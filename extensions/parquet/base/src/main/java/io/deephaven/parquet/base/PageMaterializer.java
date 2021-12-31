@@ -16,7 +16,7 @@ interface PageMaterializer {
     Factory IntFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new IntMaterializer(dataReader, nullValue, numValues);
+            return new IntMaterializer(dataReader, (int) nullValue, numValues);
         }
 
         @Override
@@ -28,60 +28,60 @@ interface PageMaterializer {
     Factory LongFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new LongMaterializer(dataReader, nullValue, numValues);
+            return new LongMaterializer(dataReader, (long) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new LongMaterializer(dataReader, 0, numValues);
+            return new LongMaterializer(dataReader, numValues);
         }
     };
 
     Factory FloatFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new FloatMaterializer(dataReader, nullValue, numValues);
+            return new FloatMaterializer(dataReader, (float) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new FloatMaterializer(dataReader, 0, numValues);
+            return new FloatMaterializer(dataReader, numValues);
         }
     };
 
     Factory DoubleFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new DoubleMaterializer(dataReader, nullValue, numValues);
+            return new DoubleMaterializer(dataReader, (double) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new DoubleMaterializer(dataReader, 0, numValues);
+            return new DoubleMaterializer(dataReader, numValues);
         }
     };
 
     Factory BoolFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BoolMaterializer(dataReader, nullValue, numValues);
+            return new BoolMaterializer(dataReader, (byte) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BoolMaterializer(dataReader, false, numValues);
+            return new BoolMaterializer(dataReader, numValues);
         }
     };
 
     Factory BlobFactory = new Factory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BlobMaterializer(dataReader, nullValue, numValues);
+            return new BlobMaterializer(dataReader, (Binary) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BlobMaterializer(dataReader, null, numValues);
+            return new BlobMaterializer(dataReader, numValues);
         }
     };
 
@@ -121,9 +121,9 @@ interface PageMaterializer {
         final int nullValue;
         final int[] data;
 
-        IntMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        IntMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (Integer) nullValue;
+            this.nullValue = nullValue;
             this.data = new int[numValues];
         }
 
@@ -162,9 +162,9 @@ interface PageMaterializer {
             this(dataReader, 0, numValues);
         }
 
-        LongMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        LongMaterializer(ValuesReader dataReader, long nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (java.lang.Long) nullValue;
+            this.nullValue = nullValue;
             this.data = new long[numValues];
         }
 
@@ -200,12 +200,12 @@ interface PageMaterializer {
         final float[] data;
 
         FloatMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0, numValues);
+            this(dataReader, 0.0f, numValues);
         }
 
-        FloatMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        FloatMaterializer(ValuesReader dataReader, float nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (java.lang.Float) nullValue;
+            this.nullValue = nullValue;
             this.data = new float[numValues];
         }
 
@@ -241,12 +241,12 @@ interface PageMaterializer {
         final double[] data;
 
         DoubleMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0, numValues);
+            this(dataReader, 0.0, numValues);
         }
 
-        DoubleMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        DoubleMaterializer(ValuesReader dataReader, double nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (java.lang.Double) nullValue;
+            this.nullValue = nullValue;
             this.data = new double[numValues];
         }
 
@@ -282,12 +282,12 @@ interface PageMaterializer {
         final byte[] data;
 
         BoolMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, null, numValues);
+            this(dataReader, (byte) 0, numValues);
         }
 
-        BoolMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        BoolMaterializer(ValuesReader dataReader, byte nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (Byte) nullValue;
+            this.nullValue = nullValue;
             this.data = new byte[numValues];
         }
 
@@ -326,9 +326,9 @@ interface PageMaterializer {
             this(dataReader, null, numValues);
         }
 
-        BlobMaterializer(ValuesReader dataReader, Object nullValue, int numValues) {
+        BlobMaterializer(ValuesReader dataReader, Binary nullValue, int numValues) {
             this.dataReader = dataReader;
-            this.nullValue = (Binary) nullValue;
+            this.nullValue = nullValue;
             this.data = new Binary[numValues];
         }
 
