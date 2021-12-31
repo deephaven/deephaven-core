@@ -28,7 +28,7 @@ public abstract class SelectAndViewAnalyzer {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, !publishTheseSources, selectColumns);
     }
 
     private static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
@@ -70,7 +70,8 @@ public abstract class SelectAndViewAnalyzer {
                 continue;
             }
 
-            final long targetDestinationCapacity = rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
+            final long targetDestinationCapacity =
+                    rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
