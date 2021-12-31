@@ -5,7 +5,7 @@ FROM $BASE as install
 #RUN set -eux; \
 #    python3 -m pip install -q --no-cache-dir \
 #    importlib-metadata \
-#    https://github.com/deephaven/deephaven-plugin-matplotlib/releases/download/v0.0.1.dev1/deephaven_plugin_matplotlib-0.0.1.dev1-py3-none-any.whl
+#    https://github.com/deephaven/deephaven-plugin-matplotlib/releases/download/v0.0.1.dev2/deephaven_plugin_matplotlib-0.0.1.dev2-py3-none-any.whl
 
 COPY licenses/ /
 
