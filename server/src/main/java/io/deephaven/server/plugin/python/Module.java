@@ -6,7 +6,7 @@ import org.jpy.PyModule;
 interface Module extends AutoCloseable {
 
     static Module of() {
-        final PyModule module = PyModule.importModule("deephaven.server.plugin");
+        final PyModule module = PyModule.importModule("deephaven2.server.plugin");
         if (module == null) {
             throw new IllegalStateException("Unable to find `deephaven.server.plugin` module");
         }
