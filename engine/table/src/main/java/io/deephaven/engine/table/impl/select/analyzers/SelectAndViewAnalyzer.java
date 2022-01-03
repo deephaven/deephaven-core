@@ -135,8 +135,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract void setBaseBits(BitSet bitset);
 
     /**
-     * Set the bits in bitset that represent all of the new columns, this is used to identify when the select or update
-     * operaiton is complete
+     * Set the bits in bitset that represent all the new columns. This is used to identify when the select or update
+     * operation is complete.
      *
      * @param bitset the bitset to manipulate.
      */
@@ -259,13 +259,13 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     /**
      * Apply this update to this SelectAndViewAnalyzer.
-     * 
+     *
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
-     * @param onCompletion called when an inner column is complete, the outer layer should pass the completion on to
-     *        other layers and if it all of it's dependencies have been satisfied schedule execution of that column
-     *        update
+     * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
+     *         on to other layers and if it and all of its dependencies have been satisfied schedule execution
+     *         of that column update. 
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
             JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
