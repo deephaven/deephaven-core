@@ -406,7 +406,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         UpdatePerformanceTracker.SubEntry getAccumulatedPerformance();
     }
 
-    public static class LiveTableMonitorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+    public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
         final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
 
         @Override

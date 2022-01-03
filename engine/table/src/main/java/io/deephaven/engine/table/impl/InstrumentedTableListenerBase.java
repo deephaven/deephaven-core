@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.time.DateTimeUtils;
@@ -126,7 +127,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 AsyncClientErrorNotifier.reportError(originalException);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Exception in " + sourceEntry.toString(), originalException);
+            throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
         }
     }
 

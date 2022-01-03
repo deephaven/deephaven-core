@@ -386,8 +386,6 @@ public class UpdatePerformanceTracker {
                     .append(", collections=").append(collections)
                     .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs));
             return appendStart(beginning)
-                    .append(", totalMemory=").append(endSample.totalMemory)
-                    .append(", totalFreeMemory=").append(endSample.freeMemory)
                     .append('}');
         }
 

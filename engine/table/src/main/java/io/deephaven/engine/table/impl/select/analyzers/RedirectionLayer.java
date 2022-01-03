@@ -42,6 +42,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     void setBaseBits(BitSet bitset) {
+        inner.setBaseBits(bitset);
         bitset.set(REDIRECTION_LAYER_INDEX);
     }
 

@@ -705,7 +705,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
                                 AsyncClientErrorNotifier.reportError(originalException);
                             }
                         } catch (IOException e) {
-                            throw new RuntimeException("Exception in ComputedTableMap", originalException);
+                            throw new UncheckedTableException("Exception in ComputedTableMap", originalException);
                         }
                     } finally {
                         outstandingNotifications.decrementAndGet();

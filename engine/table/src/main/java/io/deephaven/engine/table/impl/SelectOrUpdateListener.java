@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -7,12 +8,12 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.BitSet;
 import java.util.Map;
 
@@ -22,15 +23,14 @@ import java.util.Map;
  */
 class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final QueryTable dependent;
-    private final TrackingRowSet resultIndex;
+    private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
 
-    private long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
-    private long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
-    final BitSet completedColumns = new BitSet();
-    final BitSet allNewColumns = new BitSet();
-    final boolean enableParallelUpdate;
+    private volatile boolean updateInProgress = false;
+    private final BitSet completedColumns = new BitSet();
+    private final BitSet allNewColumns = new BitSet();
+    private final boolean enableParallelUpdate;
 
     /**
      * @param description Description of this listener
@@ -42,7 +42,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             SelectAndViewAnalyzer analyzer) {
         super(description, parent, dependent);
         this.dependent = dependent;
-        this.resultIndex = dependent.getRowSet();
+        this.resultRowSet = dependent.getRowSet();
 
         // Now calculate the other dependencies and invert
         final String[] parentNames = new String[effects.size()];
@@ -66,18 +66,18 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         // - clear only the keys that no longer exist
         // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
-        initialNotificationStep = LogicalClock.DEFAULT.currentStep();
+        updateInProgress = true;
         completedColumns.clear();
         final TableUpdate acquiredUpdate = upstream.acquire();
 
-        try (final WritableRowSet toClear = resultIndex.copyPrev();
-                final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                        new SelectAndViewAnalyzer.UpdateHelper(resultIndex, acquiredUpdate)) {
-            toClear.remove(resultIndex);
+        try (final WritableRowSet toClear = resultRowSet.copyPrev();
+             final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                        new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate)) {
+            toClear.remove(resultRowSet);
             SelectAndViewAnalyzer.JobScheduler jobScheduler;
 
             if (enableParallelUpdate) {
-                jobScheduler = new SelectAndViewAnalyzer.LiveTableMonitorJobScheduler();
+                jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
             } else {
                 jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
             }
@@ -104,9 +104,9 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 AsyncClientErrorNotifier.reportError(e);
             }
         } catch (IOException ioe) {
-            throw new RuntimeException("Exception in " + getEntry().toString(), e);
+            throw new UncheckedTableException("Exception in " + getEntry().toString(), e);
         }
-        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+        updateInProgress = false;
     }
 
     private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler) {
@@ -128,11 +128,11 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 }
             });
         }
-        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+        updateInProgress = false;
     }
 
     @Override
     public boolean satisfied(long step) {
-        return super.satisfied(step) && initialNotificationStep == finalNotificationStep;
+        return super.satisfied(step) && !updateInProgress;
     }
 }
