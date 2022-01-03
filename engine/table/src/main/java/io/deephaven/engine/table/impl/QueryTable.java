@@ -2044,8 +2044,10 @@ public class QueryTable extends BaseTable {
 
             // BTW, we don't track prev because these items are never modified or removed.
             final Table leftTable = this; // For readability.
-            final Map<String, ? extends ColumnSource<?>> triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(leftTable);
-            final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(rightTable);
+            final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
+                    SnapshotUtils.generateTriggerStampColumns(leftTable);
+            final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                    SnapshotUtils.generateSnapshotDataColumns(rightTable);
             final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
                     snapshotDataColumns, rightTable.getRowSet(),
                     resultColumns, 0);
@@ -2206,7 +2208,8 @@ public class QueryTable extends BaseTable {
 
                     final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
                     for (String stampColumn : useStampColumns) {
-                        leftColumns.put(stampColumn, SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
+                        leftColumns.put(stampColumn,
+                                SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
                     }
 
                     final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
@@ -2269,7 +2272,8 @@ public class QueryTable extends BaseTable {
                         startTrackingPrev(resultColumns.values());
                         resultTable.getRowSet().writableCast().initializePreviousValue();
                     } else if (doInitialSnapshot) {
-                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
+                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
+                                SnapshotUtils.generateSnapshotDataColumns(rightTable),
                                 leftColumns, resultColumns);
                         resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
                         resultTable.getRowSet().writableCast().initializePreviousValue();
@@ -2282,7 +2286,8 @@ public class QueryTable extends BaseTable {
                                     @Override
                                     public void onUpdate(TableUpdate upstream) {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
-                                                QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable), leftColumns, resultColumns);
+                                                QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
+                                                leftColumns, resultColumns);
                                         resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
                                         resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                                 RowSetFactory.empty(),

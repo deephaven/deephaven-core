@@ -1260,7 +1260,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table rightBy = right.aggAllBy(AggSpec.group());
 
         final QueryTable left1 = testRefreshingTable(c("T", 1));
-        final Table ex1 = newTable(col("A", new IntVector[]{new IntVectorDirect(3, 1, 2)}), col("B", new ObjectVector[]{new ObjectVectorDirect<>("c", "a", "b")}), intCol("T", 1));
+        final Table ex1 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 1, 2)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "a", "b")}), intCol("T", 1));
         TableTools.showWithRowSet(ex1);
 
         final Table actual = left1.snapshot(rightBy);
@@ -1276,7 +1277,8 @@ public class QueryTableTest extends QueryTableTestBase {
             addToTable(left1, i(3), c("T", 5));
             left1.notifyListeners(i(3), i(), i());
         });
-        final Table ex2 = newTable(col("A", new IntVector[]{new IntVectorDirect(3, 30, 1, 2, 50)}), col("B", new ObjectVector[]{new ObjectVectorDirect<>("c", "aa", "a", "b", "bc")}), intCol("T", 5));
+        final Table ex2 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 30, 1, 2, 50)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aa", "a", "b", "bc")}), intCol("T", 5));
         assertTableEquals(ex2, actual);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1290,7 +1292,8 @@ public class QueryTableTest extends QueryTableTestBase {
             left1.notifyListeners(i(4), i(), i());
         });
 
-        final Table ex3 = newTable(col("A", new IntVector[]{new IntVectorDirect(3, 31, 1, 2, 50)}), col("B", new ObjectVector[]{new ObjectVectorDirect<>("c", "aaa", "a", "b", "bc")}), intCol("T", 6));
+        final Table ex3 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 31, 1, 2, 50)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aaa", "a", "b", "bc")}), intCol("T", 6));
         assertTableEquals(ex3, actual);
     }
 

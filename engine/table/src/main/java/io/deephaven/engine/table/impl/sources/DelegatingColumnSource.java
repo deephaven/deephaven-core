@@ -23,7 +23,8 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper, Object... keys) {
+    public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+            Object... keys) {
         return delegate.match(invertMatch, usePrev, caseInsensitive, mapper, keys);
     }
 
@@ -49,7 +50,8 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return delegate.reinterpret(alternateDataType);
     }
 
@@ -64,7 +66,8 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         delegate.fillChunk(context, destination, rowSequence);
     }
 
@@ -79,13 +82,14 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         delegate.fillPrevChunk(context, destination, rowSequence);
     }
 
     @Override
     public T get(long index) {
-        return (T)delegate.get(index);
+        return (T) delegate.get(index);
     }
 
     @Override
@@ -130,7 +134,7 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
 
     @Override
     public T getPrev(long index) {
-        return (T)delegate.getPrev(index);
+        return (T) delegate.getPrev(index);
     }
 
     @Override

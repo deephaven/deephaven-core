@@ -97,8 +97,9 @@ public class SnapshotIncrementalListener extends MergedListener {
         copyRowsToResult(rowSet, triggerTable, snapshotDataColumns, leftColumns, resultColumns);
     }
 
-    public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable, Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
-                                        Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
+    public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable,
+            Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
+            Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
         if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);

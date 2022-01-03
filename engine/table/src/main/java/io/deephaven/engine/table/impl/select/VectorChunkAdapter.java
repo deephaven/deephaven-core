@@ -40,7 +40,8 @@ public class VectorChunkAdapter<ATTR extends Any> implements DefaultChunkSource.
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+            @NotNull RowSequence rowSequence) {
         // First let the underlying ChunkSource fill the chunk, and then we overwrite the values with the result
         // of applying Vector#getDirect to each element.
         underlying.fillPrevChunk(context, destination, rowSequence);

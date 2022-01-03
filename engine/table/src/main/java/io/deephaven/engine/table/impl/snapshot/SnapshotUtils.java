@@ -112,7 +112,8 @@ public class SnapshotUtils {
     @NotNull
     public static Map<String, ChunkSource.WithPrev<? extends Values>> generateSnapshotDataColumns(Table table) {
         final Map<String, ? extends ColumnSource<?>> leftSourceColumns = table.getColumnSourceMap();
-        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns = new LinkedHashMap<>(leftSourceColumns.size());
+        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                new LinkedHashMap<>(leftSourceColumns.size());
 
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : leftSourceColumns.entrySet()) {
             final ColumnSource<?> columnSource = entry.getValue();
@@ -145,18 +146,19 @@ public class SnapshotUtils {
         if (!Vector.class.isAssignableFrom(columnSource.getType())) {
             return columnSource;
         }
-        //noinspection unchecked
+        // noinspection unchecked
         final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
-        //noinspection unchecked
+        // noinspection unchecked
         final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
         return new VectorDirectDelegatingColumnSource(vectorType, columnSource, underlyingVectorSource);
     }
 
     /**
-     *  Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
+     * Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
      */
     private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
-        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource, ColumnSource<Vector<?>> underlyingVectorSource) {
+        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource,
+                ColumnSource<Vector<?>> underlyingVectorSource) {
             super(vectorType, columnSource.getComponentType(), underlyingVectorSource);
         }
 
