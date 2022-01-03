@@ -263,9 +263,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
-     * @param onCompletion called when an inner column is complete, the outer layer should pass the completion on to
-     *        other layers and if it all of it's dependencies have been satisfied schedule execution of that column
-     *        update
+     * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
+     *         on to other layers and if it and all of its dependencies have been satisfied schedule execution
+     *         of that column update. 
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
             JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
