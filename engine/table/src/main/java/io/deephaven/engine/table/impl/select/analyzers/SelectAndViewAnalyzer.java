@@ -259,7 +259,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     /**
      * Apply this update to this SelectAndViewAnalyzer.
-     * 
+     *
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
