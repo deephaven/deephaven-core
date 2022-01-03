@@ -947,18 +947,15 @@ public class ReplicateSourcesAndChunks {
                 "            () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null);"));
 
         lines = replaceRegion(lines, "constructor", Arrays.asList(
-                "    private final boolean isArrayType;",
                 "",
                 "    ObjectSparseArraySource(Class<T> type) {",
                 "        super(type);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
-                "        isArrayType = Vector.class.isAssignableFrom(type);",
                 "    }",
                 "",
                 "    ObjectSparseArraySource(Class<T> type, Class componentType) {",
                 "        super(type, componentType);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
-                "        isArrayType = Vector.class.isAssignableFrom(type);",
                 "    }"));
 
         lines = replaceRegion(lines, "move method", Arrays.asList(
@@ -976,22 +973,6 @@ public class ReplicateSourcesAndChunks {
                 "        //noinspection unchecked",
                 "        return (T[]) new Object[size];",
                 "    }"));
-
-        lines = replaceRegion(lines, "copy method", Arrays.asList(
-                "    @Override",
-                "    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {",
-                "        final T value = sourceColumn.get(sourceKey);",
-                "",
-                "        if (isArrayType && value instanceof Vector) {",
-                "            final Vector<?> vector = (Vector<?>) value;",
-                "            // noinspection unchecked",
-                "            set(destKey, (T) vector.getDirect());",
-                "        } else {",
-                "            set(destKey, value);",
-                "        }",
-                "    }"));
-
-        lines = addImport(lines, "import io.deephaven.vector.Vector;");
 
         FileUtils.writeLines(objectFile, lines);
     }

@@ -1,11 +1,16 @@
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
+import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -85,7 +90,7 @@ public class SnapshotUtils {
      * @param destColumns The destination columns we are writing to
      * @param destRowSet The keys in destColumns we want to write to
      */
-    public static void copyDataColumns(@NotNull Map<String, ? extends ColumnSource<?>> srcColumns,
+    public static void copyDataColumns(@NotNull Map<String, ChunkSource.WithPrev<? extends Values>> srcColumns,
             @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
             @NotNull RowSet destRowSet,
             boolean usePrev) {
@@ -93,13 +98,31 @@ public class SnapshotUtils {
         if (srcRowSet.isEmpty()) {
             return;
         }
-        for (Map.Entry<String, ? extends ColumnSource<?>> entry : srcColumns.entrySet()) {
+        for (Map.Entry<String, ? extends ChunkSource.WithPrev<? extends Values>> entry : srcColumns.entrySet()) {
             final String name = entry.getKey();
-            final ColumnSource<?> srcCs = entry.getValue();
+            final ChunkSource.WithPrev<? extends Values> srcCs = entry.getValue();
 
             final WritableColumnSource<?> destCs = destColumns.get(name);
             destCs.ensureCapacity(destRowSet.lastRowKey() + 1);
             ChunkUtils.copyData(srcCs, srcRowSet, destCs, destRowSet, usePrev);
         }
+    }
+
+    @NotNull
+    public static Map<String, ChunkSource.WithPrev<? extends Values>> generateSnapshotDataColumns(Table table) {
+        final Map<String, ? extends ColumnSource<?>> leftSourceColumns = table.getColumnSourceMap();
+        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns = new LinkedHashMap<>(leftSourceColumns.size());
+
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : leftSourceColumns.entrySet()) {
+            final ColumnSource<?> columnSource = entry.getValue();
+            final ChunkSource.WithPrev<? extends Values> maybeTransformed;
+            if (Vector.class.isAssignableFrom(columnSource.getType())) {
+                maybeTransformed = new VectorChunkAdapter<>(columnSource);
+            } else {
+                maybeTransformed = columnSource;
+            }
+            snapshotDataColumns.put(entry.getKey(), maybeTransformed);
+        }
+        return snapshotDataColumns;
     }
 }

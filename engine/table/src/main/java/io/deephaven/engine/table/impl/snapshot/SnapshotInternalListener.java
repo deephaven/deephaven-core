@@ -1,18 +1,24 @@
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import io.deephaven.vector.Vector;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SnapshotInternalListener extends BaseTable.ListenerImpl {
@@ -23,6 +29,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
     private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
+    private final Map<String, ColumnSource<?>> triggerStampColumns;
+    private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
 
     public SnapshotInternalListener(QueryTable triggerTable,
@@ -32,7 +40,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             Map<String, SingleValueColumnSource<?>> resultLeftColumns,
             Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
             TrackingWritableRowSet resultRowSet) {
-        super("snapshot " + result.getColumnSourceMap().keySet().toString(), triggerTable, result);
+        super("snapshot " + result.getColumnSourceMap().keySet(), triggerTable, result);
         this.triggerTable = triggerTable;
         this.result = result;
         this.lazySnapshot = lazySnapshot;
@@ -42,6 +50,35 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultRightColumns = resultRightColumns;
         this.resultRowSet = resultRowSet;
         manage(snapshotTable);
+        triggerStampColumns = generateTriggerStampColumns(triggerTable);
+        snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
+    }
+
+    @NotNull
+    private static Map<String, ColumnSource<?>> generateTriggerStampColumns(QueryTable table) {
+        final Map<String, ColumnSource<?>> triggerStampColumns;
+        final Map<String, ColumnSource<?>> leftSourceColumns = table.getColumnSourceMap();
+        if (leftSourceColumns.values().stream().anyMatch(cs -> Vector.class.isAssignableFrom(cs.getType()))) {
+            triggerStampColumns = new LinkedHashMap<>(leftSourceColumns.size());
+            for (Map.Entry<String, ColumnSource<?>> entry : leftSourceColumns.entrySet()) {
+                ColumnSource<?> columnSource = entry.getValue();
+
+                final ColumnSource<?> maybeTransformed;
+                if (Vector.class.isAssignableFrom(columnSource.getType())) {
+                    //noinspection unchecked
+                    final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
+                    //noinspection unchecked
+                    final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
+                    maybeTransformed = new VectorDirectDelegatingColumnSource(vectorType, columnSource, underlyingVectorSource);
+                } else {
+                    maybeTransformed = columnSource;
+                }
+                triggerStampColumns.put(entry.getKey(), maybeTransformed);
+            }
+        } else {
+            triggerStampColumns = leftSourceColumns;
+        }
+        return triggerStampColumns;
     }
 
     @Override
@@ -56,7 +93,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
 
         // Populate stamp columns from the triggering table
         if (!triggerTable.getRowSet().isEmpty()) {
-            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getRowSet().lastRowKey(),
+            SnapshotUtils.copyStampColumns(triggerStampColumns, triggerTable.getRowSet().lastRowKey(),
                     resultLeftColumns);
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
@@ -66,7 +103,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {
                 try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotRowSet.size() - 1)) {
-                    SnapshotUtils.copyDataColumns(snapshotTable.getColumnSourceMap(),
+                    SnapshotUtils.copyDataColumns(snapshotDataColumns,
                             snapshotRowSet, resultRightColumns, destRowSet, usePrev);
                 }
             }
@@ -101,9 +138,34 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
 
     @Override
     public boolean canExecute(final long step) {
-        if (!lazySnapshot && snapshotTable instanceof NotificationQueue.Dependency) {
-            return ((NotificationQueue.Dependency) snapshotTable).satisfied(step) && super.canExecute(step);
+        if (!lazySnapshot) {
+            return snapshotTable.satisfied(step) && super.canExecute(step);
         }
         return super.canExecute(step);
+    }
+
+    /**
+     *  Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
+     */
+    private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
+        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource, ColumnSource<Vector<?>> underlyingVectorSource) {
+            super(vectorType, columnSource.getComponentType(), underlyingVectorSource);
+        }
+
+        @Override
+        public Vector<?> get(long index) {
+            Vector<?> vector = super.get(index);
+            if (vector == null)
+                return null;
+            return vector.getDirect();
+        }
+
+        @Override
+        public Vector<?> getPrev(long index) {
+            Vector<?> vector = super.getPrev(index);
+            if (vector == null)
+                return null;
+            return vector.getDirect();
+        }
     }
 }

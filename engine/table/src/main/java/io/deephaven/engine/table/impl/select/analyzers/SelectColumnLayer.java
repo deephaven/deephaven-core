@@ -31,7 +31,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
      */
-    private ChunkSource<Values> chunkSource;
+    private ChunkSource.WithPrev<Values> chunkSource;
 
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
