@@ -365,7 +365,8 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(final LogOutput logOutput) {
-            final LogOutput beginning = logOutput.append("Entry{").append(", id=").append(id)
+            final LogOutput beginning = logOutput.append("Entry{")
+                    .append(", id=").append(id)
                     .append(", evaluationNumber=").append(evaluationNumber)
                     .append(", operationNumber=").append(operationNumber)
                     .append(", description='").append(description).append('\'')
@@ -378,10 +379,11 @@ public class UpdatePerformanceTracker {
                     .append(", maxTotalMemory=").append(maxTotalMemory)
                     .append(", minFreeMemory=").append(minFreeMemory)
                     .append(", collections=").append(collections)
-                    .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs))
+                    .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs));
+            return appendStart(beginning)
+                    .append(", totalMemory=").append(endSample.totalMemory)
+                    .append(", totalFreeMemory=").append(endSample.freeMemory)
                     .append('}');
-            return appendStart(beginning).append(", totalMemory=").append(endSample.totalMemory)
-                    .append(", totalFreeMemory=").append(endSample.freeMemory).append('}');
         }
 
         public int getId() {
@@ -536,19 +538,23 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(LogOutput logOutput) {
-            final LogOutput currentValues = logOutput.append("SubEntry{").append(", intervalUsageNanos=")
-                    .append(getIntervalUsageNanos()).append(", intervalCpuNanos=").append(getIntervalCpuNanos())
-                    .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
-                    .append(", intervalAllocatedBytes=").append(getIntervalAllocatedBytes())
-                    .append(", intervalPoolAllocatedBytes=").append(getIntervalPoolAllocatedBytes());
-            return appendStart(currentValues).append('}');
+            final LogOutput currentValues = logOutput.append("SubEntry{")
+                    .append(", intervalUsageNanos=").append(intervalUsageNanos)
+                    .append(", intervalCpuNanos=").append(intervalCpuNanos)
+                    .append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
+                    .append(", intervalAllocatedBytes=").append(intervalAllocatedBytes)
+                    .append(", intervalPoolAllocatedBytes=").append(intervalPoolAllocatedBytes);
+            return appendStart(currentValues)
+                    .append('}');
         }
 
         LogOutput appendStart(LogOutput logOutput) {
-            return logOutput.append(", startCpuNanos=").append(startCpuNanos).append(", startUserCpuNanos=")
-                    .append(startUserCpuNanos).append(", startTimeNanos=").append(startTimeNanos)
-                    .append(", startAllocatedBytes=").append(startAllocatedBytes).append(", startPoolAllocatedBytes=")
-                    .append(startPoolAllocatedBytes);
+            return logOutput
+                    .append(", startCpuNanos=").append(startCpuNanos)
+                    .append(", startUserCpuNanos=").append(startUserCpuNanos)
+                    .append(", startTimeNanos=").append(startTimeNanos)
+                    .append(", startAllocatedBytes=").append(startAllocatedBytes)
+                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes); 
         }
 
         public void accumulate(SubEntry entry) {
