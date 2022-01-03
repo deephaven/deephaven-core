@@ -554,7 +554,7 @@ public class UpdatePerformanceTracker {
                     .append(", startUserCpuNanos=").append(startUserCpuNanos)
                     .append(", startTimeNanos=").append(startTimeNanos)
                     .append(", startAllocatedBytes=").append(startAllocatedBytes)
-                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes); 
+                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes);
         }
 
         public void accumulate(SubEntry entry) {
