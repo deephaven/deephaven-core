@@ -9,16 +9,12 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
-import io.deephaven.vector.Vector;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SnapshotInternalListener extends BaseTable.ListenerImpl {
@@ -29,7 +25,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
     private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
-    private final Map<String, ColumnSource<?>> triggerStampColumns;
+    private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
 
@@ -50,35 +46,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultRightColumns = resultRightColumns;
         this.resultRowSet = resultRowSet;
         manage(snapshotTable);
-        triggerStampColumns = generateTriggerStampColumns(triggerTable);
+        triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
         snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
-    }
-
-    @NotNull
-    private static Map<String, ColumnSource<?>> generateTriggerStampColumns(QueryTable table) {
-        final Map<String, ColumnSource<?>> triggerStampColumns;
-        final Map<String, ColumnSource<?>> leftSourceColumns = table.getColumnSourceMap();
-        if (leftSourceColumns.values().stream().anyMatch(cs -> Vector.class.isAssignableFrom(cs.getType()))) {
-            triggerStampColumns = new LinkedHashMap<>(leftSourceColumns.size());
-            for (Map.Entry<String, ColumnSource<?>> entry : leftSourceColumns.entrySet()) {
-                ColumnSource<?> columnSource = entry.getValue();
-
-                final ColumnSource<?> maybeTransformed;
-                if (Vector.class.isAssignableFrom(columnSource.getType())) {
-                    //noinspection unchecked
-                    final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
-                    //noinspection unchecked
-                    final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
-                    maybeTransformed = new VectorDirectDelegatingColumnSource(vectorType, columnSource, underlyingVectorSource);
-                } else {
-                    maybeTransformed = columnSource;
-                }
-                triggerStampColumns.put(entry.getKey(), maybeTransformed);
-            }
-        } else {
-            triggerStampColumns = leftSourceColumns;
-        }
-        return triggerStampColumns;
     }
 
     @Override
@@ -144,28 +113,4 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         return super.canExecute(step);
     }
 
-    /**
-     *  Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
-     */
-    private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
-        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource, ColumnSource<Vector<?>> underlyingVectorSource) {
-            super(vectorType, columnSource.getComponentType(), underlyingVectorSource);
-        }
-
-        @Override
-        public Vector<?> get(long index) {
-            Vector<?> vector = super.get(index);
-            if (vector == null)
-                return null;
-            return vector.getDirect();
-        }
-
-        @Override
-        public Vector<?> getPrev(long index) {
-            Vector<?> vector = super.getPrev(index);
-            if (vector == null)
-                return null;
-            return vector.getDirect();
-        }
-    }
 }

@@ -2044,8 +2044,9 @@ public class QueryTable extends BaseTable {
 
             // BTW, we don't track prev because these items are never modified or removed.
             final Table leftTable = this; // For readability.
+            final Map<String, ? extends ColumnSource<?>> triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(leftTable);
             final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(rightTable);
-            final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getRowSet(),
+            final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
                     snapshotDataColumns, rightTable.getRowSet(),
                     resultColumns, 0);
             final TrackingWritableRowSet resultRowSet =
@@ -2068,7 +2069,7 @@ public class QueryTable extends BaseTable {
                         Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
                                 lastKey, "lastRowKey", added, "added");
                         final long oldSize = resultRowSet.size();
-                        final long newSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), added,
+                        final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
                                 snapshotDataColumns, rightTable.getRowSet(),
                                 resultColumns, oldSize);
                         final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
@@ -2205,8 +2206,7 @@ public class QueryTable extends BaseTable {
 
                     final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
                     for (String stampColumn : useStampColumns) {
-                        final ColumnSource<?> cs = getColumnSource(stampColumn);
-                        leftColumns.put(stampColumn, cs);
+                        leftColumns.put(stampColumn, SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
                     }
 
                     final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
@@ -2257,7 +2257,6 @@ public class QueryTable extends BaseTable {
                         final SnapshotIncrementalListener listener =
                                 new SnapshotIncrementalListener(this, resultTable, resultColumns,
                                         rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
-
 
                         rightListenerRecorder.setMergedListener(listener);
                         leftListenerRecorder.setMergedListener(listener);

@@ -7,6 +7,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSet;
@@ -65,7 +66,7 @@ public class SnapshotUtils {
      *
      * @param stampColumns The stamp columns that serve as the source data
      * @param stampKey The source key
-     * @param destColumns The destination columns we are writing to to
+     * @param destColumns The destination columns we are writing to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
             @NotNull Map<String, SingleValueColumnSource<?>> destColumns) {
@@ -124,5 +125,55 @@ public class SnapshotUtils {
             snapshotDataColumns.put(entry.getKey(), maybeTransformed);
         }
         return snapshotDataColumns;
+    }
+
+    @NotNull
+    public static Map<String, ? extends ColumnSource<?>> generateTriggerStampColumns(Table table) {
+        final Map<String, ? extends ColumnSource<?>> stampColumns = table.getColumnSourceMap();
+        if (stampColumns.values().stream().noneMatch(cs -> Vector.class.isAssignableFrom(cs.getType()))) {
+            return stampColumns;
+        }
+        final Map<String, ColumnSource<?>> triggerStampColumns = new LinkedHashMap<>(stampColumns.size());
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
+            triggerStampColumns.put(entry.getKey(), maybeTransformToDirectVectorColumnSource(entry.getValue()));
+        }
+        return triggerStampColumns;
+    }
+
+    @NotNull
+    public static ColumnSource<?> maybeTransformToDirectVectorColumnSource(ColumnSource<?> columnSource) {
+        if (!Vector.class.isAssignableFrom(columnSource.getType())) {
+            return columnSource;
+        }
+        //noinspection unchecked
+        final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
+        //noinspection unchecked
+        final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
+        return new VectorDirectDelegatingColumnSource(vectorType, columnSource, underlyingVectorSource);
+    }
+
+    /**
+     *  Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
+     */
+    private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
+        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource, ColumnSource<Vector<?>> underlyingVectorSource) {
+            super(vectorType, columnSource.getComponentType(), underlyingVectorSource);
+        }
+
+        @Override
+        public Vector<?> get(long index) {
+            Vector<?> vector = super.get(index);
+            if (vector == null)
+                return null;
+            return vector.getDirect();
+        }
+
+        @Override
+        public Vector<?> getPrev(long index) {
+            Vector<?> vector = super.getPrev(index);
+            if (vector == null)
+                return null;
+            return vector.getDirect();
+        }
     }
 }
