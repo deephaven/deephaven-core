@@ -1,6 +1,7 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.benchmarking.BenchUtil;
+import io.deephaven.benchmarking.runner.EnvUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -33,7 +34,7 @@ public class RowSetGetFindBench {
     private static final int runLen = 20;
     // RowSet size = containers * runsPerContainer*runLen.
     private static RowSet rowSet;
-    private static RowSet opRowSet;
+    private static long[] opsValues;
 
     private static final Random rand = new Random(randomSeed);
 
@@ -52,7 +53,29 @@ public class RowSetGetFindBench {
         // To get this output we need JVM flag `-DMetricsManager.enabled=true`
         System.out.println(MetricsManager.getCounters());
         final long ops = millionOps * 1000 * 1000;
-        opRowSet = rowSet.subSetByPositionRange(0, ops);
+        final RowSet opRowSet = rowSet.subSetByPositionRange(0, ops);
+        opsValues = new long[(int) opRowSet.size()];
+        int i = 0;
+        try (final RowSet.Iterator it = opRowSet.iterator()) {
+            while (it.hasNext()) {
+                opsValues[i++] = it.nextLong();
+            }
+        }
+    }
+
+    EnvUtils.GcTimeCollector gcTimeCollector = new EnvUtils.GcTimeCollector();
+
+    @Setup(Level.Iteration)
+    public void setupIteration() {
+        gcTimeCollector.resetAndStart();
+    }
+
+    @TearDown(Level.Iteration)
+    public void tearDownIteration() {
+        gcTimeCollector.stopAndSample();
+        System.out.println(
+                "Gc during iteration: count=" + gcTimeCollector.getCollectionCount() +
+                        ", timeMs=" + gcTimeCollector.getCollectionTimeMs());
     }
 
     private static RowSet loadRowSet(final String rowSetFilename) {
@@ -111,9 +134,11 @@ public class RowSetGetFindBench {
 
     @Benchmark
     public void b01_find(final Blackhole bh) {
-        final MutableInt accum = new MutableInt(0);
-        opRowSet.forAllRowKeys(l -> accum.add(rowSet.find(l)));
-        bh.consume(accum.getValue());
+        long accum = 0;
+        for (long v : opsValues) {
+            accum += rowSet.find(v);
+        }
+        bh.consume(accum);
     }
 
     public static void main(String[] args) throws RunnerException {
