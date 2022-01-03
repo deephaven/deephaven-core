@@ -135,8 +135,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract void setBaseBits(BitSet bitset);
 
     /**
-     * Set the bits in bitset that represent all of the new columns, this is used to identify when the select or update
-     * operaiton is complete
+     * Set the bits in bitset that represent all the new columns. This is used to identify when the select or update
+     * operation is complete.
      *
      * @param bitset the bitset to manipulate.
      */
