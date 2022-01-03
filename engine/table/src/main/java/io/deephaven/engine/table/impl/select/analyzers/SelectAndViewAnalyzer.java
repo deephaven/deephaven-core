@@ -328,7 +328,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         private final BitSet completedColumns;
         private final SelectLayerCompletionHandler nextHandler;
         private final BitSet requiredColumns;
-        private boolean fired = false;
+        private volatile boolean fired = false;
 
         SelectLayerCompletionHandler(BitSet requiredColumns, SelectLayerCompletionHandler nextHandler) {
             this.completedColumns = nextHandler.completedColumns;
@@ -353,16 +353,22 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @param completedColumn the layerIndex of the completedColumn
          */
         void onLayerCompleted(int completedColumn) {
-            final boolean allRequiredColumnsSet;
-            synchronized (completedColumns) {
-                completedColumns.set(completedColumn);
-                allRequiredColumnsSet = !fired && requiredColumns.stream().allMatch(completedColumns::get);
-                if (allRequiredColumnsSet) {
-                    fired = true;
+            if (!fired) {
+                final boolean readyToFire;
+                synchronized (completedColumns) {
+                    completedColumns.set(completedColumn);
+                    if (requiredColumns.get(completedColumn)) {
+                        readyToFire = !fired && requiredColumns.stream().allMatch(completedColumns::get);
+                        if (readyToFire) {
+                            fired = true;
+                        }
+                    } else {
+                        readyToFire = false;
+                    }
                 }
-            }
-            if (allRequiredColumnsSet) {
-                onAllRequiredColumnsCompleted();
+                if (readyToFire) {
+                    onAllRequiredColumnsCompleted();
+                }
             }
             if (nextHandler != null) {
                 nextHandler.onLayerCompleted(completedColumn);
