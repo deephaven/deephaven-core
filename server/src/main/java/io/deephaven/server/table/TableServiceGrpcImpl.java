@@ -6,8 +6,8 @@ package io.deephaven.server.table;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
@@ -313,7 +313,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     final Table table = exportBuilder.doExport();
 
                     safelyExecuteLocked(responseObserver,
-                            () -> responseObserver.onNext(buildTableCreationResponse(resultId, table)));
+                            () -> responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, table)));
                     if (remaining.decrementAndGet() == 0) {
                         safelyExecuteLocked(responseObserver, responseObserver::onCompleted);
                     }
@@ -358,23 +358,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                                     GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket is not a table"));
                             return;
                         }
-
-                        TableReference ref = TableReference.newBuilder().setTicket(request).build();
-                        responseObserver.onNext(buildTableCreationResponse(ref, (Table) obj));
+                        responseObserver.onNext(ExportUtil.buildTableCreationResponse(request, (Table) obj));
                         responseObserver.onCompleted();
                     });
         });
-    }
-
-    public static ExportedTableCreationResponse buildTableCreationResponse(final TableReference tableRef,
-            final Table table) {
-        return ExportedTableCreationResponse.newBuilder()
-                .setSuccess(true)
-                .setResultId(tableRef)
-                .setIsStatic(!table.isRefreshing())
-                .setSize(table.size())
-                .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                .build();
     }
 
     /**
@@ -397,8 +384,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
             }
 
-            final TableReference resultRef = TableReference.newBuilder().setTicket(resultId).build();
-
             final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
                     .map(ref -> resolveOneShotReference(session, ref))
                     .collect(Collectors.toList());
@@ -409,7 +394,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .submit(() -> {
                         final Table result = operation.create(request, dependencies);
                         safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(resultRef, result));
+                            responseObserver.onNext(ExportUtil.buildTableCreationResponse(resultId, result));
                             responseObserver.onCompleted();
                         });
                         return result;

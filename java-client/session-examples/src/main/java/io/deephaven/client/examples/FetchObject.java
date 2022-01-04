@@ -1,5 +1,6 @@
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FetchedObject;
 import io.deephaven.client.impl.Session;
 import picocli.CommandLine;
@@ -28,6 +29,9 @@ class FetchObject extends SingleSessionExampleBase {
         final String type = customObject.type();
         System.err.println("type: " + type);
         System.err.println("size: " + customObject.size());
+        for (ExportId exportId : customObject.exportIds()) {
+            System.err.println("exportId: " + exportId);
+        }
         if (file != null) {
             try (final OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
                 customObject.writeTo(out);

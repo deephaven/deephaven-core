@@ -631,7 +631,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     protected Snapshot takeSnapshot() {
-        return new GroovySnapshot(new HashMap<>(getVariables()));
+        // noinspection unchecked,rawtypes
+        return new GroovySnapshot(new HashMap<>(groovyShell.getContext().getVariables()));
     }
 
     @Override

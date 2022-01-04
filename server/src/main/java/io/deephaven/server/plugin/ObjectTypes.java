@@ -4,6 +4,7 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ final class ObjectTypes implements ObjectTypeLookup {
     private final Map<Class<?>, ObjectType> classTypes;
     private final List<ObjectType> otherTypes;
 
+    @Inject
     public ObjectTypes() {
         names = new HashSet<>();
         classTypes = new HashMap<>();

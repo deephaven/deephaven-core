@@ -233,6 +233,7 @@ message FetchObjectRequest {
 message FetchObjectResponse {
     string type = 1;
     bytes data = 2;
+    repeated io.deephaven.proto.backplane.grpc.Ticket export_id = 3;
 }
 
 message FigureDescriptor {

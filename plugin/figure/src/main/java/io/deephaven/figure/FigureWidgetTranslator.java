@@ -3,6 +3,7 @@ package io.deephaven.figure;
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
@@ -122,9 +123,8 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            final Export<Table> export = exporter.newServerSideExport(table);
-            clientFigure.addTables(buildTableCreationResponse(
-                    TableReference.newBuilder().setTicket(export.getExportId()).build(), table));
+            final Export export = exporter.newServerSideExport(table);
+            clientFigure.addTables(ExportUtil.buildTableCreationResponse(export.id(), table));
         }
 
         // TODO (deephaven-core#62) implement once tablemaps are ready

@@ -7,6 +7,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.PluginCallback;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
+import io.deephaven.server.plugin.java.JavaServiceLoader;
+import io.deephaven.server.plugin.python.PythonModuleLoader;
 
 import javax.inject.Inject;
 import java.util.Objects;
@@ -24,10 +26,10 @@ public final class PluginsLoader implements PluginCallback {
     public void registerAll() {
         log.info().append("Registering plugins...").endl();
         final Counting serviceLoaderCount = new Counting();
-        io.deephaven.server.plugin.java.Loader.allRegisterInto(serviceLoaderCount);
+        JavaServiceLoader.allRegisterInto(serviceLoaderCount);
         final Counting pythonModuleCount = new Counting();
         if (ConsoleServiceGrpcImpl.isPythonSession()) {
-            io.deephaven.server.plugin.python.Loader.allRegisterInto(pythonModuleCount);
+            PythonModuleLoader.allRegisterInto(pythonModuleCount);
         }
         log.info().append("Registered via service loader: ").append(serviceLoaderCount).endl();
         if (ConsoleServiceGrpcImpl.isPythonSession()) {

@@ -4,15 +4,19 @@ import com.google.protobuf.ByteString;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public final class FetchedObject {
     private final String type;
     private final ByteString bytes;
+    private final List<ExportId> exportIds;
 
-    FetchedObject(String type, ByteString bytes) {
+    FetchedObject(String type, ByteString bytes, List<ExportId> exportIds) {
         this.type = Objects.requireNonNull(type);
         this.bytes = Objects.requireNonNull(bytes);
+        this.exportIds = Collections.unmodifiableList(exportIds);
     }
 
     public String type() {
@@ -31,11 +35,16 @@ public final class FetchedObject {
         bytes.writeTo(out);
     }
 
+    public List<ExportId> exportIds() {
+        return exportIds;
+    }
+
     @Override
     public String toString() {
         return "FetchedObject{" +
                 "type='" + type + '\'' +
                 ", bytes=" + bytes +
+                ", exportIds=" + exportIds +
                 '}';
     }
 }

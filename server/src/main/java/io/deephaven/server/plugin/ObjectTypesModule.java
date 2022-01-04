@@ -17,5 +17,5 @@ public interface ObjectTypesModule {
     }
 
     @Binds
-    ObjectTypeLookup providesLookup(ObjectTypes types);
+    ObjectTypeLookup bindsLookup(ObjectTypes types);
 }

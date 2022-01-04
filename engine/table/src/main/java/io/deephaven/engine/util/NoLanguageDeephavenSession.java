@@ -74,7 +74,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     protected Changes createDiff(Snapshot from, Snapshot to, RuntimeException e) {
-        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support diff");
+        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support createDiff");
     }
 
     @Override

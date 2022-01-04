@@ -314,7 +314,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private static FieldType unknownType() {
         return FieldType.newBuilder()
-                .setUnknown(UnknownInfo.newBuilder().build())
+                .setUnknown(UnknownInfo.getDefaultInstance())
                 .build();
     }
 

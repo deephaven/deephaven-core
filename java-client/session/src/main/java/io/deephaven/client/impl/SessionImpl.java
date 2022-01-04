@@ -27,6 +27,7 @@ import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -50,6 +51,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
@@ -425,7 +427,14 @@ public final class SessionImpl extends SessionBase {
         public void onNext(FetchObjectResponse value) {
             final String type = value.getType();
             final ByteString data = value.getData();
-            future.complete(new FetchedObject(type, data));
+            final List<ExportId> exportIds = value.getExportIdList().stream()
+                    .map(FetchObserver::toExportId)
+                    .collect(Collectors.toList());
+            future.complete(new FetchedObject(type, data, exportIds));
+        }
+
+        private static ExportId toExportId(Ticket e) {
+            return new ExportId(ExportTicketHelper.ticketToExportId(e, "exportId"));
         }
 
         @Override

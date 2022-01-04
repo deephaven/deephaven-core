@@ -30,6 +30,8 @@ import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
+import io.deephaven.plugin.type.Exporter;
+import io.deephaven.plugin.type.Exporter.Export;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -49,6 +51,7 @@ import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
 import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
 import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
@@ -65,6 +68,7 @@ import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
+import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
 
@@ -74,6 +78,7 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -446,7 +451,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                     "Value bound to ticket " + name + " is not a FigureWidget");
                         }
                         FigureWidget widget = (FigureWidget) result;
-                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session.asExporter());
+                        final Builder dummy = FetchObjectResponse.newBuilder();
+                        final ExportCollector exportCollector = new ExportCollector(session, dummy);
+                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, exportCollector);
                         responseObserver
                                 .onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
                         responseObserver.onCompleted();
@@ -479,10 +486,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
-        final String name = type.name();
-        type.writeTo(state.asExporter(), object, out);
+        final Builder builder = FetchObjectResponse.newBuilder().setType(type.name());
+        final ExportCollector exportCollector = new ExportCollector(state, builder);
+        type.writeTo(exportCollector, object, out);
         final ByteString data = ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
-        return FetchObjectResponse.newBuilder().setType(name).setData(data).build();
+        return builder.setData(data).build();
     }
 
     private static IllegalArgumentException noTypeException(Object o) {
@@ -533,6 +541,42 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 // we are ignoring exceptions here deliberately, and just shutting down
                 close();
             }
+        }
+    }
+
+    private static final class ExportCollector implements Exporter {
+
+        private final SessionState sessionState;
+        private final Builder builder;
+        private final Thread thread;
+
+        public ExportCollector(SessionState sessionState, Builder builder) {
+            this.sessionState = Objects.requireNonNull(sessionState);
+            this.builder = Objects.requireNonNull(builder);
+            this.thread = Thread.currentThread();
+        }
+
+        @Override
+        public Export newServerSideExport(Object object) {
+            if (thread != Thread.currentThread()) {
+                throw new IllegalStateException("Should only create exports on the calling thread");
+            }
+            final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
+            builder.addExportId(exportObject.getExportId());
+            return new ExportImpl(exportObject);
+        }
+    }
+
+    private static final class ExportImpl implements Export {
+        private final ExportObject<?> export;
+
+        public ExportImpl(ExportObject<?> export) {
+            this.export = Objects.requireNonNull(export);
+        }
+
+        @Override
+        public Ticket id() {
+            return export.getExportId();
         }
     }
 }
