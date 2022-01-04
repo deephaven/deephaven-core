@@ -7,8 +7,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.TableMapTransformThreadPool;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -418,11 +418,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * The performance statistics of all runnables that have been completed off-thread, or null if it was executed
          * in the current thread.
          */
-        UpdatePerformanceTracker.SubEntry getAccumulatedPerformance();
+        BasePerformanceEntry getAccumulatedPerformance();
     }
 
     public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
+        final BasePerformanceEntry accumulatedSubEntry = new BasePerformanceEntry();
 
         @Override
         public void submit(final Runnable runnable, final LogOutputAppendable description,
@@ -435,7 +435,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
                 @Override
                 public void run() {
-                    final UpdatePerformanceTracker.SubEntry subEntry = new UpdatePerformanceTracker.SubEntry();
+                    final BasePerformanceEntry subEntry = new BasePerformanceEntry();
                     subEntry.onSubEntryStart();
                     try {
                         runnable.run();
@@ -458,19 +458,19 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         @Override
-        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+        public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedSubEntry;
         }
     }
 
     public static class TableMapTransformJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
+        final BasePerformanceEntry accumulatedSubEntry = new BasePerformanceEntry();
 
         @Override
         public void submit(final Runnable runnable, final LogOutputAppendable description,
                 final Consumer<Exception> onError) {
-            TableMapTransformThreadPool.executorService.submit(() -> {
-                final UpdatePerformanceTracker.SubEntry subEntry = new UpdatePerformanceTracker.SubEntry();
+            OperationInitializationThreadPool.executorService.submit(() -> {
+                final BasePerformanceEntry subEntry = new BasePerformanceEntry();
                 subEntry.onSubEntryStart();
                 try {
                     runnable.run();
@@ -486,7 +486,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         @Override
-        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+        public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedSubEntry;
         }
     }
@@ -505,7 +505,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         @Override
-        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+        public BasePerformanceEntry getAccumulatedPerformance() {
             return null;
         }
     }

@@ -394,8 +394,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     private synchronized ExecutorService getTransformationExecutorService() {
         if (useGlobalTransformationThreadPool) {
-            if (TableMapTransformThreadPool.TRANSFORM_THREADS > 1) {
-                return TableMapTransformThreadPool.executorService;
+            if (OperationInitializationThreadPool.TRANSFORM_THREADS > 1) {
+                return OperationInitializationThreadPool.executorService;
             } else {
                 return null;
             }
@@ -765,7 +765,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     /**
      * Sets whether this LocalTableMap is configured to use the global transformation thread pool.
      *
-     * When set to true, the global thread pool configured in {@link TableMapTransformThreadPool} is used.
+     * When set to true, the global thread pool configured in {@link OperationInitializationThreadPool} is used.
      *
      * When set to false, a thread pool for this particular TableMap is used (or no thread pool if transformation
      * threads is set to 1).

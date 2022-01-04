@@ -4,12 +4,12 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -290,7 +290,7 @@ class AggregationContext {
      * Propagate listener failure to all operators.
      *
      * @param originalException The error {@link Throwable}
-     * @param sourceEntry The {@link UpdatePerformanceTracker.Entry} for the failed listener
+     * @param sourceEntry The {@link PerformanceEntry} for the failed listener
      */
     void propagateFailureToOperators(@NotNull final Throwable originalException,
             @NotNull final TableListener.Entry sourceEntry) {

@@ -5,7 +5,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.TerminalNotification;
@@ -117,7 +117,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         upstream.release();
         toClear.close();
         updateHelper.close();
-        final UpdatePerformanceTracker.SubEntry accumulated = jobScheduler.getAccumulatedPerformance();
+        final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
         // if the entry exists, then we install a terminal notification so that we don't lose the performance from this
         // execution
         if (accumulated != null) {

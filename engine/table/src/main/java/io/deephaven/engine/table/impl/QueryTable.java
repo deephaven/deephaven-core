@@ -25,8 +25,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -1378,7 +1378,7 @@ public class QueryTable extends BaseTable {
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
                     if (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                            && TableMapTransformThreadPool.TRANSFORM_THREADS > 1)) {
+                            && OperationInitializationThreadPool.TRANSFORM_THREADS > 1)) {
                         jobScheduler = new SelectAndViewAnalyzer.TableMapTransformJobScheduler();
                     } else {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
@@ -1407,7 +1407,7 @@ public class QueryTable extends BaseTable {
                                         e.getCause());
                             }
                         } finally {
-                            final UpdatePerformanceTracker.SubEntry subEntry = jobScheduler.getAccumulatedPerformance();
+                            final BasePerformanceEntry subEntry = jobScheduler.getAccumulatedPerformance();
                             if (subEntry != null) {
                                 final QueryPerformanceNugget outerNugget =
                                         QueryPerformanceRecorder.getInstance().getOuterNugget();

@@ -63,7 +63,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * For threaded operations we want to accumulate the CPU time, allocations, and read operations to the enclosing
      * nugget of the main operation. For the initialization we ignore the wall clock time taken in the thread pool.
      */
-    private UpdatePerformanceTracker.SubEntry subEntry;
+    private BasePerformanceEntry subEntry;
 
     /**
      * Constructor for query-level nuggets.
@@ -381,7 +381,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      *
      * The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.
      */
-    public void addSubEntry(UpdatePerformanceTracker.SubEntry subEntry) {
+    public void addSubEntry(BasePerformanceEntry subEntry) {
         if (this.subEntry == null) {
             this.subEntry = subEntry;
         } else {
