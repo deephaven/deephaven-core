@@ -28,7 +28,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
         super(REDIRECTION_LAYER_INDEX);
-        Assert.eq(inner.getLayerIndex(), "inner.getLayerIndex()", 0);
+        Assert.eq(inner.getLayerIndex(), "inner.getLayerIndex()", BASE_LAYER_INDEX);
         this.inner = inner;
         this.resultRowSet = resultRowSet;
         this.rowRedirection = rowRedirection;
@@ -170,6 +170,6 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("{RedirectionLayer}");
+        return logOutput.append("{RedirectionLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
     }
 }

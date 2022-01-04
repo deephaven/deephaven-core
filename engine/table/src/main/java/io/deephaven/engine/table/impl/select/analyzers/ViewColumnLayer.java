@@ -24,6 +24,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("{ViewColumnLayer: ").append(selectColumn.toString()).append("}");
+        return logOutput.append("{ViewColumnLayer: ").append(selectColumn.toString()).append(", layerIndex=")
+                .append(getLayerIndex()).append("}");
     }
 }

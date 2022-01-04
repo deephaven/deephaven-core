@@ -9,10 +9,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -20,7 +18,6 @@ import io.deephaven.engine.table.impl.QueryTableTestBase.ListenerWithGlobals;
 import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.util.*;
@@ -30,7 +27,6 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -316,10 +312,10 @@ public class QueryTableSelectUpdateTest {
         PartialEvalNugget(Table sourceTable, boolean indexPositionChangesAllowed) {
             this.sourceTable = sourceTable;
             listener1 = new UpdateListener();
-            ((QueryTable) sourceTable).listenForUpdates(listener1);
+            sourceTable.listenForUpdates(listener1);
 
             listener2 = new UpdateListener();
-            ((QueryTable) originalValue).listenForUpdates(listener2);
+            originalValue.listenForUpdates(listener2);
 
             this.indexPositionChangesAllowed = indexPositionChangesAllowed;
         }
@@ -516,9 +512,9 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testUpdateIncremental() {
         for (int seed = 0; seed < 3; ++seed) {
-            // try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            // testUpdateIncremental(seed, false);
-            // }
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                testUpdateIncremental(seed, false);
+            }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 testUpdateIncremental(seed, true);
             }
@@ -775,9 +771,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            table.notifyListeners(i(), i(), i(9));
-        });
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(9)));
 
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
@@ -790,7 +784,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    public void testUpdateArrayColumns() throws IOException {
+    public void testUpdateArrayColumns() {
         QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "PrevI=Position_[i-1]");
         // QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k", "PrevI=Position_[i-1]");
@@ -817,9 +811,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            table.notifyListeners(i(), i(), i(9));
-        });
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(9)));
 
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());

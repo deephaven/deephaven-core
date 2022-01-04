@@ -65,6 +65,7 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("{PreserveColumnLayer: ").append(name).append("}");
+        return logOutput.append("{PreserveColumnLayer: ").append(name).append(", layerIndex=").append(getLayerIndex())
+                .append("}");
     }
 }

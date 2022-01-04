@@ -93,6 +93,6 @@ public class BaseLayer extends SelectAndViewAnalyzer {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("{BaseLayer}");
+        return logOutput.append("{BaseLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
     }
 }

@@ -264,8 +264,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
-     *         on to other layers and if it and all of its dependencies have been satisfied schedule execution
-     *         of that column update. 
+     *        on to other layers and if it and all of its dependencies have been satisfied schedule execution of that
+     *        column update.
      */
     public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
             JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
@@ -330,16 +330,29 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         private final BitSet requiredColumns;
         private volatile boolean fired = false;
 
+        /**
+         * Create a new completion handler that calls nextHandler after its own processing. The completedColumns BitSet
+         * is shared among all handlers.
+         *
+         * @param requiredColumns the columns required for this layer
+         * @param nextHandler the next handler to call
+         */
         SelectLayerCompletionHandler(BitSet requiredColumns, SelectLayerCompletionHandler nextHandler) {
+            this.requiredColumns = requiredColumns;
             this.completedColumns = nextHandler.completedColumns;
             this.nextHandler = nextHandler;
-            this.requiredColumns = requiredColumns;
         }
 
-        public SelectLayerCompletionHandler(BitSet completedColumns, BitSet requiredColumns) {
+        /**
+         * Create the final completion handler, which has no next handler.
+         *
+         * @param requiredColumns the columns required for this handler to fire
+         * @param completedColumns the set of completed columns, shared with all of the other handlers
+         */
+        public SelectLayerCompletionHandler(BitSet requiredColumns, BitSet completedColumns) {
+            this.requiredColumns = requiredColumns;
             this.completedColumns = completedColumns;
             this.nextHandler = null;
-            this.requiredColumns = requiredColumns;
         }
 
         /**
@@ -357,8 +370,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 final boolean readyToFire;
                 synchronized (completedColumns) {
                     completedColumns.set(completedColumn);
-                    if (requiredColumns.get(completedColumn)) {
-                        readyToFire = !fired && requiredColumns.stream().allMatch(completedColumns::get);
+                    if (requiredColumns.get(completedColumn) || requiredColumns.isEmpty()) {
+                        readyToFire = requiredColumns.stream().allMatch(completedColumns::get);
                         if (readyToFire) {
                             fired = true;
                         }
@@ -388,7 +401,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     /**
-     * An interface for submitting jobs to be executed and accumulating their performance.
+     * An interface for submitting jobs to be executed and accumulating their performance of all the tasks performed off
+     * thread.
      */
     public interface JobScheduler {
         /**
@@ -401,7 +415,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         void submit(Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError);
 
         /**
-         * The performance statistics of runnable, or null if it was executed in the current thread.
+         * The performance statistics of all runnables that have been completed off-thread, or null if it was executed
+         * in the current thread.
          */
         UpdatePerformanceTracker.SubEntry getAccumulatedPerformance();
     }
@@ -508,7 +523,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         setAllNewColumns(requiredColumns);
 
-        return new SelectLayerCompletionHandler(completedColumns, requiredColumns) {
+        return new SelectLayerCompletionHandler(requiredColumns, completedColumns) {
             boolean errorOccurred = false;
 
             @Override

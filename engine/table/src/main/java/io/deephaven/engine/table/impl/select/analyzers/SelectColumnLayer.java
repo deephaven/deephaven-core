@@ -168,6 +168,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("{SelectColumnLayer: ").append(selectColumn.toString()).append("}");
+        return logOutput.append("{SelectColumnLayer: ").append(selectColumn.toString()).append(", layerIndex=")
+                .append(getLayerIndex()).append("}");
     }
 }

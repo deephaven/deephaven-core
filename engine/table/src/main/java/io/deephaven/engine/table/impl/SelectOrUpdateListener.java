@@ -13,7 +13,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.BitSet;
 import java.util.Map;
 
@@ -56,7 +55,8 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
         this.enableParallelUpdate =
-                QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1;
+                QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
+                        && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1);
         analyzer.setAllNewColumns(allNewColumns);
     }
 
@@ -70,31 +70,30 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         completedColumns.clear();
         final TableUpdate acquiredUpdate = upstream.acquire();
 
-        try (final WritableRowSet toClear = resultRowSet.copyPrev();
-             final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                        new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate)) {
-            toClear.remove(resultRowSet);
-            SelectAndViewAnalyzer.JobScheduler jobScheduler;
+        final WritableRowSet toClear = resultRowSet.copyPrev();
+        final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
+        toClear.remove(resultRowSet);
+        SelectAndViewAnalyzer.JobScheduler jobScheduler;
 
-            if (enableParallelUpdate) {
-                jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
-            } else {
-                jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
-            }
-
-            analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler,
-                    new SelectAndViewAnalyzer.SelectLayerCompletionHandler(completedColumns, allNewColumns) {
-                        @Override
-                        public void onAllRequiredColumnsCompleted() {
-                            completionRoutine(acquiredUpdate, jobScheduler);
-                        }
-
-                        @Override
-                        protected void onError(Exception error) {
-                            handleException(error);
-                        }
-                    });
+        if (enableParallelUpdate) {
+            jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
+        } else {
+            jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
         }
+
+        analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler,
+                new SelectAndViewAnalyzer.SelectLayerCompletionHandler(allNewColumns, completedColumns) {
+                    @Override
+                    public void onAllRequiredColumnsCompleted() {
+                        completionRoutine(acquiredUpdate, jobScheduler, toClear, updateHelper);
+                    }
+
+                    @Override
+                    protected void onError(Exception error) {
+                        handleException(error);
+                    }
+                });
     }
 
     private void handleException(Exception e) {
@@ -109,12 +108,15 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         updateInProgress = false;
     }
 
-    private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler) {
+    private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler,
+            WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
                 upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
         transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         dependent.notifyListeners(downstream);
         upstream.release();
+        toClear.close();
+        updateHelper.close();
         final UpdatePerformanceTracker.SubEntry accumulated = jobScheduler.getAccumulatedPerformance();
         // if the entry exists, then we install a terminal notification so that we don't lose the performance from this
         // execution
