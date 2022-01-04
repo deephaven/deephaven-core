@@ -9,19 +9,17 @@ public class EnvUtils {
 
     public static class GcTimeCollector {
         private enum State {
-            STARTED,
-            STOPPED,
+            STARTED, STOPPED,
         }
+
         /**
-         *  In STARTED state, absolute count of collections since program start.
-         *  In STOPPED state, number of collections between
-         *  last call to {@code resetAndStart} and last call to {@code stopAndSample}.
+         * In STARTED state, absolute count of collections since program start. In STOPPED state, number of collections
+         * between last call to {@code resetAndStart} and last call to {@code stopAndSample}.
          */
         private long collectionCount;
         /**
-         *  In STARTED state, absolute time in millis in collections since program start.
-         *  In STOPPED state, time in millis for collections between
-         *  last call to {@code resetAndStart} and last call to {@code stopAndSample}.
+         * In STARTED state, absolute time in millis in collections since program start. In STOPPED state, time in
+         * millis for collections between last call to {@code resetAndStart} and last call to {@code stopAndSample}.
          */
         private long collectionTimeMs;
         private State state;
