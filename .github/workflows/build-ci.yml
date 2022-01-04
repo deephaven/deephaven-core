@@ -5,7 +5,7 @@ on:
     branches: [ 'main', 'build/**', 'release/v*' ]
 
 jobs:
-  grpc-api:
+  server:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -48,10 +48,8 @@ jobs:
         id: docker_meta_server
         uses: docker/metadata-action@v3
         with:
-          # TODO(deephaven-core#1691): Remove deephaven/grpc-api image name
           images: |
             ghcr.io/${{ github.repository_owner }}/server
-            ghcr.io/${{ github.repository_owner }}/grpc-api
           flavor: |
             latest=false
           tags: |
@@ -148,7 +146,7 @@ jobs:
       - name: Create Dockerfile and context
         uses: burrunan/gradle-cache-action@v1
         with:
-          job-id: build-grpc-api
+          job-id: build-server
           arguments: --scan outputVersion createCraneTagScript docker-server-slim:prepareDocker docker-server:prepareDocker
           gradle-version: wrapper
 
