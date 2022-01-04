@@ -143,7 +143,7 @@ session.bind_table(name="MyTable", table=table)
 
 Query objects are a way to create and manage a sequence of Deephaven query operations as a single unit. Query objects have the potential to perform better than the corresponding individual queries, because the query object can be transmitted to the server in one request rather than several, and because the system can perform certain optimizations when it is able to see the whole sequence of queries at once. They are similar in spirit to prepared statements in SQL.
 
-The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc) on the query object, and then assign your table to `query.exec()`.
+The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc.) on the query object, and then assign your table to `query.exec()`.
 
 Any operation that can be executed on a table can also be executed on a query object. This example shows two operations that compute the same result, with the first one using the table updates and the second one using a query object.
 
@@ -167,7 +167,7 @@ session.bind_table(name="MyTable1", table=table1)
 session.bind_table(name="MyTable2", table=table2)
 ```
 
-## Join 2 tables
+## Join two tables
 
 `table.join()` is one of many operations that can join two tables, as shown below.
 

@@ -41,7 +41,7 @@ Execute a query on a table
 
     session = Session()
 
-    # create a table with no columns and 3 rows
+    # create a table with no columns and three rows
 
     table = session.empty_table(3)
 
