@@ -2,6 +2,7 @@ package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.runner.EnvUtils;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -55,12 +56,7 @@ public class RowSetGetFindBench {
         final long ops = millionOps * 1000 * 1000;
         final RowSet opRowSet = rowSet.subSetByPositionRange(0, ops);
         opsValues = new long[(int) opRowSet.size()];
-        int i = 0;
-        try (final RowSet.Iterator it = opRowSet.iterator()) {
-            while (it.hasNext()) {
-                opsValues[i++] = it.nextLong();
-            }
-        }
+        opRowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(opsValues));
     }
 
     EnvUtils.GcTimeCollector gcTimeCollector = new EnvUtils.GcTimeCollector();
