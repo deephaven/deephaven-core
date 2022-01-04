@@ -9,7 +9,7 @@ from .start_jvm import start_jvm
 
 DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
 DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
-DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', '/app/resources/grpc-api-docker.prop')
+DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
 DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/app/classes/*:/app/libs/*")
 
 

@@ -1,6 +1,8 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
 import org.junit.Assert;
@@ -72,7 +74,6 @@ public class ComputerTest {
     @Test
     public void computeGatherGetTest() {
 
-
         final Input[] inputs = createInputs(args -> args);
 
         final int batchSize = 7;
@@ -109,27 +110,28 @@ public class ComputerTest {
 
         Computer computer = new Computer(table, myModel, thisInput, batchSize);
 
-        for (int i = 0; i < 9; i++) {
-            computer.compute(i);
-        }
-
-        for (int i = 0; i < 9; i++) {
-            rowSetTarget[0] = computer.getFuture().getRowSet();
-            // computer.getFuture.get() triggers assertions in gather functions
-            Assert.assertEquals(6, computer.getFuture().get());
-        }
+        testAddToComputer(computer, rowSetTarget, batchSize);
+        testAddToComputer(computer, rowSetTarget, 2);
 
         computer.clear();
         Assert.assertNull(computer.getFuture());
 
-        // running again to ensure that computer.clear() does what it is supposed to do
-        for (int i = 0; i < 9; i++) {
-            computer.compute(i);
-        }
+        testAddToComputer(computer, rowSetTarget, batchSize);
+        testAddToComputer(computer, rowSetTarget, 2);
+    }
 
-        for (int i = 0; i < 9; i++) {
-            rowSetTarget[0] = computer.getFuture().getRowSet();
+    public void testAddToComputer(final Computer computer, final RowSet[] rowSetTarget, final int n) {
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            rowSetTarget[0] = rowSet;
+
+            for (int i = 0; i < n; i++) {
+                computer.compute(i);
+                rowSet.insert(i);
+            }
+
             Assert.assertEquals(6, computer.getFuture().get());
+        } finally {
+            rowSetTarget[0] = null;
         }
     }
 

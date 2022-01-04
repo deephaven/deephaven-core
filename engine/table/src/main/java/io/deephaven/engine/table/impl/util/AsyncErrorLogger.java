@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.time.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
@@ -49,14 +49,14 @@ public class AsyncErrorLogger {
     public static void log(DateTime time, TableListener.Entry entry,
             TableListener.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
-        if (entry instanceof UpdatePerformanceTracker.Entry) {
-            final UpdatePerformanceTracker.Entry uptEntry = (UpdatePerformanceTracker.Entry) entry;
+        if (entry instanceof PerformanceEntry) {
+            final PerformanceEntry uptEntry = (PerformanceEntry) entry;
             evaluationNumberSetter.set(uptEntry.getEvaluationNumber());
             operationNumberSetter.setInt(uptEntry.getOperationNumber());
             descriptionSetter.set(uptEntry.getDescription());
         }
-        if (sourceEntry instanceof UpdatePerformanceTracker.Entry) {
-            final UpdatePerformanceTracker.Entry uptSourceEntry = (UpdatePerformanceTracker.Entry) sourceEntry;
+        if (sourceEntry instanceof PerformanceEntry) {
+            final PerformanceEntry uptSourceEntry = (PerformanceEntry) sourceEntry;
             failingEvaluationNumberSetter.set(uptSourceEntry.getEvaluationNumber());
             failingOperationNumberSetter.setInt(uptSourceEntry.getOperationNumber());
             failingDescriptionSetter.set(uptSourceEntry.getDescription());
