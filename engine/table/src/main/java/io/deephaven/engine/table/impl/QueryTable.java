@@ -1407,12 +1407,12 @@ public class QueryTable extends BaseTable {
                                         e.getCause());
                             }
                         } finally {
-                            final BasePerformanceEntry subEntry = jobScheduler.getAccumulatedPerformance();
-                            if (subEntry != null) {
+                            final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+                            if (baseEntry != null) {
                                 final QueryPerformanceNugget outerNugget =
                                         QueryPerformanceRecorder.getInstance().getOuterNugget();
                                 if (outerNugget != null) {
-                                    outerNugget.addSubEntry(subEntry);
+                                    outerNugget.addBaseEntry(baseEntry);
                                 }
                             }
                         }

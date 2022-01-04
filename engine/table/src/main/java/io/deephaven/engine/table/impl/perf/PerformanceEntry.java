@@ -52,7 +52,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     public final void onUpdateStart() {
         ++intervalInvocationCount;
         RuntimeMemory.getInstance().read(startSample);
-        super.onSubEntryStart();
+        super.onBaseEntryStart();
     }
 
     public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
@@ -75,7 +75,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     public final void onUpdateEnd() {
-        onSubEntryEnd();
+        onBaseEntryEnd();
         RuntimeMemory.getInstance().read(endSample);
         maxTotalMemory = Math.max(maxTotalMemory, Math.max(startSample.totalMemory, endSample.totalMemory));
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
@@ -84,7 +84,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     void reset() {
-        subEntryReset();
+        baseEntryReset();
         intervalInvocationCount = 0;
 
         intervalAdded = 0;
@@ -105,7 +105,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
     @Override
     public LogOutput append(final LogOutput logOutput) {
-        final LogOutput beginning = logOutput.append("Entry{")
+        final LogOutput beginning = logOutput.append("PerformanceEntry{")
                 .append(", id=").append(id)
                 .append(", evaluationNumber=").append(evaluationNumber)
                 .append(", operationNumber=").append(operationNumber)

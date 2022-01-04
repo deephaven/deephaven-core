@@ -422,7 +422,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedSubEntry = new BasePerformanceEntry();
+        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
         public void submit(final Runnable runnable, final LogOutputAppendable description,
@@ -435,16 +435,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
                 @Override
                 public void run() {
-                    final BasePerformanceEntry subEntry = new BasePerformanceEntry();
-                    subEntry.onSubEntryStart();
+                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
+                    baseEntry.onBaseEntryStart();
                     try {
                         runnable.run();
                     } catch (Exception e) {
                         onError.accept(e);
                     } finally {
-                        subEntry.onSubEntryEnd();
-                        synchronized (accumulatedSubEntry) {
-                            accumulatedSubEntry.accumulate(subEntry);
+                        baseEntry.onBaseEntryEnd();
+                        synchronized (accumulatedBaseEntry) {
+                            accumulatedBaseEntry.accumulate(baseEntry);
                         }
                     }
                 }
@@ -459,27 +459,27 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         @Override
         public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedSubEntry;
+            return accumulatedBaseEntry;
         }
     }
 
     public static class TableMapTransformJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedSubEntry = new BasePerformanceEntry();
+        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
         public void submit(final Runnable runnable, final LogOutputAppendable description,
                 final Consumer<Exception> onError) {
             OperationInitializationThreadPool.executorService.submit(() -> {
-                final BasePerformanceEntry subEntry = new BasePerformanceEntry();
-                subEntry.onSubEntryStart();
+                final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
+                basePerformanceEntry.onBaseEntryStart();
                 try {
                     runnable.run();
                 } catch (Exception e) {
                     onError.accept(e);
                 } finally {
-                    subEntry.onSubEntryEnd();
-                    synchronized (accumulatedSubEntry) {
-                        accumulatedSubEntry.accumulate(subEntry);
+                    basePerformanceEntry.onBaseEntryEnd();
+                    synchronized (accumulatedBaseEntry) {
+                        accumulatedBaseEntry.accumulate(basePerformanceEntry);
                     }
                 }
             });
@@ -487,7 +487,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         @Override
         public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedSubEntry;
+            return accumulatedBaseEntry;
         }
     }
 

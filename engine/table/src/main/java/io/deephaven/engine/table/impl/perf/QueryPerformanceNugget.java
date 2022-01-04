@@ -63,7 +63,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * For threaded operations we want to accumulate the CPU time, allocations, and read operations to the enclosing
      * nugget of the main operation. For the initialization we ignore the wall clock time taken in the thread pool.
      */
-    private BasePerformanceEntry subEntry;
+    private BasePerformanceEntry basePerformanceEntry;
 
     /**
      * Constructor for query-level nuggets.
@@ -140,7 +140,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         startCpuNanos = NULL_LONG;
         startUserCpuNanos = NULL_LONG;
 
-        subEntry = null;
+        basePerformanceEntry = null;
 
         state = null; // This turns close into a no-op.
         shouldLogMeAndStackParents = false;
@@ -208,12 +208,12 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
                     minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
             diffAllocatedBytes = minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
 
-            if (subEntry != null) {
-                diffUserCpuNanos += subEntry.getIntervalUserCpuNanos();
-                diffCpuNanos += subEntry.getIntervalCpuNanos();
+            if (basePerformanceEntry != null) {
+                diffUserCpuNanos += basePerformanceEntry.getIntervalUserCpuNanos();
+                diffCpuNanos += basePerformanceEntry.getIntervalCpuNanos();
 
-                diffAllocatedBytes += subEntry.getIntervalAllocatedBytes();
-                diffPoolAllocatedBytes += subEntry.getIntervalPoolAllocatedBytes();
+                diffAllocatedBytes += basePerformanceEntry.getIntervalAllocatedBytes();
+                diffPoolAllocatedBytes += basePerformanceEntry.getIntervalPoolAllocatedBytes();
             }
 
             state = closingState;
@@ -223,7 +223,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
 
     @Override
     public String toString() {
-        return Integer.toString(evaluationNumber)
+        return evaluationNumber
                 + ":" + description
                 + ":" + callerLine;
     }
@@ -376,16 +376,16 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     }
 
     /**
-     * When we track data from other threads that should be attributed to this operation, we tack extra SubEntry values
-     * onto this nugget when it is closed.
+     * When we track data from other threads that should be attributed to this operation, we tack extra
+     * BasePerformanceEntry values onto this nugget when it is closed.
      *
      * The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.
      */
-    public void addSubEntry(BasePerformanceEntry subEntry) {
-        if (this.subEntry == null) {
-            this.subEntry = subEntry;
+    public void addBaseEntry(BasePerformanceEntry baseEntry) {
+        if (this.basePerformanceEntry == null) {
+            this.basePerformanceEntry = baseEntry;
         } else {
-            this.subEntry.accumulate(subEntry);
+            this.basePerformanceEntry.accumulate(baseEntry);
         }
     }
 

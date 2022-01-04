@@ -28,7 +28,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     private long startAllocatedBytes;
     private long startPoolAllocatedBytes;
 
-    public void onSubEntryStart() {
+    public void onBaseEntryStart() {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
 
@@ -37,7 +37,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startTimeNanos = System.nanoTime();
     }
 
-    public void onSubEntryEnd() {
+    public void onBaseEntryEnd() {
         intervalUserCpuNanos = plus(intervalUserCpuNanos,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
         intervalCpuNanos =
@@ -58,7 +58,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startTimeNanos = 0;
     }
 
-    void subEntryReset() {
+    void baseEntryReset() {
         Assert.eqZero(startTimeNanos, "startTimeNanos");
 
         intervalUsageNanos = 0;
@@ -92,7 +92,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        final LogOutput currentValues = logOutput.append("SubEntry{")
+        final LogOutput currentValues = logOutput.append("BasePerformanceEntry{")
                 .append(", intervalUsageNanos=").append(intervalUsageNanos)
                 .append(", intervalCpuNanos=").append(intervalCpuNanos)
                 .append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
