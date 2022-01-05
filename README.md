@@ -24,8 +24,8 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 | Language      | Server Application | Client Application (OpenAPI) |
 | ------------- | ------------------ | ---------------------------- |
-| Python        | Yes                | Yes                           |
-| Java / Groovy | Yes                | Yes                           |
+| Python        | Yes                | Yes                          |
+| Java / Groovy | Yes                | Yes                          |
 | C++           | No                 | Yes                          |
 | JavaScript    | No                 | Yes                          |
 | gRPC          | -                  | Yes                          |
@@ -79,18 +79,91 @@ cd deephaven-deployment
 Run the following commands to launch Deephaven for Python server applications. 
 
 ```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/docker-compose.yml -O
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/base/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
 
+### Launch: Python with NLTK
+
+Run the following commands to launch Deephaven for Python server applications with the [NLTK](https://nltk.org/) module pre-installed.
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/NLTK/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with PyTorch
+
+Run the following commands to launch Deephaven for Python server applications with the [PyTorch](https://pytorch.org/) module pre-installed.
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with SciKit-Learn
+
+Run the following commands to launch Deephaven for Python server applications with the [SciKit-Learn](https://scikit-learn.org/stable/) module pre-installed.
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with TensorFlow
+
+Run the following commands to launch Deephaven for Python server applications with the [TensorFlow](https://www.tensorflow.org/) module pre-installed.
 
 ### Launch: Python with example data
 
 Run the following commands to launch Deephaven for Python server applications, with example data.
 
 ```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/docker-compose.yml -O
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/base/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with example data and NLTK
+
+Run the following commands to launch Deephaven for Python server applications, with example data and [NLTK](https://nltk.org/).
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/NLTK/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with example data and PyTorch
+
+Run the following commands to launch Deephaven for Python server applications, with example data and [PyTorch](https://pytorch.org/).
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/PyTorch/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with example data and SciKit-Learn
+
+Run the following commands to launch Deephaven for Python server applications, with example data and [SciKit-Learn](https://scikit-learn.org/stable/).
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
+
+### Launch: Python with example data and TensorFlow
+
+Run the following commands to launch Deephaven for Python server applications, with example data and [TensorFlow](https://www.tensorflow.org/).
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/TensorFlow/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
@@ -104,7 +177,6 @@ curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/
 docker-compose pull
 docker-compose up -d
 ```
-
 
 ### Launch: Groovy / Java with example data
 
