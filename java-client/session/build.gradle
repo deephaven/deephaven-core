@@ -9,9 +9,6 @@ dependencies {
   api project(':proto:proto-backplane-grpc')
   api project(':uri')
 
-  Classpaths.inheritGrpcPlatform(project, 'implementation')
-  implementation "io.grpc:grpc-stub"
-
   Classpaths.inheritImmutables(project)
 
   compileOnly 'javax.inject:javax.inject:1'
