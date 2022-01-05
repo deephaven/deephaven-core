@@ -11,11 +11,10 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
-
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import java.util.Arrays;
 
 // region boxing imports
-import java.util.Arrays;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
 // endregion boxing imports
 
 /**

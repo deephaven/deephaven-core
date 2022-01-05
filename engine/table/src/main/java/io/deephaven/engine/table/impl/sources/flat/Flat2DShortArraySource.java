@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import java.util.Arrays;
 
 // region boxing imports
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -55,15 +56,23 @@ public class Flat2DShortArraySource extends AbstractDeferredGroupingColumnSource
     // endregion constructor
 
     // region allocateArray
-    private static short [][] allocateArray(long size, int segmentSize) {
+    private static short [][] allocateArray(long size, int segmentSize, boolean nullFilled) {
         final int segments = Math.toIntExact((size + segmentSize - 1) / segmentSize);
         final short [][] data = new short[segments][];
         int segment = 0;
         while (size > segmentSize) {
-            data[segment++] = new short[segmentSize];
+            data[segment] = new short[segmentSize];
+            if (nullFilled) {
+                Arrays.fill(data[segment], 0, segmentSize, NULL_SHORT);
+            }
+            segment++;
             size -= segmentSize;
         }
-        data[segment] = new short[Math.toIntExact(size)];
+        final int remainingSize = Math.toIntExact(size);
+        data[segment] = new short[remainingSize];
+        if (nullFilled) {
+            Arrays.fill(data[segment], 0, remainingSize, NULL_SHORT);
+        }
         return data;
     }
     // endregion allocateArray
@@ -97,7 +106,7 @@ public class Flat2DShortArraySource extends AbstractDeferredGroupingColumnSource
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (data == null) {
-            data = allocateArray(size, segmentMask + 1);
+            data = allocateArray(size, segmentMask + 1, nullFilled);
         }
         if (capacity > size) {
             throw new UnsupportedOperationException();

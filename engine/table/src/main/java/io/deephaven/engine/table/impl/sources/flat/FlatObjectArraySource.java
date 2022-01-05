@@ -16,8 +16,7 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
-
-import static io.deephaven.util.null;
+import java.util.Arrays;
 
 // region boxing imports
 // endregion boxing imports
