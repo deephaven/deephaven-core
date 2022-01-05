@@ -25,7 +25,7 @@ def _qst_custom_type(cls_name: str):
 
 
 class DType:
-    """ A class represents a data type in Deephaven."""
+    """ A class representing a data type in Deephaven."""
     _j_name_map = {}
 
     @classmethod
@@ -106,9 +106,8 @@ class CharDType(DType):
         super().__init__(j_name="char", qst_type=_JQstType.charType(), is_primitive=True)
 
     def array_from(self, seq: Sequence, remap: Callable[[Any], Any] = None):
-        if isinstance(seq, str):
-            if not remap:
-                return super().array_from(seq, remap=ord)
+        if isinstance(seq, str) and not remap:
+            return super().array_from(seq, remap=ord)
         return super().array_from(seq, remap)
 
 

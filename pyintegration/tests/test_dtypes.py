@@ -6,6 +6,7 @@ import math
 import time
 import unittest
 
+import jpy
 import numpy
 import numpy as np
 import pandas as pd
@@ -42,12 +43,11 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
-
-    def test_qst_type(self):
-        self.assertIn(".qst.type.", str(dtypes.short.qst_type))
-
-    def test_custom_type(self):
-        self.assertIn("CustomType", str(dtypes.StringSet.qst_type))
+        self.assertEqual(dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet"))
+        self.assertEqual(dtypes.DateTime.j_type, jpy.get_type("io.deephaven.time.DateTime"))
+        self.assertEqual(dtypes.Period.j_type, jpy.get_type("io.deephaven.time.Period"))
+        self.assertEqual(dtypes.PyObject.j_type, jpy.get_type("org.jpy.PyObject"))
+        self.assertEqual(dtypes.JObject.j_type, jpy.get_type("java.lang.Object"))
 
     def test_period(self):
         hour_period = dtypes.Period.j_type("T1H")
@@ -67,7 +67,7 @@ class DTypesTestCase(BaseTestCase):
         np_array = numpy.frombuffer(j_array, numpy.int32)
         self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
 
-    def test_array_of(self):
+    def test_array_from(self):
         j_array = dtypes.int_.array_from(range(5))
         np_array = numpy.frombuffer(j_array, numpy.int32)
         self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
@@ -76,7 +76,7 @@ class DTypesTestCase(BaseTestCase):
         np_array = numpy.frombuffer(j_array, numpy.int32)
         self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
 
-    def test_integer_array_of(self):
+    def test_integer_array_from(self):
         np_array = np.array([float('nan'), NULL_DOUBLE, 1.123, np.inf], dtype=np.float64)
 
         nulls = {dtypes.int64: NULL_LONG, dtypes.int32: NULL_INT, dtypes.short: NULL_SHORT, dtypes.byte: NULL_BYTE}
@@ -102,7 +102,7 @@ class DTypesTestCase(BaseTestCase):
             py_array = [x for x in j_array]
             self.assertNotEqual(expected, py_array)
 
-    def test_floating_array_of(self):
+    def test_floating_array_from(self):
 
         nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
@@ -142,7 +142,7 @@ class DTypesTestCase(BaseTestCase):
             for i in range(3):
                 self.assertAlmostEqual(expected[i], py_array[i])
 
-    def test_char_array_of(self):
+    def test_char_array_from(self):
         def remap_char(v):
             if v is None:
                 return NULL_CHAR
@@ -171,10 +171,11 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(expected, py_array)
 
     def test_datetime(self):
-        values = [dtypes.DateTime(round(time.time())), dtypes.DateTime.j_type.now()]
+        dt1 = dtypes.DateTime(round(time.time()))
+        dt2 = dtypes.DateTime.j_type.now()
+        values = [dt1, dt2, None]
         j_array = dtypes.DateTime.array_from(values)
-        self.assertTrue(2, len(j_array))
-        # TODO add content comparison
+        self.assertEqual(values, [dt for dt in j_array])
 
 
 if __name__ == '__main__':
