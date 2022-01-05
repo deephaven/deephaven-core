@@ -57,6 +57,9 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     class Changes {
         public RuntimeException error = null;
+
+        // TODO(deephaven-core#1781): Close gaps between proto "CustomType" fields
+
         public Map<String, String> created = new HashMap<>();
         public Map<String, String> updated = new HashMap<>();
         public Map<String, String> removed = new HashMap<>();

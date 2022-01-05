@@ -17,6 +17,7 @@ import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.util.AbstractScriptSession.Snapshot;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -38,7 +39,7 @@ import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
  * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation for
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession extends LivenessScope
+public abstract class AbstractScriptSession<S extends Snapshot> extends LivenessScope
         implements ScriptSession, VariableProvider {
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
@@ -111,13 +112,13 @@ public abstract class AbstractScriptSession extends LivenessScope
 
     }
 
-    protected abstract Snapshot emptySnapshot();
+    protected abstract S emptySnapshot();
 
-    protected abstract Snapshot takeSnapshot();
+    protected abstract S takeSnapshot();
 
-    protected abstract Changes createDiff(Snapshot from, Snapshot to, RuntimeException e);
+    protected abstract Changes createDiff(S from, S to, RuntimeException e);
 
-    protected Changes applyDiff(Snapshot from, Snapshot to, RuntimeException e) {
+    protected Changes applyDiff(S from, S to, RuntimeException e) {
         final Changes diff = createDiff(from, to, e);
         if (changeListener != null) {
             changeListener.onScopeChanges(this, diff);
@@ -128,7 +129,7 @@ public abstract class AbstractScriptSession extends LivenessScope
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
         RuntimeException evaluateErr = null;
-        final Snapshot fromSnapshot = takeSnapshot();
+        final S fromSnapshot = takeSnapshot();
 
         // store pointers to exist query scope static variables
         final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
@@ -153,7 +154,7 @@ public abstract class AbstractScriptSession extends LivenessScope
             QueryLibrary.setLibrary(prevQueryLibrary);
         }
 
-        final Snapshot toSnapshot = takeSnapshot();
+        final S toSnapshot = takeSnapshot();
 
         final Changes diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
 
@@ -214,6 +215,7 @@ public abstract class AbstractScriptSession extends LivenessScope
         }
         if (object instanceof TableMap) {
             return Optional.empty();
+            // TODO(deephaven-core#1762): Implement Smart-Keys and Table-Maps
             // return Optional.of("TableMap");
         }
         return objectTypeLookup.findObjectType(object).map(ObjectType::name);

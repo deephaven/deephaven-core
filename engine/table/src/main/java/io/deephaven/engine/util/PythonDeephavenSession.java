@@ -11,6 +11,7 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.PythonDeephavenSession.PythonSnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
  * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
  * supporting structures.
  */
-public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
+public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot> implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
@@ -198,7 +199,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         return Collections.unmodifiableMap(scope.getEntriesMap());
     }
 
-    private static class PythonSnapshot implements Snapshot, Closeable {
+    protected static class PythonSnapshot implements Snapshot, Closeable {
 
         private final PyDictWrapper dict;
 
@@ -213,24 +214,24 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    protected Snapshot emptySnapshot() {
+    protected PythonSnapshot emptySnapshot() {
         return new PythonSnapshot(PyObject.executeCode("dict()", PyInputMode.EXPRESSION).asDict());
     }
 
     @Override
-    protected Snapshot takeSnapshot() {
+    protected PythonSnapshot takeSnapshot() {
         return new PythonSnapshot(scope.globals().copy());
     }
 
     @Override
-    protected Changes createDiff(Snapshot from, Snapshot to, RuntimeException e) {
+    protected Changes createDiff(PythonSnapshot from, PythonSnapshot to, RuntimeException e) {
         // TODO(deephaven-core#1775): multivariate jpy (unwrapped) return type into java
         // It would be great if we could push down the maybeUnwrap logic into create_change_list (it could handle the
         // unwrapping), but we are unable to tell jpy that we want to unwrap JType objects, but pass back python objects
         // as PyObject.
         try (
-                PythonSnapshot fromSnapshot = (PythonSnapshot) from;
-                PythonSnapshot toSnapshot = (PythonSnapshot) to;
+                PythonSnapshot fromSnapshot = from;
+                PythonSnapshot toSnapshot = to;
                 PyObject changes = module.create_change_list(fromSnapshot.dict.unwrap(), toSnapshot.dict.unwrap())) {
             final Changes diff = new Changes();
             diff.error = e;
@@ -269,7 +270,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public synchronized void setVariable(String name, @Nullable Object newValue) {
-        final Snapshot fromSnapshot = takeSnapshot();
+        final PythonSnapshot fromSnapshot = takeSnapshot();
         final PyDictWrapper globals = scope.globals();
         if (newValue == null) {
             try {
@@ -280,7 +281,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         } else {
             globals.setItem(name, newValue);
         }
-        final Snapshot toSnapshot = takeSnapshot();
+        final PythonSnapshot toSnapshot = takeSnapshot();
         applyDiff(fromSnapshot, toSnapshot, null);
     }
 

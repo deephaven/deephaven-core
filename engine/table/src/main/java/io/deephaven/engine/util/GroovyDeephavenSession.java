@@ -17,6 +17,7 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
@@ -53,7 +54,7 @@ import java.util.stream.StreamSupport;
 /**
  * Groovy {@link ScriptSession}. Not safe for concurrent use.
  */
-public class GroovyDeephavenSession extends AbstractScriptSession implements ScriptSession {
+public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot> implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
@@ -625,22 +626,18 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    protected Snapshot emptySnapshot() {
+    protected GroovySnapshot emptySnapshot() {
         return new GroovySnapshot(Collections.emptyMap());
     }
 
     @Override
-    protected Snapshot takeSnapshot() {
+    protected GroovySnapshot takeSnapshot() {
         // noinspection unchecked,rawtypes
         return new GroovySnapshot(new HashMap<>(groovyShell.getContext().getVariables()));
     }
 
     @Override
-    protected Changes createDiff(Snapshot from, Snapshot to, RuntimeException e) {
-        return diffImpl((GroovySnapshot) from, (GroovySnapshot) to, e);
-    }
-
-    private Changes diffImpl(GroovySnapshot from, GroovySnapshot to, RuntimeException e) {
+    protected Changes createDiff(GroovySnapshot from, GroovySnapshot to, RuntimeException e) {
         Changes diff = new Changes();
         diff.error = e;
         for (final Map.Entry<String, Object> entry : to.scope.entrySet()) {
@@ -659,7 +656,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         return diff;
     }
 
-    private static class GroovySnapshot implements Snapshot {
+    protected static class GroovySnapshot implements Snapshot {
 
         private final Map<String, Object> scope;
 

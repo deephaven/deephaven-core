@@ -6,7 +6,6 @@ plugins {
 dependencies {
     implementation project(':java-client-session-dagger')
     implementation project(':java-client-example-utilities')
-    runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
