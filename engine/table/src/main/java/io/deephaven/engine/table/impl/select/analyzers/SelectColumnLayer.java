@@ -93,7 +93,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 upstream.added().isEmpty() ? -1 : upstream.added().lastRowKey());
         if (lastKey != -1) {
             if (flattenedResult) {
-                // we know this only happens exactly one time, and we're going to flatten this
+                // This is our "fake" update, the only thing that matters is the size of the addition; because we
+                // are going to write the data into the column source flat ignoring the original index.
                 writableSource.ensureCapacity(upstream.added().size());
             } else {
                 writableSource.ensureCapacity(lastKey + 1);
