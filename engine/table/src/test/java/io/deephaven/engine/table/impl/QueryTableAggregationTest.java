@@ -2225,12 +2225,11 @@ public class QueryTableAggregationTest {
         for (int i = 0; i < 100; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
-
     }
 
     @Test
     public void testMinMaxByIncremental() {
-        final int[] sizes = {10, 50, 200};
+        final int[] sizes = {10, 20, 50, 200};
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
                 testMinMaxByIncremental(size, seed);
@@ -2259,7 +2258,7 @@ public class QueryTableAggregationTest {
             TableTools.showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.from(() -> queryTable.maxBy("Sym").sort("Sym")),
+                EvalNugget.Sorted.from(() -> queryTable.maxBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.sort("Sym").maxBy("Sym")),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").maxBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").maxBy("Sym", "intCol").sort("Sym", "intCol")),
@@ -2286,7 +2285,7 @@ public class QueryTableAggregationTest {
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Seed = " + seed + ", step=" + step);
+                System.out.println("Seed = " + seed + ", size=" + size + ", step=" + step);
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }

@@ -192,7 +192,7 @@ public interface IterativeChunkedAggregationOperator {
     }
 
     /**
-     * Shift a chunk of data previously aggregated into the result columns, including shifted same-slot modifies..
+     * Shift a chunk of data previously aggregated into the result columns, including shifted same-slot modifies.
      *
      * @param context the operator-specific context
      * @param previousValues a chunk of values that have been previously aggregated.
@@ -235,6 +235,15 @@ public interface IterativeChunkedAggregationOperator {
         return false;
     }
 
+    /**
+     * Some operators require that all values for a destination within a given chunk are adjacent. These operators must
+     * return true.
+     *
+     * @return true if the operator requires runs of the same destination to be adjacent
+     */
+    default boolean requiresRunFinds() {
+        return false;
+    }
 
     /**
      * Whether the operator can deal with an unchunked RowSet more efficiently than a chunked RowSet.
@@ -299,8 +308,8 @@ public interface IterativeChunkedAggregationOperator {
     default void resetForStep(@NotNull final TableUpdate upstream) {}
 
     /**
-     * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt 0), removed
-     * (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by this iteration. Note that
+     * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt; 0), removed
+     * (went from &gt; 0 keys to 0), or modified (keys added or removed, or keys modified) by this iteration. Note that
      * the arguments to this method should not be mutated in any way.
      *
      * @param downstream The downstream ShiftAwareListener.Update (which does <em>not</em> have its

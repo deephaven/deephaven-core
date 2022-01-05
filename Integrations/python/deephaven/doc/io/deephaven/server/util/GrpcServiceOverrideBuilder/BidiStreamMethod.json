@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.util.GrpcServiceOverrideBuilder$BidiStreamMethod",
+ "methods": {
+  "invoke": ":param responseObserver: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BidiStreamMethod.RespT>\n:return: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BidiStreamMethod.ReqT>"
+ },
+ "path": "io.deephaven.server.util.GrpcServiceOverrideBuilder.BidiStreamMethod",
+ "typeName": "class"
+}

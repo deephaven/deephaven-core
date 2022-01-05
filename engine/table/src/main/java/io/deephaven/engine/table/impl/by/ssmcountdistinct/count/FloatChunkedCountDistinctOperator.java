@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedCountDistinctOperator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -279,6 +281,11 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
             prevFlusher = new UpdateCommitter<>(this, FloatChunkedCountDistinctOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
+    }
+
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
     }
 
     //endregion

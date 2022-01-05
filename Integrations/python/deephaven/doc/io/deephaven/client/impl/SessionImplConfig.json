@@ -2,7 +2,7 @@
  "className": "io.deephaven.client.impl.SessionImplConfig",
  "methods": {
   "builder": ":return: io.deephaven.client.impl.SessionImplConfig.Builder",
-  "channel": ":return: io.deephaven.grpc_api.DeephavenChannel",
+  "channel": ":return: io.deephaven.proto.DeephavenChannel",
   "closeTimeout": "The Session and ConsoleSession close timeout. By default, is PT5s. The default can be\n overridden via the system property deephaven.session.closeTimeout.\n\n:return: (java.time.Duration) the close timeout",
   "createSession": ":return: io.deephaven.client.impl.SessionImpl",
   "createSessionFuture": ":return: java.util.concurrent.CompletableFuture<io.deephaven.client.impl.SessionImpl>",

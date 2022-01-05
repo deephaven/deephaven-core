@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollupCountDistinctOperator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -513,6 +515,11 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
         columns.put(name, resultColumn);
         columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
         return columns;
+    }
+
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
     }
 
     @Override

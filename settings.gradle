@@ -8,11 +8,23 @@ rootProject.name='Deephaven Community Core'
 
 String[] bins = ['configs', 'test-configs' ]
 
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
-        'CompilerTools', 'Generators',
-        'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'python-engine-test', 'Parquet',
-        'grpc-api', 'table-api', 'qst']
+String[] mods = [
+        'Util',
+        'Numerics',
+        'TableLogger',
+        'Plot',
+        'CompilerTools',
+        'Generators',
+        'Integrations',
+        'ModelFarm',
+        'ClientSupport',
+        'BenchmarkSupport',
+        'python-engine-test',
+        'Parquet',
+        'server',
+        'table-api',
+        'qst'
+]
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
@@ -101,8 +113,14 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-server-native')
-project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
+include(':server-test')
+project(':server-test').projectDir = file('server/test')
+
+include(':server-netty')
+project(':server-netty').projectDir = file('server/netty')
+
+include(':server-jetty')
+project(':server-jetty').projectDir = file('server/jetty')
 
 include(':Base')
 
@@ -226,6 +244,9 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
+
+include(':java-client-example-utilities')
+project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
 
 include(':qst:graphviz')
 

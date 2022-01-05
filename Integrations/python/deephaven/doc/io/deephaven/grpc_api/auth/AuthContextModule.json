@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.auth.AuthContextModule",
- "methods": {
-  "bindAuthContextProvider": ":param authContextProvider: io.deephaven.grpc_api.auth.TrivialAuthContextProvider\n:return: io.deephaven.grpc_api.auth.AuthContextProvider"
- },
- "path": "io.deephaven.grpc_api.auth.AuthContextModule",
- "typeName": "interface"
-}

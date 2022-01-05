@@ -1,12 +1,15 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStreamSortedFirstOrLastChunkedOperator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
@@ -30,11 +33,6 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     private final boolean isCombo;
     private final ByteArraySource sortColumnValues;
 
-    /**
-     * <p>The next destination slot that we expect to be used.
-     * <p>Any destination at or after this one has an undefined value in {@link #sortColumnValues}.
-     */
-    private long nextDestination;
     private RowSetBuilderRandom changedDestinationsBuilder;
 
     ByteStreamSortedFirstOrLastChunkedOperator(
@@ -98,12 +96,11 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
         if (length == 0) {
             return false;
         }
-        final boolean newDestination = destination >= nextDestination;
+        final boolean newDestination = redirections.getUnsafe(destination) == QueryConstants.NULL_LONG;
 
         int bestChunkPos;
         byte bestValue;
         if (newDestination) {
-            ++nextDestination;
             bestChunkPos = start;
             bestValue = values.get(start);
         } else {

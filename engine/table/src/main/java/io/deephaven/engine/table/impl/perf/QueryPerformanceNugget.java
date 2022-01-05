@@ -60,6 +60,12 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private boolean shouldLogMeAndStackParents;
 
     /**
+     * For threaded operations we want to accumulate the CPU time, allocations, and read operations to the enclosing
+     * nugget of the main operation. For the initialization we ignore the wall clock time taken in the thread pool.
+     */
+    private BasePerformanceEntry basePerformanceEntry;
+
+    /**
      * Constructor for query-level nuggets.
      *
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
@@ -134,6 +140,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         startCpuNanos = NULL_LONG;
         startUserCpuNanos = NULL_LONG;
 
+        basePerformanceEntry = null;
+
         state = null; // This turns close into a no-op.
         shouldLogMeAndStackParents = false;
     }
@@ -200,6 +208,14 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
                     minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
             diffAllocatedBytes = minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
 
+            if (basePerformanceEntry != null) {
+                diffUserCpuNanos += basePerformanceEntry.getIntervalUserCpuNanos();
+                diffCpuNanos += basePerformanceEntry.getIntervalCpuNanos();
+
+                diffAllocatedBytes += basePerformanceEntry.getIntervalAllocatedBytes();
+                diffPoolAllocatedBytes += basePerformanceEntry.getIntervalPoolAllocatedBytes();
+            }
+
             state = closingState;
             return recorderToNotify.releaseNugget(this);
         }
@@ -207,7 +223,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
 
     @Override
     public String toString() {
-        return Integer.toString(evaluationNumber)
+        return evaluationNumber
                 + ":" + description
                 + ":" + callerLine;
     }
@@ -357,6 +373,20 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      */
     public boolean shouldLogMenAndStackParents() {
         return shouldLogMeAndStackParents;
+    }
+
+    /**
+     * When we track data from other threads that should be attributed to this operation, we tack extra
+     * BasePerformanceEntry values onto this nugget when it is closed.
+     *
+     * The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.
+     */
+    public void addBaseEntry(BasePerformanceEntry baseEntry) {
+        if (this.basePerformanceEntry == null) {
+            this.basePerformanceEntry = baseEntry;
+        } else {
+            this.basePerformanceEntry.accumulate(baseEntry);
+        }
     }
 
     /**

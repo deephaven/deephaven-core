@@ -6,7 +6,8 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.*;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
@@ -15,13 +16,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TableToolsShowControl;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
@@ -928,10 +927,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             expectedValue = expectedValue.sort(sortColumns);
         }
 
-        final String diff = diff(maybePrev(actualValue.dropColumns(hierarchicalColumnName), actualPrev),
-                maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev), 10,
-                EnumSet.of(TableDiff.DiffItems.DoublesExact));
-        Assert.assertEquals(msg, "", diff);
+        assertTableEquals(maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev),
+                maybePrev(actualValue.dropColumns(hierarchicalColumnName), actualPrev),
+                TableDiff.DiffItems.DoublesExact);
 
         final ColumnSource actualChildren = columnOrPrev(actualValue, hierarchicalColumnName, actualPrev);
         final ColumnSource expectedChildren = columnOrPrev(expectedValue, hierarchicalColumnName, expectedPrev);
@@ -1169,7 +1167,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 continue;
             }
 
-            System.out.println(labelSource.stream().map(x -> (String) x.get(key)).collect(Collectors.joining(", ")));
+            System.out.println(
+                    "Label: " + labelSource.stream().map(x -> (String) x.get(key)).collect(Collectors.joining(", ")));
             dumpRollup(childTable, childMap, usePrev, hierarchicalColumnName, labelColumns);
         }
     }
@@ -1622,7 +1621,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupIncremental() {
-        final Random random = new Random(0);
+        for (int seed = 0; seed < 1; ++seed) {
+            System.out.println("Seed = " + seed);
+            testRollupIncremental(seed);
+        }
+    }
+
+    private void testRollupIncremental(int seed) {
+        final Random random = new Random(seed);
         final TstUtils.ColumnInfo[] columnInfo;
 
         final int size = 100;
@@ -1683,6 +1689,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
                     @Override
                     public void show() {
+                        System.out.println("Table:");
                         TableTools.showWithRowSet(table);
                     }
                 },
@@ -2027,5 +2034,50 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         return table;
+    }
+
+    public void testRollupStdSlotOutOfOrder() {
+        final QueryTable source =
+                TstUtils.testRefreshingTable(col("G1", "a", "b", "c", "d", "e", "f", "g", "A", "A", "B", "B", "A"),
+                        col("G2", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"),
+                        intCol("Val", 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5));
+        final Table rollup = source.rollup(List.of(AggVar("Val")), "G1", "G2");
+        checkVar(source, rollup);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(9, 11), col("G1", "B", "A"), col("G2", "a", "a"), intCol("Val", 6, 7));
+            final TableUpdate update =
+                    new TableUpdateImpl(i(), i(), i(9, 11), RowSetShiftData.EMPTY, source.newModifiedColumnSet("Val"));
+            source.notifyListeners(update);
+        });
+        checkVar(source, rollup);
+    }
+
+    private void checkVar(QueryTable source, Table rollup) {
+        System.out.println("Source:");
+        TableTools.showWithRowSet(source, 20);
+
+        System.out.println("Total variance");
+        final Table totalExpect = source.view("Val").varBy();
+        TableTools.show(totalExpect);
+        System.out.println("A variance");
+        final Table aExpect = source.view("G1", "Val").varBy("G1").where("G1 in `A`");
+        TableTools.show(aExpect);
+        System.out.println("B variance");
+        final Table bExpect = source.view("G1", "Val").varBy("G1").where("G1 in `B`");
+        TableTools.show(bExpect);
+
+        dumpRollup(rollup, "G1", "G2");
+
+        assertTableEquals(totalExpect, getDiffableTable(rollup).view("Val"));
+
+        final Table rootTable =
+                ((TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get(new SmartKey());
+
+        final Table a = ((TableMap) rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("A");
+        final Table b = ((TableMap) rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("B");
+
+        assertTableEquals(aExpect, a.view("G1", "Val"));
+        assertTableEquals(bExpect, b.view("G1", "Val"));
     }
 }

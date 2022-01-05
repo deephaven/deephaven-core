@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.table.ops.JoinTablesGrpcImpl$CrossJoinTablesGrpcImpl",
+ "methods": {
+  "doJoin": ":param lhs: io.deephaven.engine.table.Table\n:param rhs: io.deephaven.engine.table.Table\n:param columnsToMatch: io.deephaven.engine.table.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.table.MatchPair[]\n:param request: io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.server.table.ops.JoinTablesGrpcImpl.CrossJoinTablesGrpcImpl",
+ "typeName": "class"
+}
