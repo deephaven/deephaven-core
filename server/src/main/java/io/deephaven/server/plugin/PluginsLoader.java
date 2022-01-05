@@ -16,7 +16,7 @@ import java.util.Objects;
 public final class PluginsLoader implements PluginCallback {
     private static final Logger log = LoggerFactory.getLogger(PluginsLoader.class);
 
-    public final ObjectTypes types;
+    private final ObjectTypes types;
 
     @Inject
     public PluginsLoader(ObjectTypes types) {

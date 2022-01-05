@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-final class ObjectTypes implements ObjectTypeLookup {
+public final class ObjectTypes implements ObjectTypeLookup {
 
     private static final Set<String> RESERVED_TYPE_NAMES = Set.of("Table", "TableMap", "TreeTable");
 

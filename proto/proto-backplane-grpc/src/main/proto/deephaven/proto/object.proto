@@ -1,0 +1,29 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+import "deephaven/proto/ticket.proto";
+
+/*
+ * Object service
+*/
+service ObjectService {
+    rpc FetchObject2(FetchObjectRequest2) returns (FetchObjectResponse2) {}
+}
+
+message FetchObjectRequest2 {
+    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
+}
+
+message FetchObjectResponse2 {
+    string type = 1;
+    bytes data = 2;
+    repeated io.deephaven.proto.backplane.grpc.Ticket export_id = 3;
+}
