@@ -507,7 +507,7 @@ jobs:
 ### Notes about `driver: docker`
 ###
 ### By default, the driver used is `docker-container`. This does not allow the Dockerfile to
-### reference images that were built in earlier steps. Since our grpc-api and web Dockerfiles
+### reference images that were built in earlier steps. Since our server and web Dockerfiles
 ### reference earlier images (built during the gradle step), we need to change the driver to
 ### `docker`.
 ###
