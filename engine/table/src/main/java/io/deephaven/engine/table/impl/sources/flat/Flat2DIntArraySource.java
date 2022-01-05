@@ -37,7 +37,7 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
     private final int segmentMask;
 
     private final long size;
-    private final int[][] data;
+    private int[][] data;
 
 
     // region constructor
@@ -50,9 +50,7 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
         this.segmentShift = segmentShift;
         int segmentSize = 1 << segmentShift;
         segmentMask = segmentSize - 1;
-
         this.size = size;
-        data = allocateArray(size, segmentSize);
     }
     // endregion constructor
 
@@ -98,6 +96,9 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
+        if (data == null) {
+            data = allocateArray(size, segmentMask + 1);
+        }
         if (capacity > size) {
             throw new UnsupportedOperationException();
         }

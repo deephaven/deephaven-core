@@ -1,11 +1,9 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.impl.sources.flat.Flat2DCharArraySource;
 import io.deephaven.engine.table.impl.sources.flat.Flat2DObjectArraySource;
 import org.jetbrains.annotations.NotNull;
 

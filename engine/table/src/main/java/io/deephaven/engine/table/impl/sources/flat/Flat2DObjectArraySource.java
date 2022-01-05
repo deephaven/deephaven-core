@@ -36,7 +36,7 @@ public class Flat2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSo
     private final int segmentMask;
 
     private final long size;
-    private final Object[][] data;
+    private Object[][] data;
 
 
     // region constructor
@@ -49,9 +49,7 @@ public class Flat2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSo
         this.segmentShift = segmentShift;
         int segmentSize = 1 << segmentShift;
         segmentMask = segmentSize - 1;
-
         this.size = size;
-        data = allocateArray(size, segmentSize);
     }
     // endregion constructor
 
@@ -97,6 +95,9 @@ public class Flat2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSo
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
+        if (data == null) {
+            data = allocateArray(size, segmentMask + 1);
+        }
         if (capacity > size) {
             throw new UnsupportedOperationException();
         }

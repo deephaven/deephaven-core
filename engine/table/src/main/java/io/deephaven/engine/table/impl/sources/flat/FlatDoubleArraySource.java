@@ -17,8 +17,10 @@ import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
-// region boxing imports
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
+// region boxing imports
+import java.util.Arrays;
 // endregion boxing imports
 
 /**
@@ -33,14 +35,23 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  * If your size is greater than Integer.MAX_VALUE, prefer {@link Flat2DDoubleArraySource}.
  */
 public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
-    private final double[] data;
+    private double[] data;
 
     // region constructor
     public FlatDoubleArraySource(long size) {
         super(double.class);
-        this.data = new double[Math.toIntExact(size)];
     }
     // endregion constructor
+
+    // region allocateArray
+    void allocateArray(long capacity, boolean nullFilled) {
+        final int intCapacity = Math.toIntExact(capacity);
+        this.data = new double[intCapacity];
+        if (nullFilled) {
+            Arrays.fill(this.data, 0, intCapacity, NULL_DOUBLE);
+        }
+    }
+    // endregion allocateArray
 
     @Override
     public final double getDouble(long index) {
@@ -62,6 +73,9 @@ public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
+        if (data == null) {
+            allocateArray(capacity, nullFilled);
+        }
         if (capacity > data.length) {
             throw new UnsupportedOperationException();
         }

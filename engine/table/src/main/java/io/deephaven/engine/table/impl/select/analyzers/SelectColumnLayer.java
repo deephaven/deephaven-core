@@ -95,9 +95,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (flattenedResult) {
                 // This is our "fake" update, the only thing that matters is the size of the addition; because we
                 // are going to write the data into the column source flat ignoring the original index.
-                writableSource.ensureCapacity(upstream.added().size());
+                writableSource.ensureCapacity(upstream.added().size(), false);
             } else {
-                writableSource.ensureCapacity(lastKey + 1);
+                writableSource.ensureCapacity(lastKey + 1, false);
             }
         }
 

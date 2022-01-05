@@ -9,8 +9,6 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.vector.Vector;
-
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -74,18 +72,15 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     protected transient ObjectOneOrN.Block0<T> prevBlocks;
 
     // region constructor
-    private final boolean isArrayType;
 
     ObjectSparseArraySource(Class<T> type) {
         super(type);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = Vector.class.isAssignableFrom(type);
     }
 
     ObjectSparseArraySource(Class<T> type, Class componentType) {
         super(type, componentType);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = Vector.class.isAssignableFrom(type);
     }
     // endregion constructor
 
