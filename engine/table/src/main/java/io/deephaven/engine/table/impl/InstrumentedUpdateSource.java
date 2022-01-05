@@ -4,11 +4,12 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 
 public abstract class InstrumentedUpdateSource implements Runnable {
 
-    protected final UpdatePerformanceTracker.Entry entry;
+    protected final PerformanceEntry entry;
 
     public InstrumentedUpdateSource(String description) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);

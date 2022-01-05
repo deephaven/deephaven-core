@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.time.DateTimeUtils;
@@ -83,7 +84,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
             AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
-            throw new RuntimeException("Exception in " + sourceEntry.toString(), originalException);
+            throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
         }
     }
 

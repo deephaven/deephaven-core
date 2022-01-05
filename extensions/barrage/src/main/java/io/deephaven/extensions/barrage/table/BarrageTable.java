@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -53,7 +54,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
 
-    private final UpdatePerformanceTracker.Entry refreshEntry;
+    private final PerformanceEntry refreshEntry;
 
     /** the capacity that the destSources been set to */
     private int capacity = 0;

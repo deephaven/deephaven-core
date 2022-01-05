@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -37,7 +38,7 @@ public class TimeTable extends QueryTable implements Runnable {
     private DateTime lastTime;
     private final long period;
     private final long binOffset;
-    private final UpdatePerformanceTracker.Entry entry;
+    private final PerformanceEntry entry;
 
     public TimeTable(TimeProvider timeProvider, long period) {
         this(timeProvider, null, period);
