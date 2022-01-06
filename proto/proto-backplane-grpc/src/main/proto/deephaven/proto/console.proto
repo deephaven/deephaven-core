@@ -48,8 +48,6 @@ service ConsoleService {
      * Deprecated: TODO(deephaven-core#1784): Remove fetchFigure RPC
      */
     rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
-
-    rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {}
 }
 
 
@@ -224,16 +222,6 @@ message FetchFigureRequest {
 
 message FetchFigureResponse {
     FigureDescriptor figure_descriptor = 1;
-}
-
-message FetchObjectRequest {
-    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
-}
-
-message FetchObjectResponse {
-    string type = 1;
-    bytes data = 2;
-    repeated io.deephaven.proto.backplane.grpc.Ticket export_id = 3;
 }
 
 message FigureDescriptor {

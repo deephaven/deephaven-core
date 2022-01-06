@@ -13,7 +13,7 @@ import "deephaven/proto/ticket.proto";
 
 /*
  * Object service
-*/
+ */
 service ObjectService {
     rpc FetchObject2(FetchObjectRequest2) returns (FetchObjectResponse2) {}
 }

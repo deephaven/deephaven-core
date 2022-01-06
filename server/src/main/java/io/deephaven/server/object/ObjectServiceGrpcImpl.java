@@ -1,15 +1,14 @@
 package io.deephaven.server.object;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectType.Exporter;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
-import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest2;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse2;
@@ -24,6 +23,8 @@ import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
@@ -66,11 +67,30 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private FetchObjectResponse2 serialize(SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
-        final Builder builder = FetchObjectResponse2.newBuilder().setType(type.name());
-        final ExportCollector exportCollector = new ExportCollector(state, builder);
-        type.writeTo(exportCollector, object, out);
-        final ByteString data = ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
-        return builder.setData(data).build();
+        final ExportCollector exportCollector = new ExportCollector(state);
+        try {
+            type.writeTo(exportCollector, object, out);
+            final Builder builder = FetchObjectResponse2.newBuilder()
+                    .setType(type.name())
+                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));;
+            for (ExportObject<?> export : exportCollector.exports()) {
+                builder.addExportId(export.getExportId());
+            }
+            return builder.build();
+        } catch (Throwable t) {
+            cleanup(exportCollector, t);
+            throw t;
+        }
+    }
+
+    private static void cleanup(ExportCollector exportCollector, Throwable t) {
+        for (ExportObject<?> export : exportCollector.exports()) {
+            try {
+                export.release();
+            } catch (Throwable inner) {
+                t.addSuppressed(inner);
+            }
+        }
     }
 
     private static IllegalArgumentException noTypeException(Object o) {
@@ -78,16 +98,22 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 "No type registered for object class=" + o.getClass().getName() + ", value=" + o);
     }
 
-    private static final class ExportCollector implements Exporter {
+    // Make private after
+    // TODO(deephaven-core#1784): Remove fetchFigure RPC
+    public static final class ExportCollector implements Exporter {
 
         private final SessionState sessionState;
-        private final Builder builder;
         private final Thread thread;
+        private final List<ExportObject<?>> exports;
 
-        public ExportCollector(SessionState sessionState, Builder builder) {
+        public ExportCollector(SessionState sessionState) {
             this.sessionState = Objects.requireNonNull(sessionState);
-            this.builder = Objects.requireNonNull(builder);
             this.thread = Thread.currentThread();
+            this.exports = new ArrayList<>();
+        }
+
+        public List<ExportObject<?>> exports() {
+            return exports;
         }
 
         @Override
@@ -96,15 +122,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 throw new IllegalStateException("Should only create exports on the calling thread");
             }
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            builder.addExportId(exportObject.getExportId());
-            return new ExportImpl(exportObject);
+            exports.add(exportObject);
+            return new ReferenceImpl(exportObject);
         }
     }
 
-    private static final class ExportImpl implements Reference {
+    private static final class ReferenceImpl implements Reference {
         private final ExportObject<?> export;
 
-        public ExportImpl(ExportObject<?> export) {
+        public ReferenceImpl(ExportObject<?> export) {
             this.export = Objects.requireNonNull(export);
         }
 

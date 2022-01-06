@@ -4,7 +4,6 @@
 
 package io.deephaven.server.console;
 
-import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
@@ -14,7 +13,6 @@ import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.engine.util.jpy.JpyInit;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.figure.FigureWidgetTranslator;
 import io.deephaven.internal.log.LoggerFactory;
@@ -29,10 +27,6 @@ import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
-import io.deephaven.plugin.type.ObjectType.Exporter;
-import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
-import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
@@ -48,9 +42,6 @@ import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
 import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
-import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
-import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
@@ -63,11 +54,11 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
 import io.deephaven.proto.backplane.script.grpc.VariableDefinition;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
+import io.deephaven.server.object.ObjectServiceGrpcImpl.ExportCollector;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
-import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
 
@@ -75,11 +66,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -111,21 +99,17 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     private final GlobalSessionProvider globalSessionProvider;
 
-    private final ObjectTypeLookup objectTypeLookup;
-
     @Inject
     public ConsoleServiceGrpcImpl(final Map<String, Provider<ScriptSession>> scriptTypes,
             final TicketRouter ticketRouter,
             final SessionService sessionService,
             final LogBuffer logBuffer,
-            final GlobalSessionProvider globalSessionProvider,
-            final ObjectTypeLookup objectTypeLookup) {
+            final GlobalSessionProvider globalSessionProvider) {
         this.scriptTypes = scriptTypes;
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
         this.globalSessionProvider = globalSessionProvider;
-        this.objectTypeLookup = objectTypeLookup;
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
             throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
@@ -461,62 +445,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    @Override
-    public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            if (request.getSourceId().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
-            }
-            final SessionState.ExportObject<Object> object = ticketRouter.resolve(
-                    session, request.getSourceId(), "sourceId");
-            session.nonExport()
-                    .require(object)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final Object o = object.get();
-                        final FetchObjectResponse response = serialize(session, o);
-                        responseObserver.onNext(response);
-                        responseObserver.onCompleted();
-                        return null;
-                    });
-        });
-    }
-
-    private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
-        final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
-        final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
-        final ExportCollector exportCollector = new ExportCollector(state);
-        try {
-            type.writeTo(exportCollector, object, out);
-            final Builder builder = FetchObjectResponse.newBuilder()
-                    .setType(type.name())
-                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));;
-            for (ExportObject<?> export : exportCollector.exports()) {
-                builder.addExportId(export.getExportId());
-            }
-            return builder.build();
-        } catch (Throwable t) {
-            cleanup(exportCollector, t);
-            throw t;
-        }
-    }
-
-    private static void cleanup(ExportCollector exportCollector, Throwable t) {
-        for (ExportObject<?> export : exportCollector.exports()) {
-            try {
-                export.release();
-            } catch (Throwable inner) {
-                t.addSuppressed(inner);
-            }
-        }
-    }
-
-    private static IllegalArgumentException noTypeException(Object o) {
-        return new IllegalArgumentException(
-                "No type registered for object class=" + o.getClass().getName() + ", value=" + o);
-    }
-
     private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>
             implements LogBufferRecordListener {
         private final LogSubscriptionRequest request;
@@ -560,46 +488,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 // we are ignoring exceptions here deliberately, and just shutting down
                 close();
             }
-        }
-    }
-
-    private static final class ExportCollector implements Exporter {
-
-        private final SessionState sessionState;
-        private final Thread thread;
-        private final List<ExportObject<?>> exports;
-
-        public ExportCollector(SessionState sessionState) {
-            this.sessionState = Objects.requireNonNull(sessionState);
-            this.thread = Thread.currentThread();
-            this.exports = new ArrayList<>();
-        }
-
-        public List<ExportObject<?>> exports() {
-            return exports;
-        }
-
-        @Override
-        public Reference newServerSideReference(Object object) {
-            if (thread != Thread.currentThread()) {
-                throw new IllegalStateException("Should only create exports on the calling thread");
-            }
-            final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            exports.add(exportObject);
-            return new ReferenceImpl(exportObject);
-        }
-    }
-
-    private static final class ReferenceImpl implements Reference {
-        private final ExportObject<?> export;
-
-        public ReferenceImpl(ExportObject<?> export) {
-            this.export = Objects.requireNonNull(export);
-        }
-
-        @Override
-        public Ticket id() {
-            return export.getExportId();
         }
     }
 }
