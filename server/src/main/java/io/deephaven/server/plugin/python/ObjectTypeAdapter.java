@@ -1,6 +1,5 @@
 package io.deephaven.server.plugin.python;
 
-import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import org.jpy.PyObject;
 
@@ -10,15 +9,17 @@ import java.util.Objects;
 
 final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
 
+    private final String name;
     private final PyObject objectTypeAdapter;
 
-    public ObjectTypeAdapter(PyObject objectTypeAdapter) {
+    public ObjectTypeAdapter(String name, PyObject objectTypeAdapter) {
+        this.name = Objects.requireNonNull(name);
         this.objectTypeAdapter = Objects.requireNonNull(objectTypeAdapter);
     }
 
     @Override
     public String name() {
-        return objectTypeAdapter.getAttribute("name", String.class);
+        return name;
     }
 
     @Override
@@ -30,7 +31,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public void writeToTypeChecked(Exporter exporter, Object object, OutputStream out) throws IOException {
+    public void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException {
         final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
                 Exporter.class, exporter,
                 PyObject.class, (PyObject) object);

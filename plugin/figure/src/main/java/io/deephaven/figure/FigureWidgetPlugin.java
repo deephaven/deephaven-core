@@ -1,15 +1,15 @@
 package io.deephaven.figure;
 
-import io.deephaven.plugin.Plugin;
-import io.deephaven.plugin.PluginCallback;
+import io.deephaven.plugin.PluginBase;
+import io.deephaven.plugin.type.ObjectTypeCallback;
 
 /**
  * Registers the object type {@link FigureWidgetType}.
  */
-public final class FigureWidgetPlugin implements Plugin {
+public final class FigureWidgetPlugin extends PluginBase {
 
     @Override
-    public void registerInto(PluginCallback callback) {
+    public void registerInto(ObjectTypeCallback callback) {
         callback.registerObjectType(FigureWidgetType.instance());
     }
 }

@@ -11,21 +11,21 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.plugin.type.ObjectTypeLookup;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.CustomInfo;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldInfo.FieldType;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
+import io.deephaven.proto.backplane.grpc.PluginTypeInfo;
 import io.deephaven.proto.backplane.grpc.TableInfo;
-import io.deephaven.proto.backplane.grpc.UnknownInfo;
+import io.deephaven.server.session.SessionService;
+import io.deephaven.server.session.SessionState;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTimeUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -265,10 +265,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         return FieldInfo.newBuilder()
                 .setTicket(id.getTicket())
                 .setFieldName(id.fieldName)
-                .setFieldType(FieldInfo.FieldType.newBuilder()
-                        .setCustom(CustomInfo.newBuilder()
-                                .setType(field.type())
-                                .build())
+                .setFieldType(FieldType.newBuilder()
+                        .setCustom(CustomInfo.newBuilder().setType(field.type()).build())
                         .build())
                 .setFieldDescription(field.description().orElse(""))
                 .setApplicationId(id.applicationId())
@@ -294,7 +292,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             return tableFieldType((Table) object);
         }
         return objectTypeLookup.findObjectType(object)
-                .map(ApplicationServiceGrpcImpl::customFieldType)
+                .map(ApplicationServiceGrpcImpl::pluginType)
                 .orElseGet(ApplicationServiceGrpcImpl::unknownType);
     }
 
@@ -306,16 +304,14 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 .build()).build();
     }
 
-    private static FieldType customFieldType(ObjectType type) {
+    private static FieldType pluginType(ObjectType type) {
         return FieldType.newBuilder()
-                .setCustom(CustomInfo.newBuilder().setType(type.name()).build())
+                .setPlugin(PluginTypeInfo.newBuilder().setName(type.name()).build())
                 .build();
     }
 
     private static FieldType unknownType() {
-        return FieldType.newBuilder()
-                .setUnknown(UnknownInfo.getDefaultInstance())
-                .build();
+        return FieldType.getDefaultInstance();
     }
 
     private static class ScopeField implements Field<Object> {

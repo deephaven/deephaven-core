@@ -9,11 +9,14 @@ import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServi
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
+import io.deephaven.proto.backplane.grpc.FetchObjectRequest2;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse2;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
+import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
@@ -23,8 +26,6 @@ import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.util.ExportTicketHelper;
@@ -184,6 +185,7 @@ public final class SessionImpl extends SessionBase {
     private final ScheduledExecutorService executor;
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
+    private final ObjectServiceStub objectService;
     private final InputTableServiceStub inputTableService;
     private final ApplicationServiceStub applicationServiceStub;
     private final Handler handler;
@@ -207,6 +209,7 @@ public final class SessionImpl extends SessionBase {
         this.executor = config.executor();
         this.sessionService = config.channel().session().withCallCredentials(credentials);
         this.consoleService = config.channel().console().withCallCredentials(credentials);
+        this.objectService = config.channel().object().withCallCredentials(credentials);
         this.inputTableService = config.channel().inputTable().withCallCredentials(credentials);
         this.applicationServiceStub = config.channel().application().withCallCredentials(credentials);
         this.exportTicketCreator = new ExportTicketCreator();
@@ -252,11 +255,11 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<FetchedObject> fetchObject(HasTicketId ticketId) {
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+        final FetchObjectRequest2 request = FetchObjectRequest2.newBuilder()
                 .setSourceId(ticketId.ticketId().ticket())
                 .build();
         final FetchObserver observer = new FetchObserver();
-        consoleService.fetchObject(request, observer);
+        objectService.fetchObject2(request, observer);
         return observer.future;
     }
 
@@ -411,11 +414,11 @@ public final class SessionImpl extends SessionBase {
     }
 
     private static final class FetchObserver
-            implements ClientResponseObserver<FetchObjectRequest, FetchObjectResponse> {
+            implements ClientResponseObserver<FetchObjectRequest2, FetchObjectResponse2> {
         private final CompletableFuture<FetchedObject> future = new CompletableFuture<>();
 
         @Override
-        public void beforeStart(ClientCallStreamObserver<FetchObjectRequest> requestStream) {
+        public void beforeStart(ClientCallStreamObserver<FetchObjectRequest2> requestStream) {
             future.whenComplete((session, throwable) -> {
                 if (future.isCancelled()) {
                     requestStream.cancel("User cancelled", null);
@@ -424,7 +427,7 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public void onNext(FetchObjectResponse value) {
+        public void onNext(FetchObjectResponse2 value) {
             final String type = value.getType();
             final ByteString data = value.getData();
             final List<ExportId> exportIds = value.getExportIdList().stream()

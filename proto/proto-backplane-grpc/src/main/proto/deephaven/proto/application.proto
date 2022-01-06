@@ -56,10 +56,7 @@ message FieldInfo {
     oneof field {
       CustomInfo custom = 1;
       TableInfo table = 2;
-      UnknownInfo unknown = 3;
-      // reserved = 4; // for TableMap
-      // reserved = 5; // *DEPRECATED* Figure
-      // reserved = 6; // for TreeTable
+      PluginTypeInfo plugin = 3;
 
       // use values above 4096 for custom client behavior
     }
@@ -82,8 +79,11 @@ message CustomInfo {
   string type = 1; // application-specific type to identify the purpose of this custom field reference
 }
 
-message UnknownInfo {
-
+/*
+ * io.deephaven.plugin.type.ObjectType
+ */
+message PluginTypeInfo {
+  string name = 1;
 }
 
 /*

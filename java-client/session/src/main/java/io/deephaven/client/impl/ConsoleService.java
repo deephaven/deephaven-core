@@ -23,12 +23,4 @@ public interface ConsoleService {
      * @return the publish completable future
      */
     CompletableFuture<Void> publish(String name, HasTicketId ticketId);
-
-    /**
-     * Fetch the object.
-     *
-     * @param ticket the ticket
-     * @return the future
-     */
-    CompletableFuture<FetchedObject> fetchObject(HasTicketId ticket);
 }

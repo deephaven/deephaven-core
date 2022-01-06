@@ -3,7 +3,7 @@ package io.deephaven.plugin.type;
 import java.util.Optional;
 
 /**
- *
+ * The {@link ObjectType object type} lookup.
  */
 public interface ObjectTypeLookup {
 

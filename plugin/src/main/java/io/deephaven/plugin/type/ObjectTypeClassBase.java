@@ -30,7 +30,7 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     }
 
     @Override
-    public final void writeToTypeChecked(Exporter exporter, Object object, OutputStream out) throws IOException {
+    public final void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException {
         writeToImpl(exporter, clazz.cast(object), out);
     }
 

@@ -4,7 +4,6 @@
 
 package io.deephaven.server.console;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
@@ -30,8 +29,8 @@ import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
-import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.Exporter.Reference;
+import io.deephaven.plugin.type.ObjectType.Exporter;
+import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.Ticket;

@@ -1,10 +1,16 @@
 package io.deephaven.plugin.type;
 
-import io.deephaven.plugin.type.Exporter.Reference;
+import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * An "object type" plugin object. Useful for serializing custom objects between the server / client.
+ *
+ * @see ObjectTypePlugin
+ */
 public interface ObjectType {
 
     /**
@@ -29,7 +35,7 @@ public interface ObjectType {
      * as appropriate.
      *
      * <p>
-     * Note: the implementation should not hold onto references, or create references outside the calling thread.
+     * Note: the implementation should not hold onto references nor create references outside the calling thread.
      *
      * @param exporter the exporter
      * @param object the (compatible) object
@@ -37,4 +43,24 @@ public interface ObjectType {
      * @throws IOException if an IO exception occurs
      */
     void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
+
+    interface Exporter {
+
+        /**
+         * Create a new server side reference in anticipation of serialization.
+         *
+         * @param object the object
+         * @return the reference
+         */
+        Reference newServerSideReference(Object object);
+
+        /**
+         *
+         *
+         * TODO: management
+         */
+        interface Reference {
+            Ticket id();
+        }
+    }
 }

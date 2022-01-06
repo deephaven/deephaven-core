@@ -7,8 +7,8 @@ import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOut
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.Exporter.Reference;
+import io.deephaven.plugin.type.ObjectType.Exporter;
+import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest2;

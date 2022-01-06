@@ -2,7 +2,6 @@ package io.deephaven.figure;
 
 import io.deephaven.plot.FigureWidget;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
-import io.deephaven.plugin.type.Exporter;
 
 import java.io.IOException;
 import java.io.OutputStream;

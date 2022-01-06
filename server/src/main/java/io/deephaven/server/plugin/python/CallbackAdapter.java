@@ -12,7 +12,7 @@ class CallbackAdapter {
     }
 
     @SuppressWarnings("unused")
-    public void registerObjectType(PyObject objectTypeAdapter) {
-        callback.registerObjectType(new ObjectTypeAdapter(objectTypeAdapter));
+    public void registerObjectType(String name, PyObject objectTypeAdapter) {
+        callback.registerObjectType(new ObjectTypeAdapter(name, objectTypeAdapter));
     }
 }

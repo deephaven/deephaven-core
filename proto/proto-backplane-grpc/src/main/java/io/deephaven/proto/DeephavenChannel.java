@@ -8,6 +8,8 @@ import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
+import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
+import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceFutureStub;
@@ -50,6 +52,10 @@ public class DeephavenChannel {
 
     public ConsoleServiceStub console() {
         return ConsoleServiceGrpc.newStub(channel);
+    }
+
+    public ObjectServiceStub object() {
+        return ObjectServiceGrpc.newStub(channel);
     }
 
     public ApplicationServiceStub application() {

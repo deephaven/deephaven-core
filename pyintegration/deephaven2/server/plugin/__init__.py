@@ -1,7 +1,7 @@
 import jpy
 
 PluginCallback = jpy.get_type('io.deephaven.plugin.PluginCallback')
-Exporter = jpy.get_type('io.deephaven.plugin.type.Exporter')
+Exporter = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter')
 
 DEEPHAVEN_PLUGIN_ENTRY_KEY = 'deephaven.plugin'
 DEEPHAVEN_PLUGIN_REGISTER_NAME = 'register_into'
@@ -32,7 +32,7 @@ class CallbackAdapter:
 
     # TODO(deephaven-core#1791): type hint object_type as ObjectTypeABC
     def register_object_type(self, object_type):
-        self._callback.registerObjectType(ObjectTypeAdapter(object_type))
+        self._callback.registerObjectType(object_type.name, ObjectTypeAdapter(object_type))
 
     def __str__(self):
         return str(self._callback)
@@ -42,8 +42,8 @@ class ExporterAdapter:
     def __init__(self, exporter: Exporter):
         self._exporter = exporter
 
-    def new_server_side_export(self, object):
-        # TODO(deephaven-core#1791): define and use ExportABC
+    def new_server_side_reference(self, object):
+        # TODO(deephaven-core#1791): define and use ReferenceABC
         raise NotImplementedError
 
     def __str__(self):
@@ -53,10 +53,6 @@ class ObjectTypeAdapter:
     # TODO(deephaven-core#1791): type hint user_object_type as ObjectTypeABC
     def __init__(self, user_object_type):
         self._user_object_type = user_object_type
-
-    @property
-    def name(self):
-        return self._user_object_type.name
 
     def is_type(self, object):
         return self._user_object_type.is_type(object)
