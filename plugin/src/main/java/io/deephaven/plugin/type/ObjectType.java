@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * An "object type" plugin object. Useful for serializing custom objects between the server / client.
+ * An "object type" plugin information. Useful for serializing custom objects between the server / client.
  *
  * @see ObjectTypePlugin
  */
@@ -29,10 +29,10 @@ public interface ObjectType {
     boolean isType(Object object);
 
     /**
-     * Serializes {@code object} into {@code out}. Must only be called with compatible objects, see
-     * {@link #isType(Object)}. If the serialized {@code object} references another server side object(s), the other
-     * server side object(s) should be referenced with the {@code exporter}, and the {@link Reference#id()} serialized
-     * as appropriate.
+     * Serializes {@code object} into {@code out}. Must only be called with a compatible object, see
+     * {@link #isType(Object)}. If the {@code object} references another server side object(s), the other server side
+     * object(s) should be referenced with the {@code exporter}, and the {@link Reference#id()} serialized as
+     * appropriate.
      *
      * <p>
      * Note: the implementation should not hold onto references nor create references outside the calling thread.
@@ -44,10 +44,13 @@ public interface ObjectType {
      */
     void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 
+    /**
+     * The interface for objects to describe their relationship to other objects.
+     */
     interface Exporter {
 
         /**
-         * Create a new server side reference in anticipation of serialization.
+         * Create a new server side reference.
          *
          * @param object the object
          * @return the reference
@@ -55,11 +58,15 @@ public interface ObjectType {
         Reference newServerSideReference(Object object);
 
         /**
-         *
-         *
-         * TODO: management
+         * A reference.
          */
         interface Reference {
+
+            /**
+             * The ticket id, should be used in the serialized representation for the object.
+             *
+             * @return the id
+             */
             Ticket id();
         }
     }

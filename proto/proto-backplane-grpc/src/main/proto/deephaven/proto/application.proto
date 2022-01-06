@@ -80,7 +80,7 @@ message CustomInfo {
 }
 
 /*
- * io.deephaven.plugin.type.ObjectType
+ * Plugin object type information, as installed from io.deephaven.plugin.type.ObjectTypePlugin
  */
 message PluginTypeInfo {
   string name = 1;

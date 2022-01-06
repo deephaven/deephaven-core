@@ -398,7 +398,7 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':extensions-kafka',
                 ':extensions-parquet-table',
                 ':plugin',
-                ':plugin:figure',
+                ':plugin-figure',
                 ':Util',
                 ':ModelFarm',
                 ':Numerics',

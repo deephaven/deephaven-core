@@ -14,6 +14,6 @@ public abstract class PluginBase implements Plugin {
 
     @Override
     public void registerInto(ObjectTypeCallback callback) {
-
+        // override as necessary
     }
 }

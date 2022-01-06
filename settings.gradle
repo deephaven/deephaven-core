@@ -212,7 +212,9 @@ include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':plugin')
-include(':plugin:figure')
+
+include(':plugin-figure')
+project(':plugin-figure').projectDir = file('plugin/figure')
 
 include(':envoy')
 

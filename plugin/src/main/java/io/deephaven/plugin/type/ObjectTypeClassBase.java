@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
 
+/**
+ * An implementation that uses strict {@link Class} equality for the {@link #isType(Object)} check.
+ * 
+ * @param <T> the class type
+ */
 public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     private final String name;
     private final Class<T> clazz;
@@ -26,31 +31,13 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
 
     @Override
     public final boolean isType(Object object) {
-        return clazz.isInstance(object);
+        return clazz.equals(object.getClass());
     }
 
     @Override
     public final void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException {
-        writeToImpl(exporter, clazz.cast(object), out);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        ObjectTypeClassBase<?> that = (ObjectTypeClassBase<?>) o;
-        if (!name.equals(that.name))
-            return false;
-        return clazz.equals(that.clazz);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + clazz.hashCode();
-        return result;
+        // noinspection unchecked
+        writeToImpl(exporter, (T) clazz, out);
     }
 
     @Override

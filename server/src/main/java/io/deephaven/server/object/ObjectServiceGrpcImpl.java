@@ -10,9 +10,9 @@ import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectType.Exporter;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeLookup;
-import io.deephaven.proto.backplane.grpc.FetchObjectRequest2;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse2;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse2.Builder;
+import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.session.SessionService;
@@ -43,7 +43,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     @Override
-    public void fetchObject2(FetchObjectRequest2 request, StreamObserver<FetchObjectResponse2> responseObserver) {
+    public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
             if (request.getSourceId().getTicket().isEmpty()) {
@@ -56,7 +56,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     .onError(responseObserver)
                     .submit(() -> {
                         final Object o = object.get();
-                        final FetchObjectResponse2 response = serialize(session, o);
+                        final FetchObjectResponse response = serialize(session, o);
                         responseObserver.onNext(response);
                         responseObserver.onCompleted();
                         return null;
@@ -64,13 +64,13 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         });
     }
 
-    private FetchObjectResponse2 serialize(SessionState state, Object object) throws IOException {
+    private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
         final ExportCollector exportCollector = new ExportCollector(state);
         try {
             type.writeTo(exportCollector, object, out);
-            final Builder builder = FetchObjectResponse2.newBuilder()
+            final Builder builder = FetchObjectResponse.newBuilder()
                     .setType(type.name())
                     .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));;
             for (ExportObject<?> export : exportCollector.exports()) {
@@ -119,7 +119,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         @Override
         public Reference newServerSideReference(Object object) {
             if (thread != Thread.currentThread()) {
-                throw new IllegalStateException("Should only create exports on the calling thread");
+                throw new IllegalStateException("Should only create new references on the calling thread");
             }
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
             exports.add(exportObject);

@@ -35,6 +35,7 @@ public final class PluginsAutoDiscovery {
      */
     public void registerAll() {
         log.info().append("Registering plugins...").endl();
+        // TODO(deephaven-core#1810): Use service loader to abstract the different plugin auto-discovery methods
         final Counting serviceLoaderCount = new Counting();
         JavaServiceLoader.allRegisterInto(serviceLoaderCount);
         final Counting pythonModuleCount = new Counting();

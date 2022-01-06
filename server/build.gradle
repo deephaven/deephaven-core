@@ -41,7 +41,7 @@ dependencies {
 
     // TODO(deephaven-core#1784): Remove fetchFigure RPC
     // this can be runtimeOnly only after #1784
-    implementation project(':plugin:figure')
+    implementation project(':plugin-figure')
 
     Classpaths.inheritGrpcPlatform(project, 'api')
 

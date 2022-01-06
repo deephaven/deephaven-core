@@ -11,18 +11,15 @@ option optimize_for = SPEED;
 
 import "deephaven/proto/ticket.proto";
 
-/*
- * Object service
- */
 service ObjectService {
-    rpc FetchObject2(FetchObjectRequest2) returns (FetchObjectResponse2) {}
+    rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {}
 }
 
-message FetchObjectRequest2 {
+message FetchObjectRequest {
     io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
 }
 
-message FetchObjectResponse2 {
+message FetchObjectResponse {
     string type = 1;
     bytes data = 2;
     repeated io.deephaven.proto.backplane.grpc.Ticket export_id = 3;
