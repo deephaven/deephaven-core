@@ -31,7 +31,7 @@ import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
 import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.Exporter.Export;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -76,7 +76,9 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -451,8 +453,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                     "Value bound to ticket " + name + " is not a FigureWidget");
                         }
                         FigureWidget widget = (FigureWidget) result;
-                        final Builder dummy = FetchObjectResponse.newBuilder();
-                        final ExportCollector exportCollector = new ExportCollector(session, dummy);
+                        final ExportCollector exportCollector = new ExportCollector(session);
                         FigureDescriptor translated = FigureWidgetTranslator.translate(widget, exportCollector);
                         responseObserver
                                 .onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
@@ -486,11 +487,30 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
-        final Builder builder = FetchObjectResponse.newBuilder().setType(type.name());
-        final ExportCollector exportCollector = new ExportCollector(state, builder);
-        type.writeTo(exportCollector, object, out);
-        final ByteString data = ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
-        return builder.setData(data).build();
+        final ExportCollector exportCollector = new ExportCollector(state);
+        try {
+            type.writeTo(exportCollector, object, out);
+            final Builder builder = FetchObjectResponse.newBuilder()
+                    .setType(type.name())
+                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));;
+            for (ExportObject<?> export : exportCollector.exports()) {
+                builder.addExportId(export.getExportId());
+            }
+            return builder.build();
+        } catch (Throwable t) {
+            cleanup(exportCollector, t);
+            throw t;
+        }
+    }
+
+    private static void cleanup(ExportCollector exportCollector, Throwable t) {
+        for (ExportObject<?> export : exportCollector.exports()) {
+            try {
+                export.release();
+            } catch (Throwable inner) {
+                t.addSuppressed(inner);
+            }
+        }
     }
 
     private static IllegalArgumentException noTypeException(Object o) {
@@ -547,30 +567,34 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private static final class ExportCollector implements Exporter {
 
         private final SessionState sessionState;
-        private final Builder builder;
         private final Thread thread;
+        private final List<ExportObject<?>> exports;
 
-        public ExportCollector(SessionState sessionState, Builder builder) {
+        public ExportCollector(SessionState sessionState) {
             this.sessionState = Objects.requireNonNull(sessionState);
-            this.builder = Objects.requireNonNull(builder);
             this.thread = Thread.currentThread();
+            this.exports = new ArrayList<>();
+        }
+
+        public List<ExportObject<?>> exports() {
+            return exports;
         }
 
         @Override
-        public Export newServerSideExport(Object object) {
+        public Reference newServerSideReference(Object object) {
             if (thread != Thread.currentThread()) {
                 throw new IllegalStateException("Should only create exports on the calling thread");
             }
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            builder.addExportId(exportObject.getExportId());
-            return new ExportImpl(exportObject);
+            exports.add(exportObject);
+            return new ReferenceImpl(exportObject);
         }
     }
 
-    private static final class ExportImpl implements Export {
+    private static final class ReferenceImpl implements Reference {
         private final ExportObject<?> export;
 
-        public ExportImpl(ExportObject<?> export) {
+        public ReferenceImpl(ExportObject<?> export) {
             this.export = Objects.requireNonNull(export);
         }
 

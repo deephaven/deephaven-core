@@ -8,10 +8,10 @@ public abstract class ObjectTypeBase implements ObjectType {
     public abstract void writeToTypeChecked(Exporter exporter, Object object, OutputStream out) throws IOException;
 
     @Override
-    public final void writeTo(Exporter exporter, Object o, OutputStream out) throws IOException {
-        if (!isType(o)) {
-            throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + o);
+    public final void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException {
+        if (!isType(object)) {
+            throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
         }
-        writeToTypeChecked(exporter, o, out);
+        writeToTypeChecked(exporter, object, out);
     }
 }

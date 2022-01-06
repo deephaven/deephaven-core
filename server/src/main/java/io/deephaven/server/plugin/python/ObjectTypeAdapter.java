@@ -22,11 +22,11 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public boolean isType(Object o) {
-        if (!(o instanceof PyObject)) {
+    public boolean isType(Object object) {
+        if (!(object instanceof PyObject)) {
             return false;
         }
-        return objectTypeAdapter.call(boolean.class, "is_type", PyObject.class, (PyObject) o);
+        return objectTypeAdapter.call(boolean.class, "is_type", PyObject.class, (PyObject) object);
     }
 
     @Override

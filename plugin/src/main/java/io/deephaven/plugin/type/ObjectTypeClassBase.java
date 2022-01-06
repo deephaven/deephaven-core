@@ -25,8 +25,8 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     }
 
     @Override
-    public final boolean isType(Object o) {
-        return clazz.isInstance(o);
+    public final boolean isType(Object object) {
+        return clazz.isInstance(object);
     }
 
     @Override

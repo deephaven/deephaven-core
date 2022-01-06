@@ -1,10 +1,12 @@
-package io.deephaven.server.plugin;
+package io.deephaven.server.plugin.type;
 
 import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeCallback;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +15,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public final class ObjectTypes implements ObjectTypeLookup {
+/**
+ * Provides synchronized object type {@link ObjectTypeCallback registration} and {@link ObjectTypeLookup lookup}.
+ *
+ * <p>
+ * Object type registration that is an instances of {@link ObjectTypeClassBase} receives special consideration, and
+ * these objects have more efficient lookups.
+ */
+@Singleton
+public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeCallback {
 
     private static final Set<String> RESERVED_TYPE_NAMES = Set.of("Table", "TableMap", "TreeTable");
 
@@ -42,23 +52,24 @@ public final class ObjectTypes implements ObjectTypeLookup {
         return Optional.empty();
     }
 
-    public synchronized void register(ObjectType type) {
-        if (isReservedName(type.name())) {
-            throw new IllegalArgumentException("Unable to register type, type name is reserved: " + type.name());
+    @Override
+    public synchronized void registerObjectType(ObjectType objectType) {
+        if (isReservedName(objectType.name())) {
+            throw new IllegalArgumentException("Unable to register type, name is reserved: " + objectType.name());
         }
-        if (names.contains(type.name())) {
+        if (names.contains(objectType.name())) {
             throw new IllegalArgumentException(
-                    "Unable to register type, type name already registered: " + type.name());
+                    "Unable to register type, type name already registered: " + objectType.name());
         }
-        if (type instanceof ObjectTypeClassBase) {
-            final Class<?> clazz = ((ObjectTypeClassBase<?>) type).clazz();
-            if (classTypes.putIfAbsent(clazz, type) != null) {
+        if (objectType instanceof ObjectTypeClassBase) {
+            final Class<?> clazz = ((ObjectTypeClassBase<?>) objectType).clazz();
+            if (classTypes.putIfAbsent(clazz, objectType) != null) {
                 throw new IllegalArgumentException("Unable to register type, class already registered: " + clazz);
             }
         } else {
-            otherTypes.add(type);
+            otherTypes.add(objectType);
         }
-        names.add(type.name());
+        names.add(objectType.name());
     }
 
     private static boolean isReservedName(String name) {

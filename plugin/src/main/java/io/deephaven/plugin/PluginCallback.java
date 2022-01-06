@@ -1,8 +1,10 @@
 package io.deephaven.plugin;
 
-import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeCallback;
 
-public interface PluginCallback {
+/**
+ *
+ */
+public interface PluginCallback extends ObjectTypeCallback {
 
-    void registerObjectType(ObjectType objectType);
 }

@@ -3,9 +3,9 @@ package io.deephaven.plugin.type;
 import io.deephaven.proto.backplane.grpc.Ticket;
 
 public interface Exporter {
-    Export newServerSideExport(Object export);
+    Reference newServerSideReference(Object object);
 
-    interface Export {
+    interface Reference {
         Ticket id();
     }
 }

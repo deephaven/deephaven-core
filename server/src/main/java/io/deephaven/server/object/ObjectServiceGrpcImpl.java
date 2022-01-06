@@ -8,7 +8,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.Exporter.Export;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest2;
@@ -23,7 +23,6 @@ import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -35,7 +34,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final ObjectTypeLookup objectTypeLookup;
 
     @Inject
-    public ObjectServiceGrpcImpl(SessionService sessionService, TicketRouter ticketRouter, ObjectTypeLookup objectTypeLookup) {
+    public ObjectServiceGrpcImpl(SessionService sessionService, TicketRouter ticketRouter,
+            ObjectTypeLookup objectTypeLookup) {
         this.sessionService = Objects.requireNonNull(sessionService);
         this.ticketRouter = Objects.requireNonNull(ticketRouter);
         this.objectTypeLookup = Objects.requireNonNull(objectTypeLookup);
@@ -91,7 +91,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
-        public Export newServerSideExport(Object object) {
+        public Reference newServerSideReference(Object object) {
             if (thread != Thread.currentThread()) {
                 throw new IllegalStateException("Should only create exports on the calling thread");
             }
@@ -101,7 +101,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
     }
 
-    private static final class ExportImpl implements Export {
+    private static final class ExportImpl implements Reference {
         private final ExportObject<?> export;
 
         public ExportImpl(ExportObject<?> export) {

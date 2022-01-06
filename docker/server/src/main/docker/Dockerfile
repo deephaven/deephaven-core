@@ -2,10 +2,10 @@ ARG BASE
 FROM $BASE as install
 
 # To test out the deephaven-plugin-matplotlib, uncomment the following:
-#RUN set -eux; \
-#    python3 -m pip install -q --no-cache-dir \
-#    importlib-metadata \
-#    https://github.com/deephaven/deephaven-plugin-matplotlib/releases/download/v0.0.1.dev2/deephaven_plugin_matplotlib-0.0.1.dev2-py3-none-any.whl
+RUN set -eux; \
+    python3 -m pip install -q --no-cache-dir \
+    importlib-metadata \
+    https://github.com/deephaven/deephaven-plugin-matplotlib/releases/download/v0.0.1.dev2/deephaven_plugin_matplotlib-0.0.1.dev2-py3-none-any.whl
 
 COPY licenses/ /
 

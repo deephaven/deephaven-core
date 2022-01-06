@@ -40,7 +40,7 @@ import io.deephaven.plot.util.tables.SwappableTableOneClickMap;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.plot.util.tables.TableMapHandle;
 import io.deephaven.plugin.type.Exporter;
-import io.deephaven.plugin.type.Exporter.Export;
+import io.deephaven.plugin.type.Exporter.Reference;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
@@ -123,7 +123,7 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            final Export export = exporter.newServerSideExport(table);
+            final Reference export = exporter.newServerSideReference(table);
             clientFigure.addTables(ExportUtil.buildTableCreationResponse(export.id(), table));
         }
 

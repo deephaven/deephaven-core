@@ -6,6 +6,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.PluginCallback;
 import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeCallback;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.plugin.java.JavaServiceLoader;
 import io.deephaven.server.plugin.python.PythonModuleLoader;
@@ -13,16 +14,25 @@ import io.deephaven.server.plugin.python.PythonModuleLoader;
 import javax.inject.Inject;
 import java.util.Objects;
 
-public final class PluginsLoader implements PluginCallback {
-    private static final Logger log = LoggerFactory.getLogger(PluginsLoader.class);
+/**
+ * Provides a {@link #registerAll()} entrypoint for {@link io.deephaven.plugin.Plugin} auto-discovery. Logs
+ * auto-discovered details.
+ */
+public final class PluginsAutoDiscovery {
+    private static final Logger log = LoggerFactory.getLogger(PluginsAutoDiscovery.class);
 
-    private final ObjectTypes types;
+    private final ObjectTypeCallback types;
 
     @Inject
-    public PluginsLoader(ObjectTypes types) {
+    public PluginsAutoDiscovery(ObjectTypeCallback types) {
         this.types = Objects.requireNonNull(types);
     }
 
+    /**
+     * Registers {@link io.deephaven.plugin.Plugin plugins} via
+     * {@link JavaServiceLoader#allRegisterInto(PluginCallback)} and
+     * {@link PythonModuleLoader#allRegisterInto(PluginCallback)} (if python is enabled).
+     */
     public void registerAll() {
         log.info().append("Registering plugins...").endl();
         final Counting serviceLoaderCount = new Counting();
@@ -37,22 +47,17 @@ public final class PluginsLoader implements PluginCallback {
         }
     }
 
-    @Override
-    public void registerObjectType(ObjectType objectType) {
-        log.info().append("Registering object type: ")
-                .append(objectType.name()).append(" / ")
-                .append(objectType.toString())
-                .endl();
-        types.register(objectType);
-    }
-
     private class Counting implements PluginCallback, LogOutputAppendable {
 
         private int objectTypeCount = 0;
 
         @Override
         public void registerObjectType(ObjectType objectType) {
-            PluginsLoader.this.registerObjectType(objectType);
+            log.info().append("Registering object type: ")
+                    .append(objectType.name()).append(" / ")
+                    .append(objectType.toString())
+                    .endl();
+            types.registerObjectType(objectType);
             ++objectTypeCount;
         }
 
