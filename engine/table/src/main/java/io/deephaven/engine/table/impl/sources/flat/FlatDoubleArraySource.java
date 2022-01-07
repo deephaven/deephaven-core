@@ -29,9 +29,9 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  *
  * A single array backs the result, so getChunk calls with contiguous ranges should always be able to return a
  * reference to the backing store without an array copy.  The immediate consequence is that you may not create
- * sources that have a capacity larger than Integer.MAX_VALUE.
+ * sources that have a capacity larger than the maximum capacity of an array.
  *
- * If your size is greater than Integer.MAX_VALUE, prefer {@link Flat2DDoubleArraySource}.
+ * If your size is greater than the maximum capacity of an array, prefer {@link Flat2DDoubleArraySource}.
  */
 public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private double[] data;
@@ -41,6 +41,13 @@ public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<
         super(double.class);
     }
     // endregion constructor
+
+    // region array constructor
+    public FlatDoubleArraySource(double [] data) {
+        super(double.class);
+        this.data = data;
+    }
+    // endregion array constructor
 
     // region allocateArray
     void allocateArray(long capacity, boolean nullFilled) {

@@ -29,7 +29,7 @@ import java.util.Arrays;
  * getChunk calls with contiguous ranges are often able to return a reference to the backing store without an array
  * copy.
  *
- * If your size is smaller than Integer.MAX_VALUE, prefer {@link FlatObjectArraySource}.
+ * If your size is smaller than the maximum array size, prefer {@link FlatObjectArraySource}.
  */
 public class Flat2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;

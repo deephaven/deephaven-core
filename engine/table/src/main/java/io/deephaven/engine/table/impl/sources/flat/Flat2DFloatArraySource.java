@@ -30,7 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * getChunk calls with contiguous ranges are often able to return a reference to the backing store without an array
  * copy.
  *
- * If your size is smaller than Integer.MAX_VALUE, prefer {@link FlatFloatArraySource}.
+ * If your size is smaller than the maximum array size, prefer {@link FlatFloatArraySource}.
  */
 public class Flat2DFloatArraySource extends AbstractDeferredGroupingColumnSource<Float> implements ImmutableColumnSourceGetDefaults.ForFloat, WritableColumnSource<Float>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;

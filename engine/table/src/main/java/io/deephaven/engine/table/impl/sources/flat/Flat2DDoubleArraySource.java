@@ -30,7 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  * getChunk calls with contiguous ranges are often able to return a reference to the backing store without an array
  * copy.
  *
- * If your size is smaller than Integer.MAX_VALUE, prefer {@link FlatDoubleArraySource}.
+ * If your size is smaller than the maximum array size, prefer {@link FlatDoubleArraySource}.
  */
 public class Flat2DDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;

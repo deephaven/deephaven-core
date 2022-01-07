@@ -25,7 +25,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  * getChunk calls with contiguous ranges are often able to return a reference to the backing store without an array
  * copy.
  *
- * If your size is smaller than Integer.MAX_VALUE, prefer {@link FlatCharArraySource}.
+ * If your size is smaller than the maximum array size, prefer {@link FlatCharArraySource}.
  */
 public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;

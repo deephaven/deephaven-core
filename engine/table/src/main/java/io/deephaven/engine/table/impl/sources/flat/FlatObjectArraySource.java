@@ -28,9 +28,9 @@ import java.util.Arrays;
  *
  * A single array backs the result, so getChunk calls with contiguous ranges should always be able to return a
  * reference to the backing store without an array copy.  The immediate consequence is that you may not create
- * sources that have a capacity larger than Integer.MAX_VALUE.
+ * sources that have a capacity larger than the maximum capacity of an array.
  *
- * If your size is greater than Integer.MAX_VALUE, prefer {@link Flat2DObjectArraySource}.
+ * If your size is greater than the maximum capacity of an array, prefer {@link Flat2DObjectArraySource}.
  */
 public class FlatObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private Object[] data;
@@ -40,6 +40,13 @@ public class FlatObjectArraySource<T> extends AbstractDeferredGroupingColumnSour
         super(type, componentType);
     }
     // endregion constructor
+
+    // region array constructor
+    public FlatObjectArraySource(Class<T> type, Class<?> componentType, Object [] data) {
+        super(type, componentType);
+        this.data = data;
+    }
+    // endregion array constructor
 
     // region allocateArray
     void allocateArray(long capacity, boolean nullFilled) {

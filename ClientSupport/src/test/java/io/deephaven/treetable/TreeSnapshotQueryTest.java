@@ -7,12 +7,12 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.table.sort.SortDirective;
@@ -151,7 +151,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         private ColumnSource<?> makeConstituentColumnSource(String name, Object array) {
             final ColumnDefinition<?> colDef = theTree.getSourceTable().getDefinition().getColumn(name);
             // noinspection unchecked
-            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(),
+            return InMemoryColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(),
                     colDef.getComponentType());
         }
 
