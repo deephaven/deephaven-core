@@ -27,6 +27,15 @@ public class GenericRecordUtil {
         Schema currSchema = schema;
         int i = 0;
         while (true) {
+            if (currSchema.isUnion()) {
+                for (Schema unionType : currSchema.getTypes()) {
+                    if (unionType.getType() == Schema.Type.NULL) {
+                        continue;
+                    }
+                    currSchema = unionType;
+                    break;
+                }
+            }
             final Schema.Field currField = currSchema.getField(strFieldPath[i]);
             fieldPath[i] = currField.pos();
             ++i;
