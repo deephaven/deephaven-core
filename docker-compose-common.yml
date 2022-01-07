@@ -28,7 +28,6 @@ services:
       resources:
         limits:
           cpus: '4.0'
-          # The JVM memory is configured from gradle to use *RAMPercentage options.
           memory: 4500M
         reservations:
           memory: 1000M
