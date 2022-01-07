@@ -3,6 +3,9 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FlatCharArraySource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.flat;
 
 import io.deephaven.chunk.*;
@@ -42,8 +45,8 @@ public class FlatObjectArraySource<T> extends AbstractDeferredGroupingColumnSour
     // endregion constructor
 
     // region array constructor
-    public FlatObjectArraySource(Class<T> type, Class<?> componentType, Object [] data) {
-        super(type, componentType);
+    public FlatObjectArraySource(Object [] data) {
+        super(Object.class);
         this.data = data;
     }
     // endregion array constructor

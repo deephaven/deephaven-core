@@ -36,8 +36,6 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
-        charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
         fixupLongReinterpret(charToLong(

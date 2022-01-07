@@ -3,6 +3,9 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FlatCharArraySource and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.engine.table.impl.sources.flat;
 
 import io.deephaven.engine.table.ColumnSource;
