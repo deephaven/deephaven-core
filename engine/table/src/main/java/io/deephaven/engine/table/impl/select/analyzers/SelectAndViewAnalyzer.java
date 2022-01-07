@@ -37,6 +37,13 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+    }
+
+    public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
+                                               final TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
+                                               final boolean allowInternalFlatten,
+                                               final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -48,10 +55,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         final boolean flatResult = rowSet.isFlat();
-        final boolean flattenedResult = !flatResult
+        // if we preserve a column, we set this to false
+        boolean flattenedResult = !flatResult
+                && allowInternalFlatten
                 && (columnSources.isEmpty() || !publishTheseSources)
-                && Arrays.stream(selectColumns).noneMatch(SelectAndViewAnalyzer::shouldPreserve)
                 && mode == Mode.SELECT_STATIC;
+        int numberOfInternallyFlattenedColumns = 0;
 
         for (final SelectColumn sc : selectColumns) {
             final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
@@ -66,7 +75,13 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (shouldPreserve(sc)) {
                 analyzer =
                         analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                if (numberOfInternallyFlattenedColumns > 0) {
+                    // we must preserve this column, but have already created an analyzer for the internally flattened
+                    // column, therefore must start over without permitting internal flattening
+                    return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
+                }
                 // we can not flatten future columns because we are preserving this column
+                flattenedResult = false;
                 continue;
             }
 
@@ -91,6 +106,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                                     : sc.newDestInstance(targetDestinationCapacity);
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
                             false, flattenedResult);
+                    if (flattenedResult) {
+                        numberOfInternallyFlattenedColumns++;
+                    }
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
