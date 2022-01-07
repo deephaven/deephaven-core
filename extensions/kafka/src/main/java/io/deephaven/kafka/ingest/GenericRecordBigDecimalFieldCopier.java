@@ -9,6 +9,7 @@ import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
 public class GenericRecordBigDecimalFieldCopier extends GenericRecordFieldCopier {
@@ -34,14 +35,31 @@ public class GenericRecordBigDecimalFieldCopier extends GenericRecordFieldCopier
         final WritableObjectChunk<Object, Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final byte[] bytes = (byte[]) GenericRecordUtil.getPath(record, fieldPath);
-            if (bytes == null) {
+            final Object bytesObj = GenericRecordUtil.getPath(record, fieldPath);
+            if (bytesObj == null) {
                 output.set(ii + destOffset, null);
                 return;
             }
-            final BigInteger bi = new BigInteger(bytes);
-            final BigDecimal bd = new BigDecimal(bi, scale);
-            output.set(ii + destOffset, bd);
+            if (bytesObj instanceof byte[]) {
+                final byte[] bytes = (byte[]) bytesObj;
+                final BigInteger bi = new BigInteger(bytes);
+                final BigDecimal bd = new BigDecimal(bi, scale);
+                output.set(ii + destOffset, bd);
+            } else if (bytesObj instanceof ByteBuffer) {
+                final ByteBuffer bb = (ByteBuffer) bytesObj;
+                final BigInteger bi;
+                if (bb.hasArray()) {
+                    bi = new BigInteger(bb.array(), bb.position() + bb.arrayOffset(), bb.remaining());
+                } else {
+                    final byte[] bytes = new byte[bb.remaining()];
+                    bb.get(bytes);
+                    bi = new BigInteger(bytes);
+                }
+                final BigDecimal bd = new BigDecimal(bi, scale);
+                output.set(ii + destOffset, bd);
+            } else {
+                throw new IllegalStateException("Object of type " + bytesObj.getClass().getName() + " not recognized for decimal type backing");
+            }
         }
     }
 }

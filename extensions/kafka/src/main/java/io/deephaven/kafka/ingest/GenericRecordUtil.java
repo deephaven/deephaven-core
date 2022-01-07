@@ -6,6 +6,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class GenericRecordUtil {
@@ -28,12 +29,20 @@ public class GenericRecordUtil {
         int i = 0;
         while (true) {
             if (currSchema.isUnion()) {
-                for (Schema unionType : currSchema.getTypes()) {
-                    if (unionType.getType() == Schema.Type.NULL) {
-                        continue;
-                    }
-                    currSchema = unionType;
-                    break;
+                final List<Schema> unionTypes = currSchema.getTypes();
+                if (unionTypes.size() != 2) {
+                    throw new IllegalArgumentException(
+                            formatUnionSchema(currSchema) + ": only union schemas of two elements where one is NULL are supported");
+                }
+                final Schema unionType0 = unionTypes.get(0);
+                final Schema unionType1 = unionTypes.get(1);
+                if (unionType0.getType() == Schema.Type.NULL) {
+                    currSchema = unionType1;
+                } else if (unionType1.getType() == Schema.Type.NULL) {
+                    currSchema = unionType0;
+                } else {
+                    throw new IllegalArgumentException(
+                            formatUnionSchema(currSchema) + ": only union schemas of two elements where one is NULL are supported");
                 }
             }
             final Schema.Field currField = currSchema.getField(strFieldPath[i]);
@@ -78,6 +87,9 @@ public class GenericRecordUtil {
         int i = 0;
         while (i < fieldPath.length - 1) {
             parentRecord = (GenericRecord) parentRecord.get(fieldPath[i]);
+            if (parentRecord == null) {
+                return null;
+            }
             ++i;
         }
         return parentRecord.get(fieldPath[i]);
@@ -105,5 +117,25 @@ public class GenericRecordUtil {
             ++i;
         }
         return s;
+    }
+
+    private static String formatUnionSchema(final Schema schema) {
+        final List<Schema> unionTypes = schema.getTypes();
+        final StringBuilder sb = new StringBuilder("Union schema ");
+        sb.append("name=").append(schema.getFullName());
+        sb.append(" with ").append(unionTypes.size()).append(" elements [");
+        int i = 0;
+        for (final Schema element : unionTypes) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append("(");
+            sb.append("name=").append(element.getName());
+            sb.append(", ");
+            sb.append("type=").append(element.getType().toString());
+            sb.append(")");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }
