@@ -196,6 +196,10 @@ public class ReplicateSourcesAndChunks {
                     "FlatObjectArraySource\\(",
                     "FlatObjectArraySource\\(Class<T> type, Class<?> componentType",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)");
+            lines = simpleFixup(lines, "array constructor",
+                    "FlatObjectArraySource\\(",
+                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, ",
+                    "super\\(Object.class\\)", "super\\(type, componentType\\)");
         }
 
         FileUtils.writeLines(resultClassJavaFile, lines);

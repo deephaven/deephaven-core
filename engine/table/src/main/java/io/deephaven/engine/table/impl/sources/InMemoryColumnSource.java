@@ -166,7 +166,7 @@ public interface InMemoryColumnSource {
             result = new LongAsDateTimeColumnSource(new FlatLongArraySource((long[]) dataArray));
         } else {
             // noinspection unchecked
-            result = new FlatObjectArraySource<>(dataType, componentType, (T[]) dataArray);
+            result = new FlatObjectArraySource(dataType, componentType, (T[]) dataArray);
         }
         // noinspection unchecked
         return (ColumnSource<T>) result;

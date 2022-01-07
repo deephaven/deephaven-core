@@ -45,8 +45,8 @@ public class FlatObjectArraySource<T> extends AbstractDeferredGroupingColumnSour
     // endregion constructor
 
     // region array constructor
-    public FlatObjectArraySource(Object [] data) {
-        super(Object.class);
+    public FlatObjectArraySource(Class<T> type, Class<?> componentType, Object [] data) {
+        super(type, componentType);
         this.data = data;
     }
     // endregion array constructor
