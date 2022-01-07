@@ -20,9 +20,10 @@ public interface InMemoryColumnSource {
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
     static <T> WritableColumnSource<T> getFlatMemoryColumnSource(long longSize,
-                                                                 @NotNull final Class<T> dataType,
-                                                                 @Nullable final Class<?> componentType) {
-        // There is an jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH we would like to use, but I cannot compile that way
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
+        // There is an jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH we would like to use, but I cannot compile that
+        // way
         if (longSize > Integer.MAX_VALUE - 8) {
             return makeFlat2DSource(longSize, dataType, componentType);
         }
@@ -31,7 +32,7 @@ public interface InMemoryColumnSource {
 
     @NotNull
     static <T> WritableColumnSource<T> makeFlatSource(long longSize, @NotNull Class<T> dataType,
-                                                      @Nullable Class<?> componentType) {
+            @Nullable Class<?> componentType) {
         final int size = Math.toIntExact(longSize);
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
@@ -61,7 +62,7 @@ public interface InMemoryColumnSource {
 
     @NotNull
     static <T> WritableColumnSource<T> makeFlat2DSource(long size, @NotNull Class<T> dataType,
-                                                        @Nullable Class<?> componentType) {
+            @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new WritableByteAsBooleanColumnSource(new Flat2DByteArraySource(size));

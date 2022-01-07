@@ -170,7 +170,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // TODO: make sure an empty select does not blow the heck up
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final RowSequence.Iterator destIter = flattenedResult
-                                        ? RowSequenceFactory.forRange(0, upstream.added().size() - 1).getRowSequenceIterator()
+                                        ? RowSequenceFactory.forRange(0, upstream.added().size() - 1)
+                                                .getRowSequenceIterator()
                                         : null;
                                 final ResettableWritableChunk<?> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {

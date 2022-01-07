@@ -150,7 +150,8 @@ public class SnapshotUtils {
         final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
         // noinspection unchecked
         final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
-        return new VectorDirectDelegatingColumnSource(vectorType, columnSource.getComponentType(), underlyingVectorSource);
+        return new VectorDirectDelegatingColumnSource(vectorType, columnSource.getComponentType(),
+                underlyingVectorSource);
     }
 
     /**
@@ -160,8 +161,8 @@ public class SnapshotUtils {
      */
     private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
         public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType,
-                                                  Class<?> componentType,
-                                                  ColumnSource<Vector<?>> underlyingVectorSource) {
+                Class<?> componentType,
+                ColumnSource<Vector<?>> underlyingVectorSource) {
             super(vectorType, componentType, underlyingVectorSource);
         }
 

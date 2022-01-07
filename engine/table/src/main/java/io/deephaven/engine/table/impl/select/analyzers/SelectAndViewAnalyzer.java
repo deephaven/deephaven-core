@@ -323,8 +323,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     /**
      * Was the result internally flattened? Only the STATIC_SELECT case flattens the result. If the result preserves any
-     * columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the
-     * default implementation returns false.
+     * columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the default
+     * implementation returns false.
      */
     public boolean flattenedResult() {
         return false;
