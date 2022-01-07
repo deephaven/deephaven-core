@@ -59,8 +59,8 @@ public class BooleanUtils {
      *
      * @return booleanArray represented as a byte array
      */
-    public static byte[] booleanAsByte(final boolean [] booleanArray) {
-        final byte [] result = new byte[booleanArray.length];
+    public static byte[] booleanAsByte(final boolean[] booleanArray) {
+        final byte[] result = new byte[booleanArray.length];
         for (int ii = 0; ii < result.length; ++ii) {
             result[ii] = booleanAsByte(booleanArray[ii]);
         }
@@ -74,8 +74,8 @@ public class BooleanUtils {
      *
      * @return booleanArray represented as a byte array
      */
-    public static byte[] booleanAsByte(final Boolean [] booleanArray) {
-        final byte [] result = new byte[booleanArray.length];
+    public static byte[] booleanAsByte(final Boolean[] booleanArray) {
+        final byte[] result = new byte[booleanArray.length];
         for (int ii = 0; ii < result.length; ++ii) {
             result[ii] = booleanAsByte(booleanArray[ii]);
         }

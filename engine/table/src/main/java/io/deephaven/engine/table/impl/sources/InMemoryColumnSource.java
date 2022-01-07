@@ -111,8 +111,7 @@ public interface InMemoryColumnSource {
     /**
      * Wrap the input array in an immutable {@link ColumnSource}. This method will unbox any boxed values, and directly
      * use the result array. This version allows the user to specify the column data type. It will automatically map
-     * column type Boolean/boolean with input array types byte[] and columnType
-     * DateTime / array type long[].
+     * column type Boolean/boolean with input array types byte[] and columnType DateTime / array type long[].
      *
      * @param dataArray The array to turn into a ColumnSource
      * @param dataType the data type of the resultant column source
@@ -120,16 +119,18 @@ public interface InMemoryColumnSource {
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
     static <T> ColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
-                                                              @NotNull final Class<T> dataType,
-                                                              @Nullable final Class<?> componentType) {
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         final ColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             if (dataArray instanceof byte[]) {
                 result = new ByteAsBooleanColumnSource(new FlatByteArraySource((byte[]) dataArray));
             } else if (dataArray instanceof boolean[]) {
-                result = new ByteAsBooleanColumnSource(new FlatByteArraySource(BooleanUtils.booleanAsByte((boolean[])dataArray)));
+                result = new ByteAsBooleanColumnSource(
+                        new FlatByteArraySource(BooleanUtils.booleanAsByte((boolean[]) dataArray)));
             } else if (dataArray instanceof Boolean[]) {
-                result = new ByteAsBooleanColumnSource(new FlatByteArraySource(BooleanUtils.booleanAsByte((Boolean[])dataArray)));
+                result = new ByteAsBooleanColumnSource(
+                        new FlatByteArraySource(BooleanUtils.booleanAsByte((Boolean[]) dataArray)));
             } else {
                 throw new IllegalArgumentException("Invalid dataArray for type " + dataType);
             }
