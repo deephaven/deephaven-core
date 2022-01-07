@@ -64,6 +64,10 @@ public abstract class DeephavenApiServerTestBase {
         }
     }
 
+    public DeephavenApiServer server() {
+        return server;
+    }
+
     /**
      * The session token expiration, in milliseconds.
      *
@@ -83,7 +87,7 @@ public abstract class DeephavenApiServerTestBase {
         grpcCleanup.register(managedChannel);
     }
 
-    public DeephavenChannel channel() {
+    public DeephavenChannel createChannel() {
         ManagedChannel channel = channelBuilder().build();
         register(channel);
         return new DeephavenChannel(channel);

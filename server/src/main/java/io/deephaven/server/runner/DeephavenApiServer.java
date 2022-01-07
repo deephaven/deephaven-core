@@ -66,6 +66,12 @@ public class DeephavenApiServer {
         return server;
     }
 
+    @VisibleForTesting
+    SessionService sessionService() {
+        return sessionService;
+    }
+
+
     /**
      * Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated
      * by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.
@@ -128,6 +134,8 @@ public class DeephavenApiServer {
     }
 
     void startForUnitTests() throws Exception {
+        pluginsAutoDiscovery.registerAll();
+
         log.info().append("Starting server...").endl();
         server.start();
     }
