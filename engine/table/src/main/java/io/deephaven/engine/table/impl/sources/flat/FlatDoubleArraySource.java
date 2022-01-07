@@ -37,7 +37,7 @@ public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<
     private double[] data;
 
     // region constructor
-    public FlatDoubleArraySource(long size) {
+    public FlatDoubleArraySource() {
         super(double.class);
     }
     // endregion constructor

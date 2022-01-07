@@ -22,7 +22,8 @@ public class TestShortFlat2DArraySource extends AbstractShortColumnSourceTest {
     @Override
     Flat2DShortArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DShortArraySource flatShortArraySource = new Flat2DShortArraySource(capacity, 12);
+        final Flat2DShortArraySource flatShortArraySource = new Flat2DShortArraySource(12);
+        flatShortArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatShortArraySource.makeFillFromContext(capacity);
              final WritableShortChunk nullChunk = WritableShortChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

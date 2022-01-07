@@ -32,7 +32,7 @@ public class FlatCharArraySource extends AbstractDeferredGroupingColumnSource<Ch
     private char[] data;
 
     // region constructor
-    public FlatCharArraySource(long size) {
+    public FlatCharArraySource() {
         super(char.class);
     }
     // endregion constructor

@@ -17,7 +17,8 @@ public class TestObjectFlatArraySource extends AbstractObjectColumnSourceTest {
     @Override
     FlatObjectArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatObjectArraySource<String> flatObjectArraySource = new FlatObjectArraySource<>(String.class, null, capacity);
+        final FlatObjectArraySource<String> flatObjectArraySource = new FlatObjectArraySource<>(String.class, null);
+        flatObjectArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatObjectArraySource.makeFillFromContext(capacity);
              final WritableObjectChunk<?, Values> nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

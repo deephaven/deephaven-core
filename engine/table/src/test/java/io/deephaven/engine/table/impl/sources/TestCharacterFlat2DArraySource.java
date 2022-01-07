@@ -17,7 +17,8 @@ public class TestCharacterFlat2DArraySource extends AbstractCharacterColumnSourc
     @Override
     Flat2DCharArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DCharArraySource flatCharArraySource = new Flat2DCharArraySource(capacity, 12);
+        final Flat2DCharArraySource flatCharArraySource = new Flat2DCharArraySource(12);
+        flatCharArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatCharArraySource.makeFillFromContext(capacity);
              final WritableCharChunk nullChunk = WritableCharChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

@@ -41,21 +41,20 @@ public class Flat2DLongArraySource extends AbstractDeferredGroupingColumnSource<
     private final long segmentShift;
     private final int segmentMask;
 
-    private final long size;
+    private long size;
     private long[][] data;
 
 
     // region constructor
-    public Flat2DLongArraySource(long size) {
-        this(size, DEFAULT_SEGMENT_SHIFT);
+    public Flat2DLongArraySource() {
+        this(DEFAULT_SEGMENT_SHIFT);
     }
 
-    public Flat2DLongArraySource(long size, int segmentShift) {
+    public Flat2DLongArraySource(int segmentShift) {
         super(long.class);
         this.segmentShift = segmentShift;
         int segmentSize = 1 << segmentShift;
         segmentMask = segmentSize - 1;
-        this.size = size;
     }
     // endregion constructor
 
@@ -106,6 +105,7 @@ public class Flat2DLongArraySource extends AbstractDeferredGroupingColumnSource<
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (data == null) {
+            size = capacity;
             data = allocateArray(size, segmentMask + 1, nullFilled);
         }
         if (capacity > size) {
@@ -198,7 +198,8 @@ public class Flat2DLongArraySource extends AbstractDeferredGroupingColumnSource<
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
-            super.getChunk(contextWithResettable.inner, firstKey, lastKey);
+            // TODO: TEST COVERAGE OF THIS CASE?
+            return super.getChunk(contextWithResettable.inner, firstKey, lastKey);
         }
         final int len = (int)(lastKey - firstKey + 1);
         return contextWithResettable.resettableLongChunk.resetFromTypedArray(data[segment], (int)firstKey, len);

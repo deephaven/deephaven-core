@@ -41,9 +41,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
-                                               final TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
-                                               final boolean allowInternalFlatten,
-                                               final SelectColumn... selectColumns) {
+            final TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
+            final boolean allowInternalFlatten,
+            final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;

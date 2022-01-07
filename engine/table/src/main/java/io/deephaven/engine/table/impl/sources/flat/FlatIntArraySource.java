@@ -37,7 +37,7 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
     private int[] data;
 
     // region constructor
-    public FlatIntArraySource(long size) {
+    public FlatIntArraySource() {
         super(int.class);
     }
     // endregion constructor

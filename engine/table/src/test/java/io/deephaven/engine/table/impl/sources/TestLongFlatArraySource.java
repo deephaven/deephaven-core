@@ -16,7 +16,8 @@ public class TestLongFlatArraySource extends AbstractLongColumnSourceTest {
     @Override
     FlatLongArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatLongArraySource flatLongArraySource = new FlatLongArraySource(capacity);
+        final FlatLongArraySource flatLongArraySource = new FlatLongArraySource();
+        flatLongArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatLongArraySource.makeFillFromContext(capacity);
              final WritableLongChunk nullChunk = WritableLongChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

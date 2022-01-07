@@ -22,7 +22,8 @@ public class TestFloatFlat2DArraySource extends AbstractFloatColumnSourceTest {
     @Override
     Flat2DFloatArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DFloatArraySource flatFloatArraySource = new Flat2DFloatArraySource(capacity, 12);
+        final Flat2DFloatArraySource flatFloatArraySource = new Flat2DFloatArraySource(12);
+        flatFloatArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatFloatArraySource.makeFillFromContext(capacity);
              final WritableFloatChunk nullChunk = WritableFloatChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

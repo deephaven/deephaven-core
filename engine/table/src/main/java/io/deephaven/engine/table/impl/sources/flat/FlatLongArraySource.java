@@ -41,7 +41,7 @@ public class FlatLongArraySource extends AbstractDeferredGroupingColumnSource<Lo
     private long[] data;
 
     // region constructor
-    public FlatLongArraySource(long size) {
+    public FlatLongArraySource() {
         super(long.class);
     }
     // endregion constructor

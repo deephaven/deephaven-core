@@ -37,21 +37,20 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     private final long segmentShift;
     private final int segmentMask;
 
-    private final long size;
+    private long size;
     private byte[][] data;
 
 
     // region constructor
-    public Flat2DByteArraySource(long size) {
-        this(size, DEFAULT_SEGMENT_SHIFT);
+    public Flat2DByteArraySource() {
+        this(DEFAULT_SEGMENT_SHIFT);
     }
 
-    public Flat2DByteArraySource(long size, int segmentShift) {
+    public Flat2DByteArraySource(int segmentShift) {
         super(byte.class);
         this.segmentShift = segmentShift;
         int segmentSize = 1 << segmentShift;
         segmentMask = segmentSize - 1;
-        this.size = size;
     }
     // endregion constructor
 
@@ -102,6 +101,7 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (data == null) {
+            size = capacity;
             data = allocateArray(size, segmentMask + 1, nullFilled);
         }
         if (capacity > size) {
@@ -194,7 +194,8 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
-            super.getChunk(contextWithResettable.inner, firstKey, lastKey);
+            // TODO: TEST COVERAGE OF THIS CASE?
+            return super.getChunk(contextWithResettable.inner, firstKey, lastKey);
         }
         final int len = (int)(lastKey - firstKey + 1);
         return contextWithResettable.resettableByteChunk.resetFromTypedArray(data[segment], (int)firstKey, len);

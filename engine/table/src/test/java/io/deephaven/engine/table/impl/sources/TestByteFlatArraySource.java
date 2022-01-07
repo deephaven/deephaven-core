@@ -16,7 +16,8 @@ public class TestByteFlatArraySource extends AbstractByteColumnSourceTest {
     @Override
     FlatByteArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatByteArraySource flatByteArraySource = new FlatByteArraySource(capacity);
+        final FlatByteArraySource flatByteArraySource = new FlatByteArraySource();
+        flatByteArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatByteArraySource.makeFillFromContext(capacity);
              final WritableByteChunk nullChunk = WritableByteChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

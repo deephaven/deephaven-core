@@ -16,7 +16,8 @@ public class TestFloatFlatArraySource extends AbstractFloatColumnSourceTest {
     @Override
     FlatFloatArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatFloatArraySource flatFloatArraySource = new FlatFloatArraySource(capacity);
+        final FlatFloatArraySource flatFloatArraySource = new FlatFloatArraySource();
+        flatFloatArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatFloatArraySource.makeFillFromContext(capacity);
              final WritableFloatChunk nullChunk = WritableFloatChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

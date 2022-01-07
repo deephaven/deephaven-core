@@ -25,7 +25,7 @@ public interface InMemoryColumnSource {
         // There is an jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH we would like to use, but I cannot compile that
         // way
         if (longSize > Integer.MAX_VALUE - 8) {
-            return makeFlat2DSource(longSize, dataType, componentType);
+            return makeFlat2DSource(dataType, componentType);
         }
         return makeFlatSource(longSize, dataType, componentType);
     }
@@ -36,54 +36,54 @@ public interface InMemoryColumnSource {
         final int size = Math.toIntExact(longSize);
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
-            result = new WritableByteAsBooleanColumnSource(new FlatByteArraySource(size));
+            result = new WritableByteAsBooleanColumnSource(new FlatByteArraySource());
         } else if (dataType == char.class || dataType == Character.class) {
-            result = new FlatCharArraySource(size);
+            result = new FlatCharArraySource();
         } else if (dataType == byte.class || dataType == Byte.class) {
-            result = new FlatByteArraySource(size);
+            result = new FlatByteArraySource();
         } else if (dataType == double.class || dataType == Double.class) {
-            result = new FlatDoubleArraySource(size);
+            result = new FlatDoubleArraySource();
         } else if (dataType == float.class || dataType == Float.class) {
-            result = new FlatFloatArraySource(size);
+            result = new FlatFloatArraySource();
         } else if (dataType == int.class || dataType == Integer.class) {
-            result = new FlatIntArraySource(size);
+            result = new FlatIntArraySource();
         } else if (dataType == long.class || dataType == Long.class) {
-            result = new FlatLongArraySource(size);
+            result = new FlatLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
-            result = new FlatShortArraySource(size);
+            result = new FlatShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new FlatLongArraySource(size));
+            result = new WritableLongAsDateTimeColumnSource(new FlatLongArraySource());
         } else {
-            result = new FlatObjectArraySource<>(dataType, componentType, size);
+            result = new FlatObjectArraySource<>(dataType, componentType);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;
     }
 
     @NotNull
-    static <T> WritableColumnSource<T> makeFlat2DSource(long size, @NotNull Class<T> dataType,
+    static <T> WritableColumnSource<T> makeFlat2DSource(@NotNull Class<T> dataType,
             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
-            result = new WritableByteAsBooleanColumnSource(new Flat2DByteArraySource(size));
+            result = new WritableByteAsBooleanColumnSource(new Flat2DByteArraySource());
         } else if (dataType == char.class || dataType == Character.class) {
-            result = new Flat2DCharArraySource(size);
+            result = new Flat2DCharArraySource();
         } else if (dataType == byte.class || dataType == Byte.class) {
-            result = new Flat2DByteArraySource(size);
+            result = new Flat2DByteArraySource();
         } else if (dataType == double.class || dataType == Double.class) {
-            result = new Flat2DDoubleArraySource(size);
+            result = new Flat2DDoubleArraySource();
         } else if (dataType == float.class || dataType == Float.class) {
-            result = new Flat2DFloatArraySource(size);
+            result = new Flat2DFloatArraySource();
         } else if (dataType == int.class || dataType == Integer.class) {
-            result = new Flat2DIntArraySource(size);
+            result = new Flat2DIntArraySource();
         } else if (dataType == long.class || dataType == Long.class) {
-            result = new Flat2DLongArraySource(size);
+            result = new Flat2DLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
-            result = new Flat2DShortArraySource(size);
+            result = new Flat2DShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new Flat2DLongArraySource(size));
+            result = new WritableLongAsDateTimeColumnSource(new Flat2DLongArraySource());
         } else {
-            result = new Flat2DObjectArraySource<>(dataType, componentType, size);
+            result = new Flat2DObjectArraySource<>(dataType, componentType);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;

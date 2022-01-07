@@ -16,7 +16,8 @@ public class TestDoubleFlatArraySource extends AbstractDoubleColumnSourceTest {
     @Override
     FlatDoubleArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatDoubleArraySource flatDoubleArraySource = new FlatDoubleArraySource(capacity);
+        final FlatDoubleArraySource flatDoubleArraySource = new FlatDoubleArraySource();
+        flatDoubleArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatDoubleArraySource.makeFillFromContext(capacity);
              final WritableDoubleChunk nullChunk = WritableDoubleChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

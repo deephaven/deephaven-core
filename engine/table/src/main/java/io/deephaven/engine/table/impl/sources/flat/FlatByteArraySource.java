@@ -37,7 +37,7 @@ public class FlatByteArraySource extends AbstractDeferredGroupingColumnSource<By
     private byte[] data;
 
     // region constructor
-    public FlatByteArraySource(long size) {
+    public FlatByteArraySource() {
         super(byte.class);
     }
     // endregion constructor

@@ -16,7 +16,8 @@ public class TestIntegerFlatArraySource extends AbstractIntegerColumnSourceTest 
     @Override
     FlatIntArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatIntArraySource flatIntArraySource = new FlatIntArraySource(capacity);
+        final FlatIntArraySource flatIntArraySource = new FlatIntArraySource();
+        flatIntArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatIntArraySource.makeFillFromContext(capacity);
              final WritableIntChunk nullChunk = WritableIntChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

@@ -37,7 +37,7 @@ public class FlatFloatArraySource extends AbstractDeferredGroupingColumnSource<F
     private float[] data;
 
     // region constructor
-    public FlatFloatArraySource(long size) {
+    public FlatFloatArraySource() {
         super(float.class);
     }
     // endregion constructor

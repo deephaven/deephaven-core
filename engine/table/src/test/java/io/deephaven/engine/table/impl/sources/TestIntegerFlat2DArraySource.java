@@ -22,7 +22,8 @@ public class TestIntegerFlat2DArraySource extends AbstractIntegerColumnSourceTes
     @Override
     Flat2DIntArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DIntArraySource flatIntArraySource = new Flat2DIntArraySource(capacity, 12);
+        final Flat2DIntArraySource flatIntArraySource = new Flat2DIntArraySource(12);
+        flatIntArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatIntArraySource.makeFillFromContext(capacity);
              final WritableIntChunk nullChunk = WritableIntChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

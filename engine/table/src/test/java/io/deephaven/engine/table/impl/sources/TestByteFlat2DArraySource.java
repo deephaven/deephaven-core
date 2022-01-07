@@ -22,7 +22,8 @@ public class TestByteFlat2DArraySource extends AbstractByteColumnSourceTest {
     @Override
     Flat2DByteArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DByteArraySource flatByteArraySource = new Flat2DByteArraySource(capacity, 12);
+        final Flat2DByteArraySource flatByteArraySource = new Flat2DByteArraySource(12);
+        flatByteArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatByteArraySource.makeFillFromContext(capacity);
              final WritableByteChunk nullChunk = WritableByteChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

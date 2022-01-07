@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
@@ -13,7 +12,8 @@ public class TestBooleanFlatArraySource extends AbstractBooleanColumnSourceTest 
     @Override
     WritableColumnSource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatByteArraySource flatBooleanArraySource = new FlatByteArraySource(capacity);
+        final FlatByteArraySource flatBooleanArraySource = new FlatByteArraySource();
+        flatBooleanArraySource.ensureCapacity(capacity);
         final WritableByteAsBooleanColumnSource byteAsBooleanColumnSource = new WritableByteAsBooleanColumnSource(flatBooleanArraySource);
 
         try (final ChunkSink.FillFromContext ffc = byteAsBooleanColumnSource.makeFillFromContext(capacity);

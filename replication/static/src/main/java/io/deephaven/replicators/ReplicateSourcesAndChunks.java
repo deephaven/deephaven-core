@@ -185,15 +185,18 @@ public class ReplicateSourcesAndChunks {
 
         if (flatSourcePath.contains("2D")) {
             lines = simpleFixup(lines, "constructor",
-                    "Flat2DObjectArraySource\\(long size",
-                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "Flat2DObjectArraySource\\(\\)",
+                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType\\)",
+                    "Flat2DObjectArraySource\\(int",
+                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, int",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)",
-                    "this\\(size", "this\\(type, componentType, size");
+                    "this\\(\\)", "this\\(type, componentType\\)",
+                    "this\\(DEFAULT_SEGMENT_SHIFT\\)", "this\\(type, componentType, DEFAULT_SEGMENT_SHIFT\\)");
             lines = simpleFixup(lines, "allocateArray", "return \\(T\\)data;", "return data;");
         } else {
             lines = simpleFixup(lines, "constructor",
-                    "FlatObjectArraySource\\(long size",
-                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "FlatObjectArraySource\\(",
+                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)");
         }
 

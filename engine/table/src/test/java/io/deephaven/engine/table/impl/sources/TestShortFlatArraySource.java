@@ -16,7 +16,8 @@ public class TestShortFlatArraySource extends AbstractShortColumnSourceTest {
     @Override
     FlatShortArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final FlatShortArraySource flatShortArraySource = new FlatShortArraySource(capacity);
+        final FlatShortArraySource flatShortArraySource = new FlatShortArraySource();
+        flatShortArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flatShortArraySource.makeFillFromContext(capacity);
              final WritableShortChunk nullChunk = WritableShortChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);

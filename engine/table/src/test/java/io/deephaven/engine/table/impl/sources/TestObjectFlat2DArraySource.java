@@ -17,7 +17,8 @@ public class TestObjectFlat2DArraySource extends AbstractObjectColumnSourceTest 
     @Override
     Flat2DObjectArraySource makeTestSource() {
         final int capacity = getSourceSize();
-        final Flat2DObjectArraySource<String> flat2DObjectArraySource = new Flat2DObjectArraySource<>(String.class, null, capacity, 12);
+        final Flat2DObjectArraySource<String> flat2DObjectArraySource = new Flat2DObjectArraySource<>(String.class, null, 12);
+        flat2DObjectArraySource.ensureCapacity(capacity);
         try (final ChunkSink.FillFromContext ffc = flat2DObjectArraySource.makeFillFromContext(capacity);
              final WritableObjectChunk<?, Values> nullChunk = WritableObjectChunk.makeWritableChunk(capacity)) {
             nullChunk.fillWithNullValue(0, capacity);
