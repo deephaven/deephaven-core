@@ -134,7 +134,7 @@ public class DeephavenApiServer {
     }
 
     void startForUnitTests() throws Exception {
-        pluginsAutoDiscovery.registerAll();
+        pluginsAutoDiscovery.registerAll(false);
 
         log.info().append("Starting server...").endl();
         server.start();

@@ -10,6 +10,7 @@ import io.deephaven.plugin.type.ObjectTypeCallback;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.plugin.java.JavaServiceLoader;
 import io.deephaven.server.plugin.python.PythonModuleLoader;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import javax.inject.Inject;
 import java.util.Objects;
@@ -34,16 +35,21 @@ public final class PluginsAutoDiscovery {
      * {@link PythonModuleLoader#allRegisterInto(PluginCallback)} (if python is enabled).
      */
     public void registerAll() {
+        registerAll(ConsoleServiceGrpcImpl.isPythonSession());
+    }
+
+    @VisibleForTesting
+    public void registerAll(boolean includePython) {
         log.info().append("Registering plugins...").endl();
         // TODO(deephaven-core#1810): Use service loader to abstract the different plugin auto-discovery methods
         final Counting serviceLoaderCount = new Counting();
         JavaServiceLoader.allRegisterInto(serviceLoaderCount);
         final Counting pythonModuleCount = new Counting();
-        if (ConsoleServiceGrpcImpl.isPythonSession()) {
+        if (includePython) {
             PythonModuleLoader.allRegisterInto(pythonModuleCount);
         }
         log.info().append("Registered via service loader: ").append(serviceLoaderCount).endl();
-        if (ConsoleServiceGrpcImpl.isPythonSession()) {
+        if (includePython) {
             log.info().append("Registered via python modules: ").append(pythonModuleCount).endl();
         }
     }
