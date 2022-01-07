@@ -55,18 +55,14 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
         final int segments = Math.toIntExact((size + segmentSize - 1) / segmentSize);
         final char [][] data = new char[segments][];
         int segment = 0;
-        while (size > segmentSize) {
-            data[segment] = new char[segmentSize];
+        while (size > 0) {
+            final int thisSegmentSize = (int)Math.min(segmentSize, size);
+            data[segment] = new char[thisSegmentSize];
             if (nullFilled) {
-                Arrays.fill(data[segment], 0, segmentSize, NULL_CHAR);
+                Arrays.fill(data[segment], 0, thisSegmentSize, NULL_CHAR);
             }
             segment++;
-            size -= segmentSize;
-        }
-        final int remainingSize = Math.toIntExact(size);
-        data[segment] = new char[remainingSize];
-        if (nullFilled) {
-            Arrays.fill(data[segment], 0, remainingSize, NULL_CHAR);
+            size -= thisSegmentSize;
         }
         return data;
     }
@@ -118,9 +114,8 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
+        final int offset = keyToOffset(position);
         final int segmentLength = data[segment].length;
-        final long firstPositionInSegment = (long)segment << segmentShift;
-        final int offset = (int)(position - firstPositionInSegment);
         final int capacity = segmentLength - offset;
         chunk.asResettableWritableCharChunk().resetFromTypedArray((char[])data[segment], offset, capacity);
         return capacity;
@@ -144,7 +139,7 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
                 final int offset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asCharChunk.copyFromTypedArray(data[segment], offset, destPos.getAndAdd(rangeLength), rangeLength);
                 start += rangeLength;
             }
@@ -194,10 +189,11 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
-            super.getChunk(contextWithResettable.inner, firstKey, lastKey);
+            // TODO: TEST COVERAGE OF THIS CASE?
+            return super.getChunk(contextWithResettable.inner, firstKey, lastKey);
         }
-        final int len = Math.toIntExact(lastKey - firstKey + 1);
-        return contextWithResettable.resettableCharChunk.resetFromTypedArray(data[segment], Math.toIntExact(firstKey), len);
+        final int len = (int)(lastKey - firstKey + 1);
+        return contextWithResettable.resettableCharChunk.resetFromTypedArray(data[segment], (int)firstKey, len);
     }
 
     @Override
@@ -224,7 +220,7 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
                 final int destOffset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asCharChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], destOffset, rangeLength);
                 start += rangeLength;
             }
@@ -247,8 +243,7 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
             if (rowKey == RowSequence.NULL_ROW_KEY) {
                 charDest.set(ii, NULL_CHAR);
             } else {
-                final int key = Math.toIntExact(rowKey);
-                charDest.set(ii, getUnsafe(key));
+                charDest.set(ii, getUnsafe((int)(rowKey)));
             }
         }
     }

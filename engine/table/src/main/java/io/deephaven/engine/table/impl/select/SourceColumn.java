@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.vector.Vector;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
@@ -127,9 +127,9 @@ public class SourceColumn implements SelectColumn {
     public WritableColumnSource<?> newFlatDestInstance(long size) {
         Class<?> type = sourceColumn.getType();
         if (Vector.class.isAssignableFrom(type)) {
-            return ArrayBackedColumnSource.getFlatMemoryColumnSource(size, type, sourceColumn.getComponentType());
+            return InMemoryColumnSource.getFlatMemoryColumnSource(size, type, sourceColumn.getComponentType());
         } else {
-            return ArrayBackedColumnSource.getFlatMemoryColumnSource(size, type, null);
+            return InMemoryColumnSource.getFlatMemoryColumnSource(size, type, null);
         }
     }
 

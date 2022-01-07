@@ -37,13 +37,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
-        final boolean mustPreserve = !columnSources.isEmpty() && publishTheseSources;
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, !mustPreserve, selectColumns);
-    }
-
-    private static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean allowFlattening,
-            SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -54,9 +47,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             rowRedirection = null;
         }
 
-        boolean flattenedResult = !rowSet.isFlat() && allowFlattening && mode == Mode.SELECT_STATIC;
         final boolean flatResult = rowSet.isFlat();
-        int didFlattenedSourceCount = 0;
+        final boolean flattenedResult = !flatResult
+                && (columnSources.isEmpty() || !publishTheseSources)
+                && Arrays.stream(selectColumns).noneMatch(SelectAndViewAnalyzer::shouldPreserve)
+                && mode == Mode.SELECT_STATIC;
 
         for (final SelectColumn sc : selectColumns) {
             final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
@@ -69,14 +64,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
             if (shouldPreserve(sc)) {
-                if (didFlattenedSourceCount > 0) {
-                    // if we've already flattened a source column, start over with flattening disallowed.
-                    return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
-                }
                 analyzer =
                         analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
                 // we can not flatten future columns because we are preserving this column
-                flattenedResult = false;
                 continue;
             }
 
@@ -101,9 +91,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                                     : sc.newDestInstance(targetDestinationCapacity);
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
                             false, flattenedResult);
-                    if (flattenedResult) {
-                        didFlattenedSourceCount++;
-                    }
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -336,7 +323,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     /**
      * Was the result internally flattened? Only the STATIC_SELECT case flattens the result. If the result preserves any
-     * columns, then flattening is not permitted. Because all of the other layers are can not internally flatten, the
+     * columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the
      * default implementation returns false.
      */
     public boolean flattenedResult() {

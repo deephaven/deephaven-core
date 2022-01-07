@@ -84,9 +84,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
         if (index < 0 || index > maxIndex) {
             return NULL_INT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final int getUnsafe(long index) {

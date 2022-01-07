@@ -4,6 +4,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
@@ -94,7 +95,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (lastKey != -1) {
             if (flattenedResult) {
                 // This is our "fake" update, the only thing that matters is the size of the addition; because we
-                // are going to write the data into the column source flat ignoring the original index.
+                // are going to write the data into the column source flat ignoring the original row set.
                 writableSource.ensureCapacity(upstream.added().size(), false);
             } else {
                 writableSource.ensureCapacity(lastKey + 1, false);
@@ -166,9 +167,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             }
                         }
                     } else {
+                        // TODO: make sure an empty select does not blow the heck up
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final RowSequence.Iterator destIter = flattenedResult
-                                        ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator()
+                                        ? RowSequenceFactory.forRange(0, upstream.added().size() - 1).getRowSequenceIterator()
                                         : null;
                                 final ResettableWritableChunk<?> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {

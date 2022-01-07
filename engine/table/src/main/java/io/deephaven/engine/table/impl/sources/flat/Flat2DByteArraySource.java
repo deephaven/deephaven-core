@@ -60,18 +60,14 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
         final int segments = Math.toIntExact((size + segmentSize - 1) / segmentSize);
         final byte [][] data = new byte[segments][];
         int segment = 0;
-        while (size > segmentSize) {
-            data[segment] = new byte[segmentSize];
+        while (size > 0) {
+            final int thisSegmentSize = (int)Math.min(segmentSize, size);
+            data[segment] = new byte[thisSegmentSize];
             if (nullFilled) {
-                Arrays.fill(data[segment], 0, segmentSize, NULL_BYTE);
+                Arrays.fill(data[segment], 0, thisSegmentSize, NULL_BYTE);
             }
             segment++;
-            size -= segmentSize;
-        }
-        final int remainingSize = Math.toIntExact(size);
-        data[segment] = new byte[remainingSize];
-        if (nullFilled) {
-            Arrays.fill(data[segment], 0, remainingSize, NULL_BYTE);
+            size -= thisSegmentSize;
         }
         return data;
     }
@@ -123,9 +119,8 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
+        final int offset = keyToOffset(position);
         final int segmentLength = data[segment].length;
-        final long firstPositionInSegment = (long)segment << segmentShift;
-        final int offset = (int)(position - firstPositionInSegment);
         final int capacity = segmentLength - offset;
         chunk.asResettableWritableByteChunk().resetFromTypedArray((byte[])data[segment], offset, capacity);
         return capacity;
@@ -149,7 +144,7 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
                 final int offset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asByteChunk.copyFromTypedArray(data[segment], offset, destPos.getAndAdd(rangeLength), rangeLength);
                 start += rangeLength;
             }
@@ -201,8 +196,8 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
         if (segment != keyToSegment(lastKey)) {
             super.getChunk(contextWithResettable.inner, firstKey, lastKey);
         }
-        final int len = Math.toIntExact(lastKey - firstKey + 1);
-        return contextWithResettable.resettableByteChunk.resetFromTypedArray(data[segment], Math.toIntExact(firstKey), len);
+        final int len = (int)(lastKey - firstKey + 1);
+        return contextWithResettable.resettableByteChunk.resetFromTypedArray(data[segment], (int)firstKey, len);
     }
 
     @Override
@@ -229,7 +224,7 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
                 final int destOffset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asByteChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], destOffset, rangeLength);
                 start += rangeLength;
             }
@@ -252,8 +247,7 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
             if (rowKey == RowSequence.NULL_ROW_KEY) {
                 byteDest.set(ii, NULL_BYTE);
             } else {
-                final int key = Math.toIntExact(rowKey);
-                byteDest.set(ii, getUnsafe(key));
+                byteDest.set(ii, getUnsafe((int)(rowKey)));
             }
         }
     }

@@ -84,9 +84,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         if (index < 0 || index > maxIndex) {
             return NULL_FLOAT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final float getUnsafe(long index) {

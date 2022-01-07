@@ -79,9 +79,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         if (index < 0 || index > maxIndex) {
             return NULL_CHAR;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final char getUnsafe(long index) {

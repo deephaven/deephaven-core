@@ -84,9 +84,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
         if (index < 0 || index > maxIndex) {
             return NULL_BYTE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final byte getUnsafe(long index) {

@@ -60,18 +60,14 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
         final int segments = Math.toIntExact((size + segmentSize - 1) / segmentSize);
         final int [][] data = new int[segments][];
         int segment = 0;
-        while (size > segmentSize) {
-            data[segment] = new int[segmentSize];
+        while (size > 0) {
+            final int thisSegmentSize = (int)Math.min(segmentSize, size);
+            data[segment] = new int[thisSegmentSize];
             if (nullFilled) {
-                Arrays.fill(data[segment], 0, segmentSize, NULL_INT);
+                Arrays.fill(data[segment], 0, thisSegmentSize, NULL_INT);
             }
             segment++;
-            size -= segmentSize;
-        }
-        final int remainingSize = Math.toIntExact(size);
-        data[segment] = new int[remainingSize];
-        if (nullFilled) {
-            Arrays.fill(data[segment], 0, remainingSize, NULL_INT);
+            size -= thisSegmentSize;
         }
         return data;
     }
@@ -123,9 +119,8 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
+        final int offset = keyToOffset(position);
         final int segmentLength = data[segment].length;
-        final long firstPositionInSegment = (long)segment << segmentShift;
-        final int offset = (int)(position - firstPositionInSegment);
         final int capacity = segmentLength - offset;
         chunk.asResettableWritableIntChunk().resetFromTypedArray((int[])data[segment], offset, capacity);
         return capacity;
@@ -149,7 +144,7 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
                 final int offset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asIntChunk.copyFromTypedArray(data[segment], offset, destPos.getAndAdd(rangeLength), rangeLength);
                 start += rangeLength;
             }
@@ -201,8 +196,8 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
         if (segment != keyToSegment(lastKey)) {
             super.getChunk(contextWithResettable.inner, firstKey, lastKey);
         }
-        final int len = Math.toIntExact(lastKey - firstKey + 1);
-        return contextWithResettable.resettableIntChunk.resetFromTypedArray(data[segment], Math.toIntExact(firstKey), len);
+        final int len = (int)(lastKey - firstKey + 1);
+        return contextWithResettable.resettableIntChunk.resetFromTypedArray(data[segment], (int)firstKey, len);
     }
 
     @Override
@@ -229,7 +224,7 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
                 final int destOffset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = Math.toIntExact(realEnd - start + 1);
+                final int rangeLength = (int)(realEnd - start + 1);
                 asIntChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], destOffset, rangeLength);
                 start += rangeLength;
             }
@@ -252,8 +247,7 @@ public class Flat2DIntArraySource extends AbstractDeferredGroupingColumnSource<I
             if (rowKey == RowSequence.NULL_ROW_KEY) {
                 intDest.set(ii, NULL_INT);
             } else {
-                final int key = Math.toIntExact(rowKey);
-                intDest.set(ii, getUnsafe(key));
+                intDest.set(ii, getUnsafe((int)(rowKey)));
             }
         }
     }

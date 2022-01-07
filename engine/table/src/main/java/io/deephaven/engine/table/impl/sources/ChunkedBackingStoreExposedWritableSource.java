@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
  * reach directly into their storage in order to fill them without the need for additional array copies.
  */
 public interface ChunkedBackingStoreExposedWritableSource {
+    // TODO: MAKE A PROVIDES
+
     /**
      * Resets the given chunk to provide a write-through reference to our backing array.
      * <p>

@@ -21,7 +21,7 @@ interface PageMaterializer {
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new IntMaterializer(dataReader, 0, numValues);
+            return new IntMaterializer(dataReader, numValues);
         }
     };
 
@@ -121,6 +121,10 @@ interface PageMaterializer {
         final int nullValue;
         final int[] data;
 
+        IntMaterializer(ValuesReader dataReader, int numValues) {
+            this(dataReader, 0, numValues);
+        }
+
         IntMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
             this.dataReader = dataReader;
             this.nullValue = nullValue;
@@ -216,8 +220,8 @@ interface PageMaterializer {
 
         @Override
         public void fillValues(int startIndex, int endIndex) {
-            for (int i = startIndex; i < endIndex; i++) {
-                data[i] = dataReader.readFloat();
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = dataReader.readFloat();
             }
         }
 

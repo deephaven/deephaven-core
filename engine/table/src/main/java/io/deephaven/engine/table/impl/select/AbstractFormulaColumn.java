@@ -315,11 +315,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public WritableColumnSource<?> newFlatDestInstance(long size) {
-        if (size < Integer.MAX_VALUE) {
-            return ArrayBackedColumnSource.getFlatMemoryColumnSource(size, returnedType, null);
-        } else {
-            return newDestInstance(size);
-        }
+        return InMemoryColumnSource.getFlatMemoryColumnSource(size, returnedType, null);
     }
 
     @Override

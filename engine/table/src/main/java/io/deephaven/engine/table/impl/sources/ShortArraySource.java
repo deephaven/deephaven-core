@@ -84,9 +84,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
         if (index < 0 || index > maxIndex) {
             return NULL_SHORT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final short getUnsafe(long index) {

@@ -111,11 +111,11 @@ public class SnapshotUtils {
 
     @NotNull
     public static Map<String, ChunkSource.WithPrev<? extends Values>> generateSnapshotDataColumns(Table table) {
-        final Map<String, ? extends ColumnSource<?>> leftSourceColumns = table.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sourceColumns = table.getColumnSourceMap();
         final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
-                new LinkedHashMap<>(leftSourceColumns.size());
+                new LinkedHashMap<>(sourceColumns.size());
 
-        for (Map.Entry<String, ? extends ColumnSource<?>> entry : leftSourceColumns.entrySet()) {
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
             final ColumnSource<?> columnSource = entry.getValue();
             final ChunkSource.WithPrev<? extends Values> maybeTransformed;
             if (Vector.class.isAssignableFrom(columnSource.getType())) {
@@ -150,16 +150,19 @@ public class SnapshotUtils {
         final Class<Vector<?>> vectorType = (Class<Vector<?>>) columnSource.getType();
         // noinspection unchecked
         final ColumnSource<Vector<?>> underlyingVectorSource = (ColumnSource<Vector<?>>) columnSource;
-        return new VectorDirectDelegatingColumnSource(vectorType, columnSource, underlyingVectorSource);
+        return new VectorDirectDelegatingColumnSource(vectorType, columnSource.getComponentType(), underlyingVectorSource);
     }
 
     /**
      * Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
+     *
+     * NOTE: THIS CLASS DOES NOT IMPLEMENT getChunk and fillChunk PROPERLY!
      */
     private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
-        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType, ColumnSource<?> columnSource,
-                ColumnSource<Vector<?>> underlyingVectorSource) {
-            super(vectorType, columnSource.getComponentType(), underlyingVectorSource);
+        public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType,
+                                                  Class<?> componentType,
+                                                  ColumnSource<Vector<?>> underlyingVectorSource) {
+            super(vectorType, componentType, underlyingVectorSource);
         }
 
         @Override

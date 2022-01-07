@@ -67,7 +67,7 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
 
     @Override
     public final void set(long key, int value) {
-        data[Math.toIntExact(key)] = value;
+        data[(int)key] = value;
     }
 
     @Override
@@ -93,8 +93,8 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
         final WritableIntChunk<? super Values> asIntChunk = destination.asWritableIntChunk();
         final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = Math.toIntExact(end - start + 1);
-            asIntChunk.copyFromTypedArray(data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
+            final int rangeLength = (int)(end - start + 1);
+            asIntChunk.copyFromTypedArray(data, (int)start, destPosition.getAndAdd(rangeLength), rangeLength);
         });
         asIntChunk.setSize(destPosition.intValue());
     }
@@ -126,9 +126,9 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
 
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
-        final int capacity = Math.toIntExact(data.length - position);
+        final int capacity = (int)(data.length - position);
         ResettableWritableIntChunk resettableWritableIntChunk = chunk.asResettableWritableIntChunk();
-        resettableWritableIntChunk.resetFromTypedArray(data, Math.toIntExact(position), capacity);
+        resettableWritableIntChunk.resetFromTypedArray(data, (int)position, capacity);
         return capacity;
     }
 
@@ -154,9 +154,9 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        final int len = Math.toIntExact(lastKey - firstKey + 1);
+        final int len = (int)(lastKey - firstKey + 1);
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
-        return contextWithResettable.resettableIntChunk.resetFromTypedArray(data, Math.toIntExact(firstKey), len);
+        return contextWithResettable.resettableIntChunk.resetFromTypedArray(data, (int)firstKey, len);
     }
 
     @Override
@@ -178,8 +178,8 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
         final IntChunk<? extends Values> asIntChunk = src.asIntChunk();
         final MutableInt srcPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = Math.toIntExact(end - start + 1);
-            asIntChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, Math.toIntExact(start), rangeLength);
+            final int rangeLength = (int)(end - start + 1);
+            asIntChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, (int)start, rangeLength);
         });
     }
 
@@ -199,7 +199,7 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
             if (longKey == RowSet.NULL_ROW_KEY) {
                 intDest.set(ii, NULL_INT);
             } else {
-                final int key = Math.toIntExact(longKey);
+                final int key = (int)longKey;
                 intDest.set(ii, getUnsafe(key));
             }
         }

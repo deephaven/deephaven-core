@@ -84,9 +84,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         if (index < 0 || index > maxIndex) {
             return NULL_DOUBLE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final double getUnsafe(long index) {
