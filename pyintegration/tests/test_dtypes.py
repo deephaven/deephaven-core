@@ -175,7 +175,7 @@ class DTypesTestCase(BaseTestCase):
         dt2 = DateTime.now()
         values = [dt1, dt2, None]
         j_array = DateTime.array_from(values)
-        p_list = [DateTime(dt) for dt in j_array]
+        p_list = [DateTime(dt) if dt else dt for dt in j_array]
         self.assertTrue(all(x == y for x, y in zip(p_list, values)))
 
 
