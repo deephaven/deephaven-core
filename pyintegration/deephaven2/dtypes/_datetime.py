@@ -23,17 +23,8 @@ class DateTime:
             self.j_datetime = _DHDateTime(v)
 
     def __eq__(self, other):
-        if other is None:
-            if self.j_datetime is None:
-                return True
-            else:
-                return False
-
         if isinstance(other, DateTime):
-            if self.j_datetime is not None:
-                return self.j_datetime.equals(other.j_datetime)
-            elif other.j_datetime is None:
-                return True
+            return self.j_datetime.equals(other.j_datetime)
 
         return False
 

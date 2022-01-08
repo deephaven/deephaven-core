@@ -174,7 +174,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
     def test_nanos_to_millis(self):
         dt = current_time()
         ns = nanos(dt)
-        self.assertEqual(round(ns / 10 ** 6), nanos_to_millis(ns))
+        self.assertEqual(ns // 10 ** 6, nanos_to_millis(ns))
 
     def test_nanos_to_time(self):
         dt = current_time()
