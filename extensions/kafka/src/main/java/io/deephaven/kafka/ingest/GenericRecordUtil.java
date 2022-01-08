@@ -30,9 +30,9 @@ public class GenericRecordUtil {
         while (true) {
             if (currSchema.isUnion()) {
                 final List<Schema> unionTypes = currSchema.getTypes();
+                final String errMsg = ": only union schemas of two elements where one is NULL are supported";
                 if (unionTypes.size() != 2) {
-                    throw new IllegalArgumentException(
-                            formatUnionSchema(currSchema) + ": only union schemas of two elements where one is NULL are supported");
+                    throw new IllegalArgumentException(formatUnionSchema(currSchema) + errMsg);
                 }
                 final Schema unionType0 = unionTypes.get(0);
                 final Schema unionType1 = unionTypes.get(1);
@@ -41,8 +41,7 @@ public class GenericRecordUtil {
                 } else if (unionType1.getType() == Schema.Type.NULL) {
                     currSchema = unionType0;
                 } else {
-                    throw new IllegalArgumentException(
-                            formatUnionSchema(currSchema) + ": only union schemas of two elements where one is NULL are supported");
+                    throw new IllegalArgumentException(formatUnionSchema(currSchema) + errMsg);
                 }
             }
             final Schema.Field currField = currSchema.getField(strFieldPath[i]);
