@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.flat.*;
-import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -26,16 +25,15 @@ public interface InMemoryColumnSource {
     static <T> WritableColumnSource<T> getFlatMemoryColumnSource(long longSize,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
-        // There is an jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH we would like to use, but I cannot compile that
-        // way
+        // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
         if (longSize > Integer.MAX_VALUE - 8) {
             return makeFlat2DSource(dataType, componentType);
         }
-        return makeFlatSource(longSize, dataType, componentType);
+        return makeFlatSource(dataType, componentType);
     }
 
     @NotNull
-    static <T> WritableColumnSource<T> makeFlatSource(long longSize, @NotNull Class<T> dataType,
+    static <T> WritableColumnSource<T> makeFlatSource(@NotNull Class<T> dataType,
             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
@@ -127,10 +125,10 @@ public interface InMemoryColumnSource {
                 result = new ByteAsBooleanColumnSource(new FlatByteArraySource((byte[]) dataArray));
             } else if (dataArray instanceof boolean[]) {
                 result = new ByteAsBooleanColumnSource(
-                        new FlatByteArraySource(BooleanUtils.booleanAsByte((boolean[]) dataArray)));
+                        new FlatByteArraySource(BooleanUtils.booleanAsByteArray((boolean[]) dataArray)));
             } else if (dataArray instanceof Boolean[]) {
                 result = new ByteAsBooleanColumnSource(
-                        new FlatByteArraySource(BooleanUtils.booleanAsByte((Boolean[]) dataArray)));
+                        new FlatByteArraySource(BooleanUtils.booleanAsByteArray((Boolean[]) dataArray)));
             } else {
                 throw new IllegalArgumentException("Invalid dataArray for type " + dataType);
             }
@@ -166,7 +164,7 @@ public interface InMemoryColumnSource {
             result = new LongAsDateTimeColumnSource(new FlatLongArraySource((long[]) dataArray));
         } else {
             // noinspection unchecked
-            result = new FlatObjectArraySource(dataType, componentType, (T[]) dataArray);
+            result = new FlatObjectArraySource<>(dataType, componentType, (T[]) dataArray);
         }
         // noinspection unchecked
         return (ColumnSource<T>) result;
