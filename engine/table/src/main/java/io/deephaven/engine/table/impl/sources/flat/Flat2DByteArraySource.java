@@ -5,6 +5,8 @@
  */
 package io.deephaven.engine.table.impl.sources.flat;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -173,7 +175,7 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
-            // the super will just go into our getchunk with RowSequence and that can be an infinite loop
+            // the super will just go into our getChunk with RowSequence and that can be an infinite loop
             try (final RowSequence rs = RowSequenceFactory.forRange(firstKey, lastKey)) {
                 return super.getChunk(context, rs);
             }
@@ -261,4 +263,17 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpret
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return alternateDataType == Boolean.class;
+    }
+
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);
+    }
+    // endregion reinterpret
 }

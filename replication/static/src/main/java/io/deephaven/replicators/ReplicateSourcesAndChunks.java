@@ -45,6 +45,8 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
         fixupLongReinterpret(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java"));
+        fixupByteReinterpret("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatByteArraySource.java");
+        fixupByteReinterpret("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DByteArraySource.java");
         replicateObjectFlat2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
@@ -84,6 +86,23 @@ public class ReplicateSourcesAndChunks {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(",
                 "               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "         return (ColumnSource<ALTERNATE_DATA_TYPE>) new LongAsDateTimeColumnSource(this);",
+                "    }"));
+        FileUtils.writeLines(resultClassJavaFile, lines);
+    }
+
+    private static void fixupByteReinterpret(String byteFlatSource) throws IOException {
+        final File resultClassJavaFile = new File(byteFlatSource);
+        List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
+        lines = replaceRegion(lines, "reinterpret", Arrays.asList("    @Override",
+                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(",
+                "            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        return alternateDataType == Boolean.class;",
+                "    }",
+                "",
+                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(",
+                "               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "         return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);",
                 "    }"));
         FileUtils.writeLines(resultClassJavaFile, lines);
     }

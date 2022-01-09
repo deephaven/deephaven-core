@@ -168,6 +168,7 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
+            // the super will just go into our getChunk with RowSequence and that can be an infinite loop
             try (final RowSequence rs = RowSequenceFactory.forRange(firstKey, lastKey)) {
                 return super.getChunk(context, rs);
             }
@@ -255,4 +256,7 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpret
+    // endregion reinterpret
 }

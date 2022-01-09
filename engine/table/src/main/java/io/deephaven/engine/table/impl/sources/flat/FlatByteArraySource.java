@@ -8,6 +8,8 @@
  */
 package io.deephaven.engine.table.impl.sources.flat;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -221,5 +223,15 @@ public class FlatByteArraySource extends AbstractDeferredGroupingColumnSource<By
     }
 
     // region reinterpret
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return alternateDataType == Boolean.class;
+    }
+
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);
+    }
     // endregion reinterpret
 }
