@@ -279,6 +279,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
+    public boolean exposesChunkedBackingStore() {
+        return false;
+    }
+
+    @Override
     public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         // we can not support this operation, because the backing array is a byte and not the type of the column
         throw new UnsupportedOperationException();

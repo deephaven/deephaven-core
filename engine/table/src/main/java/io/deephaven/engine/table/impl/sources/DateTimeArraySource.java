@@ -252,4 +252,10 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
             return true;
         }
     }
+
+    @Override
+    public boolean exposesChunkedBackingStore() {
+        // our backing store is not a DateTime chunk
+        return false;
+    }
 }

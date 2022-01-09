@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -8,7 +9,22 @@ import org.jetbrains.annotations.NotNull;
  * reach directly into their storage in order to fill them without the need for additional array copies.
  */
 public interface ChunkedBackingStoreExposedWritableSource {
-    // TODO: MAKE A PROVIDES
+    /**
+     * Returns true if a given column source exposes a chunked backing store
+     * @param cs the column source to test
+     * @return true if the column source exposes a chunked backing store
+     */
+    static boolean exposesChunkedBackingStore(ColumnSource<?> cs) {
+        return cs instanceof  ChunkedBackingStoreExposedWritableSource && ((ChunkedBackingStoreExposedWritableSource) cs).exposesChunkedBackingStore();
+    }
+
+    /**
+     * Does this column source provide a chunked exposed backing store?
+     * @return true if this column source provides a chunked backing store, false otherwise
+     */
+    default boolean exposesChunkedBackingStore() {
+        return true;
+    }
 
     /**
      * Resets the given chunk to provide a write-through reference to our backing array.
