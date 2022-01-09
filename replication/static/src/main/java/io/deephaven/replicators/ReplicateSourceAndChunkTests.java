@@ -37,8 +37,11 @@ public class ReplicateSourceAndChunkTests {
                 Collections.emptyMap()));
         fixupObjectColumnSourceTest(charToObject(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java"));
-        charToAll(
+        charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
+                Collections.emptyMap()));
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterFlatArraySource.java");
         charToAllButBoolean(
@@ -115,7 +118,7 @@ public class ReplicateSourceAndChunkTests {
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
         lines = addImport(lines, "import io.deephaven.chunk.WritableObjectChunk;");
         lines = addImport(lines, "import io.deephaven.chunk.ObjectChunk;");
-        if (!booleanPath.contains("Abstract")) {
+        if (!booleanPath.contains("Abstract") && !booleanPath.contains("Sparse")) {
             lines = removeImport(lines, "import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",

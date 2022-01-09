@@ -8,8 +8,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -119,8 +119,7 @@ public class FlatCharArraySource extends AbstractDeferredGroupingColumnSource<Ch
         if (rowSequence.isContiguous()) {
             return getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey());
         }
-        final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
-        return super.getChunk(contextWithResettable.inner, rowSequence);
+        return super.getChunk(context, rowSequence);
     }
 
     @Override
@@ -137,31 +136,12 @@ public class FlatCharArraySource extends AbstractDeferredGroupingColumnSource<Ch
         return capacity;
     }
 
-    private class GetContextWithResettable implements GetContext {
-        final ResettableCharChunk<? extends Values> resettableCharChunk = ResettableCharChunk.makeResettableChunk();
-        final GetContext inner;
-
-        private GetContextWithResettable(GetContext inner) {
-            this.inner = inner;
-        }
-
-        @Override
-        public void close() {
-            resettableCharChunk.close();
-            inner.close();
-        }
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
-        return new GetContextWithResettable(super.makeGetContext(chunkCapacity, sharedContext));
-    }
-
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         final int len = (int)(lastKey - firstKey + 1);
-        final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
-        return contextWithResettable.resettableCharChunk.resetFromTypedArray(data, (int)firstKey, len);
+        //noinspection unchecked
+        DefaultGetContext<? extends Values> context1 = (DefaultGetContext<? extends Values>) context;
+        return context1.getResettableChunk().resetFromArray(data, (int)firstKey, len);
     }
 
     @Override

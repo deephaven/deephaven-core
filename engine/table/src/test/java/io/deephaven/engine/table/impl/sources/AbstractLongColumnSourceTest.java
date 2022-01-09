@@ -115,15 +115,15 @@ public abstract class AbstractLongColumnSourceTest {
     }
 
     private void testGet(Random random, int chunkSize) {
-        final LongSparseArraySource source = new LongSparseArraySource();
+        final WritableColumnSource<Long> source = makeTestSource();
 
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
-        final Chunk<Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
+        final Chunk<? extends Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
         assertEquals(emptyResult.size(), 0);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final LongChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asLongChunk();
+        final LongChunk<? extends Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asLongChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_LONG, result.get(ii));
         }
@@ -250,14 +250,14 @@ public abstract class AbstractLongColumnSourceTest {
         }
     }
 
-    private void checkRangeGet(int chunkSize, LongSparseArraySource source, ColumnSource.GetContext getContext, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeGet(int chunkSize, ColumnSource<Long> source, ColumnSource.GetContext getContext, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
-            final LongChunk<Values> result;
+            final LongChunk<? extends Values> result;
             if (usePrev) {
                 result = source.getPrevChunk(getContext, nextOk).asLongChunk();
             } else {
@@ -275,7 +275,7 @@ public abstract class AbstractLongColumnSourceTest {
         }
     }
 
-    private void checkRangeResults(long[] expectations, int offset, RowSequence nextOk, LongChunk<Values> result) {
+    private void checkRangeResults(long[] expectations, int offset, RowSequence nextOk, LongChunk<? extends Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
             checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
         }
@@ -296,49 +296,10 @@ public abstract class AbstractLongColumnSourceTest {
     @Test
     public void testSourceSink() {
         TestSourceSink.runTests(ChunkType.Long, size -> {
-            final LongSparseArraySource src = new LongSparseArraySource();
+            final WritableColumnSource<Long> src = makeTestSource();
             src.ensureCapacity(size);
             return src;
         });
-    }
-
-    @Test
-    public void confirmAliasingForbidden() {
-        final Random rng = new Random(438269476);
-        final int arraySize = 100;
-        final int rangeStart = 20;
-        final int rangeEnd = 80;
-        final LongSparseArraySource source = new LongSparseArraySource();
-        source.ensureCapacity(arraySize);
-
-        final long[] data = ArrayGenerator.randomLongs(rng, arraySize);
-        for (int ii = 0; ii < data.length; ++ii) {
-            source.set(ii, data[ii]);
-        }
-        // super hack
-        final long[] peekedBlock = source.ensureBlock(0, 0, 0);
-
-        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
-                try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
-                    try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
-                        Chunk chunk = source.getChunk(srcContext, srcKeys);
-                        if (chunk.isAlias(peekedBlock)) {
-                            // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
-                            // fill from that aliased chunk
-                            boolean testFailed;
-                            try {
-                                source.fillFromChunk(destContext, chunk, destKeys);
-                                testFailed = true;
-                            } catch (UnsupportedOperationException uoe) {
-                                testFailed = false;
-                            }
-                            assertFalse(testFailed);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // This code tickles a bug where the act of trying to fill a chunk activates the prevFlusher, but the fact that

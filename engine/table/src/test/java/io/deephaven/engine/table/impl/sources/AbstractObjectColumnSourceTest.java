@@ -114,11 +114,11 @@ public abstract class AbstractObjectColumnSourceTest {
     }
 
     private void testGet(Random random, int chunkSize) {
-        final ObjectSparseArraySource source = new ObjectSparseArraySource<>(String.class);
+        final WritableColumnSource<Object> source = makeTestSource();
 
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
-        final Chunk<Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
+        final Chunk<? extends Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
         assertEquals(emptyResult.size(), 0);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
@@ -249,7 +249,7 @@ public abstract class AbstractObjectColumnSourceTest {
         }
     }
 
-    private void checkRangeGet(int chunkSize, ObjectSparseArraySource source, ColumnSource.GetContext getContext, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeGet(int chunkSize, ColumnSource<Object> source, ColumnSource.GetContext getContext, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
@@ -295,49 +295,10 @@ public abstract class AbstractObjectColumnSourceTest {
     @Test
     public void testSourceSink() {
         TestSourceSink.runTests(ChunkType.Object, size -> {
-            final ObjectSparseArraySource src = new ObjectSparseArraySource<>(String.class);
+            final WritableColumnSource<Object> src = makeTestSource();
             src.ensureCapacity(size);
             return src;
         });
-    }
-
-    @Test
-    public void confirmAliasingForbidden() {
-        final Random rng = new Random(438269476);
-        final int arraySize = 100;
-        final int rangeStart = 20;
-        final int rangeEnd = 80;
-        final ObjectSparseArraySource source = new ObjectSparseArraySource<>(String.class);
-        source.ensureCapacity(arraySize);
-
-        final Object[] data = ArrayGenerator.randomObjects(rng, arraySize);
-        for (int ii = 0; ii < data.length; ++ii) {
-            source.set(ii, data[ii]);
-        }
-        // super hack
-        final Object[] peekedBlock = source.ensureBlock(0, 0, 0);
-
-        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
-                try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
-                    try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
-                        Chunk chunk = source.getChunk(srcContext, srcKeys);
-                        if (chunk.isAlias(peekedBlock)) {
-                            // If the ArraySource gives out aliases of its blocks, then it should throw when we try to
-                            // fill from that aliased chunk
-                            boolean testFailed;
-                            try {
-                                source.fillFromChunk(destContext, chunk, destKeys);
-                                testFailed = true;
-                            } catch (UnsupportedOperationException uoe) {
-                                testFailed = false;
-                            }
-                            assertFalse(testFailed);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // This code tickles a bug where the act of trying to fill a chunk activates the prevFlusher, but the fact that

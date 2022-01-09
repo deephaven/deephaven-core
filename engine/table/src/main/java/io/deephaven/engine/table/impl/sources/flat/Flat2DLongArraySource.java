@@ -12,9 +12,10 @@ import io.deephaven.time.DateTime;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -169,40 +170,22 @@ public class Flat2DLongArraySource extends AbstractDeferredGroupingColumnSource<
         if (rowSequence.isContiguous()) {
             return getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey());
         }
-        final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
-        return super.getChunk(contextWithResettable.inner, rowSequence);
-    }
-
-    private class GetContextWithResettable implements GetContext {
-        final ResettableLongChunk<? extends Values> resettableLongChunk = ResettableLongChunk.makeResettableChunk();
-        final GetContext inner;
-
-        private GetContextWithResettable(GetContext inner) {
-            this.inner = inner;
-        }
-
-        @Override
-        public void close() {
-            resettableLongChunk.close();
-            inner.close();
-        }
-    }
-
-    @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
-        return new GetContextWithResettable(super.makeGetContext(chunkCapacity, sharedContext));
+        return super.getChunk(context, rowSequence);
     }
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
         final int segment = keyToSegment(firstKey);
         if (segment != keyToSegment(lastKey)) {
-            // TODO: TEST COVERAGE OF THIS CASE?
-            return super.getChunk(contextWithResettable.inner, firstKey, lastKey);
+            try (final RowSequence rs = RowSequenceFactory.forRange(firstKey, lastKey)) {
+                return super.getChunk(context, rs);
+            }
         }
         final int len = (int)(lastKey - firstKey + 1);
-        return contextWithResettable.resettableLongChunk.resetFromTypedArray(data[segment], (int)firstKey, len);
+        final int firstOffset = keyToOffset(firstKey);
+        //noinspection unchecked
+        DefaultGetContext<? extends Values> context1 = (DefaultGetContext<? extends Values>) context;
+        return context1.getResettableChunk().resetFromArray(data[segment], firstOffset, len);
     }
 
     @Override
