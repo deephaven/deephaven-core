@@ -11,15 +11,18 @@ import org.jetbrains.annotations.NotNull;
 public interface ChunkedBackingStoreExposedWritableSource {
     /**
      * Returns true if a given column source exposes a chunked backing store
+     * 
      * @param cs the column source to test
      * @return true if the column source exposes a chunked backing store
      */
     static boolean exposesChunkedBackingStore(ColumnSource<?> cs) {
-        return cs instanceof  ChunkedBackingStoreExposedWritableSource && ((ChunkedBackingStoreExposedWritableSource) cs).exposesChunkedBackingStore();
+        return cs instanceof ChunkedBackingStoreExposedWritableSource
+                && ((ChunkedBackingStoreExposedWritableSource) cs).exposesChunkedBackingStore();
     }
 
     /**
      * Does this column source provide a chunked exposed backing store?
+     * 
      * @return true if this column source provides a chunked backing store, false otherwise
      */
     default boolean exposesChunkedBackingStore() {

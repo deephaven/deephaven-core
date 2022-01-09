@@ -112,7 +112,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final int chunkSourceContextSize =
                 contextSize.applyAsInt(Math.max(upstream.added().size(), upstream.modified().size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
-        final boolean isBackingChunkExposed = ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(writableSource);
+        final boolean isBackingChunkExposed =
+                ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(writableSource);
 
         try (final ChunkSink.FillFromContext destContext =
                 needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
