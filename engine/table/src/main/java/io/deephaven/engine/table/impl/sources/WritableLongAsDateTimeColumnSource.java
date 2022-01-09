@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -28,8 +29,9 @@ public class WritableLongAsDateTimeColumnSource extends LongAsDateTimeColumnSour
         this.alternateColumnSource = alternateColumnSource;
     }
 
-    public void set(long key, Boolean value) {
-        alternateColumnSource.set(key, BooleanUtils.booleanAsByte(value));
+    @Override
+    public void set(long key, DateTime value) {
+        alternateColumnSource.set(key, DateTimeUtils.nanos(value));
     }
 
     @Override

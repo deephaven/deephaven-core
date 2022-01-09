@@ -64,9 +64,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         if (index < 0 || index > maxIndex) {
             return NULL_LONG;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final long getUnsafe(long index) {

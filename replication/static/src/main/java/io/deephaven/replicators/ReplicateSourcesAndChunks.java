@@ -45,8 +45,10 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
         fixupLongReinterpret(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java"));
-        fixupByteReinterpret("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatByteArraySource.java");
-        fixupByteReinterpret("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DByteArraySource.java");
+        fixupByteReinterpret(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatByteArraySource.java");
+        fixupByteReinterpret(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DByteArraySource.java");
         replicateObjectFlat2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 

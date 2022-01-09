@@ -46,7 +46,7 @@ public interface ChunkedBackingStoreExposedWritableSource {
      * Note: This is unsafe to use if previous tracking has been enabled!
      *
      * @param chunk the writable chunk to reset to a slice of our backing array.
-     * @param position position of the first
+     * @param position position of the first value in the returned chunk
      * @return the capacity of the returned chunk
      */
     long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position);

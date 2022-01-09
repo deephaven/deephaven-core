@@ -96,9 +96,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         if (index < 0 || index > maxIndex) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getByteUnsafe(index);
     }
 
     private byte getByteUnsafe(long index) {

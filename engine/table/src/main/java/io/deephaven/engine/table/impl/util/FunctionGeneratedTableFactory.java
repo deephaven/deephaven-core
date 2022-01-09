@@ -125,7 +125,8 @@ public class FunctionGeneratedTableFactory {
         }
 
         // noinspection unchecked
-        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray, RowSetFactory.flat(sourceRowSet.size()),
+        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray,
+                RowSequenceFactory.forRange(0, sourceRowSet.size() - 1),
                 false);
     }
 

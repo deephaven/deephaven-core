@@ -115,22 +115,14 @@ public class SourceColumn implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(long size) {
-        Class<?> type = sourceColumn.getType();
-        if (Vector.class.isAssignableFrom(type)) {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, sourceColumn.getComponentType());
-        } else {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type);
-        }
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, sourceColumn.getType(),
+                sourceColumn.getComponentType());
     }
 
     @Override
     public WritableColumnSource<?> newFlatDestInstance(long size) {
-        Class<?> type = sourceColumn.getType();
-        if (Vector.class.isAssignableFrom(type)) {
-            return InMemoryColumnSource.getFlatMemoryColumnSource(size, type, sourceColumn.getComponentType());
-        } else {
-            return InMemoryColumnSource.getFlatMemoryColumnSource(size, type, null);
-        }
+        return InMemoryColumnSource.getFlatMemoryColumnSource(size, sourceColumn.getType(),
+                sourceColumn.getComponentType());
     }
 
     @Override

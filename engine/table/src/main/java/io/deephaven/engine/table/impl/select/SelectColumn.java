@@ -122,7 +122,9 @@ public interface SelectColumn extends Selectable {
     MatchPair getMatchPair();
 
     /**
-     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set.
+     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set
+     *
+     * The returned column source must be capaable of handling updates.
      *
      * @param size The number of rows to allocate
      *
@@ -132,6 +134,8 @@ public interface SelectColumn extends Selectable {
 
     /**
      * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set.
+     *
+     * The returned column source should be flat, and need not handle updates.
      *
      * @param size The number of rows to allocate
      *

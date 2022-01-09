@@ -26,10 +26,12 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
         this.alternateColumnSource = alternateColumnSource;
     }
 
+    @Override
     public void set(long key, Boolean value) {
         alternateColumnSource.set(key, BooleanUtils.booleanAsByte(value));
     }
 
+    @Override
     public void set(long key, byte value) {
         alternateColumnSource.set(key, value);
     }
