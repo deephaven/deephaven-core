@@ -7,6 +7,7 @@ from typing import Any, Sequence, Callable
 import jpy
 
 from deephaven2 import DHError
+from deephaven2.dtypes import DateTime, Period
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -18,10 +19,13 @@ def _qst_custom_type(cls_name: str):
 
 class DType:
     """ A class representing a data type in Deephaven."""
-    _j_name_map = {}
+    _j_name_map = {
+        "io.deephaven.time.DateTime": DateTime,
+        "io.deephaven.time.Period": Period
+    }
 
     @classmethod
-    def from_jtype(cls, j_class: Any) -> DType:
+    def from_jtype(cls, j_class: Any) -> Any:
         if not j_class:
             return None
 

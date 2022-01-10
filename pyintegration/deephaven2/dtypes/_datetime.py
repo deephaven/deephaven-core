@@ -31,12 +31,12 @@ class DateTime:
     def __repr__(self):
         return str(self.j_datetime)
 
-    @staticmethod
-    def now():
+    @classmethod
+    def now(cls):
         return DateTime(_DHDateTime.j_type.now())
 
-    @staticmethod
-    def array(size: int):
+    @classmethod
+    def array(cls, size: int):
         """ Creates a Java array of the Deephaven DateTime data type of the specified size.
 
         Args:
@@ -50,8 +50,8 @@ class DateTime:
         """
         return _DHDateTime.array(size)
 
-    @staticmethod
-    def array_from(seq: Sequence, remap: Callable[[Any], Any] = None):
+    @classmethod
+    def array_from(cls, seq: Sequence, remap: Callable[[Any], Any] = None):
         """ Creates a Java array of Deephaven DateTime instances from a sequence.
 
         Args:
