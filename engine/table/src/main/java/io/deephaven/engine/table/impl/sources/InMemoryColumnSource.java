@@ -2,7 +2,9 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.flat.*;
+import io.deephaven.engine.table.impl.sources.immutable.*;
+import io.deephaven.engine.table.impl.sources.immutable.Immutable2DCharArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -22,69 +24,69 @@ public interface InMemoryColumnSource {
      * @param componentType the component type for column sources of arrays or Vectors
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
-    static <T> WritableColumnSource<T> getFlatMemoryColumnSource(long longSize,
-            @NotNull final Class<T> dataType,
-            @Nullable final Class<?> componentType) {
+    static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(long longSize,
+                                                                      @NotNull final Class<T> dataType,
+                                                                      @Nullable final Class<?> componentType) {
         // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
         if (longSize > Integer.MAX_VALUE - 8) {
-            return makeFlat2DSource(dataType, componentType);
+            return makeImmutable2DSource(dataType, componentType);
         }
-        return makeFlatSource(dataType, componentType);
+        return makeImmutableSource(dataType, componentType);
     }
 
     @NotNull
-    static <T> WritableColumnSource<T> makeFlatSource(@NotNull Class<T> dataType,
-            @Nullable Class<?> componentType) {
+    static <T> WritableColumnSource<T> makeImmutableSource(@NotNull Class<T> dataType,
+                                                           @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
-            result = new WritableByteAsBooleanColumnSource(new FlatByteArraySource());
+            result = new WritableByteAsBooleanColumnSource(new ImmutableByteArraySource());
         } else if (dataType == char.class || dataType == Character.class) {
-            result = new FlatCharArraySource();
+            result = new ImmutableCharArraySource();
         } else if (dataType == byte.class || dataType == Byte.class) {
-            result = new FlatByteArraySource();
+            result = new ImmutableByteArraySource();
         } else if (dataType == double.class || dataType == Double.class) {
-            result = new FlatDoubleArraySource();
+            result = new ImmutableDoubleArraySource();
         } else if (dataType == float.class || dataType == Float.class) {
-            result = new FlatFloatArraySource();
+            result = new ImmutableFloatArraySource();
         } else if (dataType == int.class || dataType == Integer.class) {
-            result = new FlatIntArraySource();
+            result = new ImmutableIntArraySource();
         } else if (dataType == long.class || dataType == Long.class) {
-            result = new FlatLongArraySource();
+            result = new ImmutableLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
-            result = new FlatShortArraySource();
+            result = new ImmutableShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new FlatLongArraySource());
+            result = new WritableLongAsDateTimeColumnSource(new ImmutableLongArraySource());
         } else {
-            result = new FlatObjectArraySource<>(dataType, componentType);
+            result = new ImmutableObjectArraySource<>(dataType, componentType);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;
     }
 
     @NotNull
-    static <T> WritableColumnSource<T> makeFlat2DSource(@NotNull Class<T> dataType,
-            @Nullable Class<?> componentType) {
+    static <T> WritableColumnSource<T> makeImmutable2DSource(@NotNull Class<T> dataType,
+                                                             @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
-            result = new WritableByteAsBooleanColumnSource(new Flat2DByteArraySource());
+            result = new WritableByteAsBooleanColumnSource(new Immutable2DByteArraySource());
         } else if (dataType == char.class || dataType == Character.class) {
-            result = new Flat2DCharArraySource();
+            result = new Immutable2DCharArraySource();
         } else if (dataType == byte.class || dataType == Byte.class) {
-            result = new Flat2DByteArraySource();
+            result = new Immutable2DByteArraySource();
         } else if (dataType == double.class || dataType == Double.class) {
-            result = new Flat2DDoubleArraySource();
+            result = new Immutable2DDoubleArraySource();
         } else if (dataType == float.class || dataType == Float.class) {
-            result = new Flat2DFloatArraySource();
+            result = new Immutable2DFloatArraySource();
         } else if (dataType == int.class || dataType == Integer.class) {
-            result = new Flat2DIntArraySource();
+            result = new Immutable2DIntArraySource();
         } else if (dataType == long.class || dataType == Long.class) {
-            result = new Flat2DLongArraySource();
+            result = new Immutable2DLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
-            result = new Flat2DShortArraySource();
+            result = new Immutable2DShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new Flat2DLongArraySource());
+            result = new WritableLongAsDateTimeColumnSource(new Immutable2DLongArraySource());
         } else {
-            result = new Flat2DObjectArraySource<>(dataType, componentType);
+            result = new Immutable2DObjectArraySource<>(dataType, componentType);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;
@@ -122,49 +124,49 @@ public interface InMemoryColumnSource {
         final ColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             if (dataArray instanceof byte[]) {
-                result = new ByteAsBooleanColumnSource(new FlatByteArraySource((byte[]) dataArray));
+                result = new ByteAsBooleanColumnSource(new ImmutableByteArraySource((byte[]) dataArray));
             } else if (dataArray instanceof boolean[]) {
                 result = new ByteAsBooleanColumnSource(
-                        new FlatByteArraySource(BooleanUtils.booleanAsByteArray((boolean[]) dataArray)));
+                        new ImmutableByteArraySource(BooleanUtils.booleanAsByteArray((boolean[]) dataArray)));
             } else if (dataArray instanceof Boolean[]) {
                 result = new ByteAsBooleanColumnSource(
-                        new FlatByteArraySource(BooleanUtils.booleanAsByteArray((Boolean[]) dataArray)));
+                        new ImmutableByteArraySource(BooleanUtils.booleanAsByteArray((Boolean[]) dataArray)));
             } else {
                 throw new IllegalArgumentException("Invalid dataArray for type " + dataType);
             }
         } else if (dataType == byte.class) {
-            result = new FlatByteArraySource((byte[]) dataArray);
+            result = new ImmutableByteArraySource((byte[]) dataArray);
         } else if (dataType == char.class) {
-            result = new FlatCharArraySource((char[]) dataArray);
+            result = new ImmutableCharArraySource((char[]) dataArray);
         } else if (dataType == double.class) {
-            result = new FlatDoubleArraySource((double[]) dataArray);
+            result = new ImmutableDoubleArraySource((double[]) dataArray);
         } else if (dataType == float.class) {
-            result = new FlatFloatArraySource((float[]) dataArray);
+            result = new ImmutableFloatArraySource((float[]) dataArray);
         } else if (dataType == int.class) {
-            result = new FlatIntArraySource((int[]) dataArray);
+            result = new ImmutableIntArraySource((int[]) dataArray);
         } else if (dataType == long.class) {
-            result = new FlatLongArraySource((long[]) dataArray);
+            result = new ImmutableLongArraySource((long[]) dataArray);
         } else if (dataType == short.class) {
-            result = new FlatShortArraySource((short[]) dataArray);
+            result = new ImmutableShortArraySource((short[]) dataArray);
         } else if (dataType == Byte.class) {
-            result = new FlatByteArraySource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
+            result = new ImmutableByteArraySource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
         } else if (dataType == Character.class) {
-            result = new FlatCharArraySource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
+            result = new ImmutableCharArraySource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
         } else if (dataType == Double.class) {
-            result = new FlatDoubleArraySource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
+            result = new ImmutableDoubleArraySource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
         } else if (dataType == Float.class) {
-            result = new FlatFloatArraySource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
+            result = new ImmutableFloatArraySource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
         } else if (dataType == Integer.class) {
-            result = new FlatIntArraySource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
+            result = new ImmutableIntArraySource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
         } else if (dataType == Long.class) {
-            result = new FlatLongArraySource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
+            result = new ImmutableLongArraySource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataType == Short.class) {
-            result = new FlatShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
+            result = new ImmutableShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
         } else if (dataType == DateTime.class && dataArray instanceof long[]) {
-            result = new LongAsDateTimeColumnSource(new FlatLongArraySource((long[]) dataArray));
+            result = new LongAsDateTimeColumnSource(new ImmutableLongArraySource((long[]) dataArray));
         } else {
             // noinspection unchecked
-            result = new FlatObjectArraySource<>(dataType, componentType, (T[]) dataArray);
+            result = new ImmutableObjectArraySource<>(dataType, componentType, (T[]) dataArray);
         }
         // noinspection unchecked
         return (ColumnSource<T>) result;

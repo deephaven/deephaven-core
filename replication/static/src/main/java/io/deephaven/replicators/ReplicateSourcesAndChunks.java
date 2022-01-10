@@ -37,19 +37,19 @@ public class ReplicateSourcesAndChunks {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
         charToAllButBooleanAndLong(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         fixupLongReinterpret(charToLong(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java"));
-        replicateObjectFlatArraySource();
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java"));
+        replicateObjectImmutableArraySource();
         charToAllButBooleanAndLong(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java");
         fixupLongReinterpret(charToLong(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java"));
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java"));
         fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatByteArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableByteArraySource.java");
         fixupByteReinterpret(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DByteArraySource.java");
-        replicateObjectFlat2DArraySource();
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DByteArraySource.java");
+        replicateObjectImmutable2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -74,8 +74,8 @@ public class ReplicateSourcesAndChunks {
         replicateChunkColumnSource();
     }
 
-    private static void fixupLongReinterpret(String longFlatSource) throws IOException {
-        final File resultClassJavaFile = new File(longFlatSource);
+    private static void fixupLongReinterpret(String longImmutableSource) throws IOException {
+        final File resultClassJavaFile = new File(longImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = addImport(lines, "import io.deephaven.time.DateTime;");
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
@@ -92,8 +92,8 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
-    private static void fixupByteReinterpret(String byteFlatSource) throws IOException {
-        final File resultClassJavaFile = new File(byteFlatSource);
+    private static void fixupByteReinterpret(String byteImmutableSource) throws IOException {
+        final File resultClassJavaFile = new File(byteImmutableSource);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
         lines = replaceRegion(lines, "reinterpret", Arrays.asList("    @Override",
@@ -173,25 +173,25 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
-    private static void replicateObjectFlatArraySource() throws IOException {
-        replicateObjectFlatArraySource(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+    private static void replicateObjectImmutableArraySource() throws IOException {
+        replicateObjectImmutableArraySource(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
     }
 
-    private static void replicateObjectFlat2DArraySource() throws IOException {
-        replicateObjectFlatArraySource(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+    private static void replicateObjectImmutable2DArraySource() throws IOException {
+        replicateObjectImmutableArraySource(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/Immutable2DCharArraySource.java");
     }
 
-    private static void replicateObjectFlatArraySource(String flatSourcePath) throws IOException {
+    private static void replicateObjectImmutableArraySource(String immutableSourcePath) throws IOException {
         final String resultClassJavaPath = charToObject(
-                flatSourcePath);
+                immutableSourcePath);
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = removeRegion(lines, "boxing imports");
         lines = globalReplacements(lines,
-                "class FlatObjectArraySource", "class FlatObjectArraySource<T>",
-                "class Flat2DObjectArraySource", "class Flat2DObjectArraySource<T>",
+                "class ImmutableObjectArraySource", "class ImmutableObjectArraySource<T>",
+                "class Immutable2DObjectArraySource", "class Immutable2DObjectArraySource<T>",
                 "\\? extends Object", "\\? extends T",
                 "copyFromTypedArray\\(data", "copyFromTypedArray\\(\\(T[]\\)data",
                 "resetFromTypedArray\\(data", "resetFromTypedArray\\(\\(T[]\\)data",
@@ -202,24 +202,24 @@ public class ReplicateSourcesAndChunks {
 
         lines = genericObjectColumnSourceReplacements(lines);
 
-        if (flatSourcePath.contains("2D")) {
+        if (immutableSourcePath.contains("2D")) {
             lines = simpleFixup(lines, "constructor",
-                    "Flat2DObjectArraySource\\(\\)",
-                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType\\)",
-                    "Flat2DObjectArraySource\\(int",
-                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, int",
+                    "Immutable2DObjectArraySource\\(\\)",
+                    "Immutable2DObjectArraySource\\(Class<T> type, Class<?> componentType\\)",
+                    "Immutable2DObjectArraySource\\(int",
+                    "Immutable2DObjectArraySource\\(Class<T> type, Class<?> componentType, int",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)",
                     "this\\(\\)", "this\\(type, componentType\\)",
                     "this\\(DEFAULT_SEGMENT_SHIFT\\)", "this\\(type, componentType, DEFAULT_SEGMENT_SHIFT\\)");
             lines = simpleFixup(lines, "allocateArray", "return \\(T\\)data;", "return data;");
         } else {
             lines = simpleFixup(lines, "constructor",
-                    "FlatObjectArraySource\\(",
-                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType",
+                    "ImmutableObjectArraySource\\(",
+                    "ImmutableObjectArraySource\\(Class<T> type, Class<?> componentType",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)");
             lines = simpleFixup(lines, "array constructor",
-                    "FlatObjectArraySource\\(",
-                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, ",
+                    "ImmutableObjectArraySource\\(",
+                    "ImmutableObjectArraySource\\(Class<T> type, Class<?> componentType, ",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)");
         }
 
