@@ -2,6 +2,7 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.agg.NormalAggregations.Builder;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecFormula;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -61,6 +62,10 @@ public interface Aggregation extends Serializable {
 
     static Aggregation AggFirst(String... pairs) {
         return of(AggSpec.first(), pairs);
+    }
+
+    static Aggregation AggFormula(String formula, String formulaParam, String... pairs) {
+        return of(AggSpec.formula(formula, formulaParam), pairs);
     }
 
     static Aggregation AggGroup(String... pairs) {
