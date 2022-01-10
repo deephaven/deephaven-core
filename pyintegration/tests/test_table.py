@@ -266,7 +266,7 @@ class TableTestCase(BaseTestCase):
 
     def test_agg_by_2(self):
         test_table = empty_table(10)
-        test_table = test_table.update(["dumb=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"])
+        test_table = test_table.update(["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"])
 
         aggs = [group(["aggGroup=var"]),
                 avg(["aggAvg=var"]),
@@ -283,7 +283,7 @@ class TableTestCase(BaseTestCase):
                 var(["aggVar=var"]),
                 weighted_avg("var", ["weights"])]
 
-        result_table = test_table.agg_by(aggs, ["dumb"])
+        result_table = test_table.agg_by(aggs, ["grp_id"])
 
         self.assertGreaterEqual(result_table.size, 1)
 
