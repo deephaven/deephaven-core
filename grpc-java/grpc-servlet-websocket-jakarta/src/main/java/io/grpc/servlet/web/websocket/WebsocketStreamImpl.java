@@ -201,6 +201,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
                             ByteBuffer.wrap(((ByteArrayWritableBuffer) frame).bytes, 0, frame.readableBytes());
 
                     websocketSession.getBasicRemote().sendBinary(payload);
+                    transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
                 }
 
             } catch (IOException e) {
