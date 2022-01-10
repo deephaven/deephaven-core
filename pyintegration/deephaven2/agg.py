@@ -108,6 +108,21 @@ def first(cols: List[str]) -> Aggregation:
     return Aggregation(j_aggregation=_JAggregation.AggFirst(*cols))
 
 
+def formula(formula: str, formula_param: str, cols: List[str]) -> Aggregation:
+    """ Create a user defined formula aggregation.
+
+    Args:
+        formula (str): the user defined formula to apply to each group
+        formula_param (str): the parameter name within the formula
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+
+    Returns:
+        an aggregation
+    """
+
+    return Aggregation(j_aggregation=_JAggregation.AggFormula(formula, formula_param, *cols))
+
+
 def last(cols: List[str]) -> Aggregation:
     """ Create Last aggregation.
 
