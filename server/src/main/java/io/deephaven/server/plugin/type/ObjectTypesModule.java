@@ -2,11 +2,11 @@ package io.deephaven.server.plugin.type;
 
 import dagger.Binds;
 import dagger.Module;
-import io.deephaven.plugin.type.ObjectTypeCallback;
+import io.deephaven.plugin.type.ObjectTypeRegistration;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 /**
- * Binds {@link ObjectTypes} as {@link ObjectTypeLookup} and {@link ObjectTypeCallback}.
+ * Binds {@link ObjectTypes} as {@link ObjectTypeLookup} and {@link ObjectTypeRegistration}.
  */
 @Module
 public interface ObjectTypesModule {
@@ -15,5 +15,5 @@ public interface ObjectTypesModule {
     ObjectTypeLookup bindsLookup(ObjectTypes types);
 
     @Binds
-    ObjectTypeCallback bindsCallback(ObjectTypes types);
+    ObjectTypeRegistration bindsCallback(ObjectTypes types);
 }

@@ -1,19 +1,19 @@
 package io.deephaven.server.plugin.java;
 
-import io.deephaven.plugin.Plugin;
-import io.deephaven.plugin.PluginCallback;
+import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.Registration.Callback;
 
 import java.util.ServiceLoader;
 
 public final class JavaServiceLoader {
 
     /**
-     * Registers all {@link Plugin plugins} found via {@link ServiceLoader#load(Class)}.
+     * Registers all {@link Registration plugins} found via {@link ServiceLoader#load(Class)}.
      *
      * @param callback the plugin callback
      */
-    public static void allRegisterInto(PluginCallback callback) {
-        for (Plugin provider : ServiceLoader.load(Plugin.class)) {
+    public static void allRegisterInto(Callback callback) {
+        for (Registration provider : ServiceLoader.load(Registration.class)) {
             provider.registerInto(callback);
         }
     }

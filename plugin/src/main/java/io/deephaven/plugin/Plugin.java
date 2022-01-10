@@ -1,18 +1,17 @@
 package io.deephaven.plugin;
 
-import io.deephaven.plugin.type.ObjectTypePlugin;
+import io.deephaven.plugin.type.ObjectType;
 
 /**
- * The generic plugin interface which extends all of the specific plugin interfaces.
+ * A plugin is a structured extension point for user-definable behavior.
  *
- * @see ObjectTypePlugin
+ * @see ObjectType
  */
-public interface Plugin extends ObjectTypePlugin {
+public interface Plugin {
 
-    /**
-     * The generic registration entrypoint.
-     *
-     * @param callback the callback.
-     */
-    void registerInto(PluginCallback callback);
+    <T, V extends Visitor<T>> T walk(V visitor);
+
+    interface Visitor<T> {
+        T visit(ObjectType objectType);
+    }
 }

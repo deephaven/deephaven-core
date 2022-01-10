@@ -1,5 +1,6 @@
 package io.deephaven.plugin.type;
 
+import io.deephaven.plugin.Plugin;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 
@@ -7,11 +8,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * An "object type" plugin information. Useful for serializing custom objects between the server / client.
- *
- * @see ObjectTypePlugin
+ * An "object type" plugin. Useful for serializing custom objects between the server / client.
  */
-public interface ObjectType {
+public interface ObjectType extends Plugin {
 
     /**
      * The name of the object type.

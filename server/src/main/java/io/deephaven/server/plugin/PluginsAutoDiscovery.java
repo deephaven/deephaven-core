@@ -4,9 +4,10 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.plugin.PluginCallback;
+import io.deephaven.plugin.Plugin;
+import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.Registration.Callback;
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectTypeCallback;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.plugin.java.JavaServiceLoader;
 import io.deephaven.server.plugin.python.PythonModuleLoader;
@@ -16,23 +17,21 @@ import javax.inject.Inject;
 import java.util.Objects;
 
 /**
- * Provides a {@link #registerAll()} entrypoint for {@link io.deephaven.plugin.Plugin} auto-discovery. Logs
- * auto-discovered details.
+ * Provides a {@link #registerAll()} entrypoint for {@link Registration} auto-discovery. Logs auto-discovered details.
  */
 public final class PluginsAutoDiscovery {
     private static final Logger log = LoggerFactory.getLogger(PluginsAutoDiscovery.class);
 
-    private final ObjectTypeCallback types;
+    private final Registration.Callback callback;
 
     @Inject
-    public PluginsAutoDiscovery(ObjectTypeCallback types) {
-        this.types = Objects.requireNonNull(types);
+    public PluginsAutoDiscovery(Registration.Callback callback) {
+        this.callback = Objects.requireNonNull(callback);
     }
 
     /**
-     * Registers {@link io.deephaven.plugin.Plugin plugins} via
-     * {@link JavaServiceLoader#allRegisterInto(PluginCallback)} and
-     * {@link PythonModuleLoader#allRegisterInto(PluginCallback)} (if python is enabled).
+     * Registers {@link Registration plugins} via {@link JavaServiceLoader#allRegisterInto(Callback)} and
+     * {@link PythonModuleLoader#allRegisterInto(Callback)} (if python is enabled).
      */
     public void registerAll() {
         registerAll(ConsoleServiceGrpcImpl.isPythonSession());
@@ -54,18 +53,24 @@ public final class PluginsAutoDiscovery {
         }
     }
 
-    private class Counting implements PluginCallback, LogOutputAppendable {
+    private class Counting implements Registration.Callback, LogOutputAppendable, Plugin.Visitor<Counting> {
 
         private int objectTypeCount = 0;
 
         @Override
-        public void registerObjectType(ObjectType objectType) {
+        public void register(Plugin plugin) {
+            plugin.walk(this);
+        }
+
+        @Override
+        public Counting visit(ObjectType objectType) {
             log.info().append("Registering object type: ")
                     .append(objectType.name()).append(" / ")
                     .append(objectType.toString())
                     .endl();
-            types.registerObjectType(objectType);
+            callback.register(objectType);
             ++objectTypeCount;
+            return this;
         }
 
         @Override

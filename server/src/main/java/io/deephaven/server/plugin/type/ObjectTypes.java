@@ -1,7 +1,7 @@
 package io.deephaven.server.plugin.type;
 
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectTypeCallback;
+import io.deephaven.plugin.type.ObjectTypeRegistration;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
@@ -18,14 +18,14 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Provides synchronized object type {@link ObjectTypeCallback registration} and {@link ObjectTypeLookup lookup}.
+ * Provides synchronized object type {@link ObjectTypeRegistration registration} and {@link ObjectTypeLookup lookup}.
  *
  * <p>
  * Object type registration that is an instances of {@link ObjectTypeClassBase} receives special consideration, and
  * these objects have more efficient lookups.
  */
 @Singleton
-public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeCallback {
+public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeRegistration {
 
     private static final Set<String> RESERVED_TYPE_NAMES_LOWERCASE = Set.of("table", "tablemap", "treetable", "");
 
@@ -55,7 +55,7 @@ public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeCallback {
     }
 
     @Override
-    public synchronized void registerObjectType(ObjectType objectType) {
+    public synchronized void register(ObjectType objectType) {
         final String name = objectType.name();
         final String nameLowercase = name.toLowerCase(Locale.ENGLISH);
         if (SourceVersion.isKeyword(nameLowercase)) {

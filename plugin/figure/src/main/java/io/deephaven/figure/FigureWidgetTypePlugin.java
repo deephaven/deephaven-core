@@ -9,17 +9,17 @@ import java.io.OutputStream;
 /**
  * An object type named {@value NAME} of java class type {@link FigureWidget}.
  */
-public final class FigureWidgetType extends ObjectTypeClassBase<FigureWidget> {
+public final class FigureWidgetTypePlugin extends ObjectTypeClassBase<FigureWidget> {
 
-    private static final FigureWidgetType INSTANCE = new FigureWidgetType();
+    private static final FigureWidgetTypePlugin INSTANCE = new FigureWidgetTypePlugin();
 
     public static final String NAME = "Figure";
 
-    public static FigureWidgetType instance() {
+    public static FigureWidgetTypePlugin instance() {
         return INSTANCE;
     }
 
-    private FigureWidgetType() {
+    private FigureWidgetTypePlugin() {
         super(NAME, FigureWidget.class);
     }
 

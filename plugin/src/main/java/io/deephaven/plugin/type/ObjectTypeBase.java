@@ -14,4 +14,9 @@ public abstract class ObjectTypeBase implements ObjectType {
         }
         writeToCompatibleObject(exporter, object, out);
     }
+
+    @Override
+    public final <T, V extends Visitor<T>> T walk(V visitor) {
+        return visitor.visit(this);
+    }
 }

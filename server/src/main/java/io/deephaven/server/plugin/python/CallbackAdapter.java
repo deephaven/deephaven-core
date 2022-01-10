@@ -1,18 +1,18 @@
 package io.deephaven.server.plugin.python;
 
-import io.deephaven.plugin.PluginCallback;
+import io.deephaven.plugin.Registration.Callback;
 import org.jpy.PyObject;
 
 class CallbackAdapter {
 
-    private final PluginCallback callback;
+    private final Callback callback;
 
-    public CallbackAdapter(PluginCallback callback) {
+    public CallbackAdapter(Callback callback) {
         this.callback = callback;
     }
 
     @SuppressWarnings("unused")
     public void registerObjectType(String name, PyObject objectTypeAdapter) {
-        callback.registerObjectType(new ObjectTypeAdapter(name, objectTypeAdapter));
+        callback.register(new ObjectTypeAdapter(name, objectTypeAdapter));
     }
 }
