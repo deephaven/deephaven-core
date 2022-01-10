@@ -465,7 +465,9 @@ class TestTableTools(unittest.TestCase):
             # print("table from string varargs = \n{}".format(TableTools.html(TableTools.newTable(3, {'string2': col2}))))
 
         with self.subTest(msg="colSource with datetime"):
+            print("Trying date time")
             col1 = TableTools.colSource(datetime.utcnow())
+            print("Col1 col source with datetime is ", col1)
             self.assertEqual(col1.getType().toString(), 'class io.deephaven.time.DateTime')
             # print("table from string = \n{}".format(TableTools.html(TableTools.newTable(1, {'datetime1': col1}))))
 
