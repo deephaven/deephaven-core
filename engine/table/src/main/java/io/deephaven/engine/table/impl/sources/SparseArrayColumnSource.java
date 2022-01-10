@@ -71,7 +71,7 @@ import java.util.Collection;
  */
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource {
+        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource {
     public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
 
@@ -454,6 +454,7 @@ public abstract class SparseArrayColumnSource<T>
         return immutable;
     }
 
+    @Override
     public void setImmutable() {
         immutable = true;
     }

@@ -1434,8 +1434,8 @@ public class QueryTable extends BaseTable {
                             propagateGrouping(selectColumns, resultTable);
                         }
                         for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            if (columnSource instanceof SparseArrayColumnSource) {
-                                ((SparseArrayColumnSource<?>) columnSource).setImmutable();
+                            if (columnSource instanceof PossiblyImmutableColumnSource) {
+                                ((PossiblyImmutableColumnSource) columnSource).setImmutable();
                             }
                         }
                     }

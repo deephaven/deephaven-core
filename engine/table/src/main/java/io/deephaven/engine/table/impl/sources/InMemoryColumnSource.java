@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
  * try to copy it into memory a second time.
  */
 public interface InMemoryColumnSource {
+    // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = Integer.MAX_VALUE - 8;
 
     /**
@@ -29,7 +30,6 @@ public interface InMemoryColumnSource {
     static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(long longSize,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
-        // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
         if (longSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
             return makeImmutable2DSource(dataType, componentType);
         }
