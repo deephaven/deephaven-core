@@ -35,7 +35,7 @@ public abstract class ObjectTypeClassBase<T> extends ObjectTypeBase {
     }
 
     @Override
-    public final void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException {
+    public final void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
         // noinspection unchecked
         writeToImpl(exporter, (T) object, out);
     }

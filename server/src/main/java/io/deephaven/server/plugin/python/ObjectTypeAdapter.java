@@ -31,7 +31,7 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
     }
 
     @Override
-    public void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException {
+    public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException {
         final byte[] bytes = objectTypeAdapter.call(byte[].class, "to_bytes",
                 Exporter.class, exporter,
                 PyObject.class, (PyObject) object);

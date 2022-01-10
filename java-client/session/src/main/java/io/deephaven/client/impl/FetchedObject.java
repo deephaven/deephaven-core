@@ -13,6 +13,13 @@ public final class FetchedObject {
     private final ByteString bytes;
     private final List<ExportId> exportIds;
 
+    /**
+     * Constructs a new instance. Callers should not modify {@code exportIds} after construction.
+     *
+     * @param type the type
+     * @param bytes the bytes
+     * @param exportIds the export ids
+     */
     FetchedObject(String type, ByteString bytes, List<ExportId> exportIds) {
         this.type = Objects.requireNonNull(type);
         this.bytes = Objects.requireNonNull(bytes);

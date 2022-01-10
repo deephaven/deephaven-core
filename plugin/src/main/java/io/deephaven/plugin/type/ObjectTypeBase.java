@@ -5,14 +5,14 @@ import java.io.OutputStream;
 
 public abstract class ObjectTypeBase implements ObjectType {
 
-    public abstract void writeToCompatibleObject(Exporter exporter, Object object, OutputStream out) throws IOException;
+    public abstract void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 
     @Override
     public final void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException {
         if (!isType(object)) {
             throw new IllegalArgumentException("Can't serialize object, wrong type: " + this + " / " + object);
         }
-        writeToCompatibleObject(exporter, object, out);
+        writeCompatibleObjectTo(exporter, object, out);
     }
 
     @Override
