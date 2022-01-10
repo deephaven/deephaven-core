@@ -1,8 +1,8 @@
 version: "3.4"
 
 services:
-  grpc-api:
-    image: ghcr.io/deephaven/pytorch-base:${VERSION:-latest}
+  server:
+    image: ghcr.io/deephaven/server-pytorch:${VERSION:-latest}
     expose:
       - '8080'
     volumes:

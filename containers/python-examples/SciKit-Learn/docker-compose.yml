@@ -1,8 +1,8 @@
 version: "3.4"
 
 services:
-  grpc-api:
-    image: ghcr.io/deephaven/sklearn-base:${VERSION:-latest}
+  server:
+    image: ghcr.io/deephaven/server-sklearn:${VERSION:-latest}
     expose:
       - '8080'
     volumes:
