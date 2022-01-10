@@ -15,7 +15,7 @@ interface Module extends AutoCloseable {
         return (Module) module.createProxy(CallableKind.FUNCTION, Module.class);
     }
 
-    void all_plugins_register_into(CallbackAdapter callback);
+    void register_all_into(CallbackAdapter callback);
 
     @Override
     void close();
