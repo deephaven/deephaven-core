@@ -20,12 +20,15 @@ public interface InMemoryColumnSource {
     int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = Integer.MAX_VALUE - 8;
 
     /**
-     * Create an immutable in-memory column source of the provided size with an array allocated of the appropriate size
+     * Create an immutable in-memory column source that is capable of holding longSize elements.
      *
-     * @param longSize the size of the array to allocate
+     * Note, that the backing array may not be allocated after this call; you still must call
+     * {@link WritableColumnSource#ensureCapacity(long)}.
+     *
+     * @param longSize the minimum required size that the column source must support
      * @param dataType the data type of the resultant column source
      * @param componentType the component type for column sources of arrays or Vectors
-     * @return An Immutable ColumnSource that directly wraps the input array.
+     * @return an immutable WritableColumnSource
      */
     static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(long longSize,
             @NotNull final Class<T> dataType,
