@@ -25,8 +25,8 @@ public interface InMemoryColumnSource {
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
     static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(long longSize,
-                                                                      @NotNull final Class<T> dataType,
-                                                                      @Nullable final Class<?> componentType) {
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
         if (longSize > Integer.MAX_VALUE - 8) {
             return makeImmutable2DSource(dataType, componentType);
@@ -36,7 +36,7 @@ public interface InMemoryColumnSource {
 
     @NotNull
     static <T> WritableColumnSource<T> makeImmutableSource(@NotNull Class<T> dataType,
-                                                           @Nullable Class<?> componentType) {
+            @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new WritableByteAsBooleanColumnSource(new ImmutableByteArraySource());
@@ -65,7 +65,7 @@ public interface InMemoryColumnSource {
 
     @NotNull
     static <T> WritableColumnSource<T> makeImmutable2DSource(@NotNull Class<T> dataType,
-                                                             @Nullable Class<?> componentType) {
+            @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new WritableByteAsBooleanColumnSource(new Immutable2DByteArraySource());
