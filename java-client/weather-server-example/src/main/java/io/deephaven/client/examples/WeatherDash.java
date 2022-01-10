@@ -8,7 +8,7 @@ import java.awt.*;
 public class WeatherDash {
     public static void main(String[] args) {
         // Assign properties that need to be set to even turn on
-        System.setProperty("Configuration.rootFile", "grpc-api.prop");
+        System.setProperty("Configuration.rootFile", "dh-defaults.prop");
         System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
                 "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 

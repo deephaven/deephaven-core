@@ -1,7 +1,7 @@
 version: "3.4"
 
 services:
-  grpc-api:
+  server:
     build:
       context: ./src/main/docker
     expose:
@@ -23,9 +23,9 @@ services:
   grpc-proxy:
     image: deephaven/grpc-proxy:local-build
     environment:
-      - BACKEND_ADDR=grpc-api:8080
+      - BACKEND_ADDR=server:8080
     depends_on:
-      - grpc-api
+      - server
     expose:
       - '8080'
 
@@ -33,8 +33,8 @@ services:
     image: deephaven/envoy:local-build
     depends_on:
       - web
+      - server
       - grpc-proxy
-      - grpc-api
     ports:
       - "${PORT:-10000}:10000"
 

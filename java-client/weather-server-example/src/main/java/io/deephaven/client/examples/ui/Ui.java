@@ -12,6 +12,7 @@ import io.deephaven.client.impl.script.Changes;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.util.ExceptionDetails;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.arrow.memory.BufferAllocator;
@@ -122,16 +123,21 @@ public class Ui {
         managedChannel = channelBuilder.build();
 
         final BufferAllocator bufferAllocator = new RootAllocator();
-        session = SessionImplConfig.builder()
-                .executor(flightScheduler)
-                .channel(new DeephavenChannel(managedChannel))
-                .build()
-                .createSession();
+        try {
+            session = SessionImplConfig.builder()
+                    .executor(flightScheduler)
+                    .channel(new DeephavenChannel(managedChannel))
+                    .build()
+                    .createSession();
 
-        SwingUtilities.invokeLater(() -> statusLabel.setText("Connected!"));
-        support = new BarrageSupport(BarrageSession.of(session, bufferAllocator, managedChannel));
-        statsTable = support.fetchSubscribedTable("s/LastByCityState");
-        configureDisplay();
+            SwingUtilities.invokeLater(() -> statusLabel.setText("Connected!"));
+            support = new BarrageSupport(BarrageSession.of(session, bufferAllocator, managedChannel));
+            statsTable = support.fetchSubscribedTable("s/LastByCityState");
+            configureDisplay();
+        } catch (Throwable ex) {
+            SwingUtilities.invokeLater(() -> statusLabel.setText("Connection Failed: " + ex.getMessage()));
+            System.out.println("An error occurred during connection:  " + new ExceptionDetails(ex).getFullStackTrace());
+        }
     }
 
     private void configureDisplay() {

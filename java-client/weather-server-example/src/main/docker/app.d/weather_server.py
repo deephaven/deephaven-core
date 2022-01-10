@@ -1,20 +1,21 @@
-from deephaven.TableTools import *
-from deephaven import as_list
-from deephaven import DynamicTableWriter, Types as dht
-from deephaven import Aggregation as agg
-from deephaven import DateTimeUtils as TimeUtils
-# import time
-from threading import Lock
-from threading import Thread
 import random
+# import os
+import requests
 import time
 # import json
 # from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
+from deephaven import Aggregation as agg
+from deephaven import DateTimeUtils as TimeUtils
+from deephaven import DynamicTableWriter, Types as dht
+from deephaven import as_list
+from deephaven.TableTools import *
 from math import cos, asin, sqrt, pi
-# import os
-import requests
+# import time
+from threading import Lock
+from threading import Thread
+
 
 @dataclass
 class Location:
