@@ -5,7 +5,7 @@ import unittest
 
 from deephaven2 import DHError, read_csv, empty_table, SortDirection
 from deephaven2.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var
+    var, formula
 from deephaven2.table import Table
 from tests.testbase import BaseTestCase
 
@@ -258,7 +258,8 @@ class TableTestCase(BaseTestCase):
         aggs = [sum_(cols=["SumC=c"]),
                 avg(cols=["AvgB = b", "AvgD = d"]),
                 pct(percentile=0.5, cols=["PctC = c"]),
-                weighted_avg(wcol="d", cols=["WavGD = d"])]
+                weighted_avg(wcol="d", cols=["WavGD = d"]),
+                formula(formula="min(each)", formula_param="each", cols=["MinA=a", "MinD=d"])]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
@@ -283,7 +284,6 @@ class TableTestCase(BaseTestCase):
                 weighted_avg("var", ["weights"])]
 
         result_table = test_table.agg_by(aggs, ["dumb"])
-        # TODO: AggFormula - this is terrible
 
         self.assertGreaterEqual(result_table.size, 1)
 
