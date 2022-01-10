@@ -168,7 +168,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             }
                         }
                     } else {
-                        // TODO: make sure an empty select does not blow the heck up
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final RowSequence.Iterator destIter = flattenedResult
                                         ? RowSequenceFactory.forRange(0, upstream.added().size() - 1)
@@ -185,23 +184,29 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     destKeys = keys;
                                 }
                                 if (keys.isContiguous() || flattenedResult) {
-                                    long rangeOffset = 0;
                                     long firstDest = destKeys.firstRowKey();
                                     final long lastDest = destKeys.lastRowKey();
-                                    while (firstDest <= lastDest) {
-                                        final long destCapacity = exposedWritableSource
-                                                .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
-                                        if (destCapacity >= (lastDest - firstDest + 1)) {
-                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
-                                        } else {
-                                            try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(
-                                                    rangeOffset, rangeOffset + destCapacity)) {
+                                    final long destCapacity = exposedWritableSource
+                                            .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
+                                    if (destCapacity >= (lastDest - firstDest + 1)) {
+                                        chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
+                                    } else {
+                                        long chunkDestCapacity = destCapacity;
+                                        try (final RowSequence.Iterator chunkIterator = keys.getRowSequenceIterator()) {
+                                            do {
+                                                RowSequence chunkSourceKeys =
+                                                        chunkIterator.getNextRowSequenceWithLength(chunkDestCapacity);
                                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk,
                                                         chunkSourceKeys);
-                                            }
+                                                firstDest += chunkDestCapacity;
+                                                if (firstDest <= lastDest) {
+                                                    chunkDestCapacity = Math.min(
+                                                            exposedWritableSource.resetWritableChunkToBackingStoreSlice(
+                                                                    backingChunk, firstDest),
+                                                            lastDest - firstDest + 1);
+                                                }
+                                            } while (firstDest <= lastDest);
                                         }
-                                        firstDest += destCapacity;
-                                        rangeOffset += destCapacity;
                                     }
                                 } else {
                                     writableSource.fillFromChunk(destContext,

@@ -16,6 +16,8 @@ import org.jetbrains.annotations.Nullable;
  * try to copy it into memory a second time.
  */
 public interface InMemoryColumnSource {
+    int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = Integer.MAX_VALUE - 8;
+
     /**
      * Create an immutable in-memory column source of the provided size with an array allocated of the appropriate size
      *
@@ -28,7 +30,7 @@ public interface InMemoryColumnSource {
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
         // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-        if (longSize > Integer.MAX_VALUE - 8) {
+        if (longSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
             return makeImmutable2DSource(dataType, componentType);
         }
         return makeImmutableSource(dataType, componentType);
