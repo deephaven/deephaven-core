@@ -18,7 +18,6 @@ class TableTestCase(BaseTestCase):
         self.test_table = None
 
     def test_repr(self):
-        print(self.test_table)
         self.assertIn(self.test_table.__class__.__name__, repr(self.test_table))
 
     #

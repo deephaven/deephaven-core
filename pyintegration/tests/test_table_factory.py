@@ -30,7 +30,6 @@ class TableFactoryTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             t = empty_table("abc")
 
-        print(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.root_cause)
         self.assertIn("no matching Java method overloads found", cm.exception.compact_traceback)
 

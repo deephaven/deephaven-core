@@ -14,7 +14,6 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "NY"
         dt = convert_datetime(f"{datetime_str} {timezone_str}")
-        print(dt)
         self.assertTrue(str(dt).startswith(datetime_str))
 
         with self.assertRaises(DHError) as cm:
