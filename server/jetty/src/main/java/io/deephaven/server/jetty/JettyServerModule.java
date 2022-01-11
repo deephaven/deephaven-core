@@ -8,6 +8,7 @@ import io.grpc.ServerInterceptor;
 import io.grpc.servlet.ServletAdapter;
 import io.grpc.servlet.ServletServerBuilder;
 
+import javax.inject.Named;
 import java.util.Set;
 
 @Module
@@ -20,11 +21,14 @@ public class JettyServerModule {
 
     @Provides
     static ServletAdapter provideGrpcServletAdapter(
-            Set<BindableService> services,
-            Set<ServerInterceptor> interceptors) {
-        ServletServerBuilder serverBuilder = new ServletServerBuilder();
+            final @Named("grpc.maxInboundMessageSize") int maxMessageSize,
+            final Set<BindableService> services,
+            final Set<ServerInterceptor> interceptors) {
+        final ServletServerBuilder serverBuilder = new ServletServerBuilder();
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+
+        serverBuilder.maxInboundMessageSize(maxMessageSize);
 
         serverBuilder.directExecutor();
         return serverBuilder.buildServletAdapter();
