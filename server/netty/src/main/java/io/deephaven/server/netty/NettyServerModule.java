@@ -18,11 +18,14 @@ public class NettyServerModule {
     @Provides
     static GrpcServer serverBuilder(
             final @Named("http.port") int port,
+            final @Named("grpc.maxInboundMessageSize") int maxMessageSize,
             Set<BindableService> services,
             Set<ServerInterceptor> interceptors) {
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(port);
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+
+        serverBuilder.maxInboundMessageSize(maxMessageSize);
 
         Server server = serverBuilder.directExecutor().build();
 

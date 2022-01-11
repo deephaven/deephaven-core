@@ -16,12 +16,14 @@ public class JettyMain extends Main {
         int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
         int httpPort = config.getIntegerWithDefault("http.port", 10000);
         int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
+        int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", 100 * 1024 * 1024);
 
         DaggerJettyServerComponent
                 .builder()
                 .withPort(httpPort)
                 .withSchedulerPoolSize(schedulerPoolSize)
                 .withSessionTokenExpireTmMs(httpSessionExpireMs)
+                .withMaxInboundMessageSize(maxInboundMessageSize)
                 .withOut(PrintStreamGlobals.getOut())
                 .withErr(PrintStreamGlobals.getErr())
                 .build()
