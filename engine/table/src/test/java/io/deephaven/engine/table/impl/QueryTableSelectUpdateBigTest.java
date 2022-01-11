@@ -49,6 +49,6 @@ public class QueryTableSelectUpdateBigTest {
     public void test2DSelect() {
         final Table input = emptyTable(3_000_000_000L).updateView("A=(byte)7").where("ii >= 10");
         final Table selected = input.select();
-        assertTableEquals(input.tail(2_999_999_990L), selected);
+        assertTableEquals(input, selected);
     }
 }
