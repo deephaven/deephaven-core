@@ -1,5 +1,3 @@
-# todo handle gracefully when not present
-
 import jpy
 from deephaven.plugin.object import Exporter, ObjectType, Reference
 
