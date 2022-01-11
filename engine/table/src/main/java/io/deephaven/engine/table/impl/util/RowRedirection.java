@@ -36,8 +36,8 @@ public interface RowRedirection {
      */
     ChunkSource.FillContext DEFAULT_FILL_INSTANCE = new ChunkSource.FillContext() {
         @Override
-        public boolean hasLimitedCapacity() {
-            return false;
+        public boolean supportsUnboundedFill() {
+            return true;
         }
     };
 

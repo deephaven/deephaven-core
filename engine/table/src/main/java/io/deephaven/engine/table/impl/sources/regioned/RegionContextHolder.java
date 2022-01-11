@@ -7,7 +7,7 @@ public class RegionContextHolder implements ChunkSource.FillContext {
     // If that changes, we'll need to add indirection and/or caching here, switching out contexts on region boundaries.
 
     @Override
-    public boolean hasLimitedCapacity() {
-        return false;
+    public boolean supportsUnboundedFill() {
+        return true;
     }
 }

@@ -89,8 +89,8 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
         }
 
         @Override
-        public boolean hasLimitedCapacity() {
-            return colSrcCtx.hasLimitedCapacity();
+        public boolean supportsUnboundedFill() {
+            return colSrcCtx.supportsUnboundedFill();
         }
     }
 }

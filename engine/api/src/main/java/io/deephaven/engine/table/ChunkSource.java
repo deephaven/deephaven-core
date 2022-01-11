@@ -18,8 +18,8 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
 
     FillContext DEFAULT_FILL_INSTANCE = new FillContext() {
         @Override
-        public boolean hasLimitedCapacity() {
-            return false;
+        public boolean supportsUnboundedFill() {
+            return true;
         }
     };
 
@@ -113,8 +113,8 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
          * 
          * @return if this context has a limited capacity
          */
-        default boolean hasLimitedCapacity() {
-            return true;
+        default boolean supportsUnboundedFill() {
+            return false;
         };
     }
 

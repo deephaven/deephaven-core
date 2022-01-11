@@ -5,7 +5,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.time.DateTime;
@@ -152,7 +151,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 if (isBackingChunkExposed) {
                     final ChunkedBackingStoreExposedWritableSource exposedWritableSource =
                             (ChunkedBackingStoreExposedWritableSource) this.writableSource;
-                    if (flattenedResult && !chunkSourceFillContext.hasLimitedCapacity()) {
+                    if (flattenedResult && chunkSourceFillContext.supportsUnboundedFill()) {
                         // drive the fill operation off of the destination rather than the source, because we want to
                         // fill as much as possible as quickly as possible
                         long destinationOffset = 0;
