@@ -10,7 +10,7 @@ class ExporterAdapter(Exporter):
     def new_server_side_reference(self, object) -> Reference:
         # todo: unwrap_to_java_type(object)?
         _reference = self._exporter.newServerSideReference(object)
-        return Reference(_reference.id().toByteArray())
+        return Reference(bytes(_reference.id().toByteArray()))
 
     def __str__(self):
         return str(self._exporter)
