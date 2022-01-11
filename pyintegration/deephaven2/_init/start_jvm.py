@@ -1,8 +1,7 @@
 #
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
-"""Utilities for starting the Deephaven JVM."""
+""" Utilities for starting the Deephaven JVM. """
 
 import os
 import re

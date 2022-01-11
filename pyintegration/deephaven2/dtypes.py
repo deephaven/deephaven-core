@@ -3,11 +3,11 @@
 #
 """ This module defines the data types supported by the Deephaven engine.
 
-Each data type is represented by a DType class which supports creating arrays of the same type and more.
+Each data type is represented by a DType instance which supports creating arrays of the same type and more.
 """
 from __future__ import annotations
 
-from typing import Any, Sequence, Callable, Iterable
+from typing import Iterable, Any, Sequence, Callable, Optional
 
 import jpy
 
@@ -27,7 +27,7 @@ class DType:
     _j_name_type_map = {}
 
     @classmethod
-    def from_jtype(cls, j_class: Any) -> DType:
+    def from_jtype(cls, j_class: Any) -> Optional[DType]:
         if not j_class:
             return None
 
@@ -50,10 +50,10 @@ class DType:
         return self.j_name
 
     def __call__(self, *args, **kwargs):
-        try:
+        if not self.is_primitive:
             return self.j_type(*args, **kwargs)
-        except Exception as e:
-            raise DHError(e, f"failed to create an instance of {self.j_name}") from e
+        else:
+            raise DHError(message="primitive types are not callable.")
 
     def array(self, size: int):
         """ Creates a Java array of the same data type of the specified size.
@@ -137,10 +137,14 @@ Period = DType(j_name="io.deephaven.time.Period")
 
 
 def j_array_list(values: Iterable):
-    j_list = jpy.get_type("java.util.ArrayList")(len(values))
+    j_list = jpy.get_type("java.util.ArrayList")()
     try:
         for v in values:
             j_list.add(v)
         return j_list
     except Exception as e:
         raise DHError(e, "failed to create a Java ArrayList from the Python collection.") from e
+
+
+def is_java_type(obj):
+    return isinstance(obj, jpy.JType)

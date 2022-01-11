@@ -13,6 +13,7 @@ from deephaven2 import DHError
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
+_JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
 
 
 class ColumnType(Enum):
@@ -40,6 +41,10 @@ class Column:
     @property
     def j_column_header(self):
         return _JColumnHeader.of(self.name, self.data_type.qst_type)
+
+    @property
+    def j_column_definition(self):
+        return _JColumnDefinition.fromGenericType(self.name, self.data_type.qst_type.clazz(), self.component_type)
 
 
 @dataclass
