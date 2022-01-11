@@ -58,7 +58,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         final FetchObjectRequest request = FetchObjectRequest.newBuilder().setSourceId(ticket).build();
         final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
 
-        assertThat(response.getType()).isEqualTo(MyObjectPlugin.MY_OBJECT_TYPE_NAME);
+        assertThat(response.getType()).isEqualTo(MyObjectRegistration.MY_OBJECT_TYPE_NAME);
         assertThat(response.getExportIdCount()).isEqualTo(1);
 
         final DataInputStream dis = new DataInputStream(response.getData().newInput());
@@ -72,7 +72,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         assertThat(someTableTicket).containsExactly(response.getExportId(0).toByteArray());
     }
 
-    public static class MyObjectPlugin implements Registration {
+    public static class MyObjectRegistration implements Registration {
 
         public static final String MY_OBJECT_TYPE_NAME = MyObject.class.getName();
 
