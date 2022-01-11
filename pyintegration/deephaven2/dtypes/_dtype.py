@@ -6,15 +6,17 @@
 Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
 from __future__ import annotations
+
 from typing import Any, Sequence, Callable
 
 import jpy
 
 from deephaven2 import DHError
-from deephaven2.dtypes import DateTime, Period
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+
+j_name_type_map = {}
 
 
 def _qst_custom_type(cls_name: str):
@@ -23,18 +25,13 @@ def _qst_custom_type(cls_name: str):
 
 class DType:
     """ A class representing a data type in Deephaven."""
-    _j_name_map = {
-        "io.deephaven.time.DateTime": DateTime,
-        "io.deephaven.time.Period": Period
-    }
-
     @classmethod
     def from_jtype(cls, j_class: Any) -> Any:
         if not j_class:
             return None
 
         j_name = j_class.getName()
-        dtype = DType._j_name_map.get(j_name)
+        dtype = j_name_type_map.get(j_name)
         if not dtype:
             return cls(j_name=j_name, j_type=j_class)
         else:
@@ -46,7 +43,7 @@ class DType:
         self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
         self.is_primitive = is_primitive
 
-        DType._j_name_map[j_name] = self
+        j_name_type_map[j_name] = self
 
     def __repr__(self):
         return self.j_name

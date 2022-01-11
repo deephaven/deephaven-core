@@ -5,8 +5,9 @@
 
 from typing import Any, Sequence, Callable
 
+from deephaven2.dtypes import DType, j_name_type_map
+
 from deephaven2 import DHError
-from deephaven2.dtypes import DType
 
 _DHDateTime = DType(j_name="io.deephaven.time.DateTime")
 _DHPeriod = DType(j_name="io.deephaven.time.Period")
@@ -91,14 +92,16 @@ class Period:
     qst_type = _DHPeriod.qst_type
 
     def __init__(self, v: Any):
-        if v is None:
-            self.j_period = None
+        if isinstance(v, _DHPeriod.j_type):
+            self.j_period = v
         else:
-            if isinstance(v, _DHPeriod.j_type):
-                self.j_period = v
-            else:
-                # TODO? conversion support from Python timedelta, etc.
-                self.j_period = _DHPeriod(v)
+            # TODO? conversion support from Python timedelta, etc.
+            self.j_period = _DHPeriod(v)
 
     def __repr__(self):
         return str(self.j_period)
+
+
+# to Support type lookup
+j_name_type_map["io.deephaven.time.DateTime"] = DateTime
+j_name_type_map["io.deephaven.time.Period"] = Period
