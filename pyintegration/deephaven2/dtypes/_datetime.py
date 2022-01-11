@@ -1,6 +1,8 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+""" This module defines the classes for Deephaven DateTime and Period. """
+
 from typing import Any, Sequence, Callable
 
 from deephaven2 import DHError
@@ -11,6 +13,7 @@ _DHPeriod = DType(j_name="io.deephaven.time.Period")
 
 
 class DateTime:
+    """ This class defines a Deephaven DateTime object. """
     is_primitive = False
     j_type = _DHDateTime.j_type
     qst_type = _DHDateTime.qst_type
@@ -33,6 +36,7 @@ class DateTime:
 
     @classmethod
     def now(cls):
+        """ Returns a DataTime object initialized to the current time. """
         return DateTime(_DHDateTime.j_type.now())
 
     @classmethod
@@ -81,6 +85,7 @@ class DateTime:
 
 
 class Period:
+    """ This class defines a Deephaven Period object. """
     is_primitive = False
     j_type = _DHPeriod.j_type
     qst_type = _DHPeriod.qst_type
