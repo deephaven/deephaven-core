@@ -35,6 +35,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     public void testInComplex() {
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
 
         assertEquals(MatchFilter.class, WhereFilterFactory.getExpression("Opra in opra1, opra2, opra3").getClass());
         QueryScope.addParam("pmExpiry", "World");
@@ -66,11 +67,12 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
             assertEquals(e.getMessage(),
                     "Failed to convert literal value <1> for column \"Maturity\" of type java.lang.String");
         }
-
-
     }
 
     public void testCharMatch() {
+        QueryScope.setScope(new QueryScope.StandaloneImpl());
+        QueryScope.addParam("theChar", 'C');
+
         final Table tt = TableTools.newTable(TableTools.charCol("AChar", 'A', 'B', 'C', '\0', '\''));
 
         final String[] filterStrings = new String[] {
@@ -83,7 +85,10 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 "AChar != \"A\"",
                 "AChar == \"'\"",
                 "AChar in \"A\", \"C\", \"'\"",
-                "AChar not in \"A\", \"C\", \"'\""
+                "AChar not in \"A\", \"C\", \"'\"",
+                "AChar = theChar",
+                "AChar == theChar",
+                "AChar != theChar"
         };
         final RowSet[] expectedResults = new RowSet[] {
                 TstUtils.i(0),
@@ -95,7 +100,10 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 TstUtils.ir(1, 4),
                 TstUtils.i(4),
                 TstUtils.i(0, 2, 4),
-                TstUtils.i(1, 3)
+                TstUtils.i(1, 3),
+                TstUtils.i(2),
+                TstUtils.i(2),
+                TstUtils.i(0, 1, 3, 4)
         };
 
         for (int ii = 0; ii < filterStrings.length; ++ii) {
