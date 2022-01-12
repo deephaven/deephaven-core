@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.csv.parsers.Parsers",
+ "methods": {},
+ "path": "io.deephaven.csv.parsers.Parsers",
+ "text": "Standard system parsers for the CsvReader.",
+ "typeName": "class"
+}

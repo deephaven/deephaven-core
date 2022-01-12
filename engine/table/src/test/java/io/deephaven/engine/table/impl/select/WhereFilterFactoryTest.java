@@ -103,8 +103,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
             filter.init(tt.getDefinition());
             assertEquals(MatchFilter.class, filter.getClass());
             try (final RowSet selection = tt.getRowSet().copy();
-                 final RowSet filtered = filter.filter(selection, tt.getRowSet(), tt, false);
-                 final RowSet expected = expectedResults[ii]) {
+                    final RowSet filtered = filter.filter(selection, tt.getRowSet(), tt, false);
+                    final RowSet expected = expectedResults[ii]) {
                 assertEquals(expected, filtered);
             } catch (Exception e) {
                 System.err.println("Failed for test case: " + filterStrings[ii]);

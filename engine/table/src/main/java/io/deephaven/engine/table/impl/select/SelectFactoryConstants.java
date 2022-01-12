@@ -35,12 +35,12 @@ public final class SelectFactoryConstants {
     /**
      * Any pattern in:
      * <ul>
-     *     <li>{@link #INT_PTRN int}</li>
-     *     <li>{@link #FLT_PTRN float}</li>
-     *     <li>{@link #BOOL_PTRN boolean}</li>
-     *     <li>{@link #CHAR_PTRN char}</li>
-     *     <li>{@link #STR_PTRN string}</li>
-     *     <li>{@link #DATETIME_PTRN datetime}</li>
+     * <li>{@link #INT_PTRN int}</li>
+     * <li>{@link #FLT_PTRN float}</li>
+     * <li>{@link #BOOL_PTRN boolean}</li>
+     * <li>{@link #CHAR_PTRN char}</li>
+     * <li>{@link #STR_PTRN string}</li>
+     * <li>{@link #DATETIME_PTRN datetime}</li>
      * </ul>
      */
     // @formatter:off
