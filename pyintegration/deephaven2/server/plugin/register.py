@@ -8,8 +8,11 @@ from .object import ObjectTypeAdapter
 
 _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
 
-def register_all_into(callback: _JCallbackAdapter):
+
+def initialize_all_and_register_into(callback: _JCallbackAdapter):
+    deephaven.plugin.initialize_all()
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
+
 
 class RegistrationAdapter(Registration.Callback):
     def __init__(self, callback: _JCallbackAdapter):

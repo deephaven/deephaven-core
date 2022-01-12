@@ -2,7 +2,7 @@ package io.deephaven.server.object;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.RegistrationBase;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
@@ -72,12 +72,17 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         assertThat(someTableTicket).containsExactly(response.getExportId(0).toByteArray());
     }
 
-    public static class MyObjectRegistration implements Registration {
+    public static class MyObjectRegistration extends RegistrationBase {
 
         public static final String MY_OBJECT_TYPE_NAME = MyObject.class.getName();
 
         @Override
-        public void registerInto(Callback callback) {
+        protected void initImpl() {
+
+        }
+
+        @Override
+        protected void registerIntoImpl(Callback callback) {
             callback.register(new MyObjectType(MY_OBJECT_TYPE_NAME));
         }
     }

@@ -34,12 +34,14 @@ class FetchObject extends SingleSessionExampleBase {
         show(session, ticket);
     }
 
-    private void show(Session session, HasTicketId ticket) throws IOException, ExecutionException, InterruptedException {
+    private void show(Session session, HasTicketId ticket)
+            throws IOException, ExecutionException, InterruptedException {
         final FetchedObject customObject = session.fetchObject(ticket).get();
         show(session, customObject);
     }
 
-    private void show(Session session, FetchedObject customObject) throws IOException, ExecutionException, InterruptedException {
+    private void show(Session session, FetchedObject customObject)
+            throws IOException, ExecutionException, InterruptedException {
         final String type = customObject.type();
         System.err.println("type: " + type);
         System.err.println("size: " + customObject.size());

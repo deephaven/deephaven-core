@@ -13,7 +13,7 @@ public final class PythonModuleLoader {
      */
     public static void allRegisterInto(Callback callback) {
         try (final Module module = Module.of()) {
-            module.register_all_into(new CallbackAdapter(callback));
+            module.initialize_all_and_register_into(new CallbackAdapter(callback));
         }
     }
 }
