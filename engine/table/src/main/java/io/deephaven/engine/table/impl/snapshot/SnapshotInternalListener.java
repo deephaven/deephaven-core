@@ -1,12 +1,14 @@
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -23,6 +25,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
     private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
+    private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
+    private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
 
     public SnapshotInternalListener(QueryTable triggerTable,
@@ -32,7 +36,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             Map<String, SingleValueColumnSource<?>> resultLeftColumns,
             Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
             TrackingWritableRowSet resultRowSet) {
-        super("snapshot " + result.getColumnSourceMap().keySet().toString(), triggerTable, result);
+        super("snapshot " + result.getColumnSourceMap().keySet(), triggerTable, result);
         this.triggerTable = triggerTable;
         this.result = result;
         this.lazySnapshot = lazySnapshot;
@@ -42,6 +46,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultRightColumns = resultRightColumns;
         this.resultRowSet = resultRowSet;
         manage(snapshotTable);
+        triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
+        snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
     }
 
     @Override
@@ -56,8 +62,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
 
         // Populate stamp columns from the triggering table
         if (!triggerTable.getRowSet().isEmpty()) {
-            SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getRowSet().lastRowKey(),
-                    resultLeftColumns, 0);
+            SnapshotUtils.copyStampColumns(triggerStampColumns, triggerTable.getRowSet().lastRowKey(),
+                    resultLeftColumns);
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
@@ -66,7 +72,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {
                 try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotRowSet.size() - 1)) {
-                    SnapshotUtils.copyDataColumns(snapshotTable.getColumnSourceMap(),
+                    SnapshotUtils.copyDataColumns(snapshotDataColumns,
                             snapshotRowSet, resultRightColumns, destRowSet, usePrev);
                 }
             }
@@ -101,9 +107,10 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
 
     @Override
     public boolean canExecute(final long step) {
-        if (!lazySnapshot && snapshotTable instanceof NotificationQueue.Dependency) {
-            return ((NotificationQueue.Dependency) snapshotTable).satisfied(step) && super.canExecute(step);
+        if (!lazySnapshot) {
+            return snapshotTable.satisfied(step) && super.canExecute(step);
         }
         return super.canExecute(step);
     }
+
 }

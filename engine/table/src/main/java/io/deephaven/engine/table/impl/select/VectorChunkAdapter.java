@@ -18,10 +18,10 @@ import org.jetbrains.annotations.NotNull;
  * first let the inner fill the chunk, then we overwrite each value (where non-null) with the result of
  * Vector#getDirect() invoked on that value.
  */
-public class VectorChunkAdapter<ATTR extends Any> implements DefaultChunkSource<ATTR> {
-    private final ChunkSource<ATTR> underlying;
+public class VectorChunkAdapter<ATTR extends Any> implements DefaultChunkSource.WithPrev<ATTR> {
+    private final ChunkSource.WithPrev<ATTR> underlying;
 
-    public VectorChunkAdapter(ChunkSource<ATTR> underlying) {
+    public VectorChunkAdapter(ChunkSource.WithPrev<ATTR> underlying) {
         this.underlying = underlying;
     }
 
@@ -36,11 +36,24 @@ public class VectorChunkAdapter<ATTR extends Any> implements DefaultChunkSource<
         // First let the underlying ChunkSource fill the chunk, and then we overwrite the values with the result
         // of applying Vector#getDirect to each element.
         underlying.fillChunk(context, destination, rowSequence);
-        final WritableObjectChunk<Vector, ? super ATTR> typedDest = destination.asWritableObjectChunk();
+        convertToDirectVectors(destination);
+    }
+
+    @Override
+    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+            @NotNull RowSequence rowSequence) {
+        // First let the underlying ChunkSource fill the chunk, and then we overwrite the values with the result
+        // of applying Vector#getDirect to each element.
+        underlying.fillPrevChunk(context, destination, rowSequence);
+        convertToDirectVectors((WritableChunk<? super ATTR>) destination);
+    }
+
+    private void convertToDirectVectors(@NotNull WritableChunk<? super ATTR> destination) {
+        final WritableObjectChunk<Vector<?>, ? super ATTR> typedDest = destination.asWritableObjectChunk();
         for (int ii = 0; ii < destination.size(); ++ii) {
-            final Vector vector = typedDest.get(ii);
+            final Vector<?> vector = typedDest.get(ii);
             if (vector != null) {
-                final Vector direct = vector.getDirect();
+                final Vector<?> direct = vector.getDirect();
                 typedDest.set(ii, direct);
             }
         }

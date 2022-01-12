@@ -16,7 +16,6 @@ _JCsvHelpers = None
 _JCsvSpecs = None
 _JInferenceSpecs = None
 _JTableHeader = None
-_JCharset = None
 _JCsvTools = None
 
 
@@ -55,7 +54,7 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _JCsvHelpers, _JCsvSpecs, _JInferenceSpecs, _JTableHeader, _JCharset, _JCsvTools, \
+    global _JCsvHelpers, _JCsvSpecs, _JInferenceSpecs, _JTableHeader, _JCsvTools, \
         INFERENCE_STRINGS, INFERENCE_MINIMAL, INFERENCE_STANDARD, INFERENCE_STANDARD_TIMES
 
     if _JCsvHelpers is None:
@@ -64,7 +63,6 @@ def _defineSymbols():
         _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
         _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
         _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
-        _JCharset = jpy.get_type("java.nio.charset.Charset")
         _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 
         INFERENCE_STRINGS = _JInferenceSpecs.strings()
@@ -116,7 +114,7 @@ def read(path: str,
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DataType]): a dict to define the table columns with key being the name, value being the data type
-        inference (csv.Inference): an Enum value specifying the rules for data type inference, default is INFERENCE_STANDARD_TIMES
+        inference (csv.Inference): an Enum value specifying the rules for data type inference, default is INFERENCE_STANDARD
         headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
@@ -133,7 +131,7 @@ def read(path: str,
     """
 
     if inference is None:
-        inference = INFERENCE_STANDARD_TIMES
+        inference = INFERENCE_STANDARD
 
     csv_specs_builder = _JCsvSpecs.builder()
 
@@ -148,7 +146,6 @@ def read(path: str,
                  .quote(ord(quote))
                  .ignoreSurroundingSpaces(ignore_surrounding_spaces)
                  .trim(trim)
-                 .charset(_JCharset.forName(charset))
                  .build())
 
     return _JCsvHelpers.readCsv(path, csv_specs)

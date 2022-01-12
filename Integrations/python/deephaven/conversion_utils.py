@@ -68,7 +68,7 @@ except Exception as e:
     pass
 
 __ObjectColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource'
-__DatetimeColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource'
+__DatetimeColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableLongAsDateTimeColumnSource'
 __ArrayConversionUtility__ = 'io.deephaven.integrations.common.PrimitiveArrayConversionUtility'
 
 NULL_CHAR = 65535                                         #: Null value for char.
@@ -673,7 +673,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
     if junk is None:
         raise ValueError("Conversion failed")
     elif len(junk) in [2, 3]:
-        if junk[0] == 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource':
+        if junk[0] == 'io.deephaven.engine.table.impl.sources.immutable.ImmutableLongAsDateTimeColumnSource':
             return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(junk[1])
         else:
             return junk[1]

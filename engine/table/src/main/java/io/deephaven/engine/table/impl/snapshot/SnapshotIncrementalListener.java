@@ -1,8 +1,10 @@
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -22,6 +24,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final ListenerRecorder leftListener;
     private final QueryTable rightTable;
     private final Map<String, ? extends ColumnSource<?>> leftColumns;
+    private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
 
     private UpdateCoalescer rightUpdates;
     private final TrackingWritableRowSet lastRightRowSet;
@@ -40,6 +43,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
         this.lastRightRowSet = RowSetFactory.empty().toTracking();
+        this.snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(rightTable);
     }
 
     @Override
@@ -90,15 +94,16 @@ public class SnapshotIncrementalListener extends MergedListener {
     }
 
     private void doRowCopy(RowSet rowSet) {
-        copyRowsToResult(rowSet, triggerTable, rightTable, leftColumns, resultColumns);
+        copyRowsToResult(rowSet, triggerTable, snapshotDataColumns, leftColumns, resultColumns);
     }
 
-    public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
+    public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable,
+            Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
             Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
         if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
         }
-        SnapshotUtils.copyDataColumns(rightTable.getColumnSourceMap(), rowsToCopy, resultColumns, rowsToCopy, false);
+        SnapshotUtils.copyDataColumns(snapshotDataColumns, rowsToCopy, resultColumns, rowsToCopy, false);
     }
 }

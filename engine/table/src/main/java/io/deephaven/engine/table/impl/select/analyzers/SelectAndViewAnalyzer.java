@@ -37,6 +37,13 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+    }
+
+    public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
+            final TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
+            final boolean allowInternalFlatten,
+            final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -46,6 +53,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         } else {
             rowRedirection = null;
         }
+
+        final boolean flatResult = rowSet.isFlat();
+        // if we preserve a column, we set this to false
+        boolean flattenedResult = !flatResult
+                && allowInternalFlatten
+                && (columnSources.isEmpty() || !publishTheseSources)
+                && mode == Mode.SELECT_STATIC;
+        int numberOfInternallyFlattenedColumns = 0;
 
         for (final SelectColumn sc : selectColumns) {
             final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
@@ -57,18 +72,21 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
-            if (sc instanceof SourceColumn
-                    || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
-                final ColumnSource<?> sccs = sc.getDataView();
-                if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource)
-                        && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
-                    analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps,
-                            mcsBuilder);
-                    continue;
+            if (shouldPreserve(sc)) {
+                analyzer =
+                        analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                if (numberOfInternallyFlattenedColumns > 0) {
+                    // we must preserve this column, but have already created an analyzer for the internally flattened
+                    // column, therefore must start over without permitting internal flattening
+                    return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
                 }
+                // we can not flatten future columns because we are preserving this column
+                flattenedResult = false;
+                continue;
             }
 
-            final long targetSize = rowSet.isEmpty() ? 0 : rowSet.lastRowKey() + 1;
+            final long targetDestinationCapacity =
+                    rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
@@ -83,9 +101,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
-                    analyzer =
-                            analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
+                    final WritableColumnSource<?> scs =
+                            flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
+                                    : sc.newDestInstance(targetDestinationCapacity);
+                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
+                            false, flattenedResult);
+                    if (flattenedResult) {
+                        numberOfInternallyFlattenedColumns++;
+                    }
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -93,14 +116,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
                     // TODO(kosak): use DeltaAwareColumnSource
-                    WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
+                    WritableColumnSource<?> scs = sc.newDestInstance(targetDestinationCapacity);
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;
                         scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                            mcsBuilder, rowRedirection != null);
+                            mcsBuilder, rowRedirection != null, false);
                     break;
                 }
                 default:
@@ -108,6 +131,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
         }
         return analyzer;
+    }
+
+    private static boolean shouldPreserve(final SelectColumn sc) {
+        if (!(sc instanceof SourceColumn)
+                && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
+            return false;
+        }
+        final ColumnSource<?> sccs = sc.getDataView();
+        if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
+            return true;
+        }
+        return false;
     }
 
     static final int BASE_LAYER_INDEX = 0;
@@ -157,9 +192,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten) {
         return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
-                isRedirected);
+                isRedirected, flatten);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,
@@ -303,6 +338,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public abstract void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions);
 
     public abstract void startTrackingPrev();
+
+    /**
+     * Was the result internally flattened? Only the STATIC_SELECT case flattens the result. If the result preserves any
+     * columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the default
+     * implementation returns false.
+     */
+    public boolean flattenedResult() {
+        return false;
+    }
 
     /**
      * Return the layerIndex for a given string column.
