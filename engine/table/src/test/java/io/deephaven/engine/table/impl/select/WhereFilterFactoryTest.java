@@ -70,6 +70,49 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
     }
 
+    public void testCharMatch() {
+        final Table tt = TableTools.newTable(TableTools.charCol("AChar", 'A', 'B', 'C', '\0', '\''));
+
+        final String[] filterStrings = new String[] {
+                "AChar = 'A'",
+                "AChar != 'A'",
+                "AChar == '''",
+                "AChar in 'A', 'C', '''",
+                "AChar not in 'A', 'C', '''",
+                "AChar = \"A\"",
+                "AChar != \"A\"",
+                "AChar == \"'\"",
+                "AChar in \"A\", \"C\", \"'\"",
+                "AChar not in \"A\", \"C\", \"'\""
+        };
+        final RowSet[] expectedResults = new RowSet[] {
+                TstUtils.i(0),
+                TstUtils.ir(1, 4),
+                TstUtils.i(4),
+                TstUtils.i(0, 2, 4),
+                TstUtils.i(1, 3),
+                TstUtils.i(0),
+                TstUtils.ir(1, 4),
+                TstUtils.i(4),
+                TstUtils.i(0, 2, 4),
+                TstUtils.i(1, 3)
+        };
+
+        for (int ii = 0; ii < filterStrings.length; ++ii) {
+            final WhereFilter filter = WhereFilterFactory.getExpression(filterStrings[ii]);
+            filter.init(tt.getDefinition());
+            assertEquals(MatchFilter.class, filter.getClass());
+            try (final RowSet selection = tt.getRowSet().copy();
+                 final RowSet filtered = filter.filter(selection, tt.getRowSet(), tt, false);
+                 final RowSet expected = expectedResults[ii]) {
+                assertEquals(expected, filtered);
+            } catch (Exception e) {
+                System.err.println("Failed for test case: " + filterStrings[ii]);
+                throw e;
+            }
+        }
+    }
+
     public void testIcase() {
         Table t = TableTools
                 .newTable(TableTools.col("Opra", "opra1", "opra2", "opra3", "Opra1", "Opra2", "Opra3", "Opra4", null));
