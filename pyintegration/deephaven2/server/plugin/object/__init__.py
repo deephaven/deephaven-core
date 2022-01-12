@@ -12,7 +12,7 @@ class ExporterAdapter(Exporter):
             _reference = self._exporter.newServerSideReference(object)
         else:
             _reference = self._exporter.newServerSideReferencePyObject(object)
-        return Reference(bytes(_reference.id().toByteArray()))
+        return Reference(bytes(_reference.id().getTicket().toByteArray()))
 
     def __str__(self):
         return str(self._exporter)
