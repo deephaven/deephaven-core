@@ -1,5 +1,7 @@
 package io.deephaven.server.arrow;
 
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
@@ -9,6 +11,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.barrage.flatbuf.DoGetRequest;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -16,7 +19,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -27,6 +32,7 @@ import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.barrage.BarrageStreamGenerator;
@@ -45,6 +51,7 @@ import org.apache.arrow.flight.impl.Flight;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -326,50 +333,70 @@ public class ArrowFlightUtil {
                 BarrageProtoUtil.MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
                 synchronized (this) {
                     if (message.app_metadata == null
-                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC
-                            || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
+                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC) {
                         log.warn().append(myPrefix).append("received a message without app_metadata").endl();
                         return;
                     }
 
-                    if (message.app_metadata.msgPayloadVector() == null) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Subscription request not supplied");
+                    // handle the different message types that can come over DoExchange
+                    switch (message.app_metadata.msgType()) {
+                        case BarrageMessageType.BarrageSubscriptionRequest:
+                            serviceBarrageSubscriptionRequest(message);
+                            break;
+                        case BarrageMessageType.DoGetRequest:
+                            serviceDoGetRequest(message);
+                            break;
+                        default:
+                            log.warn().append(myPrefix).append("received a message with unhandled BarrageMessageType")
+                                    .endl();
+                            return;
                     }
-                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
-
-                    if (bmp != null) {
-                        apply(subscriptionRequest);
-                        return;
-                    }
-
-                    if (isClosed) {
-                        return;
-                    }
-
-                    // have we already created the queue?
-                    if (preExportSubscriptions != null) {
-                        preExportSubscriptions.add(subscriptionRequest);
-                        return;
-                    }
-
-                    if (subscriptionRequest.ticketVector() == null) {
-                        GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
-                        return;
-                    }
-
-                    preExportSubscriptions = new ArrayDeque<>();
-                    preExportSubscriptions.add(subscriptionRequest);
-                    final SessionState.ExportObject<Object> parent =
-                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
-
-                    onExportResolvedContinuation = session.nonExport()
-                            .require(parent)
-                            .onError(listener)
-                            .submit(() -> onExportResolved(parent));
                 }
             });
+        }
+
+        private void serviceDoGetRequest(BarrageProtoUtil.MessageInfo message) {
+            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
+                    "DoGet with viewport over DoExchange not implemented");
+        }
+
+        private void serviceBarrageSubscriptionRequest(BarrageProtoUtil.MessageInfo message) {
+            if (message.app_metadata.msgPayloadVector() == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Subscription request not supplied");
+            }
+            final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                    .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+            if (bmp != null) {
+                apply(subscriptionRequest);
+                return;
+            }
+
+            if (isClosed) {
+                return;
+            }
+
+            // have we already created the queue?
+            if (preExportSubscriptions != null) {
+                preExportSubscriptions.add(subscriptionRequest);
+                return;
+            }
+
+            if (subscriptionRequest.ticketVector() == null) {
+                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
+                return;
+            }
+
+            preExportSubscriptions = new ArrayDeque<>();
+            preExportSubscriptions.add(subscriptionRequest);
+            final SessionState.ExportObject<Object> parent =
+                    ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
+
+            onExportResolvedContinuation = session.nonExport()
+                    .require(parent)
+                    .onError(listener)
+                    .submit(() -> onExportResolved(parent));
         }
 
         private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
