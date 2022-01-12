@@ -6,7 +6,7 @@ from kafka import KafkaProducer
 userSeedCount      = 10000
 itemSeedCount      = 1000
 purchaseGenCount   = 1000
-purchaseGenEveryMS = 5000
+purchaseGenEveryMS = 2000
 pageviewMultiplier = 75       # Translates to 75x purchases, currently 750/sec or 65M/day
 itemInventoryMin   = 1000
 itemInventoryMax   = 5000

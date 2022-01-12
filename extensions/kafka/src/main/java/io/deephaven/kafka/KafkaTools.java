@@ -97,7 +97,7 @@ public class KafkaTools {
     public static final String BYTE_BUFFER_SERIALIZER = ByteBufferSerializer.class.getName();
     public static final String AVRO_SERIALIZER = KafkaAvroSerializer.class.getName();
     public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
-    public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
+    public static final String NESTED_FIELD_NAME_SEPARATOR = "__";
     private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
             Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
     public static final String AVRO_LATEST_VERSION = "latest";
@@ -1320,6 +1320,20 @@ public class KafkaTools {
         setIfNotSet(prop, propKey, value);
     }
 
+    static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName, final String schemaVersion) {
+        final String schemaServiceUrl = kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
+        if (schemaServiceUrl == null) {
+            throw new IllegalArgumentException(
+                    "Schema server url property " + SCHEMA_SERVER_PROPERTY + " not found.");
+
+        }
+        return getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
+    }
+
+    static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName) {
+        return getAvroSchema(kafkaProperties, schemaName, AVRO_LATEST_VERSION);
+    }
+
     private static KeyOrValueIngestData getIngestData(
             final KeyOrValue keyOrValue,
             final Properties kafkaConsumerProperties,
@@ -1339,13 +1353,7 @@ public class KafkaTools {
                 if (avroSpec.schema != null) {
                     schema = avroSpec.schema;
                 } else {
-                    if (!kafkaConsumerProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
-                        throw new IllegalArgumentException(
-                                "Avro schema name specified and schema server url property " +
-                                        SCHEMA_SERVER_PROPERTY + " not found.");
-                    }
-                    final String schemaServiceUrl = kafkaConsumerProperties.getProperty(SCHEMA_SERVER_PROPERTY);
-                    schema = getAvroSchema(schemaServiceUrl, avroSpec.schemaName, avroSpec.schemaVersion);
+                    schema = getAvroSchema(kafkaConsumerProperties, avroSpec.schemaName, avroSpec.schemaVersion);
                 }
                 avroSchemaToColumnDefinitions(
                         columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldPathToColumnName);
