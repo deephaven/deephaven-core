@@ -41,10 +41,14 @@ public class WhereFilterFactory {
 
     private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 
+    private static final String EQUALS_PTRN = "(={1,2})";
+    private static final String NOT_EQUALS_PTRN = "(!=)";
+    private static final String EQUALITY_OP_PTRN = "(?:" + EQUALS_PTRN + '|' + NOT_EQUALS_PTRN + ')';
+
     static {
         // <ColumnName>==<Number|Boolean|"String">
-        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*={1,2}\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
+        parser.registerFactory(new AbstractExpressionFactory<>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*" + EQUALITY_OP_PTRN + "\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
@@ -56,12 +60,20 @@ public class WhereFilterFactory {
                 }
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
-                return new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, columnName, matcher.group(2));
+                // @formatter:off
+                return new MatchFilter(
+                        MatchFilter.CaseSensitivity.MatchCase,
+                        matcher.group(3) == null // We must have matched EQUALS_PTRN, rather than NOT_EQUALS_PTRN
+                                ? MatchFilter.MatchType.Regular
+                                : MatchFilter.MatchType.Inverted,
+                        columnName,
+                        matcher.group(4));
+                // @formatter:on
             }
         });
         // <ColumnName>==<User QueryScopeParam>
-        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*={1,2}\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        parser.registerFactory(new AbstractExpressionFactory<>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*" + EQUALITY_OP_PTRN + "\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
@@ -73,13 +85,21 @@ public class WhereFilterFactory {
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
                 try {
-                    QueryScope.getParamValue(matcher.group(2));
+                    QueryScope.getParamValue(matcher.group(4));
                 } catch (QueryScope.MissingVariableException e) {
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
-                return new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, columnName, matcher.group(2));
+                // @formatter:off
+                return new MatchFilter(
+                        MatchFilter.CaseSensitivity.MatchCase,
+                        matcher.group(3) == null // We must have matched EQUALS_PTRN, rather than NOT_EQUALS_PTRN
+                                ? MatchFilter.MatchType.Regular
+                                : MatchFilter.MatchType.Inverted,
+                        columnName,
+                        matcher.group(4));
+                // @formatter:on
             }
         });
 
@@ -87,7 +107,7 @@ public class WhereFilterFactory {
         // <ColumnName> <= <Number|Boolean|"String">
         // <ColumnName> > <Number|Boolean|"String">
         // <ColumnName> >= <Number|Boolean|"String">
-        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
+        parser.registerFactory(new AbstractExpressionFactory<>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*([<>]=?)\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
@@ -115,23 +135,29 @@ public class WhereFilterFactory {
         });
 
         // <ColumnName> [icase] [not] in <value 1>, <value 2>, ... , <value n>
-        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>("(?s)" + START_PTRN + "(" + ID_PTRN
+        parser.registerFactory(new AbstractExpressionFactory<>("(?s)" + START_PTRN + "(" + ID_PTRN
                 + ")\\s+(" + ICASE + "\\s+)?(" + NOT + "\\s+)?" + IN + "\\s+(.+?)" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final SplitIgnoreQuotes splitter = new SplitIgnoreQuotes();
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
+                // @formatter:off
                 return new MatchFilter(
-                        matcher.group(2) == null ? MatchFilter.CaseSensitivity.MatchCase
+                        matcher.group(2) == null
+                                ? MatchFilter.CaseSensitivity.MatchCase
                                 : MatchFilter.CaseSensitivity.IgnoreCase,
-                        matcher.group(3) == null ? MatchFilter.MatchType.Regular : MatchFilter.MatchType.Inverted,
-                        matcher.group(1), splitter.split(matcher.group(4), ','));
+                        matcher.group(3) == null
+                                ? MatchFilter.MatchType.Regular
+                                : MatchFilter.MatchType.Inverted,
+                        matcher.group(1),
+                        splitter.split(matcher.group(4), ','));
+                // @formatter:on
             }
         });
 
         // <ColumnName> [icase] [not] includes [any|all]<"String">
-        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(START_PTRN + "(" + ID_PTRN + ")\\s+(" + ICASE
+        parser.registerFactory(new AbstractExpressionFactory<>(START_PTRN + "(" + ID_PTRN + ")\\s+(" + ICASE
                 + "\\s+)?(" + NOT + "\\s+)?" + INCLUDES +
                 "(?:\\s+(" + ANY + "|" + ALL + ")\\s+)?" + "\\s*((?:(?:" + STR_PTRN + ")(?:,\\s*)?)+)" + END_PTRN) {
             @Override
@@ -154,7 +180,7 @@ public class WhereFilterFactory {
 
         // Anything else is assumed to be a condition formula.
         parser.registerFactory(
-                new AbstractExpressionFactory<WhereFilter>(START_PTRN + "(" + ANYTHING + ")" + END_PTRN) {
+                new AbstractExpressionFactory<>(START_PTRN + "(" + ANYTHING + ")" + END_PTRN) {
                     @Override
                     public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                         final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
@@ -419,8 +445,7 @@ public class WhereFilterFactory {
                     long time = DateTimeUtils.convertTime(valString);
                     dateLower = DateTimeUtils.getZonedDateTime(DateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
                             ChronoUnit.NANOS);
-                } catch (RuntimeException stillIgnored) {
-
+                } catch (RuntimeException ignored1) {
                 }
             }
 
