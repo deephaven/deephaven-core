@@ -63,7 +63,7 @@ public class WhereFilterFactory {
                         .endl();
                 return new MatchFilter(
                         MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted :  MatchFilter.MatchType.Regular,
+                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
                         value);
             }
@@ -95,7 +95,7 @@ public class WhereFilterFactory {
                         .endl();
                 return new MatchFilter(
                         MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted :  MatchFilter.MatchType.Regular,
+                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
                         paramName);
             }
@@ -146,7 +146,7 @@ public class WhereFilterFactory {
                         .endl();
                 return new MatchFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted :  MatchFilter.MatchType.Regular,
+                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
                         values);
             }
@@ -168,7 +168,7 @@ public class WhereFilterFactory {
                         .append(expression).endl();
                 return new StringContainsFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted :  MatchFilter.MatchType.Regular,
+                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
                         values.length == 1 ||
                                 StringUtils.isNullOrEmpty(anyAllPart) || "any".equalsIgnoreCase(anyAllPart),
