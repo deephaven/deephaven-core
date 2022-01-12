@@ -28,7 +28,6 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * ColumnSource implementation for {@link TableTools#merge} results.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private int numSources;

@@ -16,8 +16,8 @@ import java.nio.ByteBuffer;
 /**
  * Decodes values written in the grammar described in {@link RunLengthBitPackingHybridEncoder}
  */
-public class RunLenghBitPackingHybridBufferDecoder {
-    private static final Logger LOG = LoggerFactory.getLogger(RunLenghBitPackingHybridBufferDecoder.class);
+public class RunLengthBitPackingHybridBufferDecoder {
+    private static final Logger LOG = LoggerFactory.getLogger(RunLengthBitPackingHybridBufferDecoder.class);
     private int rangeCount;
     private final int maxLevel;
     private int rleCandidateValue;
@@ -35,7 +35,7 @@ public class RunLenghBitPackingHybridBufferDecoder {
     private int currentValue;
     private int[] currentBuffer;
 
-    public RunLenghBitPackingHybridBufferDecoder(int maxLevel, ByteBuffer in) {
+    public RunLengthBitPackingHybridBufferDecoder(int maxLevel, ByteBuffer in) {
         this.bitWidth = BytesUtils.getWidthFromMaxInt(maxLevel);
         this.maxLevel = maxLevel;
         LOG.debug("decoding bitWidth {}", bitWidth);

@@ -11,10 +11,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.CharOneOrN;
@@ -24,7 +21,6 @@ import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Arrays;
 
 // region boxing imports
@@ -80,44 +76,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
     // endregion constructor
 
-    // region serialization
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
-        blocks.enumerate(NULL_CHAR, sb::appendKey);
-        final RowSet rowSet = sb.build();
-
-        final int size = rowSet.intSize();
-        final char[] data = (char[])new char[size];
-        // noinspection unchecked
-        final ColumnSource<Character> reinterpreted = (ColumnSource<Character>) reinterpretForSerialization();
-        try (final FillContext context = reinterpreted.makeFillContext(size);
-             final ResettableWritableCharChunk<Values> destChunk = ResettableWritableCharChunk.makeResettableChunk()) {
-            destChunk.resetFromTypedArray(data, 0, size);
-            // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, rowSet);
-        }
-        out.writeObject(rowSet);
-        out.writeObject(data);
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        blocks = new CharOneOrN.Block0();
-
-        final RowSet rowSet = (RowSet)in.readObject();
-        final char[] data = (char[])in.readObject();
-        final CharChunk<Values> srcChunk = CharChunk.chunkWrap(data);
-        // noinspection unchecked
-        final WritableColumnSource<Character> reinterpreted = (WritableColumnSource<Character>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
-        }
-    }
-    // endregion serialization
-
-    private void readObjectNoData() throws ObjectStreamException {
-        throw new StreamCorruptedException();
-    }
-
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
@@ -169,13 +127,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         return box(getPrevChar(index));
     }
     // endregion boxed methods
-
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
-    }
-    // endregion copy method
 
     // region primitive get
     @Override

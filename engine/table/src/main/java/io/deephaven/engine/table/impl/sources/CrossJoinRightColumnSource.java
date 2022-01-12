@@ -394,7 +394,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
         effectiveContext.shareable.ensureMappedKeysInitialized(crossJoinManager, usePrev, rowSequence);
 
-        if (innerSource instanceof FillUnordered) {
+        if (FillUnordered.providesFillUnordered(innerSource)) {
             effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);
@@ -422,7 +422,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             }
             innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
 
-            if (cs.innerSource instanceof FillUnordered) {
+            if (FillUnordered.providesFillUnordered(cs.innerSource)) {
                 innerOrderedValues = null;
                 innerOrderedValuesSlice = null;
                 dupExpandKernel = null;

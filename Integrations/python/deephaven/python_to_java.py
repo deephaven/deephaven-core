@@ -54,7 +54,7 @@ def _createColumnSource(data, columnName, convertUnknownToString=False):
         return jpy.get_type(conversion[0])(conversion[1])
     if len(conversion) == 3:
         # object type column with return value of form (<column class type>, javaArray, Class)
-        return jpy.get_type(conversion[0])(conversion[1], conversion[2])
+        return jpy.get_type(conversion[0])(conversion[2], None, conversion[1])
     else:
         # I have no idea what happened
         return None

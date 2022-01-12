@@ -10,6 +10,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
@@ -20,10 +21,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
@@ -33,7 +31,6 @@ import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Arrays;
 
 // region boxing imports
@@ -89,48 +86,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
     // endregion constructor
 
-    // region serialization
-    WritableColumnSource reinterpretForSerialization() {
-        return (WritableColumnSource)reinterpret(byte.class);
-    }
-
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
-        blocks.enumerate(NULL_BOOLEAN_AS_BYTE, sb::appendKey);
-        final RowSet rowSet = sb.build();
-
-        final int size = rowSet.intSize();
-        final byte[] data = (byte[])new byte[size];
-        // noinspection unchecked
-        final ColumnSource<Byte> reinterpreted = (ColumnSource<Byte>) reinterpretForSerialization();
-        try (final FillContext context = reinterpreted.makeFillContext(size);
-             final ResettableWritableByteChunk<Values> destChunk = ResettableWritableByteChunk.makeResettableChunk()) {
-            destChunk.resetFromTypedArray(data, 0, size);
-            // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, rowSet);
-        }
-        out.writeObject(rowSet);
-        out.writeObject(data);
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        blocks = new ByteOneOrN.Block0();
-
-        final RowSet rowSet = (RowSet)in.readObject();
-        final byte[] data = (byte[])in.readObject();
-        final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
-        // noinspection unchecked
-        final WritableColumnSource<Byte> reinterpreted = (WritableColumnSource<Byte>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
-        }
-    }
-    // endregion serialization
-
-    private void readObjectNoData() throws ObjectStreamException {
-        throw new StreamCorruptedException();
-    }
-
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
@@ -182,13 +137,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return BooleanUtils.byteAsBoolean(getPrevByte(index));
     }
     // endregion boxed methods
-
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getBoolean(sourceKey));
-    }
-    // endregion copy method
 
     // region primitive get
     @Override
@@ -857,11 +805,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-            set(destKey, sourceColumn.getByte(sourceKey));
-        }
-
-        @Override
         public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
             return alternateDataType == Boolean.class;
         }
@@ -1004,6 +947,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
             }
             destGeneric.setSize(indices.size());
+        }
+
+        @Override
+        public boolean providesFillUnordered() {
+            return true;
         }
 
         @Override

@@ -163,13 +163,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return result;
     }
 
-    @Override
-    public ColumnSource<?> updateData(WritableColumnSource<?> result, long destPos, long sourcePos) {
-        // noinspection unchecked,rawtypes
-        result.copy((ColumnSource) getDataView(), sourcePos, destPos);
-        return result;
-    }
-
     /**
      * Creates a {@link ColumnSource} that will evaluate the result of the {@link #formula} for a given row on demand
      * when it is accessed.
@@ -315,8 +308,14 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return formulaString;
     }
 
+    @Override
     public WritableColumnSource<?> newDestInstance(long size) {
         return SparseArrayColumnSource.getSparseMemoryColumnSource(rowSet.size(), returnedType);
+    }
+
+    @Override
+    public WritableColumnSource<?> newFlatDestInstance(long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, returnedType, null);
     }
 
     @Override
