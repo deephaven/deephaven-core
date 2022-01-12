@@ -48,34 +48,25 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
-
 @_passThrough
 def consumeToTable(
         kafka_config:dict,
-        server_name:str,
-        db_name:str,
-        table_name:str,
+        cdc_spec,
         partitions = None,
         ignore_key = False,
         append_only_source = False,
+        drop_columns = None,
 ):
     """
     Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium) to a Deephaven table.
-    The topic name is calculated concatenatic server_name, db_name and table_name, separate by the '.' character.
-    The names of key and or value schemas in schema server are formed by concatenating either "-key"
-    or "-value", respectively, to the topic name.
 
     :param kafka_config: Dictionary with properties to configure the associated kafka consumer and
-        also the resulting table.  Once the table-specific properties are stripped, the result is
-        passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any
-        KafkaConsumer specific desired configuration here.  Note this should include the relevant property
-        for a schema server URL where the key and/or value Avro necessary schemas are stored.
-    :param server_name:  The CDC server name.  This is used to compute the Kafka topic name (first component),
-        and also the Avro schema names expected in schema server for either key or value.
-    :param db_name:  The CDC database name.  This is used to compute the Kafka topic name (second component),
-        and also the Avro schema names expected in schema server for either key or value.
-    :param table_name:  The CDC table name.  This is used to compute the Kafka topic name (third component),
-        and also the Avro schema names expected in schema server for either key or value.
+        also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
+        pass any KafkaConsumer specific desired configuration here.
+        Note this should include the relevant property for a schema server URL where the
+        key and/or value Avro necessary schemas are stored.
+    :param cdc_spec:  A CDC Spec opaque object obtained from calling either the cdc_explict_spec method
+                      or the cdc_short_spec method
     :param partitions: Either a sequence of integer partition numbers or the predefined constant
         ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unespecified.
     :param ignore_key: Whether to ignore the key related columns for the CDC stream.
@@ -84,6 +75,10 @@ def consumeToTable(
     :param append_only_source: Whether the DHC engine can assume there will be no deletions or updates to
         the source table, only additions.  It is possible to do more efficient handling in this case.
         Defaults to FALSE.
+    :param drop_columns: A sequence of column names to omit from the resulting DHC table.
+        Note that, in the case a ignore_key is false, only columns not included in the primary
+        key for the table can be dropped at this stage; you can chain a drop column operation
+        after this call if you need to do this.
     :return: A Deephaven live table that will update based on the CDC messages consumed for the given topic.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
@@ -108,4 +103,47 @@ def consumeToTable(
 
     kafka_config = _dictToProperties(kafka_config)
     return _java_type_.consumeToTable(
-        kafka_config, server_name, db_name, table_name, partitions, ignore_key, append_only_source)
+        kafka_config,
+        cdc_spec,
+        partitions,
+        ignore_key,
+        append_only_source,
+        drop_columns)
+
+@_passThrough
+def cdc_explicit_spec(
+        topic:str,
+        key_schema_name:str,
+        key_schema_version:str,
+        value_schema_name:str,
+        value_schema_version:str,
+):
+    """
+    :param topic:  The Kafka topic for the CDC events associated to the desired table data.
+    :param key_schema_name:  The schema name for the Key Kafka field in the CDC events for the topic.
+        This schema should include definitions for the columns forming the PRIMARY KEY of the underlying table.
+        This schema name will be looked up in a schema server.
+    :param key_schema_version:  The version for the Key schema to look up in schema server.
+        None or "latest" implies using the latest version when Key is not ignored.
+    :param value_schema_name:  The schema name for the Value Kafka field in the CDC events for the topic.
+        This schema should include definitions for all the columns of the underlying table.
+        This schema name will be looked up in a schema server.
+    :param value_schema_version:  The version for the Value schema to look up in schema server.
+        None or "latest" implies using the latest version.
+    :return: A CDCSpec object representing the inputs.
+    """
+    return _java_type_.cdcExplicitSpec(topic, key_schema_name, key_schema_version, value_schema_name, value_schema_version)
+
+@_passThrough
+def cdc_short_spec(
+        server_name:str,
+        db_name:str,
+        table_name:str,
+):
+    """
+    :param server_name:  The server_name configuration value used when the CDC Stream was created.
+    :param db_name:      The database name configuration value used when the CDC Stream was created.
+    :param table_name:   The table name configuration value used when the CDC Stream was created.
+    :return: A CDCSpec object representing the inputs.
+    """
+    return _java_type_.cdcShortSpec(server_name, db_name, table_name)

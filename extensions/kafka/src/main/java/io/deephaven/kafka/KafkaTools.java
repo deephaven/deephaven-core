@@ -948,7 +948,8 @@ public class KafkaTools {
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
-     * @param partitionFilter A predicate returning true for the partitions to consume
+     * @param partitionFilter A predicate returning true for the partitions to consume.  The convenience constant
+     *                        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
@@ -1327,7 +1328,7 @@ public class KafkaTools {
                     "Schema server url property " + SCHEMA_SERVER_PROPERTY + " not found.");
 
         }
-        return getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
+        return getAvroSchema(schemaServiceUrl, schemaName, schemaVersion != null ? schemaVersion : AVRO_LATEST_VERSION);
     }
 
     static Schema getAvroSchema(final Properties kafkaProperties, final String schemaName) {
