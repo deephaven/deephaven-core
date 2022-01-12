@@ -21,6 +21,7 @@ import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
@@ -234,7 +235,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<? extends ConsoleSession> console(String type) {
-        final ExportId consoleId = new ExportId(exportTicketCreator.createExportId());
+        final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
         final ConsoleHandler handler = new ConsoleHandler(request);
@@ -311,7 +312,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public ExportId newExportId() {
-        return new ExportId(exportTicketCreator.createExportId());
+        return new ExportId("Table", exportTicketCreator.createExportId());
     }
 
     @Override
@@ -436,8 +437,10 @@ public final class SessionImpl extends SessionBase {
             future.complete(new FetchedObject(type, data, exportIds));
         }
 
-        private static ExportId toExportId(Ticket e) {
-            return new ExportId(ExportTicketHelper.ticketToExportId(e, "exportId"));
+        private static ExportId toExportId(TypedTicket e) {
+            final String type = e.getType();
+            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket().asReadOnlyByteBuffer(), "exportId");
+            return new ExportId(type, exportId);
         }
 
         @Override
@@ -517,23 +520,14 @@ public final class SessionImpl extends SessionBase {
 
         private final CompletableFuture<Changes> future = new CompletableFuture<>();
 
-        private static VariableDefinition of(io.deephaven.proto.backplane.script.grpc.VariableDefinition d) {
-            return VariableDefinition.of(d.getType(), d.getTitle());
+        private static VariableDefinition of(io.deephaven.proto.backplane.grpc.FieldInfo d) {
+            return VariableDefinition.of(d.getTicket().getType(), d.getFieldName());
         }
 
         private static Changes of(ExecuteCommandResponse value) {
-            Changes.Builder builder = Changes.builder();
+            Changes.Builder builder = Changes.builder().changes(new FieldChanges(value.getChanges()));
             if (!value.getErrorMessage().isEmpty()) {
                 builder.errorMessage(value.getErrorMessage());
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getCreatedList()) {
-                builder.addCreated(of(d));
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getUpdatedList()) {
-                builder.addUpdated(of(d));
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getRemovedList()) {
-                builder.addRemoved(of(d));
             }
             return builder.build();
         }
@@ -801,7 +795,7 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public void onNext(FieldsChangeUpdate value) {
-            listener.onNext(value);
+            listener.onNext(new FieldChanges(value));
         }
 
         @Override

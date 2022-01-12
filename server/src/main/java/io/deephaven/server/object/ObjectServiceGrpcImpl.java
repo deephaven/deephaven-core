@@ -2,6 +2,7 @@ package io.deephaven.server.object;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -15,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
@@ -66,21 +68,35 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
     private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
-        final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
+        final ObjectType objectType =
+                objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
         final ExportCollector exportCollector = new ExportCollector(state);
         try {
-            type.writeTo(exportCollector, object, out);
+            objectType.writeTo(exportCollector, object, out);
             final Builder builder = FetchObjectResponse.newBuilder()
-                    .setType(type.name())
-                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));;
+                    .setType(objectType.name())
+                    .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));
             for (ExportObject<?> export : exportCollector.exports()) {
-                builder.addExportId(export.getExportId());
+                final String exportType = findType(export.get());
+                final Ticket exportId = export.getExportId();
+                builder.addExportId(TypedTicket.newBuilder()
+                        .setType(exportType)
+                        .setTicket(exportId.getTicket())
+                        .build());
             }
             return builder.build();
         } catch (Throwable t) {
             cleanup(exportCollector, t);
             throw t;
         }
+    }
+
+    // todo consolidate logic
+    private String findType(Object o) {
+        if (o instanceof Table) {
+            return "Table";
+        }
+        return objectTypeLookup.findObjectType(o).map(ObjectType::name).orElse("");
     }
 
     private static void cleanup(ExportCollector exportCollector, Throwable t) {

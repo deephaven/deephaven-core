@@ -65,15 +65,6 @@ public class ApplicationState {
         setField(StandardField.of(name, value, description));
     }
 
-    public synchronized <T> void setCustomField(String type, String name, T value) {
-        setField(CustomField.builder(type).of(name, value));
-    }
-
-    public synchronized <T> void setCustomField(String type, String name, T value,
-            String description) {
-        setField(CustomField.builder(type).of(name, value, description));
-    }
-
     public synchronized void setField(Field<?> field) {
         Field<?> oldField = fields.remove(field.name());
         if (oldField != null) {

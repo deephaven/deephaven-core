@@ -24,3 +24,8 @@ option optimize_for = SPEED;
 message Ticket {
     bytes ticket = 1;
 }
+
+message TypedTicket {
+    bytes ticket = 1;
+    string type = 2;
+}

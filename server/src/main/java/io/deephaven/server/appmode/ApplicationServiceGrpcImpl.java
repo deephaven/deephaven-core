@@ -2,27 +2,22 @@ package io.deephaven.server.appmode;
 
 import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
-import io.deephaven.proto.backplane.grpc.CustomInfo;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
-import io.deephaven.proto.backplane.grpc.FieldInfo.FieldType;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
-import io.deephaven.proto.backplane.grpc.PluginTypeInfo;
-import io.deephaven.proto.backplane.grpc.TableInfo;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
@@ -203,7 +198,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 log.error().append("Removing old field but field not known; fieldId = ").append(id.toString()).endl();
             } else {
                 tracker.maybeUnmanage(oldField.value());
-                builder.addRemoved(getRemovedFieldInfo(id));
+                builder.addRemoved(getRemovedFieldInfo(id, oldField));
             }
         });
         removedFields.clear();
@@ -245,9 +240,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         }
     }
 
-    private static FieldInfo getRemovedFieldInfo(final AppFieldId id) {
+    private FieldInfo getRemovedFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
+                .setTicket(TypedTicket.newBuilder()
+                        .setType(fieldType(field.value()))
+                        .setTicket(id.getTicket().getTicket())
+                        .build())
                 .setFieldName(id.fieldName)
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
@@ -255,63 +253,26 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     }
 
     private FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
-        if (field instanceof CustomField) {
-            return getCustomFieldInfo(id, (CustomField<?>) field);
-        }
-        return getStandardFieldInfo(id, field);
-    }
-
-    private static FieldInfo getCustomFieldInfo(final AppFieldId id, final CustomField<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
-                .setFieldName(id.fieldName)
-                .setFieldType(FieldType.newBuilder()
-                        .setCustom(CustomInfo.newBuilder().setType(field.type()).build())
+                .setTicket(TypedTicket.newBuilder()
+                        .setType(fieldType(field.value()))
+                        .setTicket(id.getTicket().getTicket())
                         .build())
-                .setFieldDescription(field.description().orElse(""))
-                .setApplicationId(id.applicationId())
-                .setApplicationName(id.applicationName())
-                .build();
-    }
-
-    private FieldInfo getStandardFieldInfo(final AppFieldId id, final Field<?> field) {
-        // Note that this method accepts any Field and not just StandardField
-        final FieldInfo.FieldType fieldType = fieldType(field.value());
-        return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
                 .setFieldName(id.fieldName)
-                .setFieldType(fieldType)
                 .setFieldDescription(field.description().orElse(""))
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
                 .build();
     }
 
-    private FieldInfo.FieldType fieldType(final Object object) {
+    // todo consolidate logic
+    private String fieldType(final Object object) {
         if (object instanceof Table) {
-            return tableFieldType((Table) object);
+            return "Table";
         }
         return objectTypeLookup.findObjectType(object)
-                .map(ApplicationServiceGrpcImpl::pluginType)
-                .orElseGet(ApplicationServiceGrpcImpl::unknownType);
-    }
-
-    private static FieldType tableFieldType(Table table) {
-        return FieldType.newBuilder().setTable(TableInfo.newBuilder()
-                .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                .setIsStatic(!table.isRefreshing())
-                .setSize(table.size())
-                .build()).build();
-    }
-
-    private static FieldType pluginType(ObjectType type) {
-        return FieldType.newBuilder()
-                .setPlugin(PluginTypeInfo.newBuilder().setName(type.name()).build())
-                .build();
-    }
-
-    private static FieldType unknownType() {
-        return FieldType.getDefaultInstance();
+                .map(ObjectType::name)
+                .orElse("");
     }
 
     private static class ScopeField implements Field<Object> {

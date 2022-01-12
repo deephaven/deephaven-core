@@ -123,8 +123,7 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            final Reference export = exporter.newServerSideReference(table);
-            clientFigure.addTables(ExportUtil.buildTableCreationResponse(export.id(), table));
+            exporter.newServerSideReference(table);
         }
 
         // TODO (deephaven-core#62) implement once tablemaps are ready

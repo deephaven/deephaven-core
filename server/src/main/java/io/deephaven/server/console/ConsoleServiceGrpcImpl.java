@@ -4,6 +4,7 @@
 
 package io.deephaven.server.console;
 
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
@@ -27,7 +28,10 @@ import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
+import io.deephaven.proto.backplane.grpc.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
@@ -52,8 +56,8 @@ import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
-import io.deephaven.proto.backplane.script.grpc.VariableDefinition;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
+import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.object.ObjectServiceGrpcImpl.ExportCollector;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
@@ -217,34 +221,35 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
-
-                        // produce a diff
-                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-
                         ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-
+                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()
-                                .forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
+                                .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
                         changes.updated.entrySet()
-                                .forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
+                                .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
                         changes.removed.entrySet()
-                                .forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
-
-                        responseObserver.onNext(diff.build());
+                                .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
+                        responseObserver.onNext(diff.setChanges(fieldChanges).build());
                         responseObserver.onCompleted();
                     });
         });
     }
 
-    private static VariableDefinition makeVariableDefinition(Map.Entry<String, String> entry) {
+    private static FieldInfo makeVariableDefinition(Map.Entry<String, String> entry) {
         return makeVariableDefinition(entry.getKey(), entry.getValue());
     }
 
-    private static VariableDefinition makeVariableDefinition(String title, String type) {
-        return VariableDefinition.newBuilder()
-                .setTitle(title)
+    private static FieldInfo makeVariableDefinition(String title, String type) {
+        final TypedTicket id = TypedTicket.newBuilder()
                 .setType(type)
-                .setId(ScopeTicketResolver.ticketForName(title))
+                .setTicket(ByteStringAccess.wrap(ScopeTicketHelper.nameToBytes(title)))
+                .build();
+        return FieldInfo.newBuilder()
+                .setApplicationId("")
+                .setFieldName(title)
+                .setFieldDescription("query scope variable")
+                .setTicket(id)
                 .build();
     }
 

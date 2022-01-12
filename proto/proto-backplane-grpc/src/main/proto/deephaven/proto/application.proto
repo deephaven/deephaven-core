@@ -45,22 +45,12 @@ message FieldsChangeUpdate {
  * A lightweight object describing the exposed field.
  */
 message FieldInfo {
-  Ticket ticket = 1;
+  TypedTicket ticket = 1;
   string field_name = 2;
-  FieldType field_type = 3;
+//  string field_type = 3;
   string field_description = 4;
   string application_name = 5; // display-friendly identification
   string application_id = 6; // computer-friendly identification
-
-  message FieldType {
-    oneof field {
-      CustomInfo custom = 1;
-      TableInfo table = 2;
-      PluginTypeInfo plugin = 3;
-
-      // use values above 4096 for custom client behavior
-    }
-  }
 }
 
 /*
@@ -68,34 +58,4 @@ message FieldInfo {
  */
 message RemovedField {
   // Intentionally empty and is here for backwards compatibility should this API change.
-}
-
-/*
- * CustomInfo can be used to provide information about an exposed field in an unstructured way.
- *
- * Alternatively, one can extend FieldType and re-build with custom types of their own structure.
- */
-message CustomInfo {
-  string type = 1; // application-specific type to identify the purpose of this custom field reference
-}
-
-/*
- * Plugin object type information, as installed from io.deephaven.plugin.type.ObjectTypePlugin
- */
-message PluginTypeInfo {
-  string name = 1;
-}
-
-/*
- * Lightly describe a Table.
- */
-message TableInfo {
-  // Schema as described in Arrow Message.fbs::Message.
-  bytes schema_header = 1;
-
-  // Whether or not this table might change.
-  bool is_static = 2;
-
-  // The current number of rows for this table.
-  sint64 size = 3 [jstype=JS_STRING];
 }
