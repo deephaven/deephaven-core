@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.csv.densestorage.DenseStorageConstants",
+ "methods": {},
+ "path": "io.deephaven.csv.densestorage.DenseStorageConstants",
+ "text": "Constants that control the behavior of the DenseStorageWriter and DenseStorageReader.",
+ "typeName": "class"
+}
