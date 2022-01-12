@@ -5,18 +5,18 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.util.AbstractExpressionFactory;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ExpressionParser;
+import io.deephaven.engine.util.string.StringUtils;
+import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.AbstractExpressionFactory;
-import io.deephaven.engine.util.ExpressionParser;
-import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.table.impl.RollupInfo;
-import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.util.text.SplitIgnoreQuotes;
 import org.jetbrains.annotations.NotNull;
 
@@ -161,8 +161,11 @@ public class WhereFilterFactory {
                 final String columnName = matcher.group(1);
                 final boolean icase = matcher.group(2) != null;
                 final boolean inverted = matcher.group(3) != null;
-                final String[] values = new SplitIgnoreQuotes().split(matcher.group(5), ',');
                 final String anyAllPart = matcher.group(4);
+                final String[] values = new SplitIgnoreQuotes().split(matcher.group(5), ',');
+                final boolean internalDisjunctive = values.length == 1
+                        || StringUtils.isNullOrEmpty(anyAllPart)
+                        || "any".equalsIgnoreCase(anyAllPart);
 
                 log.debug().append("WhereFilterFactory creating StringContainsFilter for expression: ")
                         .append(expression).endl();
@@ -170,9 +173,9 @@ public class WhereFilterFactory {
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
-                        values.length == 1 ||
-                                StringUtils.isNullOrEmpty(anyAllPart) || "any".equalsIgnoreCase(anyAllPart),
-                        true, values);
+                        internalDisjunctive,
+                        true,
+                        values);
             }
         });
 
