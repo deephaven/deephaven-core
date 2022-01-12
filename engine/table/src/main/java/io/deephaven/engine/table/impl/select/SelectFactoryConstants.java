@@ -23,7 +23,7 @@ public final class SelectFactoryConstants {
     /** A case insensitive boolean literal */
     public static final String BOOL_PTRN = "[tT][rR][uU][eE]" + "|" + "[fF][aA][lL][sS][eE]";
 
-    /** A string, surrounded by either " or ` characters */
+    /** A char, surrounded by ' characters */
     public static final String CHAR_PTRN = "('.')";
 
     /** A string, surrounded by either " or ` characters */
