@@ -277,9 +277,8 @@ public class CdcTools {
      *                         columns in the value schema as if they were all included as the primary key
      *                         for the underlying database table.
      *                         If true, no attempt to read the Key schema will be made on Schema Server.
-     * @param appendOnlySource If true, allows the Deephaven engine to do optimizations under the assumption that
-     *                         data will never be updated, or removed from the underlying table (eg, the
-     *                         CDC stream will only contain new rows added to the table).
+     * @param asStreamTable    If true, return a stream table of row changes with an added 'op' column including
+     *                         the CDC operation affecting the row.
      * @param dropColumns    Collection of column names that will be dropped from the resulting table; null for none.
      * @return                 A Deephaven live table for underlying database table tracked by the CDC Stream
      */
@@ -289,7 +288,7 @@ public class CdcTools {
             @NotNull final CdcSpec cdcSpec,
             @NotNull final IntPredicate partitionFilter,
             final boolean ignoreKey,
-            final boolean appendOnlySource,
+            final boolean asStreamTable,
             Collection<String> dropColumns) {
         final Schema valueSchema = KafkaTools.getAvroSchema(kafkaProperties, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
         final Schema keySchema;
@@ -309,10 +308,28 @@ public class CdcTools {
                 KafkaTools.Consume.avroSpec(valueSchema),
                 KafkaTools.TableType.Stream);
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
+        final String[] allDroppedColumns;
+        if (dropColumns != null && dropColumns.size() > 0) {
+            int i = 0;
+            allDroppedColumns = new String[dropColumns.size() + (asStreamTable ? 0 : 1)];
+            for (final String columnName : dropColumns) {
+                allDroppedColumns[i++] = columnName;
+            }
+            if (!asStreamTable) {
+                allDroppedColumns[i++] = CDC_OP_COLUMN_NAME;
+            }
+        } else if (asStreamTable) {
+            allDroppedColumns = null;
+        } else {
+            allDroppedColumns = new String[] { CDC_OP_COLUMN_NAME };
+        }
         final Table narrowerStreamingTable = streamingIn
-                .view(narrowerStreamingTableViewExpressions(dbTableColumnNames, appendOnlySource));
-        if (appendOnlySource) {
-            return StreamTableTools.streamToAppendOnlyTable(narrowerStreamingTable);
+                .view(narrowerStreamingTableViewExpressions(dbTableColumnNames));
+        if (asStreamTable) {
+            if (allDroppedColumns != null) {
+                return narrowerStreamingTable.dropColumns(dropColumns);
+            }
+            return narrowerStreamingTable;
         }
         final List<String> lastByColumnNames;
         if (ignoreKey) {
@@ -320,17 +337,6 @@ public class CdcTools {
         } else {
             lastByColumnNames = fieldNames(keySchema);
         }
-        final String[] allDroppedColumns;
-        int i = 0;
-        if (dropColumns != null && dropColumns.size() > 0) {
-            allDroppedColumns = new String[dropColumns.size() + 1];
-            for (final String columnName : dropColumns) {
-                allDroppedColumns[i++] = columnName;
-            }
-        } else {
-            allDroppedColumns = new String[1];
-        }
-        allDroppedColumns[i++] = CDC_OP_COLUMN_NAME;
         // @formatter:off
         final Table cdc = narrowerStreamingTable
                 .lastBy(lastByColumnNames)
@@ -341,16 +347,13 @@ public class CdcTools {
     }
 
     private static String[] narrowerStreamingTableViewExpressions(
-            final List<String> dbTableColumnNames,
-            final boolean appendOnlySource) {
+            final List<String> dbTableColumnNames) {
         final String[] viewExpressions = new String[dbTableColumnNames.size() + 1];
         int i = 0;
         for (final String columnName : dbTableColumnNames) {
             viewExpressions[i++] = columnName + "=" + CDC_AFTER_COLUMN_PREFIX + columnName;
         }
-        if (!appendOnlySource) {
-            viewExpressions[i++] = CDC_OP_COLUMN_NAME;
-        }
+        viewExpressions[i++] = CDC_OP_COLUMN_NAME;
         return viewExpressions;
     }
 

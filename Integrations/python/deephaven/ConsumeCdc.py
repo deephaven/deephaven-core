@@ -54,7 +54,7 @@ def consumeToTable(
         cdc_spec,
         partitions = None,
         ignore_key = False,
-        append_only_source = False,
+        as_stream_table = False,
         drop_columns = None,
 ):
     """
@@ -72,9 +72,9 @@ def consumeToTable(
     :param ignore_key: Whether to ignore the key related columns for the CDC stream.
         If true, and the source is not append only, the source table will be treated as if
         the primary key contained all columns.  Defaults to FALSE.
-    :param append_only_source: Whether the DHC engine can assume there will be no deletions or updates to
-        the source table, only additions.  It is possible to do more efficient handling in this case.
-        Defaults to FALSE.
+    :param as_stream_table:  If true, produce a streaming table of changed rows keeping
+        the CDC 'op' column indicating the type of column change; if false, return
+        a DHC ticking table that tracks the underlying database table through the CDC Stream.
     :param drop_columns: A sequence of column names to omit from the resulting DHC table.
         Note that, in the case a ignore_key is false, only columns not included in the primary
         key for the table can be dropped at this stage; you can chain a drop column operation
@@ -107,7 +107,7 @@ def consumeToTable(
         cdc_spec,
         partitions,
         ignore_key,
-        append_only_source,
+        as_stream_table,
         drop_columns)
 
 @_passThrough
