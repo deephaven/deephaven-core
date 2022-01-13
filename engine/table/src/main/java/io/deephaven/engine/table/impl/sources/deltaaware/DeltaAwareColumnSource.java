@@ -601,11 +601,6 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         baselineCapacityEnsurer.ensureCapacity(capacity, nullFilled);
     }

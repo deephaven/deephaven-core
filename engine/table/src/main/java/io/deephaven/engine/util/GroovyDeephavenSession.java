@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.util;
 
+import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
@@ -816,6 +817,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         int priority();
     }
 
+    @AutoService(InitScript.class)
     public static class Base implements InitScript {
         @Override
         public String getScriptPath() {
@@ -828,6 +830,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
+    @AutoService(InitScript.class)
     public static class PerformanceQueries implements InitScript {
         @Override
         public String getScriptPath() {
@@ -840,6 +843,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
+    @AutoService(InitScript.class)
     public static class Calendars implements InitScript {
         @Override
         public String getScriptPath() {
@@ -852,6 +856,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
+    @AutoService(InitScript.class)
     public static class CountMetrics implements InitScript {
         @Override
         public String getScriptPath() {

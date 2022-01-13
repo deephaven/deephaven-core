@@ -60,23 +60,6 @@ import java.util.concurrent.TimeUnit;
 public class DeephavenApiServerModule {
 
     @Provides
-    @Singleton
-    static Server buildServer(
-            final ServerBuilder<?> builder,
-            final Set<BindableService> services,
-            final Set<ServerInterceptor> interceptors) {
-        for (final BindableService service : services) {
-            builder.addService(service);
-        }
-        for (final ServerInterceptor interceptor : interceptors) {
-            builder.intercept(interceptor);
-        }
-
-        // none of our rpc methods are allowed to block so we use a direct executor
-        return builder.directExecutor().build();
-    }
-
-    @Provides
     @ElementsIntoSet
     static Set<BindableService> primeServices() {
         return Collections.emptySet();

@@ -8,6 +8,7 @@
   "getInstance": ":return: io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder",
   "getNugget": "*Overload 1*  \n  :param name: (java.lang.String) - the nugget name\n  :return: (io.deephaven.engine.table.impl.perf.QueryPerformanceNugget) A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.\n  \n*Overload 2*  \n  :param name: (java.lang.String) - the nugget name\n  :param inputSize: (long) - the nugget's input size\n  :return: (io.deephaven.engine.table.impl.perf.QueryPerformanceNugget) A new QueryPerformanceNugget to encapsulate user query operations. done() must be called on the nugget.",
   "getOperationLevelPerformanceData": ":return: java.util.List<io.deephaven.engine.table.impl.perf.QueryPerformanceNugget>",
+  "getOuterNugget": ":return: io.deephaven.engine.table.impl.perf.QueryPerformanceNugget",
   "getPoolAllocatedBytesForCurrentThread": "Get the total bytes of pool-allocated memory attributed to this thread via\n recordPoolAllocation(Supplier).\n\n:return: (long) The total bytes of pool-allocated memory attributed to this thread.",
   "getQueryLevelPerformanceData": ":return: io.deephaven.engine.table.impl.perf.QueryPerformanceNugget",
   "getState": "Return the query's current state\n\n:return: (io.deephaven.engine.table.impl.perf.QueryState) the query's state or null if it isn't initialized yet",

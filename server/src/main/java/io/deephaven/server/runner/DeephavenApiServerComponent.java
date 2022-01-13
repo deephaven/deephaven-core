@@ -21,6 +21,9 @@ public interface DeephavenApiServerComponent {
         B withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
 
         @BindsInstance
+        B withMaxInboundMessageSize(@Named("grpc.maxInboundMessageSize") int maxInboundMessageSize);
+
+        @BindsInstance
         B withOut(@Named("out") PrintStream out);
 
         @BindsInstance

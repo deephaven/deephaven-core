@@ -1,8 +1,10 @@
 package io.deephaven.engine.util;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.engine.util.GroovyDeephavenSession.InitScript;
 import javax.inject.Inject;
 
+@AutoService(InitScript.class)
 public class PerformanceScript implements InitScript {
 
     @Inject

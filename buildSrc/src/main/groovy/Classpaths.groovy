@@ -173,6 +173,11 @@ class Classpaths {
         addDependency(ap, DAGGER_GROUP, DAGGER_COMPILER, DAGGER_VERSION)
     }
 
+    /**
+     * Auto service is an annotation processor that will generate META-INF/services/ files.
+     *
+     * @see <a href="https://github.com/google/auto/tree/master/service">google/auto/tree/master/service</a>
+     */
     static void inheritAutoService(Project p, boolean test = false) {
         Configuration ic = p.configurations.getByName(test ? 'testCompileOnly' : 'compileOnly')
         addDependency(ic, AUTOSERVICE_GROUP, AUTOSERVICE_NAME, AUTOSERVICE_VERSION)
