@@ -44,11 +44,6 @@ service ConsoleService {
      * Other half of the browser-based implementation for AutoCompleteStream.
      */
     rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
-
-    /**
-     * Deprecated: TODO(deephaven-core#1784): Remove fetchFigure RPC
-     */
-    rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
 }
 
 
@@ -208,20 +203,6 @@ message CompletionItem {
 message TextEdit {
     DocumentRange range = 1;
     string text = 2;
-}
-
-/**
- * Deprecated: TODO(deephaven-core#1784): Remove fetchFigure RPC
- */
-message FetchFigureRequest {
-    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
-}
-
-/**
- * Deprecated: TODO(deephaven-core#1784): Remove fetchFigure RPC
- */
-message FetchFigureResponse {
-    FigureDescriptor figure_descriptor = 1;
 }
 
 message FigureDescriptor {
