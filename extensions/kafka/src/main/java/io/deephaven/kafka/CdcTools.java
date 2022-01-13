@@ -176,7 +176,7 @@ public class CdcTools {
 
     /**
      * Create a {@code CdcSpec} opaque object (necessary for one argument in a call to consume*ToTable) via explicitly
-     * specifying topic and key and value schema names.
+     * specifying topic anme, and key and value schema names.
      *
      * @param topic The Kafka topic for the CDC events associated to the desired table data.
      * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
