@@ -117,7 +117,7 @@ def consumeRawToTable(
     return _java_type_.consumeRawToTable(kafka_config, cdc_spec, partitions, table_type_enum)
 
 @_passThrough
-def cdc_explicit_spec(
+def cdc_long_spec(
         topic:str,
         key_schema_name:str,
         key_schema_version:str,
@@ -125,6 +125,9 @@ def cdc_explicit_spec(
         value_schema_version:str,
 ):
     """
+    Create a CdcSpec opaque object (necessary for one argument in a call to consume*ToTable)
+    via explicitly specifying all configuration options.
+
     :param topic:  The Kafka topic for the CDC events associated to the desired table data.
     :param key_schema_name:  The schema name for the Key Kafka field in the CDC events for the topic.
         This schema should include definitions for the columns forming the PRIMARY KEY of the underlying table.
@@ -138,7 +141,7 @@ def cdc_explicit_spec(
         None or "latest" implies using the latest version.
     :return: A CDCSpec object representing the inputs.
     """
-    return _java_type_.cdcExplicitSpec(topic, key_schema_name, key_schema_version, value_schema_name, value_schema_version)
+    return _java_type_.cdcLongSpec(topic, key_schema_name, key_schema_version, value_schema_name, value_schema_version)
 
 @_passThrough
 def cdc_short_spec(
@@ -147,6 +150,13 @@ def cdc_short_spec(
         table_name:str,
 ):
     """
+    Create a CdcSpec opaque object (necessary for one argument in a call to consume*ToTable)
+    in the debezium style, specifying server name, database name and table name.
+    The topic name, and key and value schema names are implied by convention:
+      - Topic is the concatenation of the arguments using "." as separator.
+      - Key schema name is topic with a "-key" suffix added.
+      - Value schema name is topic with a "-value" suffix added.
+
     :param server_name:  The server_name configuration value used when the CDC Stream was created.
     :param db_name:      The database name configuration value used when the CDC Stream was created.
     :param table_name:   The table name configuration value used when the CDC Stream was created.

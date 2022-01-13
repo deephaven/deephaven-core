@@ -175,17 +175,18 @@ public class CdcTools {
     }
 
     /**
-     * Specify a CDC stream by extension.
+     * Create a {@code CdcSpec} opaque object (necessary for one argument in a call to consume*ToTable) via explicitly
+     * specifying topic and key and value schema names.
      *
      * @param topic The Kafka topic for the CDC events associated to the desired table data.
      * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
      *        include definitions for the columns forming the PRIMARY KEY of the underlying table.
      * @param valueSchemaName The schema name for the Value Kafka field in the CDC events for the topic. This schema
      *        should include definitions for all the columns of the underlying table.
-     * @return A CdcSpec object corresponding to the inputs.
+     * @return A CdcSpec object corresponding to the inputs; schema versions are implied to be latest.
      */
     @ScriptApi
-    public static CdcSpec cdcExplicitSpec(
+    public static CdcSpec cdcLongSpec(
             final String topic,
             final String keySchemaName,
             final String valueSchemaName) {
@@ -194,7 +195,8 @@ public class CdcTools {
     }
 
     /**
-     * Specify a CDC stream by extension.
+     * Create a {@code CdcSpec} opaque object (necessary for one argument in a call to consume*ToTable) via explicitly
+     * specifying all configuration options.
      *
      * @param topic The Kafka topic for the CDC events associated to the desired table data.
      * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
@@ -206,7 +208,7 @@ public class CdcTools {
      * @return A CdcSpec object corresponding to the inputs.
      */
     @ScriptApi
-    public static CdcSpec cdcExplicitSpec(
+    public static CdcSpec cdcLongSpec(
             final String topic,
             final String keySchemaName,
             final String keySchemaVersion,
@@ -216,7 +218,14 @@ public class CdcTools {
     }
 
     /**
-     * Specify a CDC stream by server name, database name, and table name.
+     * Create a {@code CdcSpec} opaque object (necessary for one argument in a call to consume*ToTable) in the debezium
+     * style, specifying server name, database name and table name. The topic name, and key and value schema names are
+     * implied by convention:
+     * <ul>
+     * <li>Topic is the concatenation of the arguments using "." as separator.</li>
+     * <li>Key schema name is topic with a "-key" suffix added.</li>
+     * <li>Value schema name is topic with a "-value" suffix added.</li>
+     * </ul>
      *
      * @param serverName The server name
      * @param dbName The database name
@@ -296,27 +305,22 @@ public class CdcTools {
                 KafkaTools.Consume.avroSpec(valueSchema),
                 KafkaTools.TableType.Stream);
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
-        final String[] allDroppedColumns;
+        List<String> allDroppedColumns = null;
         if (dropColumns != null && dropColumns.size() > 0) {
-            int i = 0;
-            allDroppedColumns = new String[dropColumns.size() + (asStreamTable ? 0 : 1)];
-            for (final String columnName : dropColumns) {
-                allDroppedColumns[i++] = columnName;
+            allDroppedColumns = new ArrayList<>(dropColumns);
+        }
+        if (!asStreamTable) {
+            if (allDroppedColumns == null) {
+                allDroppedColumns = new ArrayList<>(1);
             }
-            if (!asStreamTable) {
-                allDroppedColumns[i++] = CDC_OP_COLUMN_NAME;
-            }
-        } else if (asStreamTable) {
-            allDroppedColumns = null;
-        } else {
-            allDroppedColumns = new String[] {CDC_OP_COLUMN_NAME};
+            allDroppedColumns.add(CDC_OP_COLUMN_NAME);
         }
         final List<String> dbTableKeyColumnNames = fieldNames(keySchema);
         final Table narrowerStreamingTable = streamingIn
                 .view(narrowerStreamingTableViewExpressions(dbTableKeyColumnNames, dbTableColumnNames));
         if (asStreamTable) {
             if (allDroppedColumns != null) {
-                return narrowerStreamingTable.dropColumns(dropColumns);
+                return narrowerStreamingTable.dropColumns(allDroppedColumns);
             }
             return narrowerStreamingTable;
         }
