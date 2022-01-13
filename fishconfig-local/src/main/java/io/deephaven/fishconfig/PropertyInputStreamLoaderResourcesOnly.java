@@ -1,5 +1,6 @@
 package io.deephaven.fishconfig;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.configuration.ConfigurationException;
 import io.deephaven.configuration.PropertyInputStreamLoader;
 import java.io.InputStream;
@@ -8,6 +9,7 @@ import java.io.InputStream;
  * A {@link PropertyInputStreamLoader} that loads the property input stream from resources only. Has priority 0. Useful
  * for unit testing.
  */
+@AutoService(PropertyInputStreamLoader.class)
 public class PropertyInputStreamLoaderResourcesOnly implements PropertyInputStreamLoader {
 
     @Override

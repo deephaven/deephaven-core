@@ -7,4 +7,5 @@ dependencies {
 	// internal logger, that is in service of the ServiceLoader - and if consumers should not need
 	// access to the internal logger.
 	implementation project(':log-factory')
+	Classpaths.inheritAutoService(project)
 }
