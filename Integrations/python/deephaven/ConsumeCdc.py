@@ -68,7 +68,7 @@ def consumeToTable(
     :param cdc_spec:  A CDC Spec opaque object obtained from calling either the cdc_explict_spec method
                       or the cdc_short_spec method
     :param partitions: Either a sequence of integer partition numbers or the predefined constant
-        ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unespecified.
+        ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unspecified.
     :param ignore_key: Whether to ignore the key related columns for the CDC stream.
         If true, and the source is not append only, the source table will be treated as if
         the primary key contained all columns.  Defaults to FALSE.

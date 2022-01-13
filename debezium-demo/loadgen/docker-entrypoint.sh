@@ -2,8 +2,8 @@
 
 set -e
 
-wait-for-it --timeout=60 mysql:3306
-wait-for-it --timeout=60 debezium:8083
+wait-for-it --timeout 60 --service mysql:3306
+wait-for-it --timeout 60 --service debezium:8083
 
 cd /loadgen
 
