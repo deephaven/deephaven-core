@@ -39,7 +39,8 @@ dependencies {
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser project
+    Classpaths.inheritJavaParser(project)
+    Classpaths.inheritAutoService(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

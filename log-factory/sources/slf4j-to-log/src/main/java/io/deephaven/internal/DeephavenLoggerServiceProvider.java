@@ -1,5 +1,6 @@
 package io.deephaven.internal;
 
+import com.google.auto.service.AutoService;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.IMarkerFactory;
 import org.slf4j.helpers.BasicMarkerFactory;
@@ -7,6 +8,7 @@ import org.slf4j.helpers.NOPMDCAdapter;
 import org.slf4j.spi.MDCAdapter;
 import org.slf4j.spi.SLF4JServiceProvider;
 
+@AutoService(SLF4JServiceProvider.class)
 public class DeephavenLoggerServiceProvider implements SLF4JServiceProvider {
     private static final BasicMarkerFactory INSTANCE = new BasicMarkerFactory();
 
