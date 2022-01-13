@@ -26,6 +26,8 @@ dependencies {
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
+    Classpaths.inheritAutoService(project, /* test */ true)
+
     implementation project(':Plot')
 
     implementation project(':ClientSupport')

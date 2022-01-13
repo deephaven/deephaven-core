@@ -1,7 +1,9 @@
 package io.deephaven.server.object;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.plugin.Registration;
 import io.deephaven.plugin.RegistrationBase;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
@@ -69,9 +71,10 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
 
         assertThat(someString).isEqualTo(expectedSomeString);
         assertThat(someInt).isEqualTo(expectedSomeInt);
-        assertThat(someTableTicket).containsExactly(response.getExportId(0).toByteArray());
+        assertThat(someTableTicket).containsExactly(response.getExportId(0).getTicket().toByteArray());
     }
 
+    @AutoService(Registration.class)
     public static class MyObjectRegistration extends RegistrationBase {
 
         public static final String MY_OBJECT_TYPE_NAME = MyObject.class.getName();
@@ -115,7 +118,7 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
             doas.writeInt(object.someInt);
 
             final Ticket id = tableReference.id();
-            final byte[] idBytes = id.toByteArray();
+            final byte[] idBytes = id.getTicket().toByteArray();
             doas.writeByte((byte) idBytes.length);
             doas.write(idBytes);
         }

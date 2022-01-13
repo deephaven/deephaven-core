@@ -62,6 +62,11 @@ class Classpaths {
     static final String DAGGER_COMPILER = 'dagger-compiler'
     static final String DAGGER_VERSION = '2.31.1'
 
+    static final String AUTOSERVICE_GROUP = 'com.google.auto.service'
+    static final String AUTOSERVICE_NAME = 'auto-service-annotations'
+    static final String AUTOSERVICE_COMPILER = 'auto-service'
+    static final String AUTOSERVICE_VERSION = '1.0.1'
+
     static final String IMMUTABLES_GROUP = 'org.immutables'
     static final String IMMUTABLES_NAME = 'value'
     static final String IMMUTABLES_VERSION = '2.8.1'
@@ -166,6 +171,13 @@ class Classpaths {
         addDependency(ic, DAGGER_GROUP, DAGGER_NAME, DAGGER_VERSION)
         Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
         addDependency(ap, DAGGER_GROUP, DAGGER_COMPILER, DAGGER_VERSION)
+    }
+
+    static void inheritAutoService(Project p, boolean test = false) {
+        Configuration ic = p.configurations.getByName(test ? 'testCompileOnly' : 'compileOnly')
+        addDependency(ic, AUTOSERVICE_GROUP, AUTOSERVICE_NAME, AUTOSERVICE_VERSION)
+        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
+        addDependency(ap, AUTOSERVICE_GROUP, AUTOSERVICE_COMPILER, AUTOSERVICE_VERSION)
     }
 
     static void inheritImmutables(Project p) {

@@ -6,4 +6,6 @@ dependencies {
     implementation project(':plugin')
     implementation project(':Plot')
     implementation project(':extensions-barrage')
+
+    Classpaths.inheritAutoService(project)
 }
