@@ -151,6 +151,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         @Override
+        public String type() {
+            return null;
+        }
+
+        @Override
+        public byte[] ticket() {
+            return export.getExportIdBytes();
+        }
+
+        @Override
         public Ticket id() {
             return export.getExportId();
         }

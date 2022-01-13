@@ -61,6 +61,10 @@ public interface ObjectType extends Plugin {
          */
         interface Reference {
 
+            String type();
+
+            byte[] ticket();
+
             /**
              * The ticket id, should be used in the serialized representation for the object.
              *
