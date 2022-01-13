@@ -532,7 +532,6 @@ public class ParquetTableWriter {
             try (final TransferObject<?> transferObject =
                     getDestinationBuffer(computedCache, tableRowSet, columnSource, columnDefinition, targetSize,
                             columnType, writeInstructions)) {
-                final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
                 try (final RowSequence.Iterator lengthIndexIt =
@@ -555,10 +554,7 @@ public class ParquetTableWriter {
                             columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(),
                                     nullValue);
                             repeatCount.clear();
-                        } else if (supportNulls) {
                             columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
-                        } else {
-                            columnWriter.addPageNoNulls(bufferToWrite, transferObject.rowCount());
                         }
                     }
                 }
@@ -605,10 +601,6 @@ public class ParquetTableWriter {
             return QueryConstants.NULL_DOUBLE;
         }
         return null;
-    }
-
-    private static boolean supportNulls(Class<?> columnType) {
-        return !columnType.isPrimitive();
     }
 
     private static int getTargetSize(Class<?> columnType) throws IllegalAccessException {
