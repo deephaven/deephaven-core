@@ -293,4 +293,13 @@ public class ParquetTableReadWriteTest {
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
     }
+
+    @Test
+    public void testCharNullsFile() {
+        final Table source = TableTools.emptyTable(10).updateView("Chars = ii % 2 == 0 ? NULL_CHAR : (char)('A' + ii % 26)");
+        ParquetTools.writeTable(source, "CharNullTest.parquet");
+        final Table result = ParquetTools.readTable("CharNullTest.parquet");
+        TableTools.show(result.getMeta(), 10);
+        TableTools.show(result.updateView("IsNull=isNull(Chars)"), 10);
+    }
 }
