@@ -26,7 +26,7 @@ class DTypesTestCase(BaseTestCase):
     def test_type_alias(self):
         self.assertEqual(dtypes.byte, dtypes.int8)
         self.assertEqual(dtypes.short, dtypes.int16)
-        self.assertEqual(dtypes.int_, dtypes.int32)
+        self.assertEqual(dtypes.int_, dtypes.int64)
         self.assertEqual(dtypes.long, dtypes.int64)
         self.assertEqual(dtypes.float_, dtypes.single)
         self.assertEqual(dtypes.float_, dtypes.float32)
@@ -37,7 +37,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.byte.j_type, jpy.get_type("byte"))
         self.assertEqual(dtypes.short.j_type, jpy.get_type("short"))
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
-        self.assertEqual(dtypes.int_.j_type, jpy.get_type("int"))
+        self.assertEqual(dtypes.int_.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.int_.j_type, jpy.get_type("int"))
         self.assertEqual(dtypes.float_.j_type, jpy.get_type("float"))
@@ -49,6 +49,23 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.Period.j_type, jpy.get_type("io.deephaven.time.Period"))
         self.assertEqual(dtypes.PyObject.j_type, jpy.get_type("org.jpy.PyObject"))
         self.assertEqual(dtypes.JObject.j_type, jpy.get_type("java.lang.Object"))
+
+    def test_np_type(self):
+        self.assertEqual(dtypes.bool_.np_type, np.bool_)
+        self.assertEqual(dtypes.byte.np_type, np.int8)
+        self.assertEqual(dtypes.short.np_type, np.int16)
+        self.assertEqual(dtypes.char.np_type, np.dtype('uint16'))
+        self.assertEqual(dtypes.int_.np_type, np.int64)
+        self.assertEqual(dtypes.long.np_type, np.int64)
+        self.assertEqual(dtypes.float_.np_type, np.float32)
+        self.assertEqual(dtypes.double.np_type, np.float64)
+        self.assertEqual(dtypes.string.np_type, np.object_)
+        self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
+        self.assertEqual(dtypes.StringSet.np_type, np.object_)
+        self.assertEqual(dtypes.DateTime.np_type, np.dtype("datetime64[ns]"))
+        self.assertEqual(dtypes.Period.np_type, np.object_)
+        self.assertEqual(dtypes.PyObject.np_type, np.object_)
+        self.assertEqual(dtypes.JObject.np_type, np.object_)
 
     def test_period(self):
         hour_period = dtypes.Period.j_type("T1H")

@@ -1,6 +1,8 @@
 #
-#  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+#  Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+""" The modules defines the global constants including Deephaven's special numerical values. Other constants are defined
+at the individual module level because they are only locally applicable. """
 
 from enum import Enum, auto
 import jpy
