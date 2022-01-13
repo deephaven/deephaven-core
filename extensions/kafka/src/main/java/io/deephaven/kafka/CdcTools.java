@@ -2,7 +2,6 @@ package io.deephaven.kafka;
 
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.StreamTableTools;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,8 +9,10 @@ import org.apache.avro.Schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.IntPredicate;
 
 /**
@@ -255,7 +256,6 @@ public class CdcTools {
                 cdcSpec,
                 partitionFilter,
                 false,
-                false,
                 null
         );
     }
@@ -273,13 +273,12 @@ public class CdcTools {
      * @param partitionFilter  A function specifying the desired initial offset for each partition consumed
      *                         The convenience constant
      *                         {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @param ignoreKey        If true, ignore the Key schema for the CDC Stream, and instead treat all
-     *                         columns in the value schema as if they were all included as the primary key
-     *                         for the underlying database table.
-     *                         If true, no attempt to read the Key schema will be made on Schema Server.
      * @param asStreamTable    If true, return a stream table of row changes with an added 'op' column including
      *                         the CDC operation affecting the row.
-     * @param dropColumns    Collection of column names that will be dropped from the resulting table; null for none.
+     * @param dropColumns      Collection of column names that will be dropped from the resulting table; null for none.
+     *                         Note that only columns not included in the primary key can be dropped at this stage;
+     *                         you can chain a drop column operation after this call if you need to drop
+     *                         primary key columns.
      * @return                 A Deephaven live table for underlying database table tracked by the CDC Stream
      */
     @ScriptApi
@@ -287,24 +286,18 @@ public class CdcTools {
             @NotNull final Properties kafkaProperties,
             @NotNull final CdcSpec cdcSpec,
             @NotNull final IntPredicate partitionFilter,
-            final boolean ignoreKey,
             final boolean asStreamTable,
             Collection<String> dropColumns) {
-        final Schema valueSchema = KafkaTools.getAvroSchema(kafkaProperties, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
-        final Schema keySchema;
-        if (ignoreKey) {
-            keySchema = null;
-        } else {
-            keySchema = KafkaTools.getAvroSchema(kafkaProperties, cdcSpec.keySchemaName(), cdcSpec.keySchemaVersion());
-        }
+        final Schema valueSchema = KafkaTools.getAvroSchema(
+                kafkaProperties, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
+        final Schema keySchema = KafkaTools.getAvroSchema(
+                kafkaProperties, cdcSpec.keySchemaName(), cdcSpec.keySchemaVersion());
         final Table streamingIn = KafkaTools.consumeToTable(
                 kafkaProperties,
                 cdcSpec.topic(),
                 partitionFilter,
                 KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING,
-                ignoreKey
-                        ? KafkaTools.Consume.IGNORE
-                        : KafkaTools.Consume.avroSpec(keySchema),
+                KafkaTools.Consume.avroSpec(keySchema),
                 KafkaTools.Consume.avroSpec(valueSchema),
                 KafkaTools.TableType.Stream);
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
@@ -323,8 +316,9 @@ public class CdcTools {
         } else {
             allDroppedColumns = new String[] { CDC_OP_COLUMN_NAME };
         }
+        final List<String> dbTableKeyColumnNames = fieldNames(keySchema);
         final Table narrowerStreamingTable = streamingIn
-                .view(narrowerStreamingTableViewExpressions(dbTableColumnNames));
+                .view(narrowerStreamingTableViewExpressions(dbTableKeyColumnNames, dbTableColumnNames));
         if (asStreamTable) {
             if (allDroppedColumns != null) {
                 return narrowerStreamingTable.dropColumns(dropColumns);
@@ -332,14 +326,9 @@ public class CdcTools {
             return narrowerStreamingTable;
         }
         final List<String> lastByColumnNames;
-        if (ignoreKey) {
-            lastByColumnNames = fieldNames(valueSchema);
-        } else {
-            lastByColumnNames = fieldNames(keySchema);
-        }
         // @formatter:off
         final Table cdc = narrowerStreamingTable
-                .lastBy(lastByColumnNames)
+                .lastBy(dbTableKeyColumnNames)
                 .where(CDC_OP_COLUMN_NAME + " != `" + CDC_DELETE_OP_VALUE + "`")
                 .dropColumns(allDroppedColumns);
         // @formatter:on
@@ -364,11 +353,17 @@ public class CdcTools {
     }
 
     private static String[] narrowerStreamingTableViewExpressions(
+            final List<String> dbTableKeyColumnNames,
             final List<String> dbTableColumnNames) {
         final String[] viewExpressions = new String[dbTableColumnNames.size() + 1];
         int i = 0;
+        final Set<String> keyColumnsSet = new HashSet(dbTableKeyColumnNames);
         for (final String columnName : dbTableColumnNames) {
-            viewExpressions[i++] = columnName + "=" + CDC_AFTER_COLUMN_PREFIX + columnName;
+            if (dbTableKeyColumnNames.contains(columnName)) {
+                viewExpressions[i++] = columnName;
+            } else {
+                viewExpressions[i++] = columnName + "=" + CDC_AFTER_COLUMN_PREFIX + columnName;
+            }
         }
         viewExpressions[i++] = CDC_OP_COLUMN_NAME;
         return viewExpressions;

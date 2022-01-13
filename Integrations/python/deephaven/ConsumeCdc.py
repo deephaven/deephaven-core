@@ -53,7 +53,6 @@ def consumeToTable(
         kafka_config:dict,
         cdc_spec,
         partitions = None,
-        ignore_key = False,
         as_stream_table = False,
         drop_columns = None,
 ):
@@ -62,24 +61,20 @@ def consumeToTable(
     tracking the underlying database table to a Deephaven table.
 
     :param kafka_config: Dictionary with properties to configure the associated kafka consumer and
-        also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
-        pass any KafkaConsumer specific desired configuration here.
-        Note this should include the relevant property for a schema server URL where the
-        key and/or value Avro necessary schemas are stored.
+         also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
+         pass any KafkaConsumer specific desired configuration here.
+         Note this should include the relevant property for a schema server URL where the
+         key and/or value Avro necessary schemas are stored.
     :param cdc_spec:  A CDC Spec opaque object obtained from calling either the cdc_explict_spec method
                       or the cdc_short_spec method
     :param partitions: Either a sequence of integer partition numbers or the predefined constant
-        ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unspecified.
-    :param ignore_key: Whether to ignore the key related columns for the CDC stream.
-        If true, and the source is not append only, the source table will be treated as if
-        the primary key contained all columns.  Defaults to FALSE.
+         ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unspecified.
     :param as_stream_table:  If true, produce a streaming table of changed rows keeping
-        the CDC 'op' column indicating the type of column change; if false, return
-        a DHC ticking table that tracks the underlying database table through the CDC Stream.
+         the CDC 'op' column indicating the type of column change; if false, return
+         a DHC ticking table that tracks the underlying database table through the CDC Stream.
     :param drop_columns: A sequence of column names to omit from the resulting DHC table.
-        Note that, in the case a ignore_key is false, only columns not included in the primary
-        key for the table can be dropped at this stage; you can chain a drop column operation
-        after this call if you need to do this.
+         Note that only columns not included in the primary key for the table can be dropped at this stage;
+         you can chain a drop column operation after this call if you need to do this.
     :return: A Deephaven live table that will update based on the CDC messages consumed for the given topic.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
@@ -90,7 +85,6 @@ def consumeToTable(
         kafka_config,
         cdc_spec,
         partitions,
-        ignore_key,
         as_stream_table,
         drop_columns)
 
