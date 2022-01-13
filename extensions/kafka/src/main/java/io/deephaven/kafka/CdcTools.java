@@ -16,8 +16,8 @@ import java.util.Set;
 import java.util.function.IntPredicate;
 
 /**
- * Utility class with methods to support consuming from a Change Data Capture (CDC)
- * Kafka stream (as, eg, produced by Debezium) to a Deephaven table.
+ * Utility class with methods to support consuming from a Change Data Capture (CDC) Kafka stream (as, eg, produced by
+ * Debezium) to a Deephaven table.
  *
  */
 public class CdcTools {
@@ -35,16 +35,15 @@ public class CdcTools {
      */
     public static final String CDC_TOPIC_NAME_SEPARATOR = ".";
     /**
-     * The Value Kafka field in a CDC topic contains a sub field with a record (as nested fields)
-     * with values for all the columns for an updated (or added) row.
-     * This constant should match the path from the root, to this record.
-     * For instance, if the parent field is called "after", and the nested field separator is ".",
-     * this constant should be "after."
+     * The Value Kafka field in a CDC topic contains a sub field with a record (as nested fields) with values for all
+     * the columns for an updated (or added) row. This constant should match the path from the root, to this record. For
+     * instance, if the parent field is called "after", and the nested field separator is ".", this constant should be
+     * "after."
      */
     public static final String CDC_AFTER_COLUMN_PREFIX = "after" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR;
     /**
-     * The name of the sub-field in the Value field that indicates the type of operation that triggered
-     * the CDC event (eg, insert, delete).
+     * The name of the sub-field in the Value field that indicates the type of operation that triggered the CDC event
+     * (eg, insert, delete).
      */
     public static final String CDC_OP_COLUMN_NAME = "op";
     /**
@@ -53,27 +52,30 @@ public class CdcTools {
     public static final String CDC_DELETE_OP_VALUE = "d";
 
     /**
-     * Users specify CDC streams via objects satisfying this interface;
-     * the objects are created with static factory methods, the classes
-     * implementing this interface are opaque from a user perspective.
+     * Users specify CDC streams via objects satisfying this interface; the objects are created with static factory
+     * methods, the classes implementing this interface are opaque from a user perspective.
      */
     private interface CdcSpec {
         /**
          * @return CDC stream kafka topic
          */
         String topic();
+
         /**
          * return Avro Schema name in Schema Service for the Key Kafka field.
          */
         String keySchemaName();
+
         /**
          * @return Version to use from Schema Service for the Avro Schema for the Key kafka field.
          */
         String keySchemaVersion();
+
         /**
          * return Avro Schema name in Schema Service for the Value Kafka field.
          */
         String valueSchemaName();
+
         /**
          * @return Version to use from Schema Service for the Avro Schema for the Value kafka field.
          */
@@ -95,8 +97,7 @@ public class CdcTools {
                 final String keySchemaName,
                 final String keySchemaVersion,
                 final String valueSchemaName,
-                final String valueSchemaVersion
-        ) {
+                final String valueSchemaVersion) {
             this.topic = topic;
             this.keySchemaName = keySchemaName;
             this.keySchemaVersion = keySchemaVersion;
@@ -141,8 +142,7 @@ public class CdcTools {
         private CdcSpecServerDbTable(
                 final String serverName,
                 final String dbName,
-                final String tableName
-        ) {
+                final String tableName) {
             this.serverName = serverName;
             this.dbName = dbName;
             this.tableName = tableName;
@@ -177,11 +177,11 @@ public class CdcTools {
     /**
      * Specify a CDC stream by extension.
      *
-     * @param topic               The Kafka topic for the CDC events associated to the desired table data.
-     * @param keySchemaName       The schema name for the Key Kafka field in the CDC events for the topic.
-     *         This schema should include definitions for the columns forming the PRIMARY KEY of the underlying table.
-     * @param valueSchemaName     The schema name for the Value Kafka field in the CDC events for the topic.
-     *         This schema should include definitions for all the columns of the underlying table.
+     * @param topic The Kafka topic for the CDC events associated to the desired table data.
+     * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
+     *        include definitions for the columns forming the PRIMARY KEY of the underlying table.
+     * @param valueSchemaName The schema name for the Value Kafka field in the CDC events for the topic. This schema
+     *        should include definitions for all the columns of the underlying table.
      * @return A CdcSpec object corresponding to the inputs.
      */
     @ScriptApi
@@ -189,19 +189,20 @@ public class CdcTools {
             final String topic,
             final String keySchemaName,
             final String valueSchemaName) {
-        return new CdcSpecTopicSchemas(topic, keySchemaName, KafkaTools.AVRO_LATEST_VERSION, valueSchemaName, KafkaTools.AVRO_LATEST_VERSION);
+        return new CdcSpecTopicSchemas(topic, keySchemaName, KafkaTools.AVRO_LATEST_VERSION, valueSchemaName,
+                KafkaTools.AVRO_LATEST_VERSION);
     }
 
     /**
      * Specify a CDC stream by extension.
      *
-     * @param topic               The Kafka topic for the CDC events associated to the desired table data.
-     * @param keySchemaName       The schema name for the Key Kafka field in the CDC events for the topic.
-     *         This schema should include definitions for the columns forming the PRIMARY KEY of the underlying table.
-     * @parar keySchemaVersion    The version for the Key schema to look up in schema server.
-     * @param valueSchemaName     The schema name for the Value Kafka field in the CDC events for the topic.
-     *         This schema should include definitions for all the columns of the underlying table.
-     * @param valueSchemaVersion  The version for the Value schema to look up in schema server.
+     * @param topic The Kafka topic for the CDC events associated to the desired table data.
+     * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
+     *        include definitions for the columns forming the PRIMARY KEY of the underlying table.
+     * @parar keySchemaVersion The version for the Key schema to look up in schema server.
+     * @param valueSchemaName The schema name for the Value Kafka field in the CDC events for the topic. This schema
+     *        should include definitions for all the columns of the underlying table.
+     * @param valueSchemaVersion The version for the Value schema to look up in schema server.
      * @return A CdcSpec object corresponding to the inputs.
      */
     @ScriptApi
@@ -234,17 +235,15 @@ public class CdcTools {
     /**
      * Consume from a CDC Kafka Event Stream to a DHC ticking table, recreating the underlying database table.
      *
-     * @param kafkaProperties Properties to configure the associated kafka consumer and
-     *         also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
-     *         pass any KafkaConsumer specific desired configuration here.
-     *         Note this should include the relevant property for a schema server URL where the
-     *         key and/or value Avro necessary schemas are stored.
-     * @param cdcSpec         A CdcSpec opaque object specifying the CDC Stream.  Can be obtained
-     *                        from calling the {@code cdcSpec} static factory method.
-     * @param partitionFilter A function specifying the desired initial offset for each partition consumed
-     *                        The convenience constant
-     *                        {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @return                A Deephaven live table for underlying database table tracked by the CDC Stream
+     * @param kafkaProperties Properties to configure the associated kafka consumer and also the resulting table. Passed
+     *        to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any KafkaConsumer specific
+     *        desired configuration here. Note this should include the relevant property for a schema server URL where
+     *        the key and/or value Avro necessary schemas are stored.
+     * @param cdcSpec A CdcSpec opaque object specifying the CDC Stream. Can be obtained from calling the
+     *        {@code cdcSpec} static factory method.
+     * @param partitionFilter A function specifying the desired initial offset for each partition consumed The
+     *        convenience constant {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @return A Deephaven live table for underlying database table tracked by the CDC Stream
      */
     @ScriptApi
     public static Table consumeToTable(
@@ -256,30 +255,26 @@ public class CdcTools {
                 cdcSpec,
                 partitionFilter,
                 false,
-                null
-        );
+                null);
     }
 
     /**
      * Consume from a CDC Kafka Event Stream to a DHC ticking table, recreating the underlying database table.
      *
-     * @param kafkaProperties  Properties to configure the associated kafka consumer and
-     *         also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
-     *         pass any KafkaConsumer specific desired configuration here.
-     *         Note this should include the relevant property for a schema server URL where the
-     *         key and/or value Avro necessary schemas are stored.
-     * @param cdcSpec          A CdcSpec opaque object specifying the CDC Stream.  Can be obtained
-     *                         from calling the {@code cdcSpec} static factory method.
-     * @param partitionFilter  A function specifying the desired initial offset for each partition consumed
-     *                         The convenience constant
-     *                         {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @param asStreamTable    If true, return a stream table of row changes with an added 'op' column including
-     *                         the CDC operation affecting the row.
-     * @param dropColumns      Collection of column names that will be dropped from the resulting table; null for none.
-     *                         Note that only columns not included in the primary key can be dropped at this stage;
-     *                         you can chain a drop column operation after this call if you need to drop
-     *                         primary key columns.
-     * @return                 A Deephaven live table for underlying database table tracked by the CDC Stream
+     * @param kafkaProperties Properties to configure the associated kafka consumer and also the resulting table. Passed
+     *        to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any KafkaConsumer specific
+     *        desired configuration here. Note this should include the relevant property for a schema server URL where
+     *        the key and/or value Avro necessary schemas are stored.
+     * @param cdcSpec A CdcSpec opaque object specifying the CDC Stream. Can be obtained from calling the
+     *        {@code cdcSpec} static factory method.
+     * @param partitionFilter A function specifying the desired initial offset for each partition consumed The
+     *        convenience constant {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @param asStreamTable If true, return a stream table of row changes with an added 'op' column including the CDC
+     *        operation affecting the row.
+     * @param dropColumns Collection of column names that will be dropped from the resulting table; null for none. Note
+     *        that only columns not included in the primary key can be dropped at this stage; you can chain a drop
+     *        column operation after this call if you need to drop primary key columns.
+     * @return A Deephaven live table for underlying database table tracked by the CDC Stream
      */
     @ScriptApi
     public static Table consumeToTable(
@@ -314,7 +309,7 @@ public class CdcTools {
         } else if (asStreamTable) {
             allDroppedColumns = null;
         } else {
-            allDroppedColumns = new String[] { CDC_OP_COLUMN_NAME };
+            allDroppedColumns = new String[] {CDC_OP_COLUMN_NAME};
         }
         final List<String> dbTableKeyColumnNames = fieldNames(keySchema);
         final Table narrowerStreamingTable = streamingIn
@@ -340,8 +335,7 @@ public class CdcTools {
             @NotNull final Properties kafkaProperties,
             @NotNull final CdcSpec cdcSpec,
             @NotNull final IntPredicate partitionFilter,
-            @NotNull final KafkaTools.TableType tableType
-    ) {
+            @NotNull final KafkaTools.TableType tableType) {
         return KafkaTools.consumeToTable(
                 kafkaProperties,
                 cdcSpec.topic(),

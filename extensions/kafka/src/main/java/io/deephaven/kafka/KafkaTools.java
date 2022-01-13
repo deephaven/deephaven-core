@@ -948,8 +948,8 @@ public class KafkaTools {
      *
      * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
-     * @param partitionFilter A predicate returning true for the partitions to consume.  The convenience constant
-     *                        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
+     * @param partitionFilter A predicate returning true for the partitions to consume. The convenience constant
+     *        {@code ALL_PARTITIONS} is defined to facilitate requesting all partitions.
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
      * @param keySpec Conversion specification for Kafka record keys
      * @param valueSpec Conversion specification for Kafka record values
