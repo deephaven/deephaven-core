@@ -346,6 +346,23 @@ public class CdcTools {
         return cdc;
     }
 
+    @ScriptApi
+    public static Table consumeRawToTable(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final CdcSpec cdcSpec,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final KafkaTools.TableType tableType
+    ) {
+        return KafkaTools.consumeToTable(
+                kafkaProperties,
+                cdcSpec.topic(),
+                partitionFilter,
+                KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                KafkaTools.Consume.avroSpec(cdcSpec.keySchemaName(), cdcSpec.keySchemaVersion()),
+                KafkaTools.Consume.avroSpec(cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion()),
+                tableType);
+    }
+
     private static String[] narrowerStreamingTableViewExpressions(
             final List<String> dbTableColumnNames) {
         final String[] viewExpressions = new String[dbTableColumnNames.size() + 1];

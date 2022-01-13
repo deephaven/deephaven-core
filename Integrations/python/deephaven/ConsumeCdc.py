@@ -58,7 +58,8 @@ def consumeToTable(
         drop_columns = None,
 ):
     """
-    Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium) to a Deephaven table.
+    Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium)
+    tracking the underlying database table to a Deephaven table.
 
     :param kafka_config: Dictionary with properties to configure the associated kafka consumer and
         also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
@@ -83,24 +84,7 @@ def consumeToTable(
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
 
-    if partitions is None:
-        partitions = ALL_PARTITIONS
-    elif isinstance(partitions, collections.Sequence):
-        try:
-            jarr = jpy.array('int', partitions)
-        except Exception as e:
-            raise ValueError(
-                "when not one of the predefined constants, keyword argument 'partitions' has to " +
-                "represent a sequence of integer partition with values >= 0, instead got " +
-                str(partitions) + " of type " + type(partitions).__name__
-            ) from e
-        partitions = _java_type_.partitionFilterFromArray(jarr)
-    elif not isinstance(partitions, jpy.JType):
-        raise TypeError(
-            "argument 'partitions' has to be of str or sequence type, " +
-            "or a predefined compatible constant, instead got partitions " +
-            str(partitions) + " of type " + type(partitions).__name__)
-
+    partitions = ck._jpy_partitions(partitions)
     kafka_config = _dictToProperties(kafka_config)
     return _java_type_.consumeToTable(
         kafka_config,
@@ -109,6 +93,34 @@ def consumeToTable(
         ignore_key,
         as_stream_table,
         drop_columns)
+
+@_passThrough
+def consumeRawToTable(
+        kafka_config:dict,
+        cdc_spec,
+        partitions = None,
+        table_type:str = 'stream'
+):
+    """
+    Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.
+
+    :param kafka_config: Dictionary with properties to configure the associated kafka consumer and
+        also the resulting table.  Passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor;
+        pass any KafkaConsumer specific desired configuration here.
+        Note this should include the relevant property for a schema server URL where the
+        key and/or value Avro necessary schemas are stored.
+    :param cdc_spec:     A CDC Spec opaque object obtained from calling either the cdc_explict_spec method
+                         or the cdc_short_spec method
+    :param partitions:   Either a sequence of integer partition numbers or the predefined constant
+        ALL_PARTITIONS for all partitions.  Defaults to ALL_PARTITIONS if unspecified.
+    :param table_type:   A string specifying the resulting table type: one of 'stream' (default), 'append',
+       'stream_map' or 'append_map'.
+    :return: A Deephaven live table for the raw CDC events.
+    """
+    partitions = ck._jpy_partitions(partitions)
+    kafka_config = _dictToProperties(kafka_config)
+    table_type_enum = ck._jpy_table_type(table_type)
+    return _java_type_.consumeRawToTable(kafka_config, cdc_spec, partitions, table_type_enum)
 
 @_passThrough
 def cdc_explicit_spec(
