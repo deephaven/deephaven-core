@@ -1,21 +1,35 @@
 import jpy
 from deephaven.plugin.object import Exporter, ObjectType, Reference
 
+_JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
 _JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
+
+
+def adapt_reference(ref: _JReference) -> Reference:
+    return Reference(ref.index(), ref.type().orElse(None), bytes(ref.ticket()))
+
 
 class ExporterAdapter(Exporter):
     def __init__(self, exporter: _JExporterAdapter):
         self._exporter = exporter
 
-    def new_server_side_reference(self, object) -> Reference:
+    def reference(self, object) -> Reference:
         if isinstance(object, jpy.JType):
-            _reference = self._exporter.newServerSideReference(object)
+            ref = self._exporter.reference(object)
         else:
-            _reference = self._exporter.newServerSideReferencePyObject(object)
-        return Reference(bytes(_reference.id().getTicket().toByteArray()))
+            ref = self._exporter.referencePyObject(object)
+        return adapt_reference(ref)
+
+    def new_reference(self, object) -> Reference:
+        if isinstance(object, jpy.JType):
+            ref = self._exporter.newReference(object)
+        else:
+            ref = self._exporter.newReferencePyObject(object)
+        return adapt_reference(ref)
 
     def __str__(self):
         return str(self._exporter)
+
 
 # see io.deephaven.server.plugin.python.ObjectTypeAdapter for calling details
 class ObjectTypeAdapter:

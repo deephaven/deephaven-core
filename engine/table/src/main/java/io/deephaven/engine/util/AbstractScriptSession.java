@@ -203,6 +203,7 @@ public abstract class AbstractScriptSession<S extends Snapshot> extends Liveness
         if (object == null) {
             return Optional.empty();
         }
+        // Should this be consolidated down into TypeLookup and brought into engine?
         if (object instanceof Table) {
             final Table table = (Table) object;
             if (table.hasAttribute(NON_DISPLAY_TABLE)) {

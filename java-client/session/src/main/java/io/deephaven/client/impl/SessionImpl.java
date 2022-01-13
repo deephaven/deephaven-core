@@ -2,7 +2,6 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
-import io.deephaven.client.impl.script.VariableDefinition;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
@@ -438,7 +437,12 @@ public final class SessionImpl extends SessionBase {
         }
 
         private static ExportId toExportId(TypedTicket e) {
-            final String type = e.getType();
+            final String type;
+            if (!e.hasType()) {
+                type = null;
+            } else {
+                type = e.getType();
+            }
             final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket().asReadOnlyByteBuffer(), "exportId");
             return new ExportId(type, exportId);
         }
@@ -519,10 +523,6 @@ public final class SessionImpl extends SessionBase {
     private static class ExecuteCommandHandler implements StreamObserver<ExecuteCommandResponse> {
 
         private final CompletableFuture<Changes> future = new CompletableFuture<>();
-
-        private static VariableDefinition of(io.deephaven.proto.backplane.grpc.FieldInfo d) {
-            return VariableDefinition.of(d.getTicket().getType(), d.getFieldName());
-        }
 
         private static Changes of(ExecuteCommandResponse value) {
             Changes.Builder builder = Changes.builder().changes(new FieldChanges(value.getChanges()));

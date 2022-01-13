@@ -5,19 +5,18 @@ import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.proto.backplane.grpc.TypedTicket.Builder;
+import io.deephaven.server.object.TypeLookup;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
@@ -43,7 +42,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final AppMode mode;
     private final Scheduler scheduler;
     private final SessionService sessionService;
-    private final ObjectTypeLookup objectTypeLookup;
+    private final TypeLookup typeLookup;
 
     private final LivenessTracker tracker = new LivenessTracker();
 
@@ -66,11 +65,11 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     public ApplicationServiceGrpcImpl(final AppMode mode,
             final Scheduler scheduler,
             final SessionService sessionService,
-            final ObjectTypeLookup objectTypeLookup) {
+            final TypeLookup typeLookup) {
         this.mode = mode;
         this.scheduler = scheduler;
         this.sessionService = sessionService;
-        this.objectTypeLookup = objectTypeLookup;
+        this.typeLookup = typeLookup;
     }
 
     @Override
@@ -242,10 +241,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private FieldInfo getRemovedFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(TypedTicket.newBuilder()
-                        .setType(fieldType(field.value()))
-                        .setTicket(id.getTicket().getTicket())
-                        .build())
+                .setTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
@@ -254,10 +250,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(TypedTicket.newBuilder()
-                        .setType(fieldType(field.value()))
-                        .setTicket(id.getTicket().getTicket())
-                        .build())
+                .setTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
                 .setFieldDescription(field.description().orElse(""))
                 .setApplicationId(id.applicationId())
@@ -265,14 +258,10 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 .build();
     }
 
-    // todo consolidate logic
-    private String fieldType(final Object object) {
-        if (object instanceof Table) {
-            return "Table";
-        }
-        return objectTypeLookup.findObjectType(object)
-                .map(ObjectType::name)
-                .orElse("");
+    private TypedTicket typedTicket(AppFieldId id, Field<?> field) {
+        final Builder ticket = TypedTicket.newBuilder().setTicket(id.getTicket().getTicket());
+        typeLookup.type(field.value()).ifPresent(ticket::setType);
+        return ticket.build();
     }
 
     private static class ScopeField implements Field<Object> {

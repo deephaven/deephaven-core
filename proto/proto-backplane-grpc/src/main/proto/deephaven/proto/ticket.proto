@@ -27,5 +27,9 @@ message Ticket {
 
 message TypedTicket {
     bytes ticket = 1;
-    string type = 2;
+
+    /*
+     * The type. Its absence means that it is not known, not that the server chose to not set it.
+     */
+    optional string type = 2;
 }

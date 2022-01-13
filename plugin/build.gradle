@@ -5,7 +5,7 @@ plugins {
 description = 'The Deephaven plugin interface'
 
 dependencies {
-    api project(':proto:proto-backplane-grpc')
+    implementation project(':proto:proto-backplane-grpc')
 }
 
 apply plugin: 'io.deephaven.java-publishing-conventions'

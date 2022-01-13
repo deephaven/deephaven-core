@@ -1,5 +1,6 @@
 package io.deephaven.server.object;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
@@ -15,19 +16,22 @@ import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiPredicate;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ObjectServiceGrpcImpl.class);
@@ -35,13 +39,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ObjectTypeLookup objectTypeLookup;
+    private final TypeLookup typeLookup;
 
     @Inject
     public ObjectServiceGrpcImpl(SessionService sessionService, TicketRouter ticketRouter,
-            ObjectTypeLookup objectTypeLookup) {
+            ObjectTypeLookup objectTypeLookup, TypeLookup typeLookup) {
         this.sessionService = Objects.requireNonNull(sessionService);
         this.ticketRouter = Objects.requireNonNull(ticketRouter);
         this.objectTypeLookup = Objects.requireNonNull(objectTypeLookup);
+        this.typeLookup = Objects.requireNonNull(typeLookup);
     }
 
     @Override
@@ -76,13 +82,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             final Builder builder = FetchObjectResponse.newBuilder()
                     .setType(objectType.name())
                     .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));
-            for (ExportObject<?> export : exportCollector.exports()) {
-                final String exportType = findType(export.get());
-                final Ticket exportId = export.getExportId();
-                builder.addExportId(TypedTicket.newBuilder()
-                        .setType(exportType)
-                        .setTicket(exportId.getTicket())
-                        .build());
+            for (ReferenceImpl ref : exportCollector.refs()) {
+                builder.addExportId(ref.typedTicket());
             }
             return builder.build();
         } catch (Throwable t) {
@@ -91,18 +92,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
     }
 
-    // todo consolidate logic
-    private String findType(Object o) {
-        if (o instanceof Table) {
-            return "Table";
-        }
-        return objectTypeLookup.findObjectType(o).map(ObjectType::name).orElse("");
-    }
-
     private static void cleanup(ExportCollector exportCollector, Throwable t) {
-        for (ExportObject<?> export : exportCollector.exports()) {
+        for (ReferenceImpl ref : exportCollector.refs()) {
             try {
-                export.release();
+                ref.export.release();
             } catch (Throwable inner) {
                 t.addSuppressed(inner);
             }
@@ -114,55 +107,110 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 "No type registered for object class=" + o.getClass().getName() + ", value=" + o);
     }
 
-    // Make private after
-    // TODO(deephaven-core#1784): Remove fetchFigure RPC
-    public static final class ExportCollector implements Exporter {
+    private static boolean referenceEquality(Object t, Object u) {
+        return t == u;
+    }
+
+    final class ExportCollector implements Exporter {
 
         private final SessionState sessionState;
         private final Thread thread;
-        private final List<ExportObject<?>> exports;
+        private final List<ReferenceImpl> references;
 
         public ExportCollector(SessionState sessionState) {
             this.sessionState = Objects.requireNonNull(sessionState);
             this.thread = Thread.currentThread();
-            this.exports = new ArrayList<>();
+            this.references = new ArrayList<>();
         }
 
-        public List<ExportObject<?>> exports() {
-            return exports;
+        public List<ReferenceImpl> refs() {
+            return references;
+        }
+
+        public Reference reference(PyObject object) {
+            if (thread != Thread.currentThread()) {
+                throw new IllegalStateException("Should only create references on the calling thread");
+            }
+            for (ReferenceImpl reference : references) {
+                // Need to check pointers for python
+                if (object.equals(reference.export.get())) {
+                    return reference;
+                }
+            }
+            return newReferenceImpl(object);
         }
 
         @Override
-        public Reference newServerSideReference(Object object) {
+        public Reference reference(Object object) {
+            if (object instanceof PyObject) {
+                throw new IllegalArgumentException("PyObject should be called using equals()-based equality");
+            }
+            return reference(object, ObjectServiceGrpcImpl::referenceEquality);
+        }
+
+        @Override
+        public Reference reference(Object object, BiPredicate<Object, Object> equals) {
+            if (thread != Thread.currentThread()) {
+                throw new IllegalStateException("Should only create references on the calling thread");
+            }
+            for (ReferenceImpl reference : references) {
+                if (equals.test(object, reference.export.get())) {
+                    return reference;
+                }
+            }
+            return newReferenceImpl(object);
+        }
+
+        @Override
+        public Reference newReference(Object object) {
             if (thread != Thread.currentThread()) {
                 throw new IllegalStateException("Should only create new references on the calling thread");
             }
+            return newReferenceImpl(object);
+        }
+
+        private ReferenceImpl newReferenceImpl(Object object) {
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            exports.add(exportObject);
-            return new ReferenceImpl(exportObject);
+            final ReferenceImpl ref =
+                    new ReferenceImpl(references.size(), typeLookup.type(object).orElse(null), exportObject);
+            references.add(ref);
+            return ref;
         }
     }
 
     private static final class ReferenceImpl implements Reference {
+        private final int index;
+        private final String type;
         private final ExportObject<?> export;
 
-        public ReferenceImpl(ExportObject<?> export) {
+        public ReferenceImpl(int index, String type, ExportObject<?> export) {
+            this.index = index;
+            this.type = type;
             this.export = Objects.requireNonNull(export);
         }
 
+        public TypedTicket typedTicket() {
+            final ByteString ticket = ByteStringAccess.wrap(export.getExportIdBytes());
+            final TypedTicket.Builder builder = TypedTicket.newBuilder().setTicket(ticket);
+            if (type != null) {
+                builder.setType(type);
+            }
+            return builder.build();
+        }
+
         @Override
-        public String type() {
-            return null;
+        public int index() {
+            return index;
+        }
+
+        @Override
+        public Optional<String> type() {
+            return Optional.ofNullable(type);
         }
 
         @Override
         public byte[] ticket() {
             return export.getExportIdBytes();
-        }
-
-        @Override
-        public Ticket id() {
-            return export.getExportId();
         }
     }
 }

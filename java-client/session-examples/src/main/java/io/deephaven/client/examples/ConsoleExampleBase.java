@@ -52,16 +52,16 @@ abstract class ConsoleExampleBase extends SingleSessionExampleBase {
             sb.append("No displayable variables updated").append(System.lineSeparator());
         } else {
             for (FieldInfo fieldInfo : changes.changes().created()) {
-                sb.append(fieldInfo.type()).append(' ').append(fieldInfo.name()).append(" = <new>")
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name()).append(" = <new>")
                         .append(System.lineSeparator());
             }
             for (FieldInfo fieldInfo : changes.changes().updated()) {
-                sb.append(fieldInfo.type()).append(' ').append(fieldInfo.name())
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name())
                         .append(" = <updated>")
                         .append(System.lineSeparator());
             }
             for (FieldInfo fieldInfo : changes.changes().removed()) {
-                sb.append(fieldInfo.type()).append(' ').append(fieldInfo.name()).append(" <removed>")
+                sb.append(fieldInfo.type().orElse("?")).append(' ').append(fieldInfo.name()).append(" <removed>")
                         .append(System.lineSeparator());
             }
         }

@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     implementation project(':plugin')
+    implementation project(':proto:proto-backplane-grpc')
+
     implementation project(':Plot')
     implementation project(':extensions-barrage')
 

@@ -680,7 +680,8 @@ public class SessionState {
         }
 
         /**
-         * @return the ticket bytes for this export; note if this is a non-export the returned ticket will not resolve to anything and is considered an invalid ticket
+         * @return the ticket bytes for this export; note if this is a non-export the returned ticket will not resolve
+         *         to anything and is considered an invalid ticket
          */
         public byte[] getExportIdBytes() {
             return ExportTicketHelper.exportIdToBytes(exportId);

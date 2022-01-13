@@ -2,8 +2,6 @@ package io.deephaven.figure;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
@@ -41,8 +39,6 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.plot.util.tables.TableMapHandle;
 import io.deephaven.plugin.type.ObjectType.Exporter;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.AxisDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BoolMapWithDefault;
@@ -84,18 +80,6 @@ import java.util.stream.Stream;
 public class FigureWidgetTranslator {
     private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
 
-    // Copied from TableServiceGrpcImpl
-    public static ExportedTableCreationResponse buildTableCreationResponse(final TableReference tableRef,
-            final Table table) {
-        return ExportedTableCreationResponse.newBuilder()
-                .setSuccess(true)
-                .setResultId(tableRef)
-                .setIsStatic(!table.isRefreshing())
-                .setSize(table.size())
-                .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                .build();
-    }
-
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
     private final Map<TableMapHandle, Integer> tableMapPositionMap = new HashMap<>();
@@ -123,7 +107,9 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            exporter.newServerSideReference(table);
+            // noinspection unused
+            final Reference reference = exporter.newReference(table);
+            // relying on FetchObjectResponse.export_id for communicating exported tables to the client
         }
 
         // TODO (deephaven-core#62) implement once tablemaps are ready

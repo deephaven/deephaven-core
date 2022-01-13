@@ -14,12 +14,21 @@ final class ExporterAdapter {
         this.exporter = Objects.requireNonNull(exporter);
     }
 
-    public Reference newServerSideReference(Object object) {
-        return exporter.newServerSideReference(object);
+    public Reference newReference(Object object) {
+        return exporter.newReference(object);
     }
 
     // TODO(deephaven-core#1775): multivariate jpy (unwrapped) call into java
-    public Reference newServerSideReferencePyObject(PyObject object) {
-        return exporter.newServerSideReference(object);
+    public Reference newReferencePyObject(PyObject object) {
+        return exporter.newReference(object);
+    }
+
+    public Reference reference(Object object) {
+        return exporter.reference(object);
+    }
+
+    // TODO(deephaven-core#1775): multivariate jpy (unwrapped) call into java
+    public Reference referencePyObject(PyObject object) {
+        return exporter.reference(object, Objects::equals);
     }
 }

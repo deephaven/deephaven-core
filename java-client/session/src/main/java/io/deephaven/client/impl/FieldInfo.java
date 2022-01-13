@@ -1,7 +1,5 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.proto.backplane.grpc.TypedTicket;
-
 import java.util.Objects;
 import java.util.Optional;
 
@@ -13,12 +11,11 @@ public final class FieldInfo {
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
     }
 
-    public TypedTicket getTicket() {
-        return fieldInfo.getTicket();
-    }
-
-    public String type() {
-        return fieldInfo.getTicket().getType();
+    public Optional<String> type() {
+        if (!fieldInfo.getTicket().hasType()) {
+            return Optional.empty();
+        }
+        return Optional.of(fieldInfo.getTicket().getType());
     }
 
     public TicketId ticket() {

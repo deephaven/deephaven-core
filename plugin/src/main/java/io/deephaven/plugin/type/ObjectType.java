@@ -2,10 +2,11 @@ package io.deephaven.plugin.type;
 
 import io.deephaven.plugin.Plugin;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
-import io.deephaven.proto.backplane.grpc.Ticket;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Optional;
+import java.util.function.BiPredicate;
 
 /**
  * An "object type" plugin. Useful for serializing custom objects between the server / client.
@@ -29,9 +30,10 @@ public interface ObjectType extends Plugin {
 
     /**
      * Serializes {@code object} into {@code out}. Must only be called with a compatible object, see
-     * {@link #isType(Object)}. If the {@code object} references another server side object(s), the other server side
-     * object(s) should be referenced with the {@code exporter}, and the {@link Reference#id()} serialized as
-     * appropriate.
+     * {@link #isType(Object)}.
+     *
+     * <p>
+     * Objects that {@code object} references may be serialized as {@link Reference}.
      *
      * <p>
      * Note: the implementation should not hold onto references nor create references outside the calling thread.
@@ -44,33 +46,62 @@ public interface ObjectType extends Plugin {
     void writeTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 
     /**
-     * The interface for objects to describe their relationship to other objects.
+     * The interface for creating new references during the {@link #writeTo(Exporter, Object, OutputStream)}.
      */
     interface Exporter {
 
         /**
-         * Create a new server side reference.
+         * Gets the reference for {@code object} if it has already been created, otherwise creates a new one. Uses
+         * reference-based equality.
          *
          * @param object the object
          * @return the reference
          */
-        Reference newServerSideReference(Object object);
+        Reference reference(Object object);
+
+        /**
+         * Gets the reference for {@code object} if it has already been created, otherwise creates a new one.
+         *
+         * @param object the object
+         * @param equals the equals logic
+         * @return the reference
+         */
+        Reference reference(Object object, BiPredicate<Object, Object> equals);
+
+        /**
+         * Create a new reference.
+         *
+         * @param object the object
+         * @return the reference
+         */
+        Reference newReference(Object object);
 
         /**
          * A reference.
          */
         interface Reference {
-
-            String type();
-
-            byte[] ticket();
+            /**
+             * The index, which is defined by the order in which references are created. May be used in the output
+             * stream to refer to the reference from the client without needing to re-serialize the {@link #type()} and
+             * {@link #ticket()}.
+             *
+             * @return the index
+             */
+            int index();
 
             /**
-             * The ticket id, should be used in the serialized representation for the object.
+             * The type.
              *
-             * @return the id
+             * @return the type, if present
              */
-            Ticket id();
+            Optional<String> type();
+
+            /**
+             * The ticket.
+             *
+             * @return the ticket
+             */
+            byte[] ticket();
         }
     }
 }

@@ -10,7 +10,6 @@ _JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdap
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
-    deephaven.plugin.initialize_all()
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
 
 

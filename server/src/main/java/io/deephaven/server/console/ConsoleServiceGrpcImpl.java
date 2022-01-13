@@ -44,9 +44,6 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
-import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
-import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
 import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
@@ -58,7 +55,6 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
 import io.deephaven.proto.util.ScopeTicketHelper;
-import io.deephaven.server.object.ObjectServiceGrpcImpl.ExportCollector;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -415,38 +411,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     }
                 }
             };
-        });
-    }
-
-    // TODO(deephaven-core#1784): Remove fetchFigure RPC
-    @Deprecated
-    @Override
-    public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            if (request.getSourceId().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
-            }
-            final SessionState.ExportObject<Object> figure = ticketRouter.resolve(
-                    session, request.getSourceId(), "sourceId");
-
-            session.nonExport()
-                    .require(figure)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        Object result = figure.get();
-                        if (!(result instanceof FigureWidget)) {
-                            final String name = ticketRouter.getLogNameFor(request.getSourceId(), "sourceId");
-                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                                    "Value bound to ticket " + name + " is not a FigureWidget");
-                        }
-                        FigureWidget widget = (FigureWidget) result;
-                        final ExportCollector exportCollector = new ExportCollector(session);
-                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, exportCollector);
-                        responseObserver
-                                .onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
-                        responseObserver.onCompleted();
-                    });
         });
     }
 
