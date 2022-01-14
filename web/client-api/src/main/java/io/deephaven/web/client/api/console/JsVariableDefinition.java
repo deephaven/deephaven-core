@@ -2,8 +2,6 @@ package io.deephaven.web.client.api.console;
 
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Js;
-import jsinterop.base.JsPropertyMap;
 
 public class JsVariableDefinition {
     private static final String JS_UNAVAILABLE = "js-constructed-not-available";
@@ -25,7 +23,7 @@ public class JsVariableDefinition {
     }
 
     public JsVariableDefinition(FieldInfo field) {
-        this.type = JsVariableChanges.getVariableTypeFromFieldCase(field.getFieldType().getFieldCase());
+        this.type = field.getTicket().getType();
         this.id = field.getTicket().getTicket_asB64();
         this.title = field.getFieldName();
         this.description = field.getFieldDescription();
