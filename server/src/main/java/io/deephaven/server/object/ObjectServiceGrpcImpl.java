@@ -1,6 +1,5 @@
 package io.deephaven.server.object;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
@@ -21,7 +20,6 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
-import org.jpy.PyObject;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -170,8 +168,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         public TypedTicket typedTicket() {
-            final ByteString ticket = ByteStringAccess.wrap(export.getExportIdBytes());
-            final TypedTicket.Builder builder = TypedTicket.newBuilder().setTicket(ticket);
+            final TypedTicket.Builder builder = TypedTicket.newBuilder().setTicket(export.getExportId());
             if (type != null) {
                 builder.setType(type);
             }

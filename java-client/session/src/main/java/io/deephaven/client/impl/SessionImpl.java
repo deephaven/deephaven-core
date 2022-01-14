@@ -443,7 +443,7 @@ public final class SessionImpl extends SessionBase {
             } else {
                 type = e.getType();
             }
-            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket().asReadOnlyByteBuffer(), "exportId");
+            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
             return new ExportId(type, exportId);
         }
 

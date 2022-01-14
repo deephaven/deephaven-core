@@ -259,7 +259,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     }
 
     private TypedTicket typedTicket(AppFieldId id, Field<?> field) {
-        final Builder ticket = TypedTicket.newBuilder().setTicket(id.getTicket().getTicket());
+        final Builder ticket = TypedTicket.newBuilder().setTicket(id.getTicket());
         typeLookup.type(field.value()).ifPresent(ticket::setType);
         return ticket.build();
     }
