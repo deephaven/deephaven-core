@@ -438,7 +438,7 @@ public final class SessionImpl extends SessionBase {
 
         private static ExportId toExportId(TypedTicket e) {
             final String type;
-            if (!e.hasType()) {
+            if (e.getType().isEmpty()) {
                 type = null;
             } else {
                 type = e.getType();

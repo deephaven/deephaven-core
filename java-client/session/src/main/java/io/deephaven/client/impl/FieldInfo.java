@@ -12,7 +12,7 @@ public final class FieldInfo {
     }
 
     public Optional<String> type() {
-        if (!fieldInfo.getTicket().hasType()) {
+        if (fieldInfo.getTicket().getType().isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(fieldInfo.getTicket().getType());
