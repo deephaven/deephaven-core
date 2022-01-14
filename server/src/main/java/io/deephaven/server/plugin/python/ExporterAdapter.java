@@ -14,21 +14,12 @@ final class ExporterAdapter {
         this.exporter = Objects.requireNonNull(exporter);
     }
 
-    public Reference newReference(Object object) {
-        return exporter.newReference(object);
+    public Reference reference(Object object, boolean allowUnknownType, boolean forceNew) {
+        return exporter.reference(object, allowUnknownType, forceNew).orElse(null);
     }
 
     // TODO(deephaven-core#1775): multivariate jpy (unwrapped) call into java
-    public Reference newReferencePyObject(PyObject object) {
-        return exporter.newReference(object);
-    }
-
-    public Reference reference(Object object) {
-        return exporter.reference(object);
-    }
-
-    // TODO(deephaven-core#1775): multivariate jpy (unwrapped) call into java
-    public Reference referencePyObject(PyObject object) {
-        return exporter.reference(object, Objects::equals);
+    public Reference referencePyObject(PyObject object, boolean allowUnknownType, boolean forceNew) {
+        return exporter.reference(object, allowUnknownType, forceNew, Objects::equals).orElse(null);
     }
 }
