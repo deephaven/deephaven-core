@@ -10,9 +10,10 @@ services:
       # with max memory.
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
-      - JAVA_TOOL_OPTIONS=-Xmx16g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
       # For remote debugging switch the line above for the one below (and also change the ports below)
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+
 
     expose:
       - '8080'
@@ -28,9 +29,9 @@ services:
       resources:
         limits:
           cpus: '4.0'
-          memory: 16500M
+          memory: 4500M
         reservations:
-          memory: 16250M
+          memory: 1000M
 
     # Allows the querying of this process jinfo/jmap
     # docker-compose exec server jmap -heap 1
