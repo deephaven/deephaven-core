@@ -463,6 +463,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * in the current thread.
          */
         BasePerformanceEntry getAccumulatedPerformance();
+
+        /**
+         * How many threads exist in the job scheduler?  The job submitters can use this value to determine how many
+         * sub-jobs to split work into.
+         */
+        int threadCount();
     }
 
     public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
@@ -505,9 +511,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedBaseEntry;
         }
+
+        @Override
+        public int threadCount() {
+            return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
+        }
     }
 
-    public static class TableMapTransformJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+    public static class OperationInitializationPoolJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
         final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
@@ -533,6 +544,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedBaseEntry;
         }
+
+        @Override
+        public int threadCount() {
+            return OperationInitializationThreadPool.TRANSFORM_THREADS;
+        }
     }
 
     public static class ImmediateJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
@@ -551,6 +567,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         @Override
         public BasePerformanceEntry getAccumulatedPerformance() {
             return null;
+        }
+
+        @Override
+        public int threadCount() {
+            return 1;
         }
     }
 

@@ -195,6 +195,11 @@ public class QueryTable extends BaseTable {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.enableParallelSelectAndUpdate", true);
 
     /**
+     * Minimum select "chunk" size, defaults to 4 million.
+     */
+    public static long MINIMUM_PARALLEL_SELECT_ROWS = Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
+
+    /**
      * For unit tests, we do want to force the column parallel select and update at times.
      */
     static boolean FORCE_PARALLEL_SELECT_AND_UPDATE =
@@ -1380,7 +1385,7 @@ public class QueryTable extends BaseTable {
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
                     if (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                             && OperationInitializationThreadPool.TRANSFORM_THREADS > 1)) {
-                        jobScheduler = new SelectAndViewAnalyzer.TableMapTransformJobScheduler();
+                        jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
                     } else {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
                     }
