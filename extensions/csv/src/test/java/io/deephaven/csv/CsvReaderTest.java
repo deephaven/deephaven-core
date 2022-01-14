@@ -41,6 +41,70 @@ public class CsvReaderTest {
         public static final long NULL_TIMESTAMP_AS_LONG = Long.MIN_VALUE;
     }
 
+    @Test
+    public void countsAreCorrect() throws CsvReaderException {
+        final String input = "" +
+                "Values\n" +
+                "1\n" +
+                "\n" +
+                "3\n";
+        final CsvReader.Result result = parse(defaultCsvReader(), toInputStream(input));
+        Assertions.assertThat(result.numCols()).isEqualTo(1);
+        Assertions.assertThat(result.numRows()).isEqualTo(3);
+    }
+
+    @Test
+    public void countsAreCorrectNoTrailingNewline() throws CsvReaderException {
+        final String input = "" +
+                "Values\n" +
+                "1\n" +
+                "\n" +
+                "3";
+        final CsvReader.Result result = parse(defaultCsvReader(), toInputStream(input));
+        Assertions.assertThat(result.numCols()).isEqualTo(1);
+        Assertions.assertThat(result.numRows()).isEqualTo(3);
+    }
+
+    @Test
+    public void countsAreCorrectHeaderless() throws CsvReaderException {
+        final String input = "" +
+                "1\n" +
+                "\n" +
+                "3\n";
+        final CsvReader.Result result =
+                parse(defaultCsvReader().setHasHeaders(false).setHeaders("Value"), toInputStream(input));
+        Assertions.assertThat(result.numCols()).isEqualTo(1);
+        Assertions.assertThat(result.numRows()).isEqualTo(3);
+    }
+
+    @Test
+    public void multilineColumnName() throws CsvReaderException {
+        final String input = "" +
+                "|Some\nInts|,|Some\rStrings|,|Some\r\nBools|,|Some\r\n\nDoubles|\n" +
+                "-3,foo,false,1.0\n" +
+                "4,bar,true,2.0\n" +
+                "-5,baz,false,3.0\n";
+        final CsvReader.Result result = parse(defaultCsvReader().setquoteChar('|'), toInputStream(input));
+        final ColumnSet cs = toColumnSet(result);
+        Assertions.assertThat(cs.columns[0].name).isEqualTo("Some\nInts");
+        Assertions.assertThat(cs.columns[1].name).isEqualTo("Some\rStrings");
+        Assertions.assertThat(cs.columns[2].name).isEqualTo("Some\r\nBools");
+        Assertions.assertThat(cs.columns[3].name).isEqualTo("Some\r\n\nDoubles");
+    }
+
+    @Test
+    public void multilineColumnNameReportsCorrectRowNumber() {
+        // Too many columns is an error.
+        final String input = "" +
+                "|Some\nInts|,|Some\rStrings|,|Some\r\nBools|,|Some\r\n\nDoubles|\n" +
+                "-3,foo,false,1.0\n" +
+                "4,bar,true,2.0,quz\n" +
+                "-5,baz,false,3.0\n";
+        Assertions.assertThatThrownBy(() -> parse(defaultCsvReader().setquoteChar('|'), toInputStream(input)))
+                .hasRootCauseMessage("Row 8 has too many columns (expected 4)");
+    }
+
+
     private static final String BOOLEAN_INPUT = "" +
             "Values\n" +
             "true\n" +
@@ -400,8 +464,9 @@ public class CsvReaderTest {
                     final boolean oneCharIJK = oneCharIJ && entriesAreAllNullOrOneChar[kk];
                     final Class<?> expectedType = SimpleInferrer.infer(expectedTypes[kk], inferredIJ, oneCharIJK);
                     final String input = "Values\n" + allInputs[ii] + allInputs[jj] + allInputs[kk];
+                    final InputStream inputStream = toInputStream(input);
                     final CsvReader csvReader = defaultCsvReader().setParsers(Parsers.COMPLETE);
-                    final ColumnSet columnSet = parse(csvReader, input);
+                    final ColumnSet columnSet = toColumnSet(parse(csvReader, inputStream));
                     final Class<?> actualType = columnSet.columns[0].reinterpretedType;
                     Assertions.assertThat(actualType)
                             .withFailMessage("Expected to infer type %s; actually inferred %s. Failing input: %s",
@@ -1531,32 +1596,37 @@ public class CsvReaderTest {
     }
 
     private static void invokeTest(CsvReader csvReader, String input, ColumnSet expected) throws CsvReaderException {
-        final ColumnSet actual = parse(csvReader, input);
+        final InputStream inputStream = toInputStream(input);
+        final CsvReader.Result result = parse(csvReader, inputStream);
+        final ColumnSet actual = toColumnSet(result);
         final String expectedToString = expected.toString();
         final String actualToString = actual.toString();
         Assertions.assertThat(actualToString).isEqualTo(expectedToString);
     }
 
-    private static ColumnSet parse(CsvReader csvReader, String input) throws CsvReaderException {
-        final StringReader reader = new StringReader(input);
-        final ReaderInputStream inputStream = new ReaderInputStream(reader, StandardCharsets.UTF_8);
-        return parse(csvReader, inputStream);
+    /**
+     * Parses {@code inputStream} according to the specifications of {@code csvReader}.
+     * 
+     * @param inputStream the input stream.
+     * @return The parsed data
+     * @throws CsvReaderException If any sort of failure occurs.
+     */
+    private static CsvReader.Result parse(CsvReader csvReader, InputStream inputStream) throws CsvReaderException {
+        return csvReader.read(inputStream, makeMySinkFactory());
     }
 
     /**
-     * Parses {@code reader} according to the specifications of {@code this}. The {@code reader} will be closed upon
-     * return.
-     *
-     * <p>
-     * Note: this implementation will buffer the {@code reader} internally.
-     *
-     * @param inputStream the input stream.
-     * @return the new table
-     * @throws CsvReaderException If any sort of failure occurs.
+     * Convert String to InputStream
      */
-    private static ColumnSet parse(CsvReader csvReader, InputStream inputStream) throws CsvReaderException {
-        final CsvReader.Result result = csvReader.read(inputStream, makeMySinkFactory());
+    private static InputStream toInputStream(final String input) {
+        final StringReader reader = new StringReader(input);
+        return new ReaderInputStream(reader, StandardCharsets.UTF_8);
+    }
 
+    /***
+     * Converts the {@link CsvReader.Result} to a {@link ColumnSet}.
+     */
+    private static ColumnSet toColumnSet(final CsvReader.Result result) {
         final int numCols = result.numCols();
 
         final String[] columnNames = result.columnNames();
