@@ -1,8 +1,8 @@
 package io.deephaven.csv.tokenization;
 
 import io.deephaven.csv.containers.ByteSlice;
-import io.deephaven.csv.tokenization.external.FastDoubleParserFromByteArray;
 import org.apache.commons.lang3.mutable.*;
+import ch.randelshofer.fastdoubleparser.FastDoubleParserFromByteArray;
 
 import java.time.*;
 
