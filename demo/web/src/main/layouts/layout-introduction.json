@@ -111,9 +111,13 @@
                 "type": "react-component",
                 "component": "MarkdownNotebookPanel",
                 "props": {
-                  "metadata": {
-                    "id": "/00 The Deephaven IDE.md",
-                    "itemName": "/00 The Deephaven IDE.md"
+                  "metadata": { "id": "oZPNXW1jJ" },
+                  "panelState": {
+                    "settings": { "value": null, "language": "python" },
+                    "fileMetadata": {
+                      "id": "/00 The Deephaven IDE.md",
+                      "itemName": "/00 The Deephaven IDE.md"
+                    }
                   }
                 },
                 "title": "00 The Deephaven IDE.md",
