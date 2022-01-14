@@ -4,8 +4,7 @@ TensorFlow is an open source machine learning library for Python.  It boasts an 
 \
 \
 In this notebook, we'll use TensorFlow to classify the Iris flower dataset.  This dataset contains 150 measurements of petal length, petal width, sepal length, and sepal width of three different Iris flower subspecies: Iris-setosa, Iris-virginica, and Iris-versicolor.  The Iris flower dataset is commonly used in introductory AI/ML applications.  It is a classification problem: determine the class of Iris subspecies based off the four measurements given.
-\
-\
+
 Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, PyTorch imports, and additional required imports.
 
 ```python
@@ -26,16 +25,18 @@ import random, threading, time
 import pandas as pd
 import numpy as np
 ```
-\
-\
+
+## Import the data
+
 We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
 
 ```python
 iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
 raw_iris = tableToDataFrame(iris_raw)
 ```
-\
-\
+
+## Split the data into training and testing sets
+
 We now have the data in memory.  We need to split it into training and testing sets.  We'll use 120 random rows as our training set, and the other 30 as the testing set.
 
 ```python
@@ -45,8 +46,9 @@ raw_iris_test = raw_iris.drop(raw_iris_train.index)
 iris_train_raw = dataFrameToTable(raw_iris_train)
 iris_test_raw = dataFrameToTable(raw_iris_test)
 ```
-\
-\
+
+## Quantize the Iris subspecies
+
 In order to classify Iris subspecies, they need to be quantized.  Let's quantize the `Class` column in our train and test tables using a simple function.
 
 ```python
@@ -62,8 +64,9 @@ def get_class_number(c):
 iris_train = iris_raw_train.update("Class = (int)get_class_number(Class)")
 iris_test = iris_raw_test.update("Class = (int)get_class_number(Class)")
 ```
-\
-\
+
+## Construct a neural network
+
 With our data quantized and split into training and testing sets, we can get to work doing the classification.  Let's start by defining and creating a neural network to do it.
 
 ```python
@@ -72,8 +75,9 @@ model.add(Dense(16, input_shape = (4,), activation = tf.nn.relu))
 model.add(Dense(12, input_shape = (16,), activation = tf.nn.relu))
 model.add(Dense(3, input_shape = (12,), activation = tf.nn.softmax))
 ```
-\
-\
+
+## Define how the neural network will be trained
+
 With our model created, it's time to construct a function that will train our network on the Iris training dataset.
 
 ```python
@@ -81,8 +85,9 @@ def train_model(x_train, y_train):
     model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.01), loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), metrics = ["accuracy"])
     model.fit(x = x_train, y = y_train, epochs = 100)
 ```
-\
-\
+
+## Define how to make predictions with the trained model
+
 When our model is trained, we will need a function to use the trained network on the testing dataset.  Let's make a function to do that.
 
 ```python
@@ -90,10 +95,11 @@ def use_trained_model(x_test):
     if x_test.ndim == 1:
         x_test = np.expand_dims(x_test, 0)
     predictions = model.predict(x_test)
-    return [np.argmax(item) for item in predictions]
+    return np.array([np.argmax(item) for item in predictions])
 ```
-\
-\
+
+## Define the interchange between Deephaven tables and NumPy arrays
+
 There's one last step we need to take before we do the machine learning.  We need to define how our model and the two functions will interact with data in our tables.  There will be two functions that gather data from a table, and one that scatters data back into an output table.
 
 ```python
@@ -109,8 +115,9 @@ def table_to_numpy_integer(rows, columns):
 def numpy_to_table_integer(predictions, index):
     return int(data[idx])
 ```
-\
-\
+
+## Train the model
+
 With that done, it's time to put everything together.  Let's start by training the neural network on our training table.
 
 ```python
@@ -122,8 +129,9 @@ learn.learn(
     batch_size = iris_train.intSize()
 )
 ```
-\
-\
+
+## Test the trained model
+
 Lastly, it's time to use our trained model on the testing table.
 
 ```python
@@ -136,7 +144,11 @@ iris_test_predictions = learn.learn(
 ```
 \
 \
-The model works like a charm!  We classified the Iris flower dataset using Deephaven tables and TensorFlow.  That's kind of cool, but it's cooler to do classifications on a live feed of incoming observations.  We'll now show how to do that.  As you'll see, it turns out it's incredibly easy to do so with Deephaven!  We first need to set up a table that we can write faux Iris measurements in real-time to.  We can use the minimum and maximum of each measurement to make sure the faux measurements are realistic.
+The model works like a charm!  We classified the Iris flower dataset using Deephaven tables and TensorFlow.  That's kind of cool, but it's cooler to do classifications on a live feed of incoming observations.  We'll now show how to do that.  As you'll see, it turns out it's incredibly easy to do so with Deephaven!
+
+## Define bounds for making realistic faux Iris measurements
+
+We first need to set up a table that we can write faux Iris measurements in real-time to.  We can use the minimum and maximum of each measurement to make sure the faux measurements are realistic.
 
 ```python
 min_petal_length, max_petal_length = raw_iris["PetalLengthCM"].min(), raw_iris["PetalLengthCM"].max()
@@ -144,8 +156,9 @@ min_petal_width, max_petal_width = raw_iris["PetalWidthCM"].min(), raw_iris["Pet
 min_sepal_length, max_sepal_length = raw_iris["SepalLengthCM"].min(), raw_iris["SepalLengthCM"].max()
 min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["SepalWidthCM"].max()
 ```
-\
-\
+
+## Write the faux measurements to a table in real-time
+
 With these quantities now calculated and stored in memory, we need to set up a live table that we can write faux measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
@@ -169,8 +182,9 @@ def write_faux_iris_measurements():
 thread = threading.Thread(target = write_faux_iris_measurements)
 thread.start()
 ```
-\
-\
+
+## Use the trained model on live data
+
 Now we've got some faux live incoming measurements.  We can just use the model we've already trained with the functions we've already created to do live classification!
 
 ```python
@@ -182,6 +196,5 @@ iris_classifications_live = learn.learn(
     batch_size = 5
 )
 ```
-\
-\
+
 And that's all there is to it.  The only extra work we needed to do in order to use our model on real-time data is set up the real-time data itself.  This might be a simple problem, but this holds true for more complex problems.

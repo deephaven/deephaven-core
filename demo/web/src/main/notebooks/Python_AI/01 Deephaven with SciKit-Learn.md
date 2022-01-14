@@ -4,8 +4,7 @@ SciKit-Learn is an open source machine learning library for Python.  It is a pop
 \
 \
 In this notebook, we'll use SciKit-Learn to create a K-Nearest neighbors classifier and classify the Iris flower dataset.  This dataset contains 150 measurements of the petal length, petal width, sepal length, and sepal width of three different Iris flower subspecies: Iris-setosa, Iris-virginica, and Iris-versicolor.  The Iris flower dataset is commonly used in introductory AI/ML applications.  It is a classification problem: determine the class of Iris subspecies based off the four measurements given.
-\
-\
+
 Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, SciKit-Learn imports, and additional required imports.
 
 ```python
@@ -24,16 +23,18 @@ import random, threading, time
 import pandas as pd
 import numpy as np
 ```
-\
-\
+
+## Import the data
+
 We will now import our data into Deephaven as a Pandas dataframe and as a table.  The Iris dataset is available at the URL in the `read_csv` line of the code blow, along with a variety of other places (even SciKit-Learn has it built in).
 
 ```python
 iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
 raw_iris = tableToDataFrame(iris_raw)
 ```
-\
-\
+
+## Split the data into training and testing sets
+
 We now have the data in memory.  We need to split it into training and testing sets.  We'll use 120 random rows as our training set, and the other 30 as the testing set.
 
 ```python
@@ -43,8 +44,9 @@ raw_iris_test = raw_iris.drop(raw_iris_train.index)
 iris_train_raw = dataFrameToTable(raw_iris_train)
 iris_test_raw = dataFrameToTable(raw_iris_test)
 ```
-\
-\
+
+## Quantize the Iris subspecies
+
 In order to classify Iris subspecies, they need to be quantized.  Let's quantize the `Class` column in our train and test tables using a simple function.
 
 ```python
@@ -60,8 +62,9 @@ def get_class_number(c):
 iris_train = iris_raw_train.update("Class = (int)get_class_number(Class)")
 iris_test = iris_raw_test.update("Class = (int)get_class_number(Class)")
 ```
-\
-\
+
+## Define how to train and test a trained K-Nearest neighbors classifier
+
 With our data quantized and split into training and testing sets, we can get to work doing the classification.  Let's start by constructing functions to fit and use a fitted K-Neighbors classifier on the data.
 
 ```python
@@ -82,8 +85,9 @@ def use_fitted_knn(x_test):
 
     return predictions
 ```
-\
-\
+
+## Define the interchange between Deephaven tables and NumPy arrays
+
 There's one more step we need to take before we use these functions.  We have to define how our K-Neighbors classifier will interact with data in Deephaven tables.  There will be two functions that gather data from a table, and one that scatters data back into an output table.
 
 ```python
@@ -99,8 +103,9 @@ def table_to_numpy_integer(rows, columns):
 def numpy_to_table_integer(predictions, index):
     return int(data[idx])
 ```
-\
-\
+
+## Fit the model to the training data
+
 With that done, it's time to put everything together.  Let's start by fitting our classifier using our training table.
 
 ```python
@@ -112,8 +117,9 @@ learn.learn(
     batch_size = iris_train.intSize()
 )
 ```
-\
-\
+
+## Test the fitted model
+
 We've got a fitted classifier now.  Let's test it out on our test table.
 
 ```python
@@ -125,9 +131,12 @@ iris_test_knn = learn.learn(
     batch_size = iris_test.size()
 )
 ```
-\
-\
-The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large or real-time.  Let's create a real-time table of faux Iris measurements and apply our fitted classifier.
+
+The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large or real-time.
+
+## Define bounds for making realistic faux Iris measurements
+
+Let's create a real-time table of faux Iris measurements and apply our fitted classifier.
 We need to make sure our faux measurements are realistic, so let's grab the minimum and maximum observation values and use those to generate random numbers.
 
 ```python
@@ -136,8 +145,9 @@ min_petal_width, max_petal_width = raw_iris["PetalWidthCM"].min(), raw_iris["Pet
 min_sepal_length, max_sepal_length = raw_iris["SepalLengthCM"].min(), raw_iris["SepalLengthCM"].max()
 min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["SepalWidthCM"].max()
 ```
-\
-\
+
+## Write the faux measurements to a table in real-time
+
 With these quantities now calculated and stored in memory, we need to set up alive table that we can write measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
@@ -161,8 +171,9 @@ def write_faux_iris_measurements():
 thread = threading.Thread(target = write_faux_iris_measurements)
 thread.start()
 ```
-\
-\
+
+## Use the trained model on the live data
+
 Now we've got some faux live incoming measurements.  We can just use our fitted K-Neighbors classifier on the live table!
 
 ```python
@@ -174,6 +185,5 @@ iris_classifications_live = learn.learn(
     batch_size = 5
 )
 ```
-\
-\
+
 And there we have it.  Our classifier is working on live data.  The only extra work we needed to make that happen was to set up the real-time data stream.  Pretty simple!  This may be a toy problem, but the steps hold true to more complex ones.
