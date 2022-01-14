@@ -88,7 +88,7 @@ def train_model(x_train, y_train):
 
 ## Define how to make predictions with the trained model
 
-When our model is trained, we will need a function to use the trained network on the testing dataset.  Let's make a function to do that.
+After our model is trained, we need a function to use the trained network on the testing dataset.  Let's make a function to do that.
 
 ```python
 def use_trained_model(x_test):
@@ -100,7 +100,7 @@ def use_trained_model(x_test):
 
 ## Define the interchange between Deephaven tables and NumPy arrays
 
-There's one last step we need to take before we do the machine learning.  We need to define how our model and the two functions will interact with data in our tables.  There will be two functions that gather data from a table, and one that scatters data back into an output table.
+There's one last step before we do the machine learning.  We need to define how our model and the two functions will interact with data in our tables.  Two functions gather data from a table, and one scatters data back into an output table.
 
 ```python
 # A function to gather double values from a table into a torch tensor
@@ -144,11 +144,11 @@ iris_test_predictions = learn.learn(
 ```
 \
 \
-The model works like a charm!  We classified the Iris flower dataset using Deephaven tables and TensorFlow.  That's kind of cool, but it's cooler to do classifications on a live feed of incoming observations.  We'll now show how to do that.  As you'll see, it turns out it's incredibly easy to do so with Deephaven!
+The model works like a charm!  We classified the Iris flower dataset using Deephaven tables and TensorFlow.  That's kind of cool, but it's cooler to do classifications on a live feed of incoming observations.  We'll now show how to do that.  As you'll see, it's incredibly easy with Deephaven!
 
 ## Define bounds for making realistic faux Iris measurements
 
-We first need to set up a table that we can write faux Iris measurements in real-time to.  We can use the minimum and maximum of each measurement to make sure the faux measurements are realistic.
+We first need to set up a table to write faux Iris measurements in real time.  We can use the minimum and maximum of each measurement to make sure the faux measurements are realistic.
 
 ```python
 min_petal_length, max_petal_length = raw_iris["PetalLengthCM"].min(), raw_iris["PetalLengthCM"].max()
@@ -159,7 +159,7 @@ min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["Sep
 
 ## Write the faux measurements to a table in real-time
 
-With these quantities now calculated and stored in memory, we need to set up a live table that we can write faux measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
+With these quantities now calculated and stored in memory, we need to set up a live table.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
 table_writer = DynamicTableWriter(
@@ -185,7 +185,7 @@ thread.start()
 
 ## Use the trained model on live data
 
-Now we've got some faux live incoming measurements.  We can just use the model we've already trained with the functions we've already created to do live classification!
+Now we've got some faux live incoming measurements.  We can now use our trained model with our functions to do live classification!
 
 ```python
 iris_classifications_live = learn.learn(
@@ -197,4 +197,4 @@ iris_classifications_live = learn.learn(
 )
 ```
 
-And that's all there is to it.  The only extra work we needed to do in order to use our model on real-time data is set up the real-time data itself.  This might be a simple problem, but this holds true for more complex problems.
+That's all there is to it.  The only extra work required is to set up the real-time data itself.  This might be a simple problem, but this holds true for more complex problems.

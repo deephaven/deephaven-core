@@ -1,9 +1,9 @@
 # Deephaven with PyTorch
 
-PyTorch is an open source machine learning library for Python.  It is a popular and widely used module that is based on the Torch framework for Lua.  PyTorch is used in some well-known applications, the most notable of which is Tesla's Autopilot advanced driver-assistance system.
+PyTorch is an open source machine learning library for Python.  It is a popular and widely used module that is based on the Torch framework for Lua.  PyTorch is used in some well-known applications, most notably Tesla's Autopilot advanced driver-assistance system.
 \
 \
-In this notebook, we will use PyTorch to classify the Iris flower dataset.  This dataset contains 150 measurements of the petal length, petal width, sepal length, and sepal width of three different Iris flower subspecies: Iris-setosa, Iris-virginica, and Iris-versicolor.  The Iris flower dataset is commonly used in introductory AI/ML applications.  It is a classification problem: determine the class of Iris subspecies based off the four measurements given.
+In this notebook, we use PyTorch to classify the Iris flower dataset.  This dataset contains 150 measurements of the petal length, petal width, sepal length, and sepal width of three different Iris flower subspecies: Iris-setosa, Iris-virginica, and Iris-versicolor.  The Iris flower dataset is commonly used in introductory AI/ML applications.  It is a classification problem: determine the class of Iris subspecies based on the four measurements given.
 
 Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, PyTorch imports, and additional required imports.
 
@@ -28,7 +28,7 @@ import numpy as np
 
 ## Import the data
 
-We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
+Let's import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
 
 ```python
 iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
@@ -114,7 +114,7 @@ def train_model(x_train, y_train):
 
 ## Define how to make predictions with the trained model
 
-When our model is trained, we then need to use the trained network on the test dataset.  Let's construct a function to do just that.
+After our model is trained, we can use the trained network on the test dataset.  Let's construct a function to do just that.
 
 ```python
 def predict_with_model(x_test):
@@ -165,7 +165,7 @@ learn.learn(
 
 ## Test the trained model
 
-Testing the trained model works very similarly to training the model.  We'll substitute out the `modeel_func`, and this time, we don't need the second `learn.Input`.
+Testing the trained model works very similarly to training the model.  We'll substitute out the `model_func`, and this time, we don't need the second `learn.Input`.
 
 ```python
 iris_test_predictions = learn.learn(
@@ -218,7 +218,7 @@ thread.start()
 
 ## Use the trained model on the live data
 
-Now we've got some faux live incoming measurements.  We can just use the model we've already trained with the functions we've already created to do live classification!
+Now we've got some faux live incoming measurements.  We can use the trained model on our functions to do live classification!
 
 ```python
 iris_predictions_live = learn.learn(

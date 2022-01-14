@@ -26,7 +26,7 @@ import numpy as np
 
 ## Import the data
 
-We will now import our data into Deephaven as a Pandas dataframe and as a table.  The Iris dataset is available at the URL in the `read_csv` line of the code blow, along with a variety of other places (even SciKit-Learn has it built in).
+Let's import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available at the URL in the `read_csv` line of the code below, along with a variety of other places (even SciKit-Learn has it built in).
 
 ```python
 iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
@@ -120,7 +120,7 @@ learn.learn(
 
 ## Test the fitted model
 
-We've got a fitted classifier now.  Let's test it out on our test table.
+We've got a fitted classifier now.  Let's try it on our test table.
 
 ```python
 iris_test_knn = learn.learn(
@@ -132,7 +132,7 @@ iris_test_knn = learn.learn(
 )
 ```
 
-The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large or real-time.
+The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large nor real-time.
 
 ## Define bounds for making realistic faux Iris measurements
 
@@ -148,7 +148,7 @@ min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["Sep
 
 ## Write the faux measurements to a table in real-time
 
-With these quantities now calculated and stored in memory, we need to set up alive table that we can write measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
+With these quantities now calculated and stored in memory, we need to set up a live table that we can write measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
 table_writer = DynamicTableWriter(
@@ -186,4 +186,4 @@ iris_classifications_live = learn.learn(
 )
 ```
 
-And there we have it.  Our classifier is working on live data.  The only extra work we needed to make that happen was to set up the real-time data stream.  Pretty simple!  This may be a toy problem, but the steps hold true to more complex ones.
+And there we have it.  Our classifier is working on live data.  The only extra work required was to set up the real-time data stream.  Pretty simple!  This may be a toy problem, but the steps hold true to more complex ones.
