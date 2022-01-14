@@ -1,8 +1,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.fieldinfo.FieldType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -17,116 +16,6 @@ import jsinterop.base.JsPropertyMap;
 public class FieldInfo {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface FieldFieldType {
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface CustomFieldType {
-                @JsOverlay
-                static FieldInfo.ToObjectReturnType.FieldFieldType.CustomFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                String getType();
-
-                @JsProperty
-                void setType(String type);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TableFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetSchemaHeaderUnionType {
-                    @JsOverlay
-                    static FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType of(
-                            Object o) {
-                        return Js.cast(o);
-                    }
-
-                    @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
-                    }
-
-                    @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
-                    }
-                }
-
-                @JsOverlay
-                static FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-                @JsProperty
-                String getSize();
-
-                @JsProperty
-                boolean isIsStatic();
-
-                @JsProperty
-                void setIsStatic(boolean isStatic);
-
-                @JsProperty
-                void setSchemaHeader(
-                        FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-                @JsOverlay
-                default void setSchemaHeader(String schemaHeader) {
-                    setSchemaHeader(
-                            Js.<FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                    schemaHeader));
-                }
-
-                @JsOverlay
-                default void setSchemaHeader(Uint8Array schemaHeader) {
-                    setSchemaHeader(
-                            Js.<FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                    schemaHeader));
-                }
-
-                @JsProperty
-                void setSize(String size);
-            }
-
-            @JsOverlay
-            static FieldInfo.ToObjectReturnType.FieldFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            FieldInfo.ToObjectReturnType.FieldFieldType.CustomFieldType getCustom();
-
-            @JsProperty
-            Object getFigure();
-
-            @JsProperty
-            FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType getTable();
-
-            @JsProperty
-            void setCustom(FieldInfo.ToObjectReturnType.FieldFieldType.CustomFieldType custom);
-
-            @JsProperty
-            void setFigure(Object figure);
-
-            @JsProperty
-            void setTable(FieldInfo.ToObjectReturnType.FieldFieldType.TableFieldType table);
-        }
-
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TicketFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -166,6 +55,9 @@ public class FieldInfo {
             FieldInfo.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
+            String getType();
+
+            @JsProperty
             void setTicket(FieldInfo.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
@@ -181,6 +73,9 @@ public class FieldInfo {
                         Js.<FieldInfo.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
+
+            @JsProperty
+            void setType(String type);
         }
 
         @JsOverlay
@@ -201,9 +96,6 @@ public class FieldInfo {
         String getFieldName();
 
         @JsProperty
-        FieldInfo.ToObjectReturnType.FieldFieldType getFieldType();
-
-        @JsProperty
         FieldInfo.ToObjectReturnType.TicketFieldType getTicket();
 
         @JsProperty
@@ -219,124 +111,11 @@ public class FieldInfo {
         void setFieldName(String fieldName);
 
         @JsProperty
-        void setFieldType(FieldInfo.ToObjectReturnType.FieldFieldType fieldType);
-
-        @JsProperty
         void setTicket(FieldInfo.ToObjectReturnType.TicketFieldType ticket);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface FieldFieldType {
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface CustomFieldType {
-                @JsOverlay
-                static FieldInfo.ToObjectReturnType0.FieldFieldType.CustomFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                String getType();
-
-                @JsProperty
-                void setType(String type);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TableFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetSchemaHeaderUnionType {
-                    @JsOverlay
-                    static FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType of(
-                            Object o) {
-                        return Js.cast(o);
-                    }
-
-                    @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
-                    }
-
-                    @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
-                    }
-                }
-
-                @JsOverlay
-                static FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-                @JsProperty
-                String getSize();
-
-                @JsProperty
-                boolean isIsStatic();
-
-                @JsProperty
-                void setIsStatic(boolean isStatic);
-
-                @JsProperty
-                void setSchemaHeader(
-                        FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-                @JsOverlay
-                default void setSchemaHeader(String schemaHeader) {
-                    setSchemaHeader(
-                            Js.<FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                    schemaHeader));
-                }
-
-                @JsOverlay
-                default void setSchemaHeader(Uint8Array schemaHeader) {
-                    setSchemaHeader(
-                            Js.<FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                    schemaHeader));
-                }
-
-                @JsProperty
-                void setSize(String size);
-            }
-
-            @JsOverlay
-            static FieldInfo.ToObjectReturnType0.FieldFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            FieldInfo.ToObjectReturnType0.FieldFieldType.CustomFieldType getCustom();
-
-            @JsProperty
-            Object getFigure();
-
-            @JsProperty
-            FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType getTable();
-
-            @JsProperty
-            void setCustom(FieldInfo.ToObjectReturnType0.FieldFieldType.CustomFieldType custom);
-
-            @JsProperty
-            void setFigure(Object figure);
-
-            @JsProperty
-            void setTable(FieldInfo.ToObjectReturnType0.FieldFieldType.TableFieldType table);
-        }
-
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TicketFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -376,6 +155,9 @@ public class FieldInfo {
             FieldInfo.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
+            String getType();
+
+            @JsProperty
             void setTicket(FieldInfo.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
@@ -391,6 +173,9 @@ public class FieldInfo {
                         Js.<FieldInfo.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                 ticket));
             }
+
+            @JsProperty
+            void setType(String type);
         }
 
         @JsOverlay
@@ -411,9 +196,6 @@ public class FieldInfo {
         String getFieldName();
 
         @JsProperty
-        FieldInfo.ToObjectReturnType0.FieldFieldType getFieldType();
-
-        @JsProperty
         FieldInfo.ToObjectReturnType0.TicketFieldType getTicket();
 
         @JsProperty
@@ -429,9 +211,6 @@ public class FieldInfo {
         void setFieldName(String fieldName);
 
         @JsProperty
-        void setFieldType(FieldInfo.ToObjectReturnType0.FieldFieldType fieldType);
-
-        @JsProperty
         void setTicket(FieldInfo.ToObjectReturnType0.TicketFieldType ticket);
     }
 
@@ -444,8 +223,6 @@ public class FieldInfo {
     public static native FieldInfo.ToObjectReturnType toObject(
             boolean includeInstance, FieldInfo msg);
 
-    public native void clearFieldType();
-
     public native void clearTicket();
 
     public native String getApplicationId();
@@ -456,11 +233,7 @@ public class FieldInfo {
 
     public native String getFieldName();
 
-    public native FieldType getFieldType();
-
-    public native Ticket getTicket();
-
-    public native boolean hasFieldType();
+    public native TypedTicket getTicket();
 
     public native boolean hasTicket();
 
@@ -474,13 +247,9 @@ public class FieldInfo {
 
     public native void setFieldName(String value);
 
-    public native void setFieldType();
-
-    public native void setFieldType(FieldType value);
-
     public native void setTicket();
 
-    public native void setTicket(Ticket value);
+    public native void setTicket(TypedTicket value);
 
     public native FieldInfo.ToObjectReturnType0 toObject();
 

@@ -1,4 +1,4 @@
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -10,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.application_pb.TableInfo",
+        name = "dhinternal.io.deephaven.proto.ticket_pb.TypedTicket",
         namespace = JsPackage.GLOBAL)
-public class TableInfo {
+public class TypedTicket {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface GetSchemaHeaderUnionType {
+    public interface GetTicketUnionType {
         @JsOverlay
-        static TableInfo.GetSchemaHeaderUnionType of(Object o) {
+        static TypedTicket.GetTicketUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -42,9 +42,9 @@ public class TableInfo {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SetSchemaHeaderValueUnionType {
+    public interface SetTicketValueUnionType {
         @JsOverlay
-        static TableInfo.SetSchemaHeaderValueUnionType of(Object o) {
+        static TypedTicket.SetTicketValueUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -72,9 +72,9 @@ public class TableInfo {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetSchemaHeaderUnionType {
+        public interface GetTicketUnionType {
             @JsOverlay
-            static TableInfo.ToObjectReturnType.GetSchemaHeaderUnionType of(Object o) {
+            static TypedTicket.ToObjectReturnType.GetTicketUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -100,47 +100,39 @@ public class TableInfo {
         }
 
         @JsOverlay
-        static TableInfo.ToObjectReturnType create() {
+        static TypedTicket.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        TableInfo.ToObjectReturnType.GetSchemaHeaderUnionType getSchemaHeader();
+        TypedTicket.ToObjectReturnType.GetTicketUnionType getTicket();
 
         @JsProperty
-        String getSize();
+        String getType();
 
         @JsProperty
-        boolean isIsStatic();
-
-        @JsProperty
-        void setIsStatic(boolean isStatic);
-
-        @JsProperty
-        void setSchemaHeader(TableInfo.ToObjectReturnType.GetSchemaHeaderUnionType schemaHeader);
+        void setTicket(TypedTicket.ToObjectReturnType.GetTicketUnionType ticket);
 
         @JsOverlay
-        default void setSchemaHeader(String schemaHeader) {
-            setSchemaHeader(
-                    Js.<TableInfo.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(schemaHeader));
+        default void setTicket(String ticket) {
+            setTicket(Js.<TypedTicket.ToObjectReturnType.GetTicketUnionType>uncheckedCast(ticket));
         }
 
         @JsOverlay
-        default void setSchemaHeader(Uint8Array schemaHeader) {
-            setSchemaHeader(
-                    Js.<TableInfo.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(schemaHeader));
+        default void setTicket(Uint8Array ticket) {
+            setTicket(Js.<TypedTicket.ToObjectReturnType.GetTicketUnionType>uncheckedCast(ticket));
         }
 
         @JsProperty
-        void setSize(String size);
+        void setType(String type);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface GetSchemaHeaderUnionType {
+        public interface GetTicketUnionType {
             @JsOverlay
-            static TableInfo.ToObjectReturnType0.GetSchemaHeaderUnionType of(Object o) {
+            static TypedTicket.ToObjectReturnType0.GetTicketUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -166,79 +158,71 @@ public class TableInfo {
         }
 
         @JsOverlay
-        static TableInfo.ToObjectReturnType0 create() {
+        static TypedTicket.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        TableInfo.ToObjectReturnType0.GetSchemaHeaderUnionType getSchemaHeader();
+        TypedTicket.ToObjectReturnType0.GetTicketUnionType getTicket();
 
         @JsProperty
-        String getSize();
+        String getType();
 
         @JsProperty
-        boolean isIsStatic();
-
-        @JsProperty
-        void setIsStatic(boolean isStatic);
-
-        @JsProperty
-        void setSchemaHeader(TableInfo.ToObjectReturnType0.GetSchemaHeaderUnionType schemaHeader);
+        void setTicket(TypedTicket.ToObjectReturnType0.GetTicketUnionType ticket);
 
         @JsOverlay
-        default void setSchemaHeader(String schemaHeader) {
-            setSchemaHeader(
-                    Js.<TableInfo.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(schemaHeader));
+        default void setTicket(String ticket) {
+            setTicket(Js.<TypedTicket.ToObjectReturnType0.GetTicketUnionType>uncheckedCast(ticket));
         }
 
         @JsOverlay
-        default void setSchemaHeader(Uint8Array schemaHeader) {
-            setSchemaHeader(
-                    Js.<TableInfo.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(schemaHeader));
+        default void setTicket(Uint8Array ticket) {
+            setTicket(Js.<TypedTicket.ToObjectReturnType0.GetTicketUnionType>uncheckedCast(ticket));
         }
 
         @JsProperty
-        void setSize(String size);
+        void setType(String type);
     }
 
-    public static native TableInfo deserializeBinary(Uint8Array bytes);
+    public static native TypedTicket deserializeBinary(Uint8Array bytes);
 
-    public static native TableInfo deserializeBinaryFromReader(TableInfo message, Object reader);
+    public static native TypedTicket deserializeBinaryFromReader(TypedTicket message, Object reader);
 
-    public static native void serializeBinaryToWriter(TableInfo message, Object writer);
+    public static native void serializeBinaryToWriter(TypedTicket message, Object writer);
 
-    public static native TableInfo.ToObjectReturnType toObject(
-            boolean includeInstance, TableInfo msg);
+    public static native TypedTicket.ToObjectReturnType toObject(
+            boolean includeInstance, TypedTicket msg);
 
-    public native boolean getIsStatic();
+    public native void clearType();
 
-    public native TableInfo.GetSchemaHeaderUnionType getSchemaHeader();
+    public native TypedTicket.GetTicketUnionType getTicket();
 
-    public native String getSchemaHeader_asB64();
+    public native String getTicket_asB64();
 
-    public native Uint8Array getSchemaHeader_asU8();
+    public native Uint8Array getTicket_asU8();
 
-    public native String getSize();
+    public native String getType();
+
+    public native boolean hasType();
 
     public native Uint8Array serializeBinary();
 
-    public native void setIsStatic(boolean value);
-
-    public native void setSchemaHeader(TableInfo.SetSchemaHeaderValueUnionType value);
+    public native void setTicket(TypedTicket.SetTicketValueUnionType value);
 
     @JsOverlay
-    public final void setSchemaHeader(String value) {
-        setSchemaHeader(Js.<TableInfo.SetSchemaHeaderValueUnionType>uncheckedCast(value));
+    public final void setTicket(String value) {
+        setTicket(Js.<TypedTicket.SetTicketValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void setSchemaHeader(Uint8Array value) {
-        setSchemaHeader(Js.<TableInfo.SetSchemaHeaderValueUnionType>uncheckedCast(value));
+    public final void setTicket(Uint8Array value) {
+        setTicket(Js.<TypedTicket.SetTicketValueUnionType>uncheckedCast(value));
     }
 
-    public native void setSize(String value);
+    public native void setType(String value);
 
-    public native TableInfo.ToObjectReturnType0 toObject();
+    public native TypedTicket.ToObjectReturnType0 toObject();
 
-    public native TableInfo.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native TypedTicket.ToObjectReturnType0 toObject(boolean includeInstance);
 }

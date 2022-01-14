@@ -19,118 +19,6 @@ public class FieldsChangeUpdate {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface FieldFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface CustomFieldType {
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.CustomFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    String getType();
-
-                    @JsProperty
-                    void setType(String type);
-                }
-
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TableFieldType {
-                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetSchemaHeaderUnionType {
-                        @JsOverlay
-                        static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType of(
-                                Object o) {
-                            return Js.cast(o);
-                        }
-
-                        @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
-                        }
-
-                        @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
-                        }
-                    }
-
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-                    @JsProperty
-                    String getSize();
-
-                    @JsProperty
-                    boolean isIsStatic();
-
-                    @JsProperty
-                    void setIsStatic(boolean isStatic);
-
-                    @JsProperty
-                    void setSchemaHeader(
-                            FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-                    @JsOverlay
-                    default void setSchemaHeader(String schemaHeader) {
-                        setSchemaHeader(
-                                Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                        schemaHeader));
-                    }
-
-                    @JsOverlay
-                    default void setSchemaHeader(Uint8Array schemaHeader) {
-                        setSchemaHeader(
-                                Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                        schemaHeader));
-                    }
-
-                    @JsProperty
-                    void setSize(String size);
-                }
-
-                @JsOverlay
-                static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.CustomFieldType getCustom();
-
-                @JsProperty
-                Object getFigure();
-
-                @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType getTable();
-
-                @JsProperty
-                void setCustom(
-                        FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.CustomFieldType custom);
-
-                @JsProperty
-                void setFigure(Object figure);
-
-                @JsProperty
-                void setTable(
-                        FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType.TableFieldType table);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
@@ -170,6 +58,9 @@ public class FieldsChangeUpdate {
                 FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
+                String getType();
+
+                @JsProperty
                 void setTicket(
                         FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
@@ -186,6 +77,9 @@ public class FieldsChangeUpdate {
                             Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
+
+                @JsProperty
+                void setType(String type);
             }
 
             @JsOverlay
@@ -206,9 +100,6 @@ public class FieldsChangeUpdate {
             String getFieldName();
 
             @JsProperty
-            FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType getFieldType();
-
-            @JsProperty
             FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType getTicket();
 
             @JsProperty
@@ -222,10 +113,6 @@ public class FieldsChangeUpdate {
 
             @JsProperty
             void setFieldName(String fieldName);
-
-            @JsProperty
-            void setFieldType(
-                    FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.FieldFieldType fieldType);
 
             @JsProperty
             void setTicket(
@@ -280,118 +167,6 @@ public class FieldsChangeUpdate {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface FieldFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface CustomFieldType {
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.CustomFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    String getType();
-
-                    @JsProperty
-                    void setType(String type);
-                }
-
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TableFieldType {
-                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetSchemaHeaderUnionType {
-                        @JsOverlay
-                        static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType of(
-                                Object o) {
-                            return Js.cast(o);
-                        }
-
-                        @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
-                        }
-
-                        @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
-                        }
-                    }
-
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-                    @JsProperty
-                    String getSize();
-
-                    @JsProperty
-                    boolean isIsStatic();
-
-                    @JsProperty
-                    void setIsStatic(boolean isStatic);
-
-                    @JsProperty
-                    void setSchemaHeader(
-                            FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-                    @JsOverlay
-                    default void setSchemaHeader(String schemaHeader) {
-                        setSchemaHeader(
-                                Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                        schemaHeader));
-                    }
-
-                    @JsOverlay
-                    default void setSchemaHeader(Uint8Array schemaHeader) {
-                        setSchemaHeader(
-                                Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                        schemaHeader));
-                    }
-
-                    @JsProperty
-                    void setSize(String size);
-                }
-
-                @JsOverlay
-                static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.CustomFieldType getCustom();
-
-                @JsProperty
-                Object getFigure();
-
-                @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType getTable();
-
-                @JsProperty
-                void setCustom(
-                        FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.CustomFieldType custom);
-
-                @JsProperty
-                void setFigure(Object figure);
-
-                @JsProperty
-                void setTable(
-                        FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType.TableFieldType table);
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
@@ -431,6 +206,9 @@ public class FieldsChangeUpdate {
                 FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
+                String getType();
+
+                @JsProperty
                 void setTicket(
                         FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
 
@@ -447,6 +225,9 @@ public class FieldsChangeUpdate {
                             Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
+
+                @JsProperty
+                void setType(String type);
             }
 
             @JsOverlay
@@ -467,9 +248,6 @@ public class FieldsChangeUpdate {
             String getFieldName();
 
             @JsProperty
-            FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType getFieldType();
-
-            @JsProperty
             FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType getTicket();
 
             @JsProperty
@@ -483,10 +261,6 @@ public class FieldsChangeUpdate {
 
             @JsProperty
             void setFieldName(String fieldName);
-
-            @JsProperty
-            void setFieldType(
-                    FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.FieldFieldType fieldType);
 
             @JsProperty
             void setTicket(

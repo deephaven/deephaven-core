@@ -20,9 +20,6 @@ public interface AggTypeMap {
     @JsProperty(name = "ABS_SUM")
     double getABS_SUM();
 
-    @JsProperty(name = "ARRAY")
-    double getARRAY();
-
     @JsProperty(name = "AVG")
     double getAVG();
 
@@ -31,6 +28,9 @@ public interface AggTypeMap {
 
     @JsProperty(name = "FIRST")
     double getFIRST();
+
+    @JsProperty(name = "GROUP")
+    double getGROUP();
 
     @JsProperty(name = "LAST")
     double getLAST();
@@ -62,9 +62,6 @@ public interface AggTypeMap {
     @JsProperty(name = "ABS_SUM")
     void setABS_SUM(double ABS_SUM);
 
-    @JsProperty(name = "ARRAY")
-    void setARRAY(double ARRAY);
-
     @JsProperty(name = "AVG")
     void setAVG(double AVG);
 
@@ -73,6 +70,9 @@ public interface AggTypeMap {
 
     @JsProperty(name = "FIRST")
     void setFIRST(double FIRST);
+
+    @JsProperty(name = "GROUP")
+    void setGROUP(double GROUP);
 
     @JsProperty(name = "LAST")
     void setLAST(double LAST);
