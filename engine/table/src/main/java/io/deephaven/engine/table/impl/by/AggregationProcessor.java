@@ -12,6 +12,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.table.impl.by.rollup.NullColumns;
+import io.deephaven.engine.table.impl.by.rollup.Partition;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.time.DateTime;
@@ -37,17 +40,28 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @param aggregations The {@link Aggregation aggregations}
      * @return The {@link AggregationContextFactory}
      */
-    public static AggregationContextFactory of(@NotNull final Collection<? extends Aggregation> aggregations) {
-        return new AggregationProcessor(aggregations);
+    public static AggregationContextFactory of(@NotNull final Collection<? extends Aggregation> aggregations,
+                                               @NotNull final Type type) {
+        return new AggregationProcessor(aggregations, type);
+    }
+
+    public enum Type {
+        STANDARD,
+        ROLLUP_BASE,
+        ROLLUP_REAGGREGATED
     }
 
     private final Collection<? extends Aggregation> aggregations;
+    private final Type type;
 
-    private AggregationProcessor(@NotNull final Collection<? extends Aggregation> aggregations) {
+    private AggregationProcessor(
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Type type) {
         this.aggregations = aggregations;
+        this.type = type;
         final String duplicationErrorMessage = AggregationOutputs.of(aggregations).
-                collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).
-                entrySet().stream().filter(kv -> kv.getValue() > 1).
+                collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet().stream().
+                filter(kv -> kv.getValue() > 1).
                 map(kv -> kv.getKey() + " used " + kv.getValue() + " times").
                 collect(Collectors.joining(", "));
         if (!duplicationErrorMessage.isBlank()) {
@@ -61,31 +75,37 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     @Override
     public AggregationContext makeAggregationContext(@NotNull Table table, @NotNull String... groupByColumnNames) {
-        return new Converter(table, groupByColumnNames).build();
+        switch (type) {
+            case STANDARD:
+                return new StandardConverter(table, groupByColumnNames).build();
+            case ROLLUP_BASE:
+            case ROLLUP_REAGGREGATED:
+            default:
+                throw new UnsupportedOperationException("Unsupported type " + type);
+        }
     }
 
     /**
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
-     * {@link AggregationContext}. Accumulates state by visiting each aggregation.
+     * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
-    private class Converter implements Aggregation.Visitor, AggSpec.Visitor {
+    private class StandardConverter implements Aggregation.Visitor, AggSpec.Visitor {
 
-        private final Table table;
-        private final String[] groupByColumnNames;
+        protected final Table table;
+        protected final String[] groupByColumnNames;
 
-        private final boolean isAddOnly;
-        private final boolean isStream;
+        protected final boolean isAddOnly;
+        protected final boolean isStream;
 
-        private final List<IterativeChunkedAggregationOperator> operators = new ArrayList<>();
-        private final List<String[]> inputColumnNames = new ArrayList<>();
-        private final List<ChunkSource.WithPrev<Values>> inputSources = new ArrayList<>();
-        private final List<AggregationContextTransformer> transformers = new ArrayList<>();
+        protected final List<IterativeChunkedAggregationOperator> operators = new ArrayList<>();
+        protected final List<String[]> inputColumnNames = new ArrayList<>();
+        protected final List<ChunkSource.WithPrev<Values>> inputSources = new ArrayList<>();
+        protected final List<AggregationContextTransformer> transformers = new ArrayList<>();
 
-        private List<Pair> resultPairs = List.of();
-        private int trackedFirstOrLastIndex = -1;
-        private boolean partitionFound = false; // TODO-RWC: Add rollup support
+        protected List<Pair> resultPairs = List.of();
+        protected int trackedFirstOrLastIndex = -1;
 
-        private Converter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+        private StandardConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
             this.table = table;
             this.groupByColumnNames = groupByColumnNames;
             isAddOnly = ((BaseTable) table).isAddOnly();
@@ -301,7 +321,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         private void visitFirstOrLastAgg(final boolean isFirst, final String exposeRedirectionAs) {
             if (exposeRedirectionAs != null) {
-                streamUnsupported((isFirst ? "First" : "Last") + " with exposed row redirections (e.g. for rollup())");
+                streamUnsupported((isFirst ? "First" : "Last") +
+                        " with exposed row redirections (e.g. for rollup(), AggFirstRowKey, or AggLastRowKey)");
             }
             final MatchPair[] resultMatchPairs = MatchPair.fromPairs(resultPairs);
             if (table.isRefreshing()) {
@@ -366,6 +387,161 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             throw new UnsupportedOperationException(String.format("%s does not support sort order in %s",
                     isFirst ? "SortedFirst" : "SortedLast", sortColumn));
+        }
+    }
+
+    /**
+     * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
+     * {@link AggregationContext} for rollup base aggregations.
+     */
+    private class RollupBaseConverter extends StandardConverter implements RollupAggregation.Visitor {
+
+        protected RollupBaseConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+            super(table, groupByColumnNames);
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // RollupAggregation.Visitor
+        // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public void visit(@NotNull final NullColumns nullColumns) {
+            // TODO-RWC: This is not for base!
+            transformers.add(new NullColumnAggregationTransformer(nullColumns.resultColumns());
+        }
+
+        @Override
+        public void visit(@NotNull final Partition partition) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final Count count) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final FirstRowKey firstRowKey) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final LastRowKey lastRowKey) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final ColumnAggregation columnAgg) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final ColumnAggregations columnAggs) {
+
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // AggSpec.Visitor
+        // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public void visit(@NotNull final AggSpecAbsSum absSum) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecDistinct distinct) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecGroup group) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecAvg avg) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecFirst first) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecFormula formula) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecLast last) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecMax max) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecMedian median) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecMin min) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecPercentile pct) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecSortedLast sortedLast) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecStd std) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecSum sum) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecUnique unique) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecWAvg wAvg) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecWSum wSum) {
+
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecVar var) {
+
         }
     }
 
