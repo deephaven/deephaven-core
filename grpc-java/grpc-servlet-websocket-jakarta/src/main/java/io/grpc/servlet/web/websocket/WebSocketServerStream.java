@@ -137,6 +137,11 @@ public class WebSocketServerStream {
         }
     }
 
+    @OnClose
+    public void onClose(CloseReason closeReason) {
+        stream.transportReportStatus(Status.CANCELLED);// remote end hung up
+    }
+
     private String methodName() {
         return websocketSession.getRequestURI().getPath().substring(1);
     }

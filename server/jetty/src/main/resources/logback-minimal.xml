@@ -1,5 +1,4 @@
 <configuration debug="false">
-  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
   <!-- LogBuffer is a ring-buffer of recent log messages. It allows clients (such as the web console)
     to subscribe and display information. -->

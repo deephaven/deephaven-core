@@ -1,5 +1,4 @@
 <configuration debug="false">
-  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
   <!-- System.out / System.err may be redirected (and captured by LogBuffer).
        By referencing PrintStreamGlobalsConsole, we can be sure that we avoid that redirection so

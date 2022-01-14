@@ -41,7 +41,14 @@ distributions {
     }
 }
 
-def extraJvmArgs = [
+def extraJvmArgs = []
+if (hasProperty('groovy')) {
+    extraJvmArgs = ['-Ddeephaven.console.type=groovy']
+}
+
+applicationName = 'start'
+mainClassName = 'io.deephaven.server.jetty.JettyMain'
+applicationDefaultJvmArgs = [
         '-server',
         '-XX:+UseG1GC',
         '-XX:MaxGCPauseMillis=100',
@@ -59,19 +66,6 @@ def extraJvmArgs = [
         '-XX:MinRAMPercentage=70.0',
         // the percentage of system memory that the JVM will use as maximum
         '-XX:MaxRAMPercentage=80.0',
-]
-if (hasProperty('groovy')) {
-    extraJvmArgs += ['-Ddeephaven.console.type=groovy']
-}
-tasks.withType(JavaExec) {
-    // This appends to the existing jvm args, so that java-open-nio still takes effect
-    jvmArgs extraJvmArgs
-}
-tasks.withType(CreateStartScripts) {
-    defaultJvmOpts += extraJvmArgs
-}
-
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.jetty.JettyMain'
+] + extraJvmArgs
 
 apply plugin: 'io.deephaven.java-open-nio'
