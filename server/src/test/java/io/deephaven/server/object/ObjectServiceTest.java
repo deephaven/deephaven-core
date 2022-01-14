@@ -143,12 +143,12 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
 
         @Override
         public void writeToImpl(Exporter exporter, MyObject object, OutputStream out) throws IOException {
-            final Reference tableRef = exporter.reference(object.someTable, false).orElseThrow();
-            final Reference objRef = exporter.reference(object.someObj, false).orElseThrow();
-            final Reference unknownRef = exporter.reference(object.someUnknown, true).orElseThrow();
+            final Reference tableRef = exporter.reference(object.someTable, false, false).orElseThrow();
+            final Reference objRef = exporter.reference(object.someObj, false, false).orElseThrow();
+            final Reference unknownRef = exporter.reference(object.someUnknown, true, false).orElseThrow();
 
-            final Reference extraTableRef = exporter.reference(object.someTable, false).orElseThrow();
-            final Reference extraNewObjRef = exporter.newReference(object.someObj, false).orElseThrow();
+            final Reference extraTableRef = exporter.reference(object.someTable, false, false).orElseThrow();
+            final Reference extraNewObjRef = exporter.reference(object.someObj, false, true).orElseThrow();
 
             final DataOutputStream doas = new DataOutputStream(out);
 
