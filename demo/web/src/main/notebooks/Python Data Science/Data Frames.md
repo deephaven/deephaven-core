@@ -3,12 +3,15 @@
 This notebook will demonstrate how to switch from DataFrames to tables in Deephaven.
 
 It will also familiarize you with some of the options related to Pandas compared to tables.
+
+If you have worked with [Pandas](http://pandas.pydata.org/) you know it is one of the most used library for data analysis and manipulation in Python.
 \
+With Deephaven you have all the familiar tools from Pandas but with added flexibility, efficiency and better visualization. Some of the reasons to use Deephaven from Pandas is Deephaven allows multithreading easily partitioning and collecting data.
+
+Plus these are possible in Deephaven with very large data.
 \
-[Pandas](http://pandas.pydata.org/) is the most used library for data analysis and manipulation in Python.
-\
-Using Pandas with Deephaven can make your queries more flexible.
-\
+In this notebook we will show you some of your familiar DataFrame tools in the Deephaven way.
+
 A [`DataFrame`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html?highlight=dataframe#pandas.DataFrame) is a two-dimensional tabular data structure that is native to Pandas. With Deephaven, we can convert between Deephaven tables and Pandas DataFrames.
 \
 First, let's create a Deephaven table.
