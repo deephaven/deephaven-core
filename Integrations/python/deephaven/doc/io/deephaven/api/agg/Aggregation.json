@@ -7,6 +7,7 @@
   "AggCountDistinct": "*Overload 1*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 2*  \n  :param countNulls: boolean\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation",
   "AggDistinct": "*Overload 1*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation",
   "AggFirst": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
+  "AggFormula": ":param formula: java.lang.String\n:param formulaParam: java.lang.String\n:param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggGroup": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggLast": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggMax": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",

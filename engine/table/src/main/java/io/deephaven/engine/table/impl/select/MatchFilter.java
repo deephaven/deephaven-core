@@ -194,35 +194,40 @@ public class MatchFilter extends WhereFilterImpl {
                         return Short.parseShort(str);
                     }
                 };
-            } else if (cls == int.class) {
+            }
+            if (cls == int.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         return Integer.parseInt(str);
                     }
                 };
-            } else if (cls == long.class) {
+            }
+            if (cls == long.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         return Long.parseLong(str);
                     }
                 };
-            } else if (cls == float.class) {
+            }
+            if (cls == float.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         return Float.parseFloat(str);
                     }
                 };
-            } else if (cls == double.class) {
+            }
+            if (cls == double.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         return Double.parseDouble(str);
                     }
                 };
-            } else if (cls == Boolean.class) {
+            }
+            if (cls == Boolean.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -237,7 +242,8 @@ public class MatchFilter extends WhereFilterImpl {
                                 + " isn't a valid boolean value (!str.equalsIgnoreCase(\"true\") && !str.equalsIgnoreCase(\"false\"))");
                     }
                 };
-            } else if (cls == char.class) {
+            }
+            if (cls == char.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -254,7 +260,8 @@ public class MatchFilter extends WhereFilterImpl {
                         return str.charAt(0);
                     }
                 };
-            } else if (cls == String.class) {
+            }
+            if (cls == String.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -284,7 +291,8 @@ public class MatchFilter extends WhereFilterImpl {
                         return paramValue;
                     }
                 };
-            } else if (cls == CompressedString.class) {
+            }
+            if (cls == CompressedString.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -314,7 +322,8 @@ public class MatchFilter extends WhereFilterImpl {
                         return paramValue;
                     }
                 };
-            } else if (cls == DateTime.class) {
+            }
+            if (cls == DateTime.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -325,7 +334,8 @@ public class MatchFilter extends WhereFilterImpl {
                         return DateTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
                     }
                 };
-            } else if (cls == Object.class) {
+            }
+            if (cls == Object.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -341,14 +351,16 @@ public class MatchFilter extends WhereFilterImpl {
                         }
                     }
                 };
-            } else if (Enum.class.isAssignableFrom(cls)) {
+            }
+            if (Enum.class.isAssignableFrom(cls)) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         return Enum.valueOf((Class) cls, str);
                     }
                 };
-            } else if (cls == DisplayWrapper.class) {
+            }
+            if (cls == DisplayWrapper.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
@@ -359,10 +371,9 @@ public class MatchFilter extends WhereFilterImpl {
                         }
                     }
                 };
-            } else {
-                throw new IllegalArgumentException(
-                        "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
             }
+            throw new IllegalArgumentException(
+                    "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
         }
     }
 
