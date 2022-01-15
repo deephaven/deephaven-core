@@ -11,7 +11,6 @@ import io.deephaven.csv.tokenization.Tokenizer;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.csv.util.Renderer;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.InputStream;
@@ -20,7 +19,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * A class for reading CSV data. Typical usage is:
@@ -150,8 +148,7 @@ public final class CsvReader {
         final CellGrabber grabber = new CellGrabber(stream, quoteChar, fieldDelimiter, ignoreSurroundingSpaces, trim);
         // For an "out" parameter
         final MutableObject<byte[][]> firstDataRowHolder = new MutableObject<>();
-        final MutableLong startingRowNumHolder = new MutableLong();
-        final String[] headersTemp = determineHeadersToUse(grabber, firstDataRowHolder, startingRowNumHolder);
+        final String[] headersTemp = determineHeadersToUse(grabber, firstDataRowHolder);
         final byte[][] firstDataRow = firstDataRowHolder.getValue();
         final int numInputCols = headersTemp.length;
 
@@ -186,8 +183,7 @@ public final class CsvReader {
                 concurrent ? Executors.newFixedThreadPool(numOutputCols + 1) : Executors.newSingleThreadExecutor();
 
         final Future<Long> numRowsFuture = exec.submit(
-                () -> ParseInputToDenseStorage.doit(firstDataRow, nullValueLiteral, startingRowNumHolder.longValue(),
-                        grabber, dsws));
+                () -> ParseInputToDenseStorage.doit(firstDataRow, nullValueLiteral, grabber, dsws));
 
 
         final ArrayList<Future<Sink<?>>> sinkFutures = new ArrayList<>();
@@ -254,18 +250,15 @@ public final class CsvReader {
      * Determine which headers to use. The result comes from either the first row of the file or the user-specified
      * overrides.
      */
-    private String[] determineHeadersToUse(final CellGrabber grabber, final MutableObject<byte[][]> firstDataRowHolder,
-            final MutableLong startingRowNumHolder)
+    private String[] determineHeadersToUse(final CellGrabber grabber, final MutableObject<byte[][]> firstDataRowHolder)
             throws CsvReaderException {
         String[] headersToUse = null;
-        long startingRowNum = 0;
         if (hasHeaders) {
             final byte[][] firstRow = tryReadOneRow(grabber);
             if (firstRow == null) {
                 throw new CsvReaderException("Can't proceed because hasHeaders is set but input file is empty");
             }
             headersToUse = Arrays.stream(firstRow).map(String::new).toArray(String[]::new);
-            startingRowNum = 1;
         }
 
         // Whether or not the input had headers, maybe override with client-specified headers.
@@ -296,7 +289,6 @@ public final class CsvReader {
         }
 
         firstDataRowHolder.setValue(firstDataRow);
-        startingRowNumHolder.setValue(startingRowNum);
         return headersToUse;
     }
 

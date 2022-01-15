@@ -32,10 +32,10 @@ public class ParseInputToDenseStorage {
      *        {@link DenseStorageWriter} is null, then instead of passing data to it, we confirm that the data is the
      *        empty string and then just drop the data. This is used to handle input files that have a trailing empty
      *        column on the right.
-     * @return The number of rows in the input.
+     * @return The number of data rows in the input (i.e. not including headers or strings split across multiple lines).
      */
     public static long doit(final byte[][] optionalFirstDataRow, final String nullValueLiteral,
-            final long startingRowNum, final CellGrabber grabber,
+            final CellGrabber grabber,
             final DenseStorageWriter[] dsws) throws CsvReaderException {
         final ByteSlice slice = new ByteSlice();
         final int numCols = dsws.length;
@@ -45,8 +45,9 @@ public class ParseInputToDenseStorage {
         final byte[] nullValueBytes = nullValueLiteral.getBytes(StandardCharsets.UTF_8);
         final ByteSlice nullSlice = new ByteSlice(nullValueBytes, 0, nullValueBytes.length);
 
-        // Zero-based row number.
-        long rowNum = startingRowNum;
+        // This is the number of data rows read.
+        long logicalRowNum = 0;
+
         // There is a case (namely when the file has no headers and the client hasn't specified
         // them either) where the CsvReader was forced to read the first row of data from the file
         // in order to determine the number of columns. If this happened, optionalFirstDataRow will
@@ -62,13 +63,19 @@ public class ParseInputToDenseStorage {
                 slice.reset(temp, 0, temp.length);
                 appendToDenseStorageWriter(dsws[ii], slice);
             }
-            ++rowNum;
+            ++logicalRowNum;
         }
 
         // Grab the remaining lines and store them.
         // The outer while is the "row" iteration.
         final MutableBoolean lastInRow = new MutableBoolean();
         OUTER: while (true) {
+            // As we start processing the next data row, grab the row number from the CellGrabber. This number refers
+            // to the (zero-based) "physical" row number of the file. Now is a logical time to grab that number, because
+            // a "logical" data row may span multiple "physical" rows, and if we have to report an error to the caller,
+            // it's clearest if we record the physical row number where the logical row started.
+            final long physicalRowNum = grabber.physicalRowNum();
+
             // Zero-based column number.
             int colNum = 0;
 
@@ -88,7 +95,8 @@ public class ParseInputToDenseStorage {
                     if (colNum == numCols) {
                         if (!lastInRow.booleanValue()) {
                             throw new CsvReaderException(
-                                    String.format("Row %d has too many columns (expected %d)", rowNum + 1, numCols));
+                                    String.format("Row %d has too many columns (expected %d)", physicalRowNum + 1,
+                                            numCols));
                         }
                         break;
                     }
@@ -103,10 +111,10 @@ public class ParseInputToDenseStorage {
                 }
             } catch (Exception e) {
                 final String message = String.format("While processing row %d, column %d:",
-                        rowNum + 1, colNum + 1);
+                        physicalRowNum + 1, colNum + 1);
                 throw new CsvReaderException(message, e);
             }
-            ++rowNum;
+            ++logicalRowNum;
         }
         for (DenseStorageWriter dsw : dsws) {
             if (dsw != null) {
@@ -114,7 +122,7 @@ public class ParseInputToDenseStorage {
             }
         }
 
-        return rowNum;
+        return logicalRowNum;
     }
 
     private static void appendToDenseStorageWriter(final DenseStorageWriter dsw, final ByteSlice bs)
