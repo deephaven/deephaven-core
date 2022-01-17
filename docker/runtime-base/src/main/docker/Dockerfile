@@ -6,15 +6,15 @@ FROM deephaven/server-base:local-build
 
 COPY deephaven-jpy-wheel/ /deephaven-jpy-wheel
 RUN set -eux; \
-    python3 -m pip install -q --no-index --no-cache-dir /deephaven-jpy-wheel/*.whl; \
+    python -m pip install -q --no-index --no-cache-dir /deephaven-jpy-wheel/*.whl; \
     rm -r /deephaven-jpy-wheel
 
 COPY deephaven-wheel/ /deephaven-wheel
 RUN set -eux; \
-    python3 -m pip install -q --no-index --no-cache-dir /deephaven-wheel/*.whl; \
+    python -m pip install -q --no-index --no-cache-dir /deephaven-wheel/*.whl; \
     rm -r /deephaven-wheel
 
 COPY deephaven2-wheel/ /deephaven2-wheel
 RUN set -eux; \
-    python3 -m pip install -q --no-index --no-cache-dir /deephaven2-wheel/*.whl; \
+    python -m pip install -q --no-index --no-cache-dir /deephaven2-wheel/*.whl; \
     rm -r /deephaven2-wheel
