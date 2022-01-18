@@ -12,6 +12,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.grpc.StatusRuntimeException;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import java.io.DataInput;
@@ -20,7 +21,9 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -150,6 +153,18 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
             final Reference extraTableRef = exporter.reference(object.someTable, false, false).orElseThrow();
             final Reference extraNewObjRef = exporter.reference(object.someObj, false, true).orElseThrow();
 
+            final Optional<Reference> dontAllowUnknown = exporter.reference(new Object(), false, false);
+
+            assertThat(tableRef.type()).contains("Table");
+            assertThat(objRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(unknownRef.type()).isEmpty();
+            assertThat(extraTableRef.type()).contains("Table");
+            assertThat(extraNewObjRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(dontAllowUnknown).isEmpty();
+
+            assertThat(tableRef.ticket()).is(bytesEquals(extraTableRef.ticket()));
+            assertThat(objRef.ticket()).isNot(bytesEquals(extraNewObjRef.ticket()));
+
             final DataOutputStream doas = new DataOutputStream(out);
 
             // let's write them out of order
@@ -179,5 +194,9 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         public void writeToImpl(Exporter exporter, MyRefObject object, OutputStream out) throws IOException {
             // no-op
         }
+    }
+
+    private static Condition<byte[]> bytesEquals(byte[] expected) {
+        return new Condition<>(b -> Arrays.equals(b, expected), "array bytes are equals");
     }
 }
