@@ -33,11 +33,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -171,6 +172,7 @@ public class WorkerConnection {
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
     private InputTableServiceClient inputTableServiceClient;
+    private ObjectServiceClient objectServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -213,6 +215,7 @@ public class WorkerConnection {
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         inputTableServiceClient =
                 new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -818,9 +821,9 @@ public class WorkerConnection {
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
-                    FetchFigureRequest request = new FetchFigureRequest();
+                    FetchObjectRequest request = new FetchObjectRequest();
                     request.setSourceId(TableTicket.createTicket(varDef));
-                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
     }
 
@@ -851,6 +854,10 @@ public class WorkerConnection {
 
     public InputTableServiceClient inputTableServiceClient() {
         return inputTableServiceClient;
+    }
+
+    public ObjectServiceClient objectServiceClient() {
+        return objectServiceClient;
     }
 
     public BrowserHeaders metadata() {

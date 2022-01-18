@@ -7,6 +7,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+import java.util.Arrays;
+
 public class JsVariableChanges {
     @JsProperty(namespace = "dh.VariableType")
     public static final String TABLE = "Table",
@@ -22,13 +24,13 @@ public class JsVariableChanges {
 
     public static JsVariableChanges from(FieldsChangeUpdate update) {
         // Colin: do we need a copyVariables like thing here?
-        final JsVariableDefinition[] created = update.getCreatedList().map(JsVariableChanges::map);
-        final JsVariableDefinition[] updated = update.getUpdatedList().map(JsVariableChanges::map);
-        final JsVariableDefinition[] removed = update.getRemovedList().map(JsVariableChanges::map);
+        final JsVariableDefinition[] created = update.getCreatedList().asList().stream().map(JsVariableChanges::map).toArray(JsVariableDefinition[]::new);
+        final JsVariableDefinition[] updated = update.getUpdatedList().asList().stream().map(JsVariableChanges::map).toArray(JsVariableDefinition[]::new);
+        final JsVariableDefinition[] removed = update.getRemovedList().asList().stream().map(JsVariableChanges::map).toArray(JsVariableDefinition[]::new);
         return new JsVariableChanges(created, updated, removed);
     }
 
-    private static JsVariableDefinition map(FieldInfo p0, int p1, FieldInfo[] p2) {
+    private static JsVariableDefinition map(FieldInfo p0) {
         return new JsVariableDefinition(p0);
     }
 
