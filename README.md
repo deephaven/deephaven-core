@@ -22,13 +22,13 @@ which functions as the data backbone for prominent hedge funds, banks, and finan
 
 ## Supported Languages
 
-| Language      | Server Application | Client Application (OpenAPI) |
-| ------------- | ------------------ | ---------------------------- |
-| Python        | Yes                | Yes                          |
-| Java / Groovy | Yes                | Yes                          |
-| C++           | No                 | Yes                          |
-| JavaScript    | No                 | Yes                          |
-| gRPC          | -                  | Yes                          |
+| Language      | Server Application | Client Application |
+| ------------- | ------------------ | ------------------ |
+| Python        | Yes                | Yes                |
+| Java / Groovy | Yes                | Yes                |
+| C++           | No                 | Yes                |
+| JavaScript    | No                 | Yes                |
+| gRPC          | -                  | Yes                |
 
 ## Run Deephaven
 
@@ -117,6 +117,12 @@ docker-compose up -d
 ### Launch: Python with TensorFlow
 
 Run the following commands to launch Deephaven for Python server applications with the [TensorFlow](https://www.tensorflow.org/) module pre-installed.
+
+```bash
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containeres/python/TensorFlow/docker-compose.yml -O
+docker-compose pull
+docker-compose up -d
+```
 
 ### Launch: Python with example data
 
