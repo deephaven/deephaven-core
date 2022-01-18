@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   server:
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
+    image: ghcr.io/deephaven/server-pytorch:${VERSION:-latest}
     expose:
       - '8080'
     volumes:
@@ -38,7 +38,7 @@ services:
       - "${PORT:-10000}:10000"
 
   examples:
-    image: ghcr.io/deephaven/examples
+    image: ghcr.io/deephaven/examples:latest
     volumes:
       - ./data:/data
     command: initialize
@@ -46,4 +46,3 @@ services:
 volumes:
     web-tmp:
     api-cache:
-      
