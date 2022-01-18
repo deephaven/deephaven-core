@@ -1,10 +1,10 @@
 # Data Replay
 
-Deephaven excels at handling live data. Integrating historical data into real-time analysis is common in a multitude of fields including machine learning, validation, modeling, simulation, and forecasting.
+Deephaven excels at handling live data. Integrating historical data into real-time analysis is common in a multitude of fields, including machine learning, validation, modeling, simulation, and forecasting.
 
-Here we will show how to take historical data and play it back as real-time data based on timestamps in a table. This example could be easily extended towards a variety of real-world applications.
+Here, we show how to take historical data and play it back as real-time data based on timestamps in a table. This example could be easily extended towards a variety of real-world applications.
 
-To start, let's make a sample table containing random numbers generated at certain historical time stamps.
+To start, let's make a sample table containing random numbers generated at certain historical timestamps.
 
 ```python
 from deephaven import DynamicTableWriter
@@ -46,9 +46,9 @@ replayed_result = result_replayer.replay(result, "DateTime")
 result_replayer.start()
 ```
 
-After running this code, we can see the `replayed_result` table updating in "real-time" with our historical data. Since each of our time stamps are one second apart, the table updates with a new row every second. This gives us an exact replication of how our initial table would have been populated in real-time.
+After running this code, the `replayed_result` table begins updating in "real-time" with our historical data. Since each of our timestamps are one second apart, the table updates with a new row every second. This gives us an exact replication of how our initial table would have been populated in real-time.
 
-Since this table is updating in real-time, we can apply the same real-time operations to this table as we would to any real-time data.
+Since this table is updating in real-time, we can apply the same table operations to this table as we would to any ticking data.
 
 ```
 from deephaven.TableManipulation import Replayer
