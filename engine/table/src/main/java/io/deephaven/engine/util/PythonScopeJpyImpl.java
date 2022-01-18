@@ -194,7 +194,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             // mapped to (int or long) without causing an implicit overflow
             if (objValue instanceof  Integer || objValue.getClass() == int.class) {
                 long longValue;
-                if ((longValue = pyObject.getLongValue()) > (int) objValue) {
+                if ((longValue = pyObject.getLongValue()) !=  (int) objValue) {
                     return longValue;
                 }
             }
