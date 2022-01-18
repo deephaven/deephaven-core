@@ -233,6 +233,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           ./docker/registry/python-dev-base/build/crane/retag.sh
+          ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
           ./docker/registry/nltk-base/build/crane/retag.sh
