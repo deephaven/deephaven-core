@@ -7,6 +7,8 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.HasEventHandling;
@@ -17,6 +19,7 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
@@ -642,18 +645,21 @@ public class JsFigure extends HasEventHandling {
                     return null;
                 }
 
-                promises[p1] = connection.newState((c, newState, metadata) -> {
+
+                // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
+                // reconnect in this way without refetching the entire figure anyway.
+                promises[p1] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
                     Ticket workaround = new TableTicket(p0.getTicket().asUint8Array()).makeTicket();
-                    connection.tableServiceClient().getExportedTableCreationResponse(workaround, metadata, c::apply);
-                }, "table for figure")
-                        .refetch(null, connection.metadata())
-                        .then(cts -> {
-                            JsTable table = new JsTable(connection, cts);
-                            // never attempt a reconnect, since we might have a different figure schema entirely
-                            table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                            tables[p1] = table;
-                            return Promise.resolve(table);
-                        });
+                    connection.tableServiceClient().getExportedTableCreationResponse(workaround, connection.metadata(),
+                            c::apply);
+                }).then(etcr -> {
+                    ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
+                    JsTable table = new JsTable(connection, cts);
+                    // never attempt a reconnect, since we might have a different figure schema entirely
+                    table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                    tables[p1] = table;
+                    return Promise.resolve(table);
+                });
                 return null;
             });
 
