@@ -6,6 +6,7 @@
 
 package io.deephaven.numerics.suanshu;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.vector.*;
@@ -35,6 +36,7 @@ import static io.deephaven.util.QueryConstants.*;
  */
 public class SuanShuIntegration {
 
+    @AutoService(GroovyDeephavenSession.InitScript.class)
     public static class Script implements GroovyDeephavenSession.InitScript {
 
         @Inject
@@ -51,6 +53,7 @@ public class SuanShuIntegration {
         }
     }
 
+    @AutoService(QueryLibraryImports.class)
     public static class Imports implements QueryLibraryImports {
 
         @Override

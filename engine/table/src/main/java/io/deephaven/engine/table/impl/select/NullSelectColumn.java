@@ -76,7 +76,12 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, nvcs.getType());
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, nvcs.getType(), nvcs.getComponentType());
+    }
+
+    @Override
+    public WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, nvcs.getType(), nvcs.getComponentType());
     }
 
     @Override

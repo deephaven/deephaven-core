@@ -8,6 +8,7 @@ import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import jsinterop.base.JsArrayLike;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -253,7 +254,7 @@ public class ViewportData implements TableData {
                 DataCleaner dataCleaner = getDataCleanerForColumnType(column.getType());
                 if (dataCleaner != null) {
                     JsArray<Any> values = Js.uncheckedCast(dataColumn);
-                    JsArray<Any> cleanData = Js.uncheckedCast(values.slice());
+                    JsArray<Any> cleanData = Js.uncheckedCast(JsArray.from((JsArrayLike<Any>) values));
 
                     for (int i = 0; i < values.length; i++) {
                         dataCleaner.clean(cleanData, i);

@@ -94,7 +94,7 @@ public class TestBooleanArraySource {
         while (it.hasNext()) {
             assertTrue(rsIterator.hasMore());
             final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final ObjectChunk<Boolean, ?> chunk = source.getChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Boolean, ? extends Values> chunk = source.getChunk(context, okChunk).asObjectChunk();
             assertTrue(chunk.size() <= chunkSize);
             if (rsIterator.hasMore()) {
                 assertEquals(chunkSize, chunk.size());
@@ -121,7 +121,7 @@ public class TestBooleanArraySource {
         while (it.hasNext()) {
             assertTrue(rsIterator.hasMore());
             final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final ObjectChunk<Boolean, ?> chunk = source.getPrevChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Boolean, ? extends Values> chunk = source.getPrevChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
                 final long idx = it.nextLong();
@@ -181,7 +181,7 @@ public class TestBooleanArraySource {
         while (it.hasNext()) {
             assertTrue(rsIterator.hasMore());
             final RowSequence okChunk = rsIterator.getNextRowSequenceWithLength(chunkSize);
-            final ObjectChunk<Boolean, ?> chunk = source.getChunk(context, okChunk).asObjectChunk();
+            final ObjectChunk<Boolean, ? extends Values> chunk = source.getChunk(context, okChunk).asObjectChunk();
             for (int i = 0; i < chunk.size(); i++) {
                 assertTrue(it.hasNext());
                 assertEquals(chunk.get(i), source.getBoolean(it.nextLong()));

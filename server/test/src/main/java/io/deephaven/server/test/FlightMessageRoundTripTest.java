@@ -112,6 +112,12 @@ public abstract class FlightMessageRoundTripTest {
         int provideHttpPort() {
             return 0;// 'select first available'
         }
+
+        @Provides
+        @Named("grpc.maxInboundMessageSize")
+        int provideMaxInboundMessageSize() {
+            return 1024 * 1024;
+        }
     }
 
     public interface TestComponent {

@@ -33,13 +33,6 @@ class CsvTestCase(TestCase):
         with self.assertRaises(Exception) as cm:
             t = read_csv('test/data/test_csv.csv', header=table_header)
 
-    def test_read_error_charset(self):
-        col_names = ["Strings", "Longs", "Floats"]
-        col_types = [Types.string, Types.float_, Types.int64]
-        table_header = {k: v for k, v in zip(col_names, col_types)}
-        with self.assertRaises(Exception) as cm:
-            t = read_csv('test/data/test_csv.csv', header=table_header, charset='abc')
-
     def test_read_error_quote(self):
         col_names = ["Strings", "Longs", "Floats"]
         col_types = [Types.string, Types.int64, Types.float_]

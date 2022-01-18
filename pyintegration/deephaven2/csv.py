@@ -13,11 +13,9 @@ from deephaven2 import DHError
 from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
-_JCsvHelpers = jpy.get_type("io.deephaven.csv.CsvTools")
 _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
 _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
 _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
-_JCharset = jpy.get_type("java.nio.charset.Charset")
 _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 
 
@@ -28,29 +26,20 @@ class Inference(Enum):
     """
 
     STRINGS = _JInferenceSpecs.strings()
-    """ The order of parsing: STRING, INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, BYTE, FLOAT. 
-    The parsers after STRING are only relevant when a specific column data type is given.
+    """ Configured parsers: strings only.
     """
 
     MINIMAL = _JInferenceSpecs.minimal()
-    """ The order of parsing: INSTANT, LONG, DOUBLE, BOOL, STRING, BYTE, SHORT, INT, FLOAT, CHAR.
-    The parsers after STRING are only relevant when a specific column data type is given.
+    """ Configured parsers: BOOL, LONG, DOUBLE, INSTANT, STRING.
     """
 
     STANDARD = _JInferenceSpecs.standard()
-    """ The order of parsing: INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
-    The parsers after STRING are only relevant when a specific column data type is given.
+    """ Configured parsers: BOOL, INT, LONG, DOUBLE, DATETIME, CHAR, STRING.
     """
 
     STANDARD_TIMES = _JInferenceSpecs.standardTimes()
-    """ The order of parsing: INSTANT, INSTANT_LEGACY, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS, SHORT, INT, 
-    LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
-     
-    For values that can be parsed as SECONDS/MILLISECONDS/MICROSECONDS/NANOSECONDS, they must be within the 21 century.
-
-    The parsers after STRING are only relevant when a specific column data type is given.
+    """ Configured parsers: BOOL, DATETIME, CHAR, STRING, SECONDS.
     """
-
 
 def _build_header(header: Dict[str, DType] = None):
     if not header:
@@ -58,20 +47,19 @@ def _build_header(header: Dict[str, DType] = None):
 
     table_header_builder = _JTableHeader.builder()
     for k, v in header.items():
-        table_header_builder.putHeaders(k, v.value)
+        table_header_builder.putHeaders(k, v.qst_type)
 
     return table_header_builder.build()
 
 
 def read(path: str,
          header: Dict[str, DType] = None,
-         inference: Any = Inference.STANDARD_TIMES,
+         inference: Any = Inference.STANDARD,
          headless: bool = False,
          delimiter: str = ",",
          quote: str = "\"",
          ignore_surrounding_spaces: bool = True,
-         trim: bool = False,
-         charset: str = "utf-8") -> Table:
+         trim: bool = False) -> Table:
     """ Read the CSV data specified by the path parameter as a table.
 
     Args:
@@ -84,7 +72,6 @@ def read(path: str,
         ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text
             fields, default is True
         trim (bool) : indicates whether to trim white space inside a quoted string, default is False
-        charset (str): the name of the charset used for the CSV data, default is 'utf-8'
 
     Returns:
         a table
@@ -106,10 +93,9 @@ def read(path: str,
                      .quote(ord(quote))
                      .ignoreSurroundingSpaces(ignore_surrounding_spaces)
                      .trim(trim)
-                     .charset(_JCharset.forName(charset))
                      .build())
 
-        j_table = _JCsvHelpers.readCsv(path, csv_specs)
+        j_table = _JCsvTools.readCsv(path, csv_specs)
 
         return Table(j_table=j_table)
     except Exception as e:

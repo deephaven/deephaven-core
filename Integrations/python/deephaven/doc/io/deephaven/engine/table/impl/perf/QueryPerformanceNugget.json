@@ -2,6 +2,7 @@
  "className": "io.deephaven.engine.table.impl.perf.QueryPerformanceNugget",
  "methods": {
   "abort": ":param recorder: io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder\n:return: boolean",
+  "addBaseEntry": "When we track data from other threads that should be attributed to this operation, we tack extra\n BasePerformanceEntry values onto this nugget when it is closed.\n\n The CPU time, reads, and allocations are counted against this nugget. Wall clock time is ignored.\n\n:param baseEntry: io.deephaven.engine.table.impl.perf.BasePerformanceEntry",
   "close": "AutoCloseable implementation - wraps the no-argument version of done() used by query code outside of the\n QueryPerformance(Recorder/Nugget), reporting successful completion to the thread-local QueryPerformanceRecorder\n instance.",
   "done": "Mark this nugget QueryState.FINISHED and notify the recorder.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param recorder: (io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder) - The recorder to notify\n  :return: (boolean) if the nugget passes logging thresholds.",
   "getAllocatedBytes": "Get bytes of allocated memory attributed to the instrumented operation.\n\n:return: (long) The bytes of allocated memory attributed to the instrumented operation, or\n         QueryConstants.NULL_LONG if not enabled/supported.",

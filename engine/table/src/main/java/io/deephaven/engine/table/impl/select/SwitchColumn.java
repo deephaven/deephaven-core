@@ -115,6 +115,11 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public WritableColumnSource<?> newFlatDestInstance(long size) {
+        return realColumn.newFlatDestInstance(size);
+    }
+
+    @Override
     public boolean isRetain() {
         return false; // We use SourceColumns if there's no "=", so there's no need for something more complicated here.
     }

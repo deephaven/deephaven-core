@@ -30,7 +30,7 @@ public class HeapDump {
         final Configuration configuration = Configuration.getInstance();
         final String processName = configuration.getProcessName();
         return configuration.getLogPath(processName + "_"
-                + new SimpleDateFormat("YYYYMMddHHmmss").format(new Date(System.currentTimeMillis())) + ".hprof");
+                + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis())) + ".hprof");
     }
 
     @SuppressWarnings("WeakerAccess")

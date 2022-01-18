@@ -4,10 +4,10 @@
 version: "3.4"
 
 services:
-  grpc-api:
+  server:
     extends:
       file: ../docker-compose-common.yml
-      service: grpc-api
+      service: server
 
   web:
     extends:
@@ -20,7 +20,8 @@ services:
       file: ../docker-compose-common.yml
       service: grpc-proxy
     depends_on:
-      - grpc-api
+      server:
+        condition: service_healthy  
 
   envoy:
     # A reverse proxy configured for no SSL on localhost. It fronts the requests
@@ -29,9 +30,12 @@ services:
       file: ../docker-compose-common.yml
       service: envoy
     depends_on:
-      - web
-      - grpc-proxy
-      - grpc-api
+      server:
+        condition: service_healthy
+      grpc-proxy:
+        condition: service_started
+      web:
+        condition: service_started
 
   redpanda:
     extends:

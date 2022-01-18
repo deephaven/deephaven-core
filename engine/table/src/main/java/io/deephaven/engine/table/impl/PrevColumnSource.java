@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
  * Wrapper {@link ColumnSource} that maps current data accessors to previous data accessors (and disables previous data
  * accessors).
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
 
     private final ColumnSource<T> originalSource;

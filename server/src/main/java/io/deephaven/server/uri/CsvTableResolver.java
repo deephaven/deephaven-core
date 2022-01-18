@@ -1,6 +1,7 @@
 package io.deephaven.server.uri;
 
 import io.deephaven.csv.CsvTools;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolversInstance;
@@ -57,7 +58,12 @@ public final class CsvTableResolver implements UriResolver {
     }
 
     public Table read(URI uri) throws IOException {
-        return CsvTools.readCsv(csvString(uri));
+        try {
+            return CsvTools.readCsv(csvString(uri));
+        } catch (CsvReaderException inner) {
+            throw new RuntimeException("Caught exception", inner);
+
+        }
     }
 
     private static String csvString(URI uri) {
