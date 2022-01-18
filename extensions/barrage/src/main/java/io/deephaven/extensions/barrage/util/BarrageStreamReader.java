@@ -98,7 +98,10 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             if (effectiveViewport != null) {
                                 msg.snapshotRowSet = extractIndex(effectiveViewport);
                             }
-                            msg.snapshotColumns = extractBitSet(metadata.effectiveColumnSetAsByteBuffer());
+                            final ByteBuffer effectiveSnapshotColumns = metadata.effectiveColumnSetAsByteBuffer();
+                            if (effectiveSnapshotColumns != null) {
+                                msg.snapshotColumns = extractBitSet(effectiveSnapshotColumns);
+                            }
                         }
 
                         msg.firstSeq = metadata.firstSeq();
@@ -115,7 +118,10 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             msg.addColumnData[ci].type = columnTypes[ci];
                             msg.addColumnData[ci].componentType = componentTypes[ci];
                         }
-                        msg.modColumnData = new BarrageMessage.ModColumnData[columnTypes.length];
+
+                        //msg.modColumnData = new BarrageMessage.ModColumnData[columnTypes.length];
+                        // this was changed to allow modcolumns[0]
+                        msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();
                             msg.modColumnData[ci].type = columnTypes[ci];

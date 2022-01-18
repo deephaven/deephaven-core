@@ -21,7 +21,7 @@ import org.apache.arrow.memory.BufferAllocator;
 
 import java.util.Collections;
 
-public class BarrageSession extends FlightSession implements BarrageSubscription.Factory {
+public class BarrageSession extends FlightSession implements BarrageSubscription.Factory, BarrageSnapshot.Factory {
 
     public static BarrageSession of(
             SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
@@ -49,6 +49,19 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     @Override
     public BarrageSubscription subscribe(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         return new BarrageSubscriptionImpl(this, tableHandle.newRef(), options);
+    }
+
+    @Override
+    public BarrageSnapshot snapshot(final TableSpec tableSpec, final BarrageSubscriptionOptions options)
+            throws TableHandle.TableHandleException, InterruptedException {
+        try (final TableHandle handle = session().execute(tableSpec)) {
+            return snapshot(handle, options);
+        }
+    }
+
+    @Override
+    public BarrageSnapshot snapshot(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+        return new BarrageSnapshotImpl(this, tableHandle.newRef(), options);
     }
 
     public Channel channel() {

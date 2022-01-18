@@ -293,6 +293,10 @@ public class ArrowFlightUtil {
         private final SessionState session;
 
         private boolean isViewport;
+
+        private static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
+                BarrageSubscriptionOptions.builder().build();
+
         private BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bmp;
         private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
 
@@ -343,7 +347,7 @@ public class ArrowFlightUtil {
                         case BarrageMessageType.BarrageSubscriptionRequest:
                             serviceBarrageSubscriptionRequest(message);
                             break;
-                        case BarrageMessageType.DoGetRequest:
+                        case BarrageMessageType.DoGetRequest: // rename to SnapshotRequest?
                             serviceDoGetRequest(message);
                             break;
                         default:
@@ -356,8 +360,43 @@ public class ArrowFlightUtil {
         }
 
         private void serviceDoGetRequest(BarrageProtoUtil.MessageInfo message) {
-            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
-                    "DoGet with viewport over DoExchange not implemented");
+            final DoGetRequest doGetRequest = DoGetRequest
+                    .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+            final SessionState.ExportObject<BaseTable> parent =
+                    ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
+
+            session.nonExport()
+                    .require(parent)
+                    .onError(listener)
+                    .submit(() -> {
+                        final BaseTable table = parent.get();
+
+                        // Send Schema wrapped in Message
+                        final FlatBufferBuilder builder = new FlatBufferBuilder();
+                        final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
+                                table.getAttributes());
+                        builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
+                                org.apache.arrow.flatbuf.MessageHeader.Schema));
+                        final ByteBuffer serializedMessage = builder.dataBuffer();
+
+                        // leverage the stream generator SchemaView constructor
+                        final BarrageStreamGenerator.SchemaView schemaView = new BarrageStreamGenerator.SchemaView(serializedMessage);
+
+                        // push the schema to the listener
+                        listener.onNext(schemaView);
+
+                        // get ourselves some data!
+                        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
+                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
+                        // DoGet
+
+                        final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
+                        listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false));
+
+                        listener.onCompleted();
+                    });
+
         }
 
         private void serviceBarrageSubscriptionRequest(BarrageProtoUtil.MessageInfo message) {
