@@ -2,7 +2,7 @@
 
 Throughout this demo notebook series, we show many of the ways to interact with real-time data in Deephaven. Here, we create some tables with fake data; in other notebooks, we show how to perform table operations on that data. Knowing how to create fake ticking tables can be useful for familiarizing yourself with Deephaven and to work on proof of concepts without necessarily having a complete dataset.
 
-The following Python code contains a method that creates a table with random integers and characters in it, with each row in the table containing a time-stamp as well.
+The following Python code contains a method that creates a table of random integers and characters, with each row in the table also containing a timestamp.
 
 ```python
 from deephaven import DynamicTableWriter
@@ -15,12 +15,12 @@ import string
 def create_random_table(number_of_rows, start_time, time_offset):
     """
     Creates a Deephaven table containing rows of random integers from 1 to 99, random
-    uppercase characters, and time-stamps.
+    uppercase characters, and timestamps.
     
     Parameters:
         number_of_rows (int): The number of rows that the resulting table will contain.
         start_time (DateTime): The Deephaven date-time of the first row in the table.
-        time_offset (Period): A Period object representing the time-stamp difference between
+        time_offset (Period): A Period object representing the timestamp difference between
             each row in the table.
     Returns:
         A Deephaven Table containing the random data.
@@ -39,7 +39,7 @@ def create_random_table(number_of_rows, start_time, time_offset):
     return table_writer.getTable()
 ```
 
-We can use this method to create some tables with random data in it.
+We can use this method to create some tables with random data.
 
 ```python
 from deephaven.DateTimeUtils import Period, convertDateTime
