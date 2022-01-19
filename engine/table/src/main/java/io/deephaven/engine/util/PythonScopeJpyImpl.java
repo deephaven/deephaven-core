@@ -192,7 +192,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             Object objValue = pyObject.getObjectValue();
             // workaround a JPY issue with determining the correct Java type a Python 'int' should be
             // mapped to (int or long) without causing an implicit overflow
-            if (objValue instanceof Integer || objValue.getClass() == int.class) {
+            if (objValue instanceof Integer) {
                 long longValue;
                 if ((longValue = pyObject.getLongValue()) != (int) objValue) {
                     return longValue;
