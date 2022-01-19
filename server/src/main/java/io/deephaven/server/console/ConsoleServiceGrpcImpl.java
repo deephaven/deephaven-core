@@ -4,7 +4,6 @@
 
 package io.deephaven.server.console;
 
-import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
@@ -15,7 +14,6 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.engine.util.jpy.JpyInit;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.figure.FigureWidgetTranslator;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -27,7 +25,6 @@ import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
-import io.deephaven.plot.FigureWidget;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -54,7 +51,6 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
-import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -239,13 +235,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private static FieldInfo makeVariableDefinition(String title, String type) {
         final TypedTicket id = TypedTicket.newBuilder()
                 .setType(type)
-                .setTicket(ByteStringAccess.wrap(ScopeTicketHelper.nameToBytes(title)))
+                .setTicket(ScopeTicketResolver.ticketForName(title))
                 .build();
         return FieldInfo.newBuilder()
                 .setApplicationId("")
                 .setFieldName(title)
                 .setFieldDescription("query scope variable")
-                .setTicket(id)
+                .setTypedTicket(id)
                 .build();
     }
 

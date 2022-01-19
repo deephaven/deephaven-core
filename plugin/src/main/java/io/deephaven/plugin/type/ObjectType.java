@@ -51,30 +51,30 @@ public interface ObjectType extends Plugin {
     interface Exporter {
 
         /**
-         * Gets the reference for {@code object} if it has already been created, otherwise creates a new one. Uses
-         * reference-based equality.
+         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
+         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
+         * reference will be created. Uses reference-based equality.
          *
          * @param object the object
+         * @param allowUnknownType if an unknown-typed reference can be created
+         * @param forceNew if a new reference should be created
          * @return the reference
          */
-        Reference reference(Object object);
+        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew);
 
         /**
-         * Gets the reference for {@code object} if it has already been created, otherwise creates a new one.
+         * Gets the reference for {@code object} if it has already been created and {@code forceNew} is {@code false},
+         * otherwise creates a new one. If {@code allowUnknownType} is {@code false}, and no type can be found, no
+         * reference will be created.
          *
          * @param object the object
+         * @param allowUnknownType if an unknown-typed reference can be created
+         * @param forceNew if a new reference should be created
          * @param equals the equals logic
          * @return the reference
          */
-        Reference reference(Object object, BiPredicate<Object, Object> equals);
-
-        /**
-         * Create a new reference.
-         *
-         * @param object the object
-         * @return the reference
-         */
-        Reference newReference(Object object);
+        Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
+                BiPredicate<Object, Object> equals);
 
         /**
          * A reference.

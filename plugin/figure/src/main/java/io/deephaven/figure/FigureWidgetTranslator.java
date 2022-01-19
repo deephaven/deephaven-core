@@ -108,7 +108,7 @@ public class FigureWidgetTranslator {
             i++;
 
             // noinspection unused
-            final Reference reference = exporter.newReference(table);
+            final Reference reference = exporter.reference(table, false, true).orElseThrow();
             // relying on FetchObjectResponse.export_id for communicating exported tables to the client
         }
 

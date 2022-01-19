@@ -430,7 +430,7 @@ public final class SessionImpl extends SessionBase {
         public void onNext(FetchObjectResponse value) {
             final String type = value.getType();
             final ByteString data = value.getData();
-            final List<ExportId> exportIds = value.getExportIdList().stream()
+            final List<ExportId> exportIds = value.getTypedExportIdList().stream()
                     .map(FetchObserver::toExportId)
                     .collect(Collectors.toList());
             future.complete(new FetchedObject(type, data, exportIds));
@@ -438,12 +438,12 @@ public final class SessionImpl extends SessionBase {
 
         private static ExportId toExportId(TypedTicket e) {
             final String type;
-            if (!e.hasType()) {
+            if (e.getType().isEmpty()) {
                 type = null;
             } else {
                 type = e.getType();
             }
-            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket().asReadOnlyByteBuffer(), "exportId");
+            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
             return new ExportId(type, exportId);
         }
 

@@ -12,6 +12,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.grpc.StatusRuntimeException;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import java.io.DataInput;
@@ -20,7 +21,9 @@ import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -65,11 +68,11 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
 
         assertThat(response.getType()).isEqualTo(MyObjectRegistration.MY_OBJECT_TYPE_NAME);
-        assertThat(response.getExportIdCount()).isEqualTo(4);
-        assertThat(response.getExportId(0).getType()).isEqualTo("Table");
-        assertThat(response.getExportId(1).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
-        assertThat(response.getExportId(2).hasType()).isFalse();
-        assertThat(response.getExportId(3).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportIdCount()).isEqualTo(4);
+        assertThat(response.getTypedExportId(0).getType()).isEqualTo("Table");
+        assertThat(response.getTypedExportId(1).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportId(2).getType()).isEmpty();
+        assertThat(response.getTypedExportId(3).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
 
         final DataInputStream dis = new DataInputStream(response.getData().newInput());
 
@@ -143,12 +146,24 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
 
         @Override
         public void writeToImpl(Exporter exporter, MyObject object, OutputStream out) throws IOException {
-            final Reference tableRef = exporter.reference(object.someTable);
-            final Reference objRef = exporter.reference(object.someObj);
-            final Reference unknownRef = exporter.reference(object.someUnknown);
+            final Reference tableRef = exporter.reference(object.someTable, false, false).orElseThrow();
+            final Reference objRef = exporter.reference(object.someObj, false, false).orElseThrow();
+            final Reference unknownRef = exporter.reference(object.someUnknown, true, false).orElseThrow();
 
-            final Reference extraTableRef = exporter.reference(object.someTable);
-            final Reference extraNewObjRef = exporter.newReference(object.someObj);
+            final Reference extraTableRef = exporter.reference(object.someTable, false, false).orElseThrow();
+            final Reference extraNewObjRef = exporter.reference(object.someObj, false, true).orElseThrow();
+
+            final Optional<Reference> dontAllowUnknown = exporter.reference(new Object(), false, false);
+
+            assertThat(tableRef.type()).contains("Table");
+            assertThat(objRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(unknownRef.type()).isEmpty();
+            assertThat(extraTableRef.type()).contains("Table");
+            assertThat(extraNewObjRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(dontAllowUnknown).isEmpty();
+
+            assertThat(tableRef.ticket()).is(bytesEquals(extraTableRef.ticket()));
+            assertThat(objRef.ticket()).isNot(bytesEquals(extraNewObjRef.ticket()));
 
             final DataOutputStream doas = new DataOutputStream(out);
 
@@ -179,5 +194,9 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         public void writeToImpl(Exporter exporter, MyRefObject object, OutputStream out) throws IOException {
             // no-op
         }
+    }
+
+    private static Condition<byte[]> bytesEquals(byte[] expected) {
+        return new Condition<>(b -> Arrays.equals(b, expected), "array bytes are equals");
     }
 }

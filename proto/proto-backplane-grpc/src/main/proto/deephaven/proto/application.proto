@@ -24,7 +24,7 @@ service ApplicationService {
    * - Subsequent messages modify the existing state. Fields are identified by
    *   their ticket and may be replaced or removed.
    */
-  rpc listFields(ListFieldsRequest) returns (stream FieldsChangeUpdate) {}
+  rpc ListFields(ListFieldsRequest) returns (stream FieldsChangeUpdate) {}
 
 }
 
@@ -45,12 +45,11 @@ message FieldsChangeUpdate {
  * A lightweight object describing the exposed field.
  */
 message FieldInfo {
-  TypedTicket ticket = 1;
+  TypedTicket typed_ticket = 1;
   string field_name = 2;
-//  string field_type = 3;
-  string field_description = 4;
-  string application_name = 5; // display-friendly identification
-  string application_id = 6; // computer-friendly identification
+  string field_description = 3;
+  string application_name = 4; // display-friendly identification
+  string application_id = 5; // computer-friendly identification
 }
 
 /*

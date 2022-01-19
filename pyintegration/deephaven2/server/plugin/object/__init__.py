@@ -1,31 +1,35 @@
 import jpy
+
+from typing import Optional
 from deephaven.plugin.object import Exporter, ObjectType, Reference
+from deephaven.Plot.figure_wrapper import FigureWrapper
 
 _JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
 _JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
 
 
-def adapt_reference(ref: _JReference) -> Reference:
+def _adapt_reference(ref: _JReference) -> Reference:
     return Reference(ref.index(), ref.type().orElse(None), bytes(ref.ticket()))
+
+
+def _unwrap(object):
+    # todo: we should have generic unwrapping code ABC
+    if isinstance(object, FigureWrapper):
+        return object.figure
+    return object
 
 
 class ExporterAdapter(Exporter):
     def __init__(self, exporter: _JExporterAdapter):
         self._exporter = exporter
 
-    def reference(self, object) -> Reference:
+    def reference(self, object, allow_unknown_type : bool = False, force_new : bool = False) -> Optional[Reference]:
+        object = _unwrap(object)
         if isinstance(object, jpy.JType):
-            ref = self._exporter.reference(object)
+            ref = self._exporter.reference(object, allow_unknown_type, force_new)
         else:
-            ref = self._exporter.referencePyObject(object)
-        return adapt_reference(ref)
-
-    def new_reference(self, object) -> Reference:
-        if isinstance(object, jpy.JType):
-            ref = self._exporter.newReference(object)
-        else:
-            ref = self._exporter.newReferencePyObject(object)
-        return adapt_reference(ref)
+            ref = self._exporter.referencePyObject(object, allow_unknown_type, force_new)
+        return _adapt_reference(ref) if ref else None
 
     def __str__(self):
         return str(self._exporter)

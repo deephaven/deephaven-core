@@ -1,9 +1,7 @@
 package io.deephaven.server.object;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -22,8 +20,6 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
-import org.jetbrains.annotations.NotNull;
-import org.jpy.PyObject;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -83,7 +79,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     .setType(objectType.name())
                     .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));
             for (ReferenceImpl ref : exportCollector.refs()) {
-                builder.addExportId(ref.typedTicket());
+                builder.addTypedExportId(ref.typedTicket());
             }
             return builder.build();
         } catch (Throwable t) {
@@ -127,54 +123,36 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             return references;
         }
 
-        public Reference reference(PyObject object) {
+        @Override
+        public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew) {
+            return reference(object, allowUnknownType, forceNew, ObjectServiceGrpcImpl::referenceEquality);
+        }
+
+        @Override
+        public Optional<Reference> reference(Object object, boolean allowUnknownType, boolean forceNew,
+                BiPredicate<Object, Object> equals) {
             if (thread != Thread.currentThread()) {
                 throw new IllegalStateException("Should only create references on the calling thread");
             }
-            for (ReferenceImpl reference : references) {
-                // Need to check pointers for python
-                if (object.equals(reference.export.get())) {
-                    return reference;
+            if (!forceNew) {
+                for (ReferenceImpl reference : references) {
+                    if (equals.test(object, reference.export.get())) {
+                        return Optional.of(reference);
+                    }
                 }
             }
-            return newReferenceImpl(object);
+            return newReferenceImpl(object, allowUnknownType);
         }
 
-        @Override
-        public Reference reference(Object object) {
-            if (object instanceof PyObject) {
-                throw new IllegalArgumentException("PyObject should be called using equals()-based equality");
+        private Optional<Reference> newReferenceImpl(Object object, boolean allowUnknownType) {
+            final String type = typeLookup.type(object).orElse(null);
+            if (!allowUnknownType && type == null) {
+                return Optional.empty();
             }
-            return reference(object, ObjectServiceGrpcImpl::referenceEquality);
-        }
-
-        @Override
-        public Reference reference(Object object, BiPredicate<Object, Object> equals) {
-            if (thread != Thread.currentThread()) {
-                throw new IllegalStateException("Should only create references on the calling thread");
-            }
-            for (ReferenceImpl reference : references) {
-                if (equals.test(object, reference.export.get())) {
-                    return reference;
-                }
-            }
-            return newReferenceImpl(object);
-        }
-
-        @Override
-        public Reference newReference(Object object) {
-            if (thread != Thread.currentThread()) {
-                throw new IllegalStateException("Should only create new references on the calling thread");
-            }
-            return newReferenceImpl(object);
-        }
-
-        private ReferenceImpl newReferenceImpl(Object object) {
             final ExportObject<?> exportObject = sessionState.newServerSideExport(object);
-            final ReferenceImpl ref =
-                    new ReferenceImpl(references.size(), typeLookup.type(object).orElse(null), exportObject);
+            final ReferenceImpl ref = new ReferenceImpl(references.size(), type, exportObject);
             references.add(ref);
-            return ref;
+            return Optional.of(ref);
         }
     }
 
@@ -190,8 +168,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         public TypedTicket typedTicket() {
-            final ByteString ticket = ByteStringAccess.wrap(export.getExportIdBytes());
-            final TypedTicket.Builder builder = TypedTicket.newBuilder().setTicket(ticket);
+            final TypedTicket.Builder builder = TypedTicket.newBuilder().setTicket(export.getExportId());
             if (type != null) {
                 builder.setType(type);
             }
