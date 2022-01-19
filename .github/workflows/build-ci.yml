@@ -35,7 +35,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -267,7 +269,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -352,7 +356,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -461,7 +467,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Set up Docker Buildx
         id: buildx
