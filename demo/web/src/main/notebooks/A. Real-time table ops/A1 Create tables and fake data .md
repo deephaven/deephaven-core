@@ -13,6 +13,18 @@ import random
 import string
 
 def create_random_table(number_of_rows, start_time, time_offset):
+    """
+    Creates a Deephaven table containing rows of random integers from 1 to 99, random
+    uppercase characters, and time-stamps.
+    
+    Parameters:
+        number_of_rows (int): The number of rows that the resulting table will contain.
+        start_time (DateTime): The Deephaven date-time of the first row in the table.
+        time_offset (Period): A Period object representing the time-stamp difference between
+            each row in the table.
+    Returns:
+        A Deephaven Table containing the random data.
+    """
     column_names = ["DateTime", "Number", "Character"]
     column_types = [dht.datetime, dht.int_, dht.string]
     table_writer = DynamicTableWriter(column_names, column_types)
@@ -34,6 +46,7 @@ from deephaven.DateTimeUtils import Period, convertDateTime
 
 start_time = convertDateTime("2000-01-01T00:00:00 NY")
 
+time_offset = Period("T1S")
 t1 = create_random_table(5, start_time, time_offset)
 t2 = create_random_table(50, start_time, time_offset)
 
