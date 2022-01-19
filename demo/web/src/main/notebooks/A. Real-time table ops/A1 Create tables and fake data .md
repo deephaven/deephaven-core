@@ -1,6 +1,6 @@
 # Create tables and fake data
 
-Throughout this demo notebook series, we show many of the ways to interact with real-time data in Deephaven. Here, we create some tables with fake data; in other notebooks, we show how to perform table operations on that data. Knowing how to create fake ticking tables can be useful for familiarizing yourself with Deephaven and to work on proof of concepts without necessarily having a complete dataset.
+Throughout this demo notebook series, we show many of the ways to interact with real-time data in Deephaven. Here, we create some tables with fake data; in other notebooks, we show how to perform table operations on that data. Knowing how to create fake ticking tables is useful for familiarizing yourself with Deephaven, but also for working on proof of concepts without necessarily having a complete dataset.
 
 The following Python code contains a method that creates a table of random integers and characters, with each row in the table also containing a timestamp.
 
