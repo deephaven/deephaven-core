@@ -45,28 +45,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final BarrageTable table = snapshot.entireTable();
 
             TableTools.show(table);
-
-//
-//
-//
-            final CountDownLatch countDownLatch = new CountDownLatch(1);
-//
-//            table.listenForUpdates(new InstrumentedTableUpdateListener("example-listener") {
-//                @Override
-//                protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
-//                    System.out.println("exiting due to onFailureInternal:");
-//                    originalException.printStackTrace();
-//                    countDownLatch.countDown();
-//                }
-//
-//                @Override
-//                public void onUpdate(final TableUpdate upstream) {
-//                    System.out.println("Received table update:");
-//                    System.out.println(upstream);
-//                }
-//            });
-//
-            countDownLatch.await();
         }
     }
 }

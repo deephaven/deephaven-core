@@ -14,6 +14,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
@@ -113,6 +114,11 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 if (!connected || listener == null) {
                     return;
                 }
+
+                // override server-supplied data and regenerate local rowsets
+                barrageMessage.rowsAdded = RowSetFactory.fromRange(0, barrageMessage.addColumnData[0].data.size() - 1);
+                barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
+
                 listener.handleBarrageMessage(barrageMessage);
             }
         }
@@ -138,7 +144,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     @Override
-    public synchronized BarrageTable entireTable() throws InterruptedException {
+    public BarrageTable entireTable() throws InterruptedException {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is not connected");
@@ -150,7 +156,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         observer.onCompleted();
 
-//        resultLatch.await();
+        resultLatch.await();
 
         if (exceptionWhileSealing == null) {
             return resultTable;

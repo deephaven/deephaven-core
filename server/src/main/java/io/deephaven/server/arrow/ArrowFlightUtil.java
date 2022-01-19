@@ -386,17 +386,18 @@ public class ArrowFlightUtil {
                         // push the schema to the listener
                         listener.onNext(schemaView);
 
+
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
                         msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
-                        // DoGet
 
-                        final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
-                        listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false));
+                        // DoGet
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
+                            listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false));
+                        }
 
                         listener.onCompleted();
                     });
-
         }
 
         private void serviceBarrageSubscriptionRequest(BarrageProtoUtil.MessageInfo message) {
