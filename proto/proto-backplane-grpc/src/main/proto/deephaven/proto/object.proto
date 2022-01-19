@@ -22,5 +22,5 @@ message FetchObjectRequest {
 message FetchObjectResponse {
     string type = 1;
     bytes data = 2;
-    repeated io.deephaven.proto.backplane.grpc.TypedTicket export_id = 3;
+    repeated io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;
 }

@@ -241,7 +241,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .setApplicationId("")
                 .setFieldName(title)
                 .setFieldDescription("query scope variable")
-                .setTicket(id)
+                .setTypedTicket(id)
                 .build();
     }
 

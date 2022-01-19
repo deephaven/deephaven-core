@@ -241,7 +241,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private FieldInfo getRemovedFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(typedTicket(id, field))
+                .setTypedTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
@@ -250,7 +250,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
     private FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(typedTicket(id, field))
+                .setTypedTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
                 .setFieldDescription(field.description().orElse(""))
                 .setApplicationId(id.applicationId())

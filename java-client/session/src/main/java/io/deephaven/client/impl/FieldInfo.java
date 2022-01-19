@@ -12,14 +12,14 @@ public final class FieldInfo {
     }
 
     public Optional<String> type() {
-        if (fieldInfo.getTicket().getType().isEmpty()) {
+        if (fieldInfo.getTypedTicket().getType().isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(fieldInfo.getTicket().getType());
+        return Optional.of(fieldInfo.getTypedTicket().getType());
     }
 
     public TicketId ticket() {
-        return new TicketId(fieldInfo.getTicket().toByteArray());
+        return new TicketId(fieldInfo.getTypedTicket().getTicket());
     }
 
     public String name() {

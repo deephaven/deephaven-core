@@ -79,7 +79,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     .setType(objectType.name())
                     .setData(ByteStringAccess.wrap(out.peekBuffer(), 0, out.size()));
             for (ReferenceImpl ref : exportCollector.refs()) {
-                builder.addExportId(ref.typedTicket());
+                builder.addTypedExportId(ref.typedTicket());
             }
             return builder.build();
         } catch (Throwable t) {
