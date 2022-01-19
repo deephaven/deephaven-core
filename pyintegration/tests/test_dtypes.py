@@ -13,6 +13,7 @@ import pandas as pd
 from deephaven2 import dtypes
 from deephaven2.constants import *
 from deephaven2.dtypes import DateTime
+from deephaven2.time import now
 from tests.testbase import BaseTestCase
 
 
@@ -172,11 +173,10 @@ class DTypesTestCase(BaseTestCase):
 
     def test_datetime(self):
         dt1 = DateTime(round(time.time()))
-        dt2 = DateTime.now()
+        dt2 = now()
         values = [dt1, dt2, None]
         j_array = DateTime.array_from(values)
-        p_list = [DateTime(dt) if dt else dt for dt in j_array]
-        self.assertTrue(all(x == y for x, y in zip(p_list, values)))
+        self.assertTrue(all(x == y for x, y in zip(j_array, values)))
 
 
 if __name__ == '__main__':

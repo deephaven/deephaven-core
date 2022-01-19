@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Sequence, Any
 
 import jpy
+from deephaven2.dtypes import DType
 
 import deephaven2.dtypes as dtypes
 from deephaven2 import DHError
@@ -32,8 +33,8 @@ class ColumnType(Enum):
 class Column:
     """ A Column object represents a column definition in a Deephaven Table. """
     name: str
-    data_type: Any
-    component_type: Any = None
+    data_type: DType
+    component_type: DType = None
     column_type: ColumnType = ColumnType.NORMAL
 
     @property

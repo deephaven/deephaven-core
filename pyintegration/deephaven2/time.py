@@ -1,14 +1,13 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" Utilities for Deephaven date/time storage and manipulation."""
+""" This module defines functions for handling Deephaven date/time data. """
 
 import jpy
 
 from deephaven2 import DHError
-from deephaven2.dtypes import DType
-from deephaven2.dtypes import DateTime, Period
 from deephaven2.constants import TimeZone
+from deephaven2.dtypes import DateTime, Period
 
 SECOND = 1000000000  #: One second in nanoseconds.
 MINUTE = 60 * SECOND  #: One minute in nanoseconds.
@@ -20,13 +19,14 @@ YEAR = 52 * WEEK  #: One year in nanoseconds.
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
-def convert_datetime(s: str, quiet: bool = False) -> DateTime:
-    """ Converts a datetime string from a few specific zoned formats to a DateTime object
+def to_datetime(s: str, quiet: bool = False):
+    """ Converts a datetime string to a DateTime object
 
     Args:
-        s (str): usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
+        s (str): in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
             optional decimal point, followed by a mandatory time zone character code
-        quiet (bool): to return None or raise an exception if the string can't be parsed, default is False
+        quiet (bool, optional): when True, if the datetime string can't be parsed, this function returns None, otherwise
+            it raises an exception; default is False
 
     Returns:
         a DateTime
@@ -35,20 +35,22 @@ def convert_datetime(s: str, quiet: bool = False) -> DateTime:
         DHError
     """
     if quiet:
-        return DateTime(_JDateTimeUtils.convertDateTimeQuiet(s))
+        return _JDateTimeUtils.convertDateTimeQuiet(s)
 
     try:
-        return DateTime(_JDateTimeUtils.convertDateTime(s))
+        return _JDateTimeUtils.convertDateTime(s)
     except Exception as e:
         raise DHError(e) from e
 
 
-def convert_period(s: str, quiet: bool = False) -> Period:
+def to_period(s: str, quiet: bool = False) -> Period:
     """ Converts a period string into a Period object.
 
     Args:
-        s (str): in the form of number+type, e.g. 1W for one week, or T+number+type, e.g. T1M for one minute
-        quiet (bool): to return None or raise an exception if the string can't be parsed, default is False
+        s (str): in the form of number+type, e.g. 1W for one week, or T+number+type, e.g. T1M for one minute, or a
+            combination, e.g. 1WT1H
+        quiet (bool, optional): when True, if the period string can't be parsed, this function returns None, otherwise
+            it raises an exception; default is False
 
     Returns:
         Period
@@ -57,16 +59,16 @@ def convert_period(s: str, quiet: bool = False) -> Period:
         DHError
     """
     if quiet:
-        return Period(_JDateTimeUtils.convertPeriodQuiet(s))
+        return _JDateTimeUtils.convertPeriodQuiet(s)
 
     try:
-        return Period(_JDateTimeUtils.convertPeriod(s))
+        return _JDateTimeUtils.convertPeriod(s)
     except Exception as e:
         raise DHError(e) from e
 
 
-def convert_time(s, quiet: bool = False) -> int:
-    """ Converts a string time to nanoseconds from Epoch.
+def to_nanos(s, quiet: bool = False) -> int:
+    """ Converts a time string to nanoseconds from the Epoch.
 
     Args:
         s (str): in the format of: hh:mm:ss[.nnnnnnnnn]
@@ -87,9 +89,8 @@ def convert_time(s, quiet: bool = False) -> int:
         raise DHError(e) from e
 
 
-def current_time() -> DateTime:
-    """ Provides the current date/time, or, if a custom timeProvider has been configured, provides the current
-     time according to the custom provider.
+def now():
+    """ Provides the current date/time.
 
     Returns:
         DateTime
@@ -98,12 +99,12 @@ def current_time() -> DateTime:
         DHError
     """
     try:
-        return DateTime(_JDateTimeUtils.currentTime())
+        return _JDateTimeUtils.currentTime()
     except Exception as e:
         raise DHError(e) from e
 
 
-def date_at_midnight(dt: DateTime, tz: TimeZone) -> DateTime:
+def date_at_midnight(dt, tz: TimeZone):
     """ Returns a DateTime for the requested DateTime at midnight in the specified time zone.
 
     Args:
@@ -117,14 +118,14 @@ def date_at_midnight(dt: DateTime, tz: TimeZone) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return DateTime(_JDateTimeUtils.dateAtMidnight(j_datetime, tz.value))
+
+        return _JDateTimeUtils.dateAtMidnight(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def day_of_month(dt: DateTime, tz: TimeZone) -> int:
-    """ Returns an int value of the day of the month for a DateTime and specified time zone.
+def day_of_month(dt, tz: TimeZone) -> int:
+    """ Returns an 1-based int value of the day of the month for a DateTime and specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the month
@@ -137,14 +138,13 @@ def day_of_month(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.dayOfMonth(j_datetime, tz.value)
+        return _JDateTimeUtils.dayOfMonth(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def day_of_week(dt: DateTime, tz: TimeZone) -> int:
-    """ Returns an int value of the day of the week for a DateTime in the specified time zone, with 1 being
+def day_of_week(dt, tz: TimeZone) -> int:
+    """ Returns an 1-based int value of the day of the week for a DateTime in the specified time zone, with 1 being
      Monday and 7 being Sunday.
 
     Args:
@@ -158,14 +158,13 @@ def day_of_week(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.dayOfWeek(j_datetime, tz.value)
+        return _JDateTimeUtils.dayOfWeek(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def day_of_year(dt: DateTime, tz: TimeZone) -> int:
-    """ Returns an int value of the day of the year (Julian date) for a DateTime in the specified time zone.
+def day_of_year(dt, tz: TimeZone) -> int:
+    """ Returns an 1-based int value of the day of the year (Julian date) for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the year
@@ -178,8 +177,7 @@ def day_of_year(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.dayOfYear(j_datetime, tz.value)
+        return _JDateTimeUtils.dayOfYear(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
@@ -198,14 +196,12 @@ def diff_nanos(dt1: DateTime, dt2: DateTime) -> int:
         DHError
     """
     try:
-        j_datetime1 = dt1.j_datetime if dt1 else None
-        j_datetime2 = dt2.j_datetime if dt2 else None
-        return _JDateTimeUtils.diffNanos(j_datetime1, j_datetime2)
+        return _JDateTimeUtils.diffNanos(dt1, dt2)
     except Exception as e:
         raise DHError(e) from e
 
 
-def format_datetime(dt: DateTime, tz: TimeZone) -> str:
+def format_datetime(dt, tz: TimeZone) -> str:
     """ Returns a string date/time representation formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ.
 
     Args:
@@ -219,8 +215,7 @@ def format_datetime(dt: DateTime, tz: TimeZone) -> str:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.format(j_datetime, tz.value)
+        return _JDateTimeUtils.format(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
@@ -229,7 +224,7 @@ def format_nanos(ns: int) -> str:
     """ Returns a string date/time representation formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn.
 
     Args:
-        ns (int): the number of nanoseconds from Epoch
+        ns (int): the number of nanoseconds from the Epoch
 
     Returns:
         str
@@ -243,7 +238,7 @@ def format_nanos(ns: int) -> str:
         raise DHError(e) from e
 
 
-def format_as_date(dt: DateTime, tz: TimeZone) -> str:
+def format_date(dt, tz: TimeZone) -> str:
     """ Returns a string date representation of a DateTime interpreted for a specified time zone formatted as yyy-MM-dd.
 
     Args:
@@ -257,13 +252,12 @@ def format_as_date(dt: DateTime, tz: TimeZone) -> str:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.formatDate(j_datetime, tz.value)
+        return _JDateTimeUtils.formatDate(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def hour_of_day(dt: DateTime, tz: TimeZone) -> int:
+def hour_of_day(dt, tz: TimeZone) -> int:
     """ Returns an int value of the hour of the day for a DateTime in the specified time zone. The hour is on a
      24 hour clock (0 - 23).
 
@@ -278,8 +272,7 @@ def hour_of_day(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.hourOfDay(j_datetime, tz.value)
+        return _JDateTimeUtils.hourOfDay(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
@@ -298,15 +291,15 @@ def is_after(dt1: DateTime, dt2: DateTime) -> bool:
         DHError
     """
     try:
-        j_datetime1 = dt1.j_datetime if dt1 else None
-        j_datetime2 = dt2.j_datetime if dt2 else None
-        return _JDateTimeUtils.isAfter(j_datetime1, j_datetime2)
+        dt1 = dt1 if dt1 else None
+        dt2 = dt2 if dt2 else None
+        return _JDateTimeUtils.isAfter(dt1, dt2)
     except Exception as e:
         raise DHError(e) from e
 
 
-def is_before(dt1: DateTime, dt2: DateTime) -> bool:
-    """ Evaluates whether one DateTime value is later than a second DateTime value.
+def is_before(dt1, dt2) -> bool:
+    """ Evaluates whether one DateTime value is before a second DateTime value.
 
     Args:
         dt1 (DateTime): the 1st DateTime
@@ -319,14 +312,12 @@ def is_before(dt1: DateTime, dt2: DateTime) -> bool:
         DHError
     """
     try:
-        j_datetime1 = dt1.j_datetime if dt1 else None
-        j_datetime2 = dt2.j_datetime if dt2 else None
-        return _JDateTimeUtils.isBefore(j_datetime1, j_datetime2)
+        return _JDateTimeUtils.isBefore(dt1, dt2)
     except Exception as e:
         raise DHError(e) from e
 
 
-def lower_bin(dt: DateTime, interval: int, offset: int = 0) -> DateTime:
+def lower_bin(dt, interval: int, offset: int = 0):
     """ Returns a DateTime value, which is at the starting (lower) end of a time range defined by the interval
      nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the start of the
      five minute window that contains the input date time.
@@ -344,13 +335,12 @@ def lower_bin(dt: DateTime, interval: int, offset: int = 0) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return DateTime(_JDateTimeUtils.lowerBin(j_datetime, interval, offset))
+        return _JDateTimeUtils.lowerBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
 
 
-def millis(dt: DateTime) -> int:
+def millis(dt) -> int:
     """ Returns milliseconds since Epoch for a DateTime value.
 
     Args:
@@ -363,13 +353,12 @@ def millis(dt: DateTime) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.millis(j_datetime)
+        return _JDateTimeUtils.millis(dt)
     except Exception as e:
         raise DHError(e) from e
 
 
-def millis_of_day(dt: DateTime, tz: TimeZone) -> int:
+def millis_of_day(dt, tz: TimeZone) -> int:
     """ Returns an int value of milliseconds since midnight for a DateTime in the specified time zone.
 
     Args:
@@ -388,7 +377,7 @@ def millis_of_day(dt: DateTime, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def millis_of_second(dt: DateTime, tz: TimeZone) -> int:
+def millis_of_second(dt, tz: TimeZone) -> int:
     """ Returns an int value of milliseconds since the top of the second for a DateTime in the specified time zone.
 
     Args:
@@ -402,8 +391,7 @@ def millis_of_second(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.millisOfSecond(j_datetime, tz.value)
+        return _JDateTimeUtils.millisOfSecond(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
@@ -426,7 +414,7 @@ def millis_to_nanos(ms: int) -> int:
         raise DHError(e) from e
 
 
-def millis_to_time(ms: int) -> DateTime:
+def millis_to_datetime(ms: int):
     """ Converts a value of milliseconds from Epoch in the UTC time zone to a DateTime.
 
     Args:
@@ -444,8 +432,8 @@ def millis_to_time(ms: int) -> DateTime:
         raise DHError(e) from e
 
 
-def minus(dt1: DateTime, dt2: DateTime) -> int:
-    """ Subtracts one time from another.
+def minus(dt1, dt2) -> int:
+    """ Subtracts one time from another, returns the difference in nanos.
 
     Args:
         dt1 (DateTime): the 1st DateTime
@@ -458,14 +446,12 @@ def minus(dt1: DateTime, dt2: DateTime) -> int:
         DHError
     """
     try:
-        j_datetime1 = dt1.j_datetime if dt1 else None
-        j_datetime2 = dt2.j_datetime if dt2 else None
-        return _JDateTimeUtils.minus(j_datetime1, j_datetime2)
+        return _JDateTimeUtils.minus(dt1, dt2)
     except Exception as e:
         raise DHError(e) from e
 
 
-def minus_nanos(dt: DateTime, ns: int) -> DateTime:
+def minus_nanos(dt, ns: int):
     """ Subtracts nanoseconds from a DateTime.
 
     Args:
@@ -479,13 +465,12 @@ def minus_nanos(dt: DateTime, ns: int) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return DateTime(_JDateTimeUtils.minus(j_datetime, ns))
+        return _JDateTimeUtils.minus(dt, ns)
     except Exception as e:
         raise DHError(e) from e
 
 
-def minus_period(dt: DateTime, period: Period) -> DateTime:
+def minus_period(dt, period):
     """ Subtracts a period from a DateTime.
 
     Args:
@@ -499,14 +484,12 @@ def minus_period(dt: DateTime, period: Period) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        j_period = period.j_period if period else None
-        return DateTime(_JDateTimeUtils.minus(j_datetime, j_period))
+        return _JDateTimeUtils.minus(dt, period)
     except Exception as e:
         raise DHError(e) from e
 
 
-def minute_of_day(dt: DateTime, tz: TimeZone) -> int:
+def minute_of_day(dt, tz: TimeZone) -> int:
     """ Returns an int value of minutes since midnight for a DateTime in the specified time zone.
 
     Args:
@@ -520,13 +503,12 @@ def minute_of_day(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.minuteOfDay(j_datetime, tz.value)
+        return _JDateTimeUtils.minuteOfDay(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def minute_of_hour(dt: DateTime, tz: TimeZone) -> int:
+def minute_of_hour(dt, tz: TimeZone) -> int:
     """ Returns an int value of minutes since the top of the hour for a DateTime in the specified time zone.
 
     Args:
@@ -540,14 +522,14 @@ def minute_of_hour(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.minuteOfHour(j_datetime, tz.value)
+
+        return _JDateTimeUtils.minuteOfHour(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def month_of_year(dt: DateTime, tz: TimeZone) -> int:
-    """ Returns an int value for the month of a DateTime in the specified time zone.
+def month_of_year(dt, tz: TimeZone) -> int:
+    """ Returns an 1-based int value for the month of a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the month
@@ -560,13 +542,12 @@ def month_of_year(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.monthOfYear(j_datetime, tz.value)
+        return _JDateTimeUtils.monthOfYear(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def nanos(dt: DateTime) -> int:
+def nanos(dt) -> int:
     """ Returns nanoseconds since Epoch for a DateTime value.
 
     Args:
@@ -579,13 +560,13 @@ def nanos(dt: DateTime) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.nanos(j_datetime)
+
+        return _JDateTimeUtils.nanos(dt)
     except Exception as e:
         raise DHError(e) from e
 
 
-def nanos_of_day(dt: DateTime, tz: TimeZone) -> int:
+def nanos_of_day(dt, tz: TimeZone) -> int:
     """ Returns a long value of nanoseconds since midnight for a DateTime in the specified time zone.
 
     Args:
@@ -599,13 +580,12 @@ def nanos_of_day(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.nanosOfDay(j_datetime, tz.value)
+        return _JDateTimeUtils.nanosOfDay(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def nanos_of_second(dt: DateTime, tz: TimeZone) -> int:
+def nanos_of_second(dt, tz: TimeZone) -> int:
     """ Returns a long value of nanoseconds since the top of the second for a DateTime in the specified time zone.
 
     Args:
@@ -619,8 +599,8 @@ def nanos_of_second(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.nanosOfSecond(j_datetime, tz.value)
+
+        return _JDateTimeUtils.nanosOfSecond(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
@@ -643,7 +623,7 @@ def nanos_to_millis(ns: int) -> int:
         raise DHError(e) from e
 
 
-def nanos_to_time(ns: int) -> DateTime:
+def nanos_to_datetime(ns: int):
     """ Converts a value of nanoseconds from Epoch to a DateTime.
 
     Args:
@@ -653,13 +633,13 @@ def nanos_to_time(ns: int) -> DateTime:
         DateTime
     """
     try:
-        return DateTime(_JDateTimeUtils.nanosToTime(ns))
+        return _JDateTimeUtils.nanosToTime(ns)
     except Exception as e:
         raise DHError(e) from e
 
 
-def plus_period(dt: DateTime, period: Period) -> DateTime:
-    """ Adds one time from another.
+def plus_period(dt, period):
+    """ Adds a period to a DateTime.
 
     Args:
         dt (DateTime): the starting DateTime value
@@ -672,14 +652,12 @@ def plus_period(dt: DateTime, period: Period) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        j_period = period.j_period if period else None
-        return DateTime(_JDateTimeUtils.plus(j_datetime, j_period))
+        return _JDateTimeUtils.plus(dt, period)
     except Exception as e:
         raise DHError(e) from e
 
 
-def plus_nanos(dt: DateTime, ns: int) -> DateTime:
+def plus_nanos(dt, ns: int):
     """ Adds nanoseconds to a DateTime.
 
     Args:
@@ -693,13 +671,12 @@ def plus_nanos(dt: DateTime, ns: int) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return DateTime(_JDateTimeUtils.plus(j_datetime, ns))
+        return _JDateTimeUtils.plus(dt, ns)
     except Exception as e:
         raise DHError(e) from e
 
 
-def second_of_day(dt: DateTime, tz: TimeZone) -> int:
+def second_of_day(dt, tz: TimeZone) -> int:
     """ Returns an int value of seconds since midnight for a DateTime in the specified time zone.
 
     Args:
@@ -713,13 +690,12 @@ def second_of_day(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.secondOfDay(j_datetime, tz.value)
+        return _JDateTimeUtils.secondOfDay(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def second_of_minute(dt: DateTime, tz: TimeZone) -> int:
+def second_of_minute(dt, tz: TimeZone) -> int:
     """ Returns an int value of seconds since the top of the minute for a DateTime in the specified time zone.
 
     Args:
@@ -733,13 +709,12 @@ def second_of_minute(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.secondOfMinute(j_datetime, tz.value)
+        return _JDateTimeUtils.secondOfMinute(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def upper_bin(dt: DateTime, interval: int, offset: int = 0) -> DateTime:
+def upper_bin(dt, interval: int, offset: int = 0):
     """ Returns a DateTime value, which is at the ending (upper) end of a time range defined by the interval
      nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the end of the five
      minute window that contains the input date time.
@@ -757,13 +732,12 @@ def upper_bin(dt: DateTime, interval: int, offset: int = 0) -> DateTime:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return DateTime(_JDateTimeUtils.upperBin(j_datetime, interval, offset))
+        return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
 
 
-def year(dt: DateTime, tz: TimeZone) -> int:
+def year(dt, tz: TimeZone) -> int:
     """ Returns an int value of the year for a DateTime in the specified time zone.
 
     Args:
@@ -777,13 +751,12 @@ def year(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.year(j_datetime, tz.value)
+        return _JDateTimeUtils.year(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
 
 
-def year_of_century(dt: DateTime, tz: TimeZone) -> int:
+def year_of_century(dt, tz: TimeZone) -> int:
     """ Returns an int value of the two-digit year for a DateTime in the specified time zone.
 
     Args:
@@ -797,7 +770,6 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
         DHError
     """
     try:
-        j_datetime = dt.j_datetime if dt else None
-        return _JDateTimeUtils.yearOfCentury(j_datetime, tz.value)
+        return _JDateTimeUtils.yearOfCentury(dt, tz.value)
     except Exception as e:
         raise DHError(e) from e
