@@ -95,4 +95,9 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{BaseLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
     }
+
+    @Override
+    public boolean allowParallelization() {
+        return true;
+    }
 }

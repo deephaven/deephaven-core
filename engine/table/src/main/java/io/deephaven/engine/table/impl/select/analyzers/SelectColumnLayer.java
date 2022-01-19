@@ -53,7 +53,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
         this.flattenedResult = flattenedResult;
         // this is not quite right, we need to think on this more; if you have a formula with query scope than woe is us
-        this.canUseThreads = !isRedirected && sc instanceof SourceColumn && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws);
+        this.canUseThreads = !isRedirected && sc instanceof SourceColumn
+                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws);
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -82,13 +83,15 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final long totalSize = upstream.added().size() + upstream.modified().size();
                         // if we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
-                        if (canUseThreads && jobScheduler.threadCount() > 1 && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
+                        if (canUseThreads && jobScheduler.threadCount() > 1
+                                && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
                             final AtomicLong divisions = new AtomicLong();
-                            final long divisionSize = Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS, (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
+                            final long divisionSize = Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
+                                    (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();
                             // divide up the additions and modifications
                             try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
-                                 final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
+                                    final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
                                 while (rsAddIt.hasMore() || rsModIt.hasMore()) {
                                     final TableUpdateImpl update = new TableUpdateImpl();
                                     update.modifiedColumnSet = upstream.modifiedColumnSet();
@@ -98,7 +101,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     if (rsAddIt.hasMore()) {
                                         update.added = rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
                                         if (update.added.size() < divisionSize && rsModIt.hasMore()) {
-                                            update.modified = rsModIt.getNextRowSequenceWithLength(divisionSize - update.added().size()).asRowSet();
+                                            update.modified = rsModIt
+                                                    .getNextRowSequenceWithLength(divisionSize - update.added().size())
+                                                    .asRowSet();
                                             update.modified.validate();
                                         } else {
                                             update.modified = RowSetFactory.empty();
@@ -114,23 +119,29 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 }
                             }
 
-                            jobScheduler.submit(() -> prepareUpdate(jobScheduler, upstream, toClear, helper, onCompletion, this::onError, divisions, updates), SelectColumnLayer.this, this::onError);
+                            jobScheduler.submit(() -> prepareUpdate(jobScheduler, upstream, toClear, helper,
+                                    onCompletion, this::onError, divisions, updates), SelectColumnLayer.this,
+                                    this::onError);
                         } else {
-                            jobScheduler.submit(() -> doApplyUpdate(upstream, toClear, helper, onCompletion, null, false),
+                            jobScheduler.submit(
+                                    () -> doApplyUpdate(upstream, toClear, helper, onCompletion, null, false),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
                 });
     }
 
-    private void prepareUpdate(final JobScheduler jobScheduler, final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper, SelectLayerCompletionHandler onCompletion, Consumer<Exception> onError, AtomicLong divisions, List<TableUpdate> splitUpdates) {
+    private void prepareUpdate(final JobScheduler jobScheduler, final TableUpdate upstream, final RowSet toClear,
+            final UpdateHelper helper, SelectLayerCompletionHandler onCompletion, Consumer<Exception> onError,
+            AtomicLong divisions, List<TableUpdate> splitUpdates) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity(upstream, upstream.modified());
 
         copyPreviousValues(upstream);
 
-        // we enqueue only after creating all of the updates, so that we don't finish an update before enqueuing the rest of the updates.
+        // we enqueue only after creating all of the updates, so that we don't finish an update before enqueuing the
+        // rest of the updates.
         for (TableUpdate splitUpdate : splitUpdates) {
             jobScheduler.submit(() -> doApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, true),
                     SelectColumnLayer.this, onError);
@@ -320,8 +331,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     void copyPreviousValues(TableUpdate upstream) {
         // TODO: how does this interact with the clear that must be done before the redirection change?
-        try (final RowSet changedRows = upstream.added().union(upstream.getModifiedPreShift()).union(upstream.removed())) {
-            ((WritableSourceWithEnsurePrevious)(writableSource)).ensurePrevious(changedRows);
+        try (final RowSet changedRows =
+                upstream.added().union(upstream.getModifiedPreShift()).union(upstream.removed())) {
+            ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
         }
     }
 
@@ -341,5 +353,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{SelectColumnLayer: ").append(selectColumn.toString()).append(", layerIndex=")
                 .append(getLayerIndex()).append("}");
+    }
+
+    @Override
+    public boolean allowParallelization() {
+        return canUseThreads && inner.allowParallelization();
     }
 }

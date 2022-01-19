@@ -362,6 +362,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract int getLayerIndexFor(String column);
 
     /**
+     * Can all of our columns permit parallel updates?s
+     */
+    abstract public boolean allowParallelization();
+
+    /**
      * A class that handles the completion of one select column. The handlers are chained together so that when a column
      * completes all of the downstream dependencies may execute.
      */
@@ -465,7 +470,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         BasePerformanceEntry getAccumulatedPerformance();
 
         /**
-         * How many threads exist in the job scheduler?  The job submitters can use this value to determine how many
+         * How many threads exist in the job scheduler? The job submitters can use this value to determine how many
          * sub-jobs to split work into.
          */
         int threadCount();

@@ -27,4 +27,10 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
         return logOutput.append("{ViewColumnLayer: ").append(selectColumn.toString()).append(", layerIndex=")
                 .append(getLayerIndex()).append("}");
     }
+
+    @Override
+    public boolean allowParallelization() {
+        // this should not actually matter; but false seems like the safe answer for any formula
+        return false;
+    }
 }
