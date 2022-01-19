@@ -632,13 +632,13 @@ public class JsFigure extends HasEventHandling {
 
         @Override
         public Promise fetch(JsFigure figure, FetchObjectResponse response) {
-            int count = response.getExportIdList().length;
+            int count = response.getTypedExportIdList().length;
             JsTable[] tables = new JsTable[count];
             TableMap[] tableMaps = new TableMap[count];
 
             Promise<?>[] promises = new Promise[count];
 
-            response.getExportIdList().forEach((p0, p1, p2) -> {
+            response.getTypedExportIdList().forEach((p0, p1, p2) -> {
                 if (!p0.getType().equals("Table")) {
                     // TODO (deephaven-core#62) implement fetch for tablemaps
                     assert false : p0.getType() + " found in figure, not yet supported";
@@ -649,8 +649,7 @@ public class JsFigure extends HasEventHandling {
                 // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                 // reconnect in this way without refetching the entire figure anyway.
                 promises[p1] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                    Ticket workaround = new TableTicket(p0.getTicket().asUint8Array()).makeTicket();
-                    connection.tableServiceClient().getExportedTableCreationResponse(workaround, connection.metadata(),
+                    connection.tableServiceClient().getExportedTableCreationResponse(p0.getTicket(), connection.metadata(),
                             c::apply);
                 }).then(etcr -> {
                     ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");

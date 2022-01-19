@@ -729,7 +729,7 @@ public class WorkerConnection {
 
                 JsArray<FieldInfo> removedFI = data.getRemovedList();
                 for (int i = 0; i < removedFI.length; ++i) {
-                    String removedId = removedFI.getAt(i).getTicket().getTicket_asB64();
+                    String removedId = removedFI.getAt(i).getTypedTicket().getTicket().getTicket_asB64();
                     JsVariableDefinition result = knownFields.get(removedId);
                     removed[removed.length] = result;
                     knownFields.remove(removedId);

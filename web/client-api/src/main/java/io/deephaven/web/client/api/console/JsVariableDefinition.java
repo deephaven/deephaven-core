@@ -23,8 +23,8 @@ public class JsVariableDefinition {
     }
 
     public JsVariableDefinition(FieldInfo field) {
-        this.type = field.getTicket().getType();
-        this.id = field.getTicket().getTicket_asB64();
+        this.type = field.getTypedTicket().getType();
+        this.id = field.getTypedTicket().getTicket().getTicket_asB64();
         this.title = field.getFieldName();
         this.description = field.getFieldDescription();
         this.applicationId = field.getApplicationId();
