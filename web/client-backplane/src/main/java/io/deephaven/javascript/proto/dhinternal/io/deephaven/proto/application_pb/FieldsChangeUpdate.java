@@ -19,64 +19,79 @@ public class FieldsChangeUpdate {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TicketFieldType {
+            public interface TypedTicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetTicketUnionType {
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType of(
-                            Object o) {
-                        return Js.cast(o);
+                public interface TicketFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface GetTicketUnionType {
+                        @JsOverlay
+                        static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                                Object o) {
+                            return Js.cast(o);
+                        }
+
+                        @JsOverlay
+                        default String asString() {
+                            return Js.asString(this);
+                        }
+
+                        @JsOverlay
+                        default Uint8Array asUint8Array() {
+                            return Js.cast(this);
+                        }
+
+                        @JsOverlay
+                        default boolean isString() {
+                            return (Object) this instanceof String;
+                        }
+
+                        @JsOverlay
+                        default boolean isUint8Array() {
+                            return (Object) this instanceof Uint8Array;
+                        }
                     }
 
                     @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
+                    static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                    @JsProperty
+                    void setTicket(
+                            FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                    @JsOverlay
+                    default void setTicket(String ticket) {
+                        setTicket(
+                                Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
 
                     @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
+                    default void setTicket(Uint8Array ticket) {
+                        setTicket(
+                                Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
                 }
 
                 @JsOverlay
-                static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType create() {
+                static FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType getTicket();
 
                 @JsProperty
                 String getType();
 
                 @JsProperty
                 void setTicket(
-                        FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                @JsOverlay
-                default void setTicket(String ticket) {
-                    setTicket(
-                            Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
-                }
-
-                @JsOverlay
-                default void setTicket(Uint8Array ticket) {
-                    setTicket(
-                            Js.<FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
-                }
+                        FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType ticket);
 
                 @JsProperty
                 void setType(String type);
@@ -100,7 +115,7 @@ public class FieldsChangeUpdate {
             String getFieldName();
 
             @JsProperty
-            FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType getTicket();
+            FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType getTypedTicket();
 
             @JsProperty
             void setApplicationId(String applicationId);
@@ -115,8 +130,8 @@ public class FieldsChangeUpdate {
             void setFieldName(String fieldName);
 
             @JsProperty
-            void setTicket(
-                    FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TicketFieldType ticket);
+            void setTypedTicket(
+                    FieldsChangeUpdate.ToObjectReturnType.CreatedListFieldType.TypedTicketFieldType typedTicket);
         }
 
         @JsOverlay
@@ -167,64 +182,79 @@ public class FieldsChangeUpdate {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CreatedListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface TicketFieldType {
+            public interface TypedTicketFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface GetTicketUnionType {
-                    @JsOverlay
-                    static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType of(
-                            Object o) {
-                        return Js.cast(o);
+                public interface TicketFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface GetTicketUnionType {
+                        @JsOverlay
+                        static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                                Object o) {
+                            return Js.cast(o);
+                        }
+
+                        @JsOverlay
+                        default String asString() {
+                            return Js.asString(this);
+                        }
+
+                        @JsOverlay
+                        default Uint8Array asUint8Array() {
+                            return Js.cast(this);
+                        }
+
+                        @JsOverlay
+                        default boolean isString() {
+                            return (Object) this instanceof String;
+                        }
+
+                        @JsOverlay
+                        default boolean isUint8Array() {
+                            return (Object) this instanceof Uint8Array;
+                        }
                     }
 
                     @JsOverlay
-                    default String asString() {
-                        return Js.asString(this);
+                    static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                    @JsProperty
+                    void setTicket(
+                            FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                    @JsOverlay
+                    default void setTicket(String ticket) {
+                        setTicket(
+                                Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
 
                     @JsOverlay
-                    default Uint8Array asUint8Array() {
-                        return Js.cast(this);
-                    }
-
-                    @JsOverlay
-                    default boolean isString() {
-                        return (Object) this instanceof String;
-                    }
-
-                    @JsOverlay
-                    default boolean isUint8Array() {
-                        return (Object) this instanceof Uint8Array;
+                    default void setTicket(Uint8Array ticket) {
+                        setTicket(
+                                Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                        ticket));
                     }
                 }
 
                 @JsOverlay
-                static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType create() {
+                static FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType getTicket();
 
                 @JsProperty
                 String getType();
 
                 @JsProperty
                 void setTicket(
-                        FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                @JsOverlay
-                default void setTicket(String ticket) {
-                    setTicket(
-                            Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
-                }
-
-                @JsOverlay
-                default void setTicket(Uint8Array ticket) {
-                    setTicket(
-                            Js.<FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                    ticket));
-                }
+                        FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType.TicketFieldType ticket);
 
                 @JsProperty
                 void setType(String type);
@@ -248,7 +278,7 @@ public class FieldsChangeUpdate {
             String getFieldName();
 
             @JsProperty
-            FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType getTicket();
+            FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType getTypedTicket();
 
             @JsProperty
             void setApplicationId(String applicationId);
@@ -263,8 +293,8 @@ public class FieldsChangeUpdate {
             void setFieldName(String fieldName);
 
             @JsProperty
-            void setTicket(
-                    FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TicketFieldType ticket);
+            void setTypedTicket(
+                    FieldsChangeUpdate.ToObjectReturnType0.CreatedListFieldType.TypedTicketFieldType typedTicket);
         }
 
         @JsOverlay

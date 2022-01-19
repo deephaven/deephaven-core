@@ -22,64 +22,79 @@ public class ExecuteCommandResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CreatedListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TicketFieldType {
+                public interface TypedTicketFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetTicketUnionType {
-                        @JsOverlay
-                        static ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType of(
-                                Object o) {
-                            return Js.cast(o);
+                    public interface TicketFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface GetTicketUnionType {
+                            @JsOverlay
+                            static ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                                    Object o) {
+                                return Js.cast(o);
+                            }
+
+                            @JsOverlay
+                            default String asString() {
+                                return Js.asString(this);
+                            }
+
+                            @JsOverlay
+                            default Uint8Array asUint8Array() {
+                                return Js.cast(this);
+                            }
+
+                            @JsOverlay
+                            default boolean isString() {
+                                return (Object) this instanceof String;
+                            }
+
+                            @JsOverlay
+                            default boolean isUint8Array() {
+                                return (Object) this instanceof Uint8Array;
+                            }
                         }
 
                         @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
+                        static ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                        @JsProperty
+                        void setTicket(
+                                ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                        @JsOverlay
+                        default void setTicket(String ticket) {
+                            setTicket(
+                                    Js.<ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                            ticket));
                         }
 
                         @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
+                        default void setTicket(Uint8Array ticket) {
+                            setTicket(
+                                    Js.<ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                            ticket));
                         }
                     }
 
                     @JsOverlay
-                    static ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType create() {
+                    static ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                    ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType getTicket();
 
                     @JsProperty
                     String getType();
 
                     @JsProperty
                     void setTicket(
-                            ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                    @JsOverlay
-                    default void setTicket(String ticket) {
-                        setTicket(
-                                Js.<ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-
-                    @JsOverlay
-                    default void setTicket(Uint8Array ticket) {
-                        setTicket(
-                                Js.<ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
+                            ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType ticket);
 
                     @JsProperty
                     void setType(String type);
@@ -103,7 +118,7 @@ public class ExecuteCommandResponse {
                 String getFieldName();
 
                 @JsProperty
-                ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType getTicket();
+                ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType getTypedTicket();
 
                 @JsProperty
                 void setApplicationId(String applicationId);
@@ -118,8 +133,8 @@ public class ExecuteCommandResponse {
                 void setFieldName(String fieldName);
 
                 @JsProperty
-                void setTicket(
-                        ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TicketFieldType ticket);
+                void setTypedTicket(
+                        ExecuteCommandResponse.ToObjectReturnType.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType typedTicket);
             }
 
             @JsOverlay
@@ -190,64 +205,79 @@ public class ExecuteCommandResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface CreatedListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TicketFieldType {
+                public interface TypedTicketFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetTicketUnionType {
-                        @JsOverlay
-                        static ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType of(
-                                Object o) {
-                            return Js.cast(o);
+                    public interface TicketFieldType {
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface GetTicketUnionType {
+                            @JsOverlay
+                            static ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType of(
+                                    Object o) {
+                                return Js.cast(o);
+                            }
+
+                            @JsOverlay
+                            default String asString() {
+                                return Js.asString(this);
+                            }
+
+                            @JsOverlay
+                            default Uint8Array asUint8Array() {
+                                return Js.cast(this);
+                            }
+
+                            @JsOverlay
+                            default boolean isString() {
+                                return (Object) this instanceof String;
+                            }
+
+                            @JsOverlay
+                            default boolean isUint8Array() {
+                                return (Object) this instanceof Uint8Array;
+                            }
                         }
 
                         @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
+                        static ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                        @JsProperty
+                        void setTicket(
+                                ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                        @JsOverlay
+                        default void setTicket(String ticket) {
+                            setTicket(
+                                    Js.<ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                            ticket));
                         }
 
                         @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
+                        default void setTicket(Uint8Array ticket) {
+                            setTicket(
+                                    Js.<ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                            ticket));
                         }
                     }
 
                     @JsOverlay
-                    static ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType create() {
+                    static ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType create() {
                         return Js.uncheckedCast(JsPropertyMap.of());
                     }
 
                     @JsProperty
-                    ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                    ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType getTicket();
 
                     @JsProperty
                     String getType();
 
                     @JsProperty
                     void setTicket(
-                            ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                    @JsOverlay
-                    default void setTicket(String ticket) {
-                        setTicket(
-                                Js.<ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-
-                    @JsOverlay
-                    default void setTicket(Uint8Array ticket) {
-                        setTicket(
-                                Js.<ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
+                            ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType.TicketFieldType ticket);
 
                     @JsProperty
                     void setType(String type);
@@ -271,7 +301,7 @@ public class ExecuteCommandResponse {
                 String getFieldName();
 
                 @JsProperty
-                ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType getTicket();
+                ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType getTypedTicket();
 
                 @JsProperty
                 void setApplicationId(String applicationId);
@@ -286,8 +316,8 @@ public class ExecuteCommandResponse {
                 void setFieldName(String fieldName);
 
                 @JsProperty
-                void setTicket(
-                        ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TicketFieldType ticket);
+                void setTypedTicket(
+                        ExecuteCommandResponse.ToObjectReturnType0.ChangesFieldType.CreatedListFieldType.TypedTicketFieldType typedTicket);
             }
 
             @JsOverlay
