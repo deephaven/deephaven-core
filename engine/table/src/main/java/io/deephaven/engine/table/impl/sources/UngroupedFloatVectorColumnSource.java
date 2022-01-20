@@ -116,4 +116,9 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

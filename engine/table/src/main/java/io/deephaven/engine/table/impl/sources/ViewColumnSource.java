@@ -52,7 +52,8 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         this.isStateless = isStateless;
     }
 
-    public ViewColumnSource(Class<T> type, Class elementType, Formula formula, boolean usesPython, boolean isStateless) {
+    public ViewColumnSource(Class<T> type, Class elementType, Formula formula, boolean usesPython,
+            boolean isStateless) {
         super(type, elementType);
         this.formula = formula;
         this.usesPython = usesPython;

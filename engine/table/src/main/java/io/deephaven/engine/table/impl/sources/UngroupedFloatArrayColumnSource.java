@@ -65,4 +65,9 @@ public class UngroupedFloatArrayColumnSource extends UngroupedColumnSource<Float
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

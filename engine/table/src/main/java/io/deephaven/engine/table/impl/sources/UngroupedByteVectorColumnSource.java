@@ -116,4 +116,9 @@ public class UngroupedByteVectorColumnSource extends UngroupedColumnSource<Byte>
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

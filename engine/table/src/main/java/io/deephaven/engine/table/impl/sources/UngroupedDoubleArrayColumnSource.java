@@ -65,4 +65,9 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

@@ -65,4 +65,9 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

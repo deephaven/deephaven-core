@@ -116,4 +116,9 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

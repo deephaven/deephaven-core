@@ -116,4 +116,9 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

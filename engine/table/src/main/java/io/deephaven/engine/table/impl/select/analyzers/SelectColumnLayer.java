@@ -53,8 +53,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // under the GIL which will cause a deadlock
         this.canUseThreads = !sc.getDataView().usesPython();
 
-        // we can only parallelize this column if we are not redirected, our destination provides ensure previous, and the select column is stateless
-        this.canParallelizeThisColumn = canUseThreads && !isRedirected && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+        // we can only parallelize this column if we are not redirected, our destination provides ensure previous, and
+        // the select column is stateless
+        this.canParallelizeThisColumn = canUseThreads && !isRedirected
+                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
     }
 
     private ChunkSource<Values> getChunkSource() {

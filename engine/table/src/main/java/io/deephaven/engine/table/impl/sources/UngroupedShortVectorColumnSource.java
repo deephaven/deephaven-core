@@ -116,4 +116,9 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

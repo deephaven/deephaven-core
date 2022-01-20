@@ -843,7 +843,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         // we want to catch PyObjects, and CallableWrappers even if they were hand inserted into a scope
         final Object value = param.getValue();
-        if (value instanceof PyObject || value instanceof PythonScopeJpyImpl.CallableWrapper || value instanceof PyListWrapper || value instanceof PyDictWrapper) {
+        if (value instanceof PyObject || value instanceof PythonScopeJpyImpl.CallableWrapper
+                || value instanceof PyListWrapper || value instanceof PyDictWrapper) {
             return true;
         }
 
@@ -861,7 +862,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public boolean isStateless() {
-        return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType) && usedColumns.stream().allMatch(this::isUsedColumnStateless) && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
+        return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType)
+                && usedColumns.stream().allMatch(this::isUsedColumnStateless)
+                && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
     }
 
     /**
@@ -870,6 +873,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * @return true if this column has the potential to hang the gil
      */
     public boolean usesPython() {
-        return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType) || usedColumns.stream().anyMatch(this::usedColumnUsesPython) || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);
+        return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType)
+                || usedColumns.stream().anyMatch(this::usedColumnUsesPython)
+                || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);
     }
 }
