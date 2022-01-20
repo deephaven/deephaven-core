@@ -48,7 +48,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private final String logName;
     private final TableHandle tableHandle;
-    private final BarrageSubscriptionOptions options; // TODO: clone and modify this in barrage.fbs to BarrageSnapshotOptions
+    private final BarrageSubscriptionOptions options; // TODO: clone and modify this in barrage.fbs to
+                                                      // BarrageSnapshotOptions
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;

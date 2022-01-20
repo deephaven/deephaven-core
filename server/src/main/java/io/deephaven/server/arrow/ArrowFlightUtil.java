@@ -385,7 +385,8 @@ public class ArrowFlightUtil {
                         final ByteBuffer serializedMessage = builder.dataBuffer();
 
                         // leverage the stream generator SchemaView constructor
-                        final BarrageStreamGenerator.SchemaView schemaView = new BarrageStreamGenerator.SchemaView(serializedMessage);
+                        final BarrageStreamGenerator.SchemaView schemaView =
+                                new BarrageStreamGenerator.SchemaView(serializedMessage);
 
                         // push the schema to the listener
                         listener.onNext(schemaView);
@@ -397,7 +398,8 @@ public class ArrowFlightUtil {
 
                         final boolean hasViewport = subscriptionRequest.viewportVector() != null;
                         final RowSet viewport =
-                                hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+                                hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
+                                        : null;
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
@@ -406,8 +408,10 @@ public class ArrowFlightUtil {
 
                         // translate the viewport to keyspace and make the call
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
-                             final RowSet keySpaceViewport = hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
-                            listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport, columns));
+                                final RowSet keySpaceViewport =
+                                        hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                            listener.onNext(
+                                    bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport, columns));
                         }
 
                         listener.onCompleted();

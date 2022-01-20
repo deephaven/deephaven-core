@@ -13,8 +13,8 @@ import io.deephaven.qst.table.TableSpec;
 import java.util.BitSet;
 
 /**
- * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of
- * the remote source table.
+ * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of the
+ * remote source table.
  */
 public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
     interface Factory {
@@ -29,8 +29,8 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
                 throws TableHandle.TableHandleException, InterruptedException;
 
         /**
-         * Sources a barrage snapshot from a {@link TableHandle}. A new reference of the handle is created. The
-         * original {@code tableHandle} is still owned by the caller.
+         * Sources a barrage snapshot from a {@link TableHandle}. A new reference of the handle is created. The original
+         * {@code tableHandle} is still owned by the caller.
          *
          * @param tableHandle the table handle to snapshot
          * @param options the options configuring the details of this snapshot
@@ -48,8 +48,8 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
 
 
     /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable}
-     * with the data that is received.
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
+     * the data that is received.
      *
      * @return the {@code BarrageTable}
      */
