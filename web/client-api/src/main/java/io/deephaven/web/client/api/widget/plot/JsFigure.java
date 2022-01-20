@@ -649,7 +649,8 @@ public class JsFigure extends HasEventHandling {
                 // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                 // reconnect in this way without refetching the entire figure anyway.
                 promises[p1] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                    connection.tableServiceClient().getExportedTableCreationResponse(p0.getTicket(), connection.metadata(),
+                    connection.tableServiceClient().getExportedTableCreationResponse(p0.getTicket(),
+                            connection.metadata(),
                             c::apply);
                 }).then(etcr -> {
                     ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
