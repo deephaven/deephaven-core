@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -496,6 +497,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         runnable.run();
                     } catch (Exception e) {
                         onError.accept(e);
+                    } catch (Error e) {
+                        ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                        throw e;
                     } finally {
                         baseEntry.onBaseEntryEnd();
                         synchronized (accumulatedBaseEntry) {
@@ -536,6 +540,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     runnable.run();
                 } catch (Exception e) {
                     onError.accept(e);
+                } catch (Error e) {
+                    ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                    throw e;
                 } finally {
                     basePerformanceEntry.onBaseEntryEnd();
                     synchronized (accumulatedBaseEntry) {
@@ -566,6 +573,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 runnable.run();
             } catch (Exception e) {
                 onError.accept(e);
+            } catch (Error e) {
+                ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                throw e;
             }
         }
 

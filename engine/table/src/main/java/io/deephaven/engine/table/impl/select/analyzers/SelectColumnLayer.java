@@ -121,6 +121,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 }
                             }
 
+                            if (divisions.get() == 0) {
+                                throw new IllegalStateException();
+                            }
+
                             jobScheduler.submit(() -> prepareUpdate(jobScheduler, upstream, toClear, helper,
                                     onCompletion, this::onError, divisions, updates), SelectColumnLayer.this,
                                     this::onError);
