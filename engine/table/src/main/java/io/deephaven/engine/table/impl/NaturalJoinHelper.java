@@ -476,6 +476,11 @@ class NaturalJoinHelper {
         public boolean usesPython() {
             return symbolSource.usesPython();
         }
+
+        @Override
+        public boolean isStateless() {
+            return symbolSource.isStateless();
+        }
     }
 
     private static class LeftTickingListener extends BaseTable.ListenerImpl {

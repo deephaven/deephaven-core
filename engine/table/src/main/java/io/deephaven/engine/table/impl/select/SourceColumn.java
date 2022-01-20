@@ -161,7 +161,7 @@ public class SourceColumn implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return IsStatelessColumn.isStateless(sourceColumn);
+        return sourceColumn.isStateless();
     }
 
     @Override

@@ -54,4 +54,9 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
     public boolean usesPython() {
         return alternateColumnSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

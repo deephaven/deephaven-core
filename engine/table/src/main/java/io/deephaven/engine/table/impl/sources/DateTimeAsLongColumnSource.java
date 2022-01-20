@@ -98,4 +98,9 @@ public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> imple
     public boolean usesPython() {
         return alternateColumnSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

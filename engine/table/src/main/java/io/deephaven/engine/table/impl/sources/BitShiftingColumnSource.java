@@ -496,4 +496,9 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

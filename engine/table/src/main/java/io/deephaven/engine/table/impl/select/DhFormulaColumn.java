@@ -852,7 +852,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private boolean isUsedColumnStateless(String columnName) {
-        return IsStatelessColumn.isStateless(columnSources.get(columnName));
+        return columnSources.get(columnName).isStateless();
     }
 
     private boolean usedColumnUsesPython(String columnName) {

@@ -299,4 +299,9 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     public boolean usesPython() {
         return currentSource.usesPython() || (!prevInvalid() && prevSource.usesPython());
     }
+
+    @Override
+    public boolean isStateless() {
+        return currentSource.isStateless() && (prevInvalid() || prevSource.isStateless());
+    }
 }

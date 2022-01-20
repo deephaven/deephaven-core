@@ -184,7 +184,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return IsStatelessColumn.isStateless(sourceColumnSource);
+        return sourceColumnSource.isStateless();
     }
 
     @Override

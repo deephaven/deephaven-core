@@ -461,5 +461,10 @@ public class WindowCheck {
         public boolean usesPython() {
             return timeStampSource.usesPython();
         }
+
+        @Override
+        public boolean isStateless() {
+            return timeStampSource.isStateless();
+        }
     }
 }

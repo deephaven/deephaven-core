@@ -156,4 +156,9 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
     public boolean usesPython() {
         return originalSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return originalSource.isStateless();
+    }
 }

@@ -135,4 +135,9 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     public boolean usesPython() {
         return alternateColumnSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

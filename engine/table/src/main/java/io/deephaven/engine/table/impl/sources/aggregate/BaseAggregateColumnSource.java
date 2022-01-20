@@ -249,4 +249,9 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     public boolean usesPython() {
         return aggregatedSource.usesPython() || groupRowSetSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return aggregatedSource.isStateless() || groupRowSetSource.isStateless();
+    }
 }

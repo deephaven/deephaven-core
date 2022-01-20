@@ -283,5 +283,10 @@ public class MergeSortedHelper {
         public boolean usesPython() {
             return innerSources.stream().anyMatch(ColumnSource::usesPython);
         }
+
+        @Override
+        public boolean isStateless() {
+            return innerSources.stream().allMatch(ColumnSource::isStateless);
+        }
     }
 }

@@ -624,5 +624,10 @@ public class ColumnsToRowsTransform {
         public boolean usesPython() {
             return Arrays.stream(transposeColumns).anyMatch(ColumnSource::usesPython);
         }
+
+        @Override
+        public boolean isStateless() {
+            return Arrays.stream(transposeColumns).allMatch(ColumnSource::isStateless);
+        }
     }
 }

@@ -188,4 +188,11 @@ public interface ColumnSource<T>
     default boolean usesPython() {
         return false;
     }
+
+    /**
+     * Most column sources don't randomly change based on the order you read them, if they do; then they must return false.
+     */
+    default boolean isStateless() {
+        return true;
+    }
 }

@@ -172,4 +172,9 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     public boolean usesPython() {
         return originalSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return originalSource.isStateless();
+    }
 }

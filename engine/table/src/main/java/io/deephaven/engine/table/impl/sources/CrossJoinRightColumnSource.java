@@ -688,4 +688,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

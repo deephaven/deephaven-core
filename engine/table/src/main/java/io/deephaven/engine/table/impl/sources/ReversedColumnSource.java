@@ -180,4 +180,9 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     public boolean usesPython() {
         return innerSource.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

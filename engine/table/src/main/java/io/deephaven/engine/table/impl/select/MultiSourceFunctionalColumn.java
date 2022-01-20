@@ -179,7 +179,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
-        }, usesPython);
+        }, usesPython, false);
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {

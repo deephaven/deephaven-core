@@ -203,4 +203,9 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     public boolean usesPython() {
         return delegate.usesPython();
     }
+
+    @Override
+    public boolean isStateless() {
+        return delegate.isStateless();
+    }
 }
