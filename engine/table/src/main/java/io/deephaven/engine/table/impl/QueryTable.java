@@ -18,6 +18,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -1418,7 +1419,9 @@ public class QueryTable extends BaseTable {
                         }
                     }
 
-                    final QueryTable resultTable = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
+                    final TrackingRowSet resultRowSet =
+                            analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
+                    final QueryTable resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
                         analyzer.startTrackingPrev();
                         final Map<String, String[]> effects = analyzer.calcEffects();
@@ -1427,9 +1430,13 @@ public class QueryTable extends BaseTable {
                                         effects, analyzer);
                         listenForUpdates(soul);
                     } else {
-                        propagateGrouping(selectColumns, resultTable);
+                        if (resultTable.getRowSet() == rowSet) {
+                            propagateGrouping(selectColumns, resultTable);
+                        }
                         for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            ((SparseArrayColumnSource<?>) columnSource).setImmutable();
+                            if (columnSource instanceof PossiblyImmutableColumnSource) {
+                                ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+                            }
                         }
                     }
                     propagateFlatness(resultTable);
@@ -1996,7 +2003,7 @@ public class QueryTable extends BaseTable {
      */
     private static long snapshotHistoryInternal(
             @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull RowSet leftRowSet,
-            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull RowSet rightRowSet,
+            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> rightColumns, @NotNull RowSet rightRowSet,
             @NotNull Map<String, ? extends WritableColumnSource<?>> dest, long destOffset) {
         assert leftColumns.size() + rightColumns.size() == dest.size();
         if (leftRowSet.isEmpty() || rightRowSet.isEmpty()) {
@@ -2039,14 +2046,18 @@ public class QueryTable extends BaseTable {
 
             // BTW, we don't track prev because these items are never modified or removed.
             final Table leftTable = this; // For readability.
-            final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getRowSet(),
-                    rightTable.getColumnSourceMap(), rightTable.getRowSet(),
+            final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
+                    SnapshotUtils.generateTriggerStampColumns(leftTable);
+            final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                    SnapshotUtils.generateSnapshotDataColumns(rightTable);
+            final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
+                    snapshotDataColumns, rightTable.getRowSet(),
                     resultColumns, 0);
             final TrackingWritableRowSet resultRowSet =
                     RowSetFactory.flat(initialSize).toTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
-                listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet().toString(),
+                listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(),
                         this, result) {
                     private long lastKey = rowSet.lastRowKey();
 
@@ -2062,8 +2073,8 @@ public class QueryTable extends BaseTable {
                         Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
                                 lastKey, "lastRowKey", added, "added");
                         final long oldSize = resultRowSet.size();
-                        final long newSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), added,
-                                rightTable.getColumnSourceMap(), rightTable.getRowSet(),
+                        final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
+                                snapshotDataColumns, rightTable.getRowSet(),
                                 resultColumns, oldSize);
                         final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
                         resultRowSet.insert(addedSnapshots);
@@ -2199,8 +2210,8 @@ public class QueryTable extends BaseTable {
 
                     final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
                     for (String stampColumn : useStampColumns) {
-                        final ColumnSource<?> cs = getColumnSource(stampColumn);
-                        leftColumns.put(stampColumn, cs);
+                        leftColumns.put(stampColumn,
+                                SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
                     }
 
                     final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
@@ -2252,7 +2263,6 @@ public class QueryTable extends BaseTable {
                                 new SnapshotIncrementalListener(this, resultTable, resultColumns,
                                         rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
 
-
                         rightListenerRecorder.setMergedListener(listener);
                         leftListenerRecorder.setMergedListener(listener);
                         resultTable.addParentReference(listener);
@@ -2264,7 +2274,8 @@ public class QueryTable extends BaseTable {
                         startTrackingPrev(resultColumns.values());
                         resultTable.getRowSet().writableCast().initializePreviousValue();
                     } else if (doInitialSnapshot) {
-                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this, rightTable,
+                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
+                                SnapshotUtils.generateSnapshotDataColumns(rightTable),
                                 leftColumns, resultColumns);
                         resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
                         resultTable.getRowSet().writableCast().initializePreviousValue();
@@ -2277,7 +2288,8 @@ public class QueryTable extends BaseTable {
                                     @Override
                                     public void onUpdate(TableUpdate upstream) {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
-                                                QueryTable.this, rightTable, leftColumns, resultColumns);
+                                                QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
+                                                leftColumns, resultColumns);
                                         resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
                                         resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                                 RowSetFactory.empty(),

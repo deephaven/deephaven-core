@@ -8,6 +8,7 @@ import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -61,6 +62,10 @@ public class Main {
         log.info().append("Starting up ").append(mainClass.getName()).append("...").endl();
 
         final Configuration config = Configuration.getInstance();
+
+        // After logging and config are working, redirect any future JUL logging to SLF4J
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
 
         // Push our log to ProcessEnvironment, so that any parts of the system relying on ProcessEnvironment
         // instead of LoggerFactory can get the correct logger.

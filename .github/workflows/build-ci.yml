@@ -35,7 +35,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -55,7 +57,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server nltk
@@ -69,7 +71,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server pytorch
@@ -83,7 +85,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server sklearn
@@ -97,7 +99,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server tensorflow
@@ -111,7 +113,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server slim
@@ -125,7 +127,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -233,6 +235,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           ./docker/registry/python-dev-base/build/crane/retag.sh
+          ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
           ./docker/registry/nltk-base/build/crane/retag.sh
@@ -266,7 +269,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -285,7 +290,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -351,7 +356,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Get Semver
         id: semver
@@ -370,7 +377,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -433,7 +440,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
@@ -460,7 +467,9 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Set up Docker Buildx
         id: buildx

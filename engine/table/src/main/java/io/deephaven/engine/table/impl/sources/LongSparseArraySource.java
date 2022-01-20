@@ -22,9 +22,4 @@ public class LongSparseArraySource extends AbstractSparseLongArraySource<Long> i
     public void set(long key, Long value) {
         set(key, unbox(value));
     }
-
-    @Override
-    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getLong(sourceKey));
-    }
 }

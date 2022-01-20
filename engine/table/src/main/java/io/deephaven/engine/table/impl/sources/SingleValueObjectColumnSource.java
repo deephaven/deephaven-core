@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 /**
  * ColumnSource implementation for columns of a single unique value.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class SingleValueObjectColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE> implements ImmutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
     private final DATA_TYPE value;

@@ -66,10 +66,6 @@ public class RowGroupReaderImpl implements RowGroupReader {
         }
 
         OffsetIndex offsetIndex = null;
-
-        if (columnChunk == null) {
-            return null;
-        }
         if (columnChunk.isSetOffset_index_offset()) {
             try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(rootPath)) {
                 readChannel.position(columnChunk.getOffset_index_offset());

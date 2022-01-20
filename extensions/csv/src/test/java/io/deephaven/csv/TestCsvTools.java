@@ -1,6 +1,7 @@
 package io.deephaven.csv;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
@@ -32,7 +33,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 /**
  * Unit tests for {@link CsvTools}.
  */
-@Category(OutOfBandTest.class)
+@Category({OutOfBandTest.class})
 public class TestCsvTools {
 
     private File tmpDir;
@@ -48,44 +49,36 @@ public class TestCsvTools {
     }
 
     @Test
-    public void testTableDividendsCSV() {
+    public void testTableDividendsCSV() throws CsvReaderException {
         final String fileDividends = "Sym,Type,Price,SecurityId\n" +
                 "GOOG, Dividend, 0.25, 200\n" +
                 "T, Dividend, 0.15, 300\n" +
                 " Z, Dividend, 0.18, 500";
-        try {
-            Table tableDividends = CsvTools.readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
-            Assert.assertEquals(3, tableDividends.size());
-            Assert.assertEquals(4, tableDividends.getMeta().size());
-            Assert.assertEquals(0.15, tableDividends.getColumn(2).getDouble(1), 0.000001);
-            Assert.assertEquals(300, tableDividends.getColumn(3).getShort(1));
-            Assert.assertEquals("Z", tableDividends.getColumn(0).get(2));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to execute readCSV test. ", e);
-        }
+        Table tableDividends = CsvTools.readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
+        Assert.assertEquals(3, tableDividends.size());
+        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(0.15, tableDividends.getColumn(2).getDouble(1), 0.000001);
+        Assert.assertEquals(300, tableDividends.getColumn(3).getInt(1));
+        Assert.assertEquals("Z", tableDividends.getColumn(0).get(2));
     }
 
     @Test
-    public void testTableDividendsCSVNoTrim() {
+    public void testTableDividendsCSVNoTrim() throws CsvReaderException {
         final String fileDividends = "Sym,Type,Price,SecurityId\n" +
                 "GOOG, Dividend, 0.25, 200\n" +
                 "T, Dividend, 0.15, 300\n" +
                 " Z, Dividend, 0.18, 500";
-        try {
-            Table tableDividends = CsvTools
-                    .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
-            Assert.assertEquals(3, tableDividends.size());
-            Assert.assertEquals(4, tableDividends.getMeta().size());
-            Assert.assertEquals(" 0.15", tableDividends.getColumn(2).get(1));
-            Assert.assertEquals(" 300", tableDividends.getColumn(3).get(1));
-            Assert.assertEquals(" Z", tableDividends.getColumn(0).get(2));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to execute readCSV test. ", e);
-        }
+        Table tableDividends = CsvTools
+                .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
+        Assert.assertEquals(3, tableDividends.size());
+        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(0.15, tableDividends.getColumn(2).get(1));
+        Assert.assertEquals(300, tableDividends.getColumn(3).get(1));
+        Assert.assertEquals(" Z", tableDividends.getColumn(0).get(2));
     }
 
     @Test
-    public void testCompressedCSV() throws IOException {
+    public void testCompressedCSV() throws IOException, CsvReaderException {
         final String contents = "A,B,C,D\n"
                 + "\"Hello World\",3.0,5,700\n"
                 + "\"Goodbye Cruel World\",3.1,1000000,800\n"
@@ -112,7 +105,7 @@ public class TestCsvTools {
     }
 
     @Test
-    public void testUncompressedCSVFromPath() throws IOException {
+    public void testUncompressedCSVFromPath() throws IOException, CsvReaderException {
         String contents = "A,B,C,D\n"
                 + "\"Hello World\",3.0,5,700\n"
                 + "\"Goodbye Cruel World\",3.1,1000000,800\n"
@@ -134,7 +127,7 @@ public class TestCsvTools {
 
     @Test
     public void testLoadCsv() throws Exception {
-        String allSeparators = ",|\tzZ- €9@";
+        final String allSeparators = ",|\tzZ- 9@";
         System.out.println("Char Set: " + Charset.defaultCharset().displayName());
 
         for (char separator : allSeparators.toCharArray()) {
@@ -168,7 +161,7 @@ public class TestCsvTools {
             Assert.assertEquals(String.class, definition.getColumnList().get(0).getDataType());
 
             Assert.assertEquals("colB", definition.getColumnList().get(1).getName());
-            Assert.assertEquals(short.class, definition.getColumnList().get(1).getDataType());
+            Assert.assertEquals(int.class, definition.getColumnList().get(1).getDataType());
 
             Assert.assertEquals("colC", definition.getColumnList().get(2).getName());
             Assert.assertEquals(double.class, definition.getColumnList().get(2).getDataType());
@@ -186,19 +179,19 @@ public class TestCsvTools {
             Assert.assertEquals(Boolean.class, definition.getColumnList().get(6).getDataType());
 
             Assert.assertEquals(String.format("mark1%smark2", separator), table.getColumn("colA").get(0));
-            Assert.assertEquals(1, table.getColumn("colB").getShort(0));
+            Assert.assertEquals(1, table.getColumn("colB").getInt(0));
             Assert.assertEquals(1.0, table.getColumn("colC").getDouble(0), 0.000001);
             Assert.assertEquals("1", table.getColumn("colD").get(0));
-            Assert.assertEquals(null, table.getColumn("colE").get(0));
-            Assert.assertEquals(null, table.getColumn("colF").get(0));
+            Assert.assertNull(table.getColumn("colE").get(0));
+            Assert.assertNull(table.getColumn("colF").get(0));
             Assert.assertEquals(Boolean.TRUE, table.getColumn("colG").getBoolean(0));
 
-            Assert.assertEquals(null, table.getColumn("colA").get(2));
-            Assert.assertEquals(QueryConstants.NULL_SHORT, table.getColumn("colB").getShort(2));
+            Assert.assertNull(table.getColumn("colA").get(2));
+            Assert.assertEquals(QueryConstants.NULL_INT, table.getColumn("colB").getInt(2));
             Assert.assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2), 0.0000001);
-            Assert.assertEquals(null, table.getColumn("colD").get(2));
-            Assert.assertEquals(null, table.getColumn("colE").get(2));
-            Assert.assertEquals(null, table.getColumn("colF").get(2));
+            Assert.assertNull(table.getColumn("colD").get(2));
+            Assert.assertNull(table.getColumn("colE").get(2));
+            Assert.assertNull(table.getColumn("colF").get(2));
             Assert.assertEquals(QueryConstants.NULL_BOOLEAN, table.getColumn("colG").getBoolean(2));
         }
     }

@@ -7,7 +7,7 @@ unlocks the unique and tremendous power of Deephaven to the Python community.
 """
 import jpy
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 if not jpy.has_jvm():
     from ._utils.bootstrap import build_py_session
@@ -18,6 +18,4 @@ from .dherror import DHError
 from .constants import SortDirection
 from .csv import read as read_csv
 from .csv import write as write_csv
-from .table import empty_table, time_table
-
-__all__ = ["read_csv", "write_csv", "DHError", "time_table", "empty_table", "SortDirection"]
+from .table_factory import empty_table, time_table, merge, merge_sorted, new_table

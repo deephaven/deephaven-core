@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static io.deephaven.parquet.base.util.Helpers.readFully;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -42,6 +41,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
     private final Supplier<Dictionary> dictionarySupplier;
+    private final PageMaterializer.Factory nullMaterializerFactory;
 
     private Path filePath;
 
@@ -64,6 +64,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new LazyCachingSupplier<>(this::getDictionary);
+        this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
     }
 
     @Override
@@ -250,7 +251,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                                 ? dictionarySupplier
                                 : () -> NULL_DICTIONARY;
                 return new ColumnPageReaderImpl(
-                        channelsProvider, decompressor::get, pageDictionarySupplier,
+                        channelsProvider, decompressor::get, pageDictionarySupplier, nullMaterializerFactory,
                         path, getFilePath(), fieldTypes,
                         readChannel.position(), pageHeader, -1);
             } catch (IOException e) {
@@ -289,6 +290,7 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                             - offsetIndex.getFirstRowIndex(pos) + 1);
             ColumnPageReaderImpl columnPageReader =
                     new ColumnPageReaderImpl(channelsProvider, decompressor::get, dictionarySupplier,
+                            nullMaterializerFactory,
                             path, getFilePath(), fieldTypes,
                             offsetIndex.getOffset(pos), null, rowCount);
             pos++;

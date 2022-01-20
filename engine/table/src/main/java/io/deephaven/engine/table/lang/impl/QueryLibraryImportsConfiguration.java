@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.lang.impl;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.util.ClassList;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+@AutoService(QueryLibraryImports.class)
 public class QueryLibraryImportsConfiguration implements QueryLibraryImports {
 
     @Override

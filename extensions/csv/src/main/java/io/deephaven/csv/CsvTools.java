@@ -5,6 +5,8 @@
 package io.deephaven.csv;
 
 import io.deephaven.base.Procedure;
+import io.deephaven.csv.reading.CsvReader;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.MatchPair;
@@ -56,7 +58,7 @@ public class CsvTools {
      * @see #readCsv(String, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(String path) throws IOException {
+    public static Table readCsv(String path) throws CsvReaderException {
         return readCsv(path, CsvSpecs.csv());
     }
 
@@ -70,7 +72,7 @@ public class CsvTools {
      * @see #readCsv(InputStream, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(InputStream stream) throws IOException {
+    public static Table readCsv(InputStream stream) throws CsvReaderException {
         return readCsv(stream, CsvSpecs.csv());
     }
 
@@ -83,7 +85,7 @@ public class CsvTools {
      * @see #readCsv(URL, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(URL url) throws IOException {
+    public static Table readCsv(URL url) throws CsvReaderException {
         return readCsv(url, CsvSpecs.csv());
     }
 
@@ -100,7 +102,7 @@ public class CsvTools {
      * @see #readCsv(Path, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(Path path) throws IOException {
+    public static Table readCsv(Path path) throws CsvReaderException {
         return readCsv(path, CsvSpecs.csv());
     }
 
@@ -122,7 +124,7 @@ public class CsvTools {
      * @see #readCsv(Path, CsvSpecs)
      */
     @ScriptApi
-    public static Table readCsv(String path, CsvSpecs specs) throws IOException {
+    public static Table readCsv(String path, CsvSpecs specs) throws CsvReaderException {
         URL: {
             final URL url;
             try {
@@ -145,11 +147,11 @@ public class CsvTools {
      * @param stream the stream
      * @param specs the csv specs
      * @return the table
-     * @throws IOException if an I/O exception occurs
+     * @throws CsvReaderException If some error occurs.
      */
     @ScriptApi
-    public static Table readCsv(InputStream stream, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(stream));
+    public static Table readCsv(InputStream stream, CsvSpecs specs) throws CsvReaderException {
+        return specs.parse(stream);
     }
 
     /**
@@ -158,11 +160,16 @@ public class CsvTools {
      * @param url the url
      * @param specs the csv specs
      * @return the table
-     * @throws IOException if an I/O exception occurs
+     * @throws CsvReaderException If some CSV reading error occurs.
+     * @throws IOException if the URL cannot be opened.
      */
     @ScriptApi
-    public static Table readCsv(URL url, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(url.openStream()));
+    public static Table readCsv(URL url, CsvSpecs specs) throws CsvReaderException {
+        try {
+            return specs.parse(url.openStream());
+        } catch (IOException inner) {
+            throw new CsvReaderException("Caught exception", inner);
+        }
     }
 
     /**
@@ -175,12 +182,17 @@ public class CsvTools {
      * @param path the path
      * @param specs the csv specs
      * @return the table
+     * @throws CsvReaderException If some CSV reading error occurs.
      * @throws IOException if an I/O exception occurs
      * @see PathUtil#open(Path)
      */
     @ScriptApi
-    public static Table readCsv(Path path, CsvSpecs specs) throws IOException {
-        return InMemoryTable.from(specs.parse(PathUtil.open(path)));
+    public static Table readCsv(Path path, CsvSpecs specs) throws CsvReaderException {
+        try {
+            return specs.parse(PathUtil.open(path));
+        } catch (IOException inner) {
+            throw new CsvReaderException("Caught exception", inner);
+        }
     }
 
     /**
@@ -217,7 +229,7 @@ public class CsvTools {
      * {@code CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));}
      */
     @ScriptApi
-    public static Table readHeaderlessCsv(String filePath, Collection<String> columnNames) throws IOException {
+    public static Table readHeaderlessCsv(String filePath, Collection<String> columnNames) throws CsvReaderException {
         return CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));
     }
 
@@ -226,7 +238,7 @@ public class CsvTools {
      * {@code CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));}
      */
     @ScriptApi
-    public static Table readHeaderlessCsv(String filePath, String... columnNames) throws IOException {
+    public static Table readHeaderlessCsv(String filePath, String... columnNames) throws CsvReaderException {
         return CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));
     }
 
@@ -243,7 +255,7 @@ public class CsvTools {
      */
     @ScriptApi
     @Deprecated
-    public static Table readCsv(InputStream is, final String format) throws IOException {
+    public static Table readCsv(InputStream is, final String format) throws CsvReaderException {
         final CsvSpecs specs = CsvSpecs.fromLegacyFormat(format);
         if (specs == null) {
             throw new IllegalArgumentException(String.format("Unable to map legacy format '%s' into CsvSpecs", format));
@@ -263,8 +275,8 @@ public class CsvTools {
      */
     @ScriptApi
     @Deprecated
-    public static Table readCsv(InputStream is, final char separator) throws IOException {
-        return InMemoryTable.from(CsvSpecs.builder().delimiter(separator).build().parse(is));
+    public static Table readCsv(InputStream is, final char separator) throws CsvReaderException {
+        return CsvSpecs.builder().delimiter(separator).build().parse(is);
     }
 
     private static boolean isStandardFile(URL url) {

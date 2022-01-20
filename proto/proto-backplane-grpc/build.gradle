@@ -24,10 +24,10 @@ dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
   api "com.google.protobuf:protobuf-java:${protobufVersion}"
 
-  Classpaths.inheritGrpcPlatform(project, 'implementation')
-  implementation "io.grpc:grpc-protobuf"
-  implementation "io.grpc:grpc-api"
-  implementation "io.grpc:grpc-stub"
+  Classpaths.inheritGrpcPlatform(project, 'api')
+  api 'io.grpc:grpc-protobuf'
+  api 'io.grpc:grpc-api'
+  api 'io.grpc:grpc-stub'
 
   runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
 
@@ -40,8 +40,8 @@ dependencies {
 
   // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
   // the same output that it contains, and we have declared the correct dependencies as necessary
-  //  compile 'io.deephaven.barrage:barrage-core:0.2.0'
-  download 'io.deephaven.barrage:barrage-core:0.2.0'
+  //  compile 'io.deephaven.barrage:barrage-core:0.3.0'
+  download 'io.deephaven.barrage:barrage-core:0.3.0'
   Classpaths.inheritArrow(project, 'flight-core', 'download')
 }
 

@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
  */
 public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCreator {
 
+    @AutoService(TupleSourceFactory.TupleSourceCreatorProvider.class)
     public static final class TupleSourceCreatorProvider implements TupleSourceFactory.TupleSourceCreatorProvider {
 
         @Override

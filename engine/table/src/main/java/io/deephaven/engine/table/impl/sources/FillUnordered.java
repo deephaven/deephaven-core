@@ -4,6 +4,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,4 +34,18 @@ public interface FillUnordered {
             @NotNull ColumnSource.FillContext context,
             @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys);
+
+    /**
+     * Returns true if this column source can efficiently provide an unordered fill.
+     *
+     * If this method returns false, then fillChunkUnordered and fillPrevChunkUnordered may throw an
+     * UnsupportedOperationException.
+     *
+     * @return if this column source can provide an unordered fill
+     */
+    boolean providesFillUnordered();
+
+    static boolean providesFillUnordered(ChunkSource<?> chunkSource) {
+        return (chunkSource instanceof FillUnordered) && ((FillUnordered) chunkSource).providesFillUnordered();
+    }
 }

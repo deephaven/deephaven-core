@@ -87,5 +87,10 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
         public final void close() {
             colSrcCtx.close();
         }
+
+        @Override
+        public boolean supportsUnboundedFill() {
+            return colSrcCtx.supportsUnboundedFill();
+        }
     }
 }
