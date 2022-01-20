@@ -47,8 +47,8 @@ def to_period(s: str, quiet: bool = False) -> Period:
     """ Converts a period string into a Period object.
 
     Args:
-        s (str): in the form of number+type, e.g. 1W for one week, or T+number+type, e.g. T1M for one minute, or a
-            combination, e.g. 1WT1H
+        s (str): a string in the form of nYnMnWnDTnHnMnS, with n being numeric values, e.g. 1W for one week, T1M for
+            one minute, 1WT1H for one week plus one hour
         quiet (bool, optional): when True, if the period string can't be parsed, this function returns None, otherwise
             it raises an exception; default is False
 
