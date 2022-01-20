@@ -5,6 +5,8 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.*;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.util.TableTools;
@@ -38,13 +40,24 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         final TableHandleManager manager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
+//        try (final TableHandle handle = manager.executeLogic(logic());
+//                final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
+//
+//            // expect this to block until all reading complete
+//            final BarrageTable table = snapshot.entireTable();
+//
+//            TableTools.show(table);
+//        }
+
         try (final TableHandle handle = manager.executeLogic(logic());
-                final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
+             final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             // expect this to block until all reading complete
-            final BarrageTable table = snapshot.entireTable();
+            final RowSet viewport = RowSetFactory.fromRange(0, 5);
+            final BarrageTable table = snapshot.partialTable(viewport, null);
 
             TableTools.show(table);
         }
+
     }
 }

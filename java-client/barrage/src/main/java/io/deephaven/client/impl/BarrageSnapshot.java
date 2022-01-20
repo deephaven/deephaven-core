@@ -5,9 +5,12 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.table.TableSpec;
+
+import java.util.BitSet;
 
 /**
  * A {@code BarrageSnapshot} represents a snapshot of a table that may or may not be filtered to a viewport of
@@ -43,6 +46,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      * @return the {@code BarrageTable}
      */
     BarrageTable entireTable() throws InterruptedException;
+    BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 
     // TODO (deephaven-core#712): java-client viewport support
 }

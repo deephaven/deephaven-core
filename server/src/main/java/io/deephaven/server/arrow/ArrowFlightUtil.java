@@ -47,6 +47,7 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -366,6 +367,9 @@ public class ArrowFlightUtil {
             final SessionState.ExportObject<BaseTable> parent =
                     ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
 
+            final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                    .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
             session.nonExport()
                     .require(parent)
                     .onError(listener)
@@ -386,9 +390,18 @@ public class ArrowFlightUtil {
                         // push the schema to the listener
                         listener.onNext(schemaView);
 
+                        // collect the viewport and columnsets (if provided)
+                        final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+                        final BitSet columns =
+                                hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+
+                        final boolean hasViewport = subscriptionRequest.viewportVector() != null;
+                        final RowSet viewport =
+                                hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
                         // get ourselves some data!
-                        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
+                        final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
+                                table, columns, viewport);
                         msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
 
                         // DoGet
