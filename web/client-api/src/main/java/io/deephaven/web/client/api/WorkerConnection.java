@@ -38,6 +38,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
@@ -698,22 +699,12 @@ public class WorkerConnection {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        switch (VariableType.valueOf(definition.getType())) {
-            case Table:
-                return (Promise) getTable(definition, null);
-            case TreeTable:
-                return (Promise) getTreeTable(definition);
-            case Figure:
-                return (Promise) getFigure(definition);
-            case Pandas:
-                return (Promise) getPandas(definition);
-            // case OtherWidget:
-            // return (Promise) getWidget(definition.getName());
-            // case TableMap:
-            // return (Promise) getTableMap(definition.getName());
-            default:
-                return Promise.reject(
-                        new Error("Object " + definition.getTitle() + " unknown type " + definition.getType() + "."));
+        if ("Table".equals(definition.getType())) {
+            return (Promise) getTable(definition, null);
+        } else if ("Figure".equals(definition.getType())) {
+            return (Promise) getFigure(definition);
+        } else {
+            return (Promise) getPluginObject(definition);
         }
     }
 
@@ -833,6 +824,21 @@ public class WorkerConnection {
                     request.setSourceId(typedTicket);
                     objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
+    }
+
+    public Promise<String> getPluginObject(JsVariableDefinition varDef) {
+        return whenServerReady("get a plugin object")
+                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
+                        FetchObjectRequest request = new FetchObjectRequest();
+                        request.setSourceId(TableTicket.createTicket(varDef));
+                        objectServiceClient().fetchObject(request, metadata(), c::apply);
+                    })
+                ).then(response -> {
+                    // TODO: Should be able to specify if you want base64 or u8
+                    // Also need to fetch tables, via accessor methods
+//                    return Promise.resolve(response.getData_asU8());
+                    return Promise.resolve(response.getData_asB64());
+                });
     }
 
     public void registerFigure(JsFigure figure) {
