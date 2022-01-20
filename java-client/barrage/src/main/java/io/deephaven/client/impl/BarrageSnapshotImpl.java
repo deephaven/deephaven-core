@@ -126,7 +126,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         @Override
         public void onError(final Throwable t) {
             log.error().append(BarrageSnapshotImpl.this)
-                    .append(": Error detected in subscription: ")
+                    .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
             final Listener listener = resultTable;
@@ -154,6 +154,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             throw new UncheckedDeephavenException(
                     this + " is not connected");
         }
+
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
@@ -195,7 +196,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         if (!connected) {
             return;
         }
-//        observer.onCompleted();
         cleanup();
     }
 

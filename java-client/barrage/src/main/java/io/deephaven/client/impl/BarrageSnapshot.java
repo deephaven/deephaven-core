@@ -40,13 +40,18 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
     }
 
     /**
-     * Request a full subscription of the data and populate a {@link BarrageTable} with the incrementally updating data
-     * that is received.
+     * Request a full snapshot of the data and populate a {@link BarrageTable} with the data that is received.
      *
      * @return the {@code BarrageTable}
      */
     BarrageTable entireTable() throws InterruptedException;
-    BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 
-    // TODO (deephaven-core#712): java-client viewport support
+
+    /**
+     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable}
+     * with the data that is received.
+     *
+     * @return the {@code BarrageTable}
+     */
+    BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 }

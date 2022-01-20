@@ -119,8 +119,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             msg.addColumnData[ci].componentType = componentTypes[ci];
                         }
 
-                        //msg.modColumnData = new BarrageMessage.ModColumnData[columnTypes.length];
-                        // this was changed to allow modcolumns[0]
+                        // this was changed to allow ModColumnData with length 0
                         msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();
