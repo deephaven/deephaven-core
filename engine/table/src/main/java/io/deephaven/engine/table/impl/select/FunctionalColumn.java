@@ -212,6 +212,11 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
+    public WritableColumnSource<?> newFlatDestInstance(long size) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean isRetain() {
         return false;
     }

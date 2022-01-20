@@ -1,0 +1,93 @@
+# docker compose file to run the debezium-kafka ecommerce demo
+# with DHC ticking tables and dashboard
+
+version: '3.4'
+
+services:
+  server:
+    extends:
+      file: ../docker-compose-common.yml
+      service: server
+
+  web:
+    extends:
+      file: ../docker-compose-common.yml
+      service: web
+
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
+  grpc-proxy:
+    extends:
+      file: ../docker-compose-common.yml
+      service: grpc-proxy
+    depends_on:
+      server:
+        condition: service_healthy
+
+  envoy:
+    # A reverse proxy configured for no SSL on localhost. It fronts the requests
+    # for the static content and the websocket proxy.
+    extends:
+      file: ../docker-compose-common.yml
+      service: envoy
+    depends_on:
+      server:
+        condition: service_healthy
+      grpc-proxy:
+        condition: service_started
+      web:
+        condition: service_started
+
+  redpanda:
+    image: docker.vectorized.io/vectorized/redpanda:v21.9.5
+    command:
+     - redpanda start
+     - --overprovisioned
+     - --smp 1
+     - --memory 1G
+     - --reserve-memory 0M
+     - --node-id 0
+     - --check=false
+     - --kafka-addr 0.0.0.0:9092
+     - --advertise-kafka-addr redpanda:9092
+     - --pandaproxy-addr 0.0.0.0:8082
+     - --advertise-pandaproxy-addr redpanda:8082
+     - --set redpanda.enable_transactions=true
+     - --set redpanda.enable_idempotence=true
+    ports:
+     - 9092:9092
+     - 8081:8081
+     - 8082:8082
+
+  mysql:
+    image: debezium/example-mysql:1.4
+    ports:
+     - 3306:3306
+    environment:
+     - MYSQL_ROOT_PASSWORD=debezium
+     - MYSQL_USER=mysqluser
+     - MYSQL_PASSWORD=mysqlpw
+
+  debezium:
+    image: debezium/connect:1.4
+    environment:
+      BOOTSTRAP_SERVERS: redpanda:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
+    depends_on:
+      redpanda:
+        condition: service_started
+    ports:
+      - 8083:8083
+
+  loadgen:
+    build: loadgen
+    depends_on:
+      mysql:
+        condition: service_started
+      debezium:
+        condition: service_started

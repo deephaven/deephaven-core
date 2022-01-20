@@ -127,10 +127,6 @@ public class WebsocketStreamImpl extends AbstractServerStream {
         transportState().transportReportStatus(status);
     }
 
-    public void complete() {
-        transportState().complete();
-    }
-
     @Override
     public TransportState transportState() {
         return transportState;
@@ -205,6 +201,7 @@ public class WebsocketStreamImpl extends AbstractServerStream {
                             ByteBuffer.wrap(((ByteArrayWritableBuffer) frame).bytes, 0, frame.readableBytes());
 
                     websocketSession.getBasicRemote().sendBinary(payload);
+                    transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
                 }
 
             } catch (IOException e) {
@@ -253,6 +250,9 @@ public class WebsocketStreamImpl extends AbstractServerStream {
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();
             }
+            transportState().runOnTransportThread(() -> {
+                transportState().complete();
+            });
         }
 
         @Override

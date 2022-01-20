@@ -16,10 +16,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN;
@@ -29,7 +26,6 @@ import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Arrays;
 
 // region boxing imports
@@ -85,44 +81,6 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     }
     // endregion constructor
 
-    // region serialization
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
-        blocks.enumerate(NULL_FLOAT, sb::appendKey);
-        final RowSet rowSet = sb.build();
-
-        final int size = rowSet.intSize();
-        final float[] data = (float[])new float[size];
-        // noinspection unchecked
-        final ColumnSource<Float> reinterpreted = (ColumnSource<Float>) reinterpretForSerialization();
-        try (final FillContext context = reinterpreted.makeFillContext(size);
-             final ResettableWritableFloatChunk<Values> destChunk = ResettableWritableFloatChunk.makeResettableChunk()) {
-            destChunk.resetFromTypedArray(data, 0, size);
-            // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, rowSet);
-        }
-        out.writeObject(rowSet);
-        out.writeObject(data);
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        blocks = new FloatOneOrN.Block0();
-
-        final RowSet rowSet = (RowSet)in.readObject();
-        final float[] data = (float[])in.readObject();
-        final FloatChunk<Values> srcChunk = FloatChunk.chunkWrap(data);
-        // noinspection unchecked
-        final WritableColumnSource<Float> reinterpreted = (WritableColumnSource<Float>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
-        }
-    }
-    // endregion serialization
-
-    private void readObjectNoData() throws ObjectStreamException {
-        throw new StreamCorruptedException();
-    }
-
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         // Nothing to do here. Sparse array sources allocate on-demand and always null-fill.
@@ -174,13 +132,6 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         return box(getPrevFloat(index));
     }
     // endregion boxed methods
-
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getFloat(sourceKey));
-    }
-    // endregion copy method
 
     // region primitive get
     @Override

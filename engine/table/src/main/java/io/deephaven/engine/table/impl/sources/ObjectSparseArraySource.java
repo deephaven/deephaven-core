@@ -9,8 +9,6 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.vector.Vector;
-
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -18,10 +16,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN;
@@ -31,7 +26,6 @@ import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Arrays;
 
 // region boxing imports
@@ -78,58 +72,17 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     protected transient ObjectOneOrN.Block0<T> prevBlocks;
 
     // region constructor
-    private final boolean isArrayType;
 
     ObjectSparseArraySource(Class<T> type) {
         super(type);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = Vector.class.isAssignableFrom(type);
     }
 
     ObjectSparseArraySource(Class<T> type, Class componentType) {
         super(type, componentType);
         blocks = new ObjectOneOrN.Block0<>();
-        isArrayType = Vector.class.isAssignableFrom(type);
     }
     // endregion constructor
-
-    // region serialization
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
-        blocks.enumerate(null, sb::appendKey);
-        final RowSet rowSet = sb.build();
-
-        final int size = rowSet.intSize();
-        final T [] data = (T [])new Object[size];
-        // noinspection unchecked
-        final ColumnSource<T> reinterpreted = (ColumnSource<T>) reinterpretForSerialization();
-        try (final FillContext context = reinterpreted.makeFillContext(size);
-             final ResettableWritableObjectChunk<T, Values> destChunk = ResettableWritableObjectChunk.makeResettableChunk()) {
-            destChunk.resetFromTypedArray(data, 0, size);
-            // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, rowSet);
-        }
-        out.writeObject(rowSet);
-        out.writeObject(data);
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        blocks = new ObjectOneOrN.Block0<T>();
-
-        final RowSet rowSet = (RowSet)in.readObject();
-        final T [] data = (T [])in.readObject();
-        final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
-        // noinspection unchecked
-        final WritableColumnSource<T> reinterpreted = (WritableColumnSource<T>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
-        }
-    }
-    // endregion serialization
-
-    private void readObjectNoData() throws ObjectStreamException {
-        throw new StreamCorruptedException();
-    }
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
@@ -168,21 +121,6 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region boxed methods
     // endregion boxed methods
-
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        final T value = sourceColumn.get(sourceKey);
-
-        if (isArrayType && value instanceof Vector) {
-            final Vector<?> vector = (Vector<?>) value;
-            // noinspection unchecked
-            set(destKey, (T) vector.getDirect());
-        } else {
-            set(destKey, value);
-        }
-    }
-    // endregion copy method
 
     // region primitive get
     @Override

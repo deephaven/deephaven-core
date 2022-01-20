@@ -31,15 +31,6 @@ class CsvTestCase(BaseTestCase):
 
         self.assertIsNotNone(cm.exception.compact_traceback)
 
-    def test_read_error_charset(self):
-        col_names = ["Strings", "Longs", "Floats"]
-        col_types = [dtypes.string, dtypes.float_, dtypes.long]
-        table_header = {k: v for k, v in zip(col_names, col_types)}
-        with self.assertRaises(DHError) as cm:
-            t = read_csv('tests/data/test_csv.csv', header=table_header, charset='abc')
-
-        self.assertIn("UnsupportedCharsetException", cm.exception.compact_traceback)
-
     def test_read_error_quote(self):
         col_names = ["Strings", "Longs", "Floats"]
         col_types = [dtypes.string, dtypes.long, dtypes.float_]

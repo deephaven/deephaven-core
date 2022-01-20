@@ -2,17 +2,18 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.Pair;
 import io.deephaven.csv.CsvTools;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.table.sort.SortDirective;
@@ -21,7 +22,6 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -151,7 +151,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         private ColumnSource<?> makeConstituentColumnSource(String name, Object array) {
             final ColumnDefinition<?> colDef = theTree.getSourceTable().getDefinition().getColumn(name);
             // noinspection unchecked
-            return ArrayBackedColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(),
+            return InMemoryColumnSource.getImmutableMemoryColumnSource(array, colDef.getDataType(),
                     colDef.getComponentType());
         }
 
@@ -183,7 +183,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         }
     }
 
-    private static Table getRawNyMunis() throws IOException {
+    private static Table getRawNyMunis() throws CsvReaderException {
         QueryLibrary.importStatic(StaticHolder.class);
 
         final BaseTable base =
@@ -202,7 +202,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 .lastBy("Path");
     }
 
-    private static Table makeNyMunisTreeTable() throws IOException {
+    private static Table makeNyMunisTreeTable() throws CsvReaderException {
         return makeNyMunisTreeTableFrom(getRawNyMunis());
     }
 
@@ -218,7 +218,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
     // region Actual Tests
 
-    public void testTsq() throws IOException {
+    public void testTsq() throws CsvReaderException {
         final Table t = makeNyMunisTreeTable();
         final TTState state = new TTState(t);
         final BitSet allColumns = new BitSet(t.getColumns().length);
@@ -456,7 +456,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         assertFalse(state.expansionMap.containsKey(mayfieldKey));
     }
 
-    public void testSortandFilter() throws IOException {
+    public void testSortandFilter() throws CsvReaderException {
         final Table t = makeNyMunisTreeTable();
         final TTState state = new TTState(t);
         final BitSet allColumns = new BitSet(t.getColumns().length);

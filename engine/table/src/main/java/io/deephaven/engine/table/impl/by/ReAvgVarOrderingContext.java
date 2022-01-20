@@ -32,8 +32,10 @@ class ReAvgVarOrderingContext implements SafeCloseable {
 
 
     public void ensureUnordered() {
-        statePositions = WritableIntChunk.makeWritableChunk(size);
-        sortKernelContext = LongIntTimsortKernel.createContext(size);
+        if (sortKernelContext == null) {
+            statePositions = WritableIntChunk.makeWritableChunk(size);
+            sortKernelContext = LongIntTimsortKernel.createContext(size);
+        }
     }
 
     @Override

@@ -16,7 +16,12 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
 
     ChunkSource[] ZERO_LENGTH_CHUNK_SOURCE_ARRAY = new ChunkSource[0];
 
-    FillContext DEFAULT_FILL_INSTANCE = new FillContext() {};
+    FillContext DEFAULT_FILL_INSTANCE = new FillContext() {
+        @Override
+        public boolean supportsUnboundedFill() {
+            return true;
+        }
+    };
 
     /**
      * Get the most suitable {@link ChunkType} for use with this ChunkSource.
@@ -102,6 +107,15 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
      * {@link #fillChunk(FillContext, WritableChunk, RowSequence)}.
      */
     interface FillContext extends Context {
+        /**
+         * Returns true if this Context contains internal state that limits its capacity to the originally requested
+         * capacity. If false is returned, then fillChunk operations may be arbitrarily large.
+         * 
+         * @return if this context has a limited capacity
+         */
+        default boolean supportsUnboundedFill() {
+            return false;
+        };
     }
 
     /**

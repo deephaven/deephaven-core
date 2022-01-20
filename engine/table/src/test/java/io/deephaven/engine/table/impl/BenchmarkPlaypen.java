@@ -37,6 +37,7 @@ public class BenchmarkPlaypen {
             case "count2":
             case "countplant":
             case "noop":
+            case "sumall":
                 mode = args[1];
                 break;
             default:
@@ -44,8 +45,11 @@ public class BenchmarkPlaypen {
                 usage();
         }
         System.out.println("Reading: " + filename);
+        final long readStartTime = System.nanoTime();
         final Table relation = ParquetTools.readTable(filename);
         final long startTimeSelect = System.nanoTime();
+        System.out.println("readTable Elapsed Time: " + new DecimalFormat("###,###.000")
+                .format(((double) (startTimeSelect - readStartTime) / 1_000_000_000.0)));
         final String[] columns;
         switch (mode) {
             case "sum":
@@ -61,7 +65,8 @@ public class BenchmarkPlaypen {
                 columns = new String[] {"plant_id"};
                 break;
             case "noop":
-                columns = new String[] {"animal_id", "adjective_id", "plant_id"};
+            case "sumall":
+                columns = new String[] {"animal_id", "adjective_id", "plant_id", "Values"};
                 break;
             default:
                 throw new IllegalArgumentException("Invalid mode " + mode);
@@ -74,6 +79,9 @@ public class BenchmarkPlaypen {
         switch (mode) {
             case "sum":
                 result = viewed.sumBy("animal_id");
+                break;
+            case "sumall":
+                result = viewed.sumBy();
                 break;
             case "count":
                 result = viewed.countBy("N", "animal_id");

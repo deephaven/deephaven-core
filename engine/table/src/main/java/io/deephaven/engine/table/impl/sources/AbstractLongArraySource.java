@@ -64,9 +64,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         if (index < 0 || index > maxIndex) {
             return NULL_LONG;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final long getUnsafe(long index) {
@@ -410,6 +408,18 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         final long [] backingArray = blocks[blockNo];
         chunk.asResettableWritableLongChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
         return blockNo << LOG_BLOCK_SIZE;
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final long [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableLongChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
     }
 
     @Override

@@ -7,7 +7,9 @@ description 'CSV: Support to read and write engine tables from/to CSV'
 dependencies {
     api project(':engine-api')
 
-    implementation project(':engine-table')
+    implementation project(':engine-table'),
+            project(':engine-base'),
+            'ch.randelshofer:fastdoubleparser:0.3.0'
 
     Classpaths.inheritImmutables(project)
 
@@ -15,6 +17,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'engine-base'),
             'junit:junit:4.13.2'
 
     testRuntimeOnly project(':log-to-slf4j'),

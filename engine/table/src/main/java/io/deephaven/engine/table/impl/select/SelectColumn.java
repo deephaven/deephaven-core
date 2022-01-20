@@ -122,13 +122,26 @@ public interface SelectColumn extends Selectable {
     MatchPair getMatchPair();
 
     /**
-     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set.
+     * Create a new {@link WritableColumnSource}.
      *
-     * @param size The number of rows to allocate
+     * The returned column source must be capable of handling updates.
      *
-     * @return a new {@link WritableColumnSource} with sufficient capacity for 'dataSubset'
+     * @param size A hint as to the number of rows that will be used
+     *
+     * @return a new {@link WritableColumnSource}
      */
     WritableColumnSource<?> newDestInstance(long size);
+
+    /**
+     * Create a new {@link io.deephaven.engine.table.ColumnSource#isImmutable immutable} {@link WritableColumnSource}.
+     *
+     * The returned column source should be flat, and need not handle updates.
+     *
+     * @param size A hint as to the number of rows that will be used
+     *
+     * @return a new {@link WritableColumnSource}
+     */
+    WritableColumnSource<?> newFlatDestInstance(long size);
 
     /**
      *

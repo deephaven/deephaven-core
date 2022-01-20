@@ -13,6 +13,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
@@ -248,8 +249,8 @@ public class TableViewportSubscription extends HasEventHandling {
         // TODO #1039 slice rows and drop columns
         return copy.then(table -> {
             final ClientTableState state = table.state();
-            String[] columnTypes = Arrays.stream(state.getAllColumns())
-                    .map(Column::getType)
+            String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
+                    .map(ColumnDefinition::getType)
                     .toArray(String[]::new);
 
             final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);

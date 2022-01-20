@@ -1480,7 +1480,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 if (suppressedCycles > 0) {
                     logSuppressedCycles();
                 }
-                log.info().append("Live Table Monitor cycleTime=").appendDouble(cycleTime / 1_000_000.0)
+                log.info().append("Update Graph Processor cycleTime=").appendDouble(cycleTime / 1_000_000.0)
                         .append("ms, lockWaitTime=").appendDouble(currentCycleLockWaitTotalNanos / 1_000_000.0)
                         .append("ms, yieldTime=").appendDouble(currentCycleYieldTotalNanos / 1_000_000.0)
                         .append("ms, sleepTime=").appendDouble(currentCycleSleepTotalNanos / 1_000_000.0)
@@ -1502,7 +1502,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     private void logSuppressedCycles() {
-        log.info().append("Minimal Live Table Monitor cycle times: ")
+        log.info().append("Minimal Update Graph Processor cycle times: ")
                 .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
                 .appendDouble((double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0)

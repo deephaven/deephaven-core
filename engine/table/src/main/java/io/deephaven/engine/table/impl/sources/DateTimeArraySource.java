@@ -48,11 +48,6 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
 
     @Override
-    public void copy(ColumnSource<? extends DateTime> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.get(sourceKey));
-    }
-
-    @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == long.class;
@@ -224,10 +219,6 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
             DateTimeArraySource.super.set(key, value);
         }
 
-        public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
-            DateTimeArraySource.super.set(destKey, sourceColumn.getLong(sourceKey));
-        }
-
         @Override
         public void ensureCapacity(long capacity, boolean nullFill) {
             DateTimeArraySource.this.ensureCapacity(capacity, nullFill);
@@ -255,6 +246,16 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
                 @NotNull LongChunk<RowKeys> keys) {
             DateTimeArraySource.super.fillFromChunkUnordered(context, src, keys);
         }
+
+        @Override
+        public boolean providesFillUnordered() {
+            return true;
+        }
     }
 
+    @Override
+    public boolean exposesChunkedBackingStore() {
+        // our backing store is not a DateTime chunk
+        return false;
+    }
 }

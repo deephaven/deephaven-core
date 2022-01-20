@@ -411,7 +411,7 @@ public class UpdateGraphLock {
 
     private void maybeLogStackTrace(final String type) {
         if (STACK_DUMP_LOCKS) {
-            log.info().append("Live Table Monitor ").append(new LockDebugException(type)).endl();
+            log.info().append("Update Graph Processor ").append(new LockDebugException(type)).endl();
         }
     }
 

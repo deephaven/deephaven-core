@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer$JobScheduler",
+ "methods": {
+  "getAccumulatedPerformance": "The performance statistics of all runnables that have been completed off-thread, or null if it was executed\n in the current thread.\n\n:return: io.deephaven.engine.table.impl.perf.BasePerformanceEntry",
+  "submit": "Cause runnable to be executed.\n\n:param runnable: (java.lang.Runnable) - the runnable to execute\n:param description: (io.deephaven.base.log.LogOutputAppendable) - a description for logging\n:param onError: (java.util.function.Consumer<java.lang.Exception>) - a routine to call if an exception occurs while running runnable"
+ },
+ "path": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler",
+ "text": "An interface for submitting jobs to be executed and accumulating their performance of all the tasks performed off\n thread.",
+ "typeName": "interface"
+}

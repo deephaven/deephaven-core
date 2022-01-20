@@ -8,4 +8,6 @@ configurations {
 
 dependencies {
   compileOnly project(':log-factory')
+
+  Classpaths.inheritAutoService(project)
 }

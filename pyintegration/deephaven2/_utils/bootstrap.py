@@ -10,13 +10,12 @@ from .start_jvm import start_jvm
 DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
 DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
 DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
-DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/app/classes/*:/app/libs/*")
+DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*")
 
 
 def build_py_session():
     if not jpy.has_jvm():
-        os.environ['JAVA_VERSION'] = '1.8'
-        os.environ['JDK_HOME'] = '/usr/lib/jvm/zulu8/jre/'
+        os.environ['JAVA_VERSION'] = '11'
 
         # we will try to initialize the jvm
         kwargs = {

@@ -56,6 +56,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Time
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
@@ -1244,8 +1245,8 @@ public class WorkerConnection {
                     result.or(bs2);
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
-                String[] columnTypes = Arrays.stream(state.getAllColumns())
-                        .map(Column::getType)
+                String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
+                        .map(ColumnDefinition::getType)
                         .toArray(String[]::new);
 
                 state.setSubscribed(true);
