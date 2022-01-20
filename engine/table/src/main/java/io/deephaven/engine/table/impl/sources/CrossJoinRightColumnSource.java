@@ -683,4 +683,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             permuteKernel.permute(innerOrderedValues, shareable.mappedKeysOrder, destination);
         }
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

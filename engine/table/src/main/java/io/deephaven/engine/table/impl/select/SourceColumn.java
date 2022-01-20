@@ -160,6 +160,11 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
+    public boolean isStateless() {
+        return IsStatelessColumn.isStateless(sourceColumn);
+    }
+
+    @Override
     public SourceColumn copy() {
         return new SourceColumn(sourceName, destName);
     }

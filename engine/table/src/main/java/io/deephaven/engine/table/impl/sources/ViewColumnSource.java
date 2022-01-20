@@ -5,12 +5,14 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
@@ -42,14 +44,18 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
                     new ProtectionDomain[] {new ProtectionDomain(
                             new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null), perms)}));
 
-    public ViewColumnSource(Class<T> type, Formula formula) {
+    private final boolean usesPython;
+
+    public ViewColumnSource(Class<T> type, Formula formula, boolean usesPython) {
         super(type);
         this.formula = formula;
+        this.usesPython = usesPython;
     }
 
-    public ViewColumnSource(Class<T> type, Class elementType, Formula formula) {
+    public ViewColumnSource(Class<T> type, Class elementType, Formula formula, boolean usesPython) {
         super(type, elementType);
         this.formula = formula;
+        this.usesPython = usesPython;
     }
 
     @Override
@@ -279,5 +285,9 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         public void close() {
             underlyingFillContext.close();
         }
+    }
+
+    public boolean usesPython() {
+        return usesPython;
     }
 }

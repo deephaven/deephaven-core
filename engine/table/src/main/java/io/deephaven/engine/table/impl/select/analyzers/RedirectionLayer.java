@@ -174,7 +174,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public boolean allowParallelization() {
-        return inner.allowParallelization();
+    public boolean allowCrossColumnParallelization() {
+        return inner.allowCrossColumnParallelization();
     }
 }

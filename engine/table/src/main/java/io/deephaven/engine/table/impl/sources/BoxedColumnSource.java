@@ -151,4 +151,9 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
             typedDestination.setSize(sourceSize);
         }
     }
+
+    @Override
+    public boolean usesPython() {
+        return originalSource.usesPython();
+    }
 }

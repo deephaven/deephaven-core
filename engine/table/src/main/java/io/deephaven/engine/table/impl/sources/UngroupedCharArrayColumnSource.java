@@ -55,4 +55,9 @@ public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Charac
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

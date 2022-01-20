@@ -60,4 +60,9 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

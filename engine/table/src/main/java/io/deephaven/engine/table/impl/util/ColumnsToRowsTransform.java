@@ -619,5 +619,10 @@ public class ColumnsToRowsTransform {
                         transposeFillContext.outputPositions[ii], destination);
             }
         }
+
+        @Override
+        public boolean usesPython() {
+            return Arrays.stream(transposeColumns).anyMatch(ColumnSource::usesPython);
+        }
     }
 }

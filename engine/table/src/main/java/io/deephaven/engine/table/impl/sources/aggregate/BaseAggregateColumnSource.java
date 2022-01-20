@@ -244,4 +244,9 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
         }
         return aggregatedSource.getPrevLong(getPrevRowKey(groupIndexKey, offsetInGroup));
     }
+
+    @Override
+    public boolean usesPython() {
+        return aggregatedSource.usesPython() || groupRowSetSource.usesPython();
+    }
 }

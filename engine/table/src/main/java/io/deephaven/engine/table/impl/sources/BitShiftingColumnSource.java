@@ -491,4 +491,9 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
         effectiveContext.dupExpandKernel.expandDuplicates(rowSequence.intSize(), destination,
                 effectiveContext.shareable.runLengths);
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

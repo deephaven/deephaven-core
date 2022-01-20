@@ -20,10 +20,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -41,6 +38,8 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     private final BiFunction<Long, ColumnSource<?>[], D> function;
     @NotNull
     private final Class<?> componentType;
+
+    boolean usesPython;
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
             @NotNull String destName,
@@ -97,6 +96,8 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
             sourceColumns = localSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
             prevSources = localPrev.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+
+            usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::usesPython);
         }
 
         return getColumns();
@@ -178,7 +179,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
-        });
+        }, usesPython);
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
@@ -223,6 +224,11 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public boolean disallowRefresh() {
+        return false;
+    }
+
+    @Override
+    public boolean isStateless() {
         return false;
     }
 

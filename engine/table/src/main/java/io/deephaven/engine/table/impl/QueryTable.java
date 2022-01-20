@@ -1386,7 +1386,7 @@ public class QueryTable extends BaseTable {
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
                     if (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                             && OperationInitializationThreadPool.TRANSFORM_THREADS > 1)
-                            && analyzer.allowParallelization()) {
+                            && analyzer.allowCrossColumnParallelization()) {
                         jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
                     } else {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;

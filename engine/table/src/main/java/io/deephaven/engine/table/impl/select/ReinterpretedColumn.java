@@ -183,6 +183,11 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
+    public boolean isStateless() {
+        return IsStatelessColumn.isStateless(sourceColumnSource);
+    }
+
+    @Override
     public ReinterpretedColumn<S, D> copy() {
         return new ReinterpretedColumn<>(sourceName, sourceDataType, destName, destDataType);
     }

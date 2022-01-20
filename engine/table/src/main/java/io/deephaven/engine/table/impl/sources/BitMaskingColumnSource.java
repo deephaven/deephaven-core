@@ -474,4 +474,9 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
         destination.setSize((int) sz);
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

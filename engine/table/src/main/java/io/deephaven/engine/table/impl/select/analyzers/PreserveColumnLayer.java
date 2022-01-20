@@ -71,7 +71,7 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
 
 
     @Override
-    public boolean allowParallelization() {
-        return inner.allowParallelization();
+    public boolean allowCrossColumnParallelization() {
+        return inner.allowCrossColumnParallelization();
     }
 }

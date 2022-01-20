@@ -97,7 +97,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public boolean allowParallelization() {
+    public boolean allowCrossColumnParallelization() {
         return true;
     }
 }

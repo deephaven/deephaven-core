@@ -111,4 +111,9 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
     public boolean isImmutable() {
         return false;
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

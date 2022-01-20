@@ -510,4 +510,14 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     private static final ReinterpretedClassKey REINTERPRETED_CLASS_KEY_INSTANCE = new ReinterpretedClassKey();
+
+    @Override
+    public boolean usesPython() {
+        for (int ii = 0; ii < numSources; ++ii) {
+            if (subSources[ii].usesPython()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

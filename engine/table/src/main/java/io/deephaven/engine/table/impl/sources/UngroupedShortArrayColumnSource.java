@@ -60,4 +60,9 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

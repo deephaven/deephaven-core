@@ -60,4 +60,9 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

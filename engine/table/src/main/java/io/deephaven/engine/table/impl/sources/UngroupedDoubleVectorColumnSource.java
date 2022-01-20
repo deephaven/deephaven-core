@@ -111,4 +111,9 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
     public boolean isImmutable() {
         return false;
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

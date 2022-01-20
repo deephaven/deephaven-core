@@ -456,5 +456,10 @@ public class WindowCheck {
             currentTime = getTimeNanos();
             clockStep = LogicalClock.DEFAULT.currentStep();
         }
+
+        @Override
+        public boolean usesPython() {
+            return timeStampSource.usesPython();
+        }
     }
 }

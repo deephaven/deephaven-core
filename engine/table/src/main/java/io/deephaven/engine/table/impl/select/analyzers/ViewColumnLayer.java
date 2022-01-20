@@ -29,7 +29,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public boolean allowParallelization() {
+    public boolean allowCrossColumnParallelization() {
         // this should not actually matter; but false seems like the safe answer for any formula
         return false;
     }

@@ -471,6 +471,11 @@ class NaturalJoinHelper {
             }
             destination.setSize(longChunk.size());
         }
+
+        @Override
+        public boolean usesPython() {
+            return symbolSource.usesPython();
+        }
     }
 
     private static class LeftTickingListener extends BaseTable.ListenerImpl {

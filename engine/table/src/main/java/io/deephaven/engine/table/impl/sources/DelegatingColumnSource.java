@@ -198,4 +198,9 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     public short getPrevShort(long index) {
         return delegate.getPrevShort(index);
     }
+
+    @Override
+    public boolean usesPython() {
+        return delegate.usesPython();
+    }
 }

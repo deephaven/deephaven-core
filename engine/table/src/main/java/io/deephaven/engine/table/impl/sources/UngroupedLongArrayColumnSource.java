@@ -60,4 +60,9 @@ public class UngroupedLongArrayColumnSource extends UngroupedColumnSource<Long> 
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

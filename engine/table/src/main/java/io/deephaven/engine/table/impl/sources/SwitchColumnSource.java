@@ -294,4 +294,9 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     private boolean prevInvalid() {
         return prevValidityStep == -1 || prevValidityStep != LogicalClock.DEFAULT.currentStep();
     }
+
+    @Override
+    public boolean usesPython() {
+        return currentSource.usesPython() || (!prevInvalid() && prevSource.usesPython());
+    }
 }

@@ -91,4 +91,9 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
         }
         byteDestination.setSize(booleanObjectChunk.size());
     }
+
+    @Override
+    public boolean usesPython() {
+        return alternateColumnSource.usesPython();
+    }
 }

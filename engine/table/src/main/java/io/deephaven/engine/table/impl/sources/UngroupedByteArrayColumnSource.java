@@ -60,4 +60,9 @@ public class UngroupedByteArrayColumnSource extends UngroupedColumnSource<Byte> 
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

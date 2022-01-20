@@ -60,4 +60,9 @@ public class UngroupedFloatArrayColumnSource extends UngroupedColumnSource<Float
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

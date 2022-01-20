@@ -5,16 +5,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
@@ -22,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
@@ -36,6 +31,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean flattenedResult;
     private final BitSet dependencyBitSet;
     private final boolean canUseThreads;
+    private final boolean canParallelizeThisColumn;
 
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
@@ -52,9 +48,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
         this.flattenedResult = flattenedResult;
-        // this is not quite right, we need to think on this more; if you have a formula with query scope than woe is us
-        this.canUseThreads = !isRedirected && sc instanceof SourceColumn
-                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws);
+
+        // we can't use threads at all if we have column that uses a Python query scope, because we are likely operating
+        // under the GIL which will cause a deadlock
+        this.canUseThreads = !sc.getDataView().usesPython();
+
+        // we can only parallelize this column if we are not redirected, our destination provides ensure previous, and the select column is stateless
+        this.canParallelizeThisColumn = canUseThreads && !isRedirected && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -83,7 +83,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final long totalSize = upstream.added().size() + upstream.modified().size();
                         // if we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
-                        if (canUseThreads && jobScheduler.threadCount() > 1
+                        if (canParallelizeThisColumn && jobScheduler.threadCount() > 1
                                 && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
                             final AtomicLong divisions = new AtomicLong();
                             final long divisionSize = Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
@@ -356,7 +356,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public boolean allowParallelization() {
-        return canUseThreads && inner.allowParallelization();
+    public boolean allowCrossColumnParallelization() {
+        return canUseThreads && inner.allowCrossColumnParallelization();
     }
 }

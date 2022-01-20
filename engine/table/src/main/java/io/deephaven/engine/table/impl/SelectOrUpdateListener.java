@@ -57,7 +57,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         this.enableParallelUpdate =
                 QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                         && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1)
-                        && analyzer.allowParallelization();
+                        && analyzer.allowCrossColumnParallelization();
         analyzer.setAllNewColumns(allNewColumns);
     }
 

@@ -175,4 +175,9 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
         innerSource.fillPrevChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

@@ -667,4 +667,9 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
             permuteKernel.permute(innerOrderedValues, shareable.mappedKeysOrder, destination);
         }
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }

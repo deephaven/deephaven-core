@@ -362,9 +362,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract int getLayerIndexFor(String column);
 
     /**
-     * Can all of our columns permit parallel updates?s
+     * Can all of our columns permit parallel updates?
      */
-    abstract public boolean allowParallelization();
+    abstract public boolean allowCrossColumnParallelization();
 
     /**
      * A class that handles the completion of one select column. The handlers are chained together so that when a column

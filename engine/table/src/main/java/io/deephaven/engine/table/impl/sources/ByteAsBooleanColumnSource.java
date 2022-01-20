@@ -130,4 +130,9 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
         ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }
+
+    @Override
+    public boolean usesPython() {
+        return alternateColumnSource.usesPython();
+    }
 }

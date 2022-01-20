@@ -183,4 +183,9 @@ public interface ColumnSource<T>
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
+
+    /** Most column sources do not use python, those that do call into Python must return true. */
+    default boolean usesPython() {
+        return false;
+    }
 }

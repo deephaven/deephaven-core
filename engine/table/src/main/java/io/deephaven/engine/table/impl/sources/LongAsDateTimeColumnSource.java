@@ -134,4 +134,9 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
         }
         dateTimeObjectDestination.setSize(longChunk.size());
     }
+    
+    @Override
+    public boolean usesPython() {
+        return alternateColumnSource.usesPython();
+    }
 }

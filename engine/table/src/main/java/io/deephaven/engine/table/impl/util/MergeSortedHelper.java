@@ -278,5 +278,10 @@ public class MergeSortedHelper {
         public boolean isImmutable() {
             return true;
         }
+
+        @Override
+        public boolean usesPython() {
+            return innerSources.stream().anyMatch(ColumnSource::usesPython);
+        }
     }
 }

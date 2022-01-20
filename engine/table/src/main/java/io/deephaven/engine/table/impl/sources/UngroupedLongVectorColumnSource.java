@@ -111,4 +111,9 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
     public boolean isImmutable() {
         return false;
     }
+
+    @Override
+    public boolean usesPython() {
+        return innerSource.usesPython();
+    }
 }
