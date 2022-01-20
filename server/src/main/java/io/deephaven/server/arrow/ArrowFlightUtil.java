@@ -404,9 +404,10 @@ public class ArrowFlightUtil {
                                 table, columns, viewport);
                         msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
 
-                        // DoGet
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
-                            listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false));
+                        // translate the viewport to keyspace and make the call
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
+                             final RowSet keySpaceViewport = hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                            listener.onNext(bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport, columns));
                         }
 
                         listener.onCompleted();
