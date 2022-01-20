@@ -145,24 +145,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     @Override
     public BarrageTable entireTable() throws InterruptedException {
-        if (!connected) {
-            throw new UncheckedDeephavenException(
-                    this + " is not connected");
-        }
-        // Send the snapshot request:
-        observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(null, null, options)))
-                .build());
-
-        observer.onCompleted();
-
-        resultLatch.await();
-
-        if (exceptionWhileSealing == null) {
-            return resultTable;
-        } else {
-            throw new RuntimeException("Error while handling snapshot:", exceptionWhileSealing);
-        }
+        return partialTable(null, null);
     }
 
     @Override

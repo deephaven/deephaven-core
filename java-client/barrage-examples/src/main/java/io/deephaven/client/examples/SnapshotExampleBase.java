@@ -52,13 +52,12 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-
         // test #2 - reading all columns, but only subset of rows starting with 0
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             // expect this to block until all reading complete
-            final RowSet viewport = RowSetFactory.fromRange(0, 5);
+            final RowSet viewport = RowSetFactory.fromRange(0, 5); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
             System.out.println("Table info: rows = " + table.size() + ", cols = "+ table.getColumns().length);
@@ -70,25 +69,43 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             // expect this to block until all reading complete
-            final RowSet viewport = RowSetFactory.fromRange(6, 10);
+            final RowSet viewport = RowSetFactory.fromRange(6, 10); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
             System.out.println("Table info: rows = " + table.size() + ", cols = "+ table.getColumns().length);
             TableTools.show(table);
         }
 
-        // test #4 - reading some columns all rows
+        // test #4 - reading some columns but all rows
         try (final TableHandle handle = manager.executeLogic(logic());
              final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             // expect this to block until all reading complete
             final BitSet columns = new BitSet();
-            columns.set(0,1);
+            columns.set(0,2); // range not inclusive (sets bits 0-1)
 
             final BarrageTable table = snapshot.partialTable(null, columns);
 
             System.out.println("Table info: rows = " + table.size() + ", cols = "+ table.getColumns().length);
             TableTools.show(table);
         }
+
+        // test #5 - reading some columns and only some rows
+        try (final TableHandle handle = manager.executeLogic(logic());
+             final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
+
+            // expect this to block until all reading complete
+            final RowSet viewport = RowSetFactory.fromRange(100, 150); // range inclusive
+            final BitSet columns = new BitSet();
+            columns.set(0,2); // range not inclusive (sets bits 0-1)
+
+            final BarrageTable table = snapshot.partialTable(viewport, columns);
+
+            System.out.println("Table info: rows = " + table.size() + ", cols = "+ table.getColumns().length);
+            TableTools.show(table);
+        }
+
+        System.out.println("End of Snapshot tests");
+
     }
 }
