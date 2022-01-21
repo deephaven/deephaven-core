@@ -9,7 +9,7 @@ _JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdap
 
 
 def _adapt_reference(ref: _JReference) -> Reference:
-    return Reference(ref.index(), ref.type().orElse(None), bytes(ref.ticket()))
+    return Reference(ref.index(), ref.type().orElse(None))
 
 
 def _unwrap(object):
