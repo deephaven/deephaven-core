@@ -73,6 +73,7 @@ import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -82,7 +83,6 @@ import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
@@ -704,7 +704,7 @@ public class WorkerConnection {
         } else if ("Figure".equals(definition.getType())) {
             return (Promise) getFigure(definition);
         } else {
-            return (Promise) getPluginObject(definition);
+            return (Promise) getWidget(definition);
         }
     }
 
@@ -826,19 +826,13 @@ public class WorkerConnection {
                 }).refetch());
     }
 
-    public Promise<String> getPluginObject(JsVariableDefinition varDef) {
-        return whenServerReady("get a plugin object")
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return whenServerReady("get a widget")
                 .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
-                        FetchObjectRequest request = new FetchObjectRequest();
-                        request.setSourceId(TableTicket.createTicket(varDef));
-                        objectServiceClient().fetchObject(request, metadata(), c::apply);
-                    })
-                ).then(response -> {
-                    // TODO: Should be able to specify if you want base64 or u8
-                    // Also need to fetch tables, via accessor methods
-//                    return Promise.resolve(response.getData_asU8());
-                    return Promise.resolve(response.getData_asB64());
-                });
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    request.setSourceId(TableTicket.createTicket(varDef));
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
+                })).then(response -> Promise.resolve(new JsWidget(this, response)));
     }
 
     public void registerFigure(JsFigure figure) {
