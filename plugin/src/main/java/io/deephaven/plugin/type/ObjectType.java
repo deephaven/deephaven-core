@@ -82,8 +82,7 @@ public interface ObjectType extends Plugin {
         interface Reference {
             /**
              * The index, which is defined by the order in which references are created. May be used in the output
-             * stream to refer to the reference from the client without needing to re-serialize the {@link #type()} and
-             * {@link #ticket()}.
+             * stream to refer to the reference from the client.
              *
              * @return the index
              */
@@ -95,13 +94,6 @@ public interface ObjectType extends Plugin {
              * @return the type, if present
              */
             Optional<String> type();
-
-            /**
-             * The ticket.
-             *
-             * @return the ticket
-             */
-            byte[] ticket();
         }
     }
 }

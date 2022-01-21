@@ -172,8 +172,8 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
             assertThat(extraNewObjRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
             assertThat(dontAllowUnknown).isEmpty();
 
-            assertThat(tableRef.ticket()).is(bytesEquals(extraTableRef.ticket()));
-            assertThat(objRef.ticket()).isNot(bytesEquals(extraNewObjRef.ticket()));
+            assertThat(tableRef.index()).isEqualTo(extraTableRef.index());
+            assertThat(objRef.index()).isNotEqualTo(extraNewObjRef.index());
 
             final DataOutputStream doas = new DataOutputStream(out);
 

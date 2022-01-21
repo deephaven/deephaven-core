@@ -192,10 +192,5 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public Optional<String> type() {
             return Optional.ofNullable(type);
         }
-
-        @Override
-        public byte[] ticket() {
-            return export.getExportIdBytes();
-        }
     }
 }
