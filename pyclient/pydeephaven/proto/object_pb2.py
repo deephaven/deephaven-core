@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'H\001P\001',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"R\n\x12\x46\x65tchObjectRequest\x12<\n\tsource_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"z\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12G\n\x0ftyped_export_id\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket2\x8f\x01\n\rObjectService\x12~\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x00\x42\x04H\x01P\x01\x62\x06proto3'
+  serialized_pb=b'\n\x1c\x64\x65\x65phaven/proto/object.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"W\n\x12\x46\x65tchObjectRequest\x12\x41\n\tsource_id\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\"z\n\x13\x46\x65tchObjectResponse\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12G\n\x0ftyped_export_id\x18\x03 \x03(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket2\x8f\x01\n\rObjectService\x12~\n\x0b\x46\x65tchObject\x12\x35.io.deephaven.proto.backplane.grpc.FetchObjectRequest\x1a\x36.io.deephaven.proto.backplane.grpc.FetchObjectResponse\"\x00\x42\x04H\x01P\x01\x62\x06proto3'
   ,
   dependencies=[deephaven_dot_proto_dot_ticket__pb2.DESCRIPTOR,])
 
@@ -55,7 +55,7 @@ _FETCHOBJECTREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=97,
-  serialized_end=179,
+  serialized_end=184,
 )
 
 
@@ -100,11 +100,11 @@ _FETCHOBJECTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=181,
-  serialized_end=303,
+  serialized_start=186,
+  serialized_end=308,
 )
 
-_FETCHOBJECTREQUEST.fields_by_name['source_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
+_FETCHOBJECTREQUEST.fields_by_name['source_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TYPEDTICKET
 _FETCHOBJECTRESPONSE.fields_by_name['typed_export_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TYPEDTICKET
 DESCRIPTOR.message_types_by_name['FetchObjectRequest'] = _FETCHOBJECTREQUEST
 DESCRIPTOR.message_types_by_name['FetchObjectResponse'] = _FETCHOBJECTRESPONSE
@@ -134,8 +134,8 @@ _OBJECTSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=306,
-  serialized_end=449,
+  serialized_start=311,
+  serialized_end=454,
   methods=[
   _descriptor.MethodDescriptor(
     name='FetchObject',

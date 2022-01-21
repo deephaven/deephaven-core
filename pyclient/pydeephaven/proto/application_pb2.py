@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'H\001P\001',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n!deephaven/proto/application.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"\x13\n\x11ListFieldsRequest\"\xd1\x01\n\x12\x46ieldsChangeUpdate\x12=\n\x07\x63reated\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\x12=\n\x07updated\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\x12=\n\x07removed\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\"\xb2\x01\n\tFieldInfo\x12\x44\n\x0ctyped_ticket\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12\x19\n\x11\x66ield_description\x18\x03 \x01(\t\x12\x18\n\x10\x61pplication_name\x18\x04 \x01(\t\x12\x16\n\x0e\x61pplication_id\x18\x05 \x01(\t\"\x0e\n\x0cRemovedField2\x93\x01\n\x12\x41pplicationService\x12}\n\nListFields\x12\x34.io.deephaven.proto.backplane.grpc.ListFieldsRequest\x1a\x35.io.deephaven.proto.backplane.grpc.FieldsChangeUpdate\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
+  serialized_pb=b'\n!deephaven/proto/application.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"\x13\n\x11ListFieldsRequest\"\xd1\x01\n\x12\x46ieldsChangeUpdate\x12=\n\x07\x63reated\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\x12=\n\x07updated\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\x12=\n\x07removed\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.FieldInfo\"\xb2\x01\n\tFieldInfo\x12\x44\n\x0ctyped_ticket\x18\x01 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.TypedTicket\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12\x19\n\x11\x66ield_description\x18\x03 \x01(\t\x12\x18\n\x10\x61pplication_name\x18\x04 \x01(\t\x12\x16\n\x0e\x61pplication_id\x18\x05 \x01(\t2\x93\x01\n\x12\x41pplicationService\x12}\n\nListFields\x12\x34.io.deephaven.proto.backplane.grpc.ListFieldsRequest\x1a\x35.io.deephaven.proto.backplane.grpc.FieldsChangeUpdate\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
   ,
   dependencies=[deephaven_dot_proto_dot_ticket__pb2.DESCRIPTOR,])
 
@@ -157,31 +157,6 @@ _FIELDINFO = _descriptor.Descriptor(
   serialized_end=514,
 )
 
-
-_REMOVEDFIELD = _descriptor.Descriptor(
-  name='RemovedField',
-  full_name='io.deephaven.proto.backplane.grpc.RemovedField',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=516,
-  serialized_end=530,
-)
-
 _FIELDSCHANGEUPDATE.fields_by_name['created'].message_type = _FIELDINFO
 _FIELDSCHANGEUPDATE.fields_by_name['updated'].message_type = _FIELDINFO
 _FIELDSCHANGEUPDATE.fields_by_name['removed'].message_type = _FIELDINFO
@@ -189,7 +164,6 @@ _FIELDINFO.fields_by_name['typed_ticket'].message_type = deephaven_dot_proto_dot
 DESCRIPTOR.message_types_by_name['ListFieldsRequest'] = _LISTFIELDSREQUEST
 DESCRIPTOR.message_types_by_name['FieldsChangeUpdate'] = _FIELDSCHANGEUPDATE
 DESCRIPTOR.message_types_by_name['FieldInfo'] = _FIELDINFO
-DESCRIPTOR.message_types_by_name['RemovedField'] = _REMOVEDFIELD
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 ListFieldsRequest = _reflection.GeneratedProtocolMessageType('ListFieldsRequest', (_message.Message,), {
@@ -213,13 +187,6 @@ FieldInfo = _reflection.GeneratedProtocolMessageType('FieldInfo', (_message.Mess
   })
 _sym_db.RegisterMessage(FieldInfo)
 
-RemovedField = _reflection.GeneratedProtocolMessageType('RemovedField', (_message.Message,), {
-  'DESCRIPTOR' : _REMOVEDFIELD,
-  '__module__' : 'pydeephaven.proto.application_pb2'
-  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.RemovedField)
-  })
-_sym_db.RegisterMessage(RemovedField)
-
 
 DESCRIPTOR._options = None
 
@@ -230,8 +197,8 @@ _APPLICATIONSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=533,
-  serialized_end=680,
+  serialized_start=517,
+  serialized_end=664,
   methods=[
   _descriptor.MethodDescriptor(
     name='ListFields',
