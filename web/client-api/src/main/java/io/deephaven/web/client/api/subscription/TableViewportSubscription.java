@@ -1,5 +1,6 @@
 package io.deephaven.web.client.api.subscription;
 
+import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -10,11 +11,19 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_gen
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.DoGetRequest;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.TableSnapshot;
@@ -24,7 +33,11 @@ import jsinterop.base.Js;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
+import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
@@ -254,10 +267,37 @@ public class TableViewportSubscription extends HasEventHandling {
                     .toArray(String[]::new);
 
             final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);
-            return Callbacks.<TableSnapshot, String>promise(this, c -> {
-                ResponseStreamWrapper<FlightData> stream =
-                        ResponseStreamWrapper.of(table.getConnection().flightServiceClient().doGet(
-                                Js.uncheckedCast(state.getHandle().makeTicket()), table.getConnection().metadata()));
+            return Callbacks.<TableSnapshot, String>promise(this, callback -> {
+                WorkerConnection connection = table.getConnection();
+                BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
+                        headers -> connection.flightServiceClient().doExchange(headers),
+                        (firstPayload, headers) -> connection.browserFlightServiceClient().openDoExchange(firstPayload,
+                                headers),
+                        (nextPayload, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(nextPayload,
+                                headers,
+                                c::apply));
+
+                Builder doGetRequest = new Builder(1024);
+                double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
+                        makeUint8ArrayFromBitset(columnBitset));
+                double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
+                        Collections.singleton(rows.getRange())));
+                double serializationOptionsOffset = BarrageSubscriptionOptions
+                        .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0,
+                                0);
+                double tableTicketOffset =
+                        BarrageSubscriptionRequest.createTicketVector(doGetRequest, state.getHandle().getTicket());
+                DoGetRequest.startDoGetRequest(doGetRequest);
+                DoGetRequest.addTicket(doGetRequest, tableTicketOffset);
+                DoGetRequest.addColumns(doGetRequest, columnsOffset);
+                DoGetRequest.addSubscriptionOptions(doGetRequest, serializationOptionsOffset);
+                DoGetRequest.addViewport(doGetRequest, viewportOffset);
+                doGetRequest.finish(DoGetRequest.endDoGetRequest(doGetRequest));
+
+                FlightData request = new FlightData();
+                request.setAppMetadata(
+                        BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
+                stream.send(request);
                 stream.onData(flightData -> {
 
                     Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
@@ -267,15 +307,24 @@ public class TableViewportSubscription extends HasEventHandling {
                     }
                     assert message.headerType() == MessageHeader.RecordBatch;
                     RecordBatch header = message.header(new RecordBatch());
-                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
-                            BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), null, true,
-                            columnTypes);
+                    BarrageMessageWrapper barrageMessageWrapper =
+                            BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
+                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                            flightData.getAppMetadata_asU8()));
 
-                    c.onSuccess(snapshot);
+                    BarrageUpdateMetadata update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                            new ByteBuffer(
+                                    new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+
+                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
+                            BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                            true,
+                            columnTypes);
+                    callback.onSuccess(snapshot);
                 });
                 stream.onStatus(status -> {
-                    if (status.isOk()) {
-                        c.onFailure(status.getDetails());
+                    if (!status.isOk()) {
+                        callback.onFailure(status.getDetails());
                     }
                 });
             }).then(defer()).then(snapshot -> {

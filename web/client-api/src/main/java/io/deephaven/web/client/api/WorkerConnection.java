@@ -863,6 +863,10 @@ public class WorkerConnection {
         return flightServiceClient;
     }
 
+    public BrowserFlightServiceClient browserFlightServiceClient() {
+        return browserFlightServiceClient;
+    }
+
     public InputTableServiceClient inputTableServiceClient() {
         return inputTableServiceClient;
     }
