@@ -56,6 +56,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Tabl
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -820,10 +821,16 @@ public class WorkerConnection {
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
+        if (!varDef.getType().equals("Figure")) {
+            throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
+        }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
                     FetchObjectRequest request = new FetchObjectRequest();
-                    request.setSourceId(TableTicket.createTicket(varDef));
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
                     objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
     }
