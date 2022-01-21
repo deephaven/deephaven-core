@@ -14,6 +14,7 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':open-api-lang-tools')
     implementation project(':log-factory')
+    Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
     implementation project(':application-mode')
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 

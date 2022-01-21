@@ -63,6 +63,8 @@ public class ViewportData implements TableData {
         } else {
             offset = -1;
         }
+
+        // Clean data for requested columns, and provide format column data as well, if any
         for (int i = 0; i < columns.length; i++) {
             Column c = columns.getAt(i);
             int index = c.getIndex();
@@ -78,6 +80,14 @@ public class ViewportData implements TableData {
                 data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
             }
         }
+
+        // Handle row format column, if any
+        this.rowFormatColumn = rowFormatColumn;
+        if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
+            data[rowFormatColumn] = dataColumns[rowFormatColumn];
+        }
+
+        // Grow all columns to match the size of the viewport, if necesssary
         if (length < maxLength) {
             for (int i = 0; i < data.length; i++) {
                 if (data[i] != null) {
@@ -86,10 +96,6 @@ public class ViewportData implements TableData {
                     existingColumnData.fill(NULL_SENTINEL, length, this.maxLength);
                 }
             }
-        }
-        this.rowFormatColumn = rowFormatColumn;
-        if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
-            data[rowFormatColumn] = dataColumns[rowFormatColumn];
         }
 
         rows = new JsArray<>();
