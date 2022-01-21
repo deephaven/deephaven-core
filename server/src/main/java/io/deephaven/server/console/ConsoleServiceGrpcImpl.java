@@ -238,7 +238,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .setTicket(ScopeTicketResolver.ticketForName(title))
                 .build();
         return FieldInfo.newBuilder()
-                .setApplicationId("")
+                .setApplicationId("scope")
                 .setFieldName(title)
                 .setFieldDescription("query scope variable")
                 .setTypedTicket(id)

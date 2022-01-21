@@ -737,7 +737,6 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                Assert.neqNull(errorId, "errorId");
                 if (errorId == null) {
                     assignErrorId();
                 }
