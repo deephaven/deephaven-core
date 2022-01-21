@@ -170,7 +170,7 @@ def package_maven():
 
     mvn_goal = 'package'
     log.info("Executing Maven goal '" + mvn_goal + "'")
-    code = subprocess.call(['mvn', 'clean', mvn_goal, '-DskipTests'],
+    code = subprocess.call(['mvn', 'clean', mvn_goal, '-DskipTests', '-B'],
                            shell=platform.system() == 'Windows')
     if code:
         exit(code)
