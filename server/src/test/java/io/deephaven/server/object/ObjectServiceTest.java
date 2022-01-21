@@ -9,6 +9,7 @@ import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.server.runner.DeephavenApiServerSingleAuthenticatedBase;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.grpc.StatusRuntimeException;
@@ -53,7 +54,11 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         ExportObject<MyUnregisteredObject> export = authenticatedSessionState()
                 .<MyUnregisteredObject>newExport(1)
                 .submit(MyUnregisteredObject::new);
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder().setSourceId(export.getExportId()).build();
+        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+                .setSourceId(TypedTicket.newBuilder()
+                        .setTicket(export.getExportId())
+                        .build())
+                .build();
         try {
             // noinspection ResultOfMethodCallIgnored
             channel().objectBlocking().fetchObject(request);
@@ -64,7 +69,12 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     }
 
     private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt) throws IOException {
-        final FetchObjectRequest request = FetchObjectRequest.newBuilder().setSourceId(ticket).build();
+        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+                .setSourceId(TypedTicket.newBuilder()
+                        .setType(MyObjectRegistration.MY_OBJECT_TYPE_NAME)
+                        .setTicket(ticket)
+                        .build())
+                .build();
         final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
 
         assertThat(response.getType()).isEqualTo(MyObjectRegistration.MY_OBJECT_TYPE_NAME);
