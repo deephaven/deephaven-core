@@ -2,6 +2,7 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
@@ -39,7 +40,8 @@ public class JsFigureFactory {
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
-        return Promise.all(tables.map((table, index, all) -> table.copy(false)))
+        JsArray<Promise<JsTable>> tableCopyPromises = tables.map((table, index, all) -> table.copy(false));
+        return Promise.all(tableCopyPromises.asList().toArray((IThenable<JsTable>[]) new IThenable[0]))
                 .then(tableCopies -> new JsFigure(
                         c -> c.apply(null, response),
                         (figure, descriptor1) -> {

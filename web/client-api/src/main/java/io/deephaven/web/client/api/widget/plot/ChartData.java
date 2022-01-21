@@ -239,10 +239,10 @@ public class ChartData {
     private JsArray<Any> collectAllData(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
         Column column = table.findColumn(columnName);
         if (mappingFunc == null) {
-            return Js.uncheckedCast(currentUpdate.getRows().map((p0, p1, p2) -> p0.get(column)));
+            return currentUpdate.getRows().map((p0, p1, p2) -> p0.get(column));
         }
 
-        return Js.uncheckedCast(currentUpdate.getRows().map((p0, p1, p2) -> mappingFunc.apply(p0.get(column))));
+        return currentUpdate.getRows().map((p0, p1, p2) -> mappingFunc.apply(p0.get(column)));
     }
 
     /**

@@ -40,9 +40,8 @@ public class JsSeriesDescriptor {
 
         plotStyle = JsData.getRequiredStringProperty(source, "plotStyle");
         name = JsData.getStringProperty(source, "name");
-        JsArray<Object> dataSources = JsData.getRequiredProperty(source, "dataSources").cast();
-        this.dataSources = Js.uncheckedCast(dataSources.map(
-                (sourceSource, index, all) -> new JsSourceDescriptor((JsPropertyMap<Object>) sourceSource, axisMap)));
+        JsArray<JsPropertyMap<Object>> dataSources = JsData.getRequiredProperty(source, "dataSources").cast();
+        this.dataSources = dataSources.map((sourceSource, index, all) -> new JsSourceDescriptor(sourceSource, axisMap));
         linesVisible = JsData.getNullableBooleanProperty(source, "linesVisible");
         shapesVisible = JsData.getNullableBooleanProperty(source, "shapesVisible");
         gradientVisible = JsData.getNullableBooleanProperty(source, "gradientVisible");

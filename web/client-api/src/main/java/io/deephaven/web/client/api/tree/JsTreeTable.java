@@ -391,8 +391,7 @@ public class JsTreeTable extends HasEventHandling implements HasLifecycle {
             }
 
             // for each column _not_ in this list of names, explicitly assign a null constituent type
-            groupedColumns = JsObject.freeze(
-                    Js.cast(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName()))));
+            groupedColumns = JsObject.freeze(getColumns().filter((column, index, array) -> !presentNames.contains(column.getName())));
             if (rollupDefinition.getLeafType() == RollupDefinition.LeafType.Constituent) {
                 groupedColumns.forEach((column, index, array) -> {
                     column.setConstituentType(null);
