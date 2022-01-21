@@ -112,6 +112,7 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
         if (toDateTimeFillContext.longChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
+        toDateTimeFillContext.longChunk.setSize(keys.size());
         ((FillUnordered) alternateColumnSource).fillChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
         convertToDateTime(dest, toDateTimeFillContext.longChunk);
     }
@@ -122,6 +123,7 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
         if (toDateTimeFillContext.longChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
+        toDateTimeFillContext.longChunk.setSize(keys.size());
         ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
         convertToDateTime(dest, toDateTimeFillContext.longChunk);
     }
