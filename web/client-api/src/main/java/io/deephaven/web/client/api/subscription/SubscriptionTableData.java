@@ -266,7 +266,7 @@ public class SubscriptionTableData {
         switch (type) {
             case "long":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    long value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asLong();
+                    long value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asLong();
                     if (value == QueryConstants.NULL_LONG) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -275,7 +275,7 @@ public class SubscriptionTableData {
                 };
             case "io.deephaven.time.DateTime":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    long value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asLong();
+                    long value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asLong();
                     if (value == QueryConstants.NULL_LONG) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -320,7 +320,7 @@ public class SubscriptionTableData {
                 };
             case "java.lang.Boolean":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    int value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asInt();
+                    int value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asInt();
                     if (value == 1) {
                         Js.asArrayLike(destArray).setAt((int) destPos, true);
                     } else if (value == 0) {
@@ -331,7 +331,7 @@ public class SubscriptionTableData {
                 };
             case "int":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    int value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asInt();
+                    int value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asInt();
                     if (value == QueryConstants.NULL_INT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -340,7 +340,7 @@ public class SubscriptionTableData {
                 };
             case "byte":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    byte value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asByte();
+                    byte value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asByte();
                     if (value == QueryConstants.NULL_BYTE) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -349,7 +349,7 @@ public class SubscriptionTableData {
                 };
             case "short":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    short value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asShort();
+                    short value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asShort();
                     if (value == QueryConstants.NULL_SHORT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -358,7 +358,7 @@ public class SubscriptionTableData {
                 };
             case "double":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    double value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asDouble();
+                    double value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asDouble();
                     if (value == QueryConstants.NULL_DOUBLE) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -367,7 +367,7 @@ public class SubscriptionTableData {
                 };
             case "float":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    float value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asFloat();
+                    float value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asFloat();
                     if (value == QueryConstants.NULL_FLOAT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -376,7 +376,7 @@ public class SubscriptionTableData {
                 };
             case "char":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    char value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asChar();
+                    char value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asChar();
                     if (value == QueryConstants.NULL_CHAR) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -464,7 +464,7 @@ public class SubscriptionTableData {
         public Any get(Column column) {
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             JsArrayLike<Object> columnData = Js.asArrayLike(data[column.getIndex()]);
-            return columnData.getAnyAt(redirectedIndex);
+            return columnData.getAtAsAny(redirectedIndex);
         }
 
         @Override
@@ -477,19 +477,19 @@ public class SubscriptionTableData {
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
-                cellColors = colors.getAnyAt(redirectedIndex).asLong();
+                cellColors = colors.getAtAsAny(redirectedIndex).asLong();
             }
             if (rowStyleColumn != null) {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
-                rowColors = rowStyle.getAnyAt(redirectedIndex).asLong();
+                rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
             if (column.getFormatColumnIndex() != null) {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
-                numberFormat = formatStrings.getAnyAt(redirectedIndex).asString();
+                numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
-                formatString = formatStrings.getAnyAt(redirectedIndex).asString();
+                formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }
@@ -548,7 +548,7 @@ public class SubscriptionTableData {
         public Any getData(long index, Column column) {
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
             JsArrayLike<Object> columnData = Js.asArrayLike(data[column.getIndex()]);
-            return columnData.getAnyAt(redirectedIndex);
+            return columnData.getAtAsAny(redirectedIndex);
         }
 
         @Override
@@ -565,19 +565,19 @@ public class SubscriptionTableData {
             int redirectedIndex = (int) (long) redirectedIndexes.get(index);
             if (column.getStyleColumnIndex() != null) {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
-                cellColors = colors.getAnyAt(redirectedIndex).asLong();
+                cellColors = colors.getAtAsAny(redirectedIndex).asLong();
             }
             if (rowStyleColumn != null) {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
-                rowColors = rowStyle.getAnyAt(redirectedIndex).asLong();
+                rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
             if (column.getFormatColumnIndex() != null) {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatColumnIndex()]);
-                numberFormat = formatStrings.getAnyAt(redirectedIndex).asString();
+                numberFormat = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {
                 JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
-                formatString = formatStrings.getAnyAt(redirectedIndex).asString();
+                formatString = formatStrings.getAtAsAny(redirectedIndex).asString();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }

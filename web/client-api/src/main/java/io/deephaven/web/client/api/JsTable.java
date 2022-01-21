@@ -846,7 +846,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             request.setColumnsToAddList(columnsToAdd);
             if (asOfMatchRule != null) {
                 request.setAsOfMatchRule(
-                        Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAny(asOfMatchRule).asDouble());
+                        Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAsAny(asOfMatchRule).asDouble());
             }
             workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
         }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")

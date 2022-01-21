@@ -8,7 +8,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.fi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
@@ -40,7 +39,7 @@ public class JsFigureFactory {
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
-        return JsPromise.all(tables.map((table, index, all) -> table.copy(false)))
+        return Promise.all(tables.map((table, index, all) -> table.copy(false)))
                 .then(tableCopies -> new JsFigure(
                         c -> c.apply(null, response),
                         (figure, descriptor1) -> {

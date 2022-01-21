@@ -128,7 +128,7 @@ public class ChartData {
             assert cachedData.values().stream().flatMap(m -> m.values().stream())
                     .allMatch(arr -> arr.length == indexes.length);
             assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr
-                    .reduce((Object val, Any p1, int p2, Any[] p3) -> ((Integer) val) + 1, 0) == indexes.length);
+                    .reduce((Object val, Any p1, int p2, JsArray<Any> p3) -> ((Integer) val) + 1, 0) == indexes.length);
 
             JsRangeSet fullIndex = tableData.getFullIndex();
             PrimitiveIterator.OfLong iter = fullIndex.getRange().indexIterator();
@@ -188,7 +188,7 @@ public class ChartData {
         int batchSize = 1 << 15;
 
         for (int i = 0; i < lengthToInsert; i += batchSize) {
-            existingData.splice(offset + i, 0, jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)));
+            existingData.splice(offset + i, 0, jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)).asArray(new Any[0]));
         }
 
         return Js.uncheckedCast(existingData);

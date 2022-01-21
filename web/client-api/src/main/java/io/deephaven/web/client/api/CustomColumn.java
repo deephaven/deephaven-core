@@ -76,9 +76,9 @@ public class CustomColumn {
             throw new IllegalArgumentException("Unrecognized CustomColumn format: " + source);
         }
 
-        name = source.getAny("name").asString();
-        type = source.getAny("type").asString();
-        expression = source.getAny("expression").asString();
+        name = source.getAsAny("name").asString();
+        type = source.getAsAny("type").asString();
+        expression = source.getAsAny("expression").asString();
     }
 
     @JsProperty

@@ -1,5 +1,6 @@
 package io.deephaven.web.client.api.widget.calendar;
 
+import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.businesscalendardescriptor.Holiday;
 import io.deephaven.web.client.api.LocalDateWrapper;
@@ -7,7 +8,7 @@ import jsinterop.annotations.JsProperty;
 
 public class JsHoliday {
     private final LocalDateWrapper date;
-    private final JsBusinessPeriod[] businessPeriods;
+    private final JsArray<JsBusinessPeriod> businessPeriods;
 
     public JsHoliday(Holiday holiday) {
         date = new LocalDateWrapper(holiday.getDate().getYear(), holiday.getDate().getMonth(),
@@ -22,7 +23,7 @@ public class JsHoliday {
     }
 
     @JsProperty
-    public JsBusinessPeriod[] getBusinessPeriods() {
+    public JsArray<JsBusinessPeriod> getBusinessPeriods() {
         return businessPeriods;
     }
 }

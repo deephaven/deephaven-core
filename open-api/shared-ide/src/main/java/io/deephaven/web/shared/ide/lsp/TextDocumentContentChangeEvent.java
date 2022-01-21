@@ -28,15 +28,15 @@ public class TextDocumentContentChangeEvent implements Serializable {
         this();
 
         if (source.has("range")) {
-            range = new DocumentRange(source.getAny("range").asPropertyMap());
+            range = new DocumentRange(source.getAsAny("range").asPropertyMap());
         }
 
         if (source.has("rangeLength")) {
-            rangeLength = source.getAny("rangeLength").asInt();
+            rangeLength = source.getAsAny("rangeLength").asInt();
         }
 
         if (source.has("text")) {
-            text = source.getAny("text").asString();
+            text = source.getAsAny("text").asString();
         }
     }
 
