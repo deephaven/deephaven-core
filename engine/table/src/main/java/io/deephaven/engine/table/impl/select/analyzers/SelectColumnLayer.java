@@ -130,7 +130,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     this::onError);
                         } else {
                             jobScheduler.submit(
-                                    () -> doApplyUpdate(upstream, toClear, helper, onCompletion, null, false),
+                                    () -> doApplyUpdate(upstream, toClear, helper, onCompletion, null, 0, false),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -148,14 +148,23 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         // we enqueue only after creating all of the updates, so that we don't finish an update before enqueuing the
         // rest of the updates.
+        long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
-            jobScheduler.submit(() -> doApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, true),
+            final long fdest = destinationOffset;
+            jobScheduler.submit(() -> doApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, fdest, true),
                     SelectColumnLayer.this, onError);
+            if (flattenedResult) {
+                destinationOffset += splitUpdate.added().size();
+                Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
+                Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+                Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+            }
         }
     }
 
     private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            SelectLayerCompletionHandler onCompletion, AtomicLong divisions, final boolean parallelUpdate) {
+                               final SelectLayerCompletionHandler onCompletion, AtomicLong divisions, long startOffset,
+                               final boolean parallelUpdate) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -223,13 +232,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     if (flattenedResult && chunkSourceFillContext.supportsUnboundedFill()) {
                         // drive the fill operation off of the destination rather than the source, because we want to
                         // fill as much as possible as quickly as possible
-                        long destinationOffset = 0;
+                        long destinationOffset = startOffset;
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final ResettableWritableChunk<?> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final long destCapacity = exposedWritableSource
                                         .resetWritableChunkToBackingStoreSlice(backingChunk, destinationOffset);
+                                Assert.gtZero(destCapacity, "destCapacity");
                                 final RowSequence sourceKeys = keyIter.getNextRowSequenceWithLength(destCapacity);
                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk, sourceKeys);
                                 destinationOffset += destCapacity;
@@ -238,7 +248,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     } else {
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final RowSequence.Iterator destIter = flattenedResult
-                                        ? RowSequenceFactory.forRange(0, upstream.added().size() - 1)
+                                        ? RowSequenceFactory.forRange(startOffset, startOffset + upstream.added().size() - 1)
                                                 .getRowSequenceIterator()
                                         : null;
                                 final ResettableWritableChunk<?> backingChunk =
