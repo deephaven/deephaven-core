@@ -163,8 +163,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-                               final SelectLayerCompletionHandler onCompletion, AtomicLong divisions, long startOffset,
-                               final boolean parallelUpdate) {
+            final SelectLayerCompletionHandler onCompletion, AtomicLong divisions, long startOffset,
+            final boolean parallelUpdate) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -248,7 +248,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     } else {
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
                                 final RowSequence.Iterator destIter = flattenedResult
-                                        ? RowSequenceFactory.forRange(startOffset, startOffset + upstream.added().size() - 1)
+                                        ? RowSequenceFactory
+                                                .forRange(startOffset, startOffset + upstream.added().size() - 1)
                                                 .getRowSequenceIterator()
                                         : null;
                                 final ResettableWritableChunk<?> backingChunk =
