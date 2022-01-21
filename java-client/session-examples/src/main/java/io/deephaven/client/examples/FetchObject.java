@@ -20,6 +20,9 @@ import java.util.concurrent.ExecutionException;
         description = "Fetch object", version = "0.1.0")
 class FetchObject extends SingleSessionExampleBase {
 
+    @Option(names = {"--type"}, required = true, description = "The ticket type.")
+    String type;
+
     @ArgGroup(exclusive = true, multiplicity = "1")
     Ticket ticket;
 
@@ -31,12 +34,12 @@ class FetchObject extends SingleSessionExampleBase {
 
     @Override
     protected void execute(Session session) throws Exception {
-        show(session, ticket);
+        show(session, type, ticket);
     }
 
-    private void show(Session session, HasTicketId ticket)
+    private void show(Session session, String type, HasTicketId ticket)
             throws IOException, ExecutionException, InterruptedException {
-        final FetchedObject customObject = session.fetchObject(ticket).get();
+        final FetchedObject customObject = session.fetchObject(type, ticket).get();
         show(session, customObject);
     }
 
@@ -57,11 +60,8 @@ class FetchObject extends SingleSessionExampleBase {
         }
         if (recursive) {
             for (ExportId exportId : customObject.exportIds()) {
-                try {
-                    show(session, exportId);
-                } catch (ExecutionException e) {
-                    // ignore
-                    // TODO: better RPC return around fetchObject when exportId is not fetchable
+                if (exportId.type().isPresent()) {
+                    show(session, exportId.type().get(), exportId);
                 }
             }
         }

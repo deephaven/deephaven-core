@@ -51,10 +51,3 @@ message FieldInfo {
   string application_name = 4; // display-friendly identification
   string application_id = 5; // computer-friendly identification
 }
-
-/*
- * RemovedField represents that the provided ticket is no longer available.
- */
-message RemovedField {
-  // Intentionally empty and is here for backwards compatibility should this API change.
-}

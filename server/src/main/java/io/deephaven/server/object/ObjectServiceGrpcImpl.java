@@ -50,17 +50,21 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            if (request.getSourceId().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
+            final String type = request.getSourceId().getType();
+            if (type.isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No type supplied");
+            }
+            if (request.getSourceId().getTicket().getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No ticket supplied");
             }
             final SessionState.ExportObject<Object> object = ticketRouter.resolve(
-                    session, request.getSourceId(), "sourceId");
+                    session, request.getSourceId().getTicket(), "sourceId");
             session.nonExport()
                     .require(object)
                     .onError(responseObserver)
                     .submit(() -> {
                         final Object o = object.get();
-                        final FetchObjectResponse response = serialize(session, o);
+                        final FetchObjectResponse response = serialize(type, session, o);
                         responseObserver.onNext(response);
                         responseObserver.onCompleted();
                         return null;
@@ -68,10 +72,14 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         });
     }
 
-    private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
+    private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final ObjectType objectType =
                 objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
+        if (!expectedType.equals(objectType.name())) {
+            throw new IllegalArgumentException(String.format("The expected type '%s' is not equal to found type '%s'",
+                    expectedType, objectType.name()));
+        }
         final ExportCollector exportCollector = new ExportCollector(state);
         try {
             objectType.writeTo(exportCollector, object, out);

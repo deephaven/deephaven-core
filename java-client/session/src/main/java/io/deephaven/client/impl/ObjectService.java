@@ -9,5 +9,5 @@ public interface ObjectService {
      * @param ticket the ticket
      * @return the future
      */
-    CompletableFuture<FetchedObject> fetchObject(HasTicketId ticket);
+    CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticket);
 }

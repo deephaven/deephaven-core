@@ -254,9 +254,12 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<FetchedObject> fetchObject(HasTicketId ticketId) {
+    public CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticketId) {
         final FetchObjectRequest request = FetchObjectRequest.newBuilder()
-                .setSourceId(ticketId.ticketId().ticket())
+                .setSourceId(TypedTicket.newBuilder()
+                        .setType(type)
+                        .setTicket(ticketId.ticketId().ticket())
+                        .build())
                 .build();
         final FetchObserver observer = new FetchObserver();
         objectService.fetchObject(request, observer);

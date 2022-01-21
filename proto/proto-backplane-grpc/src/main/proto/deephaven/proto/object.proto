@@ -16,7 +16,7 @@ service ObjectService {
 }
 
 message FetchObjectRequest {
-    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
+    io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;
 }
 
 message FetchObjectResponse {
