@@ -1,7 +1,7 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -19,31 +19,60 @@ public class FetchObjectRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface GetTicketUnionType {
-                @JsOverlay
-                static FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType of(
-                        Object o) {
-                    return Js.cast(o);
+            public interface TicketFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetTicketUnionType {
+                    @JsOverlay
+                    static FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
                 }
 
                 @JsOverlay
-                default String asString() {
-                    return Js.asString(this);
+                static FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                @JsProperty
+                void setTicket(
+                        FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                @JsOverlay
+                default void setTicket(String ticket) {
+                    setTicket(
+                            Js.<FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
-                default Uint8Array asUint8Array() {
-                    return Js.cast(this);
-                }
-
-                @JsOverlay
-                default boolean isString() {
-                    return (Object) this instanceof String;
-                }
-
-                @JsOverlay
-                default boolean isUint8Array() {
-                    return (Object) this instanceof Uint8Array;
+                default void setTicket(Uint8Array ticket) {
+                    setTicket(
+                            Js.<FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -53,25 +82,17 @@ public class FetchObjectRequest {
             }
 
             @JsProperty
-            FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType getTicket();
+            FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType getTicket();
+
+            @JsProperty
+            String getType();
 
             @JsProperty
             void setTicket(
-                    FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType ticket);
+                    FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType ticket);
 
-            @JsOverlay
-            default void setTicket(String ticket) {
-                setTicket(
-                        Js.<FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
-            }
-
-            @JsOverlay
-            default void setTicket(Uint8Array ticket) {
-                setTicket(
-                        Js.<FetchObjectRequest.ToObjectReturnType.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
-            }
+            @JsProperty
+            void setType(String type);
         }
 
         @JsOverlay
@@ -91,31 +112,60 @@ public class FetchObjectRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SourceIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface GetTicketUnionType {
-                @JsOverlay
-                static FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType of(
-                        Object o) {
-                    return Js.cast(o);
+            public interface TicketFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetTicketUnionType {
+                    @JsOverlay
+                    static FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
                 }
 
                 @JsOverlay
-                default String asString() {
-                    return Js.asString(this);
+                static FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
+
+                @JsProperty
+                void setTicket(
+                        FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+
+                @JsOverlay
+                default void setTicket(String ticket) {
+                    setTicket(
+                            Js.<FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
-                default Uint8Array asUint8Array() {
-                    return Js.cast(this);
-                }
-
-                @JsOverlay
-                default boolean isString() {
-                    return (Object) this instanceof String;
-                }
-
-                @JsOverlay
-                default boolean isUint8Array() {
-                    return (Object) this instanceof Uint8Array;
+                default void setTicket(Uint8Array ticket) {
+                    setTicket(
+                            Js.<FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -125,25 +175,17 @@ public class FetchObjectRequest {
             }
 
             @JsProperty
-            FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType getTicket();
+            FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType getTicket();
+
+            @JsProperty
+            String getType();
 
             @JsProperty
             void setTicket(
-                    FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType ticket);
+                    FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType ticket);
 
-            @JsOverlay
-            default void setTicket(String ticket) {
-                setTicket(
-                        Js.<FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
-            }
-
-            @JsOverlay
-            default void setTicket(Uint8Array ticket) {
-                setTicket(
-                        Js.<FetchObjectRequest.ToObjectReturnType0.SourceIdFieldType.GetTicketUnionType>uncheckedCast(
-                                ticket));
-            }
+            @JsProperty
+            void setType(String type);
         }
 
         @JsOverlay
@@ -170,7 +212,7 @@ public class FetchObjectRequest {
 
     public native void clearSourceId();
 
-    public native Ticket getSourceId();
+    public native TypedTicket getSourceId();
 
     public native boolean hasSourceId();
 
@@ -178,7 +220,7 @@ public class FetchObjectRequest {
 
     public native void setSourceId();
 
-    public native void setSourceId(Ticket value);
+    public native void setSourceId(TypedTicket value);
 
     public native FetchObjectRequest.ToObjectReturnType0 toObject();
 
