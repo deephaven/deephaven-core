@@ -74,6 +74,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
     private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
+        // TODO(deephaven-core#1872): Optimize ObjectTypeLookup
         final Optional<ObjectType> o = objectTypeLookup.findObjectType(object);
         if (o.isEmpty()) {
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
