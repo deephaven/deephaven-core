@@ -11,7 +11,7 @@ time_offset = Period("1D")
 daily_data = create_random_table(365, start_time, time_offset)
 ```
 
-Now we decorate the data by adding its day of the week.<!--TODO what is a good way to describe "decorate"?-->
+Now we decorate the data by adding its day of the week.
 
 ```python
 daily_data = daily_data.update("DayOfWeekInt = dayOfWeek(DateTime, TZ_NY)")
@@ -28,7 +28,7 @@ def day_of_week_int_to_str(day_of_week):
 daily_data = daily_data.update("DayOfWeekStr = day_of_week_int_to_str(DayOfWeekInt)")
 ```
 
-Deephaven provides a wealth of filtering methods for tables.  We start by filtering using simple boolean expressions.
+Deephaven provides a wealth of [filtering methods for tables](https://deephaven.io/core/docs/how-to-guides/use-filters/). We start by filtering using simple boolean expressions.
 
 ```python
 from deephaven.filter import or_
@@ -56,7 +56,7 @@ vowels = daily_data.whereIn(vowels_table, "Character = Vowels")
 consonants = daily_data.whereNotIn(vowels_table, "Character = Vowels")
 ```
 
-You can also define custom functions to perform filtering.  Here, the custom function will omit weekend days.
+You can also define custom functions to perform filtering. Here, the custom function will omit weekend days.
 
 ```python
 def is_weekday(day_of_week):
