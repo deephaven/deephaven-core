@@ -119,7 +119,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             msg.addColumnData[ci].componentType = componentTypes[ci];
                         }
 
-                        // this was changed to allow ModColumnData with length 0
+                        // if this message is a snapshot response (vs. subscription) then mod columns may be empty
                         msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();

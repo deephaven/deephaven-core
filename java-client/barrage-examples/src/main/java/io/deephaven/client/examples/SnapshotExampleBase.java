@@ -41,7 +41,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
         final TableHandleManager manager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
-        // test #1 - verify full table reading
+        // example #1 - verify full table reading
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
@@ -52,7 +52,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-        // test #2 - reading all columns, but only subset of rows starting with 0
+        // example #2 - reading all columns, but only subset of rows starting with 0
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
@@ -64,7 +64,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-        // test #3 - reading all columns, but only subset of rows starting at >0
+        // example #3 - reading all columns, but only subset of rows starting at >0
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
@@ -76,7 +76,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-        // test #4 - reading some columns but all rows
+        // example #4 - reading some columns but all rows
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
@@ -90,7 +90,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-        // test #5 - reading some columns and only some rows
+        // example #5 - reading some columns and only some rows
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
@@ -105,7 +105,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
         }
 
-        System.out.println("End of Snapshot tests");
+        System.out.println("End of Snapshot examples");
 
     }
 }

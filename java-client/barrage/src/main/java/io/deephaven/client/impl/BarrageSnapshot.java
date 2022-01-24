@@ -22,7 +22,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
          * Sources a barrage snapshot from a {@link TableSpec}.
          *
          * @param tableSpec the tableSpec to resolve and then snapshot
-         * @param options the options configuring the details of this subscription
+         * @param options the options configuring the details of this snapshot
          * @return the {@code BarrageSnapshot}
          */
         BarrageSnapshot snapshot(TableSpec tableSpec, BarrageSubscriptionOptions options)

@@ -41,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
-import java.util.concurrent.CountDownLatch;
 
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
     private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);
@@ -53,7 +52,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;
-    private final CountDownLatch resultLatch = new CountDownLatch(1);
+
+    private volatile boolean sealed = false;
     private Throwable exceptionWhileSealing = null;
 
     private volatile boolean connected = true;
@@ -117,7 +117,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 }
 
                 // override server-supplied data and regenerate local rowsets
-                barrageMessage.rowsAdded = RowSetFactory.fromRange(0, barrageMessage.addColumnData[0].data.size() - 1);
+                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.addColumnData[0].data.size());
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
 
                 listener.handleBarrageMessage(barrageMessage);
@@ -150,10 +150,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     @Override
-    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
         if (!connected) {
-            throw new UncheckedDeephavenException(
-                    this + " is not connected");
+            throw new UncheckedDeephavenException(this + " is not connected");
         }
 
         // Send the snapshot request:
@@ -163,12 +162,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         observer.onCompleted();
 
-        resultLatch.await();
+        while (!sealed && exceptionWhileSealing == null) {
+            wait();
+        }
 
         if (exceptionWhileSealing == null) {
             return resultTable;
         } else {
-            throw new RuntimeException("Error while handling snapshot:", exceptionWhileSealing);
+            throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileSealing);
         }
     }
 
@@ -185,10 +186,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         resultTable.sealTable(() -> {
-            resultLatch.countDown();
+            synchronized (BarrageSnapshotImpl.this) {
+                sealed = true;
+                BarrageSnapshotImpl.this.notifyAll();
+            }
         }, () -> {
-            exceptionWhileSealing = new Exception();
-            resultLatch.countDown();
+            synchronized (BarrageSnapshotImpl.this) {
+                exceptionWhileSealing = new Exception();
+                BarrageSnapshotImpl.this.notifyAll();
+            }
         });
     }
 

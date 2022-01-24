@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    private static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
+    static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
