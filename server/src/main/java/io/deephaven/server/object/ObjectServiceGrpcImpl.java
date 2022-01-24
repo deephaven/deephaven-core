@@ -52,10 +52,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             final SessionState session = sessionService.getCurrentSession();
             final String type = request.getSourceId().getType();
             if (type.isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No type supplied");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No type supplied");
             }
             if (request.getSourceId().getTicket().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No ticket supplied");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
             }
             final SessionState.ExportObject<Object> object = ticketRouter.resolve(
                     session, request.getSourceId().getTicket(), "sourceId");
@@ -74,11 +74,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
     private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
         final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
-        final ObjectType objectType =
-                objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
+        final Optional<ObjectType> o = objectTypeLookup.findObjectType(object);
+        if (o.isEmpty()) {
+            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                    String.format("No ObjectType found, expected type '%s'", expectedType));
+        }
+        final ObjectType objectType = o.get();
         if (!expectedType.equals(objectType.name())) {
-            throw new IllegalArgumentException(String.format("The expected type '%s' is not equal to found type '%s'",
-                    expectedType, objectType.name()));
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+                    "Unexpected ObjectType, expected type '%s', actual type '%s'", expectedType, objectType.name()));
         }
         final ExportCollector exportCollector = new ExportCollector(state);
         try {
@@ -104,11 +108,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 t.addSuppressed(inner);
             }
         }
-    }
-
-    private static IllegalArgumentException noTypeException(Object o) {
-        return new IllegalArgumentException(
-                "No type registered for object class=" + o.getClass().getName() + ", value=" + o);
     }
 
     private static boolean referenceEquality(Object t, Object u) {

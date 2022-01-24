@@ -39,6 +39,10 @@ class FetchObject extends SingleSessionExampleBase {
 
     private void show(Session session, String type, HasTicketId ticket)
             throws IOException, ExecutionException, InterruptedException {
+        if ("Table".equals(type)) {
+            System.err.println("Unable to fetchObject for 'Table'");
+            return;
+        }
         final FetchedObject customObject = session.fetchObject(type, ticket).get();
         show(session, customObject);
     }
