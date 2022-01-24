@@ -2,8 +2,17 @@ package io.deephaven.engine.table;
 
 import io.deephaven.engine.rowset.RowSet;
 
+/**
+ * A writable source that allows setting all previous values with one operation rather than on each set.
+ */
 public interface WritableSourceWithEnsurePrevious {
-    static boolean providesEnsurePrevious(WritableColumnSource wcs) {
+    /**
+     * Does the specified WritableColumnSource provide the ensurePrevious function?
+     *
+     * @param wcs the WritableColumnSource to check
+     * @return true if ensurePrevious can be called on wcs
+     */
+    static boolean providesEnsurePrevious(WritableColumnSource<?> wcs) {
         return wcs instanceof WritableSourceWithEnsurePrevious;
     }
 

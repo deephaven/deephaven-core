@@ -829,12 +829,11 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     /**
-     * Is this parameter immutable, and thus would contribute no state to the formula?
+     * Is this parameter possibly a Python type?
      *
-     * If any query scope parameter is not a primitive, String, or known immutable class; then it may be a mutable
-     * object that results in undefined results when the column is not evaluated strictly in order.
+     * Immutable types are not Python, known Python wrappers are Python, and anything else from a PythonScope is Python.
      *
-     * @return true if this query scope parameter is immutable
+     * @return true if this query scope parameter may be a Python type
      */
     private static boolean isPythonType(QueryScopeParam<?> param) {
         if (isImmutableType(param)) {
