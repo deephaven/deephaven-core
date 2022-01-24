@@ -1,7 +1,5 @@
 package io.deephaven.server.test;
 
-import dagger.BindsInstance;
-import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -19,13 +17,10 @@ import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
-import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.FlightServiceGrpcBinding;
-import io.deephaven.server.auth.AuthContextModule;
 import io.deephaven.server.console.GlobalSessionProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
@@ -60,7 +55,6 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;

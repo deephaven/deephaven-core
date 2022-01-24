@@ -220,10 +220,7 @@ public class IdeSession extends HasEventHandling {
             connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
-            JsVariableChanges changes = new JsVariableChanges(
-                    copyVariables(response.getCreatedList()),
-                    copyVariables(response.getUpdatedList()),
-                    copyVariables(response.getRemovedList()));
+            JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
             promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
             return null;
         }, err -> {
@@ -246,17 +243,6 @@ public class IdeSession extends HasEventHandling {
         fireEvent(IdeSession.EVENT_COMMANDSTARTED, event);
 
         return result;
-    }
-
-    private JsVariableDefinition[] copyVariables(
-            JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
-        JsVariableDefinition[] array = new JsVariableDefinition[0];
-        list.forEach((item, p1, p2) -> {
-            // noinspection ConstantConditions
-            return array[array.length] =
-                    new JsVariableDefinition(item.getType(), item.getTitle(), item.getId().getTicket_asB64(), "");
-        });
-        return array;
     }
 
     public JsRunnable onLogMessage(JsConsumer<LogItem> callback) {

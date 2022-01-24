@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +27,7 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
-        session = new GroovyDeephavenSession(null, GroovyDeephavenSession.RunScripts.none(), false);
+        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none(), false);
     }
 
     @After

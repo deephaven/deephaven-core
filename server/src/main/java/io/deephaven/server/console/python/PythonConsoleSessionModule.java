@@ -6,6 +6,7 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,9 +21,9 @@ public class PythonConsoleSessionModule {
     }
 
     @Provides
-    PythonDeephavenSession bindPythonSession(final ScriptSession.Listener listener) {
+    PythonDeephavenSession bindPythonSession(ObjectTypeLookup lookup, final ScriptSession.Listener listener) {
         try {
-            return new PythonDeephavenSession(listener, true, true);
+            return new PythonDeephavenSession(lookup, listener, true, true);
         } catch (IOException e) {
             // can't happen since we pass false
             throw new UncheckedIOException(e);

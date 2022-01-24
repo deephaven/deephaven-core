@@ -17,6 +17,10 @@ public final class TicketId implements HasTicketId {
         this.ticket = Objects.requireNonNull(ticket);
     }
 
+    TicketId(Ticket ticket) {
+        this(ticket.getTicket().toByteArray());
+    }
+
     @Override
     public TicketId ticketId() {
         return this;
