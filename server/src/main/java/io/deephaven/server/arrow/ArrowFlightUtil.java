@@ -309,7 +309,7 @@ public class ArrowFlightUtil {
          * Handler for DoGetRequest over DoExchange.
          */
         private class DoGetRequestHandler
-            implements Runnable, Closeable {
+                implements Runnable, Closeable {
 
             private final BarrageProtoUtil.MessageInfo message;
 
@@ -319,63 +319,64 @@ public class ArrowFlightUtil {
 
             @Override
             public void run() {
-                    final DoGetRequest doGetRequest = DoGetRequest
-                            .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
+                final DoGetRequest doGetRequest = DoGetRequest
+                        .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final SessionState.ExportObject<BaseTable> parent =
-                            ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
+                final SessionState.ExportObject<BaseTable> parent =
+                        ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
 
-                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+                final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                        .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    session.nonExport()
-                            .require(parent)
-                            .onError(listener)
-                            .submit(() -> {
-                                final BaseTable table = parent.get();
+                session.nonExport()
+                        .require(parent)
+                        .onError(listener)
+                        .submit(() -> {
+                            final BaseTable table = parent.get();
 
-                                // Send Schema wrapped in Message
-                                final FlatBufferBuilder builder = new FlatBufferBuilder();
-                                final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
-                                        table.getAttributes());
-                                builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
-                                        org.apache.arrow.flatbuf.MessageHeader.Schema));
-                                final ByteBuffer serializedMessage = builder.dataBuffer();
+                            // Send Schema wrapped in Message
+                            final FlatBufferBuilder builder = new FlatBufferBuilder();
+                            final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
+                                    table.getAttributes());
+                            builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
+                                    org.apache.arrow.flatbuf.MessageHeader.Schema));
+                            final ByteBuffer serializedMessage = builder.dataBuffer();
 
-                                // leverage the stream generator SchemaView constructor
-                                final BarrageStreamGenerator.SchemaView schemaView =
-                                        new BarrageStreamGenerator.SchemaView(serializedMessage);
+                            // leverage the stream generator SchemaView constructor
+                            final BarrageStreamGenerator.SchemaView schemaView =
+                                    new BarrageStreamGenerator.SchemaView(serializedMessage);
 
-                                // push the schema to the listener
-                                listener.onNext(schemaView);
+                            // push the schema to the listener
+                            listener.onNext(schemaView);
 
-                                // collect the viewport and columnsets (if provided)
-                                final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-                                final BitSet columns =
-                                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+                            // collect the viewport and columnsets (if provided)
+                            final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+                            final BitSet columns =
+                                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
-                                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-                                final RowSet viewport =
-                                        hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
-                                                : null;
+                            final boolean hasViewport = subscriptionRequest.viewportVector() != null;
+                            final RowSet viewport =
+                                    hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
+                                            : null;
 
-                                // get ourselves some data!
-                                final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
-                                        table, columns, viewport);
-                                msg.modColumnData = new BarrageMessage.ModColumnData[0]; // no mod column data
+                            // get ourselves some data!
+                            final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
+                                    table, columns, viewport);
+                            msg.modColumnData = new BarrageMessage.ModColumnData[0]; // no mod column data
 
-                                // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
-                                     final RowSet keySpaceViewport =
-                                             hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
-                                    listener.onNext(
-                                            bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport, columns));
-                                }
+                            // translate the viewport to keyspace and make the call
+                            try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
+                                    final RowSet keySpaceViewport =
+                                            hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                                listener.onNext(
+                                        bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport,
+                                                columns));
+                            }
 
-                                listener.onCompleted();
-                            });
+                            listener.onCompleted();
+                        });
 
-                }
+            }
 
             @Override
             public void close() {
