@@ -222,7 +222,7 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
 
     @Override
     public void ensurePrevious(RowSet rowSet) {
-        // we don't track previous values, so we don't care to do any works
+        // we don't track previous values, so we don't care to do any work
     }
 
     // region reinterpret

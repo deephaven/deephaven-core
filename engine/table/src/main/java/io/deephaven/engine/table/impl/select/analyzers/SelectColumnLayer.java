@@ -106,13 +106,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                             update.modified = rsModIt
                                                     .getNextRowSequenceWithLength(divisionSize - update.added().size())
                                                     .asRowSet();
-                                            update.modified.validate();
                                         } else {
                                             update.modified = RowSetFactory.empty();
                                         }
                                     } else {
                                         update.modified = rsModIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
-                                        update.modified.validate();
                                         update.added = RowSetFactory.empty();
                                     }
 
@@ -146,8 +144,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         copyPreviousValues(upstream);
 
-        // we enqueue only after creating all of the updates, so that we don't finish an update before enqueuing the
-        // rest of the updates.
         long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
@@ -347,7 +343,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     void copyPreviousValues(TableUpdate upstream) {
-        // TODO: how does this interact with the clear that must be done before the redirection change?
+        // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
+        // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
         try (final RowSet changedRows =
                 upstream.added().union(upstream.getModifiedPreShift()).union(upstream.removed())) {
             ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
