@@ -2,11 +2,11 @@
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 """ This module defines functions for handling Deephaven date/time data. """
+from enum import Enum
 
 import jpy
 
 from deephaven2 import DHError
-from deephaven2.constants import TimeZone
 from deephaven2.dtypes import DateTime, Period
 
 SECOND = 1000000000  #: One second in nanoseconds.
@@ -17,16 +17,70 @@ WEEK = 7 * DAY  #: One week in nanoseconds.
 YEAR = 52 * WEEK  #: One year in nanoseconds.
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JTimeZone = jpy.get_type("io.deephaven.time.TimeZone")
 
 
-def to_datetime(s: str, quiet: bool = False):
-    """ Converts a datetime string to a DateTime object
+class TimeZone(Enum):
+    """ A Enum for known time zones. """
+    NY = _JTimeZone.TZ_NY
+    """ America/New_York """
+    ET = _JTimeZone.TZ_ET
+    """ America/New_York """
+    MN = _JTimeZone.TZ_MN
+    """ America/Chicago """
+    CT = _JTimeZone.TZ_CT
+    """ America/Chicago """
+    MT = _JTimeZone.TZ_MT
+    """ America/Denver """
+    PT = _JTimeZone.TZ_PT
+    """ America/Los_Angeles """
+    HI = _JTimeZone.TZ_HI
+    """ Pacific/Honolulu """
+    BT = _JTimeZone.TZ_BT
+    """ America/Sao_Paulo """
+    KR = _JTimeZone.TZ_KR
+    """ Asia/Seoul """
+    HK = _JTimeZone.TZ_HK
+    """ Asia/Hong_Kong """
+    JP = _JTimeZone.TZ_JP
+    """ Asia/Tokyo """
+    AT = _JTimeZone.TZ_AT
+    """ Canada/Atlantic """
+    NF = _JTimeZone.TZ_NF
+    """ Canada/Newfoundland """
+    AL = _JTimeZone.TZ_AL
+    """ America/Anchorage """
+    IN = _JTimeZone.TZ_IN
+    """ Asia/Kolkata """
+    CE = _JTimeZone.TZ_CE
+    """ Europe/Berlin """
+    SG = _JTimeZone.TZ_SG
+    """ Asia/Singapore """
+    LON = _JTimeZone.TZ_LON
+    """ Europe/London """
+    MOS = _JTimeZone.TZ_MOS
+    """ Europe/Moscow """
+    SHG = _JTimeZone.TZ_SHG
+    """ Asia/Shanghai """
+    CH = _JTimeZone.TZ_CH
+    """ Europe/Zurich """
+    NL = _JTimeZone.TZ_NL
+    """ Europe/Amsterdam """
+    TW = _JTimeZone.TZ_TW
+    """ Asia/Taipei """
+    SYD = _JTimeZone.TZ_SYD
+    """ Australia/Sydney """
+    UTC = _JTimeZone.TZ_UTC
+    """ UTC """
+
+
+def to_datetime(s: str, quiet: bool = False) -> DateTime:
+    """ Converts a datetime string to a DateTime object.
 
     Args:
-        s (str): in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
-            optional decimal point, followed by a mandatory time zone character code
-        quiet (bool, optional): when True, if the datetime string can't be parsed, this function returns None, otherwise
-            it raises an exception; default is False
+        s (str): in the form of "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ"
+        quiet (bool): when True, if the datetime string can't be parsed, this function returns None, otherwise
+            it raises an exception. The default is False
 
     Returns:
         a DateTime
@@ -49,11 +103,11 @@ def to_period(s: str, quiet: bool = False) -> Period:
     Args:
         s (str): a string in the form of nYnMnWnDTnHnMnS, with n being numeric values, e.g. 1W for one week, T1M for
             one minute, 1WT1H for one week plus one hour
-        quiet (bool, optional): when True, if the period string can't be parsed, this function returns None, otherwise
-            it raises an exception; default is False
+        quiet (bool): when True, if the period string can't be parsed, this function returns None, otherwise
+            it raises an exception. The default is False
 
     Returns:
-        Period
+        a Period
 
     Raises:
         DHError
@@ -71,7 +125,7 @@ def to_nanos(s, quiet: bool = False) -> int:
     """ Converts a time string to nanoseconds from the Epoch.
 
     Args:
-        s (str): in the format of: hh:mm:ss[.nnnnnnnnn]
+        s (str): in the format of: hh:mm:ss[.SSSSSSSSS]
         quiet (bool): to return None or raise an exception if the string can't be parsed, default is False
 
     Returns:
@@ -89,8 +143,8 @@ def to_nanos(s, quiet: bool = False) -> int:
         raise DHError(e) from e
 
 
-def now():
-    """ Provides the current date/time.
+def now() -> DateTime:
+    """ Provides the current datetime.
 
     Returns:
         DateTime
@@ -104,7 +158,7 @@ def now():
         raise DHError(e) from e
 
 
-def date_at_midnight(dt, tz: TimeZone):
+def datetime_at_midnight(dt: DateTime, tz: TimeZone) -> DateTime:
     """ Returns a DateTime for the requested DateTime at midnight in the specified time zone.
 
     Args:
@@ -124,15 +178,15 @@ def date_at_midnight(dt, tz: TimeZone):
         raise DHError(e) from e
 
 
-def day_of_month(dt, tz: TimeZone) -> int:
+def day_of_month(dt: DateTime, tz: TimeZone) -> int:
     """ Returns an 1-based int value of the day of the month for a DateTime and specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the month
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -143,16 +197,16 @@ def day_of_month(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def day_of_week(dt, tz: TimeZone) -> int:
+def day_of_week(dt: DateTime, tz: TimeZone) -> int:
     """ Returns an 1-based int value of the day of the week for a DateTime in the specified time zone, with 1 being
      Monday and 7 being Sunday.
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the week.
-        tz (TimeZone): the TimeZone to use when interpreting the date/time.
+        tz (TimeZone): the TimeZone to use when interpreting the Datetime.
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -163,15 +217,15 @@ def day_of_week(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def day_of_year(dt, tz: TimeZone) -> int:
+def day_of_year(dt: DateTime, tz: TimeZone) -> int:
     """ Returns an 1-based int value of the day of the year (Julian date) for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the year
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -190,7 +244,7 @@ def diff_nanos(dt1: DateTime, dt2: DateTime) -> int:
         dt2 (DateTime): the 2nd DateTime
 
     Returns:
-        int
+        int: NULL_LONG if either dt1 or dt2 is None
 
     Raises:
         DHError
@@ -201,12 +255,12 @@ def diff_nanos(dt1: DateTime, dt2: DateTime) -> int:
         raise DHError(e) from e
 
 
-def format_datetime(dt, tz: TimeZone) -> str:
-    """ Returns a string date/time representation formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ.
+def format_datetime(dt: DateTime, tz: TimeZone) -> str:
+    """ Returns a string DateTime representation formatted as "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ".
 
     Args:
         dt (DateTime): the DateTime to format as a string
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
         str
@@ -221,7 +275,7 @@ def format_datetime(dt, tz: TimeZone) -> str:
 
 
 def format_nanos(ns: int) -> str:
-    """ Returns a string date/time representation formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn.
+    """ Returns a string DateTime representation formatted as "yyyy-MM-ddThh:mm:ss.SSSSSSSSS".
 
     Args:
         ns (int): the number of nanoseconds from the Epoch
@@ -238,12 +292,13 @@ def format_nanos(ns: int) -> str:
         raise DHError(e) from e
 
 
-def format_date(dt, tz: TimeZone) -> str:
-    """ Returns a string date representation of a DateTime interpreted for a specified time zone formatted as yyy-MM-dd.
+def format_date(dt: DateTime, tz: TimeZone) -> str:
+    """ Returns a string date representation of a DateTime interpreted for a specified time zone formatted as
+    "yyy-MM-dd".
 
     Args:
         dt (DateTime): the DateTime to format
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
         str
@@ -257,16 +312,15 @@ def format_date(dt, tz: TimeZone) -> str:
         raise DHError(e) from e
 
 
-def hour_of_day(dt, tz: TimeZone) -> int:
-    """ Returns an int value of the hour of the day for a DateTime in the specified time zone. The hour is on a
-     24 hour clock (0 - 23).
+def hour_of_day(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the hour of the day for a DateTime in the specified time zone. The hour is on a 24 hour clock (0 - 23).
 
     Args:
         dt (DateTime): the DateTime for which to find the hour of the day
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -298,7 +352,7 @@ def is_after(dt1: DateTime, dt2: DateTime) -> bool:
         raise DHError(e) from e
 
 
-def is_before(dt1, dt2) -> bool:
+def is_before(dt1: DateTime, dt2: DateTime) -> bool:
     """ Evaluates whether one DateTime value is before a second DateTime value.
 
     Args:
@@ -317,9 +371,9 @@ def is_before(dt1, dt2) -> bool:
         raise DHError(e) from e
 
 
-def lower_bin(dt, interval: int, offset: int = 0):
+def lower_bin(dt: DateTime, interval: int, offset: int = 0) -> DateTime:
     """ Returns a DateTime value, which is at the starting (lower) end of a time range defined by the interval
-     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the start of the
+     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the DateTime value for the start of the
      five minute window that contains the input date time.
 
     Args:
@@ -340,14 +394,14 @@ def lower_bin(dt, interval: int, offset: int = 0):
         raise DHError(e) from e
 
 
-def millis(dt) -> int:
+def millis(dt: DateTime) -> int:
     """ Returns milliseconds since Epoch for a DateTime value.
 
     Args:
         dt (DateTime): the DateTime for which the milliseconds offset should be returned
 
     Returns:
-        int
+        int: NULL_LONG if dt is None
 
     Raises:
         DHError
@@ -358,15 +412,15 @@ def millis(dt) -> int:
         raise DHError(e) from e
 
 
-def millis_of_day(dt, tz: TimeZone) -> int:
-    """ Returns an int value of milliseconds since midnight for a DateTime in the specified time zone.
+def millis_of_day(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of milliseconds since midnight for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the milliseconds since midnight
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -377,15 +431,15 @@ def millis_of_day(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def millis_of_second(dt, tz: TimeZone) -> int:
-    """ Returns an int value of milliseconds since the top of the second for a DateTime in the specified time zone.
+def millis_of_second(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of milliseconds since the top of the second for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the milliseconds
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -403,7 +457,7 @@ def millis_to_nanos(ms: int) -> int:
         ms (int): the milliseconds value to convert
 
     Returns:
-        int
+        int: NULL_LONG if ms is NULL_LONG
 
     Raises:
         DHError
@@ -414,7 +468,7 @@ def millis_to_nanos(ms: int) -> int:
         raise DHError(e) from e
 
 
-def millis_to_datetime(ms: int):
+def millis_to_datetime(ms: int) -> DateTime:
     """ Converts a value of milliseconds from Epoch in the UTC time zone to a DateTime.
 
     Args:
@@ -432,7 +486,7 @@ def millis_to_datetime(ms: int):
         raise DHError(e) from e
 
 
-def minus(dt1, dt2) -> int:
+def minus(dt1: DateTime, dt2: DateTime) -> int:
     """ Subtracts one time from another, returns the difference in nanos.
 
     Args:
@@ -440,7 +494,7 @@ def minus(dt1, dt2) -> int:
         dt2 (DateTiem): the 2nd DateTime
 
     Returns:
-        int
+        int: NULL_LONG if either dt1 or dt2 is None
 
     Raises:
         DHError
@@ -451,12 +505,12 @@ def minus(dt1, dt2) -> int:
         raise DHError(e) from e
 
 
-def minus_nanos(dt, ns: int):
+def minus_nanos(dt: DateTime, ns: int) -> DateTime:
     """ Subtracts nanoseconds from a DateTime.
 
     Args:
         dt (DateTime): the starting DateTime value
-        ns (int): the long number of nanoseconds to subtract from dateTime
+        ns (int): the number of nanoseconds to subtract from dateTime
 
     Returns:
         DateTime
@@ -470,7 +524,7 @@ def minus_nanos(dt, ns: int):
         raise DHError(e) from e
 
 
-def minus_period(dt, period):
+def minus_period(dt: DateTime, period) -> DateTime:
     """ Subtracts a period from a DateTime.
 
     Args:
@@ -489,15 +543,15 @@ def minus_period(dt, period):
         raise DHError(e) from e
 
 
-def minute_of_day(dt, tz: TimeZone) -> int:
-    """ Returns an int value of minutes since midnight for a DateTime in the specified time zone.
+def minute_of_day(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of minutes since midnight for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the minutes
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -508,15 +562,15 @@ def minute_of_day(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def minute_of_hour(dt, tz: TimeZone) -> int:
-    """ Returns an int value of minutes since the top of the hour for a DateTime in the specified time zone.
+def minute_of_hour(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of minutes since the top of the hour for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the minutes
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -528,15 +582,16 @@ def minute_of_hour(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def month_of_year(dt, tz: TimeZone) -> int:
-    """ Returns an 1-based int value for the month of a DateTime in the specified time zone.
+def month_of_year(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns an 1-based int value for the month of a DateTime in the specified time zone. January is 1,
+    and December is 12.
 
     Args:
         dt (DateTime): the DateTime for which to find the month
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -547,14 +602,14 @@ def month_of_year(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def nanos(dt) -> int:
+def nanos(dt: DateTime) -> int:
     """ Returns nanoseconds since Epoch for a DateTime value.
 
     Args:
         dt (DateTime): the DateTime for which the nanoseconds offset should be returned
 
     Returns:
-        int
+        int: NULL_LONG if dt is None
 
     Raises:
         DHError
@@ -566,15 +621,15 @@ def nanos(dt) -> int:
         raise DHError(e) from e
 
 
-def nanos_of_day(dt, tz: TimeZone) -> int:
-    """ Returns a long value of nanoseconds since midnight for a DateTime in the specified time zone.
+def nanos_of_day(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of nanoseconds since midnight for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the nanoseconds since midnight
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_LONG if dt is None
 
     Raises:
         DHError
@@ -585,15 +640,15 @@ def nanos_of_day(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def nanos_of_second(dt, tz: TimeZone) -> int:
-    """ Returns a long value of nanoseconds since the top of the second for a DateTime in the specified time zone.
+def nanos_of_second(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of nanoseconds since the top of the second for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the nanoseconds
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_LONG if dt is None
 
     Raises:
         DHError
@@ -612,7 +667,7 @@ def nanos_to_millis(ns: int) -> int:
         ns (int): the value of nanoseconds to convert
 
     Returns:
-        int
+        int: NULL_LONG if ns is NULL_LONG
 
     Raises:
         DHError
@@ -623,7 +678,7 @@ def nanos_to_millis(ns: int) -> int:
         raise DHError(e) from e
 
 
-def nanos_to_datetime(ns: int):
+def nanos_to_datetime(ns: int) -> DateTime:
     """ Converts a value of nanoseconds from Epoch to a DateTime.
 
     Args:
@@ -638,7 +693,7 @@ def nanos_to_datetime(ns: int):
         raise DHError(e) from e
 
 
-def plus_period(dt, period):
+def plus_period(dt: DateTime, period: Period) -> DateTime:
     """ Adds a period to a DateTime.
 
     Args:
@@ -646,7 +701,7 @@ def plus_period(dt, period):
         period (Period): the Period to add to the DateTime
 
     Returns:
-        DateTime
+        DateTime: None if either dt or period is None
 
     Raises:
         DHError
@@ -657,15 +712,15 @@ def plus_period(dt, period):
         raise DHError(e) from e
 
 
-def plus_nanos(dt, ns: int):
+def plus_nanos(dt: DateTime, ns: int) -> DateTime:
     """ Adds nanoseconds to a DateTime.
 
     Args:
         dt (DateTime): the starting DateTime value
-        ns (int): the long number of nanoseconds to add to DateTime
+        ns (int): the number of nanoseconds to add to DateTime
 
     Returns:
-        DateTime
+        DateTime: None if dt is None or ns is NULL_LONG
 
     Raises:
         DHError
@@ -676,15 +731,15 @@ def plus_nanos(dt, ns: int):
         raise DHError(e) from e
 
 
-def second_of_day(dt, tz: TimeZone) -> int:
-    """ Returns an int value of seconds since midnight for a DateTime in the specified time zone.
+def second_of_day(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of seconds since midnight for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the seconds
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -695,15 +750,15 @@ def second_of_day(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def second_of_minute(dt, tz: TimeZone) -> int:
-    """ Returns an int value of seconds since the top of the minute for a DateTime in the specified time zone.
+def second_of_minute(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the number of seconds since the top of the minute for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the seconds
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -716,7 +771,7 @@ def second_of_minute(dt, tz: TimeZone) -> int:
 
 def upper_bin(dt, interval: int, offset: int = 0):
     """ Returns a DateTime value, which is at the ending (upper) end of a time range defined by the interval
-     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the end of the five
+     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the DateTime value for the end of the five
      minute window that contains the input date time.
 
     Args:
@@ -737,15 +792,15 @@ def upper_bin(dt, interval: int, offset: int = 0):
         raise DHError(e) from e
 
 
-def year(dt, tz: TimeZone) -> int:
+def year(dt: DateTime, tz: TimeZone) -> int:
     """ Returns an int value of the year for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the year
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
-        int
+        int: NULL_INT if dt is None
 
     Raises:
         DHError
@@ -756,12 +811,12 @@ def year(dt, tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-def year_of_century(dt, tz: TimeZone) -> int:
-    """ Returns an int value of the two-digit year for a DateTime in the specified time zone.
+def year_of_century(dt: DateTime, tz: TimeZone) -> int:
+    """ Returns the two-digit year for a DateTime in the specified time zone.
 
     Args:
         dt (DateTime): the DateTime for which to find the year
-        tz (TimeZone): the TimeZone to use when interpreting the date/time
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
         int
