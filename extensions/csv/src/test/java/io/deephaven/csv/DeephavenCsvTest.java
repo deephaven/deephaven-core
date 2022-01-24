@@ -6,9 +6,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTime;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
-import java.io.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 

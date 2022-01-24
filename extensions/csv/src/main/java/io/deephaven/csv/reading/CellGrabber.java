@@ -8,7 +8,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 
 /**
  * This class is used to traverse over text from a Reader, understanding both field and line delimiters, as well as the
@@ -59,10 +58,17 @@ final class CellGrabber {
      * A side buffer we have to use for edge cases. Normally we try to return a {@link ByteSlice} which shares our
      * buffer[] array. But we can't do that when the input cell spans more than one buffer[] chunk, or when the input
      * cell does not exactly represent the output. This latter case can happen for example when an escaped quote ("")
-     * needs to be returned as a single quotation mark ("). So if our input is hello""there, then we can't return
-     * directly return a slice of the input array, because actually we need hello"there.
+     * needs to be returned as a single quotation mark ("). So if our input is hello""there, then we can't directly
+     * return a slice of the input array, because actually we need hello"there (one quotation mark, not two).
      */
     private final GrowableByteBuffer spillBuffer;
+    /**
+     * Zero-based row number of the input stream. This is for informational purposes only and in particular does NOT
+     * refer to the number of data rows in the input. (This is because the data rows may be split across multiple lines
+     * and because there may or may not be headers). We track this number for the benefit of the caller, who may want to
+     * issue an informative error message when there is a problem.
+     */
+    private int physicalRowNum;
 
     /**
      * Constructor.
@@ -79,6 +85,7 @@ final class CellGrabber {
         this.offset = 0;
         this.startOffset = 0;
         this.spillBuffer = new GrowableByteBuffer();
+        this.physicalRowNum = 0;
     }
 
     /**
@@ -123,6 +130,7 @@ final class CellGrabber {
      */
     private void processQuotedMode(final ByteSlice dest, final MutableBoolean lastInRow) throws CsvReaderException {
         startOffset = offset;
+        boolean prevCharWasCarriageReturn = false;
         while (true) {
             if (offset == size) {
                 if (!tryEnsureMore()) {
@@ -130,6 +138,16 @@ final class CellGrabber {
                 }
             }
             final byte ch = buffer[offset++];
+            // Maintain a correct row number. This is somehat tricky.
+            if (ch == '\r') {
+                ++physicalRowNum;
+                prevCharWasCarriageReturn = true;
+            } else {
+                if (ch == '\n' && !prevCharWasCarriageReturn) {
+                    ++physicalRowNum;
+                }
+                prevCharWasCarriageReturn = false;
+            }
             if (ch != quoteChar) {
                 // Ordinary character. Note: in quoted mode we will gladly eat field and line separators.
                 continue;
@@ -227,6 +245,7 @@ final class CellGrabber {
                 finish(dest);
                 ++offset;
                 lastInRow.setValue(true);
+                ++physicalRowNum;
                 return;
             }
             if (ch == '\r') {
@@ -239,6 +258,7 @@ final class CellGrabber {
                     }
                 }
                 lastInRow.setValue(true);
+                ++physicalRowNum;
                 return;
             }
             ++offset;
@@ -301,6 +321,10 @@ final class CellGrabber {
         // and return a slice of spillBuffer.
         spillRange();
         dest.reset(spillBuffer.data(), 0, spillBuffer.size());
+    }
+
+    public int physicalRowNum() {
+        return physicalRowNum;
     }
 
     /**
