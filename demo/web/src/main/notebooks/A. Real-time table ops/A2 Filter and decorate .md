@@ -1,8 +1,8 @@
 # Filter and decorate
 
-Now that we have some data, let's work with it. In this notebook, we show how to decorate and filter our data.
+In our previous notebook, we showed how to create some tables with fake data. In this notebook, we show how to decorate and filter our data.
 
-Let's start by creating some daily data. This could simulate something like daily stock prices or daily temperatures.
+Let's start by simulating a year's worth of daily measurements. This could simulate something like stock prices, temperatures, etc.
 
 ```python
 start_time = convertDateTime("2020-01-01T00:00:00 NY")
@@ -28,7 +28,7 @@ def day_of_week_int_to_str(day_of_week):
 daily_data = daily_data.update("DayOfWeekStr = day_of_week_int_to_str(DayOfWeekInt)")
 ```
 
-Let's do some filtering on this data. For this example, we filter based on values in our columns with simple boolean expressions.
+Deephaven provides a wealth of filtering methods for tables.  We start by filtering using simple boolean expressions.
 
 ```python
 from deephaven.filter import or_
@@ -43,7 +43,7 @@ evens_and_trues = daily_data.where("Number % 2 == 0", "Boolean")
 odds_or_falses = daily_data.where(or_("!(Number % 2 == 0)", "!Boolean"))
 ```
 
-For this example, we filter based on values in another table.
+Some filtering methods can apply a filter to one table based on another.
 
 ```python
 from deephaven.TableTools import newTable, stringCol
@@ -56,7 +56,7 @@ vowels = daily_data.whereIn(vowels_table, "Character = Vowels")
 consonants = daily_data.whereNotIn(vowels_table, "Character = Vowels")
 ```
 
-For this example, we filter based on a custom function.
+You can also define custom functions to perform filtering.  Here, the custom function will omit weekend days.
 
 ```python
 def is_weekday(day_of_week):
