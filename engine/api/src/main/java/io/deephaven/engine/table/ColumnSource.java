@@ -184,7 +184,8 @@ public interface ColumnSource<T>
         return (ColumnSource<TYPE>) this;
     }
 
-    /** Most column sources do not use Python, those that do call into Python must return true.  This is essential,
+    /**
+     * Most column sources do not use Python, those that do call into Python must return true. This is essential,
      * because Python formulas may not be parallelized while holding the GIL, which would result in a deadlock.
      *
      * @return true if this column may access Python
@@ -195,11 +196,11 @@ public interface ColumnSource<T>
 
     /**
      * Most column sources will return the same value for a given row without respect to the order that the rows are
-     * read.  Those columns sources are considered "stateless" and should return true.
+     * read. Those columns sources are considered "stateless" and should return true.
      *
-     * Some column sources, however may be dependent on evaluation order.  For example, a formula that updates a Map
-     * must be evaluated from the first row to the last row.  A column source that has the potential to depend on
-     * the order of evaluation must return false.
+     * Some column sources, however may be dependent on evaluation order. For example, a formula that updates a Map must
+     * be evaluated from the first row to the last row. A column source that has the potential to depend on the order of
+     * evaluation must return false.
      *
      * @return true if this is a stateless column source
      */
