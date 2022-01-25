@@ -391,47 +391,42 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         }
         ensurePreviousClockCycle = currentStep;
 
-        if (changedRows.size() == 0) {
+        if (changedRows.isEmpty()) {
             return;
         }
 
-        final boolean hasPrev = prevFlusher != null;
-        if (!hasPrev) {
+        if (prevFlusher == null) {
             return;
         }
         prevFlusher.maybeActivate();
 
-        final RowSet.Iterator it = changedRows.iterator();
-        long key = it.nextLong();
-        while (true)
-        {
-            final long firstKey = key;
-            final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+        try (final RowSet.Iterator it = changedRows.iterator()) {
+            long key = it.nextLong();
+            while (true) {
+                final long firstKey = key;
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
 
-            final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
-            final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
-            final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
-            final char [] block = ensureBlock(block0, block1, block2);
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final char[] block = ensureBlock(block0, block1, block2);
 
-            // This conditional with its constant condition should be very friendly to the branch predictor.
-            final char[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
-            final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
-            assert inUse != null;
+                final char[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
+                final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
+                assert inUse != null;
 
-            do
-            {
-                final int indexWithinBlock = (int) (key & INDEX_MASK);
-                final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
-                final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+                do {
+                    final int indexWithinBlock = (int) (key & INDEX_MASK);
+                    final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                    final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
-                if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {
                     prevBlock[indexWithinBlock] = block[indexWithinBlock];
                     inUse[indexWithinInUse] |= maskWithinInUse;
+                } while (it.hasNext() && (key = it.nextLong()) <= maxKeyInCurrentBlock);
+                if (key <= maxKeyInCurrentBlock) {
+                    // we did not advance the iterator so should break
+                    break;
                 }
-            } while (it.hasNext() && (key = it.nextLong()) <= maxKeyInCurrentBlock);
-            if (key <= maxKeyInCurrentBlock) {
-                // we did not advance the iterator so should break
-                break;
             }
         }
     }

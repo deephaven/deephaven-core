@@ -323,7 +323,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             upstream.release();
         }
 
-        if (divisions == null || divisions.addAndGet(-1) == 0) {
+        if (divisions == null || divisions.decrementAndGet() == 0) {
             onCompletion.onLayerCompleted(getLayerIndex());
         }
     }
@@ -345,8 +345,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     void copyPreviousValues(TableUpdate upstream) {
         // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
-        try (final RowSet changedRows =
-                upstream.added().union(upstream.getModifiedPreShift()).union(upstream.removed())) {
+        try (final WritableRowSet changedRows =
+                upstream.added().union(upstream.getModifiedPreShift())) {
+            changedRows.insert(upstream.removed());
             ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
         }
     }
