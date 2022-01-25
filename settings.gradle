@@ -32,6 +32,8 @@ String[] webMods = [
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
+        'web-client-embed-grid', // Embedded grid that can be used in iframes
+        'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
         'open-api-lang-parser', // a javacc generated general-purpose language parser.

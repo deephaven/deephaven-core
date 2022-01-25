@@ -100,6 +100,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'grpc-proxy',
     'web',
     'web-client-ui',
+    'web-client-embed-grid',
     'pyclient',
     'sphinx',
     'docker-java-and-python',

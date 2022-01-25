@@ -50,6 +50,9 @@ static_resources:
                         - match: # Application mode layout storage at this path
                             prefix: "/layouts"
                           route: { cluster: web }
+                        - match: # Embed grid for iframe support at this path
+                            prefix: "/embed-grid"
+                          route: { cluster: web }
                         - match: # Any GRPC call is assumed to be forwarded to the real service
                             prefix: "/"
                           route:

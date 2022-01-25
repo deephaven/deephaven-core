@@ -1,0 +1,28 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn Docker.registryProject('node')
+
+def dhEmbedGrid = layout.buildDirectory.dir('dh-embed-grid')
+def embedGrid = Docker.registerDockerTask(project, 'embed-grid') {
+    copyIn {
+        from file('Dockerfile')
+    }
+    parentContainers = [ Docker.registryTask(project, 'node') ]
+    containerOutPath = '/usr/src/app/package/build'
+    imageName = 'deephaven/dh-embed-grid:local-build'
+    copyOut {
+        into dhEmbedGrid.get().dir('embed-grid')
+    }
+}
+
+configurations {
+    js
+}
+
+artifacts {
+    js(dhEmbedGrid) {
+        builtBy embedGrid
+    }
+}
