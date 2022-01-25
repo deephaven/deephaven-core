@@ -85,9 +85,12 @@ top_5_pageviews = item_summary \
 minute_in_nanos = 60 * 1000 * 1000 * 1000
 
 profile_views_per_minute_last_10 = \
-    wck.addTimeWindow(pageviews_stg, 'received_at', minute_in_nanos, 'in_last_10min') \
-    .where(
-        'pageview_type = `profiles`',
+    wck.addTimeWindow(
+        pageviews_stg.where('pageview_type = `profiles`'),
+        'received_at',
+        10*minute_in_nanos,
+        'in_last_10min'
+    ).where(
         'in_last_10min = true'
     ).updateView(
         'received_at_nanos = nanos(received_at)',
