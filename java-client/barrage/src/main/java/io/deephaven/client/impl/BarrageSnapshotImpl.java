@@ -196,6 +196,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 BarrageSnapshotImpl.this.notifyAll();
             }
         });
+        cleanup();
     }
 
     @Override

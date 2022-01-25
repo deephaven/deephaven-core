@@ -47,6 +47,7 @@ import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 
+import javax.validation.constraints.NotNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -284,6 +285,7 @@ public class ArrowFlightUtil {
      */
     public static class DoExchangeMarshaller extends SingletonLivenessManager
             implements StreamObserver<InputStream>, Closeable {
+
         @AssistedFactory
         public interface Factory {
             DoExchangeMarshaller openExchange(SessionState session, StreamObserver<InputStream> observer);
@@ -294,7 +296,6 @@ public class ArrowFlightUtil {
 
         private boolean isViewport;
 
-
         private final StreamObserver<BarrageStreamGenerator.View> listener;
 
         private boolean isClosed = false;
@@ -303,79 +304,202 @@ public class ArrowFlightUtil {
         private final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter;
 
-        private Closeable requestHandler = null;
+        /**
+         * Interface for the individual handlers for the DoExchange.
+         */
+        interface Handler extends Closeable {
+            void handleMessage(@NotNull BarrageProtoUtil.MessageInfo message);
+        }
+
+        private Handler requestHandler = null;
+
+        @AssistedInject
+        public DoExchangeMarshaller(
+                final TicketRouter ticketRouter,
+                final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory,
+                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
+                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter,
+                @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
+
+            this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
+            this.ticketRouter = ticketRouter;
+            this.operationFactory = operationFactory;
+            this.optionsAdapter = optionsAdapter;
+            this.session = session;
+            this.listener = listenerAdapter.adapt(responseObserver);
+
+            this.session.addOnCloseCallback(this);
+            if (responseObserver instanceof ServerCallStreamObserver) {
+                ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::onCancel);
+            }
+        }
+
+        // this entry is used for client-streaming requests
+        @Override
+        public void onNext(final InputStream request) {
+            GrpcUtil.rpcWrapper(log, listener, () -> {
+                BarrageProtoUtil.MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
+                synchronized (this) {
+                    if (message.app_metadata == null
+                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC) {
+                        log.warn().append(myPrefix).append("received a message without app_metadata").endl();
+                        return;
+                    }
+
+                    // handle the different message types that can come over DoExchange
+                    if (requestHandler == null) {
+                        // handle the different message types that can come over DoExchange
+                        switch (message.app_metadata.msgType()) {
+                            case BarrageMessageType.BarrageSubscriptionRequest:
+                                requestHandler = new SubscriptionRequestHandler();
+                                break;
+                            case BarrageMessageType.DoGetRequest: // rename to SnapshotRequest?
+                                requestHandler = new DoGetRequestHandler();
+                                break;
+                            default:
+                                log.warn().append(myPrefix)
+                                        .append("received a message with unhandled BarrageMessageType")
+                                        .endl();
+                                return;
+                        }
+                    }
+                    // rely on the handler to verify message type
+                    requestHandler.handleMessage(message);
+                }
+            });
+        }
+
+        public void onCancel() {
+            log.debug().append(myPrefix).append("cancel requested").endl();
+            tryClose();
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            boolean doLog = true;
+            if (t instanceof StatusRuntimeException) {
+                final Status status = ((StatusRuntimeException) t).getStatus();
+                if (status.getCode() == Status.Code.CANCELLED || status.getCode() == Status.Code.ABORTED) {
+                    doLog = false;
+                }
+            }
+            if (doLog) {
+                log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ")
+                        .append(t).endl();
+            }
+            tryClose();
+        }
+
+        @Override
+        public void onCompleted() {
+            log.debug().append(myPrefix).append("client stream closed subscription").endl();
+            tryClose();
+        }
+
+        @Override
+        public void close() {
+            synchronized (this) {
+                if (isClosed) {
+                    return;
+                }
+
+                isClosed = true;
+            }
+
+            try {
+                if (requestHandler != null)
+                    requestHandler.close();
+            } catch (IOException ioException) {
+                throw new UncheckedDeephavenException("IOException closing handler", ioException);
+            }
+
+            release();
+        }
+
+        private void tryClose() {
+            if (session.removeOnCloseCallback(this)) {
+                close();
+            }
+        }
 
         /**
          * Handler for DoGetRequest over DoExchange.
          */
         private class DoGetRequestHandler
-                implements Runnable, Closeable {
+                implements Handler {
 
-            private final BarrageProtoUtil.MessageInfo message;
-
-            public DoGetRequestHandler(BarrageProtoUtil.MessageInfo message) {
-                this.message = message;
-            }
+            public DoGetRequestHandler() {}
 
             @Override
-            public void run() {
-                final DoGetRequest doGetRequest = DoGetRequest
-                        .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
+            public void handleMessage(BarrageProtoUtil.MessageInfo message) {
+                // verify this is the correct type of message for this handler
+                if (message.app_metadata.msgType() != BarrageMessageType.DoGetRequest) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Request type cannot be changed after initialization");
+                }
 
-                final SessionState.ExportObject<BaseTable> parent =
-                        ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
+                // ensure synchronization with parent class functions
+                synchronized (DoExchangeMarshaller.this) {
 
-                final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                        .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+                    final DoGetRequest doGetRequest = DoGetRequest
+                            .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                session.nonExport()
-                        .require(parent)
-                        .onError(listener)
-                        .submit(() -> {
-                            final BaseTable table = parent.get();
+                    final SessionState.ExportObject<BaseTable> parent =
+                            ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
 
-                            // Send Schema wrapped in Message
-                            final FlatBufferBuilder builder = new FlatBufferBuilder();
-                            final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
-                                    table.getAttributes());
-                            builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
-                                    org.apache.arrow.flatbuf.MessageHeader.Schema));
-                            final ByteBuffer serializedMessage = builder.dataBuffer();
+                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                            // leverage the stream generator SchemaView constructor
-                            final BarrageStreamGenerator.SchemaView schemaView =
-                                    new BarrageStreamGenerator.SchemaView(serializedMessage);
+                    session.nonExport()
+                            .require(parent)
+                            .onError(listener)
+                            .submit(() -> {
+                                final BaseTable table = parent.get();
 
-                            // push the schema to the listener
-                            listener.onNext(schemaView);
+                                // Send Schema wrapped in Message
+                                final FlatBufferBuilder builder = new FlatBufferBuilder();
+                                final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
+                                        table.getAttributes());
+                                builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
+                                        org.apache.arrow.flatbuf.MessageHeader.Schema));
+                                final ByteBuffer serializedMessage = builder.dataBuffer();
 
-                            // collect the viewport and columnsets (if provided)
-                            final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-                            final BitSet columns =
-                                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+                                // leverage the stream generator SchemaView constructor
+                                final BarrageStreamGenerator.SchemaView schemaView =
+                                        new BarrageStreamGenerator.SchemaView(serializedMessage);
 
-                            final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-                            final RowSet viewport =
-                                    hasViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
-                                            : null;
+                                // push the schema to the listener
+                                listener.onNext(schemaView);
 
-                            // get ourselves some data!
-                            final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
-                                    table, columns, viewport);
-                            msg.modColumnData = new BarrageMessage.ModColumnData[0]; // no mod column data
+                                // collect the viewport and columnsets (if provided)
+                                final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+                                final BitSet columns =
+                                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
-                            // translate the viewport to keyspace and make the call
-                            try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
-                                    final RowSet keySpaceViewport =
-                                            hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
-                                listener.onNext(
-                                        bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport,
-                                                columns));
-                            }
+                                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
+                                final RowSet viewport =
+                                        hasViewport
+                                                ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
+                                                : null;
 
-                            listener.onCompleted();
-                        });
+                                // get ourselves some data!
+                                final BarrageMessage msg =
+                                        ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
+                                                table, columns, viewport);
+                                msg.modColumnData = new BarrageMessage.ModColumnData[0]; // no mod column data
 
+                                // translate the viewport to keyspace and make the call
+                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
+                                        final RowSet keySpaceViewport =
+                                                hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                                    listener.onNext(
+                                            bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport,
+                                                    columns));
+                                }
+
+                                listener.onCompleted();
+                            });
+                }
             }
 
             @Override
@@ -389,56 +513,63 @@ public class ArrowFlightUtil {
          * Handler for BarrageSubscriptionRequest over DoExchange.
          */
         private class SubscriptionRequestHandler
-                implements Runnable, Closeable {
-
-            private final BarrageProtoUtil.MessageInfo message;
+                implements Handler {
 
             private BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bmp;
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
             private SessionState.ExportObject<?> onExportResolvedContinuation;
 
-            public SubscriptionRequestHandler(BarrageProtoUtil.MessageInfo message) {
-                this.message = message;
-            }
+            public SubscriptionRequestHandler() {}
 
             @Override
-            public void run() {
+            public void handleMessage(BarrageProtoUtil.MessageInfo message) {
+                // verify this is the correct type of message for this handler
+                if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Request type cannot be changed after initialization");
+                }
+
                 if (message.app_metadata.msgPayloadVector() == null) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Subscription request not supplied");
                 }
-                final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                        .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                if (bmp != null) {
-                    apply(subscriptionRequest);
-                    return;
-                }
+                // ensure synchronization with parent class functions
+                synchronized (DoExchangeMarshaller.this) {
 
-                if (isClosed) {
-                    return;
-                }
+                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
+                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                // have we already created the queue?
-                if (preExportSubscriptions != null) {
+                    if (bmp != null) {
+                        apply(subscriptionRequest);
+                        return;
+                    }
+
+                    if (isClosed) {
+                        return;
+                    }
+
+                    // have we already created the queue?
+                    if (preExportSubscriptions != null) {
+                        preExportSubscriptions.add(subscriptionRequest);
+                        return;
+                    }
+
+                    if (subscriptionRequest.ticketVector() == null) {
+                        GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
+                        return;
+                    }
+
+                    preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
-                    return;
+                    final SessionState.ExportObject<Object> parent =
+                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
+
+                    onExportResolvedContinuation = session.nonExport()
+                            .require(parent)
+                            .onError(listener)
+                            .submit(() -> onExportResolved(parent));
                 }
-
-                if (subscriptionRequest.ticketVector() == null) {
-                    GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
-                    return;
-                }
-
-                preExportSubscriptions = new ArrayDeque<>();
-                preExportSubscriptions.add(subscriptionRequest);
-                final SessionState.ExportObject<Object> parent =
-                        ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer(), "ticket");
-
-                onExportResolvedContinuation = session.nonExport()
-                        .require(parent)
-                        .onError(listener)
-                        .submit(() -> onExportResolved(parent));
             }
 
             private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
@@ -540,111 +671,5 @@ public class ArrowFlightUtil {
             }
         }
 
-        @AssistedInject
-        public DoExchangeMarshaller(
-                final TicketRouter ticketRouter,
-                final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory,
-                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
-                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter,
-                @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
-
-            this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
-            this.ticketRouter = ticketRouter;
-            this.operationFactory = operationFactory;
-            this.optionsAdapter = optionsAdapter;
-            this.session = session;
-            this.listener = listenerAdapter.adapt(responseObserver);
-
-            this.session.addOnCloseCallback(this);
-            if (responseObserver instanceof ServerCallStreamObserver) {
-                ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::onCancel);
-            }
-        }
-
-        // this entry is used for client-streaming requests
-        @Override
-        public void onNext(final InputStream request) {
-            GrpcUtil.rpcWrapper(log, listener, () -> {
-                BarrageProtoUtil.MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
-                synchronized (this) {
-                    if (message.app_metadata == null
-                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC) {
-                        log.warn().append(myPrefix).append("received a message without app_metadata").endl();
-                        return;
-                    }
-
-                    // handle the different message types that can come over DoExchange
-                    switch (message.app_metadata.msgType()) {
-                        case BarrageMessageType.BarrageSubscriptionRequest:
-                            SubscriptionRequestHandler subscriptionHandler = new SubscriptionRequestHandler(message);
-                            requestHandler = subscriptionHandler;
-                            subscriptionHandler.run();
-                            break;
-                        case BarrageMessageType.DoGetRequest: // rename to SnapshotRequest?
-                            DoGetRequestHandler doGetHandler = new DoGetRequestHandler(message);
-                            requestHandler = doGetHandler;
-                            doGetHandler.run();
-                            break;
-                        default:
-                            log.warn().append(myPrefix).append("received a message with unhandled BarrageMessageType")
-                                    .endl();
-                            return;
-                    }
-                }
-            });
-        }
-
-        public void onCancel() {
-            log.debug().append(myPrefix).append("cancel requested").endl();
-            tryClose();
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            boolean doLog = true;
-            if (t instanceof StatusRuntimeException) {
-                final Status status = ((StatusRuntimeException) t).getStatus();
-                if (status.getCode() == Status.Code.CANCELLED || status.getCode() == Status.Code.ABORTED) {
-                    doLog = false;
-                }
-            }
-            if (doLog) {
-                log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ")
-                        .append(t).endl();
-            }
-            tryClose();
-        }
-
-        @Override
-        public void onCompleted() {
-            log.debug().append(myPrefix).append("client stream closed subscription").endl();
-            tryClose();
-        }
-
-        @Override
-        public void close() {
-            synchronized (this) {
-                if (isClosed) {
-                    return;
-                }
-
-                isClosed = true;
-            }
-
-            try {
-                if (requestHandler != null)
-                    requestHandler.close();
-            } catch (IOException ioException) {
-                throw new UncheckedDeephavenException("IOException closing handler", ioException);
-            }
-
-            release();
-        }
-
-        private void tryClose() {
-            if (session.removeOnCloseCallback(this)) {
-                close();
-            }
-        }
     }
 }
