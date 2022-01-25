@@ -73,7 +73,7 @@ def log_table_builder(table):
 
 As you can see, the `log_table_builder` function takes the `table` parameter, and returns the `log_table_update_with_row` method that takes the `update` parameter.
 
-Now let's use this function to build our listener methods, and apply them to our tables
+Now let's use this function to build our listener methods, and apply them to our tables.
 
 ```python
 table_one_listener = log_table_builder(table_one)
