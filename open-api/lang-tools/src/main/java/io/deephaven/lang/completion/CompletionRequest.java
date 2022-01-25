@@ -53,7 +53,7 @@ public class CompletionRequest {
         this.offset = this.candidate = offset;
         this.completer = completer;
         this.localDefs = localDefs;
-        Require.gtZero(offset, "offset");
+        Require.geqZero(offset, "offset");
         Require.leq(offset, "offset", command.length(), "command.length()");
     }
 
