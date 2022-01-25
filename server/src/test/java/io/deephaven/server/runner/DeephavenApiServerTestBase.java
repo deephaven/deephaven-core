@@ -1,8 +1,8 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -24,7 +24,7 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private DeephavenApiServerInProcessComponent serverComponent;
+    private InProcessServerComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
@@ -37,7 +37,7 @@ public abstract class DeephavenApiServerTestBase {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        serverComponent = DaggerDeephavenApiServerInProcessComponent
+        serverComponent = DaggerInProcessServerComponent
                 .builder()
                 .withSchedulerPoolSize(4)
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())

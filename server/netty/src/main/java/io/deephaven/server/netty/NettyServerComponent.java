@@ -1,21 +1,19 @@
 package io.deephaven.server.netty;
 
 import dagger.Component;
-import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
-import io.deephaven.server.runner.DeephavenApiServerModule;
+import io.deephaven.server.runner.MainModule;
 
 import javax.inject.Singleton;
 
 @Singleton
 @Component(modules = {
-        DeephavenApiServerModule.class,
-        HealthCheckModule.class,
+        MainModule.class,
         NettyServerModule.class
 })
 public interface NettyServerComponent extends DeephavenApiServerComponent {
     @Component.Builder
-    interface Builder extends DeephavenApiServerComponent.Builder<Builder> {
+    interface Builder extends MainModule.Builder<Builder> {
         NettyServerComponent build();
     }
 }
