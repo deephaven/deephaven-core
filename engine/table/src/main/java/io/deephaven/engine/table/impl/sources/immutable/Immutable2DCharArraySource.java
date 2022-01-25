@@ -4,8 +4,10 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.WritableSourceWithEnsurePrevious;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -28,7 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableCharArraySource}.
  */
-public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
+public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;
@@ -255,6 +257,11 @@ public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSo
     @Override
     public boolean providesFillUnordered() {
         return true;
+    }
+
+    @Override
+    public void ensurePrevious(RowSet rowSet) {
+        // nothing to do
     }
 
     // region reinterpret
