@@ -73,7 +73,9 @@ public class AggregationProcessor implements AggregationContextFactory {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull Table table, @NotNull String... groupByColumnNames) {
+    public AggregationContext makeAggregationContext(@NotNull final Table table,
+                                                     final int rollupLevel,
+                                                     @NotNull final String... groupByColumnNames) {
         switch (type) {
             case STANDARD:
                 return new StandardConverter(table, groupByColumnNames).build();
@@ -149,15 +151,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
-        public final void visit(@NotNull final Count count) {
-            addNoInputOperator(new CountAggregationOperator(count.column().name()));
-        }
-
-        // -------------------------------------------------------------------------------------------------------------
-        // Partial AggSpec.Visitor (for cases common to all types)
-        // -------------------------------------------------------------------------------------------------------------
-
-        @Override
         public final void visit(@NotNull final ColumnAggregation columnAgg) {
             resultPairs = List.of(columnAgg.pair());
             columnAgg.spec().walk(this);
@@ -170,6 +163,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             columnAggs.spec().walk(this);
             resultPairs = List.of();
         }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // Partial AggSpec.Visitor (for cases common to all types)
+        // -------------------------------------------------------------------------------------------------------------
+
+        // THIS SPACE INTENTIONALLY LEFT BLANK
 
         // -------------------------------------------------------------------------------------------------------------
         // Helpers for visitors
@@ -293,6 +292,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
         // Aggregation.Visitor
         // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public final void visit(@NotNull final Count count) {
+            addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
 
         @Override
         public void visit(@NotNull final FirstRowKey firstRowKey) {
@@ -426,6 +430,10 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private interface UnsupportedRollupAggregations extends RollupAggregation.Visitor, AggSpec.Visitor {
 
+        // -------------------------------------------------------------------------------------------------------------
+        // RollupAggregation.Visitor for unsupported aggregations
+        // -------------------------------------------------------------------------------------------------------------
+
         @Override
         @FinalDefault
         default void visit(@NotNull final FirstRowKey firstRowKey) {
@@ -437,6 +445,10 @@ public class AggregationProcessor implements AggregationContextFactory {
         default void visit(@NotNull final LastRowKey lastRowKey) {
             rollupUnsupported("LastRowKey");
         }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // AggSpec.Visitor for unsupported column aggregation specs
+        // -------------------------------------------------------------------------------------------------------------
 
         @Override
         @FinalDefault
@@ -503,6 +515,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
+        public final void visit(@NotNull final Count count) {
+            addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
+
+        @Override
         public void visit(@NotNull final NullColumns nullColumns) {
             transformers.add(new NullColumnAggregationTransformer(nullColumns.resultColumns()));
         }
@@ -536,22 +553,22 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            // Supported
+            visitBasicAgg(IterativeOperatorSpec::getAbsSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            // Supported
+            visitBasicAgg((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            // Supported
+            visitBasicAgg((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            // Supported
+            visitBasicAgg((t, n) -> getAvgChunked(t, n, true));
         }
 
         @Override
@@ -566,12 +583,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMax max) {
-            // Supported
+            visitMinOrMaxAgg(false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMin min) {
-            // Supported
+            visitMinOrMaxAgg(true);
         }
 
         @Override
@@ -586,27 +603,29 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            // Supported
+            visitBasicAgg((t, n) -> getVarChunked(t, n, true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            // Supported
+            visitBasicAgg(IterativeOperatorSpec::getSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            // Supported
+            visitBasicAgg((t, n) -> getUniqueChunked(t, n,
+                    unique.includeNulls(), null, unique.nonUniqueSentinel(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            // Supported
+            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table, wSum.weight().name(), true,
+                    MatchPair.fromPairs(resultPairs), operators, inputColumnNames, inputSources);
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            // Supported
+            visitBasicAgg((t, n) -> getVarChunked(t, n, false, true));
         }
     }
 
@@ -628,6 +647,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
         // RollupAggregation.Visitor
         // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public final void visit(@NotNull final Count count) {
+            // TODO-RWC: Re-agg as sum
+            addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
 
         @Override
         public void visit(@NotNull final NullColumns nullColumns) {
@@ -724,7 +749,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-
+            // Re-agg as sum
         }
 
         @Override
