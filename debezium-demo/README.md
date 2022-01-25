@@ -1,25 +1,31 @@
 Debezium - Kafka Demo
 =====================
 
-Start docker-compose with the compose file in this
-directory, then start a DH Web console in python and try:
+The docker compose file in this directory starts a compose with
+images for mysql, Debezium, Redpanda (kafka implementation) and Deephaven,
+plus an additional image to generate an initial mysql schema and
+then generate updates to the tables over time for a simple e-commerce demo.
 
-```
-import deephaven.ConsumeCdc as cc
-server_name = 'mysql'; db_name='shop'; table_name = 'purchases'
-purchases = cc.consumeToTable(
-    {'bootstrap.servers' : 'redpanda:9092',
-     'schema.registry.url' : 'http://redpanda:8081'},
-    cc.cdc_short_spec(server_name,
-    db_name,
-    table_name))
-```
+The demo follows closely the one defined for Materialize here:
+https://github.com/MaterializeInc/ecommerce-demo/blob/main/README_RPM.md
 
-If you browse `loadgen/generate_load.py`, you can find
-other table names in the file to play with.
-
-At the beginning of the file the constant `purchaseGenEveryMS`
+The load generation script is in `loadgen/generate_load.py`.
+At the beginning of the script the constant `purchaseGenEveryMS`
 controls how frequently purchases are triggered.
+
+
+How to run
+==========
+
+Start docker-compose with the compose file in this
+directory, then start a Deephaven web console in python mode,
+and cut & paste from `demo.py`.
+
+Suggesting that you cut&paste instead of automatically setting
+the script to run is intentional, so that you can see tables
+as they are created and populated and watch them update
+before you execute the next command.
+
 
 Attributions
 ============
