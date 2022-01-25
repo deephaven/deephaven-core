@@ -117,6 +117,7 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
         if (toBooleanFillContext.byteChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
+        toBooleanFillContext.byteChunk.setSize(keys.size());
         ((FillUnordered) alternateColumnSource).fillChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }
@@ -127,6 +128,7 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
         if (toBooleanFillContext.byteChunk == null) {
             throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
         }
+        toBooleanFillContext.byteChunk.setSize(keys.size());
         ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }

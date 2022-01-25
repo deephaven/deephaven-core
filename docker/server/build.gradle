@@ -64,9 +64,6 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
             into server
         }
     }
-    from ('src/main/arch') {
-        into 'arch'
-    }
     from ('src/main/configure') {
         into 'configure'
     }

@@ -33,11 +33,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -55,6 +56,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Tabl
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -172,6 +174,7 @@ public class WorkerConnection {
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
     private InputTableServiceClient inputTableServiceClient;
+    private ObjectServiceClient objectServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -214,6 +217,7 @@ public class WorkerConnection {
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         inputTableServiceClient =
                 new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -727,7 +731,7 @@ public class WorkerConnection {
 
                 JsArray<FieldInfo> removedFI = data.getRemovedList();
                 for (int i = 0; i < removedFI.length; ++i) {
-                    String removedId = removedFI.getAt(i).getTicket().getTicket_asB64();
+                    String removedId = removedFI.getAt(i).getTypedTicket().getTicket().getTicket_asB64();
                     JsVariableDefinition result = knownFields.get(removedId);
                     removed[removed.length] = result;
                     knownFields.remove(removedId);
@@ -817,11 +821,17 @@ public class WorkerConnection {
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
+        if (!varDef.getType().equals("Figure")) {
+            throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
+        }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
-                    FetchFigureRequest request = new FetchFigureRequest();
-                    request.setSourceId(TableTicket.createTicket(varDef));
-                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
     }
 
@@ -852,6 +862,10 @@ public class WorkerConnection {
 
     public InputTableServiceClient inputTableServiceClient() {
         return inputTableServiceClient;
+    }
+
+    public ObjectServiceClient objectServiceClient() {
+        return objectServiceClient;
     }
 
     public BrowserHeaders metadata() {

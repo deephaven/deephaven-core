@@ -2,15 +2,16 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.ApplicationService.Cancel;
 import io.deephaven.client.impl.ApplicationService.Listener;
+import io.deephaven.client.impl.FieldChanges;
+import io.deephaven.client.impl.FieldInfo;
 import io.deephaven.client.impl.Session;
-import io.deephaven.proto.backplane.grpc.FieldInfo;
-import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.grpc.Status.Code;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 @Command(name = "subscribe-fields", mixinStandardHelpOptions = true,
@@ -21,17 +22,20 @@ public final class SubscribeToFields extends SingleSessionExampleBase {
         final CountDownLatch latch = new CountDownLatch(1);
         final Cancel cancel = session.subscribeToFields(new Listener() {
             @Override
-            public void onNext(FieldsChangeUpdate fields) {
-                System.out.println("Created: " + fields.getCreatedCount());
-                System.out.println("Updated: " + fields.getUpdatedCount());
-                System.out.println("Removed: " + fields.getRemovedCount());
-                for (FieldInfo fieldInfo : fields.getCreatedList()) {
+            public void onNext(FieldChanges fields) {
+                final List<FieldInfo> created = fields.created();
+                final List<FieldInfo> updated = fields.updated();
+                final List<FieldInfo> removed = fields.removed();
+                System.out.println("Created: " + created.size());
+                System.out.println("Updated: " + updated.size());
+                System.out.println("Removed: " + removed.size());
+                for (FieldInfo fieldInfo : created) {
                     System.out.println("Created: " + fieldInfo);
                 }
-                for (FieldInfo fieldInfo : fields.getUpdatedList()) {
+                for (FieldInfo fieldInfo : updated) {
                     System.out.println("Updated: " + fieldInfo);
                 }
-                for (FieldInfo fieldInfo : fields.getRemovedList()) {
+                for (FieldInfo fieldInfo : removed) {
                     System.out.println("Removed: " + fieldInfo);
                 }
             }

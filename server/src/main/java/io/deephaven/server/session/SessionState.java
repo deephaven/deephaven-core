@@ -31,6 +31,7 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.util.Scheduler;
@@ -728,6 +729,9 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
+                if (errorId == null) {
+                    assignErrorId();
+                }
                 safelyExecute(() -> errorHandler.onError(state, errorId, dependentHandle));
             }
 
@@ -780,7 +784,7 @@ public class SessionState {
                                 break;
                         }
 
-                        errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+                        assignErrorId();
                         dependentHandle = parent.logIdentity;
                         log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
                     }
@@ -848,7 +852,7 @@ public class SessionState {
                 exception = err;
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
-                        errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+                        assignErrorId();
                         log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
                         setState(ExportNotification.State.FAILED);
                     }
@@ -887,6 +891,10 @@ public class SessionState {
                     log.error().append("Failed to log query performance data: ").append(e).endl();
                 }
             }
+        }
+
+        private void assignErrorId() {
+            errorId = UuidCreator.toString(UuidCreator.getRandomBased());
         }
 
         /**

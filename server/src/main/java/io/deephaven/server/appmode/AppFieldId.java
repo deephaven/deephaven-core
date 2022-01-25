@@ -52,7 +52,7 @@ public class AppFieldId {
 
     @Override
     public String toString() {
-        return "AppFieldId{appId=" + app.id() + ", fieldName=" + fieldName + "}";
+        return "AppFieldId{appId=" + (app == null ? "" : app.id()) + ", fieldName=" + fieldName + "}";
     }
 
     @Override

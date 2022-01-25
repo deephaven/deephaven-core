@@ -9,7 +9,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
-import io.deephaven.engine.util.ExportedObjectType;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
@@ -26,8 +25,10 @@ import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
-import io.deephaven.plot.FigureWidget;
+import io.deephaven.proto.backplane.grpc.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
@@ -40,9 +41,6 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
-import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
-import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
 import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
@@ -52,9 +50,7 @@ import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
-import io.deephaven.proto.backplane.script.grpc.VariableDefinition;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
-import io.deephaven.server.console.figure.FigureWidgetTranslator;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -86,6 +82,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
+    public static boolean isPythonSession() {
+        return PYTHON_TYPE.equals(WORKER_CONSOLE_TYPE);
+    }
+
     private final Map<String, Provider<ScriptSession>> scriptTypes;
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
@@ -106,14 +106,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
         this.globalSessionProvider = globalSessionProvider;
-
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
             throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
     }
 
     public void initializeGlobalScriptSession() throws IOException, InterruptedException, TimeoutException {
-        if (PYTHON_TYPE.equals(WORKER_CONSOLE_TYPE)) {
+        if (isPythonSession()) {
             JpyInit.init(log);
         }
         globalSessionProvider.initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
@@ -214,28 +213,36 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
-
-                        // produce a diff
-                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-
                         ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-
+                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()
-                                .forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
+                                .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
                         changes.updated.entrySet()
-                                .forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
+                                .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
                         changes.removed.entrySet()
-                                .forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
-
-                        responseObserver.onNext(diff.build());
+                                .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
+                        responseObserver.onNext(diff.setChanges(fieldChanges).build());
                         responseObserver.onCompleted();
                     });
         });
     }
 
-    private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
-        return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
-                .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
+    private static FieldInfo makeVariableDefinition(Map.Entry<String, String> entry) {
+        return makeVariableDefinition(entry.getKey(), entry.getValue());
+    }
+
+    private static FieldInfo makeVariableDefinition(String title, String type) {
+        final TypedTicket id = TypedTicket.newBuilder()
+                .setType(type)
+                .setTicket(ScopeTicketResolver.ticketForName(title))
+                .build();
+        return FieldInfo.newBuilder()
+                .setApplicationId("scope")
+                .setFieldName(title)
+                .setFieldDescription("query scope variable")
+                .setTypedTicket(id)
+                .build();
     }
 
     @Override
@@ -400,37 +407,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     }
                 }
             };
-        });
-    }
-
-    @Override
-    public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            if (request.getSourceId().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
-            }
-            final SessionState.ExportObject<Object> figure = ticketRouter.resolve(
-                    session, request.getSourceId(), "sourceId");
-
-            session.nonExport()
-                    .require(figure)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        Object result = figure.get();
-                        if (!(result instanceof FigureWidget)) {
-                            final String name = ticketRouter.getLogNameFor(request.getSourceId(), "sourceId");
-                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                                    "Value bound to ticket " + name + " is not a FigureWidget");
-                        }
-                        FigureWidget widget = (FigureWidget) result;
-
-                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session);
-
-                        responseObserver
-                                .onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
-                        responseObserver.onCompleted();
-                    });
         });
     }
 

@@ -2,29 +2,25 @@ package io.deephaven.server.appmode;
 
 import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.plot.FigureWidget;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.server.session.SessionService;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
-import io.deephaven.proto.backplane.grpc.CustomInfo;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
-import io.deephaven.proto.backplane.grpc.FigureInfo;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
-import io.deephaven.proto.backplane.grpc.TableInfo;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.proto.backplane.grpc.TypedTicket.Builder;
+import io.deephaven.server.object.TypeLookup;
+import io.deephaven.server.session.SessionService;
+import io.deephaven.server.session.SessionState;
+import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.DateTimeUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -46,6 +42,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final AppMode mode;
     private final Scheduler scheduler;
     private final SessionService sessionService;
+    private final TypeLookup typeLookup;
+
     private final LivenessTracker tracker = new LivenessTracker();
 
     /** The list of Field listeners */
@@ -66,10 +64,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     @Inject
     public ApplicationServiceGrpcImpl(final AppMode mode,
             final Scheduler scheduler,
-            final SessionService sessionService) {
+            final SessionService sessionService,
+            final TypeLookup typeLookup) {
         this.mode = mode;
         this.scheduler = scheduler;
         this.sessionService = sessionService;
+        this.typeLookup = typeLookup;
     }
 
     @Override
@@ -197,7 +197,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 log.error().append("Removing old field but field not known; fieldId = ").append(id.toString()).endl();
             } else {
                 tracker.maybeUnmanage(oldField.value());
-                builder.addRemoved(getRemovedFieldInfo(id));
+                builder.addRemoved(getRemovedFieldInfo(id, oldField));
             }
         });
         removedFields.clear();
@@ -239,69 +239,29 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         }
     }
 
-    private static FieldInfo getRemovedFieldInfo(final AppFieldId id) {
+    private FieldInfo getRemovedFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
+                .setTypedTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
                 .build();
     }
 
-    private static FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
-        if (field instanceof CustomField) {
-            return getCustomFieldInfo(id, (CustomField<?>) field);
-        }
-        return getStandardFieldInfo(id, field);
-    }
-
-    private static FieldInfo getCustomFieldInfo(final AppFieldId id, final CustomField<?> field) {
+    private FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
         return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
+                .setTypedTicket(typedTicket(id, field))
                 .setFieldName(id.fieldName)
-                .setFieldType(FieldInfo.FieldType.newBuilder()
-                        .setCustom(CustomInfo.newBuilder()
-                                .setType(field.type())
-                                .build())
-                        .build())
                 .setFieldDescription(field.description().orElse(""))
                 .setApplicationId(id.applicationId())
                 .setApplicationName(id.applicationName())
                 .build();
     }
 
-    private static FieldInfo getStandardFieldInfo(final AppFieldId id, final Field<?> field) {
-        // Note that this method accepts any Field and not just StandardField
-        final FieldInfo.FieldType fieldType = fetchFieldType(field.value());
-
-        if (fieldType == null) {
-            throw new IllegalArgumentException("Application Field is not of standard type; use CustomField instead");
-        }
-
-        return FieldInfo.newBuilder()
-                .setTicket(id.getTicket())
-                .setFieldName(id.fieldName)
-                .setFieldType(fieldType)
-                .setFieldDescription(field.description().orElse(""))
-                .setApplicationId(id.applicationId())
-                .setApplicationName(id.applicationName())
-                .build();
-    }
-
-    private static FieldInfo.FieldType fetchFieldType(final Object obj) {
-        if (obj instanceof Table) {
-            final Table table = (Table) obj;
-            return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
-                    .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                    .setIsStatic(!table.isRefreshing())
-                    .setSize(table.size())
-                    .build()).build();
-        }
-        if (obj instanceof FigureWidget) {
-            return FieldInfo.FieldType.newBuilder().setFigure(FigureInfo.getDefaultInstance()).build();
-        }
-
-        return null;
+    private TypedTicket typedTicket(AppFieldId id, Field<?> field) {
+        final Builder ticket = TypedTicket.newBuilder().setTicket(id.getTicket());
+        typeLookup.type(field.value()).ifPresent(ticket::setType);
+        return ticket.build();
     }
 
     private static class ScopeField implements Field<Object> {

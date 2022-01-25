@@ -24,3 +24,12 @@ option optimize_for = SPEED;
 message Ticket {
     bytes ticket = 1;
 }
+
+message TypedTicket {
+    Ticket ticket = 1;
+
+    /*
+     * The type. An empty string means that it is not known, not that the server chose to not set it.
+     */
+    string type = 2;
+}

@@ -37,6 +37,8 @@ dependencies {
             "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
             'com.tdunning:t-digest:3.2'
 
+    implementation project(':plugin')
+
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
     Classpaths.inheritJavaParser(project)

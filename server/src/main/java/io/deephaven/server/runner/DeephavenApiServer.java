@@ -8,6 +8,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.plugin.PluginsAutoDiscovery;
 import io.deephaven.server.appmode.ApplicationInjector;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.log.LogInit;
@@ -35,6 +36,7 @@ public class DeephavenApiServer {
     private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
+    private final PluginsAutoDiscovery pluginsAutoDiscovery;
     private final ApplicationInjector applicationInjector;
     private final UriResolvers uriResolvers;
     private final SessionService sessionService;
@@ -45,6 +47,7 @@ public class DeephavenApiServer {
             final UpdateGraphProcessor ugp,
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
+            final PluginsAutoDiscovery pluginsAutoDiscovery,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
             final SessionService sessionService) {
@@ -52,6 +55,7 @@ public class DeephavenApiServer {
         this.ugp = ugp;
         this.logInit = logInit;
         this.consoleService = consoleService;
+        this.pluginsAutoDiscovery = pluginsAutoDiscovery;
         this.applicationInjector = applicationInjector;
         this.uriResolvers = uriResolvers;
         this.sessionService = sessionService;
@@ -61,6 +65,12 @@ public class DeephavenApiServer {
     public GrpcServer server() {
         return server;
     }
+
+    @VisibleForTesting
+    SessionService sessionService() {
+        return sessionService;
+    }
+
 
     /**
      * Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated
@@ -99,6 +109,7 @@ public class DeephavenApiServer {
 
         log.info().append("Initializing Script Session...").endl();
         consoleService.initializeGlobalScriptSession();
+        pluginsAutoDiscovery.registerAll();
 
         log.info().append("Starting UGP...").endl();
         ugp.start();
@@ -123,6 +134,8 @@ public class DeephavenApiServer {
     }
 
     void startForUnitTests() throws Exception {
+        pluginsAutoDiscovery.registerAll(false);
+
         log.info().append("Starting server...").endl();
         server.start();
     }

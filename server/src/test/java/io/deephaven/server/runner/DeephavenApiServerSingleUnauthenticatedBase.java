@@ -11,6 +11,6 @@ public abstract class DeephavenApiServerSingleUnauthenticatedBase extends Deepha
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        channel = channel();
+        channel = createChannel();
     }
 }

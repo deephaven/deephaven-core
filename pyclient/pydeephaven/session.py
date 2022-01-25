@@ -180,17 +180,19 @@ class Session:
         self.session_service.release(ticket)
 
     def _parse_script_response(self, response):
-        if response.created:
-            for t in response.created:
-                self._tables[t.title] = (t.type, Table(session=self, ticket=t.id))
+        if response.changes.created:
+            for t in response.changes.created:
+                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
-        if response.updated:
-            for t in response.updated:
-                self._tables[t.title] = (t.type, Table(session=self, ticket=t.id))
+        if response.changes.updated:
+            for t in response.changes.updated:
+                t_type = None if t.typed_ticket.type == '' else t.typed_ticket.type
+                self._tables[t.field_name] = (t_type, Table(session=self, ticket=t.typed_ticket.ticket))
 
-        if response.removed:
-            for t in response.removed:
-                self._tables.pop(t.title, None)
+        if response.changes.removed:
+            for t in response.changes.removed:
+                self._tables.pop(t.field_name, None)
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:

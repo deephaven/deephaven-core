@@ -5,7 +5,6 @@ import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.ChartDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesPlotStyleMap;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceTypeMap;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -838,174 +837,6 @@ public class FigureDescriptor {
             void setTitleFont(String titleFont);
         }
 
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TablesListFieldType {
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface GetSchemaHeaderUnionType {
-                @JsOverlay
-                static FigureDescriptor.ToObjectReturnType.TablesListFieldType.GetSchemaHeaderUnionType of(
-                        Object o) {
-                    return Js.cast(o);
-                }
-
-                @JsOverlay
-                default String asString() {
-                    return Js.asString(this);
-                }
-
-                @JsOverlay
-                default Uint8Array asUint8Array() {
-                    return Js.cast(this);
-                }
-
-                @JsOverlay
-                default boolean isString() {
-                    return (Object) this instanceof String;
-                }
-
-                @JsOverlay
-                default boolean isUint8Array() {
-                    return (Object) this instanceof Uint8Array;
-                }
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface ResultIdFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TicketFieldType {
-                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetTicketUnionType {
-                        @JsOverlay
-                        static FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType of(
-                                Object o) {
-                            return Js.cast(o);
-                        }
-
-                        @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
-                        }
-
-                        @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
-                        }
-                    }
-
-                    @JsOverlay
-                    static FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
-
-                    @JsProperty
-                    void setTicket(
-                            FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                    @JsOverlay
-                    default void setTicket(String ticket) {
-                        setTicket(
-                                Js.<FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-
-                    @JsOverlay
-                    default void setTicket(Uint8Array ticket) {
-                        setTicket(
-                                Js.<FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-                }
-
-                @JsOverlay
-                static FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                double getBatchOffset();
-
-                @JsProperty
-                FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType getTicket();
-
-                @JsProperty
-                void setBatchOffset(double batchOffset);
-
-                @JsProperty
-                void setTicket(
-                        FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType.TicketFieldType ticket);
-            }
-
-            @JsOverlay
-            static FigureDescriptor.ToObjectReturnType.TablesListFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getErrorInfo();
-
-            @JsProperty
-            FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType getResultId();
-
-            @JsProperty
-            FigureDescriptor.ToObjectReturnType.TablesListFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-            @JsProperty
-            String getSize();
-
-            @JsProperty
-            boolean isIsStatic();
-
-            @JsProperty
-            boolean isSuccess();
-
-            @JsProperty
-            void setErrorInfo(String errorInfo);
-
-            @JsProperty
-            void setIsStatic(boolean isStatic);
-
-            @JsProperty
-            void setResultId(
-                    FigureDescriptor.ToObjectReturnType.TablesListFieldType.ResultIdFieldType resultId);
-
-            @JsProperty
-            void setSchemaHeader(
-                    FigureDescriptor.ToObjectReturnType.TablesListFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-            @JsOverlay
-            default void setSchemaHeader(String schemaHeader) {
-                setSchemaHeader(
-                        Js.<FigureDescriptor.ToObjectReturnType.TablesListFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                schemaHeader));
-            }
-
-            @JsOverlay
-            default void setSchemaHeader(Uint8Array schemaHeader) {
-                setSchemaHeader(
-                        Js.<FigureDescriptor.ToObjectReturnType.TablesListFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                schemaHeader));
-            }
-
-            @JsProperty
-            void setSize(String size);
-
-            @JsProperty
-            void setSuccess(boolean success);
-        }
-
         @JsOverlay
         static FigureDescriptor.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -1022,9 +853,6 @@ public class FigureDescriptor {
 
         @JsProperty
         double getRows();
-
-        @JsProperty
-        JsArray<FigureDescriptor.ToObjectReturnType.TablesListFieldType> getTablesList();
 
         @JsProperty
         String getTitle();
@@ -1062,17 +890,6 @@ public class FigureDescriptor {
 
         @JsProperty
         void setRows(double rows);
-
-        @JsProperty
-        void setTablesList(JsArray<FigureDescriptor.ToObjectReturnType.TablesListFieldType> tablesList);
-
-        @JsOverlay
-        default void setTablesList(
-                FigureDescriptor.ToObjectReturnType.TablesListFieldType[] tablesList) {
-            setTablesList(
-                    Js.<JsArray<FigureDescriptor.ToObjectReturnType.TablesListFieldType>>uncheckedCast(
-                            tablesList));
-        }
 
         @JsProperty
         void setTitle(String title);
@@ -1907,174 +1724,6 @@ public class FigureDescriptor {
             void setTitleFont(String titleFont);
         }
 
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TablesListFieldType {
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface GetSchemaHeaderUnionType {
-                @JsOverlay
-                static FigureDescriptor.ToObjectReturnType0.TablesListFieldType.GetSchemaHeaderUnionType of(
-                        Object o) {
-                    return Js.cast(o);
-                }
-
-                @JsOverlay
-                default String asString() {
-                    return Js.asString(this);
-                }
-
-                @JsOverlay
-                default Uint8Array asUint8Array() {
-                    return Js.cast(this);
-                }
-
-                @JsOverlay
-                default boolean isString() {
-                    return (Object) this instanceof String;
-                }
-
-                @JsOverlay
-                default boolean isUint8Array() {
-                    return (Object) this instanceof Uint8Array;
-                }
-            }
-
-            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface ResultIdFieldType {
-                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                public interface TicketFieldType {
-                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                    public interface GetTicketUnionType {
-                        @JsOverlay
-                        static FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType of(
-                                Object o) {
-                            return Js.cast(o);
-                        }
-
-                        @JsOverlay
-                        default String asString() {
-                            return Js.asString(this);
-                        }
-
-                        @JsOverlay
-                        default Uint8Array asUint8Array() {
-                            return Js.cast(this);
-                        }
-
-                        @JsOverlay
-                        default boolean isString() {
-                            return (Object) this instanceof String;
-                        }
-
-                        @JsOverlay
-                        default boolean isUint8Array() {
-                            return (Object) this instanceof Uint8Array;
-                        }
-                    }
-
-                    @JsOverlay
-                    static FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType create() {
-                        return Js.uncheckedCast(JsPropertyMap.of());
-                    }
-
-                    @JsProperty
-                    FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
-
-                    @JsProperty
-                    void setTicket(
-                            FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
-
-                    @JsOverlay
-                    default void setTicket(String ticket) {
-                        setTicket(
-                                Js.<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-
-                    @JsOverlay
-                    default void setTicket(Uint8Array ticket) {
-                        setTicket(
-                                Js.<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                                        ticket));
-                    }
-                }
-
-                @JsOverlay
-                static FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType create() {
-                    return Js.uncheckedCast(JsPropertyMap.of());
-                }
-
-                @JsProperty
-                double getBatchOffset();
-
-                @JsProperty
-                FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType getTicket();
-
-                @JsProperty
-                void setBatchOffset(double batchOffset);
-
-                @JsProperty
-                void setTicket(
-                        FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType.TicketFieldType ticket);
-            }
-
-            @JsOverlay
-            static FigureDescriptor.ToObjectReturnType0.TablesListFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getErrorInfo();
-
-            @JsProperty
-            FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType getResultId();
-
-            @JsProperty
-            FigureDescriptor.ToObjectReturnType0.TablesListFieldType.GetSchemaHeaderUnionType getSchemaHeader();
-
-            @JsProperty
-            String getSize();
-
-            @JsProperty
-            boolean isIsStatic();
-
-            @JsProperty
-            boolean isSuccess();
-
-            @JsProperty
-            void setErrorInfo(String errorInfo);
-
-            @JsProperty
-            void setIsStatic(boolean isStatic);
-
-            @JsProperty
-            void setResultId(
-                    FigureDescriptor.ToObjectReturnType0.TablesListFieldType.ResultIdFieldType resultId);
-
-            @JsProperty
-            void setSchemaHeader(
-                    FigureDescriptor.ToObjectReturnType0.TablesListFieldType.GetSchemaHeaderUnionType schemaHeader);
-
-            @JsOverlay
-            default void setSchemaHeader(String schemaHeader) {
-                setSchemaHeader(
-                        Js.<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                schemaHeader));
-            }
-
-            @JsOverlay
-            default void setSchemaHeader(Uint8Array schemaHeader) {
-                setSchemaHeader(
-                        Js.<FigureDescriptor.ToObjectReturnType0.TablesListFieldType.GetSchemaHeaderUnionType>uncheckedCast(
-                                schemaHeader));
-            }
-
-            @JsProperty
-            void setSize(String size);
-
-            @JsProperty
-            void setSuccess(boolean success);
-        }
-
         @JsOverlay
         static FigureDescriptor.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -2091,9 +1740,6 @@ public class FigureDescriptor {
 
         @JsProperty
         double getRows();
-
-        @JsProperty
-        JsArray<FigureDescriptor.ToObjectReturnType0.TablesListFieldType> getTablesList();
 
         @JsProperty
         String getTitle();
@@ -2134,18 +1780,6 @@ public class FigureDescriptor {
         void setRows(double rows);
 
         @JsProperty
-        void setTablesList(
-                JsArray<FigureDescriptor.ToObjectReturnType0.TablesListFieldType> tablesList);
-
-        @JsOverlay
-        default void setTablesList(
-                FigureDescriptor.ToObjectReturnType0.TablesListFieldType[] tablesList) {
-            setTablesList(
-                    Js.<JsArray<FigureDescriptor.ToObjectReturnType0.TablesListFieldType>>uncheckedCast(
-                            tablesList));
-        }
-
-        @JsProperty
         void setTitle(String title);
 
         @JsProperty
@@ -2181,18 +1815,9 @@ public class FigureDescriptor {
 
     public native String addErrors(String value);
 
-    public native ExportedTableCreationResponse addTables();
-
-    public native ExportedTableCreationResponse addTables(
-            ExportedTableCreationResponse value, double index);
-
-    public native ExportedTableCreationResponse addTables(ExportedTableCreationResponse value);
-
     public native void clearChartsList();
 
     public native void clearErrorsList();
-
-    public native void clearTablesList();
 
     public native void clearTitle();
 
@@ -2203,8 +1828,6 @@ public class FigureDescriptor {
     public native JsArray<String> getErrorsList();
 
     public native int getRows();
-
-    public native JsArray<ExportedTableCreationResponse> getTablesList();
 
     public native String getTitle();
 
@@ -2235,13 +1858,6 @@ public class FigureDescriptor {
     }
 
     public native void setRows(int value);
-
-    @JsOverlay
-    public final void setTablesList(ExportedTableCreationResponse[] value) {
-        setTablesList(Js.<JsArray<ExportedTableCreationResponse>>uncheckedCast(value));
-    }
-
-    public native void setTablesList(JsArray<ExportedTableCreationResponse> value);
 
     public native void setTitle(String value);
 
