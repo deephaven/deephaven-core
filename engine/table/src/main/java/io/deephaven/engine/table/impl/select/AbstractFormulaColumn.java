@@ -190,7 +190,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     private ColumnSource<?> getViewColumnSource(boolean lazy) {
-        final boolean usesPython = usesPython();
+        final boolean usesPython = preventsParallelization();
         final boolean isStateless = isStateless();
 
         final SecurityManager sm = System.getSecurityManager();
@@ -221,7 +221,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         }
     }
 
-    public abstract boolean usesPython();
+    public abstract boolean preventsParallelization();
 
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,

@@ -66,7 +66,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public boolean usesPython() {
+    public boolean preventsParallelization() {
         return true;
     }
 

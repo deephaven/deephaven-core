@@ -871,7 +871,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      *
      * @return true if this column has the potential to hang the gil
      */
-    public boolean usesPython() {
+    public boolean preventsParallelization() {
         return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType)
                 || usedColumns.stream().anyMatch(this::usedColumnUsesPython)
                 || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);

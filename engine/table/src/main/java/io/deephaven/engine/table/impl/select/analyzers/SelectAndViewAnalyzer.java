@@ -559,7 +559,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         @Override
         public int threadCount() {
-            return OperationInitializationThreadPool.TRANSFORM_THREADS;
+            return OperationInitializationThreadPool.NUM_THREADS;
         }
     }
 
