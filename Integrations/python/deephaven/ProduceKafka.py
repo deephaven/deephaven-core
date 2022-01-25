@@ -112,22 +112,47 @@ def produceFromTable(
     return cleanup
 
 @_passThrough
-def avro(schema, schema_version:str = None, field_to_col_mapping = None, timestamp_field = None):
+def avro(
+        schema,
+        schema_version:str = None,
+        field_to_col_mapping = None,
+        timestamp_field:str = None,
+        include_only_columns = None,
+        exclude_columns = None,
+        publish_schema:bool = False,
+        schema_namespace:str = None,
+        column_properties = None):
     """
     Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
     :param schema:  Either an Avro schema object or a string specifying a schema name for a schema
-       registered in a Confluent compatible Schema Server.  When the latter is provided, the
+       registered in a Confluent compatible Schema Registry Server.  When the latter is provided, the
        associated kafka_config dict in the call to consumeToTable should include the key
-       'schema.registry.url' with the associated value of the Schema Server URL for fetching the schema
+       'schema.registry.url' with the associated value of the Schema Registry Server URL for fetching the schema
        definition.
     :param schema_version:  If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
     :param field_to_col_mapping: A dict mapping field names in the schema to column names in the Deephaven table.
-       Any fields in the schema not present in the dict as keys are mapped to columns of the same name.
-       If this argument is None, all schema fields are mapped to columns of the same name.
+       Any fields in the schema not present in the dict as keys are mapped to columns of the same name (except for any columns
+       ignored via exclude_columns).
+       If this argument is None, all schema fields are mapped to columns of the same name (except for any columns
+       ignored via exclude_columns).
     :param timestamp_field: a string for the name of an additional timestamp field to include,
                             or None for no such field.
+    :param include_only_columns If not None, a sequence of column names in the source table to include
+           in the generated output.   Only one of include_only_columns and exclude_columns can be different from None.
+           Defaults to None.
+    :param exclude_columns If not None, a sequence of column names to exclude from the generated output (every other column
+           will be included).   Only one of include_only_columns and exclude_columns can be different from None.
+           Defaults to None.
+    :param publish_schema  If True, publish the given schema name to Schema Registry Server, according to an Avro schema
+           generated from the table definition, for the columns and fields implied by field_to_col_mapping, include_only_columns,
+           and exclude_columns.  When true, if a schema_version is provided and the resulting version after publishing does not match,
+           an exception results.
+    :param schema_namespace  When publish_schema is True, the namespace for the generated schema to be restered in Schema Registry Server.
+    :param column_properties  When publish_schema is True, a dict containing string properties for columns specifying string properties
+            implying particular Avro type mappings for them.   In particular, column X of BigDecimal type should specify string properties
+            'x.precision' and 'x.scale'.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
@@ -151,12 +176,26 @@ def avro(schema, schema_version:str = None, field_to_col_mapping = None, timesta
 
     if field_to_col_mapping is not None and not isinstance(field_to_col_mapping, dict):
         raise TypeError(
-            "argument 'mapping' is expected to be of dict type, " +
+            "argument 'field_to_col_mapping' is expected to be of dict type, " +
             "instead got " + str(field_to_col_mapping) + " of type " + type(field_to_col_mapping).__name__)
+    if column_properties is not None and not isinstance(column_properties, dict):
+        raise TypeError(
+            "argument 'column_properties' is excpected to be of dict type, " +
+            "instead got " + str(column_properties) + " of type " + type(column_properties).__name__)
     field_to_col_mapping = _dictToMap(field_to_col_mapping)
+    column_properties = _dictToProperties(column_properties)
+    include_only_columns = _seqToSet(include_only_columns)
+    exclude_columns = _seqToSet(exclude_columns)
+    publish_schema = bool(publish_schema)
     if have_actual_schema:
-        return _produce_jtype_.avroSpec(schema, field_to_col_mapping, timestamp_field)
-    return _produce_jtype_.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
+        return _produce_jtype_.avroSpec(
+            schema, field_to_col_mapping, timestamp_field,
+            include_only_columns, exclude_columns, publish_schema,
+            schema_namespace, column_properties)
+    return _produce_jtype_.avroSpec(
+        schema, schema_version, field_to_col_mapping, timestamp_field,
+        include_only_columns, exclude_columns, publish_schema,
+        schema_namespace, column_properties)
 
 @_passThrough
 def json(include_columns = None,
@@ -201,6 +240,7 @@ def json(include_columns = None,
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
     exclude_columns = _seqToSet(exclude_columns)
+    exclude_columns = _java_type_.predicateFromSet(exclude_columns)
     mapping = _dictToMap(mapping)
     return _produce_jtype_.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls, timestamp_field)
 
