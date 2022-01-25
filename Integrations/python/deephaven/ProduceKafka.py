@@ -149,7 +149,7 @@ def avro(
            generated from the table definition, for the columns and fields implied by field_to_col_mapping, include_only_columns,
            and exclude_columns.  When true, if a schema_version is provided and the resulting version after publishing does not match,
            an exception results.
-    :param schema_namespace  When publishi_schema is True, the namespace for the generated schema to be restered in Schema Registry Server.
+    :param schema_namespace  When publish_schema is True, the namespace for the generated schema to be restered in Schema Registry Server.
     :param column_properties  When publish_schema is True, a dict containing string properties for columns specifying string properties
             implying particular Avro type mappings for them.   In particular, column X of BigDecimal type should specify string properties
             'x.precision' and 'x.scale'.

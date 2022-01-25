@@ -161,7 +161,6 @@ public class KafkaTools {
         try (final CloseableHttpClient client = HttpClients.custom().build()) {
             final String requestStr =
                     schemaServerUrl + "/subjects/" + resourceName + "/versions/";
-            final List<NameValuePair> urlParameters = new ArrayList<>();
             final String jsonSchema = schema.toString().replaceAll("[\\n\\r]", "");
             final String jsonRequest = "{ \"schema\" : \"" + jsonSchema.replaceAll("\"", "\\\\\"") + "\" }";
             final HttpUriRequest request = RequestBuilder.post()
@@ -175,7 +174,7 @@ public class KafkaTools {
             if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
                 throw new UncheckedDeephavenException(
                         "Got response status code " + statusCode + " for request '" + jsonRequest + "': " +
-                        extractSchemaServerResponse(response));
+                                extractSchemaServerResponse(response));
             }
             action = "extract json server response";
             final String jsonStr = extractSchemaServerResponse(response);
@@ -725,8 +724,7 @@ public class KafkaTools {
                         final Predicate<String> excludeColumns,
                         final boolean publishSchema,
                         final String schemaNamespace,
-                        final Properties columnProperties
-                ) {
+                        final Properties columnProperties) {
                     this.schema = schema;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
@@ -754,7 +752,8 @@ public class KafkaTools {
                                 schemaName, schemaNamespace, columnProperties, includeOnlyColumns, excludeColumns);
                         final String putVersion = putAvroSchema(schema, schemaServiceUrl, schemaName);
                         if (putVersion != null && schemaVersion != null && !schemaVersion.equals(putVersion)) {
-                            throw new IllegalStateException("Specified expected version " + schemaVersion + " mismatch: schema server put for schema name " +
+                            throw new IllegalStateException("Specified expected version " + schemaVersion
+                                    + " mismatch: schema server put for schema name " +
                                     schemaName + " resulted in version " + putVersion);
                         }
                     } else {
@@ -958,8 +957,8 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is null.
-         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is
+         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1014,16 +1013,14 @@ public class KafkaTools {
          *        micros.
          * @param includeOnlyColumns If not null, filter out any columns tested false in this predicate.
          * @param excludeColumns If not null, filter out any columns tested true in this predicate.
-         * @param publishSchema If true, instead of loading a schema already defined in schema server, define a new
-         *        Avro schema based on the selected columns for this table and publish it to schema server.
-         *        When publishing, if a schema version is provided and the version generated doesn't match, an exception
-         *        results.
-         * @param schemaNamespace  When publishSchema is true, the namespace for the generated schema to be restered in schema server.
-         *                         When publishSchema is false, null should be passed.
-         * @param columnProperties When publisSchema is true, a {@code Properties} object can be provided,
-         *                         specifying String properties implying particular Avro type mappings for them.
-         *                         In particular, column {@code X} of {@code BigDecimal} type should specify string properties
-         *                         {@code "x.precision"} and {@code "x.scale"}.
+         * @param publishSchema If true, instead of loading a schema already defined in schema server, define a new Avro
+         *        schema based on the selected columns for this table and publish it to schema server. When publishing,
+         *        if a schema version is provided and the version generated doesn't match, an exception results.
+         * @param schemaNamespace When publishSchema is true, the namespace for the generated schema to be restered in
+         *        schema server. When publishSchema is false, null should be passed.
+         * @param columnProperties When publisSchema is true, a {@code Properties} object can be provided, specifying
+         *        String properties implying particular Avro type mappings for them. In particular, column {@code X} of
+         *        {@code BigDecimal} type should specify string properties {@code "x.precision"} and {@code "x.scale"}.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")

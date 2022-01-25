@@ -389,14 +389,16 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         } else if (type == DateTime.class) {
             final String logicalType = getLogicalType(fieldName, field);
             if (logicalType == null) {
-                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName + " has no logical type.");
+                throw new IllegalArgumentException(
+                        "field " + fieldName + " for column " + columnName + " has no logical type.");
             }
             if (logicalType.equals("timestamp-millis")) {
                 proc = makeDateTimeToMillisFieldProcessor(fieldName, src);
             } else if (logicalType.equals("timestamp-micros")) {
                 proc = makeDateTimeToMicrosFieldProcessor(fieldName, src);
             } else {
-                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName + " has unrecognized logical type " + logicalType);
+                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName
+                        + " has unrecognized logical type " + logicalType);
             }
         } else {
             proc = makeObjectFieldProcessor(fieldName, src);
