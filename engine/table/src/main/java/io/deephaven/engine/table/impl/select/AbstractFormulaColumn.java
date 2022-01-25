@@ -190,7 +190,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     private ColumnSource<?> getViewColumnSource(boolean lazy) {
-        final boolean usesPython = preventsParallelization();
+        final boolean preventsParallelization = preventsParallelization();
         final boolean isStateless = isStateless();
 
         final SecurityManager sm = System.getSecurityManager();
@@ -211,13 +211,13 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 final Formula formula = getFormula(lazy, columnSources, params);
                 // noinspection unchecked,rawtypes
                 return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                        usesPython, isStateless);
+                        preventsParallelization, isStateless);
             }, context);
         } else {
             final Formula formula = getFormula(lazy, columnSources, params);
             // noinspection unchecked,rawtypes
             return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
-                    usesPython, isStateless);
+                    preventsParallelization, isStateless);
         }
     }
 
