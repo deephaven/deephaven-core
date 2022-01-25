@@ -2,8 +2,8 @@ package io.deephaven.server.plugin.type;
 
 import dagger.Binds;
 import dagger.Module;
-import io.deephaven.plugin.type.ObjectTypeRegistration;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.plugin.type.ObjectTypeRegistration;
 
 /**
  * Binds {@link ObjectTypes} as {@link ObjectTypeLookup} and {@link ObjectTypeRegistration}.

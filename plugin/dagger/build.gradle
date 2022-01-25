@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'Dagger for Deephaven plugins'
+
+dependencies {
+    api project(':plugin')
+    Classpaths.inheritDagger(project)
+}
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

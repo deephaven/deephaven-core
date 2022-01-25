@@ -1,9 +1,9 @@
 package io.deephaven.server.plugin.type;
 
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.plugin.type.ObjectTypeRegistration;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.plugin.type.ObjectTypeRegistration;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
