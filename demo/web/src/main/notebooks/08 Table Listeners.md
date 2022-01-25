@@ -43,9 +43,9 @@ log_table_update_with_row_handler = listen(table, log_table_update_with_row)
 
 This example covers just the bare minimum of using listeners. Any code that you'd want to execute can be used as a listener. This allows you to do things such as HTTP webhooks, Slack notifications, or email notifications using your listener.
 
-## Parameterizing tables via Currying
+## Parameterizing the listener
 
-What if we had two time tables and wanted to reuse the same listener method with them? We can't change the listener's signature, so parameterizing the tables that way won't work. We definitely don't want to copy-paste the code into separate functions that reference the two tables as well. Instead, we can create a function that takes a table, and returns a function that takes the `update` object. If you're familiar with functional programming, this is called [Currying](https://en.wikipedia.org/wiki/Currying).
+What if we had two time tables and wanted to reuse the same listener method with them? We can't change the listener's signature, so parameterizing the tables that way won't work. We definitely don't want to copy-paste the code into separate functions that reference the two tables as well. Instead, we can create a function that takes a table, and returns a function that takes the `update` object. If you're familiar with functional programming, this is very similar to [currying](https://en.wikipedia.org/wiki/Currying).
 
 Let's start with our two time tables.
 
