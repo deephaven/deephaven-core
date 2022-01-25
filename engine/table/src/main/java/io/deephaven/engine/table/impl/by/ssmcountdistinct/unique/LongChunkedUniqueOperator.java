@@ -9,16 +9,15 @@
 
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
+import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
@@ -281,7 +280,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         if(exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, externalResult);
-            columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
             return columns;
         }
 

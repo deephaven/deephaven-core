@@ -34,19 +34,10 @@ import java.util.stream.Stream;
  * {@link AggregationContextFactory} for use internally by the implementation of {@link Table#aggBy}.
  */
 public class AggregationFactory implements AggregationSpec {
-    static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
-    static final String ROLLUP_RUNNING_SUM2_COLUMN_ID = "_RS2_";
-    static final String ROLLUP_NONNULL_COUNT_COLUMN_ID = "_NNC_";
-    static final String ROLLUP_NAN_COLUMN_ID = "_NaN_";
-    static final String ROLLUP_PIC_COLUMN_ID = "_PIC_";
-    static final String ROLLUP_NIC_COLUMN_ID = "_NIC_";
-    public static final String ROLLUP_DISTINCT_SSM_COLUMN_ID = "_SSM_";
 
     private final List<AggregationElement> underlyingAggregations = new ArrayList<>();
     private final boolean isRollup;
     private final boolean secondLevel;
-
-    public static final String ROLLUP_COLUMN_SUFFIX = "__ROLLUP__";
 
     /**
      * Create a factory for performing rollups.
@@ -532,7 +523,7 @@ public class AggregationFactory implements AggregationSpec {
                             if (sortedFirstOrLastByFactory.secondRollup
                                     && sortedFirstOrLastByFactory.getSortColumnNames().length == 1
                                     && sortedFirstOrLastByFactory.getSortColumnNames()[0]
-                                            .endsWith(ROLLUP_COLUMN_SUFFIX)) {
+                                            .endsWith(RollupConstants.ROLLUP_COLUMN_SUFFIX)) {
                                 updatedMatchPairs = Arrays.copyOf(comboMatchPairs, comboMatchPairs.length + 1);
                                 final String redirectionName = sortedFirstOrLastByFactory.getSortColumnNames()[0];
                                 updatedMatchPairs[updatedMatchPairs.length - 1] =
@@ -563,17 +554,17 @@ public class AggregationFactory implements AggregationSpec {
                                     final boolean isStdVar = isStd || isVar;
                                     if (isAverage || isStdVar) {
                                         final String runningSumName =
-                                                mp.leftColumn() + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_RUNNING_SUM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String runningSum2Name =
-                                                mp.leftColumn() + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_RUNNING_SUM2_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String nonNullName =
-                                                mp.leftColumn() + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_NONNULL_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String nanName =
-                                                mp.leftColumn() + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_NAN_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String picName =
-                                                mp.leftColumn() + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_PIC_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String nicName =
-                                                mp.leftColumn() + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_NIC_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
                                         final boolean isFloatingPoint = table.hasColumns(nanName);
 
@@ -740,7 +731,7 @@ public class AggregationFactory implements AggregationSpec {
                                         return;
                                     } else if (isCountDistinct || isDistinct || isAggUnique) {
                                         final String ssmColName =
-                                                mp.leftColumn() + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource =
                                                 table.getColumnSource(ssmColName);
                                         final ColumnSource<?> lastLevelResult = table.getColumnSource(mp.leftColumn());
@@ -925,7 +916,7 @@ public class AggregationFactory implements AggregationSpec {
                     final QueryTable adjustedTable;
                     final List<String> columnsToDrop =
                             parentTable.getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
+                                    .filter(cn -> cn.endsWith(RollupConstants.ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
                     if (!columnsToDrop.isEmpty()) {
                         adjustedTable = (QueryTable) parentTable.dropColumns(columnsToDrop);
                     } else {
@@ -993,7 +984,7 @@ public class AggregationFactory implements AggregationSpec {
     @NotNull
     private static String makeRedirectionName(IterativeIndexSpec inputAggregationStateFactory) {
         return IterativeIndexSpec.ROW_REDIRECTION_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
-                + ROLLUP_COLUMN_SUFFIX;
+                + RollupConstants.ROLLUP_COLUMN_SUFFIX;
     }
 
     private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {

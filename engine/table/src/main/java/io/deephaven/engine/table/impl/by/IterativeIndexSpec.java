@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
+
 public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
     static final String ROW_REDIRECTION_PREFIX = "RowRedirection_";
     private final Map<String, ColumnSource> nameToDestColumns = new LinkedHashMap<>();
@@ -41,7 +43,7 @@ public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
 
     @NotNull
     private String getRedirectionName() {
-        return ROW_REDIRECTION_PREFIX + rollupColumnIdentifier + AggregationFactory.ROLLUP_COLUMN_SUFFIX;
+        return ROW_REDIRECTION_PREFIX + rollupColumnIdentifier + ROLLUP_COLUMN_SUFFIX;
     }
 
     @Override

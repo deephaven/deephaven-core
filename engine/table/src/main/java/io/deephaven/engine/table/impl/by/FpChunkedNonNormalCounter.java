@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 
 abstract class FpChunkedNonNormalCounter {
     // individual state values for nan, positive infinity, and negative infinity

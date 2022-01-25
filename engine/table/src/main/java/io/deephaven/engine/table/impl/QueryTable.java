@@ -506,7 +506,7 @@ public class QueryTable extends BaseTable {
             }
 
             final String[] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream()
-                    .filter(cn -> cn.endsWith(AggregationFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+                    .filter(cn -> cn.endsWith(RollupConstants.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
             final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(rollupsToDrop);
             final Object reverseLookup =
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
