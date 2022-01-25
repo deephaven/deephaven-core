@@ -4,6 +4,8 @@
 
 package io.deephaven.kafka;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -34,17 +36,17 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
+import org.apache.avro.SchemaBuilder;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+import org.apache.http.*;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -52,6 +54,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -106,6 +109,15 @@ public class KafkaTools {
 
     private static final int CHUNK_SIZE = 2048;
 
+    private static String extractSchemaServerResponse(final HttpResponse response) throws IOException {
+        final HttpEntity entity = response.getEntity();
+        final Header encodingHeader = entity.getContentEncoding();
+        final Charset encoding = encodingHeader == null
+                ? StandardCharsets.UTF_8
+                : Charsets.toCharset(encodingHeader.getValue());
+        return EntityUtils.toString(entity, encoding);
+    }
+
     /**
      * Fetch an Avro schema from a Confluent compatible Schema Server.
      *
@@ -127,17 +139,126 @@ public class KafkaTools {
                 throw new UncheckedDeephavenException("Got status code " + statusCode + " requesting " + request);
             }
             action = "extract json server response";
-            final HttpEntity entity = response.getEntity();
-            final Header encodingHeader = entity.getContentEncoding();
-            final Charset encoding = encodingHeader == null
-                    ? StandardCharsets.UTF_8
-                    : Charsets.toCharset(encodingHeader.getValue());
-            final String json = EntityUtils.toString(entity, encoding);
+            final String json = extractSchemaServerResponse(response);
             action = "parse schema server response: " + json;
             return new Schema.Parser().parse(json);
         } catch (Exception e) {
             throw new UncheckedDeephavenException("Exception while trying to " + action, e);
         }
+    }
+
+    /**
+     * Push an Avro schema from a Confluent compatible Schema Server.
+     *
+     * @param schema An Avro schema
+     * @param schemaServerUrl The schema server URL
+     * @param resourceName The resource name that the schema will be known as in the schema server
+     * @return The version for the added resource as returned by schema server.
+     */
+    public static String putAvroSchema(
+            final Schema schema, final String schemaServerUrl, final String resourceName) {
+        String action = "setup http client";
+        try (final CloseableHttpClient client = HttpClients.custom().build()) {
+            final String requestStr =
+                    schemaServerUrl + "/subjects/" + resourceName + "/versions/";
+            final List<NameValuePair> urlParameters = new ArrayList<>();
+            final String jsonSchema = schema.toString().replaceAll("[\\n\\r]", "");
+            final String jsonRequest = "{ \"schema\" : \"" + jsonSchema.replaceAll("\"", "\\\\\"") + "\" }";
+            final HttpUriRequest request = RequestBuilder.post()
+                    .setHeader("Content-Type", "application/vnd.schemaregistry.v1+json")
+                    .setEntity(new StringEntity(jsonRequest))
+                    .setUri(requestStr)
+                    .build();
+            action = "execute schema request " + requestStr;
+            final HttpResponse response = client.execute(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_CREATED) {
+                throw new UncheckedDeephavenException(
+                        "Got response status code " + statusCode + " for request '" + jsonRequest + "': " +
+                        extractSchemaServerResponse(response));
+            }
+            action = "extract json server response";
+            final String jsonStr = extractSchemaServerResponse(response);
+            action = "parse json server response: '" + jsonStr + "' for request '" + jsonRequest + "'";
+            final JsonNode jnode = new ObjectMapper().readTree(jsonStr).get("version");
+            if (jnode == null) {
+                return null;
+            }
+            return jnode.asText();
+        } catch (Exception e) {
+            throw new UncheckedDeephavenException("Exception while trying to " + action, e);
+        }
+    }
+
+    public static Schema columnDefinitionsToAvroSchema(
+            final ColumnDefinition<?>[] colDefs,
+            final String schemaName,
+            final String namespace,
+            final Properties colProps,
+            final Predicate<String> includeOnly,
+            final Predicate<String> exclude) {
+        SchemaBuilder.FieldAssembler<Schema> fass = SchemaBuilder.record(schemaName).namespace(namespace).fields();
+        for (final ColumnDefinition<?> colDef : colDefs) {
+            if (includeOnly != null && !includeOnly.test(colDef.getName())) {
+                continue;
+            }
+            if (exclude != null && exclude.test(colDef.getName())) {
+                continue;
+            }
+            fass = addFieldForColDef(fass, colDef, colProps);
+        }
+        return fass.endRecord();
+    }
+
+    private static SchemaBuilder.FieldAssembler<Schema> addFieldForColDef(
+            final SchemaBuilder.FieldAssembler<Schema> fassIn, final ColumnDefinition<?> colDef,
+            final Properties colProps) {
+        final String colNameToPropSeparator = ".";
+        final String logicalTypeName = "logicalType";
+        final String dhTypeAttribute = "dhType";
+        SchemaBuilder.FieldAssembler<Schema> fass = fassIn;
+        final Class<?> type = colDef.getDataType();
+        final String colName = colDef.getName();
+        final SchemaBuilder.BaseFieldTypeBuilder<Schema> base = fass.name(colName).type().nullable();
+        if (type == byte.class || type == char.class || type == short.class) {
+            fass = base.intBuilder().prop(dhTypeAttribute, type.getName()).endInt().noDefault();
+        } else if (type == int.class) {
+            fass = base.intType().noDefault();
+        } else if (type == long.class) {
+            fass = base.longType().noDefault();
+        } else if (type == float.class) {
+            fass = base.floatType().noDefault();
+        } else if (type == double.class) {
+            fass = base.doubleType().noDefault();
+        } else if (type == String.class) {
+            fass = base.stringType().noDefault();
+        } else if (type == DateTime.class) {
+            fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
+        } else if (type == BigDecimal.class) {
+            final String precisionName = "precision";
+            final String scaleName = "scale";
+            String precision = null;
+            String scale = null;
+            if (colProps != null) {
+                precision = colProps.getProperty(colName + colNameToPropSeparator + precisionName);
+                scale = colProps.getProperty(colName + colNameToPropSeparator + scaleName);
+            }
+            if (precision == null || scale == null) {
+                throw new IllegalArgumentException(
+                        "When " + BigDecimal.class.getSimpleName() + " type columns are included, " +
+                                " column properties '" + precisionName + "' and '" + scaleName
+                                + "' for the given columns should be provided.");
+            }
+            fass = base.bytesBuilder()
+                    .prop(logicalTypeName, "decimal")
+                    .prop(precisionName, precision)
+                    .prop(scaleName, scale)
+                    .endBytes()
+                    .noDefault();
+        } else {
+            fass = base.bytesBuilder().prop(dhTypeAttribute, type.getName()).endBytes().noDefault();
+        }
+        return fass;
     }
 
     /**
@@ -589,17 +710,33 @@ public class KafkaTools {
                 final String schemaVersion;
                 final Map<String, String> fieldToColumnMapping;
                 final String timestampFieldName;
+                final Predicate<String> includeOnlyColumns;
+                final Predicate<String> excludeColumns;
+                final boolean publishSchema;
+                final String schemaNamespace;
+                final Properties columnProperties;
 
                 Avro(final Schema schema,
                         final String schemaName,
                         final String schemaVersion,
                         final Map<String, String> fieldToColumnMapping,
-                        final String timestampFieldName) {
+                        final String timestampFieldName,
+                        final Predicate<String> includeOnlyColumns,
+                        final Predicate<String> excludeColumns,
+                        final boolean publishSchema,
+                        final String schemaNamespace,
+                        final Properties columnProperties
+                ) {
                     this.schema = schema;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
                     this.fieldToColumnMapping = fieldToColumnMapping;
                     this.timestampFieldName = timestampFieldName;
+                    this.includeOnlyColumns = includeOnlyColumns;
+                    this.excludeColumns = excludeColumns;
+                    this.publishSchema = publishSchema;
+                    this.schemaNamespace = schemaNamespace;
+                    this.columnProperties = columnProperties;
                 }
 
                 @Override
@@ -607,22 +744,35 @@ public class KafkaTools {
                     return DataFormat.AVRO;
                 }
 
-                void ensureSchema(final Properties kafkaProperties) {
+                void ensureSchema(final Table t, final Properties kafkaProperties) {
                     if (schema != null) {
                         return;
                     }
-                    if (!kafkaProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
-                        throw new IllegalArgumentException(
-                                "Avro schema name specified and schema server url property " +
-                                        SCHEMA_SERVER_PROPERTY + " not found.");
+                    final String schemaServiceUrl = ensureAndGetSchemaServerProprety(kafkaProperties);
+                    if (publishSchema) {
+                        schema = columnDefinitionsToAvroSchema(t.getDefinition().getColumns(),
+                                schemaName, schemaNamespace, columnProperties, includeOnlyColumns, excludeColumns);
+                        final String putVersion = putAvroSchema(schema, schemaServiceUrl, schemaName);
+                        if (putVersion != null && schemaVersion != null && !schemaVersion.equals(putVersion)) {
+                            throw new IllegalStateException("Specified expected version " + schemaVersion + " mismatch: schema server put for schema name " +
+                                    schemaName + " resulted in version " + putVersion);
+                        }
+                    } else {
+                        schema = getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
                     }
-                    final String schemaServiceUrl = kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
-                    schema = getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
                 }
 
+                private static String ensureAndGetSchemaServerProprety(final Properties kafkaProperties) {
+                    if (!kafkaProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
+                        throw new IllegalArgumentException(
+                                "Avro schema name specified but schema server url property " +
+                                        SCHEMA_SERVER_PROPERTY + " not found.");
+                    }
+                    return kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
+                }
 
-                String[] getColumnNames(final Properties kafkaProperties) {
-                    ensureSchema(kafkaProperties);
+                String[] getColumnNames(final Table t, final Properties kafkaProperties) {
+                    ensureSchema(t, kafkaProperties);
                     final List<Schema.Field> fields = schema.getFields();
                     // ensure we got timestampFieldName right
                     if (timestampFieldName != null) {
@@ -642,21 +792,27 @@ public class KafkaTools {
                     }
                     final int timestampFieldCount = ((timestampFieldName != null) ? 1 : 0);
                     final int nColNames = fields.size() - timestampFieldCount;
-                    final String[] columnNames = new String[nColNames];
-                    int i = 0;
+                    final List<String> columnNames = new ArrayList<>();
                     for (final Schema.Field field : fields) {
                         final String fieldName = field.name();
                         if (timestampFieldName != null && fieldName.equals(timestampFieldName)) {
                             continue;
                         }
+                        final String candidateColumnName;
                         if (fieldToColumnMapping == null) {
-                            columnNames[i] = fieldName;
+                            candidateColumnName = fieldName;
                         } else {
-                            columnNames[i] = fieldToColumnMapping.getOrDefault(fieldName, fieldName);
+                            candidateColumnName = fieldToColumnMapping.getOrDefault(fieldName, fieldName);
                         }
-                        ++i;
+                        if (excludeColumns != null && excludeColumns.test(candidateColumnName)) {
+                            continue;
+                        }
+                        if (includeOnlyColumns != null && !includeOnlyColumns.test(candidateColumnName)) {
+                            continue;
+                        }
+                        columnNames.add(candidateColumnName);
                     }
-                    return columnNames;
+                    return columnNames.toArray(new String[columnNames.size()]);
                 }
             }
 
@@ -665,14 +821,14 @@ public class KafkaTools {
              */
             static final class Json extends KeyOrValueSpec {
                 final String[] includeColumns;
-                final Set<String> excludeColumns;
+                final Predicate<String> excludeColumns;
                 final Map<String, String> columnNameToFieldName;
                 final String nestedObjectDelimiter;
                 final boolean outputNulls;
                 final String timestampFieldName;
 
                 Json(final String[] includeColumns,
-                        final Set<String> excludeColumns,
+                        final Predicate<String> excludeColumns,
                         final Map<String, String> columnNameToFieldName,
                         final String nestedObjectDelimiter,
                         final boolean outputNulls,
@@ -710,14 +866,8 @@ public class KafkaTools {
                         }
                         return includeColumns;
                     }
-                    final List<String> mismatches = excludeColumns.stream().filter(cn -> !tableColumnsSet.contains(cn))
-                            .collect(Collectors.toList());
-                    if (mismatches.size() > 0) {
-                        throw new IllegalArgumentException(
-                                "excludeColumns contains names not found in table columns: " + mismatches);
-                    }
                     return Arrays.stream(tableColumnNames)
-                            .filter(cn -> !excludeColumns.contains(cn)).toArray(String[]::new);
+                            .filter(cn -> !excludeColumns.test(cn)).toArray(String[]::new);
                 }
 
                 String[] getFieldNames(final String[] columnNames) {
@@ -781,7 +931,7 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
                 final String[] includeColumns,
-                final Set<String> excludeColumns,
+                final Predicate<String> excludeColumns,
                 final Map<String, String> columnToFieldMapping,
                 final String nestedObjectDelimiter,
                 final boolean outputNulls,
@@ -808,7 +958,7 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
+         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is null.
          *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
@@ -818,7 +968,7 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
                 final String[] includeColumns,
-                final Set<String> excludeColumns,
+                final Predicate<String> excludeColumns,
                 final Map<String, String> columnToFieldMapping) {
             return jsonSpec(includeColumns, excludeColumns, columnToFieldMapping, null, false, null);
         }
@@ -829,19 +979,24 @@ public class KafkaTools {
          * @param schema An Avro schema. The message will implement this schema; all fields will be populated from some
          *        table column via explicit or implicit mapping.
          * @param fieldToColumnMapping A map from Avro schema field name to column name. Any field names not included as
-         *        a key in the map will be mapped to columns with the same name. If null, map all fields to columns of
-         *        the same name.
+         *        a key in the map will be mapped to columns with the same name (unless those columns are filtered out).
+         *        If null, map all fields to columns of the same name (except for columns filtered out).
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
          *        field with the given name should exist in the provided schema, and be of logical type timestamp
          *        micros.
+         * @param includeOnlyColumns If not null, filter out any columns tested false in this predicate.
+         * @param excludeColumns If not null, filter out any columns tested true in this predicate.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(
                 final Schema schema,
                 final Map<String, String> fieldToColumnMapping,
-                final String timestampFieldName) {
-            return new KeyOrValueSpec.Avro(schema, null, null, fieldToColumnMapping, timestampFieldName);
+                final String timestampFieldName,
+                final Predicate<String> includeOnlyColumns,
+                final Predicate<String> excludeColumns) {
+            return new KeyOrValueSpec.Avro(schema, null, null, fieldToColumnMapping,
+                    timestampFieldName, includeOnlyColumns, excludeColumns, false, null, null);
         }
 
         /**
@@ -857,6 +1012,18 @@ public class KafkaTools {
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
          *        field with the given name should exist in the provided schema, and be of logical type timestamp
          *        micros.
+         * @param includeOnlyColumns If not null, filter out any columns tested false in this predicate.
+         * @param excludeColumns If not null, filter out any columns tested true in this predicate.
+         * @param publishSchema If true, instead of loading a schema already defined in schema server, define a new
+         *        Avro schema based on the selected columns for this table and publish it to schema server.
+         *        When publishing, if a schema version is provided and the version generated doesn't match, an exception
+         *        results.
+         * @param schemaNamespace  When publishSchema is true, the namespace for the generated schema to be restered in schema server.
+         *                         When publishSchema is false, null should be passed.
+         * @param columnProperties When publisSchema is true, a {@code Properties} object can be provided,
+         *                         specifying String properties implying particular Avro type mappings for them.
+         *                         In particular, column {@code X} of {@code BigDecimal} type should specify string properties
+         *                         {@code "x.precision"} and {@code "x.scale"}.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
@@ -864,9 +1031,16 @@ public class KafkaTools {
                 final String schemaName,
                 final String schemaVersion,
                 final Map<String, String> fieldToColumnMapping,
-                final String timestampFieldName) {
+                final String timestampFieldName,
+                final Predicate<String> includeOnlyColumns,
+                final Predicate<String> excludeColumns,
+                final boolean publishSchema,
+                final String schemaNamespace,
+                final Properties columnProperties) {
             return new KeyOrValueSpec.Avro(
-                    null, schemaName, schemaVersion, fieldToColumnMapping, timestampFieldName);
+                    null, schemaName, schemaVersion, fieldToColumnMapping,
+                    timestampFieldName, includeOnlyColumns, excludeColumns, publishSchema,
+                    schemaNamespace, columnProperties);
         }
     }
 
@@ -1119,7 +1293,7 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case AVRO:
                 final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
-                return avroSpec.getColumnNames(kafkaProperties);
+                return avroSpec.getColumnNames(t, kafkaProperties);
             case JSON:
                 final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
                 return jsonSpec.getColumnNames(t);
@@ -1625,6 +1799,11 @@ public class KafkaTools {
             map.put(partitions[i], offsets[i]);
         }
         return map::get;
+    }
+
+    @SuppressWarnings("unused")
+    public static Predicate<String> predicateFromSet(final Set<String> set) {
+        return set::contains;
     }
 
     private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {

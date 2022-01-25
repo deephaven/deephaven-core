@@ -3,6 +3,8 @@ package io.deephaven.kafka.publish;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.kafka.KafkaSchemaUtils;
+import io.deephaven.kafka.ingest.GenericRecordUtil;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
@@ -279,6 +281,24 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 (final int ii, final ObjectChunk<?, Values> inputChunk) -> inputChunk.get(ii));
     }
 
+    private static GenericRecordFieldProcessor makeDateTimeToMillisFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((DateTime) inputChunk.get(ii)).getMillis());
+    }
+
+    private static GenericRecordFieldProcessor makeDateTimeToMicrosFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((DateTime) inputChunk.get(ii)).getMicros());
+    }
+
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
         private final long fromNanosToUnitDenominator;
 
@@ -332,6 +352,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeLongFieldProcessor(fieldName, src);
     }
 
+    final String getLogicalType(final String fieldName, final Schema.Field field) {
+        final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, field.schema());
+        return effectiveSchema.getProp("logicalType");
+    }
+
     /**
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
@@ -361,6 +386,18 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             proc = makeFloatFieldProcessor(fieldName, src);
         } else if (type == double.class) {
             proc = makeDoubleFieldProcessor(fieldName, src);
+        } else if (type == DateTime.class) {
+            final String logicalType = getLogicalType(fieldName, field);
+            if (logicalType == null) {
+                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName + " has no logical type.");
+            }
+            if (logicalType.equals("timestamp-millis")) {
+                proc = makeDateTimeToMillisFieldProcessor(fieldName, src);
+            } else if (logicalType.equals("timestamp-micros")) {
+                proc = makeDateTimeToMicrosFieldProcessor(fieldName, src);
+            } else {
+                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName + " has unrecognized logical type " + logicalType);
+            }
         } else {
             proc = makeObjectFieldProcessor(fieldName, src);
         }

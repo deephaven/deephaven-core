@@ -1077,6 +1077,8 @@ def _tuplesListToColDefsList(ts):
 
 @_passThrough
 def _dictToProperties(d):
+    if d is None:
+        return None
     r = _jprops_()
     for key, value in d.items():
         if value is None:
