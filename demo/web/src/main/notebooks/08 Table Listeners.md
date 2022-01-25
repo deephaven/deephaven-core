@@ -83,4 +83,4 @@ table_one_handler = listen(table_one, table_one_listener)
 table_two_handler = listen(table_two, table_two_listener)
 ```
 
-And now we have reused our base listener across two tables!
+And now we have reused our base listener across two tables.
