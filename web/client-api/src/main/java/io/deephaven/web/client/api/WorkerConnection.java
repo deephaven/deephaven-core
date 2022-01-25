@@ -830,7 +830,10 @@ public class WorkerConnection {
         return whenServerReady("get a widget")
                 .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
                     FetchObjectRequest request = new FetchObjectRequest();
-                    request.setSourceId(TableTicket.createTicket(varDef));
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
                     objectServiceClient().fetchObject(request, metadata(), c::apply);
                 })).then(response -> Promise.resolve(new JsWidget(this, response)));
     }
