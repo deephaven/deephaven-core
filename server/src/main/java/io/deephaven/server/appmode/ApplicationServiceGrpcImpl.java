@@ -27,12 +27,7 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Singleton
 public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.ApplicationServiceImplBase
@@ -53,13 +48,13 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final FieldUpdatePropagationJob propagationJob = new FieldUpdatePropagationJob();
 
     /** Which fields have been updated since we last propagated? */
-    private final Map<AppFieldId, Field<?>> addedFields = new HashMap<>();
+    private final Map<AppFieldId, Field<?>> addedFields = new LinkedHashMap<>();
     /** Which fields have been removed since we last propagated? */
-    private final Set<AppFieldId> removedFields = new HashSet<>();
+    private final Set<AppFieldId> removedFields = new LinkedHashSet<>();
     /** Which fields have been updated since we last propagated? */
-    private final Set<AppFieldId> updatedFields = new HashSet<>();
+    private final Set<AppFieldId> updatedFields = new LinkedHashSet<>();
     /** Which [remaining] fields have we seen? */
-    private final Map<AppFieldId, Field<?>> knownFieldMap = new HashMap<>();
+    private final Map<AppFieldId, Field<?>> knownFieldMap = new LinkedHashMap<>();
 
     @Inject
     public ApplicationServiceGrpcImpl(final AppMode mode,

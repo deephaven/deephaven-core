@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -60,9 +61,9 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
         // TODO(deephaven-core#1781): Close gaps between proto "CustomType" fields
 
-        public Map<String, String> created = new HashMap<>();
-        public Map<String, String> updated = new HashMap<>();
-        public Map<String, String> removed = new HashMap<>();
+        public Map<String, String> created = new LinkedHashMap<>();
+        public Map<String, String> updated = new LinkedHashMap<>();
+        public Map<String, String> removed = new LinkedHashMap<>();
 
         public boolean isEmpty() {
             return error == null && created.isEmpty() && updated.isEmpty() && removed.isEmpty();
