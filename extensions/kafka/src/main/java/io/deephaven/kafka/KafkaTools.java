@@ -1802,7 +1802,7 @@ public class KafkaTools {
 
     @SuppressWarnings("unused")
     public static Predicate<String> predicateFromSet(final Set<String> set) {
-        return set::contains;
+        return (set == null) ? null : set::contains;
     }
 
     private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
