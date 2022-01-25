@@ -4,6 +4,7 @@ import deephaven.ProduceKafka as pk
 import deephaven.Types as dh
 from deephaven import Aggregation as agg, as_list
 from deephaven import PythonFunction as pyfun
+import deephaven.TableManipulation.WindowCheck as wck
 import jpy
 
 def tmapfun(x):
@@ -83,16 +84,14 @@ top_5_pageviews = item_summary \
 
 minute_in_nanos = 60 * 1000 * 1000 * 1000
 
-# Once deephaven-core PR #1843 is merged, we can remove the need for explicitly using L below
-# by defining a minute_in_nanos python variable, which would be interpolated with the right type,
-# and replacing `60L*second_in_nanos` by `minute_in_nanos`.
-profile_views_per_minute_last_10 = pageviews_stg \
-    .updateView(
+profile_views_per_minute_last_10 = \
+    wck.addTimeWindow(pageviews_stg, 'received_at', minute_in_nanos, 'in_last_10min') \
+    .where(
+        'pageview_type = `profiles`',
+        'in_last_10min = true'
+    ).updateView(
         'received_at_nanos = nanos(received_at)',
         'received_at_minutes = received_at_nanos - received_at_nanos % minute_in_nanos'
-    ).where(
-        'pageview_type = `profiles`',
-        'nanos(DateTime.now()) < received_at_nanos + 10*minute_in_nanos'
     ).updateView(
         'received_at_minute = new DateTime(received_at_minutes)'
     ).view(
@@ -108,14 +107,18 @@ profile_views_per_minute_last_10 = pageviews_stg \
     )
 
 profile_views = pageviews_stg \
-    .view('owner_id = target_id', 'viewer_id = user_id', 'received_at') \
-    .partitionBy('owner_id') \
-    .transformTables(
-        tmapfun(lambda t : t \
-            .sortDescending('received_at') \
+    .view(
+        'owner_id = target_id',
+        'viewer_id = user_id',
+        'received_at'
+    ).partitionBy(
+        'owner_id'
+    ).transformTables(
+        tmapfun(lambda t : t
+            .sortDescending('received_at')
             .head(10)
-        )) \
-    .merge()
+        )
+    ).merge()
     
 profile_views_enriched = profile_views \
     .naturalJoin(users, 'owner_id = id', 'owner_email = email') \
@@ -132,12 +135,8 @@ dd_flagged_profiles = ck.consumeToTable(
 dd_flagged_profile_view = dd_flagged_profiles \
     .naturalJoin(pageviews_stg, 'user_id')
 
-jbigd_type = jpy.get_type('java.math.BigDecimal')
-def mult(jbigd_value, long_value):
-    return jbigd_value.multiply(jbigd_type(long_value))
-
 high_value_users = purchases \
-    .updateView('purchase_total = (java.math.BigDecimal) mult(purchase_price, quantity)') \
+    .updateView('purchase_total = purchase_price.multiply(java.math.BigDecimal.valueOf(quantity))') \
     .aggBy(
         as_list([
             agg.AggSum('lifetime_value = purchase_total'),
