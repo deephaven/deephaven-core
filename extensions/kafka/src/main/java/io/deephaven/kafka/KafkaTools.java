@@ -6,6 +6,7 @@ package io.deephaven.kafka;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gnu.trove.map.hash.TIntLongHashMap;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -46,7 +47,6 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -161,8 +161,10 @@ public class KafkaTools {
         try (final CloseableHttpClient client = HttpClients.custom().build()) {
             final String requestStr =
                     schemaServerUrl + "/subjects/" + resourceName + "/versions/";
-            final String jsonSchema = schema.toString().replaceAll("[\\n\\r]", "");
-            final String jsonRequest = "{ \"schema\" : \"" + jsonSchema.replaceAll("\"", "\\\\\"") + "\" }";
+            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectNode root = mapper.createObjectNode();
+            root.put("schema", schema.toString());
+            final String jsonRequest = mapper.writeValueAsString(root);
             final HttpUriRequest request = RequestBuilder.post()
                     .setHeader("Content-Type", "application/vnd.schemaregistry.v1+json")
                     .setEntity(new StringEntity(jsonRequest))
@@ -179,7 +181,7 @@ public class KafkaTools {
             action = "extract json server response";
             final String jsonStr = extractSchemaServerResponse(response);
             action = "parse json server response: '" + jsonStr + "' for request '" + jsonRequest + "'";
-            final JsonNode jnode = new ObjectMapper().readTree(jsonStr).get("version");
+            final JsonNode jnode = mapper.readTree(jsonStr).get("version");
             if (jnode == null) {
                 return null;
             }
