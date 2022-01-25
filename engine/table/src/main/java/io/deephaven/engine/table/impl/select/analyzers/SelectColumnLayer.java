@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
 
@@ -87,7 +87,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final boolean hasShifts = upstream.shifted().nonempty();
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1
                                 && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
-                            final AtomicLong divisions = new AtomicLong();
                             final long divisionSize = Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                     (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();
@@ -102,29 +101,28 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
                                     if (rsAddIt.hasMore()) {
                                         update.added = rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
-                                        if (update.added.size() < divisionSize && rsModIt.hasMore()) {
-                                            update.modified = rsModIt
-                                                    .getNextRowSequenceWithLength(divisionSize - update.added().size())
-                                                    .asRowSet();
-                                        } else {
-                                            update.modified = RowSetFactory.empty();
-                                        }
                                     } else {
-                                        update.modified = rsModIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
                                         update.added = RowSetFactory.empty();
                                     }
 
-                                    divisions.addAndGet(1);
+                                    if (update.added.size() < divisionSize && rsModIt.hasMore()) {
+                                        update.modified = rsModIt
+                                                .getNextRowSequenceWithLength(divisionSize - update.added().size())
+                                                .asRowSet();
+                                    } else {
+                                        update.modified = RowSetFactory.empty();
+                                    }
+
                                     updates.add(update);
                                 }
                             }
 
-                            if (divisions.get() == 0) {
+                            if (updates.isEmpty()) {
                                 throw new IllegalStateException();
                             }
 
                             jobScheduler.submit(() -> prepareUpdate(jobScheduler, upstream, toClear, helper,
-                                    onCompletion, this::onError, divisions, updates), SelectColumnLayer.this,
+                                    onCompletion, this::onError, updates), SelectColumnLayer.this,
                                     this::onError);
                         } else {
                             jobScheduler.submit(
@@ -137,12 +135,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void prepareUpdate(final JobScheduler jobScheduler, final TableUpdate upstream, final RowSet toClear,
             final UpdateHelper helper, SelectLayerCompletionHandler onCompletion, Consumer<Exception> onError,
-            AtomicLong divisions, List<TableUpdate> splitUpdates) {
+            List<TableUpdate> splitUpdates) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity(upstream, upstream.modified());
 
         copyPreviousValues(upstream);
+
+        final AtomicInteger divisions = new AtomicInteger(splitUpdates.size());
 
         long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
@@ -159,7 +159,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            final SelectLayerCompletionHandler onCompletion, AtomicLong divisions, long startOffset,
+            final SelectLayerCompletionHandler onCompletion, AtomicInteger divisions, long startOffset,
             final boolean parallelUpdate) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
