@@ -51,7 +51,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         // we can't use threads at all if we have column that uses a Python query scope, because we are likely operating
         // under the GIL which will cause a deadlock
-        this.canUseThreads = !sc.getDataView().usesPython();
+        this.canUseThreads = !sc.getDataView().preventsParallelism();
 
         // we can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless

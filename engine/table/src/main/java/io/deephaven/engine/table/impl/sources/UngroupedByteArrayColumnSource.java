@@ -62,8 +62,8 @@ public class UngroupedByteArrayColumnSource extends UngroupedColumnSource<Byte> 
     }
     
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

@@ -153,8 +153,8 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
     }
 
     @Override
-    public boolean usesPython() {
-        return originalSource.usesPython();
+    public boolean preventsParallelism() {
+        return originalSource.preventsParallelism();
     }
 
     @Override

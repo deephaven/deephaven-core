@@ -621,8 +621,8 @@ public class ColumnsToRowsTransform {
         }
 
         @Override
-        public boolean usesPython() {
-            return Arrays.stream(transposeColumns).anyMatch(ColumnSource::usesPython);
+        public boolean preventsParallelism() {
+            return Arrays.stream(transposeColumns).anyMatch(ColumnSource::preventsParallelism);
         }
 
         @Override

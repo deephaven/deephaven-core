@@ -280,8 +280,8 @@ public class MergeSortedHelper {
         }
 
         @Override
-        public boolean usesPython() {
-            return innerSources.stream().anyMatch(ColumnSource::usesPython);
+        public boolean preventsParallelism() {
+            return innerSources.stream().anyMatch(ColumnSource::preventsParallelism);
         }
 
         @Override

@@ -138,8 +138,8 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
     }
     
     @Override
-    public boolean usesPython() {
-        return alternateColumnSource.usesPython();
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
     }
 
     @Override

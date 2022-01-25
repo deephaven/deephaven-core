@@ -97,7 +97,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
             sourceColumns = localSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
             prevSources = localPrev.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-            usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::usesPython);
+            usesPython = Arrays.stream(sourceColumns).anyMatch(ColumnSource::preventsParallelism);
         }
 
         return getColumns();

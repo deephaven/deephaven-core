@@ -856,7 +856,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private boolean usedColumnUsesPython(String columnName) {
-        return columnSources.get(columnName).usesPython();
+        return columnSources.get(columnName).preventsParallelism();
     }
 
     @Override

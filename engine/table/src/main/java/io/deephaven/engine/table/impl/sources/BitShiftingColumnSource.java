@@ -493,8 +493,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     }
 
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

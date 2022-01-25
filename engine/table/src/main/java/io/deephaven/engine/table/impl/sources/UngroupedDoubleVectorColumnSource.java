@@ -113,8 +113,8 @@ public class UngroupedDoubleVectorColumnSource extends UngroupedColumnSource<Dou
     }
 
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

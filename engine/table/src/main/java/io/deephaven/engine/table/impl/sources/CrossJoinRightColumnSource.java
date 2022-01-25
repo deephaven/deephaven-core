@@ -685,8 +685,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     }
 
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

@@ -51,8 +51,8 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
     }
 
     @Override
-    public boolean usesPython() {
-        return alternateColumnSource.usesPython();
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
     }
 
     @Override

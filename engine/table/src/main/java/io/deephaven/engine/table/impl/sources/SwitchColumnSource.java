@@ -296,8 +296,8 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean usesPython() {
-        return currentSource.usesPython() || (!prevInvalid() && prevSource.usesPython());
+    public boolean preventsParallelism() {
+        return currentSource.preventsParallelism() || (!prevInvalid() && prevSource.preventsParallelism());
     }
 
     @Override

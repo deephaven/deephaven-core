@@ -79,7 +79,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getDataType()));
                     allowing(mocked).getComponentType();
                     will(returnValue(cd.getComponentType()));
-                    allowing(mocked).usesPython();
+                    allowing(mocked).preventsParallelism();
                     will(returnValue(false));
                     allowing(mocked).isStateless();
                     will(returnValue(true));

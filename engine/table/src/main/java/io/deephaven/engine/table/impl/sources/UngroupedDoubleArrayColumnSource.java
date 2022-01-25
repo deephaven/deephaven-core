@@ -62,8 +62,8 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     }
     
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

@@ -200,8 +200,8 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean usesPython() {
-        return delegate.usesPython();
+    public boolean preventsParallelism() {
+        return delegate.preventsParallelism();
     }
 
     @Override

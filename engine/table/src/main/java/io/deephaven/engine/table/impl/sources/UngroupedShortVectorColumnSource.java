@@ -113,8 +113,8 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
     }
 
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

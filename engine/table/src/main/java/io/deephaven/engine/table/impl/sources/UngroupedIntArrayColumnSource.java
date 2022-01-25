@@ -62,8 +62,8 @@ public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer
     }
     
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

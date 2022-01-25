@@ -62,8 +62,8 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     }
     
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

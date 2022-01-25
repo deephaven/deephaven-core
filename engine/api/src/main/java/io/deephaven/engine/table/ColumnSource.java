@@ -185,12 +185,15 @@ public interface ColumnSource<T>
     }
 
     /**
-     * Most column sources do not use Python, those that do call into Python must return true. This is essential,
-     * because Python formulas may not be parallelized while holding the GIL, which would result in a deadlock.
+     * Can this column source be evaluated on an arbitrary thread?
      *
-     * @return true if this column may access Python
+     * Most column sources can be evaluated on an arbitrary thread, however those that do call into Python can not be
+     * evaluated on an arbitrary thread as the calling thread may already have the GIL, which would result in a
+     * deadlock when the column source takes the GIL to evaluate formulas.
+     *
+     * @return true if this column prevents parallelization
      */
-    default boolean usesPython() {
+    default boolean preventsParallelism() {
         return false;
     }
 

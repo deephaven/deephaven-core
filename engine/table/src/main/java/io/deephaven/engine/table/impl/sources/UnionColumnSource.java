@@ -512,9 +512,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     private static final ReinterpretedClassKey REINTERPRETED_CLASS_KEY_INSTANCE = new ReinterpretedClassKey();
 
     @Override
-    public boolean usesPython() {
+    public boolean preventsParallelism() {
         for (int ii = 0; ii < numSources; ++ii) {
-            if (subSources[ii].usesPython()) {
+            if (subSources[ii].preventsParallelism()) {
                 return true;
             }
         }

@@ -134,8 +134,8 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public boolean usesPython() {
-        return alternateColumnSource.usesPython();
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
     }
 
     @Override

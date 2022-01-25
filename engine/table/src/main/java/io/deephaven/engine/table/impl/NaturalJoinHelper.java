@@ -473,8 +473,8 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public boolean usesPython() {
-            return symbolSource.usesPython();
+        public boolean preventsParallelism() {
+            return symbolSource.preventsParallelism();
         }
 
         @Override

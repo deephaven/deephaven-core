@@ -289,7 +289,7 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    public boolean usesPython() {
+    public boolean preventsParallelism() {
         return usesPython;
     }
 

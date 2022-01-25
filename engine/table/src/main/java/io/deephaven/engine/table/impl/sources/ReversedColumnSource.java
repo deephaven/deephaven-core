@@ -177,8 +177,8 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean usesPython() {
-        return innerSource.usesPython();
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
     }
 
     @Override

@@ -458,8 +458,8 @@ public class WindowCheck {
         }
 
         @Override
-        public boolean usesPython() {
-            return timeStampSource.usesPython();
+        public boolean preventsParallelism() {
+            return timeStampSource.preventsParallelism();
         }
 
         @Override

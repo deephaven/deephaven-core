@@ -169,8 +169,8 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public boolean usesPython() {
-        return originalSource.usesPython();
+    public boolean preventsParallelism() {
+        return originalSource.preventsParallelism();
     }
 
     @Override

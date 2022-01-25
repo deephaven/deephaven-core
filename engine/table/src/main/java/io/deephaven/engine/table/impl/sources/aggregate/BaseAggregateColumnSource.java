@@ -246,8 +246,8 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     }
 
     @Override
-    public boolean usesPython() {
-        return aggregatedSource.usesPython() || groupRowSetSource.usesPython();
+    public boolean preventsParallelism() {
+        return aggregatedSource.preventsParallelism() || groupRowSetSource.preventsParallelism();
     }
 
     @Override
