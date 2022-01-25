@@ -168,6 +168,31 @@ b = 2
 c = 3
 t = emptyTable."""
     }
+
+    def "Completion should not error out in a comment between two lines"() {
+        given:
+        CompletionParser p = new CompletionParser()
+        String beforeCursor = """
+a = 1
+# hello world a."""
+        String afterCursor = """
+b = 2
+"""
+        String src = beforeCursor + afterCursor;
+
+        doc = p.parse(src)
+
+        LoggerFactory.getLogger(CompletionHandler)
+        VariableProvider variables = Mock(VariableProvider) {
+            _ * getVariableNames() >> ['emptyTable']
+            0 * _
+        }
+
+        when: "Cursor is in the comment after the variablename+dot and completion is requested"
+        Set<CompletionItem> result = performSearch(doc, beforeCursor.length(), variables)
+        then: "Expect the completion result to suggest nothing"
+        result.size() == 0
+    }
     @Override
     VariableProvider getVariables() {
         return Mock(VariableProvider) {
