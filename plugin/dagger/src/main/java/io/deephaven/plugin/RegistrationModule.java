@@ -7,6 +7,7 @@ import dagger.multibindings.IntoSet;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Provides an empty set for {@link Registration} and adapters into {@link Registration} from {@link Plugin}.
@@ -23,8 +24,8 @@ public interface RegistrationModule {
     }
 
     @Provides
-    @IntoSet
-    static Registration adaptsPlugins(Set<Plugin> plugins) {
-        return new PluginRegistrations(plugins);
+    @ElementsIntoSet
+    static Set<Registration> adaptsPlugins(Set<Plugin> plugins) {
+        return plugins.stream().map(RegistrationAdapter::new).collect(Collectors.toSet());
     }
 }
