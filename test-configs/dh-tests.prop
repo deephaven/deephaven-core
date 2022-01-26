@@ -98,3 +98,6 @@ SystemicObjectTracker.enabled=true
 # Disable some noise in test logs
 Liveness.countLogEnabled=false
 Liveness.cleanupLogEnabled=false
+
+# Force more parallelism
+QueryTable.minimumParallelSelectRows=1024

@@ -60,4 +60,14 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

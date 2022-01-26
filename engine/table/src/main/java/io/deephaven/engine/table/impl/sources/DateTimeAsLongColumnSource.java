@@ -93,4 +93,14 @@ public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> imple
         }
         longDestination.setSize(dateTimeChunk.size());
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

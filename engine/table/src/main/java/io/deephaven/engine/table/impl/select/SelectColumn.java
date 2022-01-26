@@ -158,6 +158,12 @@ public interface SelectColumn extends Selectable {
     boolean disallowRefresh();
 
     /**
+     * Returns true if this column is stateless (i.e. one row does not depend on the order of evaluation for another
+     * row).
+     */
+    boolean isStateless();
+
+    /**
      * Create a copy of this SelectColumn.
      *
      * @return an independent copy of this SelectColumn.

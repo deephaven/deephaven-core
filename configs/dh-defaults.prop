@@ -51,3 +51,5 @@ PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
 server.timezone=America/New_York
 
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
+
+OperationInitializationThreadPool.threads=1

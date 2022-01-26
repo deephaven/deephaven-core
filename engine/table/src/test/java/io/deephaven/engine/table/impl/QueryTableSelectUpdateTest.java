@@ -638,10 +638,10 @@ public class QueryTableSelectUpdateTest {
             for (int seed = 0; seed < 5; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                    testUpdateIncrementalRandomized(seed, false);
+                    testUpdateIncrementalRandomized(seed, false, 25);
                 }
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                    testUpdateIncrementalRandomized(seed, true);
+                    testUpdateIncrementalRandomized(seed, true, 25);
                 }
             }
         } finally {
@@ -649,24 +649,42 @@ public class QueryTableSelectUpdateTest {
         }
     }
 
-    private void testUpdateIncrementalRandomized(int seed, boolean useRedirection) {
+    @Test
+    public void testUpdateIncrementalRandomizedLarge() {
+        // this test has large enough size that we will have individual column updates spread across threads
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 2, 1);
+        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
+        try {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+            for (int seed = 0; seed < 1; ++seed) {
+                System.out.println("Seed: " + seed);
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUpdateIncrementalRandomized(seed, false, 4096);
+                }
+            }
+        } finally {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
+        }
+    }
+
+    private void testUpdateIncrementalRandomized(int seed, boolean useRedirection, int size) {
         final boolean startSelect = QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT;
         final boolean startUpdate = QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE;
 
         try {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = useRedirection;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = useRedirection;
-            testUpdateIncrementalRandomized(seed, new MutableInt(100));
+            testUpdateIncrementalRandomized(seed, new MutableInt(100), size);
         } finally {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
         }
     }
 
-    private void testUpdateIncrementalRandomized(final int seed, MutableInt numSteps) {
+    private void testUpdateIncrementalRandomized(final int seed, MutableInt numSteps, int size) {
         final Random random = new Random(seed);
         final TstUtils.ColumnInfo[] columnInfo;
-        final int size = 25;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d", "e"),

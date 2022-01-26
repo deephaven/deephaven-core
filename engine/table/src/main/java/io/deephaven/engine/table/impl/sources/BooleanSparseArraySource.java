@@ -23,6 +23,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
@@ -67,6 +68,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
      * track previous values.
      */
     protected transient UpdateCommitter<BooleanSparseArraySource> prevFlusher = null;
+
+    /**
+     * If ensure previous has been called, we need not check previous values when filling.
+     */
+    private transient long ensurePreviousClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -387,6 +393,54 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return null;
     }
 
+    @Override
+    public void ensurePrevious(RowSet changedRows) {
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        if (ensurePreviousClockCycle == currentStep) {
+            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        }
+        ensurePreviousClockCycle = currentStep;
+
+        if (changedRows.isEmpty()) {
+            return;
+        }
+
+        if (prevFlusher == null) {
+            return;
+        }
+        prevFlusher.maybeActivate();
+
+        try (final RowSet.Iterator it = changedRows.iterator()) {
+            long key = it.nextLong();
+            while (true) {
+                final long firstKey = key;
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final byte[] block = ensureBlock(block0, block1, block2);
+
+                final byte[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
+                final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
+                assert inUse != null;
+
+                do {
+                    final int indexWithinBlock = (int) (key & INDEX_MASK);
+                    final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                    final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                    prevBlock[indexWithinBlock] = block[indexWithinBlock];
+                    inUse[indexWithinInUse] |= maskWithinInUse;
+                } while (it.hasNext() && (key = it.nextLong()) <= maxKeyInCurrentBlock);
+                if (key <= maxKeyInCurrentBlock) {
+                    // we did not advance the iterator so should break
+                    break;
+                }
+            }
+        }
+    }
+
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
@@ -562,9 +616,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -592,7 +646,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
                 final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     final byte[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
                     final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
 
@@ -633,9 +687,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -657,13 +711,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             }
 
             // This conditional with its constant condition should be very friendly to the branch predictor.
-            final byte[] prevBlock = hasPrev ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
-            final long[] inUse = hasPrev ? prevInUse.get(block0).get(block1).get(block2) : null;
+            final byte[] prevBlock = trackPrevious ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
+            final long[] inUse = trackPrevious ? prevInUse.get(block0).get(block1).get(block2) : null;
 
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     assert inUse != null;
                     assert prevBlock != null;
 
@@ -690,9 +744,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -711,14 +765,14 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             }
 
             // This conditional with its constant condition should be very friendly to the branch predictor.
-            final byte[] prevBlock = hasPrev ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
-            final long[] inUse = hasPrev ? prevInUse.get(block0).get(block1).get(block2) : null;
+            final byte[] prevBlock = trackPrevious ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
+            final long[] inUse = trackPrevious ? prevInUse.get(block0).get(block1).get(block2) : null;
 
             long key = keys.get(ii);
             do {
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     assert inUse != null;
 
                     final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;

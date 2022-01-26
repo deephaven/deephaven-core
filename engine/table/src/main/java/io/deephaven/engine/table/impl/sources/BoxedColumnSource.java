@@ -151,4 +151,14 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
             typedDestination.setSize(sourceSize);
         }
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return originalSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return originalSource.isStateless();
+    }
 }

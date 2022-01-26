@@ -394,7 +394,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     private synchronized ExecutorService getTransformationExecutorService() {
         if (useGlobalTransformationThreadPool) {
-            if (OperationInitializationThreadPool.TRANSFORM_THREADS > 1) {
+            if (OperationInitializationThreadPool.NUM_THREADS > 1) {
                 return OperationInitializationThreadPool.executorService;
             } else {
                 return null;

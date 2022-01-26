@@ -683,4 +683,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             permuteKernel.permute(innerOrderedValues, shareable.mappedKeysOrder, destination);
         }
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

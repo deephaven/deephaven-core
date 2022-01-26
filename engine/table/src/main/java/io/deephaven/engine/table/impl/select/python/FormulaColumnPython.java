@@ -60,6 +60,17 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
+    public boolean isStateless() {
+        // we can't control python
+        return false;
+    }
+
+    @Override
+    public boolean preventsParallelization() {
+        return true;
+    }
+
+    @Override
     protected final FormulaSourceDescriptor getSourceDescriptor() {
         if (!initialized) {
             throw new IllegalStateException("Must be initialized first");

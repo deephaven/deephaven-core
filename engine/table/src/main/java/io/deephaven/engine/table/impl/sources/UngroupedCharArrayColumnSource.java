@@ -55,4 +55,14 @@ public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Charac
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
+    
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }
