@@ -5,11 +5,11 @@ import java.util.Objects;
 /**
  * Adapts a {@link Plugin} into a {@link Registration}.
  */
-public final class RegistrationAdapter implements Registration {
+public final class PluginAdapter implements Registration {
 
     private final Plugin plugin;
 
-    public RegistrationAdapter(Plugin plugin) {
+    public PluginAdapter(Plugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
     }
 
@@ -20,6 +20,6 @@ public final class RegistrationAdapter implements Registration {
 
     @Override
     public String toString() {
-        return "RegistrationAdapter(" + plugin + ")";
+        return "PluginAdapter(" + plugin + ")";
     }
 }

@@ -3,7 +3,6 @@ package io.deephaven.plugin;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import dagger.multibindings.IntoSet;
 
 import java.util.Collections;
 import java.util.Set;
@@ -26,6 +25,6 @@ public interface RegistrationModule {
     @Provides
     @ElementsIntoSet
     static Set<Registration> adaptsPlugins(Set<Plugin> plugins) {
-        return plugins.stream().map(RegistrationAdapter::new).collect(Collectors.toSet());
+        return plugins.stream().map(PluginAdapter::new).collect(Collectors.toSet());
     }
 }
