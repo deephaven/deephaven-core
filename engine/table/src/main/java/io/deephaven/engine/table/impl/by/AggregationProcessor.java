@@ -14,21 +14,28 @@ import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
+import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.time.DateTime;
+import io.deephaven.util.FunctionalInterfaces.TriFunction;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
 import static io.deephaven.engine.table.impl.by.IterativeOperatorSpec.*;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -74,8 +81,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,
-                                                     final int rollupLevel,
-                                                     @NotNull final String... groupByColumnNames) {
+            @NotNull final String... groupByColumnNames) {
         switch (type) {
             case STANDARD:
                 return new StandardConverter(table, groupByColumnNames).build();
@@ -131,12 +137,6 @@ public class AggregationProcessor implements AggregationContextFactory {
                     transformers.toArray(AggregationContextTransformer[]::new));
         }
 
-        final void addNoInputOperator(@NotNull final IterativeChunkedAggregationOperator operator) {
-            operators.add(operator);
-            inputColumnNames.add(ZERO_LENGTH_STRING_ARRAY);
-            inputSources.add(null);
-        }
-
         void streamUnsupported(@NotNull final String operationName) {
             if (!isStream) {
                 return;
@@ -174,7 +174,20 @@ public class AggregationProcessor implements AggregationContextFactory {
         // Helpers for visitors
         // -------------------------------------------------------------------------------------------------------------
 
-        void visitBasicAgg(BiFunction<Class<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
+        void addNoInputOperator(@NotNull final IterativeChunkedAggregationOperator operator) {
+            addOperator(operator, null, ZERO_LENGTH_STRING_ARRAY);
+        }
+
+        final void addOperator(@NotNull final IterativeChunkedAggregationOperator operator,
+                @Nullable final ChunkSource.WithPrev<Values> inputSource,
+                @NotNull final String... inputColumnNames) {
+            operators.add(operator);
+            this.inputColumnNames.add(inputColumnNames);
+            inputSources.add(inputSource);
+        }
+
+        final void addBasicOperators(
+                BiFunction<Class<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
             for (final Pair pair : resultPairs) {
                 final String inputName = pair.input().name();
                 final String resultName = pair.output().name();
@@ -182,40 +195,42 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final Class<?> type = rawInputSource.getType();
                 final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
 
-                operators.add(operatorFactory.apply(type, resultName));
-                inputColumnNames.add(new String[] {inputName});
-                inputSources.add(inputSource);
+                addOperator(operatorFactory.apply(type, resultName), inputSource, inputName);
             }
         }
 
-        void visitMinOrMaxAgg(final boolean isMin) {
+        final void addMinOrMaxOperators(final boolean isMin) {
             for (final Pair pair : resultPairs) {
                 final String inputName = pair.input().name();
                 final String resultName = pair.output().name();
-                final ColumnSource<?> rawInputSource = table.getColumnSource(inputName);
-                final Class<?> type = rawInputSource.getType();
-                final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
 
-                IntStream.range(0, inputSources.size())
-                        .filter(index -> (inputSources.get(index) == inputSource)
-                                && (operators.get(index) instanceof SsmChunkedMinMaxOperator))
-                        .findFirst().ifPresentOrElse(
-                                (final int priorMinMaxIndex) -> {
-                                    final SsmChunkedMinMaxOperator ssmChunkedMinMaxOperator =
-                                            (SsmChunkedMinMaxOperator) operators.get(priorMinMaxIndex);
-                                    operators.add(ssmChunkedMinMaxOperator.makeSecondaryOperator(isMin, resultName));
-                                    inputColumnNames.add(new String[] {inputName});
-                                    inputSources.add(null);
-                                },
-                                () -> {
-                                    operators.add(getMinMaxChunked(type, resultName, isMin, isAddOnly || isStream));
-                                    inputColumnNames.add(new String[] {inputName});
-                                    inputSources.add(inputSource);
-                                });
+                addMinOrMaxOperator(isMin, inputName, resultName);
             }
         }
 
-        void visitFirstOrLastAgg(final boolean isFirst, final String exposeRedirectionAs) {
+        final void addMinOrMaxOperator(final boolean isMin, @NotNull final String inputName,
+                @NotNull final String resultName) {
+            final ColumnSource<?> rawInputSource = table.getColumnSource(inputName);
+            final Class<?> type = rawInputSource.getType();
+            final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
+
+            IntStream.range(0, inputSources.size())
+                    .filter(index -> (inputSources.get(index) == inputSource)
+                            && (operators.get(index) instanceof SsmChunkedMinMaxOperator))
+                    .findFirst().ifPresentOrElse(
+                            (final int priorMinMaxIndex) -> {
+                                final SsmChunkedMinMaxOperator ssmChunkedMinMaxOperator =
+                                        (SsmChunkedMinMaxOperator) operators.get(priorMinMaxIndex);
+                                addOperator(
+                                        ssmChunkedMinMaxOperator.makeSecondaryOperator(isMin, resultName),
+                                        null, inputName);
+                            },
+                            () -> addOperator(
+                                    getMinMaxChunked(type, resultName, isMin, isAddOnly || isStream),
+                                    inputSource, inputName));
+        }
+
+        final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
             if (exposeRedirectionAs != null) {
                 streamUnsupported((isFirst ? "First" : "Last") +
                         " with exposed row redirections (e.g. for rollup(), AggFirstRowKey, or AggLastRowKey)");
@@ -246,7 +261,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             addNoInputOperator(operator);
         }
 
-        void visitSortedFirstOrLastAgg(@NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
+        final void addSortedFirstOrLastOperator(@NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
             final String[] sortColumnNames = sortColumns.stream().map(sc -> {
                 descendingSortedFirstOrLastUnsupported(sc, isFirst);
                 return sc.column().name();
@@ -260,13 +275,12 @@ public class AggregationProcessor implements AggregationContextFactory {
                         Arrays.stream(sortColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
             }
             // TODO-RWC: Move this helper here or to a new landing place
-            operators.add(SortedFirstOrLastByAggregationFactory.makeOperator(inputSource.getChunkType(), isFirst,
-                    aggregations.size() > 1, MatchPair.fromPairs(resultPairs), table));
-            inputColumnNames.add(sortColumnNames);
-            inputSources.add(inputSource);
+            addOperator(SortedFirstOrLastByAggregationFactory.makeOperator(inputSource.getChunkType(), isFirst,
+                    aggregations.size() > 1, MatchPair.fromPairs(resultPairs), table),
+                    inputSource, sortColumnNames);
         }
 
-        void descendingSortedFirstOrLastUnsupported(@NotNull final SortColumn sortColumn, final boolean isFirst) {
+        final void descendingSortedFirstOrLastUnsupported(@NotNull final SortColumn sortColumn, final boolean isFirst) {
             if (sortColumn.order() == SortColumn.Order.ASCENDING) {
                 return;
             }
@@ -283,7 +297,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
-    private class StandardConverter extends Converter {
+    private final class StandardConverter extends Converter {
 
         private StandardConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
             super(table, groupByColumnNames);
@@ -294,18 +308,18 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
-        public final void visit(@NotNull final Count count) {
+        public void visit(@NotNull final Count count) {
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
         }
 
         @Override
         public void visit(@NotNull final FirstRowKey firstRowKey) {
-            visitFirstOrLastAgg(true, firstRowKey.column().name());
+            addFirstOrLastOperators(true, firstRowKey.column().name());
         }
 
         @Override
         public void visit(@NotNull final LastRowKey lastRowKey) {
-            visitFirstOrLastAgg(false, lastRowKey.column().name());
+            addFirstOrLastOperators(false, lastRowKey.column().name());
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -315,17 +329,17 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
             // TODO-RWC: Move this helper and its friends here or to a new landing place
-            visitBasicAgg(IterativeOperatorSpec::getAbsSumChunked);
+            addBasicOperators(IterativeOperatorSpec::getAbsSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            visitBasicAgg((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), false, false));
+            addBasicOperators((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), false, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            visitBasicAgg((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), false, false));
+            addBasicOperators((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), false, false));
         }
 
         @Override
@@ -336,12 +350,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            visitBasicAgg((t, n) -> getAvgChunked(t, n, false));
+            addBasicOperators((t, n) -> getAvgChunked(t, n, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecFirst first) {
-            visitFirstOrLastAgg(true, null);
+            addFirstOrLastOperators(true, null);
         }
 
         @Override
@@ -356,52 +370,52 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecLast last) {
-            visitFirstOrLastAgg(false, null);
+            addFirstOrLastOperators(false, null);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMax max) {
-            visitMinOrMaxAgg(false);
+            addMinOrMaxOperators(false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            visitBasicAgg((t, n) -> getPercentileChunked(t, n, 0.50d, median.averageMedian()));
+            addBasicOperators((t, n) -> getPercentileChunked(t, n, 0.50d, median.averageMedian()));
         }
 
         @Override
         public void visit(@NotNull final AggSpecMin min) {
-            visitMinOrMaxAgg(true);
+            addMinOrMaxOperators(true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            visitBasicAgg((t, n) -> getPercentileChunked(t, n, pct.percentile(), pct.averageMedian()));
+            addBasicOperators((t, n) -> getPercentileChunked(t, n, pct.percentile(), pct.averageMedian()));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            visitSortedFirstOrLastAgg(sortedFirst.columns(), true);
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            visitSortedFirstOrLastAgg(sortedLast.columns(), false);
+            addSortedFirstOrLastOperator(sortedLast.columns(), false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            visitBasicAgg((t, n) -> getVarChunked(t, n, true, false));
+            addBasicOperators((t, n) -> getVarChunked(t, n, true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            visitBasicAgg(IterativeOperatorSpec::getSumChunked);
+            addBasicOperators(IterativeOperatorSpec::getSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            visitBasicAgg((t, n) -> getUniqueChunked(t, n,
+            addBasicOperators((t, n) -> getUniqueChunked(t, n,
                     unique.includeNulls(), null, unique.nonUniqueSentinel(), false, false));
         }
 
@@ -420,7 +434,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            visitBasicAgg((t, n) -> getVarChunked(t, n, false, false));
+            addBasicOperators((t, n) -> getVarChunked(t, n, false, false));
         }
     }
 
@@ -493,12 +507,13 @@ public class AggregationProcessor implements AggregationContextFactory {
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
      * {@link AggregationContext} for rollup base aggregations.
      */
-    private class RollupBaseConverter extends Converter
+    private final class RollupBaseConverter extends Converter
             implements RollupAggregation.Visitor, UnsupportedRollupAggregations {
 
         private boolean partitionFound;
+        private int nextColumnIdentifier = 0;
 
-        protected RollupBaseConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+        private RollupBaseConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
             super(table, groupByColumnNames);
         }
 
@@ -515,7 +530,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
-        public final void visit(@NotNull final Count count) {
+        public void visit(@NotNull final Count count) {
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
         }
 
@@ -553,67 +568,67 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            visitBasicAgg(IterativeOperatorSpec::getAbsSumChunked);
+            addBasicOperators(IterativeOperatorSpec::getAbsSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            visitBasicAgg((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), true, false));
+            addBasicOperators((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            visitBasicAgg((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), true, false));
+            addBasicOperators((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            visitBasicAgg((t, n) -> getAvgChunked(t, n, true));
+            addBasicOperators((t, n) -> getAvgChunked(t, n, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecFirst first) {
-            // Supported
+            addFirstOrLastOperators(true, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
         public void visit(@NotNull final AggSpecLast last) {
-            // Supported
+            addFirstOrLastOperators(false, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
         public void visit(@NotNull final AggSpecMax max) {
-            visitMinOrMaxAgg(false);
+            addMinOrMaxOperators(false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMin min) {
-            visitMinOrMaxAgg(true);
+            addMinOrMaxOperators(true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            // Supported
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            // Supported
+            addSortedFirstOrLastOperator(sortedLast.columns(), false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            visitBasicAgg((t, n) -> getVarChunked(t, n, true, true));
+            addBasicOperators((t, n) -> getVarChunked(t, n, true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            visitBasicAgg(IterativeOperatorSpec::getSumChunked);
+            addBasicOperators(IterativeOperatorSpec::getSumChunked);
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            visitBasicAgg((t, n) -> getUniqueChunked(t, n,
+            addBasicOperators((t, n) -> getUniqueChunked(t, n,
                     unique.includeNulls(), null, unique.nonUniqueSentinel(), true, false));
         }
 
@@ -625,7 +640,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            visitBasicAgg((t, n) -> getVarChunked(t, n, false, true));
+            addBasicOperators((t, n) -> getVarChunked(t, n, false, true));
         }
     }
 
@@ -637,10 +652,12 @@ public class AggregationProcessor implements AggregationContextFactory {
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
      * {@link AggregationContext} for rollup reaggregated (not base level) aggregations.
      */
-    private class RollupReaggregatedConverter extends Converter
+    private final class RollupReaggregatedConverter extends Converter
             implements RollupAggregation.Visitor, UnsupportedRollupAggregations {
 
-        protected RollupReaggregatedConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+        private int nextColumnIdentifier = 0;
+
+        private RollupReaggregatedConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
             super(table, groupByColumnNames);
         }
 
@@ -649,9 +666,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         @Override
-        public final void visit(@NotNull final Count count) {
-            // TODO-RWC: Re-agg as sum
-            addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        public void visit(@NotNull final Count count) {
+            addNoInputOperator(new LongChunkedSumOperator(false, count.column().name()));
         }
 
         @Override
@@ -684,77 +700,247 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-
+            reaggregateAsSum();
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getCountDistinctChunked(ssmType, n,
+                    countDistinct.countNulls(), true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getDistinctChunked(priorResultType, n,
+                    distinct.includeNulls(), true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-
+            reaggregateAvgOperator();
         }
 
         @Override
         public void visit(@NotNull final AggSpecFirst first) {
-
+            reaggregateFirstOrLastOperator(true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecLast last) {
-
+            reaggregateFirstOrLastOperator(false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMax max) {
-
+            reaggregateMinOrMaxOperators(false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecMin min) {
-
+            reaggregateMinOrMaxOperators(true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-
+            reaggregateSortedFirstOrLastOperator(sortedFirst.columns(), true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-
+            reaggregateSortedFirstOrLastOperator(sortedLast.columns(), false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-
+            reaggregateStdOrVarOperators(true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-
+            reaggregateAsSum();
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getUniqueChunked(
+                    priorResultType, n, unique.includeNulls(), null, unique.nonUniqueSentinel(), true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            // Re-agg as sum
+            reaggregateAsSum();
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
+            reaggregateStdOrVarOperators(false);
+        }
 
+        private void reaggregateAsSum() {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+                final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+
+                addOperator(IterativeOperatorSpec.getSumChunked(resultSource.getType(), resultName),
+                        resultSource, resultName);
+            }
+        }
+
+        private void reaggregateSsmBackedOperator(
+                TriFunction<Class<?>, Class<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+                final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource = table.getColumnSource(ssmName);
+                final ColumnSource<?> priorResultSource = table.getColumnSource(resultName);
+                final IterativeChunkedAggregationOperator operator = operatorFactory.apply(
+                        ssmSource.getComponentType(), priorResultSource.getComponentType(), resultName);
+
+                addOperator(operator, ssmSource, ssmName);
+            }
+        }
+
+        private void reaggregateFirstOrLastOperator(final boolean isFirst) {
+            final ColumnName redirectionColumnName = ColumnName.of(makeRedirectionName(nextColumnIdentifier++));
+            resultPairs = Stream.concat(
+                    resultPairs.stream().map(Pair::output),
+                    Stream.of(redirectionColumnName))
+                    .collect(Collectors.toList());
+            addSortedFirstOrLastOperator(List.of(SortColumn.asc(redirectionColumnName)), isFirst);
+        }
+
+        private void reaggregateSortedFirstOrLastOperator(
+                @NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
+            resultPairs = resultPairs.stream().map(Pair::output).collect(Collectors.toList());
+            addSortedFirstOrLastOperator(sortColumns, isFirst);
+        }
+
+        private void reaggregateMinOrMaxOperators(final boolean isMin) {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+                addMinOrMaxOperator(isMin, resultName, resultName);
+            }
+        }
+
+        private void reaggregateAvgOperator() {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+
+                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final Class<?> runningSumType = table.getColumnSource(runningSumName).getType();
+
+                final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
+
+                if (runningSumType == double.class) {
+                    final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
+
+                    final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
+
+                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator piCountOp = addAndGetLongSumOperator(piCountName);
+
+                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator niCountOp = addAndGetLongSumOperator(niCountName);
+
+                    final Class<?> resultType = table.getColumnSource(resultName).getType();
+                    if (resultType == float.class) {
+                        addOperator(new FloatChunkedReAvgOperator(resultName,
+                                runningSumOp, nonNullCountOp, nanCountOp, piCountOp, niCountOp),
+                                null, nonNullCountName, runningSumName, nanCountName, piCountName, niCountName);
+                    } else { // resultType == double.class
+                        addOperator(new DoubleChunkedReAvgOperator(resultName,
+                                runningSumOp, nonNullCountOp, nanCountOp, piCountOp, niCountOp),
+                                null, nonNullCountName, runningSumName, nanCountName, piCountName, niCountName);
+                    }
+                } else if (BigInteger.class.isAssignableFrom(runningSumType)) {
+                    final BigIntegerChunkedSumOperator runningSumOp = addAndGetBigIntegerSumOperator(runningSumName);
+                    addOperator(new BigIntegerChunkedReAvgOperator(resultName, runningSumOp, nonNullCountOp),
+                            null, nonNullCountName, runningSumName);
+                } else if (BigDecimal.class.isAssignableFrom(runningSumType)) {
+                    final BigDecimalChunkedSumOperator runningSumOp = addAndGetBigDecimalSumOperator(runningSumName);
+                    addOperator(new BigDecimalChunkedReAvgOperator(resultName, runningSumOp, nonNullCountOp),
+                            null, nonNullCountName, runningSumName);
+                } else {
+                    final LongChunkedSumOperator runningSumOp = addAndGetLongSumOperator(runningSumName);
+                    addOperator(new IntegralChunkedReAvgOperator(resultName, runningSumOp, nonNullCountOp),
+                            null, nonNullCountName, runningSumName);
+                }
+            }
+        }
+
+        private void reaggregateStdOrVarOperators(final boolean isStd) {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+
+                final String runningSumName = resultName + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final Class<?> runningSumType = table.getColumnSource(runningSumName).getType();
+
+                final String runningSum2Name = resultName + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+
+                final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
+
+                if (runningSumType == double.class) {
+                    final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
+                    final DoubleChunkedSumOperator runningSum2Op = addAndGetDoubleSumOperator(runningSum2Name);
+
+                    final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
+
+                    final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator piCountOp = addAndGetLongSumOperator(piCountName);
+
+                    final String niCountName = resultName + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                    final LongChunkedSumOperator niCountOp = addAndGetLongSumOperator(niCountName);
+
+                    addOperator(new FloatChunkedReVarOperator(resultName, isStd, runningSumOp, runningSum2Op,
+                            nonNullCountOp, nanCountOp, piCountOp, niCountOp), null,
+                            nonNullCountName, runningSumName, runningSum2Name, nanCountName, piCountName, niCountName);
+                } else if (BigInteger.class.isAssignableFrom(runningSumType)) {
+                    final BigIntegerChunkedSumOperator runningSumOp = addAndGetBigIntegerSumOperator(runningSumName);
+                    final BigIntegerChunkedSumOperator runningSum2Op = addAndGetBigIntegerSumOperator(runningSum2Name);
+                    addOperator(new BigIntegerChunkedReVarOperator(resultName, isStd,
+                            runningSumOp, runningSum2Op, nonNullCountOp),
+                            null, nonNullCountName, runningSumName, runningSum2Name);
+                } else if (BigDecimal.class.isAssignableFrom(runningSumType)) {
+                    final BigDecimalChunkedSumOperator runningSumOp = addAndGetBigDecimalSumOperator(runningSumName);
+                    final BigDecimalChunkedSumOperator runningSum2Op = addAndGetBigDecimalSumOperator(runningSum2Name);
+                    addOperator(new BigDecimalChunkedReVarOperator(resultName, isStd,
+                            runningSumOp, runningSum2Op, nonNullCountOp),
+                            null, nonNullCountName, runningSumName, runningSum2Name);
+                } else {
+                    final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
+                    final DoubleChunkedSumOperator runningSum2Op = addAndGetDoubleSumOperator(runningSum2Name);
+                    addOperator(new IntegralChunkedReVarOperator(resultName, isStd,
+                            runningSumOp, runningSum2Op, nonNullCountOp),
+                            null, nonNullCountName, runningSumName, runningSum2Name);
+                }
+            }
+        }
+
+        private BigDecimalChunkedSumOperator addAndGetBigDecimalSumOperator(@NotNull final String inputColumnName) {
+            return getAndAddBasicOperator(n -> new BigDecimalChunkedSumOperator(false, n), inputColumnName);
+        }
+
+        private BigIntegerChunkedSumOperator addAndGetBigIntegerSumOperator(@NotNull final String inputColumnName) {
+            return getAndAddBasicOperator(n -> new BigIntegerChunkedSumOperator(false, n), inputColumnName);
+        }
+
+        private DoubleChunkedSumOperator addAndGetDoubleSumOperator(@NotNull final String inputColumnName) {
+            return getAndAddBasicOperator(n -> new DoubleChunkedSumOperator(false, n), inputColumnName);
+        }
+
+        private LongChunkedSumOperator addAndGetLongSumOperator(@NotNull final String inputColumnName) {
+            return getAndAddBasicOperator(n -> new LongChunkedSumOperator(false, n), inputColumnName);
+        }
+
+        private <OP_TYPE extends IterativeChunkedAggregationOperator> OP_TYPE getAndAddBasicOperator(
+                @NotNull final Function<String, OP_TYPE> opFactory, @NotNull final String inputColumnName) {
+            OP_TYPE operator = opFactory.apply(inputColumnName);
+            addOperator(operator, table.getColumnSource(inputColumnName), inputColumnName);
+            return operator;
         }
     }
 
@@ -768,10 +954,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 : inputSource;
     }
 
-    @NotNull
-    private static String makeRedirectionName(IterativeIndexSpec inputAggregationStateFactory) {
-        return IterativeIndexSpec.ROW_REDIRECTION_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
-                + RollupConstants.ROLLUP_COLUMN_SUFFIX;
+    private static String makeRedirectionName(final int columnIdentifier) {
+        return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_COLUMN_SUFFIX;
     }
 
     private static QueryTable maybeCopyRlAttribute(@NotNull final Table parent, @NotNull final Table child) {

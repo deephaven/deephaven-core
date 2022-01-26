@@ -560,11 +560,11 @@ public class AggregationFactory implements AggregationSpec {
                                         final String nonNullName =
                                                 mp.leftColumn() + RollupConstants.ROLLUP_NONNULL_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String nanName =
-                                                mp.leftColumn() + RollupConstants.ROLLUP_NAN_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_NAN_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String picName =
-                                                mp.leftColumn() + RollupConstants.ROLLUP_PIC_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_PI_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
                                         final String nicName =
-                                                mp.leftColumn() + RollupConstants.ROLLUP_NIC_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + RollupConstants.ROLLUP_NI_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
                                         final boolean isFloatingPoint = table.hasColumns(nanName);
 
