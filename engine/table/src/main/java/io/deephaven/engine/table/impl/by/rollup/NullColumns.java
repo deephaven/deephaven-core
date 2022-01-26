@@ -12,6 +12,14 @@ import java.util.Map;
 @BuildableStyle
 public abstract class NullColumns extends RollupAggregationBase {
 
+    public static NullColumns of(String name, Class<?> type) {
+        return builder().putResultColumns(name, type).build();
+    }
+
+    public static NullColumns from(Map<String, Class<?>> resultColumns) {
+        return builder().putResultColumns(resultColumns).build();
+    }
+
     public static Builder builder() {
         return ImmutableNullColumns.builder();
     }

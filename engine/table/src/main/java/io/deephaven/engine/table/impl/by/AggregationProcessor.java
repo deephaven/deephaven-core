@@ -55,7 +55,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     public enum Type {
-        STANDARD, ROLLUP_BASE, ROLLUP_REAGGREGATED
+        NORMAL, ROLLUP_BASE, ROLLUP_REAGGREGATED
     }
 
     private final Collection<? extends Aggregation> aggregations;
@@ -75,6 +75,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
+    @Override
+    public String toString() {
+        return type.name() + ':' + aggregations;
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // AggregationContextFactory
     // -----------------------------------------------------------------------------------------------------------------
@@ -83,7 +88,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     public AggregationContext makeAggregationContext(@NotNull final Table table,
             @NotNull final String... groupByColumnNames) {
         switch (type) {
-            case STANDARD:
+            case NORMAL:
                 return new StandardConverter(table, groupByColumnNames).build();
             case ROLLUP_BASE:
                 return new RollupBaseConverter(table, groupByColumnNames).build();
