@@ -6,7 +6,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.table.TableSpec;
 
@@ -25,7 +25,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
          * @param options the options configuring the details of this snapshot
          * @return the {@code BarrageSnapshot}
          */
-        BarrageSnapshot snapshot(TableSpec tableSpec, BarrageSubscriptionOptions options)
+        BarrageSnapshot snapshot(TableSpec tableSpec, BarrageSnapshotOptions options)
                 throws TableHandle.TableHandleException, InterruptedException;
 
         /**
@@ -36,7 +36,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
          * @param options the options configuring the details of this snapshot
          * @return the {@code BarrageSnapshot}
          */
-        BarrageSnapshot snapshot(TableHandle tableHandle, BarrageSubscriptionOptions options);
+        BarrageSnapshot snapshot(TableHandle tableHandle, BarrageSnapshotOptions options);
     }
 
     /**

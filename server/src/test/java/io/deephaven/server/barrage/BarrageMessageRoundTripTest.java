@@ -35,9 +35,9 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
@@ -1267,7 +1267,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<BarrageSubscriptionOptions> streamReader) {
+                final StreamReader streamReader) {
             super(options, columnChunkTypes, columnTypes, componentTypes, streamReader);
         }
     }

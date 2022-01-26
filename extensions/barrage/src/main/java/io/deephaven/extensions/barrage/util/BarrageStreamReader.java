@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
@@ -35,7 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Iterator;
 
-public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<BarrageSubscriptionOptions> {
+public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
@@ -44,7 +43,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
     private BarrageMessage msg = null;
 
     @Override
-    public BarrageMessage safelyParseFrom(final BarrageSubscriptionOptions options,
+    public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,

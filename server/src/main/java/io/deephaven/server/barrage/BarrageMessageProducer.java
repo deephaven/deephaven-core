@@ -49,7 +49,6 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -91,7 +90,7 @@ import java.util.function.IntFunction;
  * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
  *
- * The client-side counterpart of this is the {@link BarrageMessageConsumer}.
+ * The client-side counterpart of this is the {@link StreamReader}.
  *
  * @param <Options> The options related to serialization.
  * @param <MessageView> The sub-view type that the listener expects to receive.

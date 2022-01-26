@@ -4,6 +4,7 @@
 
 package io.deephaven.client.impl;
 
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.CallOptions;
@@ -52,7 +53,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     }
 
     @Override
-    public BarrageSnapshot snapshot(final TableSpec tableSpec, final BarrageSubscriptionOptions options)
+    public BarrageSnapshot snapshot(final TableSpec tableSpec, final BarrageSnapshotOptions options)
             throws TableHandle.TableHandleException, InterruptedException {
         try (final TableHandle handle = session().execute(tableSpec)) {
             return snapshot(handle, options);
@@ -60,7 +61,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     }
 
     @Override
-    public BarrageSnapshot snapshot(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+    public BarrageSnapshot snapshot(final TableHandle tableHandle, final BarrageSnapshotOptions options) {
         return new BarrageSnapshotImpl(this, tableHandle.newRef(), options);
     }
 

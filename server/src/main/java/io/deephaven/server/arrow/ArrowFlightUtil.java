@@ -25,10 +25,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
@@ -172,7 +169,9 @@ public class ArrowFlightUtil {
                     msg.addColumnData[ci] = acd;
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
+                        StreamReader.StreamReaderOptions streamReaderOptions = new StreamReader.StreamReaderOptions(options);
+
+                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(streamReaderOptions, factor,
                                 columnChunkTypes[ci],
                                 columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
                     } catch (final IOException unexpected) {
@@ -353,8 +352,8 @@ public class ArrowFlightUtil {
                             case BarrageMessageType.BarrageSubscriptionRequest:
                                 requestHandler = new SubscriptionRequestHandler();
                                 break;
-                            case BarrageMessageType.DoGetRequest: // rename to SnapshotRequest?
-                                requestHandler = new DoGetRequestHandler();
+                            case BarrageMessageType.BarrageSnapshotRequest:
+                                requestHandler = new SnapshotRequestHandler();
                                 break;
                             default:
                                 log.warn().append(myPrefix)
@@ -425,15 +424,15 @@ public class ArrowFlightUtil {
         /**
          * Handler for DoGetRequest over DoExchange.
          */
-        private class DoGetRequestHandler
+        private class SnapshotRequestHandler
                 implements Handler {
 
-            public DoGetRequestHandler() {}
+            public SnapshotRequestHandler() {}
 
             @Override
             public void handleMessage(BarrageProtoUtil.MessageInfo message) {
                 // verify this is the correct type of message for this handler
-                if (message.app_metadata.msgType() != BarrageMessageType.DoGetRequest) {
+                if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Request type cannot be changed after initialization");
                 }

@@ -7,9 +7,7 @@ package io.deephaven.client.impl;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.DoGetRequest;
+import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
@@ -18,12 +16,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
-import io.deephaven.extensions.barrage.util.BarrageStreamReader;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.CallOptions;
@@ -47,8 +42,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private final String logName;
     private final TableHandle tableHandle;
-    private final BarrageSubscriptionOptions options; // TODO: clone and modify this in barrage.fbs to
-                                                      // BarrageSnapshotOptions
+    private final BarrageSnapshotOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;
@@ -66,7 +60,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
      * @param options the transport level options for this snapshot
      */
     public BarrageSnapshotImpl(
-            final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+            final BarrageSession session, final TableHandle tableHandle, final BarrageSnapshotOptions options) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
@@ -221,16 +215,16 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
-            @Nullable BarrageSubscriptionOptions options) {
+            @Nullable BarrageSnapshotOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
         if (columns != null) {
-            colOffset = DoGetRequest.createColumnsVector(metadata, columns.toByteArray());
+            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
         }
         int vpOffset = 0;
         if (viewport != null) {
-            vpOffset = DoGetRequest.createViewportVector(
+            vpOffset = BarrageSnapshotRequest.createViewportVector(
                     metadata, BarrageProtoUtil.toByteBuffer(viewport));
         }
         int optOffset = 0;
@@ -238,20 +232,20 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = DoGetRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
-        DoGetRequest.startDoGetRequest(metadata);
-        DoGetRequest.addColumns(metadata, colOffset);
-        DoGetRequest.addViewport(metadata, vpOffset);
-        DoGetRequest.addSubscriptionOptions(metadata, optOffset);
-        DoGetRequest.addTicket(metadata, ticOffset);
-        metadata.finish(DoGetRequest.endDoGetRequest(metadata));
+        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
+        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+        BarrageSnapshotRequest.addColumns(metadata, colOffset);
+        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();
         final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
         wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
                 wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.DoGetRequest,
+                BarrageMessageType.BarrageSnapshotRequest,
                 innerOffset));
         return wrapper.dataBuffer();
     }
@@ -282,35 +276,34 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
      * @param columnTypes the class type per column
      * @param componentTypes the component class type per column
      * @param streamReader the stream reader - intended to be thread safe and re-usable
-     * @param <Options> the options related to deserialization
      * @return the client side method descriptor
      */
-    public static <Options> MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final Options options,
+    public static MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+            final BarrageSnapshotOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            final StreamReader streamReader) {
         return descriptorFor(
                 MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
                 ProtoUtils.marshaller(FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
+                new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
                 FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
-        private final Options options;
+    public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+        private final BarrageSnapshotOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final BarrageMessageConsumer.StreamReader<Options> streamReader;
+        private final StreamReader streamReader;
 
         public BarrageDataMarshaller(
-                final Options options,
+                final BarrageSnapshotOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+                final StreamReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -326,7 +319,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            StreamReader.StreamReaderOptions streamReaderOptions = new StreamReader.StreamReaderOptions(options);
+
+            return streamReader.safelyParseFrom(streamReaderOptions, columnChunkTypes, columnTypes, componentTypes,
+                    stream);
         }
     }
 }

@@ -1,24 +1,23 @@
 /*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 
 package io.deephaven.extensions.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSubscriptionOptions {
-
+public abstract class BarrageSnapshotOptions {
     public static Builder builder() {
-        return ImmutableBarrageSubscriptionOptions.builder();
+        return ImmutableBarrageSnapshotOptions.builder();
     }
 
-    public static BarrageSubscriptionOptions of(final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options) {
+    public static BarrageSnapshotOptions of(final io.deephaven.barrage.flatbuf.BarrageSnapshotOptions options) {
         if (options == null) {
             return builder().build();
         }
@@ -26,13 +25,12 @@ public abstract class BarrageSubscriptionOptions {
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
                 .columnConversionMode(conversionModeFbToEnum(mode))
-                .minUpdateIntervalMs(options.minUpdateIntervalMs())
                 .batchSize(options.batchSize())
                 .build();
     }
 
-    public static BarrageSubscriptionOptions of(final BarrageSubscriptionRequest subscriptionRequest) {
-        return of(subscriptionRequest.subscriptionOptions());
+    public static BarrageSnapshotOptions of(final BarrageSnapshotRequest snapshotRequest) {
+        return of(snapshotRequest.snapshotOptions());
     }
 
     /**
@@ -43,29 +41,6 @@ public abstract class BarrageSubscriptionOptions {
     @Default
     public boolean useDeephavenNulls() {
         return false;
-    }
-
-    /**
-     * By default, we should not specify anything; the server will use whatever it is configured with. If multiple
-     * subscriptions exist on a table (via the same client or via multiple clients) then the server will re-use state
-     * needed to perform barrage-acrobatics for both of them. This greatly reduces the burden each client adds to the
-     * server's workload. If a given table does want a shorter interval, consider using that shorter interval for all
-     * subscriptions to that table.
-     *
-     * The default interval can be set on the server with the flag
-     * {@code io.deephaven.server.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
-     * {@code -Dbarrage.minUpdateInterval=1000}.
-     *
-     * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to
-     * update at least as quickly. This can be done on the server with the flag
-     * {@code io.deephaven.engine.updategraph.UpdateGraphProcessor#defaultTargetCycleTime}, or
-     * {@code -DUpdateGraphProcessor.targetcycletime=1000}.
-     *
-     * @return the update interval to subscribe for
-     */
-    @Default
-    public int minUpdateIntervalMs() {
-        return 0;
     }
 
     /**
@@ -82,9 +57,8 @@ public abstract class BarrageSubscriptionOptions {
     }
 
     public int appendTo(FlatBufferBuilder builder) {
-        return io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions.createBarrageSubscriptionOptions(
-                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(), minUpdateIntervalMs(),
-                batchSize());
+        return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
+                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(), batchSize());
     }
 
     private static ColumnConversionMode conversionModeFbToEnum(final byte mode) {
@@ -119,10 +93,8 @@ public abstract class BarrageSubscriptionOptions {
 
         Builder columnConversionMode(ColumnConversionMode columnConversionMode);
 
-        Builder minUpdateIntervalMs(int minUpdateIntervalMs);
-
         Builder batchSize(int batchSize);
 
-        BarrageSubscriptionOptions build();
+        BarrageSnapshotOptions build();
     }
 }

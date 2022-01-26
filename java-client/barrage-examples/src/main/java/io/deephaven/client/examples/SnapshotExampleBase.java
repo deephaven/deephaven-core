@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
@@ -36,7 +37,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
     @Override
     protected void execute(final BarrageSession client) throws Exception {
 
-        final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
+        final BarrageSnapshotOptions options = BarrageSnapshotOptions.builder().build();
 
         final TableHandleManager manager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();

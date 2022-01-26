@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.Chunk;
@@ -146,7 +147,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
 
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReader.StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -156,7 +157,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
 
     static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReader.StreamReaderOptions options,
             final FloatConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

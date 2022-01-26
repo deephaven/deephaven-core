@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
@@ -229,7 +230,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
-            final BarrageSubscriptionOptions options,
+            final StreamReader.StreamReaderOptions options,
             final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

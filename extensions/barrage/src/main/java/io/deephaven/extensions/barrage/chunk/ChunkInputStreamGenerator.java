@@ -5,13 +5,13 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.LittleEndianDataOutputStream;
-import com.google.common.primitives.Ints;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -22,7 +22,6 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -83,7 +82,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     static <T> Chunk<Values> extractChunkFromInputStream(
-            final BarrageSubscriptionOptions options,
+            final StreamReader.StreamReaderOptions options,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -92,7 +91,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     static <T> Chunk<Values> extractChunkFromInputStream(
-            final BarrageSubscriptionOptions options,
+            final StreamReader.StreamReaderOptions options,
             final int factor,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -159,7 +158,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     );
                 }
                 if (type == String.class ||
-                        options.columnConversionMode().equals(BarrageSubscriptionOptions.ColumnConversionMode.Stringify)) {
+                        options.columnConversionMode().equals(ColumnConversionMode.Stringify)) {
                     return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
                             (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
                 }
