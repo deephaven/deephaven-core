@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
@@ -669,7 +670,7 @@ public class ParquetTableWriter {
         } else if (BigDecimal.class.equals(columnType)) {
             // noinspection unchecked
             final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-            final TypeInfos.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+            final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
                     computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);
