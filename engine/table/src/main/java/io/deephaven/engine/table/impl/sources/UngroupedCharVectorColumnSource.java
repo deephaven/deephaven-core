@@ -106,4 +106,14 @@ public class UngroupedCharVectorColumnSource extends UngroupedColumnSource<Chara
     public boolean isImmutable() {
         return false;
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

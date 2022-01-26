@@ -49,4 +49,14 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
         // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

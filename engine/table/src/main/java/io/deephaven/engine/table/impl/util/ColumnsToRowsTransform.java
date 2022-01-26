@@ -619,5 +619,15 @@ public class ColumnsToRowsTransform {
                         transposeFillContext.outputPositions[ii], destination);
             }
         }
+
+        @Override
+        public boolean preventsParallelism() {
+            return Arrays.stream(transposeColumns).anyMatch(ColumnSource::preventsParallelism);
+        }
+
+        @Override
+        public boolean isStateless() {
+            return Arrays.stream(transposeColumns).allMatch(ColumnSource::isStateless);
+        }
     }
 }

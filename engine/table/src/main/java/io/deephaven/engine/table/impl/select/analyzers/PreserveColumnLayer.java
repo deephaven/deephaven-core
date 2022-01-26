@@ -68,4 +68,10 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
         return logOutput.append("{PreserveColumnLayer: ").append(name).append(", layerIndex=").append(getLayerIndex())
                 .append("}");
     }
+
+
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        return inner.allowCrossColumnParallelization();
+    }
 }

@@ -139,6 +139,11 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public boolean isStateless() {
+        return Require.neqNull(realColumn, "realColumn").isStateless();
+    }
+
+    @Override
     public SwitchColumn copy() {
         return new SwitchColumn(columnName, expression, parser);
     }

@@ -190,6 +190,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @NotNull
     private ColumnSource<?> getViewColumnSource(boolean lazy) {
+        final boolean preventsParallelization = preventsParallelization();
+        final boolean isStateless = isStateless();
+
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create
@@ -207,14 +210,18 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             return AccessController.doPrivileged((PrivilegedAction<ColumnSource<?>>) () -> {
                 final Formula formula = getFormula(lazy, columnSources, params);
                 // noinspection unchecked,rawtypes
-                return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula);
+                return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
+                        preventsParallelization, isStateless);
             }, context);
         } else {
             final Formula formula = getFormula(lazy, columnSources, params);
             // noinspection unchecked,rawtypes
-            return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula);
+            return new ViewColumnSource((returnedType == boolean.class ? Boolean.class : returnedType), formula,
+                    preventsParallelization, isStateless);
         }
     }
+
+    public abstract boolean preventsParallelization();
 
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,

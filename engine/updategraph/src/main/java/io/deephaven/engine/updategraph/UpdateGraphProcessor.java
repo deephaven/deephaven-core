@@ -288,7 +288,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     @SuppressWarnings("unused")
     public int getUpdateThreads() {
-        return updateThreads;
+        if (notificationProcessor == null) {
+            return updateThreads;
+        } else if (notificationProcessor instanceof ConcurrentNotificationProcessor) {
+            return ((ConcurrentNotificationProcessor) notificationProcessor).threadCount();
+        } else {
+            return 1;
+        }
     }
 
     // region Accessors for the shared and exclusive locks
@@ -1343,6 +1349,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         @Override
         public void beforeNotificationsDrained() {
             pendingNormalNotificationsCheckNeeded.drainPermits();
+        }
+
+        int threadCount() {
+            return updateThreads.length;
         }
     }
 

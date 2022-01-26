@@ -183,4 +183,31 @@ public interface ColumnSource<T>
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
+
+    /**
+     * Can this column source be evaluated on an arbitrary thread?
+     *
+     * Most column sources can be evaluated on an arbitrary thread, however those that do call into Python can not be
+     * evaluated on an arbitrary thread as the calling thread may already have the GIL, which would result in a deadlock
+     * when the column source takes the GIL to evaluate formulas.
+     *
+     * @return true if this column prevents parallelization
+     */
+    default boolean preventsParallelism() {
+        return false;
+    }
+
+    /**
+     * Most column sources will return the same value for a given row without respect to the order that the rows are
+     * read. Those columns sources are considered "stateless" and should return true.
+     *
+     * Some column sources, however may be dependent on evaluation order. For example, a formula that updates a Map must
+     * be evaluated from the first row to the last row. A column source that has the potential to depend on the order of
+     * evaluation must return false.
+     *
+     * @return true if this is a stateless column source
+     */
+    default boolean isStateless() {
+        return true;
+    }
 }
