@@ -124,8 +124,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         underlyingSource = scs;
                         scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
                     }
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                            mcsBuilder, rowRedirection != null, false);
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                                    mcsBuilder, rowRedirection != null, false);
                     break;
                 }
                 default:
@@ -141,10 +142,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             return false;
         }
         final ColumnSource<?> sccs = sc.getDataView();
-        if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
-            return true;
-        }
-        return false;
+        return sccs instanceof InMemoryColumnSource && !Vector.class.isAssignableFrom(sc.getReturnedType());
     }
 
     static final int BASE_LAYER_INDEX = 0;
