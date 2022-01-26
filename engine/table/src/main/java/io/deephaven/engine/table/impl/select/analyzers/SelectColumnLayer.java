@@ -27,6 +27,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      * The same reference as super.columnSource, but as a WritableColumnSource
      */
     private final WritableColumnSource writableSource;
+    /**
+     * Our parent row set, used for ensuring capacity.
+     */
+    private final RowSet parentRowSet;
     private final boolean isRedirected;
     private final boolean flattenedResult;
     private final BitSet dependencyBitSet;
@@ -38,11 +42,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      */
     private ChunkSource.WithPrev<Values> chunkSource;
 
-    SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
+    SelectColumnLayer(RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
             String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
             boolean flattenedResult) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
+        this.parentRowSet = parentRowSet;
         this.writableSource = ws;
         this.isRedirected = isRedirected;
         this.dependencyBitSet = new BitSet();
@@ -121,24 +126,25 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 throw new IllegalStateException();
                             }
 
-                            jobScheduler.submit(() -> prepareUpdate(jobScheduler, upstream, toClear, helper,
+                            jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
                                     onCompletion, this::onError, updates), SelectColumnLayer.this,
                                     this::onError);
                         } else {
                             jobScheduler.submit(
-                                    () -> doApplyUpdate(upstream, toClear, helper, onCompletion, null, 0, false),
+                                    () -> doSerialApplyUpdate(upstream, toClear, helper, onCompletion),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
                 });
     }
 
-    private void prepareUpdate(final JobScheduler jobScheduler, final TableUpdate upstream, final RowSet toClear,
+    private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
+            final RowSet toClear,
             final UpdateHelper helper, SelectLayerCompletionHandler onCompletion, Consumer<Exception> onError,
             List<TableUpdate> splitUpdates) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
-        doEnsureCapacity(upstream, upstream.modified());
+        doEnsureCapacity();
 
         copyPreviousValues(upstream);
 
@@ -147,7 +153,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
-            jobScheduler.submit(() -> doApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, fdest, true),
+            jobScheduler.submit(
+                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, fdest),
                     SelectColumnLayer.this, onError);
             if (flattenedResult) {
                 destinationOffset += splitUpdate.added().size();
@@ -158,9 +165,25 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
+    private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
+            final SelectLayerCompletionHandler onCompletion) {
+        doEnsureCapacity();
+        doApplyUpdate(upstream, toClear, helper, 0);
+        onCompletion.onLayerCompleted(getLayerIndex());
+    }
+
+    private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
+            final SelectLayerCompletionHandler onCompletion, AtomicInteger divisions, long startOffset) {
+        doApplyUpdate(upstream, toClear, helper, startOffset);
+        upstream.release();
+
+        if (divisions.decrementAndGet() == 0) {
+            onCompletion.onLayerCompleted(getLayerIndex());
+        }
+    }
+
     private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            final SelectLayerCompletionHandler onCompletion, AtomicInteger divisions, long startOffset,
-            final boolean parallelUpdate) {
+            long startOffset) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -171,9 +194,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
-        if (!parallelUpdate) {
-            doEnsureCapacity(upstream, postMoveKeys);
-        }
 
         // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
         // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
@@ -318,27 +338,17 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
-
-        if (parallelUpdate) {
-            upstream.release();
-        }
-
-        if (divisions == null || divisions.decrementAndGet() == 0) {
-            onCompletion.onLayerCompleted(getLayerIndex());
-        }
     }
 
-    private void doEnsureCapacity(TableUpdate upstream, RowSet postMoveKeys) {
-        final long lastKey = Math.max(postMoveKeys.isEmpty() ? -1 : postMoveKeys.lastRowKey(),
-                upstream.added().isEmpty() ? -1 : upstream.added().lastRowKey());
-        if (lastKey != -1) {
-            if (flattenedResult) {
-                // This is our "fake" update, the only thing that matters is the size of the addition; because we
-                // are going to write the data into the column source flat ignoring the original row set.
-                writableSource.ensureCapacity(upstream.added().size(), false);
-            } else {
-                writableSource.ensureCapacity(lastKey + 1, false);
-            }
+    private void doEnsureCapacity() {
+        if (parentRowSet.isEmpty())
+            return;
+        if (flattenedResult || isRedirected) {
+            // This is our "fake" update, the only thing that matters is the size of the addition; because we
+            // are going to write the data into the column source flat ignoring the original row set.
+            writableSource.ensureCapacity(parentRowSet.size(), false);
+        } else {
+            writableSource.ensureCapacity(parentRowSet.lastRowKey() + 1, false);
         }
     }
 

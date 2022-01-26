@@ -105,8 +105,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs =
                             flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
                                     : sc.newDestInstance(targetDestinationCapacity);
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
-                            false, flattenedResult);
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
+                                    false, flattenedResult);
                     if (flattenedResult) {
                         numberOfInternallyFlattenedColumns++;
                     }
@@ -191,10 +192,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
-    private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
+    private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten) {
-        return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
+        return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
+                mcsBuilder,
                 isRedirected, flatten);
     }
 
