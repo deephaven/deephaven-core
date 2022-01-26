@@ -2,6 +2,7 @@
 
 from jpy import JType
 from deephaven.Plot.figure_wrapper import FigureWrapper
+import deephaven2.table
 
 def create_change_list(from_snapshot, to_snapshot):
     changes = []
@@ -39,7 +40,9 @@ def unwrap_to_java_type(object):
     """
     if isinstance(object, JType):
         return object
-    # Consider a generic ABC JType wrapper we could use
+    # TODO(deephaven-core#1892): Create standard ABC for wrapped Java objects
+    if isinstance(object, deephaven2.table.Table):
+        return object.j_table
     if isinstance(object, FigureWrapper):
         return object.figure
     # add more here when/if necessary
