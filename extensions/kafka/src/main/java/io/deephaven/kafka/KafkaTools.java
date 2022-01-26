@@ -1251,7 +1251,7 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec.Avro avroSpec,
             @NotNull final String[] columnNames) {
         return new GenericRecordKeyOrValueSerializer(
-                t, avroSpec.schema, columnNames, avroSpec.timestampFieldName);
+                t, avroSpec.schema, columnNames, avroSpec.timestampFieldName, avroSpec.columnProperties);
     }
 
     private static KeyOrValueSerializer<?> getJsonSerializer(

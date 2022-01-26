@@ -4,7 +4,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.kafka.KafkaSchemaUtils;
-import io.deephaven.kafka.ingest.GenericRecordUtil;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,6 +18,10 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -36,10 +39,13 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     protected final List<GenericRecordFieldProcessor> fieldProcessors = new ArrayList<>();
 
-    public GenericRecordKeyOrValueSerializer(final Table source,
+    public GenericRecordKeyOrValueSerializer(
+            final Table source,
             final Schema schema,
             final String[] columnNames,
-            final String timestampFieldName) {
+            final String timestampFieldName,
+            final Properties columnProperties
+    ) {
         this.source = source;
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
@@ -61,11 +67,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             if (haveTimestampField && timestampFieldName.equals(field.name())) {
                 continue;
             }
-            if (columnNames == null) {
-                makeFieldProcessor(field, null);
-            } else {
-                makeFieldProcessor(field, columnNames[i]);
-            }
+            makeFieldProcessor(field, (columnNames == null) ? null : columnNames[i], columnProperties);
             ++i;
         }
 
@@ -299,6 +301,32 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((DateTime) inputChunk.get(ii)).getMicros());
     }
 
+    private static BigInteger toBigIntegerAtPrecisionAndScale(
+            final BigDecimal v, final MathContext mathContext, final int scale) {
+        final BigDecimal rescaled = v
+                .scaleByPowerOfTen(scale)
+                .setScale(0, mathContext.getRoundingMode())
+                .round(mathContext)
+                ;
+        return rescaled.toBigIntegerExact();
+    }
+
+    private static GenericRecordFieldProcessor makeBigDecimalFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource,
+            final int precision,
+            final int scale) {
+        final MathContext mathContext = new MathContext(precision, RoundingMode.HALF_UP);
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> {
+                    final BigDecimal bd = (BigDecimal) inputChunk.get(ii);
+                    final BigInteger bi = toBigIntegerAtPrecisionAndScale(bd, mathContext, scale);
+                    return bi.toByteArray();
+                });
+    }
+
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
         private final long fromNanosToUnitDenominator;
 
@@ -364,46 +392,93 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * @param field The field in the schema.
      * @param columnNameIn The Deephaven column to be translated into publishable format
      */
-    private void makeFieldProcessor(final Schema.Field field, final String columnNameIn) {
+    private void makeFieldProcessor(
+            final Schema.Field field,
+            final String columnNameIn,
+            final Properties columnProperties
+    ) {
         final String fieldName = field.name();
         final String columnName = (columnNameIn == null) ? fieldName : columnNameIn;
         // getColumnSource should throw a ColumnNotFoundException if it can't find the column,
         // which will blow us up here.
         final ColumnSource<?> src = source.getColumnSource(columnName);
         final Class<?> type = src.getType();
-        final GenericRecordFieldProcessor proc;
+        final GenericRecordFieldProcessor proc = getFieldProcessorForType(type, field, fieldName, columnName, src, columnProperties);
+        fieldProcessors.add(proc);
+    }
+
+    private GenericRecordFieldProcessor getFieldProcessorForType(
+            final Class<?> type,
+            final Schema.Field field,
+            final String fieldName,
+            final String columnName,
+            final ColumnSource<?> src,
+            final Properties columnProperties) {
         if (type == char.class) {
-            proc = makeCharFieldProcessor(fieldName, src);
-        } else if (type == byte.class) {
-            proc = makeByteFieldProcessor(fieldName, src);
-        } else if (type == short.class) {
-            proc = makeShortFieldProcessor(fieldName, src);
-        } else if (type == int.class) {
-            proc = makeIntFieldProcessor(fieldName, src);
-        } else if (type == long.class) {
-            proc = getLongProcessor(field, fieldName, source.getColumn(columnName).getType(), src);
-        } else if (type == float.class) {
-            proc = makeFloatFieldProcessor(fieldName, src);
-        } else if (type == double.class) {
-            proc = makeDoubleFieldProcessor(fieldName, src);
-        } else if (type == DateTime.class) {
+            return makeCharFieldProcessor(fieldName, src);
+        }
+        if (type == byte.class) {
+            return makeByteFieldProcessor(fieldName, src);
+        }
+        if (type == short.class) {
+            return makeShortFieldProcessor(fieldName, src);
+        }
+        if (type == int.class) {
+            return makeIntFieldProcessor(fieldName, src);
+        }
+        if (type == long.class) {
+            return getLongProcessor(field, fieldName, source.getColumn(columnName).getType(), src);
+        }
+        if (type == float.class) {
+            return makeFloatFieldProcessor(fieldName, src);
+        }
+        if (type == double.class) {
+            return makeDoubleFieldProcessor(fieldName, src);
+        }
+        if (type == DateTime.class) {
             final String logicalType = getLogicalType(fieldName, field);
             if (logicalType == null) {
                 throw new IllegalArgumentException(
                         "field " + fieldName + " for column " + columnName + " has no logical type.");
             }
             if (logicalType.equals("timestamp-millis")) {
-                proc = makeDateTimeToMillisFieldProcessor(fieldName, src);
-            } else if (logicalType.equals("timestamp-micros")) {
-                proc = makeDateTimeToMicrosFieldProcessor(fieldName, src);
-            } else {
-                throw new IllegalArgumentException("field " + fieldName + " for column " + columnName
-                        + " has unrecognized logical type " + logicalType);
+                return makeDateTimeToMillisFieldProcessor(fieldName, src);
             }
-        } else {
-            proc = makeObjectFieldProcessor(fieldName, src);
+            if (logicalType.equals("timestamp-micros")) {
+                return makeDateTimeToMicrosFieldProcessor(fieldName, src);
+            }
+            throw new IllegalArgumentException("field " + fieldName + " for column " + columnName
+                    + " has unrecognized logical type " + logicalType);
         }
-        fieldProcessors.add(proc);
+        if (type == BigDecimal.class) {
+            final int precision = getPrecisionOrScale("precision", columnName, columnProperties);
+            final int scale = getPrecisionOrScale("scale", columnName, columnProperties);
+            return makeBigDecimalFieldProcessor(fieldName, src, precision, scale);
+        }
+        return makeObjectFieldProcessor(fieldName, src);
+    }
+
+    private static final int getPrecisionOrScale(
+            final String precisionOrScale,
+            final String columnName,
+            final Properties columnProperties) {
+        final String property = columnName + "." + precisionOrScale;
+        final String propertyValue = columnProperties.getProperty(property);
+        if (propertyValue == null) {
+            throw new IllegalArgumentException(
+                    "column name '" + columnName + "' has type " + BigDecimal.class.getSimpleName() + "" +
+                            " but no property '" + property + "' defined.");
+        }
+        final int parsedResult;
+        try {
+            parsedResult = Integer.parseInt(propertyValue);
+        } catch(NumberFormatException e) {
+            throw new IllegalArgumentException("Couldn't parse as int value '" + propertyValue + "' for property " + property);
+        }
+        if (parsedResult < 1) {
+            throw new IllegalArgumentException("Invalid value '" + parsedResult + "' for proprety " + property);
+        }
+        return parsedResult;
     }
 
     /**
