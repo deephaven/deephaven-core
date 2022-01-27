@@ -214,7 +214,7 @@ public class BarrageStreamGenerator implements
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
-    public View getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
+    public SubView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, null, null, null);
     }
 
@@ -278,7 +278,7 @@ public class BarrageStreamGenerator implements
      * @param viewport is the position-space viewport
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
      */
     @Override
     public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
@@ -289,10 +289,10 @@ public class BarrageStreamGenerator implements
     }
 
     /**
-     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+     * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single snapshot requestor.
      *
      * @param options serialization options for this specific view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
      */
     @Override
     public SnapshotView getSnapshotView(BarrageSnapshotOptions options) {
