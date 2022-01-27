@@ -140,8 +140,9 @@ dd_flagged_profile_view = dd_flagged_profiles \
     .naturalJoin(pageviews_stg, 'user_id')
 
 high_value_users = purchases \
-    .updateView('purchase_total = purchase_price.multiply(java.math.BigDecimal.valueOf(quantity))') \
-    .aggBy(
+    .updateView(
+        'purchase_total = purchase_price.multiply(java.math.BigDecimal.valueOf(quantity))'
+    ).aggBy(
         as_list([
             agg.AggSum('lifetime_value = purchase_total'),
             agg.AggCount('purchases'),
@@ -167,7 +168,10 @@ cancel_callback = pk.produceFromTable(
         'high_value_users_sink_value',
         publish_schema = True,
         schema_namespace = schema_namespace,
-        column_properties = { "lifetime_value.precision" : "12", "lifetime_value.scale" : "4" }
+        column_properties = {
+            "lifetime_value.precision" : "12",
+            "lifetime_value.scale" : "4"
+        }
     ),
     last_by_key_columns = True
 )
