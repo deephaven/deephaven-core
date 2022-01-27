@@ -12,6 +12,11 @@ public abstract class AggSpecVar extends AggSpecEmptyBase {
     }
 
     @Override
+    public final String description() {
+        return "variance";
+    }
+
+    @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

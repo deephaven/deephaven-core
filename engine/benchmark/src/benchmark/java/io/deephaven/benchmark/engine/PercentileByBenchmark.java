@@ -1,6 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -197,8 +198,7 @@ public class PercentileByBenchmark {
     private Function<Table, Table> getFunction() {
         final Function<Table, Table> fut;
         if (percentileMode.equals("normal")) {
-            fut = (t) -> ((QueryTable) t).by(new PercentileBySpecImpl(0.99),
-                    SelectColumn.from(Selectable.from(keyColumnNames)));
+            fut = t -> t.aggAllBy(AggSpec.percentile(0.99), SelectColumn.from(Selectable.from(keyColumnNames)));
         } else if (percentileMode.equals("tdigest")) {
             fut = (t) -> {
                 final NonKeyColumnAggregationFactory aggregationContextFactory =

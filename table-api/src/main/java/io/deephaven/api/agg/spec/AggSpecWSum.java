@@ -13,6 +13,11 @@ public abstract class AggSpecWSum extends AggSpecBase {
         return ImmutableAggSpecWSum.of(weight);
     }
 
+    @Override
+    public final String description() {
+        return "sum weighted by " + weight();
+    }
+
     @Parameter
     public abstract ColumnName weight();
 

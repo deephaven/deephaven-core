@@ -12,6 +12,11 @@ public abstract class AggSpecStd extends AggSpecEmptyBase {
     }
 
     @Override
+    public final String description() {
+        return "standard deviation";
+    }
+
+    @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

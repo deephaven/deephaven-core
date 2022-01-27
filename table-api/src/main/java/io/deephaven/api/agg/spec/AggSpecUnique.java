@@ -38,6 +38,11 @@ public abstract class AggSpecUnique extends AggSpecBase {
                 .build();
     }
 
+    @Override
+    public final String description() {
+        return "unique" + (includeNulls() ? " (including nulls)" : "");
+    }
+
     @Default
     public boolean includeNulls() {
         return false;

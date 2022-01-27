@@ -10,8 +10,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
@@ -25,8 +24,6 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.by.rollup.NullColumns;
-import io.deephaven.engine.table.impl.by.rollup.Partition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -83,8 +80,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
-import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
-import static io.deephaven.engine.table.impl.by.AggregationProcessor.Type.ROLLUP_BASE;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
 /**
  * Primary coalesced table implementation.
@@ -477,39 +473,31 @@ public class QueryTable extends BaseTable {
         final MemoizedOperationKey rollupKey =
                 MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents);
         return memoizeResult(rollupKey, () -> {
-            final List<Aggregation> baseAggregations = Stream.concat(
-                    aggregations.stream(),
-                    Stream.of(includeConstituents
-                            ? Partition.of(true)
-                            : NullColumns.of(ROLLUP_COLUMN, Object.class))
-            ).collect(Collectors.toList());
-            final QueryTable baseLevel = aggNoMemo(AggregationProcessor.of(baseAggregations, ROLLUP_BASE), gbsColumns);
+            final QueryTable baseLevel = aggNoMemo(
+                    AggregationProcessor.forRollupBase(aggregations, includeConstituents), gbsColumns);
 
-            final Deque<SelectColumn> reaggregateColumns = new ArrayDeque<>(Arrays.asList(gbsColumns));
-            final Deque<String> nullColumns = new ArrayDeque<>(groupByColumns.length);
-
+            final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns));
+            final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length);
             QueryTable lastLevel = baseLevel;
-            while (!reaggregateColumns.isEmpty()) {
-                nullColumns.addFirst(reaggregateColumns.removeLast().getName());
-                // TODO-RWC: RESUME FROM HERE: FIGURE OUT WHEN TO ADD PARTITION
-                final Map<String, Class<?>> nullColumnsMap = new LinkedHashMap<>(nullColumns.size());
-                final Table fLastLevel = lastLevel;
-                nullColumns
-                        .forEach(nc -> nullColumnsMap.put(nc, fLastLevel.getDefinition().getColumn(nc).getDataType()));
-
-                aggregationStateFactory = rollupFactory.withNulls(nullColumnsMap);
-                lastLevel = lastLevel.byNoMemo(aggregationStateFactory,
-                        reaggregateColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            while (!gbsColumnsToReaggregate.isEmpty()) {
+                nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName());
+                final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
+                final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
+                        Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
+                        Assert::neverInvoked, LinkedHashMap::new));
+                lastLevel = lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
+                        gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
             }
 
-            final String[] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream()
-                    .filter(cn -> cn.endsWith(RollupConstants.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(rollupsToDrop);
+            final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
+                    .map(ColumnDefinition::getName)
+                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
             final Object reverseLookup =
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
             finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregationFactory, columns,
+            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
                     includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
             result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             copyAttributes(result, CopyAttributeOperation.Rollup);
@@ -617,14 +605,20 @@ public class QueryTable extends BaseTable {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
         }
-        final Table tableToUse = AggAllByUseTable.of(this, spec);
-        final Table result = tableToUse.aggBy(agg.get(), groupByList);
-        spec.walk(new AggAllByCopyAttributes(this, result));
-        return result;
+        final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
+        final List<? extends Aggregation> aggs = List.of(agg.get());
+        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, gbsColumns);
+        return tableToUse.memoizeResult(aggKey, () -> {
+            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), gbsColumns);
+            spec.walk(new AggAllByCopyAttributes(this, result));
+            return result;
+        });
     }
 
     @Override
-    public Table aggBy(final Collection<? extends Aggregation> aggregations,
+    public Table aggBy(
+            final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
         if (aggregations.isEmpty()) {
             throw new IllegalArgumentException(
@@ -632,25 +626,20 @@ public class QueryTable extends BaseTable {
                             + toString(groupByColumns));
         }
 
-        final List<AggregationFactory.AggregationElement> optimized =
-                AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
+        final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
+        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, gbsColumns);
+        final Table aggregationTable = memoizeResult(aggKey, () ->
+                aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
 
-        final List<ColumnName> optimizedOrder = optimized.stream()
-                .map(AggregationFactory.AggregationElement::getResultPairs)
-                .flatMap(Stream::of)
-                .map(MatchPair::leftColumn)
-                .map(ColumnName::of)
-                .collect(Collectors.toList());
-        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
-
-        final Table aggregationTable = by(new AggregationFactory(optimized), SelectColumn.from(groupByColumns));
-
+        final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }
 
         // We need to re-order the result columns to match the user-provided order
-        List<ColumnName> resultOrder =
+        final List<ColumnName> resultOrder =
                 Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
                         .collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
@@ -660,12 +649,7 @@ public class QueryTable extends BaseTable {
     public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> {
-                    if (!COLUMN_NAME.matcher(countColumnName).matches()) { // TODO: Test more columns this way
-                        throw new RuntimeException(countColumnName + " is not a valid column name");
-                    }
-                    return by(new CountBySpecImpl(countColumnName), SelectColumn.from(groupByColumns));
-                });
+                () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
@@ -2903,7 +2887,11 @@ public class QueryTable extends BaseTable {
     public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
-                () -> by(new SelectDistinctSpecImpl(), SelectColumn.from(groupByColumns)));
+                () -> {
+                    final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+                    final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(Collections.emptyList(), gbsColumns);
+                    return memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), gbsColumns));
+                });
     }
 
     @Override

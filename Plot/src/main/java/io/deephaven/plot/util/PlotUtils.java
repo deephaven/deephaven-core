@@ -5,6 +5,7 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,16 +20,12 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
-import io.deephaven.engine.table.impl.by.KeyOnlyFirstOrLastBySpec;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.by.AggType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.ColorPalette;
@@ -42,8 +39,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+import static io.deephaven.api.agg.Aggregation.AggCount;
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.function.IntegerNumericPrimitives.abs;
 
 /**
@@ -726,7 +723,7 @@ public class PlotUtils {
         final List<String> lastColumns = t.getDefinition().getColumnNames();
         lastColumns.removeAll(Arrays.asList(catColumns));
         final Table result = ((QueryTable) t).by(
-                createCategoryComboAgg(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
+                createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
                 SelectColumn.from(Selectable.from(catColumns)));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
@@ -736,16 +733,12 @@ public class PlotUtils {
     }
 
     public static Table createCategoryHistogramTable(final Table t, final String... byColumns) {
-        return ((QueryTable) t).by(createCategoryComboAgg(AggCount(IntervalXYDataSeriesArray.COUNT)),
-                SelectColumn.from(Selectable.from(byColumns)));
+        return t.aggBy(createCategoryAggs(AggCount(IntervalXYDataSeriesArray.COUNT)), Selectable.from(byColumns));
 
     }
 
-    public static AggregationFactory createCategoryComboAgg(AggregationElement agg) {
-        return AggCombo(
-                Agg(new KeyOnlyFirstOrLastBySpec(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First),
-                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
-                agg);
+    public static Collection<? extends Aggregation> createCategoryAggs(Aggregation agg) {
+        return List.of(Aggregation.AggFirstRowKey(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN), agg);
     }
 
     public static List<Condition> getColumnConditions(final Table arg, final String column) {

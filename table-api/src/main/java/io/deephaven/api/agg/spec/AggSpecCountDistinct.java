@@ -16,6 +16,11 @@ public abstract class AggSpecCountDistinct extends AggSpecBase {
         return ImmutableAggSpecCountDistinct.builder().countNulls(countNulls).build();
     }
 
+    @Override
+    public final String description() {
+        return "count distinct" + (countNulls() ? " (counting nulls)" : "");
+    }
+
     @Default
     public boolean countNulls() {
         return false;

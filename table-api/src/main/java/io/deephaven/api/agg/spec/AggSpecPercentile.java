@@ -17,6 +17,11 @@ public abstract class AggSpecPercentile extends AggSpecBase {
         return ImmutableAggSpecPercentile.builder().percentile(percentile).averageMedian(averageMedian).build();
     }
 
+    @Override
+    public final String description() {
+        return String.format("%.2f percentile%s", percentile(), averageMedian() ? " averaging median" : "");
+    }
+
     public abstract double percentile();
 
     @Default

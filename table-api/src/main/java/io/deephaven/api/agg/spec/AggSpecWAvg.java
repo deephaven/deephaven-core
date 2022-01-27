@@ -13,6 +13,11 @@ public abstract class AggSpecWAvg extends AggSpecBase {
         return ImmutableAggSpecWAvg.of(weight);
     }
 
+    @Override
+    public final String description() {
+        return "average weighted by " + weight();
+    }
+
     @Parameter
     public abstract ColumnName weight();
 

@@ -4,6 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.*;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.*;
@@ -11,13 +12,19 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.Partition;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.*;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.*;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.*;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
+import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.FunctionalInterfaces.TriFunction;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.TypeUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,10 +39,16 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
+import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
+import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
+import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
-import static io.deephaven.engine.table.impl.by.IterativeOperatorSpec.*;
+import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
+import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.type.TypeUtils.getBoxedType;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -43,30 +56,85 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.*;
  */
 public class AggregationProcessor implements AggregationContextFactory {
 
-    /**
-     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
-     *
-     * @param aggregations The {@link Aggregation aggregations}
-     * @return The {@link AggregationContextFactory}
-     */
-    public static AggregationContextFactory of(@NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Type type) {
-        return new AggregationProcessor(aggregations, type);
-    }
-
-    public enum Type {
-        NORMAL, ROLLUP_BASE, ROLLUP_REAGGREGATED
+    private enum Type {
+        NORMAL, ROLLUP_BASE, ROLLUP_REAGGREGATED, SELECT_DISTINCT
     }
 
     private final Collection<? extends Aggregation> aggregations;
     private final Type type;
+
+    /**
+     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
+     *
+     * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
+     *        mutated by {@link AggregationProcessor}.
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forAggregation(
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        return new AggregationProcessor(aggregations, Type.NORMAL);
+    }
+
+    /**
+     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory} for use in
+     * computing the base level of a rollup.
+     *
+     * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
+     *        mutated by {@link AggregationProcessor}.
+     * @param includeConstituents Whether constituents should be included via a partition aggregation
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forRollupBase(
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            final boolean includeConstituents) {
+        // @formatter:off
+        final Collection<? extends Aggregation> baseAggregations =
+                Stream.concat(
+                    aggregations.stream(),
+                    Stream.of(includeConstituents ? Partition.of(true) : NullColumns.of(ROLLUP_COLUMN, Object.class))
+                ).collect(Collectors.toList());
+        // @formatter:on
+        return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
+    }
+
+    /**
+     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory} for use in
+     * computing a reaggregated level of a rollup.
+     *
+     * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
+     *        mutated by {@link AggregationProcessor}.
+     * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forRollupReaggregated(
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Map<String, Class<?>> nullColumns) {
+        // @formatter:off
+        final Collection<? extends Aggregation> reaggregations =
+                Stream.of(
+                    Stream.of(NullColumns.from(nullColumns)),
+                    aggregations.stream(),
+                    Stream.of(Partition.of(false))
+                ).flatMap(Function.identity()).collect(Collectors.toList());
+        // @formatter:on
+        return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
+    }
+
+    /**
+     * Create a trivial {@link AggregationContextFactory} to implement {@link Table#selectDistinct select distinct}.
+     * 
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forSelectDistinct() {
+        return new AggregationProcessor(Collections.emptyList(), Type.SELECT_DISTINCT);
+    }
 
     private AggregationProcessor(
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Type type) {
         this.aggregations = aggregations;
         this.type = type;
-        final String duplicationErrorMessage = AggregationOutputs.of(aggregations)
+        final String duplicationErrorMessage = AggregationPairs.outputsOf(aggregations)
                 .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet().stream()
                 .filter(kv -> kv.getValue() > 1).map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
                 .collect(Collectors.joining(", "));
@@ -94,6 +162,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return new RollupBaseConverter(table, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
                 return new RollupReaggregatedConverter(table, groupByColumnNames).build();
+            case SELECT_DISTINCT:
+                return makeEmptyAggregationContext();
             default:
                 throw new UnsupportedOperationException("Unsupported type " + type);
         }
@@ -183,6 +253,14 @@ public class AggregationProcessor implements AggregationContextFactory {
             addOperator(operator, null, ZERO_LENGTH_STRING_ARRAY);
         }
 
+        @SafeVarargs
+        final void addOperator(@NotNull final IterativeChunkedAggregationOperator operator,
+                @Nullable final ChunkSource.WithPrev<Values> inputSource,
+                @NotNull final Stream<String>... inputColumnNames) {
+            addOperator(operator, inputSource,
+                    Stream.of(inputColumnNames).flatMap(Function.identity()).toArray(String[]::new));
+        }
+
         final void addOperator(@NotNull final IterativeChunkedAggregationOperator operator,
                 @Nullable final ChunkSource.WithPrev<Values> inputSource,
                 @NotNull final String... inputColumnNames) {
@@ -231,7 +309,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                                         null, inputName);
                             },
                             () -> addOperator(
-                                    getMinMaxChunked(type, resultName, isMin, isAddOnly || isStream),
+                                    makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isStream),
                                     inputSource, inputName));
         }
 
@@ -279,9 +357,9 @@ public class AggregationProcessor implements AggregationContextFactory {
                 inputSource = TupleSourceFactory.makeTupleSource(
                         Arrays.stream(sortColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
             }
-            // TODO-RWC: Move this helper here or to a new landing place
-            addOperator(SortedFirstOrLastByAggregationFactory.makeOperator(inputSource.getChunkType(), isFirst,
-                    aggregations.size() > 1, MatchPair.fromPairs(resultPairs), table),
+            addOperator(
+                    makeSortedFirstOrLastOperator(inputSource.getChunkType(), isFirst, aggregations.size() > 1,
+                            MatchPair.fromPairs(resultPairs), table),
                     inputSource, sortColumnNames);
         }
 
@@ -291,6 +369,80 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             throw new UnsupportedOperationException(String.format("%s does not support sort order in %s",
                     isFirst ? "SortedFirst" : "SortedLast", sortColumn));
+        }
+
+        final void addWeightedAvgOrSumOperator(@NotNull final String weightName, final boolean isSum) {
+            final ColumnSource<?> weightSource = table.getColumnSource(weightName);
+            final boolean weightSourceIsFloatingPoint;
+            if (isInteger(weightSource.getChunkType())) {
+                weightSourceIsFloatingPoint = false;
+            } else if (isFloatingPoint(weightSource.getChunkType())) {
+                weightSourceIsFloatingPoint = true;
+            } else {
+                throw new UnsupportedOperationException(
+                        String.format("Invalid type %s in weight column %s for AggW%s",
+                                weightSource.getType(), weightName, isSum ? "Sum" : "Avg"));
+            }
+
+            final MutableBoolean anyIntegerResults = new MutableBoolean();
+            final MutableBoolean anyFloatingPointResults = new MutableBoolean();
+            final List<Result> results = resultPairs.stream().map(pair -> {
+                final ColumnSource<?> inputSource = table.getColumnSource(pair.input().name());
+                final ResultType resultType;
+                if (isInteger(inputSource.getChunkType())) {
+                    if (!weightSourceIsFloatingPoint && isSum) {
+                        anyIntegerResults.setTrue();
+                        resultType = ResultType.INTEGER;
+                    } else {
+                        anyFloatingPointResults.setTrue();
+                        resultType = ResultType.FLOATING_POINT;
+                    }
+                } else if (isFloatingPoint(inputSource.getChunkType())) {
+                    anyFloatingPointResults.setTrue();
+                    resultType = ResultType.FLOATING_POINT;
+                } else {
+                    throw new UnsupportedOperationException(
+                            String.format("Invalid type %s in column %s for AggW%s weighted by %s",
+                                    inputSource.getType(), pair.input().name(), isSum ? "Sum" : "Avg", weightName));
+                }
+                return new Result(pair, resultType, inputSource);
+            }).collect(Collectors.toList());
+
+            final LongWeightRecordingInternalOperator longWeightOperator;
+            if (anyIntegerResults.booleanValue()) {
+                longWeightOperator = new LongWeightRecordingInternalOperator(weightSource.getChunkType());
+                addOperator(longWeightOperator, weightSource, Stream.of(weightName),
+                        results.stream().filter(r -> r.type == ResultType.INTEGER).map(r -> r.pair.input().name()));
+            } else {
+                longWeightOperator = null;
+            }
+
+            final DoubleWeightRecordingInternalOperator doubleWeightOperator;
+            if (anyFloatingPointResults.booleanValue()) {
+                doubleWeightOperator = new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
+                addOperator(doubleWeightOperator, weightSource, Stream.of(weightName),
+                        results.stream().filter(r -> r.type == ResultType.FLOATING_POINT)
+                                .map(r -> r.pair.input().name()));
+            } else {
+                doubleWeightOperator = null;
+            }
+
+            results.forEach(r -> {
+                final IterativeChunkedAggregationOperator resultOperator;
+                if (isSum) {
+                    if (r.type == ResultType.INTEGER) {
+                        resultOperator = new LongChunkedWeightedSumOperator(
+                                r.source.getChunkType(), longWeightOperator, r.pair.output().name());
+                    } else {
+                        resultOperator = new DoubleChunkedWeightedSumOperator(
+                                r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                    }
+                } else {
+                    resultOperator = new ChunkedWeightedAverageOperator(
+                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                }
+                addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
+            });
         }
     }
 
@@ -333,18 +485,17 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            // TODO-RWC: Move this helper and its friends here or to a new landing place
-            addBasicOperators(IterativeOperatorSpec::getAbsSumChunked);
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            addBasicOperators((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), false, false));
+            addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), false, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            addBasicOperators((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), false, false));
+            addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), false, false));
         }
 
         @Override
@@ -355,7 +506,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> getAvgChunked(t, n, false));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, false));
         }
 
         @Override
@@ -385,7 +536,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> getPercentileChunked(t, n, 0.50d, median.averageMedian()));
+            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, 0.50d, median.averageMedian(), n));
         }
 
         @Override
@@ -395,7 +546,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators((t, n) -> getPercentileChunked(t, n, pct.percentile(), pct.averageMedian()));
+            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageMedian(), n));
         }
 
         @Override
@@ -410,36 +561,33 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> getVarChunked(t, n, true, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators(IterativeOperatorSpec::getSumChunked);
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> getUniqueChunked(t, n,
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n,
                     unique.includeNulls(), null, unique.nonUniqueSentinel(), false, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
-            // TODO-RWC: Move this helper here or to a new landing place
-            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table, wAvg.weight().name(), false,
-                    MatchPair.fromPairs(resultPairs), operators, inputColumnNames, inputSources);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table, wSum.weight().name(), true,
-                    MatchPair.fromPairs(resultPairs), operators, inputColumnNames, inputSources);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> getVarChunked(t, n, false, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, false));
         }
     }
 
@@ -546,23 +694,19 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Partition partition) {
-            if (partition.includeConstituents()) {
-                streamUnsupported("Partition for rollup with constituents included");
+            if (!partition.includeConstituents()) {
+                throw new IllegalArgumentException(
+                        "Partition isn't used for rollup base levels unless constituents are included");
             }
+            streamUnsupported("Partition for rollup with constituents included");
 
-            final QueryTable adjustedTable = partition.includeConstituents()
-                    ? maybeCopyRlAttribute(table, table.updateView(ROLLUP_COLUMN + " = null"))
-                    : table;
-            final PartitionByChunkedOperator.AttributeCopier copier = partition.includeConstituents()
-                    ? RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE
-                    : RollupAttributeCopier.DEFAULT_INSTANCE;
+            final QueryTable adjustedTable = maybeCopyRlAttribute(table, table.updateView(ROLLUP_COLUMN + " = null"));
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(table,
-                    adjustedTable, copier, Collections.emptyList(), groupByColumnNames);
+                    adjustedTable, LEAF_WITHCONSTITUENTS_INSTANCE, Collections.emptyList(), groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
             transformers.add(makeRollupKeysTransformer(groupByColumnNames));
-            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, false,
-                    partition.includeConstituents()));
+            transformers.add(new RollupTableMapAndReverseLookupAttributeSetter(partitionOperator, false, true));
 
             partitionFound = true;
         }
@@ -573,22 +717,22 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            addBasicOperators(IterativeOperatorSpec::getAbsSumChunked);
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            addBasicOperators((t, n) -> getCountDistinctChunked(t, n, countDistinct.countNulls(), true, false));
+            addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            addBasicOperators((t, n) -> getDistinctChunked(t, n, distinct.includeNulls(), true, false));
+            addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> getAvgChunked(t, n, true));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
         }
 
         @Override
@@ -623,29 +767,28 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> getVarChunked(t, n, true, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators(IterativeOperatorSpec::getSumChunked);
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> getUniqueChunked(t, n,
+            addBasicOperators((t, n) -> makeUniqueOperator(t, n,
                     unique.includeNulls(), null, unique.nonUniqueSentinel(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table, wSum.weight().name(), true,
-                    MatchPair.fromPairs(resultPairs), operators, inputColumnNames, inputSources);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> getVarChunked(t, n, false, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, true));
         }
     }
 
@@ -692,7 +835,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     ? table
                     : maybeCopyRlAttribute(table, table.dropColumns(columnsToDrop));
             final PartitionByChunkedOperator partitionOperator = new PartitionByChunkedOperator(table,
-                    adjustedTable, RollupAttributeCopier.DEFAULT_INSTANCE, Collections.emptyList(), groupByColumnNames);
+                    adjustedTable, DEFAULT_INSTANCE, Collections.emptyList(), groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
             transformers.add(makeRollupKeysTransformer(groupByColumnNames));
@@ -710,13 +853,13 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getCountDistinctChunked(ssmType, n,
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeCountDistinctOperator(ssmType, n,
                     countDistinct.countNulls(), true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getDistinctChunked(priorResultType, n,
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeDistinctOperator(priorResultType, n,
                     distinct.includeNulls(), true, true));
         }
 
@@ -767,7 +910,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> getUniqueChunked(
+            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeUniqueOperator(
                     priorResultType, n, unique.includeNulls(), null, unique.nonUniqueSentinel(), true, true));
         }
 
@@ -786,8 +929,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String resultName = pair.output().name();
                 final ColumnSource<?> resultSource = table.getColumnSource(resultName);
 
-                addOperator(IterativeOperatorSpec.getSumChunked(resultSource.getType(), resultName),
-                        resultSource, resultName);
+                addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
             }
         }
 
@@ -950,14 +1092,411 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Helpers
+    // Basic Helpers
     // -----------------------------------------------------------------------------------------------------------------
+
+    private static AggregationContext makeEmptyAggregationContext() {
+        // noinspection unchecked
+        return new AggregationContext(
+                ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
+                ZERO_LENGTH_STRING_ARRAY_ARRAY,
+                ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
+    }
 
     private static ColumnSource<?> maybeReinterpretDateTimeAsLong(@NotNull final ColumnSource<?> inputSource) {
         return inputSource.getType() == DateTime.class
                 ? ReinterpretUtils.dateTimeToLongSource(inputSource)
                 : inputSource;
     }
+
+    private static boolean isFloatingPoint(@NotNull final ChunkType chunkType) {
+        return chunkType == ChunkType.Float
+                || chunkType == ChunkType.Double;
+    }
+
+    private static boolean isInteger(@NotNull final ChunkType chunkType) {
+        return chunkType == ChunkType.Char
+                || chunkType == ChunkType.Byte
+                || chunkType == ChunkType.Short
+                || chunkType == ChunkType.Int
+                || chunkType == ChunkType.Long;
+    }
+
+    private enum ResultType {
+        INTEGER, FLOATING_POINT
+    }
+
+    private static class Result {
+
+        private final Pair pair;
+        private final ResultType type;
+        private final ColumnSource<?> source;
+
+        private Result(@NotNull final Pair pair, @NotNull final ResultType type,
+                @NotNull final ColumnSource<?> source) {
+            this.pair = pair;
+            this.type = type;
+            this.source = source;
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Operator Construction Helpers (e.g. to multiplex on input/output data type)
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private static IterativeChunkedAggregationOperator makeSumOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean isAbsolute) {
+        if (type == Boolean.class || type == boolean.class) {
+            return new BooleanChunkedSumOperator(name);
+        } else if (type == Byte.class || type == byte.class) {
+            return new ByteChunkedSumOperator(isAbsolute, name);
+        } else if (type == Character.class || type == char.class) {
+            return new CharChunkedSumOperator(isAbsolute, name);
+        } else if (type == Double.class || type == double.class) {
+            return new DoubleChunkedSumOperator(isAbsolute, name);
+        } else if (type == Float.class || type == float.class) {
+            return new FloatChunkedSumOperator(isAbsolute, name);
+        } else if (type == Integer.class || type == int.class) {
+            return new IntChunkedSumOperator(isAbsolute, name);
+        } else if (type == Long.class || type == long.class) {
+            return new LongChunkedSumOperator(isAbsolute, name);
+        } else if (type == Short.class || type == short.class) {
+            return new ShortChunkedSumOperator(isAbsolute, name);
+        } else if (type == BigInteger.class) {
+            return new BigIntegerChunkedSumOperator(isAbsolute, name);
+        } else if (type == BigDecimal.class) {
+            return new BigDecimalChunkedSumOperator(isAbsolute, name);
+        }
+        throw new UnsupportedOperationException("Unsupported type " + type);
+    }
+
+    private static IterativeChunkedAggregationOperator makeMinOrMaxOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean isMin,
+            final boolean isStreamOrAddOnly) {
+        if (!isStreamOrAddOnly) {
+            return new SsmChunkedMinMaxOperator(type, isMin, name);
+        }
+        if (type == Byte.class || type == byte.class) {
+            return new ByteChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Character.class || type == char.class) {
+            return new CharChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Double.class || type == double.class) {
+            return new DoubleChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Float.class || type == float.class) {
+            return new FloatChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Integer.class || type == int.class) {
+            return new IntChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+            return new LongChunkedAddOnlyMinMaxOperator(type, isMin, name);
+        } else if (type == Short.class || type == short.class) {
+            return new ShortChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else if (type == Boolean.class || type == boolean.class) {
+            return new BooleanChunkedAddOnlyMinMaxOperator(isMin, name);
+        } else {
+            return new ObjectChunkedAddOnlyMinMaxOperator(type, isMin, name);
+        }
+    }
+
+    private static IterativeChunkedAggregationOperator makeCountDistinctOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean countNulls,
+            final boolean exposeInternal,
+            final boolean reaggregated) {
+        if (type == Byte.class || type == byte.class) {
+            return reaggregated
+                    ? new ByteRollupCountDistinctOperator(name, countNulls)
+                    : new ByteChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Character.class || type == char.class) {
+            return reaggregated
+                    ? new CharRollupCountDistinctOperator(name, countNulls)
+                    : new CharChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Double.class || type == double.class) {
+            return reaggregated
+                    ? new DoubleRollupCountDistinctOperator(name, countNulls)
+                    : new DoubleChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Float.class || type == float.class) {
+            return reaggregated
+                    ? new FloatRollupCountDistinctOperator(name, countNulls)
+                    : new FloatChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Integer.class || type == int.class) {
+            return reaggregated
+                    ? new IntRollupCountDistinctOperator(name, countNulls)
+                    : new IntChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+            return reaggregated
+                    ? new LongRollupCountDistinctOperator(name, countNulls)
+                    : new LongChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else if (type == Short.class || type == short.class) {
+            return reaggregated
+                    ? new ShortRollupCountDistinctOperator(name, countNulls)
+                    : new ShortChunkedCountDistinctOperator(name, countNulls, exposeInternal);
+        } else {
+            return reaggregated
+                    ? new ObjectRollupCountDistinctOperator(type, name, countNulls)
+                    : new ObjectChunkedCountDistinctOperator(type, name, countNulls, exposeInternal);
+        }
+    }
+
+    private static IterativeChunkedAggregationOperator makeDistinctOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean includeNulls,
+            final boolean exposeInternal,
+            final boolean reaggregated) {
+        if (type == Byte.class || type == byte.class) {
+            return reaggregated
+                    ? new ByteRollupDistinctOperator(name, includeNulls)
+                    : new ByteChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else if (type == Character.class || type == char.class) {
+            return reaggregated
+                    ? new CharRollupDistinctOperator(name, includeNulls)
+                    : new CharChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else if (type == Double.class || type == double.class) {
+            return reaggregated
+                    ? new DoubleRollupDistinctOperator(name, includeNulls)
+                    : new DoubleChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else if (type == Float.class || type == float.class) {
+            return reaggregated
+                    ? new FloatRollupDistinctOperator(name, includeNulls)
+                    : new FloatChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else if (type == Integer.class || type == int.class) {
+            return reaggregated
+                    ? new IntRollupDistinctOperator(name, includeNulls)
+                    : new IntChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+            return reaggregated
+                    ? new LongRollupDistinctOperator(type, name, includeNulls)
+                    : new LongChunkedDistinctOperator(type, name, includeNulls, exposeInternal);
+        } else if (type == Short.class || type == short.class) {
+            return reaggregated
+                    ? new ShortRollupDistinctOperator(name, includeNulls)
+                    : new ShortChunkedDistinctOperator(name, includeNulls, exposeInternal);
+        } else {
+            return reaggregated
+                    ? new ObjectRollupDistinctOperator(type, name, includeNulls)
+                    : new ObjectChunkedDistinctOperator(type, name, includeNulls, exposeInternal);
+        }
+    }
+
+    private static IterativeChunkedAggregationOperator makeUniqueOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String resultName,
+            final boolean includeNulls,
+            @SuppressWarnings("SameParameterValue") final Object onlyNullsSentinel,
+            final Object nonUniqueSentinel,
+            final boolean exposeInternal,
+            final boolean reaggregated) {
+        checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
+        checkType(resultName, "Non Unique Sentinel", type, nonUniqueSentinel);
+
+        if (type == Byte.class || type == byte.class) {
+            final byte onsAsType = (onlyNullsSentinel == null) ? NULL_BYTE : ((Number) onlyNullsSentinel).byteValue();
+            final byte nusAsType = (nonUniqueSentinel == null) ? NULL_BYTE : ((Number) nonUniqueSentinel).byteValue();
+            return reaggregated
+                    ? new ByteRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+        } else if (type == Character.class || type == char.class) {
+            return reaggregated
+                    ? new CharRollupUniqueOperator(resultName, includeNulls,
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel))
+                    : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal,
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel));
+        } else if (type == Double.class || type == double.class) {
+            final double onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_DOUBLE : ((Number) onlyNullsSentinel).doubleValue();
+            final double nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_DOUBLE : ((Number) nonUniqueSentinel).doubleValue();
+            return reaggregated
+                    ? new DoubleRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+        } else if (type == Float.class || type == float.class) {
+            final float onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_FLOAT : ((Number) onlyNullsSentinel).floatValue();
+            final float nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_FLOAT : ((Number) nonUniqueSentinel).floatValue();
+            return reaggregated
+                    ? new FloatRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+        } else if (type == Integer.class || type == int.class) {
+            final int onsAsType = (onlyNullsSentinel == null) ? NULL_INT : ((Number) onlyNullsSentinel).intValue();
+            final int nusAsType = (nonUniqueSentinel == null) ? NULL_INT : ((Number) nonUniqueSentinel).intValue();
+            return reaggregated
+                    ? new IntRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+            final long onsAsType;
+            final long nusAsType;
+            if (type == DateTime.class) {
+                onsAsType = (onlyNullsSentinel == null) ? NULL_LONG : ((DateTime) onlyNullsSentinel).getNanos();
+                nusAsType = (nonUniqueSentinel == null) ? NULL_LONG : ((DateTime) nonUniqueSentinel).getNanos();
+            } else {
+                onsAsType = (onlyNullsSentinel == null) ? NULL_LONG : ((Number) onlyNullsSentinel).longValue();
+                nusAsType = (nonUniqueSentinel == null) ? NULL_LONG : ((Number) nonUniqueSentinel).longValue();
+            }
+            return reaggregated
+                    ? new LongRollupUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                    : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
+                            nusAsType);
+        } else if (type == Short.class || type == short.class) {
+            final short onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_SHORT : ((Number) onlyNullsSentinel).shortValue();
+            final short nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_SHORT : ((Number) nonUniqueSentinel).shortValue();
+            return reaggregated
+                    ? new ShortRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+        } else {
+            return reaggregated
+                    ? new ObjectRollupUniqueOperator(type, resultName, includeNulls, onlyNullsSentinel,
+                            nonUniqueSentinel)
+                    : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onlyNullsSentinel,
+                            nonUniqueSentinel);
+        }
+    }
+
+    private static void checkType(@NotNull final String name, @NotNull final String valueIntent,
+            @NotNull Class<?> expected, final Object value) {
+        expected = getBoxedType(expected);
+        if (value != null && !expected.isAssignableFrom(value.getClass())) {
+            if (io.deephaven.util.type.TypeUtils.isNumeric(expected) && TypeUtils.isNumeric(value.getClass())) {
+                if (checkNumericCompatibility((Number) value, expected)) {
+                    return;
+                }
+                throw new IllegalArgumentException(
+                        String.format("For result column %s the %s %s is larger than can be represented with a %s",
+                                name, valueIntent, value, expected.getName()));
+            }
+            throw new IllegalArgumentException(
+                    String.format("For result column %s the %s must be of type %s but is %s",
+                            name, valueIntent, expected.getName(), value.getClass().getName()));
+        }
+    }
+
+    private static boolean checkNumericCompatibility(@NotNull final Number value, @NotNull final Class<?> expected) {
+        if (expected == Byte.class) {
+            return Byte.MIN_VALUE <= value.longValue() && value.longValue() <= Byte.MAX_VALUE;
+        } else if (expected == Short.class) {
+            return Short.MIN_VALUE <= value.longValue() && value.longValue() <= Short.MAX_VALUE;
+        } else if (expected == Integer.class) {
+            return Integer.MIN_VALUE <= value.longValue() && value.longValue() <= Integer.MAX_VALUE;
+        } else if (expected == Long.class) {
+            return new BigInteger(value.toString()).compareTo(BigInteger.valueOf(Long.MIN_VALUE)) >= 0 &&
+                    new BigInteger(value.toString()).compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0;
+        } else if (expected == Float.class) {
+            return value.getClass() != Double.class;
+        } else if (expected == Double.class) {
+            return value.getClass() != BigDecimal.class;
+        } else {
+            return expected == BigDecimal.class || expected == BigInteger.class;
+        }
+    }
+
+    private static IterativeChunkedAggregationOperator makeAvgOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean exposeInternal) {
+        if (type == Byte.class || type == byte.class) {
+            return new ByteChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Character.class || type == char.class) {
+            return new CharChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Double.class || type == double.class) {
+            return new DoubleChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Float.class || type == float.class) {
+            return new FloatChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Integer.class || type == int.class) {
+            return new IntChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Long.class || type == long.class) {
+            return new LongChunkedAvgOperator(name, exposeInternal);
+        } else if (type == Short.class || type == short.class) {
+            return new ShortChunkedAvgOperator(name, exposeInternal);
+        } else if (type == BigInteger.class) {
+            return new BigIntegerChunkedAvgOperator(name, exposeInternal);
+        } else if (type == BigDecimal.class) {
+            return new BigDecimalChunkedAvgOperator(name, exposeInternal);
+        } else if (AvgState.class.isAssignableFrom(type)) {
+            throw new UnsupportedOperationException();
+        } else if (AvgStateWithNan.class.isAssignableFrom(type)) {
+            throw new UnsupportedOperationException();
+        }
+        throw new UnsupportedOperationException("Unsupported type " + type);
+    }
+
+    private static IterativeChunkedAggregationOperator makeVarOrStdOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final boolean isStd,
+            final boolean exposeInternal) {
+        if (type == Byte.class || type == byte.class) {
+            return new ByteChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Character.class || type == char.class) {
+            return new CharChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Double.class || type == double.class) {
+            return new DoubleChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Float.class || type == float.class) {
+            return new FloatChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Integer.class || type == int.class) {
+            return new IntChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Long.class || type == long.class) {
+            return new LongChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == Short.class || type == short.class) {
+            return new ShortChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == BigInteger.class) {
+            return new BigIntegerChunkedVarOperator(isStd, name, exposeInternal);
+        } else if (type == BigDecimal.class) {
+            return new BigDecimalChunkedVarOperator(isStd, name, exposeInternal);
+        }
+        throw new UnsupportedOperationException("Unsupported type " + type);
+    }
+
+    static IterativeChunkedAggregationOperator makeSortedFirstOrLastOperator(
+            @NotNull final ChunkType chunkType,
+            final boolean isFirst,
+            final boolean multipleAggs,
+            @NotNull final MatchPair[] resultPairs,
+            @NotNull final QueryTable sourceTable) {
+        if (sourceTable.isAddOnly()) {
+            // @formatter:off
+            switch (chunkType) {
+                case Boolean: throw new UnsupportedOperationException("Columns never use boolean chunks");
+                case    Char: return new CharAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
+                case    Byte: return new ByteAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
+                case   Short: return new ShortAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
+                case     Int: return new IntAddOnlySortedFirstOrLastChunkedOperator(   isFirst, resultPairs, sourceTable, null);
+                case    Long: return new LongAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
+                case   Float: return new FloatAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
+                case  Double: return new DoubleAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
+                case  Object: return new ObjectAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
+            }
+            // @formatter:on
+        }
+        if (sourceTable.isStream()) {
+            // @formatter:off
+            switch (chunkType) {
+                case Boolean: throw new UnsupportedOperationException("Columns never use boolean chunks");
+                case    Char: return new CharStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case    Byte: return new ByteStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case   Short: return new ShortStreamSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
+                case     Int: return new IntStreamSortedFirstOrLastChunkedOperator(   isFirst, multipleAggs, resultPairs, sourceTable);
+                case    Long: return new LongStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case   Float: return new FloatStreamSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
+                case  Double: return new DoubleStreamSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
+                case  Object: return new ObjectStreamSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
+            }
+            // @formatter:on
+        }
+        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Rollup Structure Helpers
+    // -----------------------------------------------------------------------------------------------------------------
 
     private static String makeRedirectionName(final int columnIdentifier) {
         return ROW_REDIRECTION_PREFIX + columnIdentifier + ROLLUP_COLUMN_SUFFIX;

@@ -6,6 +6,7 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Note: the sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
@@ -19,6 +20,11 @@ public abstract class AggSpecSortedFirst extends AggSpecBase {
 
     public static Builder builder() {
         return ImmutableAggSpecSortedFirst.builder();
+    }
+
+    @Override
+    public final String description() {
+        return "first sorted by " + columns().stream().map(sc -> sc.column().name()).collect(Collectors.joining(", "));
     }
 
     public abstract List<SortColumn> columns();

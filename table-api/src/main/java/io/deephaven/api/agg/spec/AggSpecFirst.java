@@ -12,6 +12,11 @@ public abstract class AggSpecFirst extends AggSpecEmptyBase {
     }
 
     @Override
+    public final String description() {
+        return "first";
+    }
+
+    @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

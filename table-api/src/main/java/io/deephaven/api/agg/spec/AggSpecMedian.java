@@ -16,6 +16,11 @@ public abstract class AggSpecMedian extends AggSpecBase {
         return ImmutableAggSpecMedian.builder().averageMedian(averageMedian).build();
     }
 
+    @Override
+    public final String description() {
+        return "median" + (averageMedian() ? " averaging median" : "");
+    }
+
     @Default
     public boolean averageMedian() {
         return true;

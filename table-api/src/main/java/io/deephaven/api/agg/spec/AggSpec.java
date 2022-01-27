@@ -140,6 +140,8 @@ public interface AggSpec {
 
     Aggregation aggregation(Collection<? extends Pair> pairs);
 
+    String description();
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {

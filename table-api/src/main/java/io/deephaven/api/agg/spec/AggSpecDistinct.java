@@ -16,6 +16,11 @@ public abstract class AggSpecDistinct extends AggSpecBase {
         return ImmutableAggSpecDistinct.builder().includeNulls(includeNulls).build();
     }
 
+    @Override
+    public final String description() {
+        return "distinct" + (includeNulls() ? " (including nulls)" : "");
+    }
+
     @Default
     public boolean includeNulls() {
         return false;
