@@ -185,7 +185,9 @@ def avro(
     field_to_col_mapping = _dictToMap(field_to_col_mapping)
     column_properties = _dictToProperties(column_properties)
     include_only_columns = _seqToSet(include_only_columns)
+    include_only_columns = _java_type_.predicateFromSet(include_only_columns)
     exclude_columns = _seqToSet(exclude_columns)
+    exclude_columns = _java_type_.predicateFromSet(exclude_columns)
     publish_schema = bool(publish_schema)
     if have_actual_schema:
         return _produce_jtype_.avroSpec(

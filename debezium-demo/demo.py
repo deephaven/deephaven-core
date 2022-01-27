@@ -130,6 +130,7 @@ profile_views_enriched = profile_views \
 dd_flagged_profiles = ck.consumeToTable(
     consume_properties,
     topic = 'dd_flagged_profiles',
+    offsets = ck.ALL_PARTITIONS_SEEK_TO_BEGINNING,
     key = ck.IGNORE,
     value = ck.simple('user_id_str', dh.string),
     table_type = 'append'
@@ -150,16 +151,32 @@ high_value_users = purchases \
     .where('lifetime_value > 10000') \
     .naturalJoin(users, 'user_id = id', 'email')
 
-#
-# TODO: Publish to kafka the high-value-users-sink topic. Two missing pieces:
-# * Need a way to automatically generate (and post) an Avro schema from a table definition.
-# * Need support for publishing BigDecimal as Avro decimal logical type.
-#
-# callback = pk.produceFromTable(
-#    high_value_users,
-#    kafka_base_properties,
-#    'high-value-users-sink',
-#    key = pk.avro(),
-#    value = pk.avro(),
-#    last_by_key_columns = True
-#)
+schema_namespace = 'io.deephaven.examples'
+
+cancel_callback = pk.produceFromTable(
+    high_value_users,
+    kafka_base_properties,
+    topic = 'high_value_users_sink',
+    key = pk.avro(
+        'high_value_users_sink_key',
+        publish_schema = True,
+        schema_namespace = schema_namespace,
+        include_only_columns = [ 'user_id' ]
+    ),
+    value = pk.avro(
+        'high_value_users_sink_value',
+        publish_schema = True,
+        schema_namespace = schema_namespace,
+        column_properties = { "lifetime_value.precision" : "12", "lifetime_value.scale" : "4" }
+    ),
+    last_by_key_columns = True
+)
+
+hvu_test = ck.consumeToTable(
+    consume_properties,
+    topic = 'high_value_users_sink',
+    offsets = ck.ALL_PARTITIONS_SEEK_TO_BEGINNING,
+    key = ck.IGNORE,
+    value = ck.avro('high_value_users_sink_value'),
+    table_type = 'append'
+)
