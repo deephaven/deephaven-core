@@ -74,6 +74,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -3040,7 +3041,24 @@ public class QueryTable extends BaseTable {
         return copy(definition, copyAttributes);
     }
 
+    public Table copy(Predicate<String> shouldCopy) {
+        return copy(definition, shouldCopy);
+    }
+
+    private enum NoCopy implements Predicate<String> {
+        INSTANCE;
+
+        @Override
+        public boolean test(String s) {
+            return false;
+        }
+    }
+
     public Table copy(TableDefinition definition, boolean copyAttributes) {
+        return copy(definition, copyAttributes ? a -> true : NoCopy.INSTANCE);
+    }
+
+    public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
             final Mutable<Table> result = new MutableObject<>();
 
@@ -3048,8 +3066,8 @@ public class QueryTable extends BaseTable {
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
                 final QueryTable resultTable = new CopiedTable(definition, this);
                 propagateFlatness(resultTable);
-                if (copyAttributes) {
-                    copyAttributes(resultTable, a -> true);
+                if (shouldCopy != NoCopy.INSTANCE) {
+                    copyAttributes(resultTable, shouldCopy);
                 }
 
                 if (swapListener != null) {
