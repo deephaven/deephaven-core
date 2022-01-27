@@ -19438,9 +19438,6 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal plus(long a, BigDecimal b) {
-        if (a == QueryConstants.NULL_LONG || b == null) {
-            return null;
-        }
         return plus(b, a);
     }
 
@@ -19452,9 +19449,6 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal plus(double a, BigDecimal b) {
-        if (a == QueryConstants.NULL_DOUBLE || b == null) {
-            return null;
-        }
         return plus(b, a);
     }
 
@@ -19462,7 +19456,6 @@ public final class QueryLanguageFunctionUtils {
         if (a == null || b == QueryConstants.NULL_LONG) {
             return null;
         }
-
         return a.subtract(BigDecimal.valueOf(b));
     }
 
@@ -19495,9 +19488,6 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal multiply(long a, BigDecimal b) {
-        if (a == QueryConstants.NULL_LONG || b == null) {
-            return null;
-        }
         return multiply(b, a);
     }
 
@@ -19509,9 +19499,6 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal multiply(double a, BigDecimal b) {
-        if (a == QueryConstants.NULL_DOUBLE || b == null) {
-            return null;
-        }
         return multiply(b, a);
     }
 
@@ -19547,11 +19534,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_LONG);
         }
-
         if (b == QueryConstants.NULL_LONG) {
             return false;
         }
-
         return a.compareTo(BigDecimal.valueOf(b)) == 0;
     }
 
@@ -19559,11 +19544,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_LONG) {
             return (b == null);
         }
-
         if (b == null) {
             return false;
         }
-
         return BigDecimal.valueOf(a).compareTo(b) == 0;
     }
 
@@ -19571,11 +19554,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_INT);
         }
-
         if (b == QueryConstants.NULL_INT) {
             return false;
         }
-
         return a.compareTo(BigDecimal.valueOf(b)) == 0;
     }
 
@@ -19583,11 +19564,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_INT) {
             return (b == null);
         }
-
         if (b == null) {
             return false;
         }
-
         return BigDecimal.valueOf(a).compareTo(b) == 0;
     }
 
@@ -19595,11 +19574,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_DOUBLE);
         }
-
         if (b == QueryConstants.NULL_DOUBLE) {
             return false;
         }
-
         return a.compareTo(BigDecimal.valueOf(b)) == 0;
     }
 
@@ -19607,11 +19584,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == null);
         }
-
         if (b == null) {
             return false;
         }
-
         return BigDecimal.valueOf(a).compareTo(b) == 0;
     }
 
@@ -19619,11 +19594,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_FLOAT);
         }
-
         if (b == QueryConstants.NULL_FLOAT) {
             return false;
         }
-
         return a.compareTo(BigDecimal.valueOf(b)) == 0;
     }
 
@@ -19631,11 +19604,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == null);
         }
-
         if (b == null) {
             return false;
         }
-
         return BigDecimal.valueOf(a).compareTo(b) == 0;
     }
 
@@ -19643,11 +19614,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_LONG) ? 0 : -1;
         }
-
         if (b == QueryConstants.NULL_LONG) {
             return 1;
         }
-
         return a.compareTo(BigDecimal.valueOf(b));
     }
 
@@ -19655,11 +19624,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_LONG) {
             return (b == null) ? 0 : -1;
         }
-
         if (b == null) {
             return 1;
         }
-
         return BigDecimal.valueOf(a).compareTo(b);
     }
 
@@ -19667,11 +19634,9 @@ public final class QueryLanguageFunctionUtils {
         if (a == null) {
             return (b == QueryConstants.NULL_INT) ? 0 : -1;
         }
-
         if (b == QueryConstants.NULL_INT) {
             return 1;
         }
-
         return a.compareTo(BigDecimal.valueOf(b));
     }
 
@@ -19679,59 +19644,61 @@ public final class QueryLanguageFunctionUtils {
         if (a == QueryConstants.NULL_INT) {
             return (b == null) ? 0 : -1;
         }
-
         if (b == null) {
             return 1;
         }
-
         return BigDecimal.valueOf(a).compareTo(b);
     }
 
     public static int compareTo(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return 1;  // even if a == null.
+        }
         if (a == null) {
             return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
         }
-
         if (b == QueryConstants.NULL_DOUBLE) {
             return 1;
         }
-
         return a.compareTo(BigDecimal.valueOf(b));
     }
 
     public static int compareTo(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return -1;  // even if b == null.
+        }
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == null) ? 0 : -1;
         }
-
         if (b == null) {
             return 1;
         }
-
         return BigDecimal.valueOf(a).compareTo(b);
     }
 
     public static int compareTo(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return 1;  //even if a == null.
+        }
         if (a == null) {
             return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
         }
-
         if (b == QueryConstants.NULL_FLOAT) {
             return 1;
         }
-
         return a.compareTo(BigDecimal.valueOf(b));
     }
 
     public static int compareTo(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return -1;  // even if b == null
+        }
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == null) ? 0 : -1;
         }
-
         if (b == null) {
             return 1;
         }
-
         return BigDecimal.valueOf(a).compareTo(b);
     }
 
