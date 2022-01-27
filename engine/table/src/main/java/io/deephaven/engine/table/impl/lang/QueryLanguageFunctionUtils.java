@@ -19764,7 +19764,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(BigDecimal a, double b) {
         if (Double.isNaN(b)) {
-            return -1;  // even if a == null.
+            return -1; // even if a == null.
         }
         if (a == null) {
             return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
@@ -19777,7 +19777,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(double a, BigDecimal b) {
         if (Double.isNaN(a)) {
-            return 1;  // even if b == null.
+            return 1; // even if b == null.
         }
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == null) ? 0 : -1;
@@ -19790,7 +19790,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(BigDecimal a, float b) {
         if (Float.isNaN(b)) {
-            return -1;  // even if a == null.
+            return -1; // even if a == null.
         }
         if (a == null) {
             return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
@@ -19803,7 +19803,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(float a, BigDecimal b) {
         if (Float.isNaN(a)) {
-            return 1;  // even if b == null
+            return 1; // even if b == null
         }
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == null) ? 0 : -1;

@@ -13573,15 +13573,15 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final float vfnan = Float.NaN;
         final double vdnan = Double.NaN;
 
-        TestCase.assertEquals(-1, compareTo(bv1, vfnan));  // rhs NaN
-        TestCase.assertEquals(1, compareTo(vfnan, bv1));   // lhs NaN
-        TestCase.assertEquals(-1, compareTo(bvnull, vfnan));  // lhs null and rhs NaN
-        TestCase.assertEquals(1, compareTo(vfnan, bvnull));   // lhs NaN and rhs null
+        TestCase.assertEquals(-1, compareTo(bv1, vfnan)); // rhs NaN
+        TestCase.assertEquals(1, compareTo(vfnan, bv1)); // lhs NaN
+        TestCase.assertEquals(-1, compareTo(bvnull, vfnan)); // lhs null and rhs NaN
+        TestCase.assertEquals(1, compareTo(vfnan, bvnull)); // lhs NaN and rhs null
 
-        TestCase.assertEquals(-1, compareTo(bv1, vdnan));  // rhs NaN
-        TestCase.assertEquals(1, compareTo(vdnan, bv1));   // lhs NaN
-        TestCase.assertEquals(-1, compareTo(bvnull, vdnan));  // lhs null and rhs NaN
-        TestCase.assertEquals(1, compareTo(vdnan, bvnull));   // lhs NaN and rhs null
+        TestCase.assertEquals(-1, compareTo(bv1, vdnan)); // rhs NaN
+        TestCase.assertEquals(1, compareTo(vdnan, bv1)); // lhs NaN
+        TestCase.assertEquals(-1, compareTo(bvnull, vdnan)); // lhs null and rhs NaN
+        TestCase.assertEquals(1, compareTo(vdnan, bvnull)); // lhs NaN and rhs null
 
         TestCase.assertFalse(eq(bv1, vfnan));
         TestCase.assertFalse(eq(vfnan, bv1));
