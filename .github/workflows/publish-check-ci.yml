@@ -1,4 +1,4 @@
-name: Publish Long CI results
+name: Publish Check CI results
 
 # WARNING:
 # workflow_run provides read-write repo token and access to secrets.
@@ -6,13 +6,13 @@ name: Publish Long CI results
 # We should only be running trusted code here.
 on:
   workflow_run:
-    workflows: ["Long Check CI"]
+    workflows: ["Check CI"]
     types:
       - completed
 
 jobs:
   # Job based on https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
-  publish-long-check-ci:
+  publish-check-ci:
     runs-on: ubuntu-20.04
     steps:
       # Unfortunately, the official actions/download-artifact action is very limited in scope.
@@ -27,7 +27,7 @@ jobs:
                run_id: ${{ github.event.workflow_run.id }},
             });
             var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "long-check-ci-results"
+              return artifact.name == "check-ci-results"
             })[0];
             var download = await github.actions.downloadArtifact({
                owner: context.repo.owner,
@@ -36,13 +36,13 @@ jobs:
                archive_format: 'zip',
             });
             var fs = require('fs');
-            fs.writeFileSync('${{github.workspace}}/long-check-ci-results.zip', Buffer.from(download.data));
-      - run: unzip long-check-ci-results.zip
+            fs.writeFileSync('${{github.workspace}}/check-ci-results.zip', Buffer.from(download.data));
+      - run: unzip check-ci-results.zip
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1.0.9
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: long-check-ci test report
+          check_name: check-ci test report
           commit: ${{ github.event.workflow_run.head_sha }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
