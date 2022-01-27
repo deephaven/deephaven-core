@@ -46,8 +46,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final Schema schema,
             final String[] columnNames,
             final String timestampFieldName,
-            final Properties columnProperties
-    ) {
+            final Properties columnProperties) {
         this.source = source;
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
@@ -308,8 +307,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         final BigDecimal rescaled = v
                 .scaleByPowerOfTen(scale)
                 .setScale(0, mathContext.getRoundingMode())
-                .round(mathContext)
-                ;
+                .round(mathContext);
         return rescaled.toBigIntegerExact();
     }
 
@@ -397,15 +395,15 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private void makeFieldProcessor(
             final Schema.Field field,
             final String columnNameIn,
-            final Properties columnProperties
-    ) {
+            final Properties columnProperties) {
         final String fieldName = field.name();
         final String columnName = (columnNameIn == null) ? fieldName : columnNameIn;
         // getColumnSource should throw a ColumnNotFoundException if it can't find the column,
         // which will blow us up here.
         final ColumnSource<?> src = source.getColumnSource(columnName);
         final Class<?> type = src.getType();
-        final GenericRecordFieldProcessor proc = getFieldProcessorForType(type, field, fieldName, columnName, src, columnProperties);
+        final GenericRecordFieldProcessor proc =
+                getFieldProcessorForType(type, field, fieldName, columnName, src, columnProperties);
         fieldProcessors.add(proc);
     }
 

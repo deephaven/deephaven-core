@@ -252,29 +252,36 @@ public class KafkaTools {
             if (t.isRefreshing()) {
                 final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
                         " in a refreshing table implies both properties '" +
-                        propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty + "' should be defined; ";
+                        propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty
+                        + "' should be defined; ";
 
-                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE && scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                        && scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                     throw new IllegalArgumentException(exBaseMsg + " missing both");
                 }
                 if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                    throw new IllegalArgumentException(exBaseMsg + " missing '" + propertyNames.precisionProperty + "'");
+                    throw new IllegalArgumentException(
+                            exBaseMsg + " missing '" + propertyNames.precisionProperty + "'");
                 }
                 if (scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                     throw new IllegalArgumentException(exBaseMsg + " missing '" + propertyNames.scaleProperty + "'");
                 }
-            } else {  // non refreshing table
-                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE || scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            } else { // non refreshing table
+                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                        || scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                     final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
                             " in a non refreshing table implies either both properties '" +
-                            propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty + "' should be defined, or none of them;";
+                            propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty
+                            + "' should be defined, or none of them;";
                     if (precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                         throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + propertyNames.precisionProperty + "' is defined, missing '" + propertyNames.scaleProperty + "'");
+                                exBaseMsg + " only '" + propertyNames.precisionProperty + "' is defined, missing '"
+                                        + propertyNames.scaleProperty + "'");
                     }
                     if (scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                         throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + propertyNames.scaleProperty + "' is defined, missing '" + propertyNames.precisionProperty + "'");
+                                exBaseMsg + " only '" + propertyNames.scaleProperty + "' is defined, missing '"
+                                        + propertyNames.precisionProperty + "'");
                     }
                     // Both precision and scale are null; compute them ourselves.
                     final BigDecimalUtils.PrecisionAndScale precisionAndScale =
@@ -799,7 +806,8 @@ public class KafkaTools {
                     final String schemaServiceUrl = ensureAndGetSchemaServerProprety(kafkaProperties);
                     if (publishSchema) {
                         schema = columnDefinitionsToAvroSchema(t,
-                                schemaName, schemaNamespace, columnProperties.getValue(), includeOnlyColumns, excludeColumns, columnProperties);
+                                schemaName, schemaNamespace, columnProperties.getValue(), includeOnlyColumns,
+                                excludeColumns, columnProperties);
                         final String putVersion = putAvroSchema(schema, schemaServiceUrl, schemaName);
                         if (putVersion != null && schemaVersion != null && !schemaVersion.equals(putVersion)) {
                             throw new IllegalStateException("Specified expected version " + schemaVersion

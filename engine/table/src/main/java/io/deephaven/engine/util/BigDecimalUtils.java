@@ -13,6 +13,7 @@ import java.util.Properties;
 
 public class BigDecimalUtils {
     public static final int INVALID_PRECISION_OR_SCALE = -1;
+
     public static class PrecisionAndScale {
         public final int precision;
         public final int scale;
@@ -31,8 +32,7 @@ public class BigDecimalUtils {
 
     public static PrecisionAndScale computePrecisionAndScale(
             final TrackingRowSet rowSet,
-            final ColumnSource<BigDecimal> source
-    ) {
+            final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
         // we first compute max(precision - scale) and max(scale), which corresponds to
         // max(digits left of the decimal point), max(digits right of the decimal point).
@@ -40,7 +40,7 @@ public class BigDecimalUtils {
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
         try (final ChunkSource.GetContext context = source.makeGetContext(sz);
-             final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             final RowSequence rowSeq = it.getNextRowSequenceWithLength(sz);
             final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
             for (int i = 0; i < chunk.size(); ++i) {
@@ -91,8 +91,9 @@ public class BigDecimalUtils {
         final int parsedResult;
         try {
             parsedResult = Integer.parseInt(propertyValue);
-        } catch(NumberFormatException e) {
-            throw new IllegalArgumentException("Couldn't parse as int value '" + propertyValue + "' for property " + property);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "Couldn't parse as int value '" + propertyValue + "' for property " + property);
         }
         if (parsedResult < 1) {
             throw new IllegalArgumentException("Invalid value '" + parsedResult + "' for property " + property);
@@ -103,8 +104,7 @@ public class BigDecimalUtils {
     public static PrecisionAndScale getPrecisionAndScaleFromColumnProperties(
             final PrecisionAndScalePropertyNames propertyNames,
             final Properties columnProperties,
-            final boolean allowNulls
-    ) {
+            final boolean allowNulls) {
         final int precision = getPrecisionAndScaleFromColumnProperties(
                 propertyNames.columnName,
                 propertyNames.precisionProperty,
