@@ -179,7 +179,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
         MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
-                               @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+                @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
 
     }
 

@@ -171,7 +171,8 @@ public class ArrowFlightUtil {
                     msg.addColumnData[ci] = acd;
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
-                        StreamReader.StreamReaderOptions streamReaderOptions = new StreamReader.StreamReaderOptions(options);
+                        StreamReader.StreamReaderOptions streamReaderOptions =
+                                new StreamReader.StreamReaderOptions(options);
 
                         acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(streamReaderOptions, factor,
                                 columnChunkTypes[ci],
@@ -494,8 +495,8 @@ public class ArrowFlightUtil {
                                         final RowSet keySpaceViewport =
                                                 hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
                                     listener.onNext(
-                                            bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport, keySpaceViewport,
-                                                    columns));
+                                            bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport,
+                                                    keySpaceViewport, columns));
                                 }
 
                                 listener.onCompleted();

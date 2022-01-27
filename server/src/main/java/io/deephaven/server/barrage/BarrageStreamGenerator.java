@@ -62,12 +62,15 @@ public class BarrageStreamGenerator implements
     public interface View {
 
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
+
         default boolean isViewport() {
             return false;
         }
+
         default StreamReader.StreamReaderOptions options() {
             return null;
         }
+
         default RowSet keyspaceViewport() {
             return null;
         }
@@ -282,9 +285,9 @@ public class BarrageStreamGenerator implements
      */
     @Override
     public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
-                              @Nullable final RowSet viewport,
-                              @Nullable final RowSet keyspaceViewport,
-                              @Nullable final BitSet subscribedColumns) {
+            @Nullable final RowSet viewport,
+            @Nullable final RowSet keyspaceViewport,
+            @Nullable final BitSet subscribedColumns) {
         return new SnapshotView(this, options, viewport, keyspaceViewport, subscribedColumns);
     }
 
@@ -309,10 +312,10 @@ public class BarrageStreamGenerator implements
         public final boolean hasModBatch;
 
         public SnapshotView(final BarrageStreamGenerator generator,
-                       final BarrageSnapshotOptions options,
-                       @Nullable final RowSet viewport,
-                       @Nullable final RowSet keyspaceViewport,
-                       @Nullable final BitSet subscribedColumns) {
+                final BarrageSnapshotOptions options,
+                @Nullable final RowSet viewport,
+                @Nullable final RowSet keyspaceViewport,
+                @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.viewport = viewport;
