@@ -65,7 +65,7 @@ public class ArrowFlightUtil {
     public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
-    private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
+    static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
@@ -487,7 +487,7 @@ public class ArrowFlightUtil {
                                 final BarrageMessage msg =
                                         ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
                                                 table, columns, viewport);
-                                msg.modColumnData = new BarrageMessage.ModColumnData[0]; // no mod column data
+                                msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
                                 try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);

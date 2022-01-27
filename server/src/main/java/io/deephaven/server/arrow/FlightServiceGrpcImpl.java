@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import static io.deephaven.server.arrow.ArrowFlightUtil.ZERO_MOD_COLUMNS;
+
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     static final BarrageSubscriptionOptions DEFAULT_SUB_DESER_OPTIONS =
@@ -173,8 +175,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
-                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
-                                                                                 // DoGet
+                        msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
                             bsg.forEachDoGetStream(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS),
