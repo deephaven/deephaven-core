@@ -240,8 +240,7 @@ public class KafkaTools {
             final MutableObject<Properties> colPropsMu,
             final Table t,
             final BigDecimalUtils.PropertyNames names,
-            final BigDecimalUtils.PrecisionAndScale valuesIn
-    ) {
+            final BigDecimalUtils.PrecisionAndScale valuesIn) {
         if (valuesIn.precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE
                 && valuesIn.scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
             return valuesIn;
@@ -261,7 +260,8 @@ public class KafkaTools {
                             + names.precisionProperty + "'");
         }
         // Both precision and scale are null; compute them ourselves.
-        final BigDecimalUtils.PrecisionAndScale newValues = BigDecimalUtils.computePrecisionAndScale(t, names.columnName);
+        final BigDecimalUtils.PrecisionAndScale newValues =
+                BigDecimalUtils.computePrecisionAndScale(t, names.columnName);
         final Properties toSet;
         final Properties colProps = colPropsMu.getValue();
         if (colProps == null) {
@@ -303,7 +303,8 @@ public class KafkaTools {
             final BigDecimalUtils.PropertyNames propertyNames =
                     new BigDecimalUtils.PropertyNames(colName);
             BigDecimalUtils.PrecisionAndScale values =
-                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colPropsMu.getValue(), true);
+                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colPropsMu.getValue(),
+                            true);
             if (t.isRefreshing()) {
                 validatePrecisionAndScaleForRefreshingTable(propertyNames, values);
             } else { // non refreshing table

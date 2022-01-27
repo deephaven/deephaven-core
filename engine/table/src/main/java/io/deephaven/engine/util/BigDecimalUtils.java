@@ -14,11 +14,11 @@ import java.util.Properties;
 /**
  * Utilities to support BigDecimal exhaust.
  *
- * Parquet and Avro decimal types make a whole column decimal type have a fixed precision and scale;
- * BigDecimal columns in Deephaven are, each value, arbitrary precision (its own precision and scale).
+ * Parquet and Avro decimal types make a whole column decimal type have a fixed precision and scale; BigDecimal columns
+ * in Deephaven are, each value, arbitrary precision (its own precision and scale).
  *
- * For static tables, it is possible to compute overall precision and scale values that fit every existing value.
- * For refreshing tables, we need the user to tell us.
+ * For static tables, it is possible to compute overall precision and scale values that fit every existing value. For
+ * refreshing tables, we need the user to tell us.
  */
 public class BigDecimalUtils {
     public static final int INVALID_PRECISION_OR_SCALE = -1;
@@ -133,11 +133,11 @@ public class BigDecimalUtils {
     /**
      * Get a {@code PrecisionAndScale} value from a {@Properties} object.
      *
-     * @param propertyNames     The property names to read.
-     * @param columnProperties  The {@Properties} object from where to read the properties
-     * @param allowNulls        If true, do not throw when a property is missing, instead set the value to
-     *                          {@Code INVALID_PRECISION_OR_SCALE}
-     * @return  A {@PrecisionAndScale} object with the values read.
+     * @param propertyNames The property names to read.
+     * @param columnProperties The {@Properties} object from where to read the properties
+     * @param allowNulls If true, do not throw when a property is missing, instead set the value to
+     *        {@Code INVALID_PRECISION_OR_SCALE}
+     * @return A {@PrecisionAndScale} object with the values read.
      */
     public static PrecisionAndScale getPrecisionAndScaleFromColumnProperties(
             final PropertyNames propertyNames,
@@ -163,7 +163,8 @@ public class BigDecimalUtils {
      * @param names Property names to set
      * @param values Property values to set
      */
-    public static void setProperties(final Properties props, final PropertyNames names, final PrecisionAndScale values) {
+    public static void setProperties(final Properties props, final PropertyNames names,
+            final PrecisionAndScale values) {
         props.setProperty(names.precisionProperty, Integer.toString(values.precision));
         props.setProperty(names.scaleProperty, Integer.toString(values.scale));
     }
