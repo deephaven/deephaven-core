@@ -74,7 +74,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options,
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options,
                                           final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
@@ -86,7 +86,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         private final DrainableColumn innerStream;
 
         private VarListInputStream(
-                final BarrageSubscriptionOptions options, final RowSet subsetIn) throws IOException {
+                final StreamReader.StreamReaderOptions options, final RowSet subsetIn) throws IOException {
             super(chunk, options, subsetIn);
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);

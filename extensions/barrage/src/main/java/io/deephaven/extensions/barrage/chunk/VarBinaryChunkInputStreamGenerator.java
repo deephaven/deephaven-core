@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
@@ -86,7 +87,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) throws IOException {
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, offsets, bytes, subset);
     }
@@ -97,7 +98,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         private final IntChunk<ChunkPositions> myOffsets;
 
         private ObjectChunkInputStream(
-                final BarrageSubscriptionOptions options,
+                final StreamReader.StreamReaderOptions options,
                 final IntChunk<ChunkPositions> myOffsets,
                 final byte[] myBytes, final RowSet subset) {
             super(chunk, options, subset);

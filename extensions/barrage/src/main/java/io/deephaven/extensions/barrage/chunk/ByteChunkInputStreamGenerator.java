@@ -38,12 +38,12 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) {
         return new ByteChunkInputStream(options, subset);
     }
 
     private class ByteChunkInputStream extends BaseChunkInputStream {
-        private ByteChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private ByteChunkInputStream(final StreamReader.StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 

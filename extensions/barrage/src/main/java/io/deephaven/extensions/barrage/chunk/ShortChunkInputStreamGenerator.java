@@ -38,12 +38,12 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) {
         return new ShortChunkInputStream(options, subset);
     }
 
     private class ShortChunkInputStream extends BaseChunkInputStream {
-        private ShortChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private ShortChunkInputStream(final StreamReader.StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 

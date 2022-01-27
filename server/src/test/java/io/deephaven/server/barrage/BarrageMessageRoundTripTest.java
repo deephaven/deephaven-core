@@ -1262,7 +1262,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static class BarrageMarshaller
-            extends BarrageSubscriptionImpl.BarrageDataMarshaller<BarrageSubscriptionOptions> {
+            extends BarrageSubscriptionImpl.BarrageDataMarshaller {
         public BarrageMarshaller(final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,

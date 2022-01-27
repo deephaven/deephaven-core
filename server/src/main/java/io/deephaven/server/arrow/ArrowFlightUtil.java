@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.barrage.flatbuf.DoGetRequest;
 import io.deephaven.chunk.ChunkType;
@@ -55,7 +56,8 @@ import java.util.Iterator;
 import java.util.Queue;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
-import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_DESER_OPTIONS;
+import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SNAPSHOT_DESER_OPTIONS;
+import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SUB_DESER_OPTIONS;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -300,7 +302,7 @@ public class ArrowFlightUtil {
         private boolean isClosed = false;
 
         private final TicketRouter ticketRouter;
-        private final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory;
+        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter;
 
         /**
@@ -315,7 +317,7 @@ public class ArrowFlightUtil {
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageMessageProducer.Operation.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> operationFactory,
+                final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory,
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
@@ -446,8 +448,8 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<BaseTable> parent =
                             ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
 
-                    final BarrageSubscriptionRequest subscriptionRequest = BarrageSubscriptionRequest
-                            .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+                    final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
+                            .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
                     session.nonExport()
                             .require(parent)
@@ -471,14 +473,14 @@ public class ArrowFlightUtil {
                                 listener.onNext(schemaView);
 
                                 // collect the viewport and columnsets (if provided)
-                                final boolean hasColumns = subscriptionRequest.columnsVector() != null;
+                                final boolean hasColumns = snapshotRequest.columnsVector() != null;
                                 final BitSet columns =
-                                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
+                                        hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
 
-                                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
+                                final boolean hasViewport = snapshotRequest.viewportVector() != null;
                                 final RowSet viewport =
                                         hasViewport
-                                                ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer())
+                                                ? BarrageProtoUtil.toIndex(snapshotRequest.viewportAsByteBuffer())
                                                 : null;
 
                                 // get ourselves some data!
@@ -492,7 +494,7 @@ public class ArrowFlightUtil {
                                         final RowSet keySpaceViewport =
                                                 hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
                                     listener.onNext(
-                                            bsg.getSubView(DEFAULT_DESER_OPTIONS, false, viewport, keySpaceViewport,
+                                            bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport, keySpaceViewport,
                                                     columns));
                                 }
 
@@ -514,7 +516,7 @@ public class ArrowFlightUtil {
         private class SubscriptionRequestHandler
                 implements Handler {
 
-            private BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bmp;
+            private BarrageMessageProducer<BarrageStreamGenerator.View> bmp;
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
             private SessionState.ExportObject<?> onExportResolvedContinuation;
 

@@ -9,6 +9,7 @@ import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -49,7 +50,10 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
@@ -92,10 +96,9 @@ import java.util.function.IntFunction;
  *
  * The client-side counterpart of this is the {@link StreamReader}.
  *
- * @param <Options> The options related to serialization.
  * @param <MessageView> The sub-view type that the listener expects to receive.
  */
-public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifact
+public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class, "debug", false);
@@ -110,27 +113,25 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
      * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different
      * subscribers that may subscribe to different viewports and columns.
      *
-     * @param <Options> The options related to serialization.
      * @param <MessageView> The sub-view type that the listener expects to receive.
      */
-    public interface StreamGenerator<Options, MessageView> extends SafeCloseable {
-        interface Factory<Options, MessageView> {
+    public interface StreamGenerator<MessageView> extends SafeCloseable {
+        interface Factory<MessageView> {
             /**
              * Create a StreamGenerator that now owns the BarrageMessage.
              *
              * @param message the message that contains the update that we would like to propagate
              */
-            StreamGenerator<Options, MessageView> newGenerator(BarrageMessage message);
+            StreamGenerator<MessageView> newGenerator(BarrageMessage message);
 
             /**
              * Create a MessageView of the Schema to send as the initial message to a new subscriber.
              *
-             * @param options serialization options for this specific view
              * @param table the description of the table's data layout
              * @param attributes the table attributes
              * @return a MessageView that can be sent to a subscriber
              */
-            MessageView getSchemaView(Options options, TableDefinition table, Map<String, Object> attributes);
+            MessageView getSchemaView(TableDefinition table, Map<String, Object> attributes);
         }
 
         /**
@@ -145,7 +146,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
          * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
-        MessageView getSubView(Options options, boolean isInitialSnapshot);
+        MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot);
 
         /**
          * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
@@ -157,8 +158,29 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
          * @param subscribedColumns are the columns subscribed for this view
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
-        MessageView getSubView(Options options, boolean isInitialSnapshot, @Nullable RowSet viewport,
+        MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot, @Nullable RowSet viewport,
                 @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+
+        /**
+         * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+         *
+         * @param options serialization options for this specific view
+         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+         */
+        MessageView getSnapshotView(BarrageSnapshotOptions options);
+
+        /**
+         * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
+         *
+         * @param options serialization options for this specific view
+         * @param viewport is the position-space viewport
+         * @param keyspaceViewport is the key-space viewport
+         * @param subscribedColumns are the columns subscribed for this view
+         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+         */
+        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
+                               @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+
     }
 
     /**
@@ -171,23 +193,23 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         V adapt(T t);
     }
 
-    public static class Operation<Options, MessageView>
-            implements QueryTable.MemoizableOperation<BarrageMessageProducer<Options, MessageView>> {
+    public static class Operation<MessageView>
+            implements QueryTable.MemoizableOperation<BarrageMessageProducer<MessageView>> {
 
         @AssistedFactory
-        public interface Factory<Options, MessageView> {
-            Operation<Options, MessageView> create(BaseTable parent, long updateIntervalMs);
+        public interface Factory<MessageView> {
+            Operation<MessageView> create(BaseTable parent, long updateIntervalMs);
         }
 
         private final Scheduler scheduler;
-        private final StreamGenerator.Factory<Options, MessageView> streamGeneratorFactory;
+        private final StreamGenerator.Factory<MessageView> streamGeneratorFactory;
         private final BaseTable parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
 
         @AssistedInject
         public Operation(final Scheduler scheduler,
-                final StreamGenerator.Factory<Options, MessageView> streamGeneratorFactory,
+                final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
                 @Assisted final BaseTable parent,
                 @Assisted final long updateIntervalMs) {
             this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
@@ -195,7 +217,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         @VisibleForTesting
         public Operation(final Scheduler scheduler,
-                final StreamGenerator.Factory<Options, MessageView> streamGeneratorFactory,
+                final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
                 final BaseTable parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
@@ -222,9 +244,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         @Override
-        public Result<BarrageMessageProducer<Options, MessageView>> initialize(final boolean usePrev,
+        public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
                 final long beforeClock) {
-            final BarrageMessageProducer<Options, MessageView> result = new BarrageMessageProducer<>(
+            final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<>(
                     scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
@@ -255,7 +277,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     private final String logPrefix;
     private final Scheduler scheduler;
-    private final StreamGenerator.Factory<Options, MessageView> streamGeneratorFactory;
+    private final StreamGenerator.Factory<MessageView> streamGeneratorFactory;
 
     private final BaseTable parent;
     private final long updateIntervalMs;
@@ -337,7 +359,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private final Runnable onGetSnapshot;
 
     public BarrageMessageProducer(final Scheduler scheduler,
-            final StreamGenerator.Factory<Options, MessageView> streamGeneratorFactory,
+            final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
             final BaseTable parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
@@ -417,7 +439,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
      * @formatter:on
      */
     private class Subscription {
-        final Options options;
+        final BarrageSubscriptionOptions options;
         final StreamObserver<MessageView> listener;
         final String logPrefix;
 
@@ -434,7 +456,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
 
         private Subscription(final StreamObserver<MessageView> listener,
-                final Options options,
+                final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
                 final @Nullable RowSet initialViewport) {
             this.options = options;
@@ -455,12 +477,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
      * Add a subscription to this BarrageMessageProducer.
      *
      * @param listener The listener for this subscription
-     * @param options The {@link Options subscription options}
+     * @param options The {@link BarrageSubscriptionOptions subscription options}
      * @param columnsToSubscribe The initial columns to subscribe to
      * @param initialViewport Initial viewport, to be owned by the subscription
      */
     public void addSubscription(final StreamObserver<MessageView> listener,
-            final Options options,
+            final BarrageSubscriptionOptions options,
             final @Nullable BitSet columnsToSubscribe,
             final @Nullable RowSet initialViewport) {
         synchronized (this) {
@@ -1079,7 +1101,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         if (snapshot != null) {
-            try (final StreamGenerator<Options, MessageView> snapshotGenerator =
+            try (final StreamGenerator<MessageView> snapshotGenerator =
                     streamGeneratorFactory.newGenerator(snapshot)) {
                 for (final Subscription subscription : updatedSubscriptions) {
                     if (subscription.pendingDelete) {
@@ -1111,7 +1133,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
-        try (final StreamGenerator<Options, MessageView> generator = streamGeneratorFactory.newGenerator(message)) {
+        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(message)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
                     continue;
@@ -1159,7 +1181,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     private void propagateSnapshotForSubscription(final Subscription subscription,
-            final StreamGenerator<Options, MessageView> snapshotGenerator) {
+            final StreamGenerator<MessageView> snapshotGenerator) {
         boolean needsSnapshot = subscription.pendingInitialSnapshot;
 
         // This is a little confusing, but by the time we propagate, the `snapshotViewport`/`snapshotColumns` objects
@@ -1191,7 +1213,6 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            subscription.options,
                             parent.getDefinition(),
                             parent.getAttributes()));
                 }

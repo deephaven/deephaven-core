@@ -38,12 +38,12 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) {
         return new DoubleChunkInputStream(options, subset);
     }
 
     private class DoubleChunkInputStream extends BaseChunkInputStream {
-        private DoubleChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private DoubleChunkInputStream(final StreamReader.StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 

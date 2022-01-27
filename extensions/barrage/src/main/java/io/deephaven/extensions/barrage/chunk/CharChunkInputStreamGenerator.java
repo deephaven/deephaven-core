@@ -33,12 +33,12 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) {
         return new CharChunkInputStream(options, subset);
     }
 
     private class CharChunkInputStream extends BaseChunkInputStream {
-        private CharChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private CharChunkInputStream(final StreamReader.StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 

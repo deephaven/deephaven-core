@@ -11,6 +11,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -34,8 +35,10 @@ import java.nio.ByteBuffer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
+    static final BarrageSubscriptionOptions DEFAULT_SUB_DESER_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
+    static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
+            BarrageSnapshotOptions.builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -174,7 +177,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                                                                                  // DoGet
 
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
-                            bsg.forEachDoGetStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false),
+                            bsg.forEachDoGetStream(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS),
                                     responseObserver::onNext);
                         } catch (final IOException e) {
                             throw new UncheckedDeephavenException(e); // unexpected

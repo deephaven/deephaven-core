@@ -175,7 +175,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final RowSet subset) throws IOException;
+    DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, @Nullable final RowSet subset) throws IOException;
 
     final class FieldNodeInfo {
         public final int numElements;
