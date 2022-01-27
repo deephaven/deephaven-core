@@ -281,7 +281,7 @@ public class QueryTable extends BaseTable {
     @Deprecated
     public QueryTable withDefinitionUnsafe(TableDefinition template) {
         TableDefinition inOrder = template.checkMutualCompatibility(definition);
-        return (QueryTable) copy(inOrder, true);
+        return (QueryTable) copy(inOrder, StandardOptions.COPY_ALL);
     }
 
     private void initializeTransientFields() {
@@ -3034,28 +3034,26 @@ public class QueryTable extends BaseTable {
      */
     @Override
     public Table copy() {
-        return copy(true);
-    }
-
-    public Table copy(boolean copyAttributes) {
-        return copy(definition, copyAttributes);
+        return copy(StandardOptions.COPY_ALL);
     }
 
     public Table copy(Predicate<String> shouldCopy) {
         return copy(definition, shouldCopy);
     }
 
-    private enum NoCopy implements Predicate<String> {
-        INSTANCE;
-
-        @Override
-        public boolean test(String s) {
-            return false;
+    private enum StandardOptions implements Predicate<String> {
+        COPY_ALL {
+            @Override
+            public boolean test(String attributeName) {
+                return true;
+            }
+        },
+        COPY_NONE {
+            @Override
+            public boolean test(String attributeName) {
+                return false;
+            }
         }
-    }
-
-    public Table copy(TableDefinition definition, boolean copyAttributes) {
-        return copy(definition, copyAttributes ? a -> true : NoCopy.INSTANCE);
     }
 
     public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
@@ -3066,10 +3064,9 @@ public class QueryTable extends BaseTable {
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
                 final QueryTable resultTable = new CopiedTable(definition, this);
                 propagateFlatness(resultTable);
-                if (shouldCopy != NoCopy.INSTANCE) {
+                if (shouldCopy != StandardOptions.COPY_NONE) {
                     copyAttributes(resultTable, shouldCopy);
                 }
-
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
@@ -3109,7 +3106,7 @@ public class QueryTable extends BaseTable {
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
-                    final Table myResult = ((QueryTable) parentResult).copy(false);
+                    final Table myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
                     // noinspection unchecked
