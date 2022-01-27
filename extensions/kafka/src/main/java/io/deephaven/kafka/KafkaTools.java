@@ -215,19 +215,76 @@ public class KafkaTools {
         return fass.endRecord();
     }
 
+    private static void validatePrecisionAndScaleForRefreshingTable(
+            final BigDecimalUtils.PropertyNames names,
+            final BigDecimalUtils.PrecisionAndScale values) {
+        final String exBaseMsg = "Column " + names.columnName + " of type " + BigDecimal.class.getSimpleName() +
+                " in a refreshing table implies both properties '" +
+                names.precisionProperty + "' and '" + names.scaleProperty
+                + "' should be defined; ";
+
+        if (values.precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                && values.scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(exBaseMsg + " missing both");
+        }
+        if (values.precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " missing '" + names.precisionProperty + "'");
+        }
+        if (values.scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(exBaseMsg + " missing '" + names.scaleProperty + "'");
+        }
+    }
+
+    private static BigDecimalUtils.PrecisionAndScale ensurePrecisionAndScaleForStaticTable(
+            final MutableObject<Properties> colPropsMu,
+            final Table t,
+            final BigDecimalUtils.PropertyNames names,
+            final BigDecimalUtils.PrecisionAndScale valuesIn
+    ) {
+        if (valuesIn.precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                && valuesIn.scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            return valuesIn;
+        }
+        final String exBaseMsg = "Column " + names.columnName + " of type " + BigDecimal.class.getSimpleName() +
+                " in a non refreshing table implies either both properties '" +
+                names.precisionProperty + "' and '" + names.scaleProperty
+                + "' should be defined, or none of them;";
+        if (valuesIn.precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " only '" + names.precisionProperty + "' is defined, missing '"
+                            + names.scaleProperty + "'");
+        }
+        if (valuesIn.scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " only '" + names.scaleProperty + "' is defined, missing '"
+                            + names.precisionProperty + "'");
+        }
+        // Both precision and scale are null; compute them ourselves.
+        final BigDecimalUtils.PrecisionAndScale newValues = BigDecimalUtils.computePrecisionAndScale(t, names.columnName);
+        final Properties toSet;
+        final Properties colProps = colPropsMu.getValue();
+        if (colProps == null) {
+            toSet = new Properties();
+            colPropsMu.setValue(toSet);
+        } else {
+            toSet = colProps;
+        }
+        BigDecimalUtils.setProperties(toSet, names, newValues);
+        return newValues;
+    }
+
     private static SchemaBuilder.FieldAssembler<Schema> addFieldForColDef(
             final Table t,
             final SchemaBuilder.FieldAssembler<Schema> fassIn,
             final ColumnDefinition<?> colDef,
             final MutableObject<Properties> colPropsMu) {
-        final String colNameToPropSeparator = ".";
         final String logicalTypeName = "logicalType";
         final String dhTypeAttribute = "dhType";
         SchemaBuilder.FieldAssembler<Schema> fass = fassIn;
         final Class<?> type = colDef.getDataType();
         final String colName = colDef.getName();
         final SchemaBuilder.BaseFieldTypeBuilder<Schema> base = fass.name(colName).type().nullable();
-        final Properties colProps = colPropsMu.getValue();
         if (type == byte.class || type == char.class || type == short.class) {
             fass = base.intBuilder().prop(dhTypeAttribute, type.getName()).endInt().noDefault();
         } else if (type == int.class) {
@@ -243,66 +300,19 @@ public class KafkaTools {
         } else if (type == DateTime.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
-            final BigDecimalUtils.PrecisionAndScalePropertyNames propertyNames =
-                    new BigDecimalUtils.PrecisionAndScalePropertyNames(colName);
-            final BigDecimalUtils.PrecisionAndScale precisionAndScaleFromProperties =
-                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colProps, true);
-            int precision = precisionAndScaleFromProperties.precision;
-            int scale = precisionAndScaleFromProperties.scale;
+            final BigDecimalUtils.PropertyNames propertyNames =
+                    new BigDecimalUtils.PropertyNames(colName);
+            BigDecimalUtils.PrecisionAndScale values =
+                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colPropsMu.getValue(), true);
             if (t.isRefreshing()) {
-                final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
-                        " in a refreshing table implies both properties '" +
-                        propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty
-                        + "' should be defined; ";
-
-                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
-                        && scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                    throw new IllegalArgumentException(exBaseMsg + " missing both");
-                }
-                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                    throw new IllegalArgumentException(
-                            exBaseMsg + " missing '" + propertyNames.precisionProperty + "'");
-                }
-                if (scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                    throw new IllegalArgumentException(exBaseMsg + " missing '" + propertyNames.scaleProperty + "'");
-                }
+                validatePrecisionAndScaleForRefreshingTable(propertyNames, values);
             } else { // non refreshing table
-                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
-                        || scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                    final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
-                            " in a non refreshing table implies either both properties '" +
-                            propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty
-                            + "' should be defined, or none of them;";
-                    if (precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                        throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + propertyNames.precisionProperty + "' is defined, missing '"
-                                        + propertyNames.scaleProperty + "'");
-                    }
-                    if (scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
-                        throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + propertyNames.scaleProperty + "' is defined, missing '"
-                                        + propertyNames.precisionProperty + "'");
-                    }
-                    // Both precision and scale are null; compute them ourselves.
-                    final BigDecimalUtils.PrecisionAndScale precisionAndScale =
-                            BigDecimalUtils.computePrecisionAndScale(t, colName);
-                    precision = precisionAndScale.precision;
-                    scale = precisionAndScale.scale;
-                    final Properties toSet;
-                    if (colProps == null) {
-                        toSet = new Properties();
-                        colPropsMu.setValue(toSet);
-                    } else {
-                        toSet = colProps;
-                    }
-                    toSet.setProperty(propertyNames.precisionProperty, Integer.toString(precision));
-                    toSet.setProperty(propertyNames.scaleProperty, Integer.toString(scale));
-                }
+                ensurePrecisionAndScaleForStaticTable(colPropsMu, t, propertyNames, values);
             }
             fass = base.bytesBuilder()
                     .prop(logicalTypeName, "decimal")
-                    .prop("precision", precision)
-                    .prop("scale", scale)
+                    .prop("precision", values.precision)
+                    .prop("scale", values.scale)
                     .endBytes()
                     .noDefault();
         } else {

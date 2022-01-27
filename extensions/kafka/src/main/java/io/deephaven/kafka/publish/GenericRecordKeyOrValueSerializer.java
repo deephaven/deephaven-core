@@ -451,8 +451,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                     + " has unrecognized logical type " + logicalType);
         }
         if (type == BigDecimal.class) {
-            final BigDecimalUtils.PrecisionAndScalePropertyNames propertyNames =
-                    new BigDecimalUtils.PrecisionAndScalePropertyNames(columnName);
+            final BigDecimalUtils.PropertyNames propertyNames =
+                    new BigDecimalUtils.PropertyNames(columnName);
             final BigDecimalUtils.PrecisionAndScale precisionAndScale =
                     BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, columnProperties, true);
             return makeBigDecimalFieldProcessor(fieldName, src, precisionAndScale.precision, precisionAndScale.scale);

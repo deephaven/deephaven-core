@@ -11,9 +11,21 @@ import io.deephaven.engine.table.Table;
 import java.math.BigDecimal;
 import java.util.Properties;
 
+/**
+ * Utilities to support BigDecimal exhaust.
+ *
+ * Parquet and Avro decimal types make a whole column decimal type have a fixed precision and scale;
+ * BigDecimal columns in Deephaven are, each value, arbitrary precision (its own precision and scale).
+ *
+ * For static tables, it is possible to compute overall precision and scale values that fit every existing value.
+ * For refreshing tables, we need the user to tell us.
+ */
 public class BigDecimalUtils {
     public static final int INVALID_PRECISION_OR_SCALE = -1;
 
+    /**
+     * Immutable way to store and pass precision and scale values.
+     */
     public static class PrecisionAndScale {
         public final int precision;
         public final int scale;
@@ -24,12 +36,26 @@ public class BigDecimalUtils {
         }
     }
 
+    /**
+     * Compute an overall precision and scale that would fit all existing values in a table.
+     *
+     * @param t a Deephaven table
+     * @param colName a Column for {@code t}, which should be of {@code BigDecimal} type
+     * @return a {@code PrecisionAndScale} object result.
+     */
     public static PrecisionAndScale computePrecisionAndScale(
             final Table t, final String colName) {
         final ColumnSource<BigDecimal> src = t.getColumnSource(colName, BigDecimal.class);
         return computePrecisionAndScale(t.getRowSet(), src);
     }
 
+    /**
+     * Compute an overall precision and scale that would fit all existing values in a column source.
+     *
+     * @param rowSet The rowset for the provided column
+     * @param source a {@code ColumnSource} of {@code BigDecimal} type
+     * @return a {@code PrecisionAndScale} object result.
+     */
     public static PrecisionAndScale computePrecisionAndScale(
             final TrackingRowSet rowSet,
             final ColumnSource<BigDecimal> source) {
@@ -59,12 +85,15 @@ public class BigDecimalUtils {
         return new PrecisionAndScale(maxPrecisionMinusScale + maxScale, maxScale);
     }
 
-    public static class PrecisionAndScalePropertyNames {
+    /**
+     * Immutable way to store and pass properties to get precision and scale for a given named column.
+     */
+    public static class PropertyNames {
         public final String columnName;
         public final String precisionProperty;
         public final String scaleProperty;
 
-        public PrecisionAndScalePropertyNames(final String columnName) {
+        public PropertyNames(final String columnName) {
             this.columnName = columnName;
             precisionProperty = columnName + ".precision";
             scaleProperty = columnName + ".scale";
@@ -101,8 +130,17 @@ public class BigDecimalUtils {
         return parsedResult;
     }
 
+    /**
+     * Get a {@code PrecisionAndScale} value from a {@Properties} object.
+     *
+     * @param propertyNames     The property names to read.
+     * @param columnProperties  The {@Properties} object from where to read the properties
+     * @param allowNulls        If true, do not throw when a property is missing, instead set the value to
+     *                          {@Code INVALID_PRECISION_OR_SCALE}
+     * @return  A {@PrecisionAndScale} object with the values read.
+     */
     public static PrecisionAndScale getPrecisionAndScaleFromColumnProperties(
-            final PrecisionAndScalePropertyNames propertyNames,
+            final PropertyNames propertyNames,
             final Properties columnProperties,
             final boolean allowNulls) {
         final int precision = getPrecisionAndScaleFromColumnProperties(
@@ -116,5 +154,17 @@ public class BigDecimalUtils {
                 columnProperties,
                 allowNulls);
         return new PrecisionAndScale(precision, scale);
+    }
+
+    /**
+     * Set the given names and values in the supplied {@code Properties} object.
+     *
+     * @param props Properties where the given property names and values would be set.
+     * @param names Property names to set
+     * @param values Property values to set
+     */
+    public static void setProperties(final Properties props, final PropertyNames names, final PrecisionAndScale values) {
+        props.setProperty(names.precisionProperty, Integer.toString(values.precision));
+        props.setProperty(names.scaleProperty, Integer.toString(values.scale));
     }
 }
