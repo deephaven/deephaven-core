@@ -243,48 +243,44 @@ public class KafkaTools {
         } else if (type == DateTime.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
-            final String precisionName = "precision";
-            final String scaleName = "scale";
-            String precision = null;
-            final String precisionProperty = colName + colNameToPropSeparator + precisionName;
-            String scale = null;
-            final String scaleProperty = colName + colNameToPropSeparator + scaleName;
-            if (colProps != null) {
-                precision = colProps.getProperty(precisionProperty);
-                scale = colProps.getProperty(scaleProperty);
-            }
+            final BigDecimalUtils.PrecisionAndScalePropertyNames propertyNames =
+                    new BigDecimalUtils.PrecisionAndScalePropertyNames(colName);
+            final BigDecimalUtils.PrecisionAndScale precisionAndScaleFromProperties =
+                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colProps, true);
+            int precision = precisionAndScaleFromProperties.precision;
+            int scale = precisionAndScaleFromProperties.scale;
             if (t.isRefreshing()) {
                 final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
                         " in a refreshing table implies both properties '" +
-                        precisionProperty + "' and '" + scaleProperty + "' should be defined; ";
+                        propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty + "' should be defined; ";
 
-                if (precision == null && scale == null) {
+                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE && scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                     throw new IllegalArgumentException(exBaseMsg + " missing both");
                 }
-                if (precision == null) {
-                    throw new IllegalArgumentException(exBaseMsg + " missing '" + precisionProperty + "'");
+                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+                    throw new IllegalArgumentException(exBaseMsg + " missing '" + propertyNames.precisionProperty + "'");
                 }
-                if (scale == null) {
-                    throw new IllegalArgumentException(exBaseMsg + " missing '" + scaleProperty + "'");
+                if (scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+                    throw new IllegalArgumentException(exBaseMsg + " missing '" + propertyNames.scaleProperty + "'");
                 }
             } else {  // non refreshing table
-                if (precision == null || scale == null) {
+                if (precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE || scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                     final String exBaseMsg = "Column " + colName + " of type " + BigDecimal.class.getSimpleName() +
                             " in a non refreshing table implies either both properties '" +
-                            precisionProperty + "' and '" + scaleProperty + "' should be defined, or none of them;";
-                    if (precision != null) {
+                            propertyNames.precisionProperty + "' and '" + propertyNames.scaleProperty + "' should be defined, or none of them;";
+                    if (precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                         throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + precisionProperty + "' is defined, missing '" + scaleProperty + "'");
+                                exBaseMsg + " only '" + propertyNames.precisionProperty + "' is defined, missing '" + propertyNames.scaleProperty + "'");
                     }
-                    if (scale != null) {
+                    if (scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
                         throw new IllegalArgumentException(
-                                exBaseMsg + " only '" + scaleProperty + "' is defined, missing '" + precisionProperty + "'");
+                                exBaseMsg + " only '" + propertyNames.scaleProperty + "' is defined, missing '" + propertyNames.precisionProperty + "'");
                     }
                     // Both precision and scale are null; compute them ourselves.
                     final BigDecimalUtils.PrecisionAndScale precisionAndScale =
                             BigDecimalUtils.computePrecisionAndScale(t, colName);
-                    precision = Integer.toString(precisionAndScale.precision);
-                    scale = Integer.toString(precisionAndScale.scale);
+                    precision = precisionAndScale.precision;
+                    scale = precisionAndScale.scale;
                     final Properties toSet;
                     if (colProps == null) {
                         toSet = new Properties();
@@ -292,14 +288,14 @@ public class KafkaTools {
                     } else {
                         toSet = colProps;
                     }
-                    toSet.setProperty(precisionProperty, precision);
-                    toSet.setProperty(scaleProperty, scale);
+                    toSet.setProperty(propertyNames.precisionProperty, Integer.toString(precision));
+                    toSet.setProperty(propertyNames.scaleProperty, Integer.toString(scale));
                 }
             }
             fass = base.bytesBuilder()
                     .prop(logicalTypeName, "decimal")
-                    .prop(precisionName, precision)
-                    .prop(scaleName, scale)
+                    .prop("precision", precision)
+                    .prop("scale", scale)
                     .endBytes()
                     .noDefault();
         } else {
@@ -340,6 +336,11 @@ public class KafkaTools {
                 fieldSchema, mappedName, fieldType, fieldPathToColumnName);
     }
 
+    private static LogicalType getEffectiveLogicalType(final String fieldName, final Schema fieldSchema) {
+        final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
+        return effectiveSchema.getLogicalType();
+    }
+
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> fieldPathToColumnNameOut,
@@ -357,7 +358,7 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
             case LONG: {
-                final LogicalType logicalType = fieldSchema.getLogicalType();
+                final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
                         LogicalTypes.timestampMillis().equals(logicalType)) {
                     columnsOut.add(ColumnDefinition.ofTime(mappedName));
@@ -376,13 +377,14 @@ public class KafkaTools {
             case STRING:
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
-            case UNION:
+            case UNION: {
                 final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
                         prefix, fieldName,
                         effectiveSchema, mappedName, effectiveSchema.getType(), fieldPathToColumnName);
                 return;
+            }
             case RECORD:
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : fieldSchema.getFields()) {
@@ -394,7 +396,7 @@ public class KafkaTools {
                 return;
             case BYTES:
             case FIXED: {
-                final LogicalType logicalType = fieldSchema.getLogicalType();
+                final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (logicalType instanceof LogicalTypes.Decimal) {
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedName, BigDecimal.class));
                     break;

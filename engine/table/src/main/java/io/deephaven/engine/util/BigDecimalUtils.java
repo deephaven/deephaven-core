@@ -9,8 +9,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 
 import java.math.BigDecimal;
+import java.util.Properties;
 
 public class BigDecimalUtils {
+    public static final int INVALID_PRECISION_OR_SCALE = -1;
     public static class PrecisionAndScale {
         public final int precision;
         public final int scale;
@@ -55,5 +57,64 @@ public class BigDecimalUtils {
             }
         }
         return new PrecisionAndScale(maxPrecisionMinusScale + maxScale, maxScale);
+    }
+
+    public static class PrecisionAndScalePropertyNames {
+        public final String columnName;
+        public final String precisionProperty;
+        public final String scaleProperty;
+
+        public PrecisionAndScalePropertyNames(final String columnName) {
+            this.columnName = columnName;
+            precisionProperty = columnName + ".precision";
+            scaleProperty = columnName + ".scale";
+        }
+    }
+
+    private static int getPrecisionAndScaleFromColumnProperties(
+            final String columnName,
+            final String property,
+            final Properties columnProperties,
+            final boolean allowNulls) {
+        if (columnProperties == null) {
+            return INVALID_PRECISION_OR_SCALE;
+        }
+        final String propertyValue = columnProperties.getProperty(property);
+        if (propertyValue == null) {
+            if (!allowNulls) {
+                throw new IllegalArgumentException(
+                        "column name '" + columnName + "' has type " + BigDecimal.class.getSimpleName() + "" +
+                                " but no property '" + property + "' defined.");
+            }
+            return INVALID_PRECISION_OR_SCALE;
+        }
+        final int parsedResult;
+        try {
+            parsedResult = Integer.parseInt(propertyValue);
+        } catch(NumberFormatException e) {
+            throw new IllegalArgumentException("Couldn't parse as int value '" + propertyValue + "' for property " + property);
+        }
+        if (parsedResult < 1) {
+            throw new IllegalArgumentException("Invalid value '" + parsedResult + "' for property " + property);
+        }
+        return parsedResult;
+    }
+
+    public static PrecisionAndScale getPrecisionAndScaleFromColumnProperties(
+            final PrecisionAndScalePropertyNames propertyNames,
+            final Properties columnProperties,
+            final boolean allowNulls
+    ) {
+        final int precision = getPrecisionAndScaleFromColumnProperties(
+                propertyNames.columnName,
+                propertyNames.precisionProperty,
+                columnProperties,
+                allowNulls);
+        final int scale = getPrecisionAndScaleFromColumnProperties(
+                propertyNames.columnName,
+                propertyNames.scaleProperty,
+                columnProperties,
+                allowNulls);
+        return new PrecisionAndScale(precision, scale);
     }
 }

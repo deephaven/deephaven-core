@@ -3,6 +3,7 @@ package io.deephaven.kafka.publish;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.kafka.KafkaSchemaUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -323,7 +325,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 (final int ii, final ObjectChunk<?, Values> inputChunk) -> {
                     final BigDecimal bd = (BigDecimal) inputChunk.get(ii);
                     final BigInteger bi = toBigIntegerAtPrecisionAndScale(bd, mathContext, scale);
-                    return bi.toByteArray();
+                    return ByteBuffer.wrap(bi.toByteArray());
                 });
     }
 
@@ -451,34 +453,13 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                     + " has unrecognized logical type " + logicalType);
         }
         if (type == BigDecimal.class) {
-            final int precision = getPrecisionOrScale("precision", columnName, columnProperties);
-            final int scale = getPrecisionOrScale("scale", columnName, columnProperties);
-            return makeBigDecimalFieldProcessor(fieldName, src, precision, scale);
+            final BigDecimalUtils.PrecisionAndScalePropertyNames propertyNames =
+                    new BigDecimalUtils.PrecisionAndScalePropertyNames(columnName);
+            final BigDecimalUtils.PrecisionAndScale precisionAndScale =
+                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, columnProperties, true);
+            return makeBigDecimalFieldProcessor(fieldName, src, precisionAndScale.precision, precisionAndScale.scale);
         }
         return makeObjectFieldProcessor(fieldName, src);
-    }
-
-    private static final int getPrecisionOrScale(
-            final String precisionOrScale,
-            final String columnName,
-            final Properties columnProperties) {
-        final String property = columnName + "." + precisionOrScale;
-        final String propertyValue = columnProperties.getProperty(property);
-        if (propertyValue == null) {
-            throw new IllegalArgumentException(
-                    "column name '" + columnName + "' has type " + BigDecimal.class.getSimpleName() + "" +
-                            " but no property '" + property + "' defined.");
-        }
-        final int parsedResult;
-        try {
-            parsedResult = Integer.parseInt(propertyValue);
-        } catch(NumberFormatException e) {
-            throw new IllegalArgumentException("Couldn't parse as int value '" + propertyValue + "' for property " + property);
-        }
-        if (parsedResult < 1) {
-            throw new IllegalArgumentException("Invalid value '" + parsedResult + "' for proprety " + property);
-        }
-        return parsedResult;
     }
 
     /**
