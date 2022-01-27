@@ -62,9 +62,15 @@ public class BarrageStreamGenerator implements
     public interface View {
 
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
-        boolean isViewport();
-        StreamReader.StreamReaderOptions options();
-        RowSet keyspaceViewport();
+        default boolean isViewport() {
+            return false;
+        }
+        default StreamReader.StreamReaderOptions options() {
+            return null;
+        }
+        default RowSet keyspaceViewport() {
+            return null;
+        }
     }
 
     @Singleton
@@ -351,18 +357,6 @@ public class BarrageStreamGenerator implements
         public void forEachStream(Consumer<InputStream> visitor) {
             visitor.accept(new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
         }
-
-        public boolean isViewport() {
-            return false;
-        }
-
-        public final StreamReader.StreamReaderOptions options() {
-            return null;
-        }
-
-        public final RowSet keyspaceViewport() {
-            return null;
-        };
     }
 
     /**
