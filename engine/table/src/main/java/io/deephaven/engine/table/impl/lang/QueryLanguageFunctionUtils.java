@@ -19441,6 +19441,17 @@ public final class QueryLanguageFunctionUtils {
         return plus(b, a);
     }
 
+    public static BigDecimal plus(BigDecimal a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal plus(int a, BigDecimal b) {
+        return plus(b, a);
+    }
+
     public static BigDecimal plus(BigDecimal a, double b) {
         if (a == null || b == QueryConstants.NULL_DOUBLE) {
             return null;
@@ -19449,6 +19460,17 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal plus(double a, BigDecimal b) {
+        return plus(b, a);
+    }
+
+    public static BigDecimal plus(BigDecimal a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal plus(float a, BigDecimal b) {
         return plus(b, a);
     }
 
@@ -19461,6 +19483,20 @@ public final class QueryLanguageFunctionUtils {
 
     public static BigDecimal minus(long a, BigDecimal b) {
         if (a == QueryConstants.NULL_LONG || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal minus(BigDecimal a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal minus(int a, BigDecimal b) {
+        if (a == QueryConstants.NULL_INT || b == null) {
             return null;
         }
         return BigDecimal.valueOf(a).subtract(b);
@@ -19480,6 +19516,20 @@ public final class QueryLanguageFunctionUtils {
         return BigDecimal.valueOf(a).subtract(b);
     }
 
+    public static BigDecimal minus(BigDecimal a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal minus(float a, BigDecimal b) {
+        if (a == QueryConstants.NULL_FLOAT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).subtract(b);
+    }
+
     public static BigDecimal multiply(BigDecimal a, long b) {
         if (a == null || b == QueryConstants.NULL_LONG) {
             return null;
@@ -19491,6 +19541,17 @@ public final class QueryLanguageFunctionUtils {
         return multiply(b, a);
     }
 
+    public static BigDecimal multiply(BigDecimal a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal multiply(int a, BigDecimal b) {
+        return multiply(b, a);
+    }
+
     public static BigDecimal multiply(BigDecimal a, double b) {
         if (a == null || b == QueryConstants.NULL_DOUBLE) {
             return null;
@@ -19499,6 +19560,17 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static BigDecimal multiply(double a, BigDecimal b) {
+        return multiply(b, a);
+    }
+
+    public static BigDecimal multiply(BigDecimal a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal multiply(float a, BigDecimal b) {
         return multiply(b, a);
     }
 
@@ -19516,6 +19588,20 @@ public final class QueryLanguageFunctionUtils {
         return BigDecimal.valueOf(a).divide(b);
     }
 
+    public static BigDecimal divide(BigDecimal a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(int a, BigDecimal b) {
+        if (a == QueryConstants.NULL_INT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(b);
+    }
+
     public static BigDecimal divide(BigDecimal a, double b) {
         if (a == null || b == QueryConstants.NULL_DOUBLE) {
             return null;
@@ -19525,6 +19611,20 @@ public final class QueryLanguageFunctionUtils {
 
     public static BigDecimal divide(double a, BigDecimal b) {
         if (a == QueryConstants.NULL_DOUBLE || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(b);
+    }
+
+    public static BigDecimal divide(BigDecimal a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return a.divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(float a, BigDecimal b) {
+        if (a == QueryConstants.NULL_FLOAT || b == null) {
             return null;
         }
         return BigDecimal.valueOf(a).divide(b);
@@ -19571,6 +19671,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean eq(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false;
+        }
         if (a == null) {
             return (b == QueryConstants.NULL_DOUBLE);
         }
@@ -19581,6 +19684,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean eq(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false;
+        }
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == null);
         }
@@ -19591,6 +19697,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean eq(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false;
+        }
         if (a == null) {
             return (b == QueryConstants.NULL_FLOAT);
         }
@@ -19601,6 +19710,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean eq(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false;
+        }
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == null);
         }
@@ -19652,7 +19764,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(BigDecimal a, double b) {
         if (Double.isNaN(b)) {
-            return 1;  // even if a == null.
+            return -1;  // even if a == null.
         }
         if (a == null) {
             return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
@@ -19665,7 +19777,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(double a, BigDecimal b) {
         if (Double.isNaN(a)) {
-            return -1;  // even if b == null.
+            return 1;  // even if b == null.
         }
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == null) ? 0 : -1;
@@ -19678,7 +19790,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(BigDecimal a, float b) {
         if (Float.isNaN(b)) {
-            return 1;  //even if a == null.
+            return -1;  // even if a == null.
         }
         if (a == null) {
             return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
@@ -19691,7 +19803,7 @@ public final class QueryLanguageFunctionUtils {
 
     public static int compareTo(float a, BigDecimal b) {
         if (Float.isNaN(a)) {
-            return -1;  // even if b == null
+            return 1;  // even if b == null
         }
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == null) ? 0 : -1;

@@ -9,6 +9,11 @@ import io.deephaven.util.QueryConstants;
 
 import junit.framework.TestCase;
 
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 @SuppressWarnings({"unused", "WeakerAccess", "NumericOverflow"})
 public final class TestQueryLanguageFunctionUtils extends TestCase {
 
@@ -13389,4 +13394,202 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
+
+    public static void test_bigdecimal_plus() {
+        final BigDecimal bv1 = new BigDecimal(BigInteger.valueOf(10005), 3);
+        final int iv1 = 10;
+        final long lv1 = 10;
+        final float fv1 = 0.5F;
+        final double dv1 = 0.5;
+        final BigDecimal[] results = new BigDecimal[] {
+                plus(plus(bv1, iv1), fv1),
+                plus(plus(iv1, bv1), fv1),
+                plus(plus(bv1, fv1), iv1),
+                plus(plus(fv1, bv1), iv1),
+                plus(plus(bv1, lv1), dv1),
+                plus(plus(lv1, bv1), dv1),
+                plus(plus(bv1, dv1), lv1),
+                plus(plus(dv1, bv1), lv1),
+        };
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(20505), 3);
+        for (BigDecimal r : results) {
+            TestCase.assertEquals(0, expected.compareTo(r));
+        }
+    }
+
+    public static void test_bigdecimal_minus() {
+        final BigDecimal bv1Left = new BigDecimal(BigInteger.valueOf(10005), 0);
+        final BigDecimal bv1Right = new BigDecimal(BigInteger.valueOf(10), 0);
+        final BigDecimal[] results = new BigDecimal[] {
+                minus(bv1Left, 10),
+                minus(10005, bv1Right),
+                minus(bv1Left, 10L),
+                minus(10005L, bv1Right),
+                minus(bv1Left, 10.0F),
+                minus(10005.0F, bv1Right),
+                minus(bv1Left, 10.0),
+                minus(10005.0, bv1Right),
+        };
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(9995), 0);
+        for (BigDecimal r : results) {
+            TestCase.assertEquals(0, expected.compareTo(r));
+        }
+    }
+
+    public static void test_bigdecimal_multiply() {
+        final BigDecimal bv1 = new BigDecimal(BigInteger.valueOf(10005), 3);
+        final int iv1 = 2;
+        final long lv1 = 2;
+        final float fv1 = 2.0F;
+        final double dv1 = 2.0;
+        final BigDecimal[] results = new BigDecimal[] {
+                multiply(bv1, iv1),
+                multiply(iv1, bv1),
+                multiply(bv1, fv1),
+                multiply(fv1, bv1),
+                multiply(bv1, lv1),
+                multiply(lv1, bv1),
+                multiply(bv1, dv1),
+                multiply(dv1, bv1),
+        };
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(2001), 2);
+        for (BigDecimal r : results) {
+            TestCase.assertEquals(0, expected.compareTo(r));
+        }
+    }
+
+    public static void test_bigdecimal_divide() {
+        final BigDecimal bv1Left = new BigDecimal(BigInteger.valueOf(10005), 0);
+        final BigDecimal bv1Right = new BigDecimal(BigInteger.valueOf(2), 0);
+        final BigDecimal[] results = new BigDecimal[] {
+                divide(bv1Left, 2),
+                divide(10005, bv1Right),
+                divide(bv1Left, 2L),
+                divide(10005L, bv1Right),
+                divide(bv1Left, 2.0F),
+                divide(10005.0F, bv1Right),
+                divide(bv1Left, 2.0),
+                divide(10005.0, bv1Right),
+        };
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(50025), 1);
+        for (BigDecimal r : results) {
+            TestCase.assertEquals(0, expected.compareTo(r));
+        }
+    }
+
+    public static void test_bigdecimal_primitives_null() {
+        final BigDecimal bv1 = new BigDecimal(BigInteger.valueOf(10005), 3);
+        final int iv1 = QueryConstants.NULL_INT;
+        final long lv1 = QueryConstants.NULL_LONG;
+        final float fv1 = QueryConstants.NULL_FLOAT;
+        final double dv1 = QueryConstants.NULL_DOUBLE;
+        final BigDecimal[] results = new BigDecimal[] {
+                plus(bv1, iv1),
+                plus(iv1, bv1),
+                plus(bv1, fv1),
+                plus(fv1, bv1),
+                plus(bv1, lv1),
+                plus(lv1, bv1),
+                plus(bv1, dv1),
+                plus(dv1, bv1),
+                minus(bv1, iv1),
+                minus(iv1, bv1),
+                minus(bv1, fv1),
+                minus(fv1, bv1),
+                minus(bv1, lv1),
+                minus(lv1, bv1),
+                minus(bv1, dv1),
+                minus(dv1, bv1),
+                multiply(bv1, iv1),
+                multiply(iv1, bv1),
+                multiply(bv1, fv1),
+                multiply(fv1, bv1),
+                multiply(bv1, lv1),
+                multiply(lv1, bv1),
+                multiply(bv1, dv1),
+                multiply(dv1, bv1),
+                divide(bv1, iv1),
+                divide(iv1, bv1),
+                divide(bv1, fv1),
+                divide(fv1, bv1),
+                divide(bv1, lv1),
+                divide(lv1, bv1),
+                divide(bv1, dv1),
+                divide(dv1, bv1),
+        };
+        for (BigDecimal r : results) {
+            TestCase.assertNull(r);
+        }
+    }
+
+    public static void test_bigdecimal_bigdecimal_null() {
+        final BigDecimal bv1 = null;
+        final int iv1 = 10;
+        final long lv1 = 10L;
+        final float fv1 = 0.5F;
+        final double dv1 = 0.5;
+        final BigDecimal[] results = new BigDecimal[] {
+                plus(bv1, iv1),
+                plus(iv1, bv1),
+                plus(bv1, fv1),
+                plus(fv1, bv1),
+                plus(bv1, lv1),
+                plus(lv1, bv1),
+                plus(bv1, dv1),
+                plus(dv1, bv1),
+                minus(bv1, iv1),
+                minus(iv1, bv1),
+                minus(bv1, fv1),
+                minus(fv1, bv1),
+                minus(bv1, lv1),
+                minus(lv1, bv1),
+                minus(bv1, dv1),
+                minus(dv1, bv1),
+                multiply(bv1, iv1),
+                multiply(iv1, bv1),
+                multiply(bv1, fv1),
+                multiply(fv1, bv1),
+                multiply(bv1, lv1),
+                multiply(lv1, bv1),
+                multiply(bv1, dv1),
+                multiply(dv1, bv1),
+                divide(bv1, iv1),
+                divide(iv1, bv1),
+                divide(bv1, fv1),
+                divide(fv1, bv1),
+                divide(bv1, lv1),
+                divide(lv1, bv1),
+                divide(bv1, dv1),
+                divide(dv1, bv1),
+        };
+        for (BigDecimal r : results) {
+            TestCase.assertNull(r);
+        }
+    }
+
+    public static void test_bigdecimal_nans() {
+        final BigDecimal bv1 = new BigDecimal(BigInteger.valueOf(10005), 2);
+        final BigDecimal bvnull = null;
+        final float vfnan = Float.NaN;
+        final double vdnan = Double.NaN;
+
+        TestCase.assertEquals(-1, compareTo(bv1, vfnan));  // rhs NaN
+        TestCase.assertEquals(1, compareTo(vfnan, bv1));   // lhs NaN
+        TestCase.assertEquals(-1, compareTo(bvnull, vfnan));  // lhs null and rhs NaN
+        TestCase.assertEquals(1, compareTo(vfnan, bvnull));   // lhs NaN and rhs null
+
+        TestCase.assertEquals(-1, compareTo(bv1, vdnan));  // rhs NaN
+        TestCase.assertEquals(1, compareTo(vdnan, bv1));   // lhs NaN
+        TestCase.assertEquals(-1, compareTo(bvnull, vdnan));  // lhs null and rhs NaN
+        TestCase.assertEquals(1, compareTo(vdnan, bvnull));   // lhs NaN and rhs null
+
+        TestCase.assertFalse(eq(bv1, vfnan));
+        TestCase.assertFalse(eq(vfnan, bv1));
+        TestCase.assertFalse(eq(bvnull, vfnan));
+        TestCase.assertFalse(eq(vfnan, bvnull));
+        TestCase.assertFalse(eq(bv1, vdnan));
+        TestCase.assertFalse(eq(vdnan, bv1));
+        TestCase.assertFalse(eq(bvnull, vdnan));
+        TestCase.assertFalse(eq(vdnan, bvnull));
+    }
 }
