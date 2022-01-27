@@ -1,7 +1,7 @@
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-ARG WEB_EMBED_GRID_VERSION=0.9.1-embed-grid.10
+ARG WEB_EMBED_GRID_VERSION=0.9.1-embed-grid.14
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

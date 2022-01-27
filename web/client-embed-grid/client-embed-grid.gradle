@@ -13,7 +13,9 @@ def embedGrid = Docker.registerDockerTask(project, 'embed-grid') {
     containerOutPath = '/usr/src/app/package/build'
     imageName = 'deephaven/dh-embed-grid:local-build'
     copyOut {
-        into dhEmbedGrid.get().dir('embed-grid')
+        // Copy into the iframe/table directory
+        // If we add other embeddable widgets, they can go at other subpaths, e.g. iframe/plot
+        into dhEmbedGrid.get().dir('iframe/table')
     }
 }
 
