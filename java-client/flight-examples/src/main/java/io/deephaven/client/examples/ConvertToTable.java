@@ -12,7 +12,8 @@ import picocli.CommandLine.Option;
 
 import java.util.concurrent.ExecutionException;
 
-@Command(name = "convert-to-table", mixinStandardHelpOptions = true, description = "Convert to table", version = "0.1.0")
+@Command(name = "convert-to-table", mixinStandardHelpOptions = true, description = "Convert to table",
+        version = "0.1.0")
 class ConvertToTable extends FlightExampleBase {
 
     @Option(names = {"--type"}, required = true, description = "The ticket type.")
