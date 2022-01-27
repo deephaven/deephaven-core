@@ -78,9 +78,15 @@ item_summary = items \
     .dropColumns('item_id') \
     .updateView('conversion_rate = orders / (double) pageviews')
 
-top_5_pageviews = item_summary \
+# These two 'top_*' tables match the 'Business Intelligence: Metabase' / dashboard
+# part of the original example.
+top_viewed_items = item_summary \
     .sortDescending('pageviews') \
-    .head(5)
+    .head(20)
+
+top_converting_items = item_summary \
+    .sortDescending('conversion_rate') \
+    .head(20)
 
 minute_in_nanos = 60 * 1000 * 1000 * 1000
 
