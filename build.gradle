@@ -475,7 +475,6 @@ tasks.register('quick') {
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 
