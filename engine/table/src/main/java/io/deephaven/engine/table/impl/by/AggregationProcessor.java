@@ -386,33 +386,34 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             final MutableBoolean anyIntegerResults = new MutableBoolean();
             final MutableBoolean anyFloatingPointResults = new MutableBoolean();
-            final List<Result> results = resultPairs.stream().map(pair -> {
+            final List<WeightedOpResult> results = resultPairs.stream().map(pair -> {
                 final ColumnSource<?> inputSource = table.getColumnSource(pair.input().name());
-                final ResultType resultType;
+                final WeightedOpResultType resultType;
                 if (isInteger(inputSource.getChunkType())) {
                     if (!weightSourceIsFloatingPoint && isSum) {
                         anyIntegerResults.setTrue();
-                        resultType = ResultType.INTEGER;
+                        resultType = WeightedOpResultType.INTEGER;
                     } else {
                         anyFloatingPointResults.setTrue();
-                        resultType = ResultType.FLOATING_POINT;
+                        resultType = WeightedOpResultType.FLOATING_POINT;
                     }
                 } else if (isFloatingPoint(inputSource.getChunkType())) {
                     anyFloatingPointResults.setTrue();
-                    resultType = ResultType.FLOATING_POINT;
+                    resultType = WeightedOpResultType.FLOATING_POINT;
                 } else {
                     throw new UnsupportedOperationException(
                             String.format("Invalid type %s in column %s for AggW%s weighted by %s",
                                     inputSource.getType(), pair.input().name(), isSum ? "Sum" : "Avg", weightName));
                 }
-                return new Result(pair, resultType, inputSource);
+                return new WeightedOpResult(pair, resultType, inputSource);
             }).collect(Collectors.toList());
 
             final LongWeightRecordingInternalOperator longWeightOperator;
             if (anyIntegerResults.booleanValue()) {
                 longWeightOperator = new LongWeightRecordingInternalOperator(weightSource.getChunkType());
                 addOperator(longWeightOperator, weightSource, Stream.of(weightName),
-                        results.stream().filter(r -> r.type == ResultType.INTEGER).map(r -> r.pair.input().name()));
+                        results.stream().filter(r -> r.type == WeightedOpResultType.INTEGER)
+                                .map(r -> r.pair.input().name()));
             } else {
                 longWeightOperator = null;
             }
@@ -421,7 +422,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (anyFloatingPointResults.booleanValue()) {
                 doubleWeightOperator = new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
                 addOperator(doubleWeightOperator, weightSource, Stream.of(weightName),
-                        results.stream().filter(r -> r.type == ResultType.FLOATING_POINT)
+                        results.stream().filter(r -> r.type == WeightedOpResultType.FLOATING_POINT)
                                 .map(r -> r.pair.input().name()));
             } else {
                 doubleWeightOperator = null;
@@ -430,7 +431,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             results.forEach(r -> {
                 final IterativeChunkedAggregationOperator resultOperator;
                 if (isSum) {
-                    if (r.type == ResultType.INTEGER) {
+                    if (r.type == WeightedOpResultType.INTEGER) {
                         resultOperator = new LongChunkedWeightedSumOperator(
                                 r.source.getChunkType(), longWeightOperator, r.pair.output().name());
                     } else {
@@ -1122,18 +1123,18 @@ public class AggregationProcessor implements AggregationContextFactory {
                 || chunkType == ChunkType.Long;
     }
 
-    private enum ResultType {
+    private enum WeightedOpResultType {
         INTEGER, FLOATING_POINT
     }
 
-    private static class Result {
+    private static class WeightedOpResult {
 
         private final Pair pair;
-        private final ResultType type;
+        private final WeightedOpResultType type;
         private final ColumnSource<?> source;
 
-        private Result(@NotNull final Pair pair, @NotNull final ResultType type,
-                @NotNull final ColumnSource<?> source) {
+        private WeightedOpResult(@NotNull final Pair pair, @NotNull final WeightedOpResultType type,
+                                 @NotNull final ColumnSource<?> source) {
             this.pair = pair;
             this.type = type;
             this.source = source;
