@@ -223,7 +223,7 @@ public class ApproximatePercentile {
             return result;
         }
 
-        private void    flattenInto(List<PercentileDefinition> result) {
+        private void flattenInto(List<PercentileDefinition> result) {
             if (prior != null) {
                 prior.flattenInto(result);
             }
