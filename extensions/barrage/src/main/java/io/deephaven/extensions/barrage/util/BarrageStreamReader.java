@@ -151,7 +151,7 @@ public class BarrageStreamReader implements StreamReader {
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
-                // snapshots do not provide metadata, generate it now
+                // snapshots may not provide metadata, generate it now
                 if (msg == null) {
                     msg = new BarrageMessage();
 

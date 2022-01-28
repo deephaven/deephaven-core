@@ -154,13 +154,15 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionState.ExportObject<BaseTable> export =
                     ticketRouter.resolve(session, request, "request");
 
-            final StreamObserver<BarrageStreamGenerator.View> listener = ArrowModule.provideListenerAdapter().adapt(responseObserver);
-
             session.nonExport()
                     .require(export)
                     .onError(responseObserver)
                     .submit(() -> {
                         final BaseTable table = export.get();
+
+                        // create an adapter for the response observer
+                        final StreamObserver<BarrageStreamGenerator.View> listener =
+                                ArrowModule.provideListenerAdapter().adapt(responseObserver);
 
                         // Send Schema wrapped in Message
                         final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -182,7 +184,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
                         // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg); ) {
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);) {
                             listener.onNext(
                                     bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }

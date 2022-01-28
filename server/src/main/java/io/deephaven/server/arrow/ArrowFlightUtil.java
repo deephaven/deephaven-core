@@ -356,7 +356,7 @@ public class ArrowFlightUtil {
                                 break;
                             default:
                                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        myPrefix + " received a message with unhandled BarrageMessageType");
+                                        myPrefix + "received a message with unhandled BarrageMessageType");
                         }
                     }
                     // rely on the handler to verify message type
