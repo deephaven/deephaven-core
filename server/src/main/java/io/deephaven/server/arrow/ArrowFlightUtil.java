@@ -57,7 +57,6 @@ import java.util.Queue;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SNAPSHOT_DESER_OPTIONS;
-import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SUB_DESER_OPTIONS;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -171,12 +170,9 @@ public class ArrowFlightUtil {
                     msg.addColumnData[ci] = acd;
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
-                        StreamReader.StreamReaderOptions streamReaderOptions =
-                                new StreamReader.StreamReaderOptions(options);
-
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(streamReaderOptions, factor,
-                                columnChunkTypes[ci],
-                                columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
+                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(
+                                StreamReaderOptions.of(options), factor, columnChunkTypes[ci], columnTypes[ci],
+                                fieldNodeIter, bufferInfoIter, mi.inputStream);
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
                     }
@@ -359,10 +355,8 @@ public class ArrowFlightUtil {
                                 requestHandler = new SnapshotRequestHandler();
                                 break;
                             default:
-                                log.warn().append(myPrefix)
-                                        .append("received a message with unhandled BarrageMessageType")
-                                        .endl();
-                                return;
+                                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                        myPrefix + " received a message with unhandled BarrageMessageType");
                         }
                     }
                     // rely on the handler to verify message type
@@ -409,8 +403,9 @@ public class ArrowFlightUtil {
             }
 
             try {
-                if (requestHandler != null)
+                if (requestHandler != null) {
                     requestHandler.close();
+                }
             } catch (IOException ioException) {
                 throw new UncheckedDeephavenException("IOException closing handler", ioException);
             }
@@ -437,7 +432,7 @@ public class ArrowFlightUtil {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Request type cannot be changed after initialization");
+                            "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
                 }
 
                 // ensure synchronization with parent class functions
@@ -528,7 +523,7 @@ public class ArrowFlightUtil {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Request type cannot be changed after initialization");
+                            "Request type cannot be changed after initialization, expected BarrageSubscriptionRequest metadata");
                 }
 
                 if (message.app_metadata.msgPayloadVector() == null) {

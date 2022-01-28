@@ -9,7 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.util.StreamReader;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
@@ -18,7 +18,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -87,7 +86,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) throws IOException {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, offsets, bytes, subset);
     }
@@ -98,7 +97,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         private final IntChunk<ChunkPositions> myOffsets;
 
         private ObjectChunkInputStream(
-                final StreamReader.StreamReaderOptions options,
+                final StreamReaderOptions options,
                 final IntChunk<ChunkPositions> myOffsets,
                 final byte[] myBytes, final RowSet subset) {
             super(chunk, options, subset);

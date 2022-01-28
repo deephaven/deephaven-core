@@ -151,8 +151,34 @@ public class BarrageStreamReader implements StreamReader {
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
+                // snapshots do not provide metadata, generate it now
                 if (msg == null) {
-                    throw new IllegalStateException("Could not detect barrage metadata for update");
+                    msg = new BarrageMessage();
+
+                    // generate a default set of column selectors
+                    msg.snapshotColumns = new BitSet(columnTypes.length);
+
+                    // create and fill the add column metadata from the schema
+                    msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
+                    for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
+                        msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
+                        msg.addColumnData[ci].type = columnTypes[ci];
+                        msg.addColumnData[ci].componentType = componentTypes[ci];
+
+                        // set the column selector active by default
+                        msg.snapshotColumns.set(ci);
+                    }
+
+                    // no mod column data
+                    msg.modColumnData = new BarrageMessage.ModColumnData[0];
+
+                    // generate empty row sets
+                    msg.rowsRemoved = RowSetFactory.empty();
+                    msg.shifted = new RowSetShiftData.Builder().build();
+
+
+                    msg.isSnapshot = true;
+                    numAddBatchesRemaining = 1;
                 }
 
                 bodyParsed = true;
@@ -193,6 +219,11 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
                                     columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, ois);
+
+                            // test for zero-data columns and remove from snapshot columns bitset
+                            if (msg.addColumnData[ci].data.size() == 0 && msg.snapshotColumns != null) {
+                                msg.snapshotColumns.clear(ci);
+                            }
                         }
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {

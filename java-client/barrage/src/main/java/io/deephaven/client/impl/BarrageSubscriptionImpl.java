@@ -291,10 +291,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            StreamReader.StreamReaderOptions streamReaderOptions = new StreamReader.StreamReaderOptions(options);
-
-            return streamReader.safelyParseFrom(streamReaderOptions, columnChunkTypes, columnTypes, componentTypes,
-                    stream);
+            return streamReader.safelyParseFrom(StreamReaderOptions.of(options), columnChunkTypes, columnTypes,
+                    componentTypes, stream);
         }
     }
 }

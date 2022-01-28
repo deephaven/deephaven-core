@@ -12,14 +12,12 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.extensions.barrage.util.StreamReader;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,12 +36,12 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
         return new LongChunkInputStream(options, subset);
     }
 
     private class LongChunkInputStream extends BaseChunkInputStream {
-        private LongChunkInputStream(final StreamReader.StreamReaderOptions options, final RowSet subset) {
+        private LongChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -147,7 +145,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final StreamReader.StreamReaderOptions options,
+            final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -157,7 +155,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final StreamReader.StreamReaderOptions options,
+            final StreamReaderOptions options,
             final LongConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

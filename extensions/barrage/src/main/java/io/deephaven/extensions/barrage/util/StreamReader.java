@@ -2,9 +2,6 @@ package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 
 import java.io.InputStream;
 
@@ -29,26 +26,4 @@ public interface StreamReader {
             final Class<?>[] componentTypes,
             final InputStream stream);
 
-    class StreamReaderOptions {
-        private final boolean useDeephavenNulls;
-        private final ColumnConversionMode columnConversionMode;
-
-        public StreamReaderOptions(BarrageSnapshotOptions options) {
-            this.useDeephavenNulls = options.useDeephavenNulls();
-            this.columnConversionMode = options.columnConversionMode();
-        }
-
-        public StreamReaderOptions(BarrageSubscriptionOptions options) {
-            this.useDeephavenNulls = options.useDeephavenNulls();
-            this.columnConversionMode = options.columnConversionMode();
-        }
-
-        public boolean useDeephavenNulls() {
-            return useDeephavenNulls;
-        }
-
-        public ColumnConversionMode columnConversionMode() {
-            return columnConversionMode;
-        }
-    }
 }

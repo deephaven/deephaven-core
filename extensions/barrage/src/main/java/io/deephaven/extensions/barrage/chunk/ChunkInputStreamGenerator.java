@@ -8,10 +8,9 @@ import com.google.common.base.Charsets;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.extensions.barrage.util.StreamReader;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -82,7 +81,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     static <T> Chunk<Values> extractChunkFromInputStream(
-            final StreamReader.StreamReaderOptions options,
+            final StreamReaderOptions options,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -91,7 +90,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     static <T> Chunk<Values> extractChunkFromInputStream(
-            final StreamReader.StreamReaderOptions options,
+            final StreamReaderOptions options,
             final int factor,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -175,7 +174,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    DrainableColumn getInputStream(final StreamReader.StreamReaderOptions options, @Nullable final RowSet subset) throws IOException;
+    DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) throws IOException;
 
     final class FieldNodeInfo {
         public final int numElements;

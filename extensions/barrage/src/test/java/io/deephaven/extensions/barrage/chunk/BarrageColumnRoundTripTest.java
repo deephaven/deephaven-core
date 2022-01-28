@@ -25,6 +25,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
@@ -436,7 +437,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                    final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null);) {
+                    final ChunkInputStreamGenerator.DrainableColumn column =
+                            generator.getInputStream(StreamReaderOptions.of(options), null);) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -448,7 +450,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                StreamReaderOptions.of(options), chunkType, type, fieldNodes.iterator(),
+                                bufferNodes.iterator(), dis)) {
                     Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, null);
                 }
@@ -458,7 +461,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, RowSetFactory.empty());) {
+                            generator.getInputStream(StreamReaderOptions.of(options), RowSetFactory.empty());) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -470,7 +473,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                StreamReaderOptions.of(options), chunkType, type, fieldNodes.iterator(),
+                                bufferNodes.iterator(), dis)) {
                     Assert.eq(rtData.size(), "rtData.size()", 0);
                 }
 
@@ -488,7 +492,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
                     final RowSet subset = builder.build();
                     final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, subset);) {
+                            generator.getInputStream(StreamReaderOptions.of(options), subset);) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -500,7 +504,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                StreamReaderOptions.of(options), chunkType, type, fieldNodes.iterator(),
+                                bufferNodes.iterator(), dis)) {
                     Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, subset);
                 }
