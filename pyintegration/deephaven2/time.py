@@ -122,7 +122,7 @@ def to_period(s: str, quiet: bool = False) -> Period:
 
 
 def to_nanos(s, quiet: bool = False) -> int:
-    """ Converts a time string to nanoseconds from the Epoch.
+    """ Converts a time string to nanoseconds.
 
     Args:
         s (str): in the format of: hh:mm:ss[.SSSSSSSSS]
@@ -203,7 +203,7 @@ def day_of_week(dt: DateTime, tz: TimeZone) -> int:
 
     Args:
         dt (DateTime): the DateTime for which to find the day of the week.
-        tz (TimeZone): the TimeZone to use when interpreting the Datetime.
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime.
 
     Returns:
         int: NULL_INT if dt is None
@@ -278,7 +278,7 @@ def format_nanos(ns: int) -> str:
     """ Returns a string DateTime representation formatted as "yyyy-MM-ddThh:mm:ss.SSSSSSSSS".
 
     Args:
-        ns (int): the number of nanoseconds from the Epoch
+        ns (int): the number of nanoseconds
 
     Returns:
         str

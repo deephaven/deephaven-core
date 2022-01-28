@@ -50,6 +50,11 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         in_nanos = to_nanos(time_str, quiet=True)
         self.assertEqual(in_nanos, NULL_LONG)
 
+        time_str = "1:02:03"
+        in_nanos = to_nanos(time_str)
+        time_str2 = format_nanos(in_nanos)
+        self.assertEqual(time_str2, time_str)
+
     def test_current_time_and_diff(self):
         dt = now()
         sleep(1)
