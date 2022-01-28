@@ -48,8 +48,7 @@ public class TestBigDecimalColumns {
                 "V9B = (BD2 > BD)",
                 "V10 = (BD >= I2)",
                 "V10A = (I2 >= BD)",
-                "V10B = (BD2 >= BD)"
-        );
+                "V10B = (BD2 >= BD)");
         final Table expected = TableTools.newTable(
                 col("VPLUS", BigDecimal.valueOf(1), BigDecimal.valueOf(4), BigDecimal.valueOf(7)),
                 col("VMINUS", BigDecimal.valueOf(1), BigDecimal.valueOf(0), BigDecimal.valueOf(-1)),
@@ -76,8 +75,7 @@ public class TestBigDecimalColumns {
                 col("V9B", false, false, true),
                 col("V10", true, true, false),
                 col("V10A", false, true, true),
-                col("V10B", false, true, true)
-        );
+                col("V10B", false, true, true));
         assertTableEquals(expected, result);
     }
 }

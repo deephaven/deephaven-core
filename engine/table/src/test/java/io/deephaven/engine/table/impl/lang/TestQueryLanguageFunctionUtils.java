@@ -13443,7 +13443,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal bv1 = BigDecimal.valueOf(10.005);
         final BigDecimal bv2 = BigDecimal.valueOf(2);
         final int iv2 = 2;
-        final long lv2= 2;
+        final long lv2 = 2;
         final float fv2 = 2.0F;
         final double dv2 = 2.0;
         final BigDecimal[] results = new BigDecimal[] {
@@ -13546,6 +13546,8 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 plus(lv1, bvnull),
                 plus(bvnull, dv1),
                 plus(dv1, bvnull),
+                minus(bvnull, bv1),
+                minus(bv1, bvnull),
                 minus(bvnull, iv1),
                 minus(iv1, bvnull),
                 minus(bvnull, fv1),
@@ -13554,6 +13556,8 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 minus(lv1, bvnull),
                 minus(bvnull, dv1),
                 minus(dv1, bvnull),
+                multiply(bvnull, bv1),
+                multiply(bv1, bvnull),
                 multiply(bvnull, iv1),
                 multiply(iv1, bvnull),
                 multiply(bvnull, fv1),
@@ -13562,6 +13566,8 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 multiply(lv1, bvnull),
                 multiply(bvnull, dv1),
                 multiply(dv1, bvnull),
+                divide(bvnull, bv1),
+                divide(bv1, bvnull),
                 divide(bvnull, iv1),
                 divide(iv1, bvnull),
                 divide(bvnull, fv1),
