@@ -11,6 +11,9 @@ import java.util.Collection;
  *
  * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  * @see Count
+ * @see FirstRowKey
+ * @see LastRowKey
+ * @see ApproximatePercentile
  * @see ColumnAggregation
  * @see ColumnAggregations
  */
@@ -159,6 +162,8 @@ public interface Aggregation extends Serializable {
         void visit(FirstRowKey firstRowKey);
 
         void visit(LastRowKey lastRowKey);
+
+        void visit(ApproximatePercentile approximatePercentile);
 
         void visit(ColumnAggregation columnAgg);
 

@@ -246,6 +246,11 @@ public class ApproximatePercentile {
             throw new IllegalArgumentException("No percentile columns defined!");
         }
         final double compression = flatDefs.get(0).compression;
+
+        io.deephaven.api.agg.ApproximatePercentile.Builder aggBuilder =
+                io.deephaven.api.agg.ApproximatePercentile.builder();
+        aggBuilder.input(flatDefs)
+
         final NonKeyColumnAggregationFactory aggregationContextFactory =
                 new NonKeyColumnAggregationFactory((type, resultName, exposeInternalColumns) -> {
                     for (final PercentileDefinition percentileDefinition : flatDefs) {

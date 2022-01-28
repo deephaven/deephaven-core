@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.*;
+import io.deephaven.api.agg.ApproximatePercentile;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElementImpl;
@@ -39,6 +40,11 @@ class AggregationElementAdapter implements Aggregation.Visitor {
         out = new AggregationElementImpl(
                 new KeyOnlyFirstOrLastBySpec(lastRowKey.column().name(), AggType.Last),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+    }
+
+    @Override
+    public void visit(ApproximatePercentile approximatePercentile) {
+        // WHO CARE I'm DELETING THIS CLASS
     }
 
     @Override

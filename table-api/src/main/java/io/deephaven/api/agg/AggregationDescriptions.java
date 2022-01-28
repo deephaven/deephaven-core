@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * A visitor to describe the input and aggregation {@link Pair column name pairs} for {@link Aggregation aggregations}.
  */
-public class AggregationDescriptions implements Aggregation.Visitor {
+public final class AggregationDescriptions implements Aggregation.Visitor {
 
     public static Map<String, String> of(Aggregation aggregation) {
         return aggregation.walk(new AggregationDescriptions()).getOut();
@@ -38,6 +38,13 @@ public class AggregationDescriptions implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         out.put(lastRowKey.column().name(), "last row key");
+    }
+
+    @Override
+    public void visit(ApproximatePercentile approximatePercentile) {
+        approximatePercentile.percentileOutputs().forEach(po -> out.put(po.output().name(), String.format(
+                "%s aggregated with %.2f approximate percentile (compression %.2f)",
+                approximatePercentile.input().name(), po.percentile(), approximatePercentile.compression())));
     }
 
     @Override

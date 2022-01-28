@@ -50,6 +50,8 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                 for (Pair pair : e.getValue()) {
                     out.add(LastRowKey.of((ColumnName) pair));
                 }
+            } else if (e.getValue() == null) {
+                out.add((Aggregation) e.getKey());
             } else if (e.getValue().size() == 1) {
                 out.add(ColumnAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
@@ -72,6 +74,11 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
+    }
+
+    @Override
+    public void visit(ApproximatePercentile approximatePercentile) {
+        visitOrder.computeIfAbsent(approximatePercentile, k -> null);
     }
 
     @Override

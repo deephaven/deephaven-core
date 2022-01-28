@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
+import io.deephaven.api.agg.ApproximatePercentile;
 import io.deephaven.api.agg.spec.*;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
@@ -480,6 +481,21 @@ public class AggregationProcessor implements AggregationContextFactory {
             addFirstOrLastOperators(false, lastRowKey.column().name());
         }
 
+        @Override
+        public void visit(ApproximatePercentile approximatePercentile) {
+            final String inputName = approximatePercentile.input().name();
+            final ColumnSource<?> inputSource = table.getColumnSource(inputName);
+            final IterativeChunkedAggregationOperator operator = new TDigestPercentileOperator(
+                    inputSource.getType(),
+                    approximatePercentile.compression(),
+                    approximatePercentile.digest().map(ColumnName::name).orElse(null),
+                    approximatePercentile.percentileOutputs().stream()
+                            .mapToDouble(ApproximatePercentile.PercentileOutput::percentile).toArray(),
+                    approximatePercentile.percentileOutputs().stream()
+                                    .map(po -> po.output().name()).toArray(String[]::new));
+            addOperator(operator, inputSource, inputName);
+        }
+
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -612,6 +628,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final LastRowKey lastRowKey) {
             rollupUnsupported("LastRowKey");
+        }
+
+        @Override
+        default void visit(ApproximatePercentile approximatePercentile) {
+            rollupUnsupported("ApproximatePercentile");
         }
 
         // -------------------------------------------------------------------------------------------------------------
