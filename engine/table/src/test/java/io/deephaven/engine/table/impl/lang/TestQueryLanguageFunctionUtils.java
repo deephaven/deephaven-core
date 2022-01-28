@@ -13398,12 +13398,18 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     public static void test_bigdecimal_plus() {
         final BigDecimal bv1 = BigDecimal.valueOf(10.005);
         final BigDecimal bv2 = BigDecimal.valueOf(10.5);
+        final byte yv2 = (byte) 10;
         final int iv2 = 10;
+        final short sv2 = (short) 10;
         final long lv2 = 10;
         final float fv2 = 0.5F;
         final double dv2 = 0.5;
         final BigDecimal[] results = new BigDecimal[] {
                 plus(bv1, bv2),
+                plus(plus(bv1, yv2), fv2),
+                plus(plus(yv2, bv1), fv2),
+                plus(plus(bv1, sv2), fv2),
+                plus(plus(sv2, bv1), fv2),
                 plus(plus(bv1, iv2), fv2),
                 plus(plus(iv2, bv1), fv2),
                 plus(plus(bv1, fv2), iv2),
@@ -13420,20 +13426,24 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     }
 
     public static void test_bigdecimal_minus() {
-        final BigDecimal bv1Left = BigDecimal.valueOf(10005);
+        final BigDecimal bv1Left = BigDecimal.valueOf(100);
         final BigDecimal bv1Right = BigDecimal.valueOf(10);
         final BigDecimal[] results = new BigDecimal[] {
                 minus(bv1Left, bv1Right),
+                minus(bv1Left, (byte) 10),
+                minus((byte) 100, bv1Right),
+                minus(bv1Left, (short) 10),
+                minus((short) 100, bv1Right),
                 minus(bv1Left, 10),
-                minus(10005, bv1Right),
+                minus(100, bv1Right),
                 minus(bv1Left, 10L),
-                minus(10005L, bv1Right),
+                minus(100L, bv1Right),
                 minus(bv1Left, 10.0F),
-                minus(10005.0F, bv1Right),
+                minus(100.0F, bv1Right),
                 minus(bv1Left, 10.0),
-                minus(10005.0, bv1Right),
+                minus(100.0, bv1Right),
         };
-        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(9995), 0);
+        final BigDecimal expected = BigDecimal.valueOf(90);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }
@@ -13442,12 +13452,18 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     public static void test_bigdecimal_multiply() {
         final BigDecimal bv1 = BigDecimal.valueOf(10.005);
         final BigDecimal bv2 = BigDecimal.valueOf(2);
+        final byte yv2 = (byte) 2;
+        final short sv2 = (short) 2;
         final int iv2 = 2;
         final long lv2 = 2;
         final float fv2 = 2.0F;
         final double dv2 = 2.0;
         final BigDecimal[] results = new BigDecimal[] {
                 multiply(bv1, bv2),
+                multiply(bv1, yv2),
+                multiply(yv2, bv1),
+                multiply(bv1, sv2),
+                multiply(sv2, bv1),
                 multiply(bv1, iv2),
                 multiply(iv2, bv1),
                 multiply(bv1, fv2),
@@ -13464,20 +13480,24 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     }
 
     public static void test_bigdecimal_divide() {
-        final BigDecimal bv1Left = BigDecimal.valueOf(10005);
+        final BigDecimal bv1Left = BigDecimal.valueOf(91);
         final BigDecimal bv1Right = BigDecimal.valueOf(2);
         final BigDecimal[] results = new BigDecimal[] {
                 divide(bv1Left, bv1Right),
+                divide(bv1Left, (byte) 2),
+                divide((byte) 91, bv1Right),
+                divide(bv1Left, (short) 2),
+                divide((short) 91, bv1Right),
                 divide(bv1Left, 2),
-                divide(10005, bv1Right),
+                divide(91, bv1Right),
                 divide(bv1Left, 2L),
-                divide(10005L, bv1Right),
+                divide(91L, bv1Right),
                 divide(bv1Left, 2.0F),
-                divide(10005.0F, bv1Right),
+                divide(91.0F, bv1Right),
                 divide(bv1Left, 2.0),
-                divide(10005.0, bv1Right),
+                divide(91.0, bv1Right),
         };
-        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(50025), 1);
+        final BigDecimal expected = BigDecimal.valueOf(45.5);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }
@@ -13485,11 +13505,17 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
 
     public static void test_bigdecimal_arithmetic_op_primitives_null() {
         final BigDecimal bv1 = BigDecimal.valueOf(10.005);
+        final byte yv1 = QueryConstants.NULL_BYTE;
+        final short sv1 = QueryConstants.NULL_SHORT;
         final int iv1 = QueryConstants.NULL_INT;
         final long lv1 = QueryConstants.NULL_LONG;
         final float fv1 = QueryConstants.NULL_FLOAT;
         final double dv1 = QueryConstants.NULL_DOUBLE;
         final BigDecimal[] results = new BigDecimal[] {
+                plus(bv1, yv1),
+                plus(yv1, bv1),
+                plus(bv1, sv1),
+                plus(sv1, bv1),
                 plus(bv1, iv1),
                 plus(iv1, bv1),
                 plus(bv1, fv1),
@@ -13498,6 +13524,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 plus(lv1, bv1),
                 plus(bv1, dv1),
                 plus(dv1, bv1),
+                minus(bv1, yv1),
+                minus(yv1, bv1),
+                minus(bv1, sv1),
+                minus(sv1, bv1),
                 minus(bv1, iv1),
                 minus(iv1, bv1),
                 minus(bv1, fv1),
@@ -13506,6 +13536,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 minus(lv1, bv1),
                 minus(bv1, dv1),
                 minus(dv1, bv1),
+                multiply(bv1, yv1),
+                multiply(yv1, bv1),
+                multiply(bv1, sv1),
+                multiply(sv1, bv1),
                 multiply(bv1, iv1),
                 multiply(iv1, bv1),
                 multiply(bv1, fv1),
@@ -13514,6 +13548,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 multiply(lv1, bv1),
                 multiply(bv1, dv1),
                 multiply(dv1, bv1),
+                divide(bv1, yv1),
+                divide(yv1, bv1),
+                divide(bv1, sv1),
+                divide(sv1, bv1),
                 divide(bv1, iv1),
                 divide(iv1, bv1),
                 divide(bv1, fv1),
@@ -13531,11 +13569,17 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     public static void test_bigdecimal_airthmetic_op_bigdecimal_null() {
         final BigDecimal bvnull = null;
         final BigDecimal bv1 = BigDecimal.valueOf(100.05);
+        final byte yv1 = (byte) 10;
+        final short sv1 = (short) 10;
         final int iv1 = 10;
         final long lv1 = 10L;
         final float fv1 = 0.5F;
         final double dv1 = 0.5;
         final BigDecimal[] results = new BigDecimal[] {
+                plus(bvnull, yv1),
+                plus(yv1, bvnull),
+                plus(bvnull, sv1),
+                plus(sv1, bvnull),
                 plus(bvnull, bv1),
                 plus(bv1, bvnull),
                 plus(bvnull, iv1),
@@ -13546,6 +13590,14 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 plus(lv1, bvnull),
                 plus(bvnull, dv1),
                 plus(dv1, bvnull),
+                minus(bvnull, yv1),
+                minus(yv1, bvnull),
+                minus(bvnull, sv1),
+                minus(sv1, bvnull),
+                minus(bvnull, yv1),
+                minus(yv1, bvnull),
+                minus(bvnull, sv1),
+                minus(sv1, bvnull),
                 minus(bvnull, bv1),
                 minus(bv1, bvnull),
                 minus(bvnull, iv1),
@@ -13556,6 +13608,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 minus(lv1, bvnull),
                 minus(bvnull, dv1),
                 minus(dv1, bvnull),
+                multiply(bvnull, yv1),
+                multiply(yv1, bvnull),
+                multiply(bvnull, sv1),
+                multiply(sv1, bvnull),
                 multiply(bvnull, bv1),
                 multiply(bv1, bvnull),
                 multiply(bvnull, iv1),
@@ -13566,6 +13622,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 multiply(lv1, bvnull),
                 multiply(bvnull, dv1),
                 multiply(dv1, bvnull),
+                divide(bvnull, yv1),
+                divide(yv1, bvnull),
+                divide(bvnull, sv1),
+                divide(sv1, bvnull),
                 divide(bvnull, bv1),
                 divide(bv1, bvnull),
                 divide(bvnull, iv1),
@@ -13612,6 +13672,12 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal bv10 = BigDecimal.valueOf(10);
         final BigDecimal bv11 = BigDecimal.valueOf(11);
         final BigDecimal bvnull = null;
+        final byte yv10 = (byte) 10;
+        final byte yv11 = (byte) 11;
+        final byte yvnull = QueryConstants.NULL_BYTE;
+        final short sv10 = (short) 10;
+        final short sv11 = (short) 11;
+        final short svnull = QueryConstants.NULL_SHORT;
         final int iv10 = 10;
         final int iv11 = 11;
         final int ivnull = QueryConstants.NULL_INT;
@@ -13626,57 +13692,81 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final double dvnull = QueryConstants.NULL_DOUBLE;
 
         TestCase.assertEquals(-1, compareTo(bv10, bv11));
+        TestCase.assertEquals(-1, compareTo(bv10, yv11));
+        TestCase.assertEquals(-1, compareTo(bv10, sv11));
         TestCase.assertEquals(-1, compareTo(bv10, iv11));
         TestCase.assertEquals(-1, compareTo(bv10, lv11));
         TestCase.assertEquals(-1, compareTo(bv10, fv11));
         TestCase.assertEquals(-1, compareTo(bv10, dv11));
         TestCase.assertEquals(0, compareTo(bv10, bv10));
+        TestCase.assertEquals(0, compareTo(bv10, yv10));
+        TestCase.assertEquals(0, compareTo(bv10, sv10));
         TestCase.assertEquals(0, compareTo(bv10, iv10));
         TestCase.assertEquals(0, compareTo(bv10, lv10));
         TestCase.assertEquals(0, compareTo(bv10, fv10));
         TestCase.assertEquals(0, compareTo(bv10, dv10));
         TestCase.assertEquals(1, compareTo(bv11, bv10));
+        TestCase.assertEquals(1, compareTo(bv11, yv10));
+        TestCase.assertEquals(1, compareTo(bv11, sv10));
         TestCase.assertEquals(1, compareTo(bv11, iv10));
         TestCase.assertEquals(1, compareTo(bv11, lv10));
         TestCase.assertEquals(1, compareTo(bv11, fv10));
         TestCase.assertEquals(1, compareTo(bv11, dv10));
 
+        TestCase.assertEquals(-1, compareTo(yv10, bv11));
+        TestCase.assertEquals(-1, compareTo(sv10, bv11));
         TestCase.assertEquals(-1, compareTo(iv10, bv11));
         TestCase.assertEquals(-1, compareTo(lv10, bv11));
         TestCase.assertEquals(-1, compareTo(fv10, bv11));
         TestCase.assertEquals(-1, compareTo(dv10, bv11));
+        TestCase.assertEquals(0, compareTo(yv10, bv10));
+        TestCase.assertEquals(0, compareTo(sv10, bv10));
         TestCase.assertEquals(0, compareTo(iv10, bv10));
         TestCase.assertEquals(0, compareTo(lv10, bv10));
         TestCase.assertEquals(0, compareTo(fv10, bv10));
         TestCase.assertEquals(0, compareTo(dv10, bv10));
+        TestCase.assertEquals(1, compareTo(yv11, bv10));
+        TestCase.assertEquals(1, compareTo(sv11, bv10));
         TestCase.assertEquals(1, compareTo(iv11, bv10));
         TestCase.assertEquals(1, compareTo(lv11, bv10));
         TestCase.assertEquals(1, compareTo(fv11, bv10));
         TestCase.assertEquals(1, compareTo(dv11, bv10));
 
         TestCase.assertEquals(-1, compareTo(bvnull, bv10));
+        TestCase.assertEquals(-1, compareTo(bvnull, yv10));
+        TestCase.assertEquals(-1, compareTo(bvnull, sv10));
         TestCase.assertEquals(-1, compareTo(bvnull, iv10));
         TestCase.assertEquals(-1, compareTo(bvnull, lv10));
         TestCase.assertEquals(-1, compareTo(bvnull, fv10));
         TestCase.assertEquals(-1, compareTo(bvnull, dv10));
+        TestCase.assertEquals(0, compareTo(bvnull, yvnull));
+        TestCase.assertEquals(0, compareTo(bvnull, svnull));
         TestCase.assertEquals(0, compareTo(bvnull, ivnull));
         TestCase.assertEquals(0, compareTo(bvnull, lvnull));
         TestCase.assertEquals(0, compareTo(bvnull, fvnull));
         TestCase.assertEquals(0, compareTo(bvnull, dvnull));
         TestCase.assertEquals(1, compareTo(bv10, bvnull));
+        TestCase.assertEquals(1, compareTo(bv10, yvnull));
+        TestCase.assertEquals(1, compareTo(bv10, svnull));
         TestCase.assertEquals(1, compareTo(bv10, ivnull));
         TestCase.assertEquals(1, compareTo(bv10, lvnull));
         TestCase.assertEquals(1, compareTo(bv10, fvnull));
         TestCase.assertEquals(1, compareTo(bv10, dvnull));
 
+        TestCase.assertEquals(-1, compareTo(yvnull, bv10));
+        TestCase.assertEquals(-1, compareTo(svnull, bv10));
         TestCase.assertEquals(-1, compareTo(ivnull, bv10));
         TestCase.assertEquals(-1, compareTo(lvnull, bv10));
         TestCase.assertEquals(-1, compareTo(fvnull, bv10));
         TestCase.assertEquals(-1, compareTo(dvnull, bv10));
+        TestCase.assertEquals(0, compareTo(yvnull, bvnull));
+        TestCase.assertEquals(0, compareTo(svnull, bvnull));
         TestCase.assertEquals(0, compareTo(ivnull, bvnull));
         TestCase.assertEquals(0, compareTo(lvnull, bvnull));
         TestCase.assertEquals(0, compareTo(fvnull, bvnull));
         TestCase.assertEquals(0, compareTo(dvnull, bvnull));
+        TestCase.assertEquals(1, compareTo(yv10, bvnull));
+        TestCase.assertEquals(1, compareTo(sv10, bvnull));
         TestCase.assertEquals(1, compareTo(iv10, bvnull));
         TestCase.assertEquals(1, compareTo(lv10, bvnull));
         TestCase.assertEquals(1, compareTo(fv10, bvnull));
@@ -13687,6 +13777,12 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal bv10 = BigDecimal.valueOf(10);
         final BigDecimal bv11 = BigDecimal.valueOf(11);
         final BigDecimal bvnull = null;
+        final byte yv10 = (byte) 10;
+        final byte yv11 = (byte) 11;
+        final byte yvnull = QueryConstants.NULL_BYTE;
+        final short sv10 = (short) 10;
+        final short sv11 = (short) 11;
+        final short svnull = QueryConstants.NULL_SHORT;
         final int iv10 = 10;
         final int iv11 = 11;
         final int ivnull = QueryConstants.NULL_INT;
@@ -13701,48 +13797,68 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final double dvnull = QueryConstants.NULL_DOUBLE;
 
         TestCase.assertTrue(eq(bv10, bv10));
+        TestCase.assertTrue(eq(bv10, yv10));
+        TestCase.assertTrue(eq(bv10, sv10));
         TestCase.assertTrue(eq(bv10, iv10));
         TestCase.assertTrue(eq(bv10, lv10));
         TestCase.assertTrue(eq(bv10, fv10));
         TestCase.assertTrue(eq(bv10, dv10));
+        TestCase.assertTrue(eq(yv10, bv10));
+        TestCase.assertTrue(eq(sv10, bv10));
         TestCase.assertTrue(eq(iv10, bv10));
         TestCase.assertTrue(eq(lv10, bv10));
         TestCase.assertTrue(eq(fv10, bv10));
         TestCase.assertTrue(eq(dv10, bv10));
 
         TestCase.assertFalse(eq(bv10, bv11));
+        TestCase.assertFalse(eq(bv10, yv11));
+        TestCase.assertFalse(eq(bv10, sv11));
         TestCase.assertFalse(eq(bv10, iv11));
         TestCase.assertFalse(eq(bv10, lv11));
         TestCase.assertFalse(eq(bv10, fv11));
         TestCase.assertFalse(eq(bv10, dv11));
+        TestCase.assertFalse(eq(yv10, bv11));
+        TestCase.assertFalse(eq(sv10, bv11));
         TestCase.assertFalse(eq(iv10, bv11));
         TestCase.assertFalse(eq(lv10, bv11));
         TestCase.assertFalse(eq(fv10, bv11));
         TestCase.assertFalse(eq(dv10, bv11));
 
         TestCase.assertFalse(eq(bv10, bvnull));
+        TestCase.assertFalse(eq(bv10, yvnull));
+        TestCase.assertFalse(eq(bv10, svnull));
         TestCase.assertFalse(eq(bv10, ivnull));
         TestCase.assertFalse(eq(bv10, lvnull));
         TestCase.assertFalse(eq(bv10, fvnull));
         TestCase.assertFalse(eq(bv10, dvnull));
+        TestCase.assertFalse(eq(yvnull, bv11));
+        TestCase.assertFalse(eq(svnull, bv11));
         TestCase.assertFalse(eq(ivnull, bv11));
         TestCase.assertFalse(eq(lvnull, bv11));
         TestCase.assertFalse(eq(fvnull, bv11));
         TestCase.assertFalse(eq(dvnull, bv11));
+        TestCase.assertFalse(eq(bvnull, yv11));
+        TestCase.assertFalse(eq(bvnull, sv11));
         TestCase.assertFalse(eq(bvnull, iv11));
         TestCase.assertFalse(eq(bvnull, lv11));
         TestCase.assertFalse(eq(bvnull, fv11));
         TestCase.assertFalse(eq(bvnull, dv11));
+        TestCase.assertFalse(eq(yv10, bvnull));
+        TestCase.assertFalse(eq(sv10, bvnull));
         TestCase.assertFalse(eq(iv10, bvnull));
         TestCase.assertFalse(eq(lv10, bvnull));
         TestCase.assertFalse(eq(fv10, bvnull));
         TestCase.assertFalse(eq(dv10, bvnull));
 
         TestCase.assertTrue(eq(bvnull, bvnull));
+        TestCase.assertTrue(eq(bvnull, yvnull));
+        TestCase.assertTrue(eq(bvnull, svnull));
         TestCase.assertTrue(eq(bvnull, ivnull));
         TestCase.assertTrue(eq(bvnull, lvnull));
         TestCase.assertTrue(eq(bvnull, fvnull));
         TestCase.assertTrue(eq(bvnull, dvnull));
+        TestCase.assertTrue(eq(yvnull, bvnull));
+        TestCase.assertTrue(eq(svnull, bvnull));
         TestCase.assertTrue(eq(ivnull, bvnull));
         TestCase.assertTrue(eq(lvnull, bvnull));
         TestCase.assertTrue(eq(fvnull, bvnull));
@@ -13753,6 +13869,12 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal bv10 = BigDecimal.valueOf(10);
         final BigDecimal bv11 = BigDecimal.valueOf(11);
         final BigDecimal bvnull = null;
+        final byte yv10 = (byte) 10;
+        final byte yv11 = (byte) 11;
+        final byte yvnull = QueryConstants.NULL_BYTE;
+        final short sv10 = (short) 10;
+        final short sv11 = (short) 11;
+        final short svnull = QueryConstants.NULL_SHORT;
         final int iv10 = 10;
         final int iv11 = 11;
         final int ivnull = QueryConstants.NULL_INT;
@@ -13767,112 +13889,160 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final double dvnull = QueryConstants.NULL_DOUBLE;
 
         TestCase.assertTrue(less(bv10, bv11));
+        TestCase.assertTrue(less(bv10, yv11));
+        TestCase.assertTrue(less(bv10, sv11));
         TestCase.assertTrue(less(bv10, iv11));
         TestCase.assertTrue(less(bv10, lv11));
         TestCase.assertTrue(less(bv10, fv11));
         TestCase.assertTrue(less(bv10, dv11));
+        TestCase.assertTrue(less(yv10, bv11));
+        TestCase.assertTrue(less(sv10, bv11));
         TestCase.assertTrue(less(iv10, bv11));
         TestCase.assertTrue(less(lv10, bv11));
         TestCase.assertTrue(less(fv10, bv11));
         TestCase.assertTrue(less(dv10, bv11));
         TestCase.assertFalse(less(bv10, bv10));
+        TestCase.assertFalse(less(bv10, yv10));
+        TestCase.assertFalse(less(bv10, sv10));
         TestCase.assertFalse(less(bv10, iv10));
         TestCase.assertFalse(less(bv10, lv10));
         TestCase.assertFalse(less(bv10, fv10));
         TestCase.assertFalse(less(bv10, dv10));
+        TestCase.assertFalse(less(yv10, bv10));
+        TestCase.assertFalse(less(sv10, bv10));
         TestCase.assertFalse(less(iv10, bv10));
         TestCase.assertFalse(less(lv10, bv10));
         TestCase.assertFalse(less(fv10, bv10));
         TestCase.assertFalse(less(dv10, bv10));
         TestCase.assertFalse(less(bv11, bv10));
+        TestCase.assertFalse(less(bv11, yv10));
+        TestCase.assertFalse(less(bv11, sv10));
         TestCase.assertFalse(less(bv11, iv10));
         TestCase.assertFalse(less(bv11, lv10));
         TestCase.assertFalse(less(bv11, fv10));
         TestCase.assertFalse(less(bv11, dv10));
+        TestCase.assertFalse(less(yv11, bv10));
+        TestCase.assertFalse(less(sv11, bv10));
         TestCase.assertFalse(less(iv11, bv10));
         TestCase.assertFalse(less(lv11, bv10));
         TestCase.assertFalse(less(fv11, bv10));
         TestCase.assertFalse(less(dv11, bv10));
 
         TestCase.assertTrue(lessEquals(bv10, bv10));
+        TestCase.assertTrue(lessEquals(bv10, yv10));
+        TestCase.assertTrue(lessEquals(bv10, sv10));
         TestCase.assertTrue(lessEquals(bv10, iv10));
         TestCase.assertTrue(lessEquals(bv10, lv10));
         TestCase.assertTrue(lessEquals(bv10, fv10));
         TestCase.assertTrue(lessEquals(bv10, dv10));
+        TestCase.assertTrue(lessEquals(yv10, bv10));
+        TestCase.assertTrue(lessEquals(sv10, bv10));
         TestCase.assertTrue(lessEquals(iv10, bv10));
         TestCase.assertTrue(lessEquals(lv10, bv10));
         TestCase.assertTrue(lessEquals(fv10, bv10));
         TestCase.assertTrue(lessEquals(dv10, bv10));
         TestCase.assertTrue(lessEquals(bv10, bv11));
+        TestCase.assertTrue(lessEquals(bv10, yv11));
+        TestCase.assertTrue(lessEquals(bv10, sv11));
         TestCase.assertTrue(lessEquals(bv10, iv11));
         TestCase.assertTrue(lessEquals(bv10, lv11));
         TestCase.assertTrue(lessEquals(bv10, fv11));
         TestCase.assertTrue(lessEquals(bv10, dv11));
+        TestCase.assertTrue(lessEquals(yv10, bv11));
+        TestCase.assertTrue(lessEquals(sv10, bv11));
         TestCase.assertTrue(lessEquals(iv10, bv11));
         TestCase.assertTrue(lessEquals(lv10, bv11));
         TestCase.assertTrue(lessEquals(fv10, bv11));
         TestCase.assertTrue(lessEquals(dv10, bv11));
         TestCase.assertFalse(less(bv11, bv10));
+        TestCase.assertFalse(less(bv11, yv10));
+        TestCase.assertFalse(less(bv11, sv10));
         TestCase.assertFalse(less(bv11, iv10));
         TestCase.assertFalse(less(bv11, lv10));
         TestCase.assertFalse(less(bv11, fv10));
         TestCase.assertFalse(less(bv11, dv10));
+        TestCase.assertFalse(less(yv11, bv10));
+        TestCase.assertFalse(less(sv11, bv10));
         TestCase.assertFalse(less(iv11, bv10));
         TestCase.assertFalse(less(lv11, bv10));
         TestCase.assertFalse(less(fv11, bv10));
         TestCase.assertFalse(less(dv11, bv10));
 
         TestCase.assertFalse(greater(bv10, bv11));
+        TestCase.assertFalse(greater(bv10, yv11));
+        TestCase.assertFalse(greater(bv10, sv11));
         TestCase.assertFalse(greater(bv10, iv11));
         TestCase.assertFalse(greater(bv10, lv11));
         TestCase.assertFalse(greater(bv10, fv11));
         TestCase.assertFalse(greater(bv10, dv11));
+        TestCase.assertFalse(greater(yv10, bv11));
+        TestCase.assertFalse(greater(sv10, bv11));
         TestCase.assertFalse(greater(iv10, bv11));
         TestCase.assertFalse(greater(lv10, bv11));
         TestCase.assertFalse(greater(fv10, bv11));
         TestCase.assertFalse(greater(dv10, bv11));
         TestCase.assertFalse(greater(bv10, bv10));
+        TestCase.assertFalse(greater(bv10, yv10));
+        TestCase.assertFalse(greater(bv10, sv10));
         TestCase.assertFalse(greater(bv10, iv10));
         TestCase.assertFalse(greater(bv10, lv10));
         TestCase.assertFalse(greater(bv10, fv10));
         TestCase.assertFalse(greater(bv10, dv10));
+        TestCase.assertFalse(greater(yv10, bv10));
+        TestCase.assertFalse(greater(sv10, bv10));
         TestCase.assertFalse(greater(iv10, bv10));
         TestCase.assertFalse(greater(lv10, bv10));
         TestCase.assertFalse(greater(fv10, bv10));
         TestCase.assertFalse(greater(dv10, bv10));
         TestCase.assertTrue(greater(bv11, bv10));
+        TestCase.assertTrue(greater(bv11, yv10));
+        TestCase.assertTrue(greater(bv11, sv10));
         TestCase.assertTrue(greater(bv11, iv10));
         TestCase.assertTrue(greater(bv11, lv10));
         TestCase.assertTrue(greater(bv11, fv10));
         TestCase.assertTrue(greater(bv11, dv10));
+        TestCase.assertTrue(greater(yv11, bv10));
+        TestCase.assertTrue(greater(sv11, bv10));
         TestCase.assertTrue(greater(iv11, bv10));
         TestCase.assertTrue(greater(lv11, bv10));
         TestCase.assertTrue(greater(fv11, bv10));
         TestCase.assertTrue(greater(dv11, bv10));
 
         TestCase.assertFalse(greaterEquals(bv10, bv11));
+        TestCase.assertFalse(greaterEquals(bv10, yv11));
+        TestCase.assertFalse(greaterEquals(bv10, sv11));
         TestCase.assertFalse(greaterEquals(bv10, iv11));
         TestCase.assertFalse(greaterEquals(bv10, lv11));
         TestCase.assertFalse(greaterEquals(bv10, fv11));
         TestCase.assertFalse(greaterEquals(bv10, dv11));
+        TestCase.assertFalse(greaterEquals(yv10, bv11));
+        TestCase.assertFalse(greaterEquals(sv10, bv11));
         TestCase.assertFalse(greaterEquals(iv10, bv11));
         TestCase.assertFalse(greaterEquals(lv10, bv11));
         TestCase.assertFalse(greaterEquals(fv10, bv11));
         TestCase.assertFalse(greaterEquals(dv10, bv11));
         TestCase.assertTrue(greaterEquals(bv10, bv10));
+        TestCase.assertTrue(greaterEquals(bv10, yv10));
+        TestCase.assertTrue(greaterEquals(bv10, sv10));
         TestCase.assertTrue(greaterEquals(bv10, iv10));
         TestCase.assertTrue(greaterEquals(bv10, lv10));
         TestCase.assertTrue(greaterEquals(bv10, fv10));
         TestCase.assertTrue(greaterEquals(bv10, dv10));
+        TestCase.assertTrue(greaterEquals(yv10, bv10));
+        TestCase.assertTrue(greaterEquals(sv10, bv10));
         TestCase.assertTrue(greaterEquals(iv10, bv10));
         TestCase.assertTrue(greaterEquals(lv10, bv10));
         TestCase.assertTrue(greaterEquals(fv10, bv10));
         TestCase.assertTrue(greaterEquals(dv10, bv10));
         TestCase.assertTrue(greaterEquals(bv11, bv10));
+        TestCase.assertTrue(greaterEquals(bv11, yv10));
+        TestCase.assertTrue(greaterEquals(bv11, sv10));
         TestCase.assertTrue(greaterEquals(bv11, iv10));
         TestCase.assertTrue(greaterEquals(bv11, lv10));
         TestCase.assertTrue(greaterEquals(bv11, fv10));
         TestCase.assertTrue(greaterEquals(bv11, dv10));
+        TestCase.assertTrue(greaterEquals(yv11, bv10));
+        TestCase.assertTrue(greaterEquals(sv11, bv10));
         TestCase.assertTrue(greaterEquals(iv11, bv10));
         TestCase.assertTrue(greaterEquals(lv11, bv10));
         TestCase.assertTrue(greaterEquals(fv11, bv10));
