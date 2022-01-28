@@ -74,6 +74,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -280,7 +281,7 @@ public class QueryTable extends BaseTable {
     @Deprecated
     public QueryTable withDefinitionUnsafe(TableDefinition template) {
         TableDefinition inOrder = template.checkMutualCompatibility(definition);
-        return (QueryTable) copy(inOrder, true);
+        return (QueryTable) copy(inOrder, StandardOptions.COPY_ALL);
     }
 
     private void initializeTransientFields() {
@@ -3033,14 +3034,29 @@ public class QueryTable extends BaseTable {
      */
     @Override
     public Table copy() {
-        return copy(true);
+        return copy(StandardOptions.COPY_ALL);
     }
 
-    public Table copy(boolean copyAttributes) {
-        return copy(definition, copyAttributes);
+    public Table copy(Predicate<String> shouldCopy) {
+        return copy(definition, shouldCopy);
     }
 
-    public Table copy(TableDefinition definition, boolean copyAttributes) {
+    private enum StandardOptions implements Predicate<String> {
+        COPY_ALL {
+            @Override
+            public boolean test(String attributeName) {
+                return true;
+            }
+        },
+        COPY_NONE {
+            @Override
+            public boolean test(String attributeName) {
+                return false;
+            }
+        }
+    }
+
+    public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
             final Mutable<Table> result = new MutableObject<>();
 
@@ -3048,10 +3064,9 @@ public class QueryTable extends BaseTable {
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
                 final QueryTable resultTable = new CopiedTable(definition, this);
                 propagateFlatness(resultTable);
-                if (copyAttributes) {
-                    copyAttributes(resultTable, a -> true);
+                if (shouldCopy != StandardOptions.COPY_NONE) {
+                    copyAttributes(resultTable, shouldCopy);
                 }
-
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
@@ -3091,7 +3106,7 @@ public class QueryTable extends BaseTable {
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
-                    final Table myResult = ((QueryTable) parentResult).copy(false);
+                    final Table myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
                     // noinspection unchecked
