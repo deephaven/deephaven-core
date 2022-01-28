@@ -19430,6 +19430,13 @@ public final class QueryLanguageFunctionUtils {
         return a == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : -a;
     }
 
+    public static BigDecimal plus(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.add(b);
+    }
+
     public static BigDecimal plus(BigDecimal a, long b) {
         if (a == null || b == QueryConstants.NULL_LONG) {
             return null;
@@ -19472,6 +19479,13 @@ public final class QueryLanguageFunctionUtils {
 
     public static BigDecimal plus(float a, BigDecimal b) {
         return plus(b, a);
+    }
+
+    public static BigDecimal minus(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.subtract(b);
     }
 
     public static BigDecimal minus(BigDecimal a, long b) {
@@ -19530,6 +19544,13 @@ public final class QueryLanguageFunctionUtils {
         return BigDecimal.valueOf(a).subtract(b);
     }
 
+    public static BigDecimal multiply(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.multiply(b);
+    }
+
     public static BigDecimal multiply(BigDecimal a, long b) {
         if (a == null || b == QueryConstants.NULL_LONG) {
             return null;
@@ -19572,6 +19593,13 @@ public final class QueryLanguageFunctionUtils {
 
     public static BigDecimal multiply(float a, BigDecimal b) {
         return multiply(b, a);
+    }
+
+    public static BigDecimal divide(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.divide(b);
     }
 
     public static BigDecimal divide(BigDecimal a, long b) {
@@ -19628,6 +19656,16 @@ public final class QueryLanguageFunctionUtils {
             return null;
         }
         return BigDecimal.valueOf(a).divide(b);
+    }
+
+    public static boolean eq(BigDecimal a, BigDecimal b) {
+        if (a == null) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return a.compareTo(b) == 0;
     }
 
     public static boolean eq(BigDecimal a, long b) {
@@ -19722,6 +19760,16 @@ public final class QueryLanguageFunctionUtils {
         return BigDecimal.valueOf(a).compareTo(b) == 0;
     }
 
+    public static int compareTo(BigDecimal a, BigDecimal b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return a.compareTo(b);
+    }
+
     public static int compareTo(BigDecimal a, long b) {
         if (a == null) {
             return (b == QueryConstants.NULL_LONG) ? 0 : -1;
@@ -19814,6 +19862,10 @@ public final class QueryLanguageFunctionUtils {
         return BigDecimal.valueOf(a).compareTo(b);
     }
 
+    public static boolean less(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
     public static boolean less(BigDecimal a, long b) {
         return compareTo(a, b) < 0;
     }
@@ -19844,6 +19896,10 @@ public final class QueryLanguageFunctionUtils {
 
     public static boolean less(float a, BigDecimal b) {
         return compareTo(a, b) < 0;
+    }
+
+    public static boolean lessEquals(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
     }
 
     public static boolean lessEquals(BigDecimal a, long b) {
@@ -19878,6 +19934,10 @@ public final class QueryLanguageFunctionUtils {
         return compareTo(a, b) <= 0;
     }
 
+    public static boolean greater(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
     public static boolean greater(BigDecimal a, long b) {
         return compareTo(a, b) > 0;
     }
@@ -19908,6 +19968,10 @@ public final class QueryLanguageFunctionUtils {
 
     public static boolean greater(float a, BigDecimal b) {
         return compareTo(a, b) > 0;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
     }
 
     public static boolean greaterEquals(BigDecimal a, long b) {
