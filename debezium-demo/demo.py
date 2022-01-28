@@ -147,7 +147,7 @@ dd_flagged_profile_view = dd_flagged_profiles \
 
 high_value_users = purchases \
     .updateView(
-        'purchase_total = purchase_price.multiply(java.math.BigDecimal.valueOf(quantity))'
+        'purchase_total = purchase_price * quantity'
     ).aggBy(
         as_list([
             agg.AggSum('lifetime_value = purchase_total'),
