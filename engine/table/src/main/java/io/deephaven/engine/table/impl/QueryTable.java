@@ -75,7 +75,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -148,8 +147,6 @@ public class QueryTable extends BaseTable {
     private static final long serialVersionUID = 1L;
 
     static final Logger log = LoggerFactory.getLogger(QueryTable.class);
-
-    private static final Pattern COLUMN_NAME = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
 
     private final TrackingRowSet rowSet;
     private final LinkedHashMap<String, ColumnSource<?>> columns;
@@ -650,13 +647,6 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));
-    }
-
-    // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    // uses the AggregationFactory as a specifier.
-    public Table by(final AggregationSpec inputAggregationSpec, final SelectColumn... groupByColumns) {
-        return memoizeResult(MemoizedOperationKey.aggBy(inputAggregationSpec, groupByColumns),
-                () -> byNoMemo(inputAggregationSpec, groupByColumns));
     }
 
     private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
@@ -1607,7 +1597,7 @@ public class QueryTable extends BaseTable {
                     for (MatchPair pair : pairs) {
                         if (pair.leftColumn == null || pair.leftColumn.equals("")) {
                             throw new IllegalArgumentException(
-                                    "Bad left column in rename pair \"" + pair.toString() + "\"");
+                                    "Bad left column in rename pair \"" + pair + "\"");
                         }
                         if (null == columns.get(pair.rightColumn)) {
                             throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");

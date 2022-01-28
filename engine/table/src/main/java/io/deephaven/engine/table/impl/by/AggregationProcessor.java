@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.FunctionalInterfaces.TriFunction;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +40,7 @@ import java.util.stream.Stream;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
+import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
@@ -48,7 +48,7 @@ import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.util.type.TypeUtils.getBoxedType;
+import static io.deephaven.util.type.TypeUtils.*;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -157,7 +157,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                return new StandardConverter(table, groupByColumnNames).build();
+                return new NormalConverter(table, groupByColumnNames).build();
             case ROLLUP_BASE:
                 return new RollupBaseConverter(table, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
@@ -454,9 +454,9 @@ public class AggregationProcessor implements AggregationContextFactory {
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
-    private final class StandardConverter extends Converter {
+    private final class NormalConverter extends Converter {
 
-        private StandardConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
+        private NormalConverter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
             super(table, groupByColumnNames);
         }
 
@@ -1303,11 +1303,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         } else if (type == Character.class || type == char.class) {
             return reaggregated
                     ? new CharRollupUniqueOperator(resultName, includeNulls,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
-                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel))
+                            unbox((Character) onlyNullsSentinel),
+                            unbox((Character) nonUniqueSentinel))
                     : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
-                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel));
+                            unbox((Character) onlyNullsSentinel),
+                            unbox((Character) nonUniqueSentinel));
         } else if (type == Double.class || type == double.class) {
             final double onsAsType =
                     (onlyNullsSentinel == null) ? NULL_DOUBLE : ((Number) onlyNullsSentinel).doubleValue();
@@ -1365,7 +1365,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull Class<?> expected, final Object value) {
         expected = getBoxedType(expected);
         if (value != null && !expected.isAssignableFrom(value.getClass())) {
-            if (io.deephaven.util.type.TypeUtils.isNumeric(expected) && TypeUtils.isNumeric(value.getClass())) {
+            if (isNumeric(expected) && isNumeric(value.getClass())) {
                 if (checkNumericCompatibility((Number) value, expected)) {
                     return;
                 }
@@ -1538,9 +1538,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public QueryTable transformResult(@NotNull final QueryTable table) {
-            table.setAttribute(QueryTable.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionOperator.getTableMap());
+            table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionOperator.getTableMap());
             if (reaggregated || includeConstituents) {
-                table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+                table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
             } else {
                 setRollupLeafAttributes(table);
             }
@@ -1594,7 +1594,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private static void setRollupLeafAttributes(@NotNull final QueryTable table) {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
-        table.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
-        table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
+        table.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
+        table.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 }

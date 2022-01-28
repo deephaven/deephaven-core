@@ -51,6 +51,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.spec.AggSpec.percentile;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
@@ -672,10 +673,6 @@ public class QueryTableAggregationTest {
         TstUtils.validate(en);
     }
 
-    private static Table by(Table table, AggregationSpec spec, String... groupByColumns) {
-        return ((QueryTable) table).by(spec, SelectColumn.from(Selectable.from(groupByColumns)));
-    }
-
     @Test
     public void testFirstByLastByIncremental() {
         final Random random = new Random(0);
@@ -701,13 +698,9 @@ public class QueryTableAggregationTest {
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").firstBy("Sym")),
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").lastBy("Sym")),
                 EvalNugget.from(
-                        () -> by(table.sort("Sym", "intCol"), new TrackingLastBySpecImpl(), "Sym").sort("Sym")),
+                        () -> table.sort("Sym", "intCol").lastBy("Sym").sort("Sym")),
                 EvalNugget.from(
-                        () -> by(table.sort("Sym", "intCol"), new TrackingFirstBySpecImpl(), "Sym").sort("Sym")),
-                new io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator(table.lastBy("Sym"),
-                        by(table, new TrackingLastBySpecImpl(), "Sym")),
-                new io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator(table.firstBy("Sym"),
-                        by(table, new TrackingFirstBySpecImpl(), "Sym")),
+                        () -> table.sort("Sym", "intCol").firstBy("Sym").sort("Sym")),
                 EvalNugget.from(() -> table.firstBy("boolCol").sort("boolCol")),
                 EvalNugget.from(() -> table.firstBy("boolCol", "Sym").sort("boolCol", "Sym")),
                 EvalNugget.from(() -> table.firstBy("Sym", "Sym2", "IntSet", "boolCol").sort("Sym", "Sym2", "IntSet",
@@ -2299,103 +2292,98 @@ public class QueryTableAggregationTest {
         }
     }
 
+    private static <T extends Table> T setAddOnly(@NotNull final T table) {
+        table.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        return table;
+    }
+
     private void testMinMaxByAppend(int size) {
         final Random random = new Random(0);
         final ColumnInfo[] columnInfo;
-        final QueryTable queryTable = getTable(size, random,
+        final QueryTable queryTable = setAddOnly(getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100, 0.1),
-                        new SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>(10.1, 20.1, 30.1))));
         if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable, new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym");
+                        return queryTable.maxBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.dropColumns("Sym").update("x = k"),
-                                new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
+                        return setAddOnly(queryTable.dropColumns("Sym").update("x = k")).maxBy("intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.updateView("x = k"),
-                                new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.updateView("x = k").maxBy("Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(false), "Sym")
-                                .sort("Sym");
+                        return setAddOnly(queryTable.update("x=intCol+1")).maxBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1").dropColumns("Sym"),
-                                new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
+                        return setAddOnly(queryTable.update("x=intCol+1").dropColumns("Sym")).maxBy("intCol")
+                                .sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"),
-                                new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return setAddOnly(queryTable.update("x=intCol+1")).maxBy("Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(false), "Sym")
-                                .sort("Sym");
+                        return setAddOnly(queryTable.update("x=intCol+1")).maxBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable, new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym");
+                        return queryTable.minBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.dropColumns("Sym").update("x = k"),
-                                new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
+                        return setAddOnly(queryTable.dropColumns("Sym").update("x = k")).minBy("intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.updateView("x = k"),
-                                new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return queryTable.updateView("x = k").minBy("Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(true), "Sym")
-                                .sort("Sym");
+                        return setAddOnly(queryTable.update("x=intCol+1")).minBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1").dropColumns("Sym"),
-                                new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
+                        return setAddOnly(queryTable.update("x=intCol+1").dropColumns("Sym")).minBy("intCol")
+                                .sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"),
-                                new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return setAddOnly(queryTable.update("x=intCol+1")).minBy("Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(true), "Sym")
-                                .sort("Sym");
+                        return setAddOnly(queryTable.update("x=intCol+1")).minBy("Sym").sort("Sym");
                     }
                 },
-                new TableComparator(by(queryTable, new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym"),
+                new TableComparator(queryTable.maxBy("Sym").sort("Sym"),
                         queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
-                new TableComparator(by(queryTable, new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym"),
+                new TableComparator(queryTable.minBy("Sym").sort("Sym"),
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
@@ -2440,12 +2428,11 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.view("doubleCol").medianBy()),
                 EvalNugget.Sorted.from(() -> queryTable.medianBy("Sym"), "Sym"),
                 new UpdateValidatorNugget(queryTable.medianBy("Sym")),
-                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.25), "Sym").sort("Sym")),
-                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.75), "Sym").sort("Sym")),
-                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.1), "Sym").sort("Sym")),
-                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.99), "Sym").sort("Sym")),
-                EvalNugget.from(() -> by(withoutFloats.where("Sym=`a`"), new PercentileBySpecImpl(0.99), "Sym")
-                        .sort("Sym"))
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.25), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.1), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.99), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").aggAllBy(percentile(0.99), "Sym").sort("Sym"))
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -2753,8 +2740,8 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();
-        final Table percentile10 = by(table, new PercentileBySpecImpl(0.1));
-        final Table percentile90 = by(table, new PercentileBySpecImpl(0.9));
+        final Table percentile10 = table.aggAllBy(percentile(0.1));
+        final Table percentile90 = table.aggAllBy(percentile(0.9));
         TableTools.showWithRowSet(median);
         TableTools.showWithRowSet(percentile10);
         TableTools.showWithRowSet(percentile90);
@@ -3510,7 +3497,7 @@ public class QueryTableAggregationTest {
                 col("Value", BigInteger.valueOf(0), new BigInteger("100"), BigInteger.valueOf(100),
                         new BigInteger("100"), new BigInteger("100"), new BigInteger("100"), new BigInteger("100"),
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
-        final Table percentile = by(source, new PercentileBySpecImpl(0.25));
+        final Table percentile = source.aggAllBy(percentile(0.25));
         TableTools.show(percentile);
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
 
