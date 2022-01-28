@@ -456,5 +456,15 @@ public class WindowCheck {
             currentTime = getTimeNanos();
             clockStep = LogicalClock.DEFAULT.currentStep();
         }
+
+        @Override
+        public boolean preventsParallelism() {
+            return timeStampSource.preventsParallelism();
+        }
+
+        @Override
+        public boolean isStateless() {
+            return timeStampSource.isStateless();
+        }
     }
 }

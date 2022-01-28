@@ -132,4 +132,14 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
         ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
         convertToBoolean(dest, toBooleanFillContext.byteChunk);
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

@@ -178,7 +178,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, rowSequence, destination);
             }
-        });
+        }, sourceColumnSource.preventsParallelism(), false);
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
@@ -223,6 +223,11 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public boolean disallowRefresh() {
+        return false;
+    }
+
+    @Override
+    public boolean isStateless() {
         return false;
     }
 

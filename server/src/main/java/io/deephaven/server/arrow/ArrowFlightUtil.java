@@ -411,7 +411,7 @@ public class ArrowFlightUtil {
 
             isViewport = subscriptionRequest.viewportVector() != null;
             final RowSet viewport =
-                    isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+                    isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport);
 
@@ -435,7 +435,7 @@ public class ArrowFlightUtil {
 
             final boolean hasViewport = subscriptionRequest.viewportVector() != null;
             final RowSet viewport =
-                    isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+                    isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             final boolean subscriptionFound;
             if (isViewport && hasColumns && hasViewport) {

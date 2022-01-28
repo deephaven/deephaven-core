@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.LocalTableMap;
 import io.deephaven.engine.table.impl.StreamTableTools;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.TransformableTableMap;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
@@ -192,13 +193,16 @@ public class KafkaTools {
     }
 
     public static Schema columnDefinitionsToAvroSchema(
-            final ColumnDefinition<?>[] colDefs,
+            final Table t,
             final String schemaName,
             final String namespace,
             final Properties colProps,
             final Predicate<String> includeOnly,
-            final Predicate<String> exclude) {
+            final Predicate<String> exclude,
+            final MutableObject<Properties> colPropsOut) {
         SchemaBuilder.FieldAssembler<Schema> fass = SchemaBuilder.record(schemaName).namespace(namespace).fields();
+        final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
+        colPropsOut.setValue(colProps);
         for (final ColumnDefinition<?> colDef : colDefs) {
             if (includeOnly != null && !includeOnly.test(colDef.getName())) {
                 continue;
@@ -206,15 +210,75 @@ public class KafkaTools {
             if (exclude != null && exclude.test(colDef.getName())) {
                 continue;
             }
-            fass = addFieldForColDef(fass, colDef, colProps);
+            fass = addFieldForColDef(t, fass, colDef, colPropsOut);
         }
         return fass.endRecord();
     }
 
+    private static void validatePrecisionAndScaleForRefreshingTable(
+            final BigDecimalUtils.PropertyNames names,
+            final BigDecimalUtils.PrecisionAndScale values) {
+        final String exBaseMsg = "Column " + names.columnName + " of type " + BigDecimal.class.getSimpleName() +
+                " in a refreshing table implies both properties '" +
+                names.precisionProperty + "' and '" + names.scaleProperty
+                + "' should be defined; ";
+
+        if (values.precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                && values.scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(exBaseMsg + " missing both");
+        }
+        if (values.precision == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " missing '" + names.precisionProperty + "'");
+        }
+        if (values.scale == BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(exBaseMsg + " missing '" + names.scaleProperty + "'");
+        }
+    }
+
+    private static BigDecimalUtils.PrecisionAndScale ensurePrecisionAndScaleForStaticTable(
+            final MutableObject<Properties> colPropsMu,
+            final Table t,
+            final BigDecimalUtils.PropertyNames names,
+            final BigDecimalUtils.PrecisionAndScale valuesIn) {
+        if (valuesIn.precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE
+                && valuesIn.scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            return valuesIn;
+        }
+        final String exBaseMsg = "Column " + names.columnName + " of type " + BigDecimal.class.getSimpleName() +
+                " in a non refreshing table implies either both properties '" +
+                names.precisionProperty + "' and '" + names.scaleProperty
+                + "' should be defined, or none of them;";
+        if (valuesIn.precision != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " only '" + names.precisionProperty + "' is defined, missing '"
+                            + names.scaleProperty + "'");
+        }
+        if (valuesIn.scale != BigDecimalUtils.INVALID_PRECISION_OR_SCALE) {
+            throw new IllegalArgumentException(
+                    exBaseMsg + " only '" + names.scaleProperty + "' is defined, missing '"
+                            + names.precisionProperty + "'");
+        }
+        // Both precision and scale are null; compute them ourselves.
+        final BigDecimalUtils.PrecisionAndScale newValues =
+                BigDecimalUtils.computePrecisionAndScale(t, names.columnName);
+        final Properties toSet;
+        final Properties colProps = colPropsMu.getValue();
+        if (colProps == null) {
+            toSet = new Properties();
+            colPropsMu.setValue(toSet);
+        } else {
+            toSet = colProps;
+        }
+        BigDecimalUtils.setProperties(toSet, names, newValues);
+        return newValues;
+    }
+
     private static SchemaBuilder.FieldAssembler<Schema> addFieldForColDef(
-            final SchemaBuilder.FieldAssembler<Schema> fassIn, final ColumnDefinition<?> colDef,
-            final Properties colProps) {
-        final String colNameToPropSeparator = ".";
+            final Table t,
+            final SchemaBuilder.FieldAssembler<Schema> fassIn,
+            final ColumnDefinition<?> colDef,
+            final MutableObject<Properties> colPropsMu) {
         final String logicalTypeName = "logicalType";
         final String dhTypeAttribute = "dhType";
         SchemaBuilder.FieldAssembler<Schema> fass = fassIn;
@@ -236,24 +300,20 @@ public class KafkaTools {
         } else if (type == DateTime.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
-            final String precisionName = "precision";
-            final String scaleName = "scale";
-            String precision = null;
-            String scale = null;
-            if (colProps != null) {
-                precision = colProps.getProperty(colName + colNameToPropSeparator + precisionName);
-                scale = colProps.getProperty(colName + colNameToPropSeparator + scaleName);
-            }
-            if (precision == null || scale == null) {
-                throw new IllegalArgumentException(
-                        "When " + BigDecimal.class.getSimpleName() + " type columns are included, " +
-                                " column properties '" + precisionName + "' and '" + scaleName
-                                + "' for the given columns should be provided.");
+            final BigDecimalUtils.PropertyNames propertyNames =
+                    new BigDecimalUtils.PropertyNames(colName);
+            BigDecimalUtils.PrecisionAndScale values =
+                    BigDecimalUtils.getPrecisionAndScaleFromColumnProperties(propertyNames, colPropsMu.getValue(),
+                            true);
+            if (t.isRefreshing()) {
+                validatePrecisionAndScaleForRefreshingTable(propertyNames, values);
+            } else { // non refreshing table
+                ensurePrecisionAndScaleForStaticTable(colPropsMu, t, propertyNames, values);
             }
             fass = base.bytesBuilder()
                     .prop(logicalTypeName, "decimal")
-                    .prop(precisionName, precision)
-                    .prop(scaleName, scale)
+                    .prop("precision", values.precision)
+                    .prop("scale", values.scale)
                     .endBytes()
                     .noDefault();
         } else {
@@ -294,6 +354,11 @@ public class KafkaTools {
                 fieldSchema, mappedName, fieldType, fieldPathToColumnName);
     }
 
+    private static LogicalType getEffectiveLogicalType(final String fieldName, final Schema fieldSchema) {
+        final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
+        return effectiveSchema.getLogicalType();
+    }
+
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> fieldPathToColumnNameOut,
@@ -311,7 +376,7 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
             case LONG: {
-                final LogicalType logicalType = fieldSchema.getLogicalType();
+                final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
                         LogicalTypes.timestampMillis().equals(logicalType)) {
                     columnsOut.add(ColumnDefinition.ofTime(mappedName));
@@ -330,13 +395,14 @@ public class KafkaTools {
             case STRING:
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
-            case UNION:
+            case UNION: {
                 final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
                         prefix, fieldName,
                         effectiveSchema, mappedName, effectiveSchema.getType(), fieldPathToColumnName);
                 return;
+            }
             case RECORD:
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : fieldSchema.getFields()) {
@@ -348,7 +414,7 @@ public class KafkaTools {
                 return;
             case BYTES:
             case FIXED: {
-                final LogicalType logicalType = fieldSchema.getLogicalType();
+                final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (logicalType instanceof LogicalTypes.Decimal) {
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedName, BigDecimal.class));
                     break;
@@ -715,7 +781,7 @@ public class KafkaTools {
                 final Predicate<String> excludeColumns;
                 final boolean publishSchema;
                 final String schemaNamespace;
-                final Properties columnProperties;
+                final MutableObject<Properties> columnProperties;
 
                 Avro(final Schema schema,
                         final String schemaName,
@@ -736,7 +802,7 @@ public class KafkaTools {
                     this.excludeColumns = excludeColumns;
                     this.publishSchema = publishSchema;
                     this.schemaNamespace = schemaNamespace;
-                    this.columnProperties = columnProperties;
+                    this.columnProperties = new MutableObject<>(columnProperties);
                 }
 
                 @Override
@@ -750,8 +816,9 @@ public class KafkaTools {
                     }
                     final String schemaServiceUrl = ensureAndGetSchemaServerProprety(kafkaProperties);
                     if (publishSchema) {
-                        schema = columnDefinitionsToAvroSchema(t.getDefinition().getColumns(),
-                                schemaName, schemaNamespace, columnProperties, includeOnlyColumns, excludeColumns);
+                        schema = columnDefinitionsToAvroSchema(t,
+                                schemaName, schemaNamespace, columnProperties.getValue(), includeOnlyColumns,
+                                excludeColumns, columnProperties);
                         final String putVersion = putAvroSchema(schema, schemaServiceUrl, schemaName);
                         if (putVersion != null && schemaVersion != null && !schemaVersion.equals(putVersion)) {
                             throw new IllegalStateException("Specified expected version " + schemaVersion
@@ -792,7 +859,6 @@ public class KafkaTools {
                         }
                     }
                     final int timestampFieldCount = ((timestampFieldName != null) ? 1 : 0);
-                    final int nColNames = fields.size() - timestampFieldCount;
                     final List<String> columnNames = new ArrayList<>();
                     for (final Schema.Field field : fields) {
                         final String fieldName = field.name();
@@ -1251,7 +1317,7 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec.Avro avroSpec,
             @NotNull final String[] columnNames) {
         return new GenericRecordKeyOrValueSerializer(
-                t, avroSpec.schema, columnNames, avroSpec.timestampFieldName);
+                t, avroSpec.schema, columnNames, avroSpec.timestampFieldName, avroSpec.columnProperties.getValue());
     }
 
     private static KeyOrValueSerializer<?> getJsonSerializer(

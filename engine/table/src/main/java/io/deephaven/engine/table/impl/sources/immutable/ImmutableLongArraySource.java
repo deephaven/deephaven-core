@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.WritableSourceWithEnsurePrevious;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -40,7 +41,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DLongArraySource}.
  */
-public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
+public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
     private long[] data;
 
     // region constructor
@@ -222,6 +223,11 @@ public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSour
     @Override
     public boolean providesFillUnordered() {
         return true;
+    }
+
+    @Override
+    public void ensurePrevious(RowSet rowSet) {
+        // we don't track previous values, so we don't care to do any work
     }
 
     // region reinterpret

@@ -471,6 +471,16 @@ class NaturalJoinHelper {
             }
             destination.setSize(longChunk.size());
         }
+
+        @Override
+        public boolean preventsParallelism() {
+            return symbolSource.preventsParallelism();
+        }
+
+        @Override
+        public boolean isStateless() {
+            return symbolSource.isStateless();
+        }
     }
 
     private static class LeftTickingListener extends BaseTable.ListenerImpl {

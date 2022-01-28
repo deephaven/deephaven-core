@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Predicate;
 
 /**
  * This class is an extension of QueryTable that overrides many methods from {@link Table} which are not valid to
@@ -52,7 +53,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table copy(boolean copyAttributes) {
+    public Table copy(Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("hierarchicalTable-copy()", sizeForInstrumentation(), () -> {
             final HierarchicalTable result = createFrom((QueryTable) rootTable.copy(), info);
             copyAttributes(result, a -> true);

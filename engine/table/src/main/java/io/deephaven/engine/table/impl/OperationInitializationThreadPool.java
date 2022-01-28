@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class OperationInitializationThreadPool {
-    final static int TRANSFORM_THREADS =
+    public final static int NUM_THREADS =
             Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
 
     public final static ExecutorService executorService;
@@ -26,6 +26,6 @@ public class OperationInitializationThreadPool {
                         });
                     }
                 };
-        executorService = Executors.newFixedThreadPool(TRANSFORM_THREADS, threadFactory);
+        executorService = Executors.newFixedThreadPool(NUM_THREADS, threadFactory);
     }
 }

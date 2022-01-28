@@ -88,11 +88,11 @@ public class BarrageStreamGenerator implements
     }
 
     public static class ModColumnData {
-        public final IndexGenerator rowsModified;
+        public final RowSetGenerator rowsModified;
         public final ChunkInputStreamGenerator data;
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
-            rowsModified = new IndexGenerator(col.rowsModified);
+            rowsModified = new RowSetGenerator(col.rowsModified);
             data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(), col.type, col.data);
         }
     }
@@ -105,9 +105,9 @@ public class BarrageStreamGenerator implements
 
     public final boolean isSnapshot;
 
-    public final IndexGenerator rowsAdded;
-    public final IndexGenerator rowsIncluded;
-    public final IndexGenerator rowsRemoved;
+    public final RowSetGenerator rowsAdded;
+    public final RowSetGenerator rowsIncluded;
+    public final RowSetGenerator rowsRemoved;
     public final IndexShiftDataGenerator shifted;
 
     public final ChunkInputStreamGenerator[] addColumnData;
@@ -126,9 +126,9 @@ public class BarrageStreamGenerator implements
             step = message.step;
             isSnapshot = message.isSnapshot;
 
-            rowsAdded = new IndexGenerator(message.rowsAdded);
-            rowsIncluded = new IndexGenerator(message.rowsIncluded);
-            rowsRemoved = new IndexGenerator(message.rowsRemoved);
+            rowsAdded = new RowSetGenerator(message.rowsAdded);
+            rowsIncluded = new RowSetGenerator(message.rowsIncluded);
+            rowsRemoved = new RowSetGenerator(message.rowsRemoved);
             shifted = new IndexShiftDataGenerator(message.shifted);
 
             addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
@@ -486,7 +486,7 @@ public class BarrageStreamGenerator implements
 
         int effectiveViewportOffset = 0;
         if (isSnapshot && view.isViewport()) {
-            try (final IndexGenerator viewportGen = new IndexGenerator(view.viewport)) {
+            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
                 effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
             }
         }
@@ -499,7 +499,7 @@ public class BarrageStreamGenerator implements
         final int rowsAddedOffset;
         if (isSnapshot && !view.isInitialSnapshot) {
             // client's don't need/want to receive the full RowSet on every snapshot
-            rowsAddedOffset = EmptyIndexGenerator.INSTANCE.addToFlatBuffer(metadata);
+            rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
         } else {
             rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
         }
@@ -567,10 +567,10 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    public static class IndexGenerator extends ByteArrayGenerator implements SafeCloseable {
+    public static class RowSetGenerator extends ByteArrayGenerator implements SafeCloseable {
         public final RowSet original;
 
-        public IndexGenerator(final RowSet rowSet) throws IOException {
+        public RowSetGenerator(final RowSet rowSet) throws IOException {
             this.original = rowSet.copy();
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
@@ -769,17 +769,17 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    private static final class EmptyIndexGenerator extends IndexGenerator {
-        public static final EmptyIndexGenerator INSTANCE;
+    private static final class EmptyRowSetGenerator extends RowSetGenerator {
+        public static final EmptyRowSetGenerator INSTANCE;
         static {
             try {
-                INSTANCE = new EmptyIndexGenerator();
+                INSTANCE = new EmptyRowSetGenerator();
             } catch (final IOException ioe) {
                 throw new UncheckedDeephavenException(ioe);
             }
         }
 
-        EmptyIndexGenerator() throws IOException {
+        EmptyRowSetGenerator() throws IOException {
             super(RowSetFactory.empty());
         }
 

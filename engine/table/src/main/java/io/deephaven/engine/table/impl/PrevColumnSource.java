@@ -167,4 +167,14 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return originalSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return originalSource.isStateless();
+    }
 }

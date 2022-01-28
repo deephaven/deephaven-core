@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -104,8 +105,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs =
                             flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
                                     : sc.newDestInstance(targetDestinationCapacity);
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
-                            false, flattenedResult);
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
+                                    false, flattenedResult);
                     if (flattenedResult) {
                         numberOfInternallyFlattenedColumns++;
                     }
@@ -122,8 +124,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         underlyingSource = scs;
                         scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
                     }
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                            mcsBuilder, rowRedirection != null, false);
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                                    mcsBuilder, rowRedirection != null, false);
                     break;
                 }
                 default:
@@ -139,10 +142,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             return false;
         }
         final ColumnSource<?> sccs = sc.getDataView();
-        if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
-            return true;
-        }
-        return false;
+        return sccs instanceof InMemoryColumnSource && !Vector.class.isAssignableFrom(sc.getReturnedType());
     }
 
     static final int BASE_LAYER_INDEX = 0;
@@ -190,10 +190,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
-    private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
+    private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten) {
-        return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
+        return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
+                mcsBuilder,
                 isRedirected, flatten);
     }
 
@@ -362,6 +363,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract int getLayerIndexFor(String column);
 
     /**
+     * Can all of our columns permit parallel updates?
+     */
+    abstract public boolean allowCrossColumnParallelization();
+
+    /**
      * A class that handles the completion of one select column. The handlers are chained together so that when a column
      * completes all of the downstream dependencies may execute.
      */
@@ -463,6 +469,12 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * in the current thread.
          */
         BasePerformanceEntry getAccumulatedPerformance();
+
+        /**
+         * How many threads exist in the job scheduler? The job submitters can use this value to determine how many
+         * sub-jobs to split work into.
+         */
+        int threadCount();
     }
 
     public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
@@ -485,6 +497,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                         runnable.run();
                     } catch (Exception e) {
                         onError.accept(e);
+                    } catch (Error e) {
+                        ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                        throw e;
                     } finally {
                         baseEntry.onBaseEntryEnd();
                         synchronized (accumulatedBaseEntry) {
@@ -505,9 +520,14 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedBaseEntry;
         }
+
+        @Override
+        public int threadCount() {
+            return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
+        }
     }
 
-    public static class TableMapTransformJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+    public static class OperationInitializationPoolJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
         final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
         @Override
@@ -520,6 +540,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     runnable.run();
                 } catch (Exception e) {
                     onError.accept(e);
+                } catch (Error e) {
+                    ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                    throw e;
                 } finally {
                     basePerformanceEntry.onBaseEntryEnd();
                     synchronized (accumulatedBaseEntry) {
@@ -533,6 +556,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public BasePerformanceEntry getAccumulatedPerformance() {
             return accumulatedBaseEntry;
         }
+
+        @Override
+        public int threadCount() {
+            return OperationInitializationThreadPool.NUM_THREADS;
+        }
     }
 
     public static class ImmediateJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
@@ -545,12 +573,20 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 runnable.run();
             } catch (Exception e) {
                 onError.accept(e);
+            } catch (Error e) {
+                ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
+                throw e;
             }
         }
 
         @Override
         public BasePerformanceEntry getAccumulatedPerformance() {
             return null;
+        }
+
+        @Override
+        public int threadCount() {
+            return 1;
         }
     }
 

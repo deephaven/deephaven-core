@@ -198,4 +198,14 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     public short getPrevShort(long index) {
         return delegate.getPrevShort(index);
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return delegate.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return delegate.isStateless();
+    }
 }

@@ -474,4 +474,14 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
         destination.setSize((int) sz);
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

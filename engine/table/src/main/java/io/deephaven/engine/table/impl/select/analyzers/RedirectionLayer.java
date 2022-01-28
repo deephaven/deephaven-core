@@ -172,4 +172,9 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{RedirectionLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
     }
+
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        return inner.allowCrossColumnParallelization();
+    }
 }

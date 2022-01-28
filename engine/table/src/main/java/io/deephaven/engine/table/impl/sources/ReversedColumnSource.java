@@ -175,4 +175,14 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
         innerSource.fillPrevChunk(context.innerContext, destination, reversedIndex);
         context.reverseKernel.reverse(destination);
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
+    }
 }

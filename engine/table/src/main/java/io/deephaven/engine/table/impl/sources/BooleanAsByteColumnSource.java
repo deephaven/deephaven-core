@@ -91,4 +91,14 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
         }
         byteDestination.setSize(booleanObjectChunk.size());
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
+    }
 }

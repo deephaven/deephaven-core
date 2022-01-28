@@ -510,4 +510,24 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     private static final ReinterpretedClassKey REINTERPRETED_CLASS_KEY_INSTANCE = new ReinterpretedClassKey();
+
+    @Override
+    public boolean preventsParallelism() {
+        for (int ii = 0; ii < numSources; ++ii) {
+            if (subSources[ii].preventsParallelism()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isStateless() {
+        for (int ii = 0; ii < numSources; ++ii) {
+            if (!subSources[ii].isStateless()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

@@ -294,4 +294,14 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     private boolean prevInvalid() {
         return prevValidityStep == -1 || prevValidityStep != LogicalClock.DEFAULT.currentStep();
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return currentSource.preventsParallelism() || (!prevInvalid() && prevSource.preventsParallelism());
+    }
+
+    @Override
+    public boolean isStateless() {
+        return currentSource.isStateless() && (prevInvalid() || prevSource.isStateless());
+    }
 }
