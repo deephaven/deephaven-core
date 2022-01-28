@@ -3,6 +3,8 @@ from deephaven.plugin.object import Exporter, ObjectType
 from pandas import DataFrame
 
 NAME = "pandas.DataFrame"
+
+
 class PandasDataFrameSerializer(ObjectType):
     @property
     def name(self) -> str:

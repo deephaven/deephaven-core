@@ -699,10 +699,13 @@ public class WorkerConnection {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        if (definition.getType().equals(JsVariableChanges.TABLE)) {
+        if (JsVariableChanges.TABLE.equals(definition.getType())) {
             return (Promise) getTable(definition, null);
-        } else if (definition.getType().equals(JsVariableChanges.FIGURE)) {
+        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
             return (Promise) getFigure(definition);
+        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+            return getWidget(definition)
+                    .then(widget -> widget.getExportedObjects()[0].fetch());
         } else {
             return (Promise) getWidget(definition);
         }
