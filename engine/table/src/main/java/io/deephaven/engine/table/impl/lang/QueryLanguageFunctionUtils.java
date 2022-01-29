@@ -9,6 +9,7 @@ import io.deephaven.util.QueryConstants;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
 public final class QueryLanguageFunctionUtils {
@@ -19430,6 +19431,10 @@ public final class QueryLanguageFunctionUtils {
         return a == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : -a;
     }
 
+    //
+    // BigDecimal ops
+    //
+
     public static BigDecimal plus(BigDecimal a, BigDecimal b) {
         if (a == null || b == null) {
             return null;
@@ -20247,6 +20252,830 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    //
+    // BigInteger ops
+    //
+
+    public static BigInteger plus(BigInteger a, BigInteger b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.add(b);
+    }
+
+    public static BigInteger plus(BigInteger a, long b) {
+        if (a == null || b == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        return a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger plus(long a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigInteger plus(BigInteger a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger plus(int a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigInteger plus(BigInteger a, short b) {
+        if (a == null || b == QueryConstants.NULL_SHORT) {
+            return null;
+        }
+        return a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger plus(short a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigInteger plus(BigInteger a, byte b) {
+        if (a == null || b == QueryConstants.NULL_BYTE) {
+            return null;
+        }
+        return a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger plus(byte a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigDecimal plus(BigInteger a, double b) {
+        if (a == null || b == QueryConstants.NULL_DOUBLE) {
+            return null;
+        }
+        return new BigDecimal(a).add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal plus(double a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigDecimal plus(BigInteger a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return new BigDecimal(a).add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal plus(float a, BigInteger b) {
+        return plus(b, a);
+    }
+
+    public static BigInteger minus(BigInteger a, BigInteger b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.subtract(b);
+    }
+
+    public static BigInteger minus(BigInteger a, long b) {
+        if (a == null || b == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        return a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger minus(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG || b == null) {
+            return null;
+        }
+        return BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger minus(BigInteger a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger minus(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT || b == null) {
+            return null;
+        }
+        return BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger minus(BigInteger a, short b) {
+        if (a == null || b == QueryConstants.NULL_SHORT) {
+            return null;
+        }
+        return a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger minus(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT || b == null) {
+            return null;
+        }
+        return BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger minus(BigInteger a, byte b) {
+        if (a == null || b == QueryConstants.NULL_BYTE) {
+            return null;
+        }
+        return a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger minus(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE || b == null) {
+            return null;
+        }
+        return BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal minus(BigInteger a, double b) {
+        if (a == null || b == QueryConstants.NULL_DOUBLE) {
+            return null;
+        }
+        return new BigDecimal(a).subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal minus(double a, BigInteger b) {
+        if (a == QueryConstants.NULL_DOUBLE || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).subtract(new BigDecimal(b));
+    }
+
+    public static BigDecimal minus(BigInteger a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return new BigDecimal(a).subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal minus(float a, BigInteger b) {
+        if (a == QueryConstants.NULL_FLOAT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).subtract(new BigDecimal(b));
+    }
+
+    public static BigInteger multiply(BigInteger a, BigInteger b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return a.multiply(b);
+    }
+
+    public static BigInteger multiply(BigInteger a, long b) {
+        if (a == null || b == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        return a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger multiply(long a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigInteger multiply(BigInteger a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger multiply(int a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigInteger multiply(BigInteger a, short b) {
+        if (a == null || b == QueryConstants.NULL_SHORT) {
+            return null;
+        }
+        return a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger multiply(short a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigInteger multiply(BigInteger a, byte b) {
+        if (a == null || b == QueryConstants.NULL_BYTE) {
+            return null;
+        }
+        return a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger multiply(byte a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigDecimal multiply(BigInteger a, double b) {
+        if (a == null || b == QueryConstants.NULL_DOUBLE) {
+            return null;
+        }
+        return new BigDecimal(a).multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal multiply(double a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigDecimal multiply(BigInteger a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return new BigDecimal(a).multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal multiply(float a, BigInteger b) {
+        return multiply(b, a);
+    }
+
+    public static BigDecimal divide(BigInteger a, BigInteger b) {
+        if (a == null || b == null) {
+            return null;
+        }
+        return new BigDecimal(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, long b) {
+        if (a == null || b == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, int b) {
+        if (a == null || b == QueryConstants.NULL_INT) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, short b) {
+        if (a == null || b == QueryConstants.NULL_SHORT) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, byte b) {
+        if (a == null || b == QueryConstants.NULL_BYTE) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, double b) {
+        if (a == null || b == QueryConstants.NULL_DOUBLE) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(double a, BigInteger b) {
+        if (a == QueryConstants.NULL_DOUBLE || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static BigDecimal divide(BigInteger a, float b) {
+        if (a == null || b == QueryConstants.NULL_FLOAT) {
+            return null;
+        }
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal divide(float a, BigInteger b) {
+        if (a == QueryConstants.NULL_FLOAT || b == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(a).divide(new BigDecimal(b));
+    }
+
+    public static boolean eq(BigInteger a, BigInteger b) {
+        if (a == null) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return a.compareTo(b) == 0;
+    }
+
+    public static boolean eq(BigInteger a, long b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_LONG);
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return false;
+        }
+        return a.compareTo(BigInteger.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigInteger.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean eq(BigInteger a, int b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_INT);
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return false;
+        }
+        return a.compareTo(BigInteger.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigInteger.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean eq(BigInteger a, short b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_SHORT);
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return false;
+        }
+        return a.compareTo(BigInteger.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigInteger.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean eq(BigInteger a, byte b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_BYTE);
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return false;
+        }
+        return a.compareTo(BigInteger.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigInteger.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean eq(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_DOUBLE);
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return false;
+        }
+        return new BigDecimal(a).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(new BigDecimal(b)) == 0;
+    }
+
+    public static boolean eq(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_FLOAT);
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return false;
+        }
+        return new BigDecimal(a).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean eq(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return (b == null);
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(new BigDecimal(b)) == 0;
+    }
+
+    public static int compareTo(BigInteger a, BigInteger b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return a.compareTo(b);
+    }
+
+    public static int compareTo(BigInteger a, long b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static int compareTo(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static int compareTo(BigInteger a, int b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_INT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static int compareTo(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static int compareTo(BigInteger a, short b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_SHORT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static int compareTo(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static int compareTo(BigInteger a, byte b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_BYTE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static int compareTo(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static int compareTo(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return -1; // even if a == null.
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return 1;
+        }
+        return new BigDecimal(a).compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static int compareTo(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return 1; // even if b == null.
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(new BigDecimal(b));
+    }
+
+    public static int compareTo(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return -1; // even if a == null.
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return 1;
+        }
+        return new BigDecimal(a).compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static int compareTo(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return 1; // even if b == null
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(new BigDecimal(b));
+    }
+
+    public static boolean less(BigInteger a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, long b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(long a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, int b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(int a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, short b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(short a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, byte b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(byte a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, double b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(double a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(BigInteger a, float b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean less(float a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, long b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(long a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, int b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(int a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, short b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(short a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, byte b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(byte a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, double b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(double a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(BigInteger a, float b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean lessEquals(float a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean greater(BigInteger a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, long b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(long a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, int b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(int a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, short b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(short a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, byte b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(byte a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, double b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(double a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(BigInteger a, float b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greater(float a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, long b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(long a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, int b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(int a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, short b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(short a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, byte b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(byte a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, double b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(double a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(BigInteger a, float b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean greaterEquals(float a, BigInteger b) {
         return compareTo(a, b) >= 0;
     }
 }
