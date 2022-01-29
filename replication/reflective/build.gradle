@@ -7,6 +7,11 @@ description 'Reflective Replicators: Source code generators and replicators with
 dependencies {
     implementation project(':replication-util'),
             project(':engine-table')
+
+    runtimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
 }
 
 task replicateAll {
