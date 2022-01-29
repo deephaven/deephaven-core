@@ -1,8 +1,10 @@
 {
  "className": "io.deephaven.api.agg.spec.AggSpecUnique",
  "methods": {
+  "description": ":return: java.lang.String",
   "includeNulls": ":return: boolean",
-  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecUnique\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecUnique",
+  "nonUniqueSentinel": ":return: java.lang.Object",
+  "of": "**Incompatible overloads text - text from the first overload:**\n\nSpecify a \"unique\" aggregation that does not treat null as a value for purposes of determining if the\n values in a group are unique. If a group is non-empty but contains only null values, its result will be\n null. If a group contains more than a single unique value, its result will also be null.\n\n*Overload 1*  \n  :return: (io.deephaven.api.agg.spec.AggSpecUnique) The \"unique\" aggregation specification\n  \n*Overload 2*  \n  :param includeNulls: (boolean) - Whether null is treated as a value for determining if the values in a group are\n          unique\n  :param nonUniqueSentinel: (java.lang.Object) - Sentinel value to use if a group contains more than a single unique value\n  :return: (io.deephaven.api.agg.spec.AggSpecUnique) The \"unique\" aggregation specification",
   "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.api.agg.spec.AggSpecUnique",

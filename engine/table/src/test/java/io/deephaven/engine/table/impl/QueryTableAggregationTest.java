@@ -2481,8 +2481,7 @@ public class QueryTableAggregationTest {
         final Collection<? extends Aggregation> aggregations = List.of(
                 AggApproxPct("doubleCol", PctOut(0.75, "DP75"), PctOut(0.95, "DP95"), PctOut(0.99, "DP99"),
                         PctOut(0.999, "DP999")),
-                AggApproxPct("floatCol", PctOut(0.75, "FP75"), PctOut(0.99, "FP99"))
-        );
+                AggApproxPct("floatCol", PctOut(0.75, "FP75"), PctOut(0.99, "FP99")));
         final Table aggregated = queryTable.dropColumns("Sym").aggBy(aggregations);
         TableTools.showWithRowSet(aggregated);
 
@@ -2509,15 +2508,13 @@ public class QueryTableAggregationTest {
 
         final Collection<? extends Aggregation> aggregations33 = List.of(
                 AggTDigest(33, "Digest=doubleCol"),
-                AggApproxPct("doubleCol", PctOut(0.95, "P95"))
-        );
+                AggApproxPct("doubleCol", PctOut(0.95, "P95")));
         final Table aggregated = queryTable.dropColumns("Sym").aggBy(aggregations33);
         TableTools.showWithRowSet(aggregated);
 
         final Collection<? extends Aggregation> aggregations100 = List.of(
                 AggTDigest(100, "Digest=doubleCol"),
-                AggApproxPct("doubleCol", PctOut(0.95, "P95"))
-        );
+                AggApproxPct("doubleCol", PctOut(0.95, "P95")));
         final Table aggregatedBySym = queryTable.aggBy(aggregations100, "Sym");
         TableTools.showWithRowSet(aggregatedBySym);
 
@@ -2617,8 +2614,7 @@ public class QueryTableAggregationTest {
                 AggApproxPct("doubleCol", PctOut(0.75, "DP75"), PctOut(0.95, "DP95"), PctOut(0.99, "DP99"),
                         PctOut(0.999, "DP999")),
                 AggApproxPct("longCol", PctOut(0.75, "LP75"), PctOut(0.95, "LP95"), PctOut(0.99, "LP99"),
-                        PctOut(0.999, "LP999"))
-        );
+                        PctOut(0.999, "LP999")));
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {

@@ -163,21 +163,21 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 agg -> getColumnPairs(parent, groupByColumnSet, agg);
 
         final Collection<? extends Aggregation> aggregations = aggregates.stream().map(
-                agg -> makeAggregation(agg, getPairs)
-        ).collect(Collectors.toList());
+                agg -> makeAggregation(agg, getPairs)).collect(Collectors.toList());
 
         return parent.aggBy(aggregations, Arrays.asList(groupByColumns));
     }
 
     private static String[] getColumnPairs(@NotNull final Table parent,
-                                           @NotNull final Set<String> groupByColumnSet,
-                                           @NotNull final ComboAggregateRequest.Aggregate agg) {
+            @NotNull final Set<String> groupByColumnSet,
+            @NotNull final ComboAggregateRequest.Aggregate agg) {
         if (agg.getMatchPairsCount() == 0) {
             // If not specified, we apply the aggregate to all columns not "otherwise involved"
             return parent.getDefinition().getColumnStream()
                     .map(ColumnDefinition::getName)
                     .filter(n -> !(groupByColumnSet.contains(n) ||
-                            (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG && agg.getColumnName().equals(n))))
+                            (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG
+                                    && agg.getColumnName().equals(n))))
                     .toArray(String[]::new);
         }
         return agg.getMatchPairsList().toArray(String[]::new);

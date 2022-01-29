@@ -191,16 +191,14 @@ public class TestAggBy extends RefreshingTableTestCase {
                     public Table e() {
                         return queryTable.aggBy(List.of(
                                 AggAvg("MeanI=intCol", "MeanD=doubleCol"),
-                                AggStd("StdI=intCol", "StdD=doubleCol")
-                        ), "Sym").sort("Sym");
+                                AggStd("StdI=intCol", "StdD=doubleCol")), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.aggBy(List.of(
                                 AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
-                                AggFormula("max(each)", "each", "MaxI=intCol")
-                        ), "Sym").sort("Sym");
+                                AggFormula("max(each)", "each", "MaxI=intCol")), "Sym").sort("Sym");
                     }
                 },
                 new QueryTableTest.TableComparator(
@@ -343,7 +341,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggDistinct(true, "dicN=intColNulls", "didN=doubleColNulls"),
                                 AggUnique("uic=intCol", "uid=doubleCol"),
                                 AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")), "Sym")
-                                        .sort("Sym"),
+                                .sort("Sym"),
                         "AggCountDistinct")
         };
         final int steps = 100; // 8;
@@ -670,7 +668,7 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     private static <T extends Throwable> void expectException(@SuppressWarnings("SameParameterValue") Class<T> excType,
-                                                              String failMessage, Runnable action) {
+            String failMessage, Runnable action) {
         try {
             action.run();
             fail(failMessage);

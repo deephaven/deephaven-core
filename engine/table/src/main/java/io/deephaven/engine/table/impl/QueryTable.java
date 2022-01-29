@@ -626,8 +626,8 @@ public class QueryTable extends BaseTable {
         final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
         final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
         final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, gbsColumns);
-        final Table aggregationTable = memoizeResult(aggKey, () ->
-                aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
+        final Table aggregationTable =
+                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
 
         final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
         final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
@@ -650,7 +650,7 @@ public class QueryTable extends BaseTable {
     }
 
     private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
-                                 @NotNull final SelectColumn... groupByColumns) {
+            @NotNull final SelectColumn... groupByColumns) {
         final String description = "aggregation(" + aggregationContextFactory
                 + ", " + Arrays.toString(groupByColumns) + ")";
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),

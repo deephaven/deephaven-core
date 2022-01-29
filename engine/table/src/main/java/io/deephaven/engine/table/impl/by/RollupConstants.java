@@ -5,8 +5,7 @@ package io.deephaven.engine.table.impl.by;
  */
 public final class RollupConstants {
 
-    private RollupConstants() {
-    }
+    private RollupConstants() {}
 
     /**
      * Marker suffiix for rollup-internal column names.

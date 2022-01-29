@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.Aggregations",
+ "methods": {
+  "aggregations": ":return: java.util.List<io.deephaven.api.agg.Aggregation>",
+  "builder": ":return: io.deephaven.api.agg.Aggregations.Builder",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.Aggregations",
+ "text": "Aggregations is an Aggregation that is a collection of two or more aggregations.",
+ "typeName": "class"
+}

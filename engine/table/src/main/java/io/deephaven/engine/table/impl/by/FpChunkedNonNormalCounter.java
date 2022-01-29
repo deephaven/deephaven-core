@@ -205,7 +205,8 @@ abstract class FpChunkedNonNormalCounter {
         if (nanCount != null) {
             results.put(name + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nanCount);
         } else {
-            results.put(name + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, new WrappedLongArraySource(() -> nanCount));
+            results.put(name + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
+                    new WrappedLongArraySource(() -> nanCount));
         }
         if (positiveInfinityCount != null) {
             results.put(name + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, positiveInfinityCount);

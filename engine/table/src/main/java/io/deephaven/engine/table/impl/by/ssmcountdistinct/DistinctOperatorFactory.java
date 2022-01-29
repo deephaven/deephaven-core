@@ -120,8 +120,8 @@ public interface DistinctOperatorFactory {
      * @return an appropriate operator.
      */
     static IterativeChunkedAggregationOperator createUnique(Class<?> type, String resultName, boolean countNulls,
-                                                            Object onlyNullsSentinel, Object nonUniqueSentinel,
-                                                            boolean exposeInternal, boolean isRollup) {
+            Object onlyNullsSentinel, Object nonUniqueSentinel,
+            boolean exposeInternal, boolean isRollup) {
         checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
         checkType(resultName, "Non Unique Sentinel", type, nonUniqueSentinel);
 
@@ -139,13 +139,17 @@ public interface DistinctOperatorFactory {
                             io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
                             io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel));
         } else if (type == Double.class || type == double.class) {
-            final double onsAsType = (onlyNullsSentinel == null) ? NULL_DOUBLE : ((Number) onlyNullsSentinel).doubleValue();
-            final double nusAsType = (nonUniqueSentinel == null) ? NULL_DOUBLE : ((Number) nonUniqueSentinel).doubleValue();
+            final double onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_DOUBLE : ((Number) onlyNullsSentinel).doubleValue();
+            final double nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_DOUBLE : ((Number) nonUniqueSentinel).doubleValue();
             return isRollup ? new DoubleRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
                     : new DoubleChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Float.class || type == float.class) {
-            final float onsAsType = (onlyNullsSentinel == null) ? NULL_FLOAT : ((Number) onlyNullsSentinel).floatValue();
-            final float nusAsType = (nonUniqueSentinel == null) ? NULL_FLOAT : ((Number) nonUniqueSentinel).floatValue();
+            final float onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_FLOAT : ((Number) onlyNullsSentinel).floatValue();
+            final float nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_FLOAT : ((Number) nonUniqueSentinel).floatValue();
             return isRollup ? new FloatRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
                     : new FloatChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Integer.class || type == int.class) {
@@ -167,12 +171,15 @@ public interface DistinctOperatorFactory {
             return isRollup ? new LongRollupUniqueOperator(type, resultName, countNulls, onsAsType, nusAsType)
                     : new LongChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Short.class || type == short.class) {
-            final short onsAsType = (onlyNullsSentinel == null) ? NULL_SHORT : ((Number) onlyNullsSentinel).shortValue();
-            final short nusAsType = (nonUniqueSentinel == null) ? NULL_SHORT : ((Number) nonUniqueSentinel).shortValue();
+            final short onsAsType =
+                    (onlyNullsSentinel == null) ? NULL_SHORT : ((Number) onlyNullsSentinel).shortValue();
+            final short nusAsType =
+                    (nonUniqueSentinel == null) ? NULL_SHORT : ((Number) nonUniqueSentinel).shortValue();
             return isRollup ? new ShortRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
                     : new ShortChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else {
-            return isRollup ? new ObjectRollupUniqueOperator(type, resultName, countNulls, onlyNullsSentinel, nonUniqueSentinel)
+            return isRollup
+                    ? new ObjectRollupUniqueOperator(type, resultName, countNulls, onlyNullsSentinel, nonUniqueSentinel)
                     : new ObjectChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onlyNullsSentinel,
                             nonUniqueSentinel);
         }

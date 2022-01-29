@@ -96,7 +96,7 @@ public abstract class MemoizedOperationKey {
     }
 
     public static MemoizedOperationKey aggBy(Collection<? extends Aggregation> aggregations,
-                                             SelectColumn[] groupByColumns) {
+            SelectColumn[] groupByColumns) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }
@@ -111,7 +111,7 @@ public abstract class MemoizedOperationKey {
     }
 
     public static MemoizedOperationKey rollup(Collection<? extends Aggregation> aggregations,
-                                              SelectColumn[] groupByColumns, boolean includeConstituents) {
+            SelectColumn[] groupByColumns, boolean includeConstituents) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }

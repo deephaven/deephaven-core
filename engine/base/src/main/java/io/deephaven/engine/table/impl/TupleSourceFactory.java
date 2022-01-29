@@ -39,7 +39,7 @@ public class TupleSourceFactory {
      * @param columnSources The column sources
      * @return The tuple factory
      */
-    public static <TUPLE_TYPE> TupleSource<TUPLE_TYPE>  makeTupleSource(@NotNull final ColumnSource... columnSources) {
+    public static <TUPLE_TYPE> TupleSource<TUPLE_TYPE> makeTupleSource(@NotNull final ColumnSource... columnSources) {
         return tupleSourceCreator().makeTupleSource(columnSources);
     }
 }
