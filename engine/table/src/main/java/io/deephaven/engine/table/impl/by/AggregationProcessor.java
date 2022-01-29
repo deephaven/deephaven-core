@@ -203,14 +203,10 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationContextFactory forRollupReaggregated(
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Map<String, Class<?>> nullColumns) {
-        // @formatter:off
-        final Collection<? extends Aggregation> reaggregations =
-                Stream.of(
-                    Stream.of(NullColumns.from(nullColumns)),
-                    aggregations.stream(),
-                    Stream.of(Partition.of(false))
-                ).flatMap(Function.identity()).collect(Collectors.toList());
-        // @formatter:on
+        final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
+        reaggregations.add(NullColumns.from(nullColumns));
+        reaggregations.addAll(aggregations);
+        reaggregations.add(Partition.of(false));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 

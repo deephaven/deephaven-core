@@ -17,7 +17,7 @@ public abstract class NullColumns extends RollupAggregationBase {
     }
 
     public static NullColumns from(Map<String, Class<?>> resultColumns) {
-        return builder().putResultColumns(resultColumns).build();
+        return builder().putAllResultColumns(resultColumns).build();
     }
 
     public static Builder builder() {
@@ -41,10 +41,9 @@ public abstract class NullColumns extends RollupAggregationBase {
     }
 
     public interface Builder {
-
         Builder putResultColumns(String name, Class<?> type);
 
-        Builder putResultColumns(Map<String, Class<?>> resultColumns);
+        Builder putAllResultColumns(Map<String, ? extends Class<?>> resultColumns);
 
         NullColumns build();
     }

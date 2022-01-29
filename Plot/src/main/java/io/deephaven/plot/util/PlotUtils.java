@@ -8,8 +8,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
 import io.deephaven.plot.datasets.data.*;
@@ -40,6 +38,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static io.deephaven.api.agg.Aggregation.AggCount;
+import static io.deephaven.api.agg.Aggregation.AggLast;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.IntegerNumericPrimitives.abs;
 
@@ -722,9 +721,9 @@ public class PlotUtils {
         // We need to do the equivalent of LastBy wrt. to columns included, or we have a chance to break ACLs
         final List<String> lastColumns = t.getDefinition().getColumnNames();
         lastColumns.removeAll(Arrays.asList(catColumns));
-        final Table result = ((QueryTable) t).by(
+        final Table result = t.aggBy(
                 createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
-                SelectColumn.from(Selectable.from(catColumns)));
+                Selectable.from(catColumns));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
         // automatically do the copy.

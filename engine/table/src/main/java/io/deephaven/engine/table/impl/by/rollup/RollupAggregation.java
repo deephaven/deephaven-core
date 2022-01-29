@@ -10,7 +10,7 @@ import java.util.Map;
 public interface RollupAggregation extends Aggregation {
 
     static RollupAggregation nullColumns(Map<String, Class<?>> resultColumns) {
-        return NullColumns.builder().putResultColumns(resultColumns).build();
+        return NullColumns.from(resultColumns);
     }
 
     static RollupAggregation partition(boolean includeConstituents) {
