@@ -1,13 +1,16 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
@@ -74,6 +77,14 @@ public class QueryTableAggregationTest {
 
     // region Static chunked groupBy() tests
 
+    private static AggregationContextFactory makeGroupByACF(
+            @NotNull final Table table, @NotNull final String... groupByColumns) {
+        return AggregationProcessor.forAggregation(List.of(
+                AggregateAllByTable.singleAggregation(AggSpec.group(), Selectable.from(groupByColumns),
+                        table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
+                                .map(ColumnName::of).collect(Collectors.toList())).orElseThrow()));
+    }
+
     private static Table individualStaticByTest(@NotNull final Table input,
             @Nullable final AggregationControl aggregationControl, @NotNull final String... keyColumns) {
         final Table adjustedInput = input.update("__Pre_Agg_II__=ii");
@@ -109,8 +120,9 @@ public class QueryTableAggregationTest {
             final SelectColumn[] keySelectColumns = SelectColumnFactory.getExpressions(keyColumns);
             final String[] keyNames =
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
-            final Table aggregatedInput = GroupByAggregationFactory.by(
+            final Table aggregatedInput = ChunkedOperatorAggregationHelper.aggregation(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
+                    makeGroupByACF(adjustedInput, keyColumns),
                     (QueryTable) adjustedInput, keySelectColumns);
             actualKeys = keyNames.length == 0
                     ? aggregatedInput.dropColumns(aggregatedInput.getDefinition().getColumnNamesArray())
@@ -198,6 +210,8 @@ public class QueryTableAggregationTest {
         private final QueryTable input;
         private final String[] columns;
 
+        private final AggregationContextFactory acf;
+
         private final AtomicBoolean firstTime = new AtomicBoolean(true);
 
         private IncrementalFirstStaticAfterByResultSupplier(@NotNull final AggregationControl control,
@@ -205,6 +219,7 @@ public class QueryTableAggregationTest {
             this.control = control;
             this.input = input;
             this.columns = columns;
+            acf = makeGroupByACF(input, columns);
         }
 
         /**
@@ -221,9 +236,11 @@ public class QueryTableAggregationTest {
             final String[] keyNames =
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
             if (firstTime.compareAndSet(true, false)) {
-                return GroupByAggregationFactory.by(control, input, keySelectColumns).sort(keyNames);
+                return ChunkedOperatorAggregationHelper
+                        .aggregation(control, acf, input, keySelectColumns).sort(keyNames);
             }
-            return GroupByAggregationFactory.by(control, (QueryTable) input.silent(), keySelectColumns).sort(keyNames);
+            return ChunkedOperatorAggregationHelper
+                    .aggregation(control, acf, (QueryTable) input.silent(), keySelectColumns).sort(keyNames);
         }
     }
 
@@ -305,7 +322,7 @@ public class QueryTableAggregationTest {
                 new EvalNugget() {
                     @Override
                     protected final Table e() {
-                        return GroupByAggregationFactory.by(merged, "StrCol").update("IntColSum=sum(IntCol)");
+                        return merged.groupBy("StrCol").update("IntColSum=sum(IntCol)");
                     }
                 }
         };
@@ -381,7 +398,7 @@ public class QueryTableAggregationTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return GroupByAggregationFactory.by(input1).update("IntColSum=sum(IntCol)");
+                        return input1.groupBy().update("IntColSum=sum(IntCol)");
                     }
                 }
         };
@@ -3453,9 +3470,8 @@ public class QueryTableAggregationTest {
         final FuzzerPrintListener soucePrinter = new FuzzerPrintListener("source", source);
         source.listenForUpdates(soucePrinter);
 
-        final QueryTable exposedLastBy = ChunkedOperatorAggregationHelper.aggregation(
-                new FirstOrLastByAggregationFactory(false, "ExposedRowRedirection"), source,
-                SelectColumnFactory.getExpressions("Key"));
+        final QueryTable exposedLastBy = (QueryTable) source.aggBy(Aggregation.AggLastRowKey("ExposedRowRedirection"),
+                "Key");
         final TableUpdateValidator validator = TableUpdateValidator.make(exposedLastBy);
         final QueryTable validatorResult = validator.getResultTable();
         final FailureListener validatorListener = new FailureListener();
