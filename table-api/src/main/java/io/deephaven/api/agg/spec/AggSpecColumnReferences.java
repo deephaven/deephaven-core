@@ -41,6 +41,11 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecFreeze freeze) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecGroup group) {
         out = Collections.emptySet();
     }

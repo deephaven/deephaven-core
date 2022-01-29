@@ -698,6 +698,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(AggSpecFreeze freeze) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
         public void visit(AggSpecGroup group) {
             out = of(AggType.GROUP, pairs).build();
         }

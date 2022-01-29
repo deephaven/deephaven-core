@@ -58,6 +58,10 @@ public interface AggSpec {
         return AggSpecFormula.of(formula, formulaParam);
     }
 
+    static AggSpecFreeze freeze() {
+        return AggSpecFreeze.of();
+    }
+
     static AggSpecGroup group() {
         return AggSpecGroup.of();
     }
@@ -168,6 +172,8 @@ public interface AggSpec {
         void visit(AggSpecCountDistinct countDistinct);
 
         void visit(AggSpecDistinct distinct);
+
+        void visit(AggSpecFreeze freeze);
 
         void visit(AggSpecGroup group);
 

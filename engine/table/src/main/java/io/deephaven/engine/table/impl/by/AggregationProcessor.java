@@ -18,6 +18,7 @@ import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
 import io.deephaven.api.agg.spec.AggSpecFirst;
 import io.deephaven.api.agg.spec.AggSpecFormula;
+import io.deephaven.api.agg.spec.AggSpecFreeze;
 import io.deephaven.api.agg.spec.AggSpecGroup;
 import io.deephaven.api.agg.spec.AggSpecLast;
 import io.deephaven.api.agg.spec.AggSpecMax;
@@ -102,6 +103,8 @@ import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOpera
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
+import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
+import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.FunctionalInterfaces.TriFunction;
 import io.deephaven.util.annotations.FinalDefault;
@@ -281,6 +284,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         final List<AggregationContextTransformer> transformers = new ArrayList<>();
 
         List<Pair> resultPairs = List.of();
+        int freezeByCountIndex = -1;
         int trackedFirstOrLastIndex = -1;
 
         private Converter(@NotNull final Table table, @NotNull final String... groupByColumnNames) {
@@ -393,7 +397,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                         (operator = operators.get(ii)) instanceof TDigestPercentileOperator) {
                     final TDigestPercentileOperator tDigestOperator = (TDigestPercentileOperator) operator;
                     if (tDigestOperator.compression() == compression) {
-                        addOperator(tDigestOperator.makeSecondaryOperator(percentile, resultName), inputSource,
+                        addOperator(tDigestOperator.makeSecondaryOperator(percentile, resultName), null,
                                 inputName);
                         return;
                     }
@@ -401,6 +405,17 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             addOperator(new TDigestPercentileOperator(type, compression, percentile, resultName), inputSource,
                     inputName);
+        }
+
+        final void addFreezeOperators() {
+            final FreezeByCountOperator countOperator;
+            if (freezeByCountIndex >= 0) {
+                countOperator = (FreezeByCountOperator) operators.get(freezeByCountIndex);
+            } else {
+                freezeByCountIndex = operators.size();
+                addNoInputOperator(countOperator = new FreezeByCountOperator());
+            }
+            addBasicOperators((t, n) -> new FreezeByOperator(t, n, countOperator));
         }
 
         final void addMinOrMaxOperators(final boolean isMin) {
@@ -625,6 +640,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(AggSpecFreeze freeze) {
+            addFreezeOperators();
+        }
+
+        @Override
         public void visit(@NotNull final AggSpecGroup group) {
             streamUnsupported("Group");
             addNoInputOperator(new GroupByChunkedOperator(table, true, MatchPair.fromPairs(resultPairs)));
@@ -752,6 +772,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final AggSpecApproximatePercentile approxPct) {
             rollupUnsupported("ApproximatePercentile");
+        }
+
+        @Override
+        default void visit(AggSpecFreeze freeze) {
+            rollupUnsupported("Freeze");
         }
 
         @Override
