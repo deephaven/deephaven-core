@@ -10,6 +10,7 @@
   "distinct": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecDistinct\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecDistinct",
   "first": ":return: io.deephaven.api.agg.spec.AggSpecFirst",
   "formula": "*Overload 1*  \n  :param formula: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula\n  \n*Overload 2*  \n  :param formula: java.lang.String\n  :param formulaParam: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula",
+  "freeze": ":return: io.deephaven.api.agg.spec.AggSpecFreeze",
   "group": ":return: io.deephaven.api.agg.spec.AggSpecGroup",
   "last": ":return: io.deephaven.api.agg.spec.AggSpecLast",
   "max": ":return: io.deephaven.api.agg.spec.AggSpecMax",

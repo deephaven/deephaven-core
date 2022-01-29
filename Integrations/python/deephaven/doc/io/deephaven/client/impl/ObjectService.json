@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.ObjectService",
+ "methods": {
+  "fetchObject": "Fetch the object.\n\n:param type: java.lang.String\n:param ticket: (io.deephaven.client.impl.HasTicketId) - the ticket\n:return: (java.util.concurrent.CompletableFuture<io.deephaven.client.impl.FetchedObject>) the future"
+ },
+ "path": "io.deephaven.client.impl.ObjectService",
+ "typeName": "interface"
+}

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.FetchObjectResponseOrBuilder",
+ "methods": {
+  "getData": "bytes data = 2;\n\n:return: (com.google.protobuf.ByteString) The data.",
+  "getType": "string type = 1;\n\n:return: (java.lang.String) The type.",
+  "getTypeBytes": "string type = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for type.",
+  "getTypedExportId": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.TypedTicket",
+  "getTypedExportIdCount": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: int",
+  "getTypedExportIdList": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: java.util.List<io.deephaven.proto.backplane.grpc.TypedTicket>",
+  "getTypedExportIdOrBuilder": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+  "getTypedExportIdOrBuilderList": "repeated .io.deephaven.proto.backplane.grpc.TypedTicket typed_export_id = 3;\n\n:return: java.util.List<? extends io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder>"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.FetchObjectResponseOrBuilder",
+ "typeName": "interface"
+}

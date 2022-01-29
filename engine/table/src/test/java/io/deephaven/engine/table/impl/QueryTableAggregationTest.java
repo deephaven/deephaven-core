@@ -82,7 +82,8 @@ public class QueryTableAggregationTest {
         return AggregationProcessor.forAggregation(List.of(
                 AggregateAllByTable.singleAggregation(AggSpec.group(), Selectable.from(groupByColumns),
                         table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                                .map(ColumnName::of).collect(Collectors.toList())).orElseThrow()));
+                                .map(ColumnName::of).collect(Collectors.toList()))
+                        .orElseThrow()));
     }
 
     private static Table individualStaticByTest(@NotNull final Table input,

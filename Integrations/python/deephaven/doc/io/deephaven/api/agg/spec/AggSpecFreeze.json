@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecFreeze",
+ "methods": {
+  "description": ":return: java.lang.String",
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecFreeze",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecFreeze",
+ "text": "Aggregation that freezes the first value for each group and ignores subsequent changes. When groups are removed, the\n corresponding output row is removed. When groups are re-added (on a subsequent update cycle), the newly added value\n is then frozen.\n \n Only one row per group is allowed in the output, because the operation has no way to determine which row to freeze\n otherwise. This is a constraint on the input data.",
+ "typeName": "class"
+}

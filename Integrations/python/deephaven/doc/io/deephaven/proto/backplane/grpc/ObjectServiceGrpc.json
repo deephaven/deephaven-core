@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc",
+ "methods": {
+  "getFetchObjectMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.FetchObjectRequest,io.deephaven.proto.backplane.grpc.FetchObjectResponse>",
+  "getServiceDescriptor": ":return: io.grpc.ServiceDescriptor",
+  "newBlockingStub": "Creates a new blocking-style stub that supports unary and streaming output calls on the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceBlockingStub",
+  "newFutureStub": "Creates a new ListenableFuture-style stub that supports unary calls on the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceFutureStub",
+  "newStub": "Creates a new async stub that supports all call types for the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc",
+ "typeName": "class"
+}

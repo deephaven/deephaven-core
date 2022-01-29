@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.plugin.PluginsAutoDiscovery",
+ "methods": {
+  "registerAll": "Registers plugins via JavaServiceLoader.loadAllAndRegisterInto(Callback) and\n PythonModuleLoader.allRegisterInto(Callback) (if python is enabled).\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param includePython: boolean"
+ },
+ "path": "io.deephaven.server.plugin.PluginsAutoDiscovery",
+ "text": "Provides a registerAll() entrypoint for Registration auto-discovery. Logs auto-discovered details.",
+ "typeName": "class"
+}

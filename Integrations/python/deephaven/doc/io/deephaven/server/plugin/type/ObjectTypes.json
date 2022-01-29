@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.plugin.type.ObjectTypes",
+ "methods": {
+  "findObjectType": "Find the ObjectType compatible with object. That is, ObjectType.isType(Object) will be\n true for object.\n\n:param object: (java.lang.Object) - the object\n:return: (java.util.Optional<io.deephaven.plugin.type.ObjectType>) the object type, if found",
+  "register": "Register objectType.\n\n:param objectType: (io.deephaven.plugin.type.ObjectType) - the object type"
+ },
+ "path": "io.deephaven.server.plugin.type.ObjectTypes",
+ "text": "Provides synchronized object type registration and lookup.\n\n \n Object type registration that is an instances of ObjectTypeClassBase receives special consideration, and\n these objects have more efficient lookups.",
+ "typeName": "class"
+}
