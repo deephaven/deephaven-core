@@ -263,7 +263,7 @@ class AggregationContext {
      * keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by
      * this iteration. Note that the arguments to this method should not be mutated in any way.
      *
-     * @param downstream The downstream {@link TableUpdateImpl} (which does <em>not</em> have its
+     * @param downstream The downstream {@link TableUpdate} (which does <em>not</em> have its
      *        {@link ModifiedColumnSet} finalized yet)
      * @param newDestinations New destinations added on this update
      */

@@ -26,28 +26,6 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(Count count) {
-        out.put(count.column().name(), "count");
-    }
-
-    @Override
-    public void visit(FirstRowKey firstRowKey) {
-        out.put(firstRowKey.column().name(), "first row key");
-    }
-
-    @Override
-    public void visit(LastRowKey lastRowKey) {
-        out.put(lastRowKey.column().name(), "last row key");
-    }
-
-    @Override
-    public void visit(ApproximatePercentile approximatePercentile) {
-        approximatePercentile.percentileOutputs().forEach(po -> out.put(po.output().name(), String.format(
-                "%s aggregated with %.2f approximate percentile (compression %.2f)",
-                approximatePercentile.input().name(), po.percentile(), approximatePercentile.compression())));
-    }
-
-    @Override
     public void visit(ColumnAggregation columnAgg) {
         visitColumnAgg(columnAgg.pair(), columnAgg.spec().description());
     }
@@ -60,5 +38,20 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     private void visitColumnAgg(Pair pair, String specDescription) {
         out.put(pair.output().name(), pair.input().name() + " aggregated with " + specDescription);
+    }
+
+    @Override
+    public void visit(Count count) {
+        out.put(count.column().name(), "count");
+    }
+
+    @Override
+    public void visit(FirstRowKey firstRowKey) {
+        out.put(firstRowKey.column().name(), "first row key");
+    }
+
+    @Override
+    public void visit(LastRowKey lastRowKey) {
+        out.put(lastRowKey.column().name(), "last row key");
     }
 }

@@ -1,21 +1,24 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.agg.ColumnAggregations.Builder;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.util.PercentileOutput;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.function.BiFunction;
 
 /**
  * Represents an aggregation that can be applied to a table.
  *
- * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
+ * @see io.deephaven.api.TableOperations#aggBy
+ * @see io.deephaven.api.TableOperations#aggAllBy
+ * @see Aggregations
+ * @see ColumnAggregation
+ * @see ColumnAggregations
  * @see Count
  * @see FirstRowKey
  * @see LastRowKey
- * @see ApproximatePercentile
- * @see ColumnAggregation
- * @see ColumnAggregations
  */
 public interface Aggregation extends Serializable {
 
@@ -27,15 +30,57 @@ public interface Aggregation extends Serializable {
         if (pairs.length == 1) {
             return of(spec, pairs[0]);
         }
-        final Builder builder = ColumnAggregations.builder().spec(spec);
+        final ColumnAggregations.Builder builder = ColumnAggregations.builder().spec(spec);
         for (String pair : pairs) {
             builder.addPairs(Pair.parse(pair));
         }
         return builder.build();
     }
 
+    static Aggregation of(Aggregation... aggregations) {
+        if (aggregations.length == 1) {
+            return aggregations[0];
+        }
+        return Aggregations.builder().addAggregations(aggregations).build();
+    }
+
+    @SafeVarargs
+    static <INPUT_TYPE> Aggregation of(BiFunction<ColumnName, INPUT_TYPE, ColumnAggregation> columnAggFactory,
+            String inputColumn, INPUT_TYPE... inputs) {
+        final ColumnName inputColumnName = ColumnName.of(inputColumn);
+        if (inputs.length == 1) {
+            return columnAggFactory.apply(inputColumnName, inputs[0]);
+        }
+        final Aggregations.Builder builder = Aggregations.builder();
+        for (INPUT_TYPE input : inputs) {
+            builder.addAggregations(columnAggFactory.apply(inputColumnName, input));
+        }
+        return builder.build();
+    }
+
     static Aggregation AggAbsSum(String... pairs) {
         return of(AggSpec.absSum(), pairs);
+    }
+
+    static Aggregation AggApproxPct(double percentile, String... pairs) {
+        return of(AggSpec.approximatePercentile(percentile), pairs);
+    }
+
+    static Aggregation AggApproxPct(double percentile, double compression, String... pairs) {
+        return of(AggSpec.approximatePercentile(percentile, compression), pairs);
+    }
+
+    static Aggregation AggApproxPct(String inputColumn, PercentileOutput... percentileOutputs) {
+        final BiFunction<ColumnName, PercentileOutput, ColumnAggregation> aggFactory = (ic, po) -> ColumnAggregation
+                .of(AggSpec.approximatePercentile(po.percentile()), Pair.of(ic, po.output()));
+        return of(aggFactory, inputColumn, percentileOutputs);
+    }
+
+    static Aggregation AggApproxPct(String inputColumn, double compression, PercentileOutput... percentileOutputs) {
+        final BiFunction<ColumnName, PercentileOutput, ColumnAggregation> aggFactory =
+                (ic, po) -> ColumnAggregation.of(AggSpec.approximatePercentile(po.percentile(), compression),
+                        Pair.of(ic, po.output()));
+        return of(aggFactory, inputColumn, percentileOutputs);
     }
 
     static Aggregation AggAvg(String... pairs) {
@@ -110,6 +155,18 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.percentile(percentile, average), pairs);
     }
 
+    static Aggregation AggPct(String inputColumn, PercentileOutput... percentileOutputs) {
+        final BiFunction<ColumnName, PercentileOutput, ColumnAggregation> aggFactory =
+                (ic, po) -> ColumnAggregation.of(AggSpec.percentile(po.percentile()), Pair.of(ic, po.output()));
+        return of(aggFactory, inputColumn, percentileOutputs);
+    }
+
+    static Aggregation AggPct(String inputColumn, boolean average, PercentileOutput... percentileOutputs) {
+        final BiFunction<ColumnName, PercentileOutput, ColumnAggregation> aggFactory = (ic, po) -> ColumnAggregation
+                .of(AggSpec.percentile(po.percentile(), average), Pair.of(ic, po.output()));
+        return of(aggFactory, inputColumn, percentileOutputs);
+    }
+
     static Aggregation AggSortedFirst(String sortedColumn, String... pairs) {
         return of(AggSpec.sortedFirst(sortedColumn), pairs);
     }
@@ -134,6 +191,14 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.sum(), pairs);
     }
 
+    static Aggregation AggTDigest(String... pairs) {
+        return of(AggSpec.tDigest(), pairs);
+    }
+
+    static Aggregation AggTDigest(double compression, String... pairs) {
+        return of(AggSpec.tDigest(compression), pairs);
+    }
+
     static Aggregation AggUnique(String... pairs) {
         return of(AggSpec.unique(), pairs);
     }
@@ -154,19 +219,25 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.wsum(weightColumn), pairs);
     }
 
+    static PercentileOutput PctOut(double percentile, String outputColumn) {
+        return PercentileOutput.of(percentile, outputColumn);
+    }
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
+        default void visit(Aggregations aggregations) {
+            aggregations.aggregations().forEach(a -> a.walk(this));
+        }
+
+        void visit(ColumnAggregation columnAgg);
+
+        void visit(ColumnAggregations columnAggs);
+
         void visit(Count count);
 
         void visit(FirstRowKey firstRowKey);
 
         void visit(LastRowKey lastRowKey);
-
-        void visit(ApproximatePercentile approximatePercentile);
-
-        void visit(ColumnAggregation columnAgg);
-
-        void visit(ColumnAggregations columnAggs);
     }
 }

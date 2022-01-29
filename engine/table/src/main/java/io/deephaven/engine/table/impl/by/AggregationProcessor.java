@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
-import io.deephaven.api.agg.ApproximatePercentile;
 import io.deephaven.api.agg.spec.*;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
@@ -35,11 +34,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
+import static io.deephaven.datastructures.util.CollectionUtil.*;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
@@ -283,6 +280,37 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
         }
 
+        final void addApproximatePercentileOperators(final double percentile, final double compression) {
+            for (final Pair pair : resultPairs) {
+                final String inputName = pair.input().name();
+                final String resultName = pair.output().name();
+
+                addApproximatePercentileOperator(percentile, compression, inputName, resultName);
+            }
+        }
+
+        final void addApproximatePercentileOperator(final double percentile, final double compression,
+                @NotNull final String inputName, @NotNull final String resultName) {
+            final ColumnSource<?> inputSource = table.getColumnSource(inputName);
+            final Class<?> type = inputSource.getType();
+
+            final int size = inputSources.size();
+            for (int ii = 0; ii < size; ii++) {
+                final IterativeChunkedAggregationOperator operator;
+                if (inputSources.get(ii) == inputSource &&
+                        (operator = operators.get(ii)) instanceof TDigestPercentileOperator) {
+                    final TDigestPercentileOperator tDigestOperator = (TDigestPercentileOperator) operator;
+                    if (tDigestOperator.compression() == compression) {
+                        addOperator(tDigestOperator.makeSecondaryOperator(percentile, resultName), inputSource,
+                                inputName);
+                        return;
+                    }
+                }
+            }
+            addOperator(new TDigestPercentileOperator(type, compression, percentile, resultName), inputSource,
+                    inputName);
+        }
+
         final void addMinOrMaxOperators(final boolean isMin) {
             for (final Pair pair : resultPairs) {
                 final String inputName = pair.input().name();
@@ -298,20 +326,19 @@ public class AggregationProcessor implements AggregationContextFactory {
             final Class<?> type = rawInputSource.getType();
             final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
 
-            IntStream.range(0, inputSources.size())
-                    .filter(index -> (inputSources.get(index) == inputSource)
-                            && (operators.get(index) instanceof SsmChunkedMinMaxOperator))
-                    .findFirst().ifPresentOrElse(
-                            (final int priorMinMaxIndex) -> {
-                                final SsmChunkedMinMaxOperator ssmChunkedMinMaxOperator =
-                                        (SsmChunkedMinMaxOperator) operators.get(priorMinMaxIndex);
-                                addOperator(
-                                        ssmChunkedMinMaxOperator.makeSecondaryOperator(isMin, resultName),
-                                        null, inputName);
-                            },
-                            () -> addOperator(
-                                    makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isStream),
-                                    inputSource, inputName));
+            final int size = inputSources.size();
+            for (int ii = 0; ii < size; ii++) {
+                if (inputSources.get(ii) != inputSource) {
+                    continue;
+                }
+                final IterativeChunkedAggregationOperator operator = operators.get(ii);
+                if (operator instanceof SsmChunkedMinMaxOperator) {
+                    final SsmChunkedMinMaxOperator minMaxOperator = (SsmChunkedMinMaxOperator) operator;
+                    addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
+                    return;
+                }
+            }
+            addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isStream), inputSource, inputName);
         }
 
         final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
@@ -481,21 +508,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             addFirstOrLastOperators(false, lastRowKey.column().name());
         }
 
-        @Override
-        public void visit(ApproximatePercentile approximatePercentile) {
-            final String inputName = approximatePercentile.input().name();
-            final ColumnSource<?> inputSource = table.getColumnSource(inputName);
-            final IterativeChunkedAggregationOperator operator = new TDigestPercentileOperator(
-                    inputSource.getType(),
-                    approximatePercentile.compression(),
-                    approximatePercentile.digest().map(ColumnName::name).orElse(null),
-                    approximatePercentile.percentileOutputs().stream()
-                            .mapToDouble(ApproximatePercentile.PercentileOutput::percentile).toArray(),
-                    approximatePercentile.percentileOutputs().stream()
-                                    .map(po -> po.output().name()).toArray(String[]::new));
-            addOperator(operator, inputSource, inputName);
-        }
-
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -503,6 +515,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
             addBasicOperators((t, n) -> makeSumOperator(t, n, true));
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecApproximatePercentile pct) {
+            addApproximatePercentileOperators(pct.percentile(), pct.compression());
         }
 
         @Override
@@ -586,6 +603,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             addBasicOperators((t, n) -> makeSumOperator(t, n, false));
         }
 
+        public void visit(@NotNull final AggSpecTDigest tDigest) {
+            addBasicOperators((t, n) -> new TDigestPercentileOperator(t, tDigest.compression(), n,
+                    ZERO_LENGTH_DOUBLE_ARRAY, ZERO_LENGTH_STRING_ARRAY));
+        }
+
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, n,
@@ -630,14 +652,15 @@ public class AggregationProcessor implements AggregationContextFactory {
             rollupUnsupported("LastRowKey");
         }
 
-        @Override
-        default void visit(ApproximatePercentile approximatePercentile) {
-            rollupUnsupported("ApproximatePercentile");
-        }
-
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor for unsupported column aggregation specs
         // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        @FinalDefault
+        default void visit(@NotNull final AggSpecApproximatePercentile approxPct) {
+            rollupUnsupported("ApproximatePercentile");
+        }
 
         @Override
         @FinalDefault
@@ -661,6 +684,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final AggSpecPercentile pct) {
             rollupUnsupported("Percentile");
+        }
+
+        @Override
+        @FinalDefault
+        default void visit(@NotNull final AggSpecTDigest tDigest) {
+            rollupUnsupported("TDigest");
         }
 
         @Override
@@ -1155,7 +1184,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         private final ColumnSource<?> source;
 
         private WeightedOpResult(@NotNull final Pair pair, @NotNull final WeightedOpResultType type,
-                                 @NotNull final ColumnSource<?> source) {
+                @NotNull final ColumnSource<?> source) {
             this.pair = pair;
             this.type = type;
             this.source = source;

@@ -12,27 +12,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.*;
-import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecAbsSum;
-import io.deephaven.api.agg.spec.AggSpecAvg;
-import io.deephaven.api.agg.spec.AggSpecCountDistinct;
-import io.deephaven.api.agg.spec.AggSpecDistinct;
-import io.deephaven.api.agg.spec.AggSpecFirst;
-import io.deephaven.api.agg.spec.AggSpecFormula;
-import io.deephaven.api.agg.spec.AggSpecGroup;
-import io.deephaven.api.agg.spec.AggSpecLast;
-import io.deephaven.api.agg.spec.AggSpecMax;
-import io.deephaven.api.agg.spec.AggSpecMedian;
-import io.deephaven.api.agg.spec.AggSpecMin;
-import io.deephaven.api.agg.spec.AggSpecPercentile;
-import io.deephaven.api.agg.spec.AggSpecSortedFirst;
-import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecStd;
-import io.deephaven.api.agg.spec.AggSpecSum;
-import io.deephaven.api.agg.spec.AggSpecUnique;
-import io.deephaven.api.agg.spec.AggSpecVar;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
@@ -545,12 +525,6 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(ApproximatePercentile approximatePercentile) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
         public void visit(ColumnAggregation columnAgg) {
             out = columnAgg.spec()
                     .walk(new AggregateAdapter(Collections.singletonList(columnAgg.pair()))).out();
@@ -706,6 +680,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(AggSpecApproximatePercentile pct) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
         public void visit(AggSpecCountDistinct countDistinct) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
@@ -791,6 +771,12 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AggSpecSum sum) {
             out = of(AggType.SUM, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecTDigest tDigest) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override

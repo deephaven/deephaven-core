@@ -6,6 +6,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;

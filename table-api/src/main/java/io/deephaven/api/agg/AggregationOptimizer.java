@@ -62,6 +62,17 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(ColumnAggregation columnAgg) {
+        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
+    }
+
+    @Override
+    public void visit(ColumnAggregations columnAggs) {
+        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>())
+                .addAll(columnAggs.pairs());
+    }
+
+    @Override
     public void visit(Count count) {
         visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count.column());
     }
@@ -74,21 +85,5 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
-    }
-
-    @Override
-    public void visit(ApproximatePercentile approximatePercentile) {
-        visitOrder.computeIfAbsent(approximatePercentile, k -> null);
-    }
-
-    @Override
-    public void visit(ColumnAggregation columnAgg) {
-        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
-    }
-
-    @Override
-    public void visit(ColumnAggregations columnAggs) {
-        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>())
-                .addAll(columnAggs.pairs());
     }
 }

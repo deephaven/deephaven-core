@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -51,6 +52,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.api.agg.spec.AggSpec.percentile;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
@@ -2453,10 +2455,10 @@ public class QueryTableAggregationTest {
                         new DoubleGenerator(-10000, 10000, 0.05, 0.05),
                         new FloatGenerator(0, 100.0f)));
 
-        final Table aggregated = ApproximatePercentile.approximatePercentile(queryTable.dropColumns("Sym"), 0.99);
+        final Table aggregated = ApproximatePercentile.approximatePercentileBy(queryTable.dropColumns("Sym"), 0.99);
         TableTools.showWithRowSet(aggregated);
 
-        final Table aggregatedBySym = ApproximatePercentile.approximatePercentile(queryTable, 0.99, "Sym");
+        final Table aggregatedBySym = ApproximatePercentile.approximatePercentileBy(queryTable, 0.99, "Sym");
         TableTools.showWithRowSet(aggregatedBySym);
 
         checkTableP99(queryTable, aggregated);
@@ -2476,15 +2478,15 @@ public class QueryTableAggregationTest {
                         new DoubleGenerator(-10000, 10000, 0.05, 0.05),
                         new FloatGenerator(0, 100.0f)));
 
-        final ApproximatePercentile.PercentileDefinition definition =
-                new ApproximatePercentile.PercentileDefinition("doubleCol").add(0.75, "DP75").add(0.95, "DP95")
-                        .add(0.99, "DP99").add(0.999, "DP999").nextColumn("floatCol").add(0.75, "FP75")
-                        .add(0.99, "FP99");
-        final Table aggregated =
-                ApproximatePercentile.approximatePercentiles(queryTable.dropColumns("Sym"), definition);
+        final Collection<? extends Aggregation> aggregations = List.of(
+                AggApproxPct("doubleCol", PctOut(0.75, "DP75"), PctOut(0.95, "DP95"), PctOut(0.99, "DP99"),
+                        PctOut(0.999, "DP999")),
+                AggApproxPct("floatCol", PctOut(0.75, "FP75"), PctOut(0.99, "FP99"))
+        );
+        final Table aggregated = queryTable.dropColumns("Sym").aggBy(aggregations);
         TableTools.showWithRowSet(aggregated);
 
-        final Table aggregatedBySym = ApproximatePercentile.approximatePercentiles(queryTable, definition, "Sym");
+        final Table aggregatedBySym = queryTable.aggBy(aggregations, "Sym");
         TableTools.showWithRowSet(aggregatedBySym);
 
         checkTableComboPercentiles(queryTable, aggregated);
@@ -2505,19 +2507,22 @@ public class QueryTableAggregationTest {
                         new DoubleGenerator(-10000, 10000, 0.05, 0.05),
                         new FloatGenerator(0, 100.0f)));
 
-        final ApproximatePercentile.PercentileDefinition definition =
-                new ApproximatePercentile.PercentileDefinition("doubleCol").exposeDigest("Digest").add(0.95, "P95")
-                        .setCompression(33);
-        final Table aggregated =
-                ApproximatePercentile.approximatePercentiles(queryTable.dropColumns("Sym"), definition);
+        final Collection<? extends Aggregation> aggregations33 = List.of(
+                AggTDigest(33, "Digest=doubleCol"),
+                AggApproxPct("doubleCol", PctOut(0.95, "P95"))
+        );
+        final Table aggregated = queryTable.dropColumns("Sym").aggBy(aggregations33);
         TableTools.showWithRowSet(aggregated);
 
-        final Table aggregatedBySym =
-                ApproximatePercentile.approximatePercentiles(queryTable, definition.setCompression(100), "Sym");
+        final Collection<? extends Aggregation> aggregations100 = List.of(
+                AggTDigest(100, "Digest=doubleCol"),
+                AggApproxPct("doubleCol", PctOut(0.95, "P95"))
+        );
+        final Table aggregatedBySym = queryTable.aggBy(aggregations100, "Sym");
         TableTools.showWithRowSet(aggregatedBySym);
 
         final Table accumulated = aggregatedBySym.dropColumns("Sym").groupBy()
-                .update("Digest=io.deephaven.engine.table.impl.by.ApproximatePercentile.accumulateDigests(Digest)")
+                .update("Digest=io.deephaven.engine.table.impl.by.AggSpecTDigest.accumulateDigests(Digest)")
                 .update("P95=Digest.quantile(0.95)");
         TableTools.show(accumulated);
 
@@ -2608,16 +2613,18 @@ public class QueryTableAggregationTest {
                         new DoubleGenerator(-10000, 10000, 0.05, 0.05),
                         new LongGenerator(0, 1_000_000_000L)));
 
-        final ApproximatePercentile.PercentileDefinition definition =
-                new ApproximatePercentile.PercentileDefinition("doubleCol").add(0.75, "DP75").add(0.95, "DP95")
-                        .add(0.99, "DP99").add(0.999, "DP999").nextColumn("longCol").add(0.75, "LP75").add(0.95, "LP95")
-                        .add(0.99, "FP99").add(0.999, "LP999");
+        final Collection<? extends Aggregation> aggregations = List.of(
+                AggApproxPct("doubleCol", PctOut(0.75, "DP75"), PctOut(0.95, "DP95"), PctOut(0.99, "DP99"),
+                        PctOut(0.999, "DP999")),
+                AggApproxPct("longCol", PctOut(0.75, "LP75"), PctOut(0.95, "LP95"), PctOut(0.99, "LP99"),
+                        PctOut(0.999, "LP999"))
+        );
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return ApproximatePercentile.approximatePercentiles(queryTable, definition);
+                        return queryTable.aggBy(aggregations);
                     }
 
                     @Override
@@ -2649,7 +2656,7 @@ public class QueryTableAggregationTest {
                 new EvalNugget.Sorted(new String[] {"Sym"}) {
                     @Override
                     protected Table e() {
-                        return ApproximatePercentile.approximatePercentiles(queryTable, definition, "Sym");
+                        return queryTable.aggBy(aggregations, "Sym");
                     }
 
                     @Override

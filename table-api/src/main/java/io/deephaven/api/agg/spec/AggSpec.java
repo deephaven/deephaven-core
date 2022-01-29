@@ -18,6 +18,14 @@ public interface AggSpec {
         return AggSpecAbsSum.of();
     }
 
+    static AggSpecApproximatePercentile approximatePercentile(double percentile) {
+        return AggSpecApproximatePercentile.of(percentile);
+    }
+
+    static AggSpecApproximatePercentile approximatePercentile(double percentile, double compression) {
+        return AggSpecApproximatePercentile.of(percentile, compression);
+    }
+
     static AggSpecAvg avg() {
         return AggSpecAvg.of();
     }
@@ -114,6 +122,14 @@ public interface AggSpec {
         return AggSpecSum.of();
     }
 
+    static AggSpecTDigest tDigest() {
+        return AggSpecTDigest.of();
+    }
+
+    static AggSpecTDigest tDigest(double compression) {
+        return AggSpecTDigest.of(compression);
+    }
+
     static AggSpecUnique unique() {
         return AggSpecUnique.of();
     }
@@ -147,6 +163,8 @@ public interface AggSpec {
     interface Visitor {
         void visit(AggSpecAbsSum absSum);
 
+        void visit(AggSpecApproximatePercentile pct);
+
         void visit(AggSpecCountDistinct countDistinct);
 
         void visit(AggSpecDistinct distinct);
@@ -176,6 +194,8 @@ public interface AggSpec {
         void visit(AggSpecStd std);
 
         void visit(AggSpecSum sum);
+
+        void visit(AggSpecTDigest tDigest);
 
         void visit(AggSpecUnique unique);
 

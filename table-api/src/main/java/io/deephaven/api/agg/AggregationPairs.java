@@ -34,6 +34,16 @@ public class AggregationPairs implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(ColumnAggregation columnAgg) {
+        out = Stream.of(columnAgg.pair());
+    }
+
+    @Override
+    public void visit(ColumnAggregations columnAggs) {
+        out = columnAggs.pairs().stream();
+    }
+
+    @Override
     public void visit(Count count) {
         out = Stream.of(count.column());
     }
@@ -46,26 +56,5 @@ public class AggregationPairs implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         out = Stream.of(lastRowKey.column());
-    }
-
-    @Override
-    public void visit(ApproximatePercentile approximatePercentile) {
-        final Stream<Pair> percentilePairs = approximatePercentile.percentileOutputs().stream()
-                .map(po -> Pair.of(approximatePercentile.input(), po.output()));
-        if (approximatePercentile.digest().isPresent()) {
-            out = Stream.concat(Stream.of(approximatePercentile.digest().get()), percentilePairs);
-        } else {
-            out = percentilePairs;
-        }
-    }
-
-    @Override
-    public void visit(ColumnAggregation columnAgg) {
-        out = Stream.of(columnAgg.pair());
-    }
-
-    @Override
-    public void visit(ColumnAggregations columnAggs) {
-        out = columnAggs.pairs().stream();
     }
 }

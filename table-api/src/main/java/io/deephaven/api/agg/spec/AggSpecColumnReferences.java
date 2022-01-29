@@ -26,6 +26,11 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecApproximatePercentile pct) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         out = Collections.emptySet();
     }
@@ -97,6 +102,11 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecSum sum) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecTDigest tDigest) {
         out = Collections.emptySet();
     }
 

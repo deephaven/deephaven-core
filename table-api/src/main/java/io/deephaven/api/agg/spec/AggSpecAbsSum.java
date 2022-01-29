@@ -1,7 +1,6 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.api.agg.spec.ImmutableAggSpecAbsSum;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
