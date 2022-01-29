@@ -12,7 +12,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @BuildableStyle
-public abstract class AggSpecApproximatePercentile implements AggSpec {
+public abstract class AggSpecApproximatePercentile extends AggSpecBase {
 
     public static AggSpecApproximatePercentile of(double percentile) {
         return ImmutableAggSpecApproximatePercentile.builder().percentile(percentile).build();

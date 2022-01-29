@@ -18,8 +18,7 @@ public abstract class Aggregations implements Aggregation {
         return ImmutableAggregations.builder();
     }
 
-    @Parameter
-    public abstract List<? extends Aggregation> aggregations();
+    public abstract List<Aggregation> aggregations();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

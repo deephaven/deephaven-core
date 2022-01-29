@@ -163,7 +163,7 @@ public interface AggSpec {
     interface Visitor {
         void visit(AggSpecAbsSum absSum);
 
-        void visit(AggSpecApproximatePercentile pct);
+        void visit(AggSpecApproximatePercentile approxPct);
 
         void visit(AggSpecCountDistinct countDistinct);
 

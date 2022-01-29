@@ -680,7 +680,7 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(AggSpecApproximatePercentile pct) {
+        public void visit(AggSpecApproximatePercentile approxPct) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }

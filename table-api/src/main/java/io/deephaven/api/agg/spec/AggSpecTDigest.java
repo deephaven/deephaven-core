@@ -16,7 +16,7 @@ import org.immutables.value.Value.Immutable;
  */
 @Immutable
 @BuildableStyle
-public abstract class AggSpecTDigest implements AggSpec {
+public abstract class AggSpecTDigest extends AggSpecBase {
 
     public static AggSpecTDigest of() {
         return ImmutableAggSpecTDigest.builder().build();

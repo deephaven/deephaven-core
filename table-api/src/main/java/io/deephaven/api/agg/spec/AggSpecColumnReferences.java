@@ -26,7 +26,7 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
-    public void visit(AggSpecApproximatePercentile pct) {
+    public void visit(AggSpecApproximatePercentile approxPct) {
         out = Collections.emptySet();
     }
 

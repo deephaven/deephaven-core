@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
+import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
@@ -17,6 +18,7 @@ import io.deephaven.api.agg.spec.AggSpecSortedFirst;
 import io.deephaven.api.agg.spec.AggSpecSortedLast;
 import io.deephaven.api.agg.spec.AggSpecStd;
 import io.deephaven.api.agg.spec.AggSpecSum;
+import io.deephaven.api.agg.spec.AggSpecTDigest;
 import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
@@ -38,6 +40,9 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecAbsSum absSum) {}
+
+    @Override
+    public void visit(AggSpecApproximatePercentile approxPct) {}
 
     @Override
     public void visit(AggSpecCountDistinct countDistinct) {}
@@ -87,6 +92,9 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecSum sum) {}
+
+    @Override
+    public void visit(AggSpecTDigest tDigest) {}
 
     @Override
     public void visit(AggSpecUnique unique) {}

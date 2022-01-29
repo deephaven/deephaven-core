@@ -2,19 +2,101 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.*;
-import io.deephaven.api.agg.spec.*;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationPairs;
+import io.deephaven.api.agg.ColumnAggregation;
+import io.deephaven.api.agg.ColumnAggregations;
+import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.FirstRowKey;
+import io.deephaven.api.agg.LastRowKey;
+import io.deephaven.api.agg.Pair;
+import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecAbsSum;
+import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
+import io.deephaven.api.agg.spec.AggSpecAvg;
+import io.deephaven.api.agg.spec.AggSpecCountDistinct;
+import io.deephaven.api.agg.spec.AggSpecDistinct;
+import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFormula;
+import io.deephaven.api.agg.spec.AggSpecGroup;
+import io.deephaven.api.agg.spec.AggSpecLast;
+import io.deephaven.api.agg.spec.AggSpecMax;
+import io.deephaven.api.agg.spec.AggSpecMedian;
+import io.deephaven.api.agg.spec.AggSpecMin;
+import io.deephaven.api.agg.spec.AggSpecPercentile;
+import io.deephaven.api.agg.spec.AggSpecSortedFirst;
+import io.deephaven.api.agg.spec.AggSpecSortedLast;
+import io.deephaven.api.agg.spec.AggSpecStd;
+import io.deephaven.api.agg.spec.AggSpecSum;
+import io.deephaven.api.agg.spec.AggSpecTDigest;
+import io.deephaven.api.agg.spec.AggSpecUnique;
+import io.deephaven.api.agg.spec.AggSpecVar;
+import io.deephaven.api.agg.spec.AggSpecWAvg;
+import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.EmptyTableMap;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.ReverseLookup;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.Partition;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.*;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.*;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.*;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.CharChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.CharRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.DoubleChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.DoubleRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.FloatChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.FloatRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.IntChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.IntRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.LongChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.LongRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ObjectChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ObjectRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ShortChunkedCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ShortRollupCountDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ByteChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ByteRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.CharChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.CharRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.DoubleChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.DoubleRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.FloatChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.FloatRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.IntChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.IntRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.LongChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.LongRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortChunkedDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -29,14 +111,21 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.*;
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE_ARRAY;
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.REVERSE_LOOKUP_ATTRIBUTE;
@@ -45,8 +134,15 @@ import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONS
 import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
-import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.util.type.TypeUtils.*;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.type.TypeUtils.getBoxedType;
+import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -518,8 +614,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
-        public void visit(@NotNull final AggSpecApproximatePercentile pct) {
-            addApproximatePercentileOperators(pct.percentile(), pct.compression());
+        public void visit(@NotNull final AggSpecApproximatePercentile approxPct) {
+            addApproximatePercentileOperators(approxPct.percentile(), approxPct.compression());
         }
 
         @Override
@@ -1471,10 +1567,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             return new BigIntegerChunkedAvgOperator(name, exposeInternal);
         } else if (type == BigDecimal.class) {
             return new BigDecimalChunkedAvgOperator(name, exposeInternal);
-        } else if (AvgState.class.isAssignableFrom(type)) {
-            throw new UnsupportedOperationException();
-        } else if (AvgStateWithNan.class.isAssignableFrom(type)) {
-            throw new UnsupportedOperationException();
         }
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
