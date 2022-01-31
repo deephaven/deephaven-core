@@ -2,9 +2,9 @@ package io.deephaven.server.plugin;
 
 import dagger.Binds;
 import dagger.Module;
+import io.deephaven.plugin.PluginModule;
 import io.deephaven.plugin.Registration;
 import io.deephaven.plugin.Registration.Callback;
-import io.deephaven.plugin.RegistrationServiceLoaderModule;
 import io.deephaven.server.plugin.type.ObjectTypesModule;
 
 /**
@@ -15,9 +15,9 @@ import io.deephaven.server.plugin.type.ObjectTypesModule;
  * <a href="https://github.com/deephaven/deephaven-core/issues/1809">deephaven-core#1809</a> for the feature request.
  *
  * @see ObjectTypesModule
- * @see RegistrationServiceLoaderModule
+ * @see PluginModule
  */
-@Module(includes = {ObjectTypesModule.class, RegistrationServiceLoaderModule.class})
+@Module(includes = {ObjectTypesModule.class, PluginModule.class})
 public interface PluginsModule {
 
     @Binds
