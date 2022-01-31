@@ -134,7 +134,7 @@ public class RowSetUtils {
          * greater than the provided value, respectively.
          *
          * @param value
-         * @return -1 if target < value; 0 if value == target; +1 if value < target.
+         * @return -1 if target &lt; value; 0 if value == target; +1 if value &lt; target.
          */
         int directionToTargetFrom(final long value);
     }

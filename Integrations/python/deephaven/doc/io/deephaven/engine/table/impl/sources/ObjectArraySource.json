@@ -1,7 +1,6 @@
 {
  "className": "io.deephaven.engine.table.impl.sources.ObjectArraySource",
  "methods": {
-  "copy": ":param sourceColumn: io.deephaven.engine.table.ColumnSource<? extendsObjectArraySource.T>\n:param sourceKey: long\n:param destKey: long",
   "copyFromChunk": ":param firstKey: long\n:param totalLength: long\n:param src: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param offset: int",
   "ensureCapacity": "Ensure that this WritableColumnSource can accept row keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFill: (boolean) - Whether data should be \"null-filled\". If true, get operations at row keys that have not been\n        set will return the appropriate null value; otherwise such gets produce undefined results.",
   "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data rowSequence\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be written",
@@ -16,6 +15,7 @@
   "makeFillFromContext": "Provide a default, empty ChunkSink.FillFromContext for use with our default\n WritableColumnSource.fillFromChunk(io.deephaven.engine.table.ChunkSink.FillFromContext, io.deephaven.chunk.Chunk<? extends io.deephaven.chunk.attributes.Values>, io.deephaven.engine.rowset.RowSequence).\n\n:param chunkCapacity: int\n:return: io.deephaven.engine.table.ChunkSink.FillFromContext",
   "move": ":param source: long\n:param dest: long\n:param length: long",
   "resetWritableChunkToBackingStore": "Resets the given chunk to provide a write-through reference to our backing array.\n \n Note: This is unsafe to use if previous tracking has been enabled!\n\n:param chunk: (io.deephaven.chunk.ResettableWritableChunk<?>) - the writable chunk to reset to our backing array.\n:param position: (long) - position that we require\n:return: (long) the first position addressable by the chunk",
+  "resetWritableChunkToBackingStoreSlice": "Resets the given chunk to provide a write-through reference to our backing array.\n \n Note: This is unsafe to use if previous tracking has been enabled!\n\n:param chunk: (io.deephaven.chunk.ResettableWritableChunk<?>) - the writable chunk to reset to a slice of our backing array.\n:param position: (long) - position of the first value in the returned chunk\n:return: (long) the capacity of the returned chunk",
   "set": ":param key: long\n:param value: ObjectArraySource.T",
   "startTrackingPrevValues": "Force my inheritors to implement this method, rather than taking the interface default."
  },

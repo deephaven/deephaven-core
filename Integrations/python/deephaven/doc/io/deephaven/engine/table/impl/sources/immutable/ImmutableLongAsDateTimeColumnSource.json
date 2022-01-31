@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.immutable.ImmutableLongAsDateTimeColumnSource",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.sources.immutable.ImmutableLongAsDateTimeColumnSource",
+ "text": "Convenience wrapper for Python conversions from long[] to immutable DateTime source.",
+ "typeName": "class"
+}
