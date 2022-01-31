@@ -23,7 +23,7 @@ else:
 
 class TestAggregation(unittest.TestCase):
     """
-    Test cases for the deephaven.AggregationFactory module (performed locally) -
+    Test cases for the deephaven.Aggregation module (performed locally) -
     """
 
     def testAggMethods(self):
