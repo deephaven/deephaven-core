@@ -19,14 +19,10 @@ import static java.lang.Math.*;
 public final class QueryLanguageFunctionUtils {
 
     private static final String DEFAULT_SCALE_PROPERTY = "defaultScale";
-    private static final int defaultScale = Configuration.getInstance()
+    public static final int DEFAULT_SCALE = Configuration.getInstance()
             .getIntegerForClassWithDefault(QueryLanguageFunctionUtils.class, DEFAULT_SCALE_PROPERTY, 8);
 
-    private static final RoundingMode roundingMode = RoundingMode.HALF_UP;
-
-    public static int defaultScale() {
-        return defaultScale;
-    }
+    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
     public static boolean eq(Object obj1, Object obj2) {
         // noinspection SimplifiableBooleanExpression
@@ -19690,23 +19686,25 @@ public final class QueryLanguageFunctionUtils {
         if (a == null || b == null) {
             return null;
         }
-        final int aScale = a.scale();
-        final int bScale = b.scale();
-        return a
-                .setScale(max(aScale, bScale), roundingMode)
-                .divide(b, roundingMode);
+        final int scale = max(max(a.scale(), b.scale()), DEFAULT_SCALE);
+        return a.divide(b, scale, ROUNDING_MODE);
     }
 
     private static BigDecimal scaled(long x, int scale) {
-        return BigDecimal.valueOf(x).setScale(scale, roundingMode);
+        return BigDecimal.valueOf(x).setScale(scale, ROUNDING_MODE);
     }
 
     private static BigDecimal divideNoNull(BigDecimal a, long b) {
-        return a.divide(BigDecimal.valueOf(b), roundingMode);
+        return a.divide(
+            BigDecimal.valueOf(b),
+            max(a.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE
+        );
     }
 
     private static BigDecimal divideNoNull(long a, BigDecimal b) {
-        return scaled(a, b.scale()).divide(b, roundingMode);
+        return BigDecimal.valueOf(a)
+            .divide(b, max(b.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigDecimal a, long b) {
@@ -19769,32 +19767,36 @@ public final class QueryLanguageFunctionUtils {
         if (a == null || b == QueryConstants.NULL_DOUBLE) {
             return null;
         }
-        return a.divide(BigDecimal.valueOf(b), roundingMode);
+        final BigDecimal bdb = BigDecimal.valueOf(b);
+        final int scale = max(max(a.scale(), bdb.scale()), DEFAULT_SCALE);
+        return a.divide(bdb, scale, ROUNDING_MODE);
     }
 
     public static BigDecimal divide(double a, BigDecimal b) {
         if (a == QueryConstants.NULL_DOUBLE || b == null) {
             return null;
         }
-        return BigDecimal.valueOf(a)
-                .setScale(b.scale(), roundingMode)
-                .divide(b, roundingMode);
+        final BigDecimal bda = BigDecimal.valueOf(a);
+        final int scale = max(max(bda.scale(), b.scale()), DEFAULT_SCALE);
+        return bda.divide(b, scale, ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigDecimal a, float b) {
         if (a == null || b == QueryConstants.NULL_FLOAT) {
             return null;
-        }
-        return a.divide(BigDecimal.valueOf(b), roundingMode);
+        }        
+        final BigDecimal bdb = BigDecimal.valueOf(b);
+        final int scale = max(max(a.scale(), bdb.scale()), DEFAULT_SCALE);
+        return a.divide(bdb, scale, ROUNDING_MODE);
     }
 
     public static BigDecimal divide(float a, BigDecimal b) {
         if (a == QueryConstants.NULL_FLOAT || b == null) {
             return null;
         }
-        return BigDecimal.valueOf(a)
-                .setScale(b.scale(), roundingMode)
-                .divide(b, roundingMode);
+        final BigDecimal bda = BigDecimal.valueOf(a);
+        final int scale = max(max(bda.scale(), b.scale()), DEFAULT_SCALE);
+        return bda.divide(b, scale, ROUNDING_MODE);
     }
 
     public static boolean eq(BigDecimal a, BigDecimal b) {
@@ -20531,15 +20533,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     private static BigDecimal divideNoNull(final BigInteger a, final long b) {
-        return new BigDecimal(a)
-                .setScale(defaultScale)
-                .divide(BigDecimal.valueOf(b), roundingMode);
+        return new BigDecimal(a).divide(BigDecimal.valueOf(b), DEFAULT_SCALE, ROUNDING_MODE);
     }
 
     private static BigDecimal divideNoNull(final long a, final BigInteger b) {
         return BigDecimal.valueOf(a)
-                .setScale(defaultScale)
-                .divide(new BigDecimal(b), roundingMode);
+                .divide(new BigDecimal(b), DEFAULT_SCALE, ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigInteger a, BigInteger b) {
@@ -20547,8 +20546,7 @@ public final class QueryLanguageFunctionUtils {
             return null;
         }
         return new BigDecimal(a)
-                .setScale(defaultScale)
-                .divide((new BigDecimal(b)), roundingMode);
+                .divide(new BigDecimal(b), DEFAULT_SCALE, ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigInteger a, long b) {
@@ -20613,8 +20611,7 @@ public final class QueryLanguageFunctionUtils {
         }
         final BigDecimal bbd = BigDecimal.valueOf(b);
         return new BigDecimal(a)
-                .setScale(max(defaultScale, bbd.scale()))
-                .divide(bbd, roundingMode);
+            .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(double a, BigInteger b) {
@@ -20622,10 +20619,11 @@ public final class QueryLanguageFunctionUtils {
             return null;
         }
         BigDecimal bba = BigDecimal.valueOf(a);
-        if (bba.scale() < defaultScale) {
-            bba = bba.setScale(defaultScale);
-        }
-        return bba.divide(new BigDecimal(b), roundingMode);
+        return bba.divide(
+            new BigDecimal(b),
+            max(bba.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE
+        );
     }
 
     public static BigDecimal divide(BigInteger a, float b) {
@@ -20634,8 +20632,7 @@ public final class QueryLanguageFunctionUtils {
         }
         final BigDecimal bbd = BigDecimal.valueOf(b);
         return new BigDecimal(a)
-                .setScale(max(defaultScale, bbd.scale()))
-                .divide(bbd, roundingMode);
+            .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(float a, BigInteger b) {
@@ -20643,10 +20640,11 @@ public final class QueryLanguageFunctionUtils {
             return null;
         }
         BigDecimal bba = BigDecimal.valueOf(a);
-        if (bba.scale() < defaultScale) {
-            bba = bba.setScale(defaultScale);
-        }
-        return bba.divide(new BigDecimal(b), roundingMode);
+        return bba.divide(
+            new BigDecimal(b),
+            max(bba.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE
+        );
     }
 
     public static boolean eq(BigInteger a, BigInteger b) {

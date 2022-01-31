@@ -69,7 +69,7 @@ public class TestBigIntegerColumns {
                 "V10A = (I2 >= BI)",
                 "V10B = (BI2 >= BI)");
 
-        final int divScale = QueryLanguageFunctionUtils.defaultScale();
+        final int divScale = QueryLanguageFunctionUtils.DEFAULT_SCALE;
         final Table expected = TableTools.newTable(
                 col("VPLUS", BigInteger.valueOf(1), BigInteger.valueOf(4), BigInteger.valueOf(7)),
                 col("VMINUS", BigInteger.valueOf(1), BigInteger.valueOf(0), BigInteger.valueOf(-1)),

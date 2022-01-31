@@ -13498,7 +13498,41 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 divide(bv1Left, 3.0),
                 divide(1.0, bv1Right),
         };
-        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(333), 3);
+        long ex = 0;
+        for (int i = 0; i < DEFAULT_SCALE; ++i) {
+            ex = ex*10 + 3;
+        }
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(ex), DEFAULT_SCALE);
+        for (BigDecimal r : results) {
+            TestCase.assertEquals(0, expected.compareTo(r));
+        }
+
+        final int biggerScale = DEFAULT_SCALE + 2;
+        final BigDecimal bv2Left = BigDecimal.valueOf(1).setScale(biggerScale);
+        ex = 0;
+        for (int i = 0; i < biggerScale; ++i) {
+            ex = ex*10 + 3;
+        }
+        final BigDecimal expected2 = new BigDecimal(BigInteger.valueOf(ex), biggerScale);
+        TestCase.assertEquals(0, expected2.compareTo(divide(bv2Left, 3.0)));
+        TestCase.assertEquals(0, expected2.compareTo(divide(bv2Left, 3.0F)));
+
+        final BigDecimal bv2Right = BigDecimal.valueOf(3).setScale(biggerScale);
+        TestCase.assertEquals(0, expected2.compareTo(divide(1.0, bv2Right)));
+        TestCase.assertEquals(0, expected2.compareTo(divide(1.0F, bv2Right)));
+    }
+
+    public static void test_bigdecimal_divide_floating_actual() {
+        final BigDecimal bv1Left = BigDecimal.valueOf(0.5);
+        final BigDecimal bv1Right = BigDecimal.valueOf(0.125);
+        final BigDecimal[] results = new BigDecimal[] {
+                divide(bv1Left, bv1Right),
+                divide(bv1Left, 0.125),
+                divide(0.5, bv1Right),
+                divide(bv1Left, 0.125F),
+                divide(0.5F, bv1Right),
+        };
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(4)).setScale(DEFAULT_SCALE, ROUNDING_MODE);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }
@@ -14179,7 +14213,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         };
         final BigDecimal expected = BigDecimal.valueOf(45.5)
                 .setScale(
-                        QueryLanguageFunctionUtils.defaultScale(),
+                        QueryLanguageFunctionUtils.DEFAULT_SCALE,
                         RoundingMode.HALF_UP);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));

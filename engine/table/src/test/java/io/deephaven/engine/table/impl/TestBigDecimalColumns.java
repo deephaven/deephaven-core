@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.util.TableTools;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
@@ -9,8 +10,13 @@ import static io.deephaven.engine.util.TableTools.*;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class TestBigDecimalColumns {
+
+    private static BigDecimal atScale(final double v, final int scale) {
+        return BigDecimal.valueOf(v).setScale(scale, RoundingMode.HALF_UP);
+    }
 
     @Test
     public void testBigDecimalOps() {
@@ -61,11 +67,12 @@ public class TestBigDecimalColumns {
                 "V10 = (BD >= I2)",
                 "V10A = (I2 >= BD)",
                 "V10B = (BD2 >= BD)");
+        final int divScale = QueryLanguageFunctionUtils.DEFAULT_SCALE;
         final Table expected = TableTools.newTable(
                 col("VPLUS", BigDecimal.valueOf(1), BigDecimal.valueOf(4), BigDecimal.valueOf(7)),
                 col("VMINUS", BigDecimal.valueOf(1), BigDecimal.valueOf(0), BigDecimal.valueOf(-1)),
                 col("VMUL", BigDecimal.valueOf(0), BigDecimal.valueOf(4), BigDecimal.valueOf(12)),
-                col("VDIV", null, BigDecimal.valueOf(1), BigDecimal.valueOf(0.75)),
+                col("VDIV", null, atScale(1, divScale), atScale(0.75, divScale)),
                 col("V1", BigDecimal.valueOf(1), BigDecimal.valueOf(4), BigDecimal.valueOf(9)),
                 col("V2", BigDecimal.valueOf(5), BigDecimal.valueOf(7), BigDecimal.valueOf(9)),
                 col("V2A", BigDecimal.valueOf(5), BigDecimal.valueOf(7), BigDecimal.valueOf(9)),
@@ -76,7 +83,7 @@ public class TestBigDecimalColumns {
                 col("V3S", true, false, false),
                 col("V3SA", true, false, false),
                 col("V4", BigDecimal.valueOf(12.5), BigDecimal.valueOf(12.5), BigDecimal.valueOf(12.5)),
-                col("V5", BigDecimal.valueOf(4), BigDecimal.valueOf(2.5), BigDecimal.valueOf(2)),
+                col("V5", atScale(4, divScale), atScale(2.5, divScale), atScale(2, divScale)),
                 col("V6", false, true, false),
                 col("V6A", false, true, false),
                 col("V6Y", false, true, false),
