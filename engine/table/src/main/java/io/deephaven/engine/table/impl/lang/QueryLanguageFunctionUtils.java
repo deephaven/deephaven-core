@@ -19,10 +19,10 @@ import static java.lang.Math.*;
 public final class QueryLanguageFunctionUtils {
 
     private static final String DEFAULT_SCALE_PROPERTY = "defaultScale";
-    private static int defaultScale = Configuration.getInstance()
+    private static final int defaultScale = Configuration.getInstance()
             .getIntegerForClassWithDefault(QueryLanguageFunctionUtils.class, DEFAULT_SCALE_PROPERTY, 8);
 
-    public static RoundingMode roundingMode = getRoundingModeFromString(
+    public static final RoundingMode roundingMode = getRoundingModeFromString(
             Configuration.getInstance().getStringForClassWithDefault(
                     QueryLanguageFunctionUtils.class,
                     "roundingMode",
@@ -43,21 +43,8 @@ public final class QueryLanguageFunctionUtils {
         return defaultScale;
     }
 
-    public static int setDefaultScale(int newScale) {
-        final int oldScale = defaultScale;
-        defaultScale = newScale;
-        return oldScale;
-    }
-
     public static RoundingMode roundingMode() {
         return roundingMode;
-    }
-
-    public static RoundingMode setRoundingMode(RoundingMode newMode) {
-        final RoundingMode oldMode = roundingMode;
-        roundingMode = newMode;
-        return oldMode;
-
     }
 
     public static boolean eq(Object obj1, Object obj2) {
