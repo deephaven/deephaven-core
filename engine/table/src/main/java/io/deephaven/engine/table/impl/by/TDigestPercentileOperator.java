@@ -189,7 +189,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         if (resultColumns.length == 0) {
             return;
         }
-        firstNewDestination = resultTable.getRowSet().lastRowKey();
+        firstNewDestination = resultTable.getRowSet().lastRowKey() + 1;
         resultTable.getRowSet().forAllRowKeys(this::updateDestination);
     }
 
@@ -210,7 +210,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         if (resultColumns.length == 0) {
             return;
         }
-        firstNewDestination = newDestinations.lastRowKey();
+        firstNewDestination = newDestinations.lastRowKey() + 1;
         downstream.added().forAllRowKeys(this::updateDestination);
         if (modifiedThisStep) {
             downstream.modified().forAllRowKeys(this::updateDestination);
