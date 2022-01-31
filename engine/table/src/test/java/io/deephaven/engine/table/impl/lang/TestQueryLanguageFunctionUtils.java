@@ -13480,24 +13480,24 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
     }
 
     public static void test_bigdecimal_divide() {
-        final BigDecimal bv1Left = BigDecimal.valueOf(91);
-        final BigDecimal bv1Right = BigDecimal.valueOf(2);
+        final BigDecimal bv1Left = BigDecimal.valueOf(1).setScale(3);
+        final BigDecimal bv1Right = BigDecimal.valueOf(3).setScale(3);
         final BigDecimal[] results = new BigDecimal[] {
                 divide(bv1Left, bv1Right),
-                divide(bv1Left, (byte) 2),
-                divide((byte) 91, bv1Right),
-                divide(bv1Left, (short) 2),
-                divide((short) 91, bv1Right),
-                divide(bv1Left, 2),
-                divide(91, bv1Right),
-                divide(bv1Left, 2L),
-                divide(91L, bv1Right),
-                divide(bv1Left, 2.0F),
-                divide(91.0F, bv1Right),
-                divide(bv1Left, 2.0),
-                divide(91.0, bv1Right),
+                divide(bv1Left, (byte) 3),
+                divide((byte) 1, bv1Right),
+                divide(bv1Left, (short) 3),
+                divide((short) 1, bv1Right),
+                divide(bv1Left, 3),
+                divide(1, bv1Right),
+                divide(bv1Left, 3L),
+                divide(1L, bv1Right),
+                divide(bv1Left, 3.0F),
+                divide(1.0F, bv1Right),
+                divide(bv1Left, 3.0),
+                divide(1.0, bv1Right),
         };
-        final BigDecimal expected = BigDecimal.valueOf(45.5);
+        final BigDecimal expected = new BigDecimal(BigInteger.valueOf(333), 3);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }
@@ -14176,7 +14176,10 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
                 divide(bv1Left, 2.0),
                 divide(91.0, bv1Right),
         };
-        final BigDecimal expected = BigDecimal.valueOf(45.5);
+        final BigDecimal expected = BigDecimal.valueOf(45.5)
+                .setScale(
+                        QueryLanguageFunctionUtils.defaultScale(),
+                        QueryLanguageFunctionUtils.roundingMode());
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }
