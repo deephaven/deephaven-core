@@ -156,10 +156,12 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 public class AggregationProcessor implements AggregationContextFactory {
 
     private enum Type {
+        // @formatter:off
         NORMAL(false),
         ROLLUP_BASE(true),
         ROLLUP_REAGGREGATED(true),
         SELECT_DISTINCT(false);
+        // @formatter:on
 
         private final boolean isRollup;
 
@@ -238,12 +240,13 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final Type type) {
         this.aggregations = aggregations;
         this.type = type;
-        final String duplicationErrorMessage =
-                (type.isRollup
-                        ? RollupAggregationPairs.outputsOf(aggregations)
-                        : AggregationPairs.outputsOf(aggregations))
-                        .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet().stream()
-                        .filter(kv -> kv.getValue() > 1).map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
+        final String duplicationErrorMessage = (type.isRollup
+                ? RollupAggregationPairs.outputsOf(aggregations)
+                : AggregationPairs.outputsOf(aggregations))
+                        .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet()
+                        .stream()
+                        .filter(kv -> kv.getValue() > 1)
+                        .map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
                         .collect(Collectors.joining(", "));
         if (!duplicationErrorMessage.isBlank()) {
             throw new IllegalArgumentException("Duplicate output columns found: " + duplicationErrorMessage);
@@ -1131,8 +1134,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private void reaggregateSsmBackedOperator(
-                TriFunction<ColumnSource<SegmentedSortedMultiSet<?>>, ColumnSource<?>, String,
-                        IterativeChunkedAggregationOperator> operatorFactory) {
+                TriFunction<ColumnSource<SegmentedSortedMultiSet<?>>, ColumnSource<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
                 final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;

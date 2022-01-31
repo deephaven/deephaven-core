@@ -22,11 +22,12 @@
   "AggStd": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggSum": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggTDigest": "*Overload 1*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 2*  \n  :param compression: double\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation",
-  "AggUnique": "*Overload 1*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :param nonUniqueSentinel: java.lang.Object\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation",
+  "AggUnique": "*Overload 1*  \n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 3*  \n  :param includeNulls: boolean\n  :param nonUniqueSentinel: io.deephaven.api.agg.util.Sentinel\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation",
   "AggVar": ":param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggWAvg": ":param weightColumn: java.lang.String\n:param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "AggWSum": ":param weightColumn: java.lang.String\n:param pairs: java.lang.String...\n:return: io.deephaven.api.agg.Aggregation",
   "PctOut": ":param percentile: double\n:param outputColumn: java.lang.String\n:return: io.deephaven.api.agg.util.PercentileOutput",
+  "Sentinel": "*Overload 1*  \n  :param value: java.lang.Object\n  :return: io.deephaven.api.agg.util.Sentinel\n  \n*Overload 2*  \n  :return: io.deephaven.api.agg.util.Sentinel",
   "of": "*Overload 1*  \n  :param spec: io.deephaven.api.agg.spec.AggSpec\n  :param pair: java.lang.String\n  :return: io.deephaven.api.agg.ColumnAggregation\n  \n*Overload 2*  \n  :param spec: io.deephaven.api.agg.spec.AggSpec\n  :param pairs: java.lang.String...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 3*  \n  :param aggregations: io.deephaven.api.agg.Aggregation...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 4*  \n  Note: Java generics information - <INPUT_TYPE>\n  \n  :param columnAggFactory: java.util.function.BiFunction<io.deephaven.api.ColumnName,INPUT_TYPE,io.deephaven.api.agg.ColumnAggregation>\n  :param inputColumn: java.lang.String\n  :param inputs: INPUT_TYPE...\n  :return: io.deephaven.api.agg.Aggregation",
   "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
  },

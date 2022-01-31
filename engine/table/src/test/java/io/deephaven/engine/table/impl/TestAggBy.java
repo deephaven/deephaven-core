@@ -636,8 +636,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol"), "USym").sort("USym"));
 
         dataTable.aggBy(AggUnique(false, Sentinel(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
-                        "DoubleCol"),
-                "USym").sort("USym");
+                "DoubleCol"), "USym").sort("USym");
 
         // Byte out of range
         testUniqueOutOfRangeParams(Byte.class, dataTable, ((short) Byte.MIN_VALUE - 1), Byte.MIN_VALUE,
