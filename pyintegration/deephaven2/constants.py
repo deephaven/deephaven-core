@@ -5,6 +5,8 @@
 from enum import Enum, auto
 import jpy
 
+_JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
+
 
 class SortDirection(Enum):
     """An enum defining the sorting orders."""
@@ -15,8 +17,6 @@ class SortDirection(Enum):
 
 
 # Deephaven Special Null values for primitive types
-_JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
-
 NULL_BOOLEAN = _JQueryConstants.NULL_BOOLEAN
 """ Null boolean value. """
 NULL_CHAR = _JQueryConstants.NULL_CHAR
@@ -91,4 +91,5 @@ MAX_FINITE_DOUBLE = _JQueryConstants.MAX_FINITE_DOUBLE
 """ Maximum finite value of type double. """
 MIN_POS_DOUBLE = _JQueryConstants.MIN_POS_DOUBLE
 """ Minimum positive value of type double. """
+
 

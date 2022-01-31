@@ -3,13 +3,13 @@
 #
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Sequence
+from typing import Sequence, Any
 
 import jpy
-from deephaven2 import DHError
+from deephaven2.dtypes import DType
 
 import deephaven2.dtypes as dtypes
-from deephaven2.dtypes import DType
+from deephaven2 import DHError
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
