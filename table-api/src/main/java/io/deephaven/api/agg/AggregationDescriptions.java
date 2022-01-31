@@ -26,6 +26,11 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(Aggregations aggregations) {
+        aggregations.aggregations().forEach(a -> a.walk(this));
+    }
+
+    @Override
     public void visit(ColumnAggregation columnAgg) {
         visitColumnAgg(columnAgg.pair(), columnAgg.spec().description());
     }

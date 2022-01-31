@@ -538,12 +538,12 @@ public class TestAggBy extends RefreshingTableTestCase {
                 c("Whee", dt1, dt1, dt1, /**/ dt1, dt2, /**/ dt2, dt2, dt2, dt2, /**/ null));
 
         Table result = dataTable.aggBy(List.of(
-                AggUnique(false, -1, "Account", "Qty"),
-                AggUnique(false, dtDefault, "Whee")), "USym").sort("USym");
+                AggUnique(false, Sentinel(-1), "Account", "Qty"),
+                AggUnique(false, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
 
         Table countNulls = dataTable.aggBy(List.of(
-                AggUnique(true, -1, "Account", "Qty"),
-                AggUnique(true, dtDefault, "Whee")), "USym").sort("USym");
+                AggUnique(true, Sentinel(-1), "Account", "Qty"),
+                AggUnique(true, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
 
         assertEquals(4, result.size());
         assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, result.getRecord(0));
@@ -632,10 +632,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         // First try mixing column types and values
         expectException(IllegalArgumentException.class,
                 "Attempted to use no key/non unique values of incorrect types for aggregated columns!",
-                () -> dataTable.aggBy(AggUnique(false, 2, "StringCol", "BoolCol", "DatTime", "CharCol",
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(2), "StringCol", "BoolCol", "DatTime", "CharCol",
                         "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol"), "USym").sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, -2, "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol"),
+        dataTable.aggBy(AggUnique(false, Sentinel(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                        "DoubleCol"),
                 "USym").sort("USym");
 
         // Byte out of range
@@ -657,14 +658,14 @@ public class TestAggBy extends RefreshingTableTestCase {
         // Byte out of range
         expectException(IllegalArgumentException.class,
                 "Attempted to non unique values too small for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, invalidLow, aggCols), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidLow), aggCols), "USym").sort("USym"));
 
         expectException(IllegalArgumentException.class,
                 "Attempted to use non unique values too large for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, invalidHigh, aggCols), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidHigh), aggCols), "USym").sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, validLow, aggCols), "USym").sort("USym");
-        dataTable.aggBy(AggUnique(false, validHigh, aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, Sentinel(validLow), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, Sentinel(validHigh), aggCols), "USym").sort("USym");
     }
 
     private static <T extends Throwable> void expectException(@SuppressWarnings("SameParameterValue") Class<T> excType,

@@ -3,6 +3,7 @@ package io.deephaven.api.agg;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.util.PercentileOutput;
+import io.deephaven.api.agg.util.Sentinel;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -203,8 +204,12 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.unique(), pairs);
     }
 
-    static Aggregation AggUnique(boolean includeNulls, Object nonUniqueSentinel, String... pairs) {
-        return of(AggSpec.unique(includeNulls, nonUniqueSentinel), pairs);
+    static Aggregation AggUnique(boolean includeNulls, String... pairs) {
+        return AggUnique(includeNulls, Sentinel.of(), pairs);
+    }
+
+    static Aggregation AggUnique(boolean includeNulls, Sentinel nonUniqueSentinel, String... pairs) {
+        return of(AggSpec.unique(includeNulls, nonUniqueSentinel.value()), pairs);
     }
 
     static Aggregation AggVar(String... pairs) {
@@ -223,12 +228,18 @@ public interface Aggregation extends Serializable {
         return PercentileOutput.of(percentile, outputColumn);
     }
 
+    static Sentinel Sentinel(Object value) {
+        return Sentinel.of(value);
+    }
+
+    static Sentinel Sentinel() {
+        return Sentinel.of();
+    }
+
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        default void visit(Aggregations aggregations) {
-            aggregations.aggregations().forEach(a -> a.walk(this));
-        }
+        void visit(Aggregations aggregations);
 
         void visit(ColumnAggregation columnAgg);
 

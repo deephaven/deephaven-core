@@ -27,10 +27,15 @@ public class AggregationPairs implements Aggregation.Visitor {
         return of(aggregations).map(Pair::output);
     }
 
-    private Stream<Pair> out;
+    protected Stream<Pair> out;
 
-    Stream<Pair> getOut() {
+    protected Stream<Pair> getOut() {
         return Objects.requireNonNull(out);
+    }
+
+    @Override
+    public void visit(Aggregations aggregations) {
+        out = aggregations.aggregations().stream().flatMap(AggregationPairs::of);
     }
 
     @Override

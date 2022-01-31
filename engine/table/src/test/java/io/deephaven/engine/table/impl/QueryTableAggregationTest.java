@@ -2537,7 +2537,7 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(aggregatedBySym);
 
         final Table accumulated = aggregatedBySym.dropColumns("Sym").groupBy()
-                .update("Digest=io.deephaven.engine.table.impl.by.AggSpecTDigest.accumulateDigests(Digest)")
+                .update("Digest=io.deephaven.engine.table.impl.by.ApproximatePercentile.accumulateDigests(Digest)")
                 .update("P95=Digest.quantile(0.95)");
         TableTools.show(accumulated);
 
@@ -2825,7 +2825,7 @@ public class QueryTableAggregationTest {
             newTable().countBy("x = 1");
             TestCase.fail("should throw an exception");
         } catch (RuntimeException e) {
-            TestCase.assertEquals("x = 1 is not a valid column name", e.getMessage());
+            TestCase.assertTrue(e.getMessage().contains("x = 1"));
         }
 
         try {

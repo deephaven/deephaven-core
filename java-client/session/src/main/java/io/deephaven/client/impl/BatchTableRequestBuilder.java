@@ -108,6 +108,7 @@ import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 class BatchTableRequestBuilder {
 
@@ -461,7 +462,7 @@ class BatchTableRequestBuilder {
         private ComboAggregateRequest aggBy(AggregationTable agg) {
             ComboAggregateRequest.Builder builder = groupByColumns(agg);
             for (Aggregation aggregation : agg.aggregations()) {
-                builder.addAggregates(AggregationAdapter.of(aggregation));
+                AggregationAdapter.of(aggregation).forEach(builder::addAggregates);
             }
             return builder.build();
         }
@@ -497,19 +498,24 @@ class BatchTableRequestBuilder {
 
     private static class AggregationAdapter implements Aggregation.Visitor {
 
-        public static Aggregate of(Aggregation aggregation) {
+        public static Stream<Aggregate> of(Aggregation aggregation) {
             return aggregation.walk(new AggregationAdapter()).out();
         }
 
-        private Aggregate out;
+        private Stream<Aggregate> out;
 
-        public Aggregate out() {
+        public Stream<Aggregate> out() {
             return Objects.requireNonNull(out);
         }
 
         @Override
+        public void visit(Aggregations aggregations) {
+            out = aggregations.aggregations().stream().flatMap(AggregationAdapter::of);
+        }
+
+        @Override
         public void visit(Count count) {
-            out = Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name()).build();
+            out = Stream.of(Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name()).build());
         }
 
         @Override
@@ -526,13 +532,13 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(ColumnAggregation columnAgg) {
-            out = columnAgg.spec()
-                    .walk(new AggregateAdapter(Collections.singletonList(columnAgg.pair()))).out();
+            out = Stream.of(columnAgg.spec()
+                    .walk(new AggregateAdapter(Collections.singletonList(columnAgg.pair()))).out());
         }
 
         @Override
         public void visit(ColumnAggregations columnAggs) {
-            out = columnAggs.spec().walk(new AggregateAdapter(columnAggs.pairs())).out();
+            out = Stream.of(columnAggs.spec().walk(new AggregateAdapter(columnAggs.pairs())).out());
         }
     }
 

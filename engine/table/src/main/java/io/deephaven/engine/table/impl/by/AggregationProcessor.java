@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Aggregations;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.ColumnAggregations;
@@ -50,6 +51,7 @@ import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.Partition;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
+import io.deephaven.engine.table.impl.by.rollup.RollupAggregationPairs;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteChunkedCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteRollupCountDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.CharChunkedCountDistinctOperator;
@@ -154,7 +156,16 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 public class AggregationProcessor implements AggregationContextFactory {
 
     private enum Type {
-        NORMAL, ROLLUP_BASE, ROLLUP_REAGGREGATED, SELECT_DISTINCT
+        NORMAL(false),
+        ROLLUP_BASE(true),
+        ROLLUP_REAGGREGATED(true),
+        SELECT_DISTINCT(false);
+
+        private final boolean isRollup;
+
+        Type(boolean isRollup) {
+            this.isRollup = isRollup;
+        }
     }
 
     private final Collection<? extends Aggregation> aggregations;
@@ -227,10 +238,13 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final Type type) {
         this.aggregations = aggregations;
         this.type = type;
-        final String duplicationErrorMessage = AggregationPairs.outputsOf(aggregations)
-                .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet().stream()
-                .filter(kv -> kv.getValue() > 1).map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
-                .collect(Collectors.joining(", "));
+        final String duplicationErrorMessage =
+                (type.isRollup
+                        ? RollupAggregationPairs.outputsOf(aggregations)
+                        : AggregationPairs.outputsOf(aggregations))
+                        .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet().stream()
+                        .filter(kv -> kv.getValue() > 1).map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
+                        .collect(Collectors.joining(", "));
         if (!duplicationErrorMessage.isBlank()) {
             throw new IllegalArgumentException("Duplicate output columns found: " + duplicationErrorMessage);
         }
@@ -295,9 +309,18 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         AggregationContext build() {
+            walkAllAggregations();
+            return makeAggregationContext();
+        }
+
+        final void walkAllAggregations() {
             for (final Aggregation aggregation : aggregations) {
                 aggregation.walk(this);
             }
+        }
+
+        @NotNull
+        final AggregationContext makeAggregationContext() {
             // noinspection unchecked
             return new AggregationContext(
                     operators.toArray(IterativeChunkedAggregationOperator[]::new),
@@ -306,7 +329,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                     transformers.toArray(AggregationContextTransformer[]::new));
         }
 
-        void streamUnsupported(@NotNull final String operationName) {
+        final void streamUnsupported(@NotNull final String operationName) {
             if (!isStream) {
                 return;
             }
@@ -318,6 +341,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
         // Partial Aggregation.Visitor (for cases common to all types)
         // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public final void visit(@NotNull final Aggregations aggregations) {
+            aggregations.aggregations().forEach(a -> a.walk(this));
+        }
 
         @Override
         public final void visit(@NotNull final ColumnAggregation columnAgg) {
@@ -840,10 +868,11 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         AggregationContext build() {
+            walkAllAggregations();
             if (!partitionFound) {
                 transformers.add(new NoKeyLeafRollupAttributeSetter());
             }
-            return super.build();
+            return makeAggregationContext();
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -983,7 +1012,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Count count) {
-            addNoInputOperator(new LongChunkedSumOperator(false, count.column().name()));
+            addBasicOperators((t, n) -> new LongChunkedSumOperator(false, n));
         }
 
         @Override
@@ -1021,14 +1050,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeCountDistinctOperator(ssmType, n,
-                    countDistinct.countNulls(), true, true));
+            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeCountDistinctOperator(
+                    ssmSrc.getComponentType(), n, countDistinct.countNulls(), true, true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeDistinctOperator(priorResultType, n,
-                    distinct.includeNulls(), true, true));
+            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeDistinctOperator(
+                    priorResultSrc.getComponentType(), n, distinct.includeNulls(), true, true));
         }
 
         @Override
@@ -1078,8 +1107,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            reaggregateSsmBackedOperator((ssmType, priorResultType, n) -> makeUniqueOperator(
-                    priorResultType, n, unique.includeNulls(), null, unique.nonUniqueSentinel(), true, true));
+            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeUniqueOperator(
+                    priorResultSrc.getType(), n, unique.includeNulls(), null, unique.nonUniqueSentinel(), true, true));
         }
 
         @Override
@@ -1102,14 +1131,15 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private void reaggregateSsmBackedOperator(
-                TriFunction<Class<?>, Class<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
+                TriFunction<ColumnSource<SegmentedSortedMultiSet<?>>, ColumnSource<?>, String,
+                        IterativeChunkedAggregationOperator> operatorFactory) {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
                 final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource = table.getColumnSource(ssmName);
                 final ColumnSource<?> priorResultSource = table.getColumnSource(resultName);
                 final IterativeChunkedAggregationOperator operator = operatorFactory.apply(
-                        ssmSource.getComponentType(), priorResultSource.getComponentType(), resultName);
+                        ssmSource, priorResultSource, resultName);
 
                 addOperator(operator, ssmSource, ssmName);
             }
@@ -1147,10 +1177,11 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
 
-                if (runningSumType == double.class) {
+                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+
+                if (table.hasColumns(nanCountName)) {
                     final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
 
-                    final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                     final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
 
                     final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
@@ -1197,11 +1228,12 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String nonNullCountName = resultName + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final LongChunkedSumOperator nonNullCountOp = addAndGetLongSumOperator(nonNullCountName);
 
-                if (runningSumType == double.class) {
+                final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+
+                if (table.hasColumns(nanCountName)) {
                     final DoubleChunkedSumOperator runningSumOp = addAndGetDoubleSumOperator(runningSumName);
                     final DoubleChunkedSumOperator runningSum2Op = addAndGetDoubleSumOperator(runningSum2Name);
 
-                    final String nanCountName = resultName + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                     final LongChunkedSumOperator nanCountOp = addAndGetLongSumOperator(nanCountName);
 
                     final String piCountName = resultName + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;

@@ -62,6 +62,11 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(Aggregations aggregations) {
+        aggregations.aggregations().forEach(a -> a.walk(this));
+    }
+
+    @Override
     public void visit(ColumnAggregation columnAgg) {
         visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
     }
