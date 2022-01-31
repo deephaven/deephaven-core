@@ -19696,15 +19696,14 @@ public final class QueryLanguageFunctionUtils {
 
     private static BigDecimal divideNoNull(BigDecimal a, long b) {
         return a.divide(
-            BigDecimal.valueOf(b),
-            max(a.scale(), DEFAULT_SCALE),
-                ROUNDING_MODE
-        );
+                BigDecimal.valueOf(b),
+                max(a.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE);
     }
 
     private static BigDecimal divideNoNull(long a, BigDecimal b) {
         return BigDecimal.valueOf(a)
-            .divide(b, max(b.scale(), DEFAULT_SCALE), ROUNDING_MODE);
+                .divide(b, max(b.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigDecimal a, long b) {
@@ -19784,7 +19783,7 @@ public final class QueryLanguageFunctionUtils {
     public static BigDecimal divide(BigDecimal a, float b) {
         if (a == null || b == QueryConstants.NULL_FLOAT) {
             return null;
-        }        
+        }
         final BigDecimal bdb = BigDecimal.valueOf(b);
         final int scale = max(max(a.scale(), bdb.scale()), DEFAULT_SCALE);
         return a.divide(bdb, scale, ROUNDING_MODE);
@@ -20611,7 +20610,7 @@ public final class QueryLanguageFunctionUtils {
         }
         final BigDecimal bbd = BigDecimal.valueOf(b);
         return new BigDecimal(a)
-            .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
+                .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(double a, BigInteger b) {
@@ -20620,10 +20619,9 @@ public final class QueryLanguageFunctionUtils {
         }
         BigDecimal bba = BigDecimal.valueOf(a);
         return bba.divide(
-            new BigDecimal(b),
-            max(bba.scale(), DEFAULT_SCALE),
-                ROUNDING_MODE
-        );
+                new BigDecimal(b),
+                max(bba.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE);
     }
 
     public static BigDecimal divide(BigInteger a, float b) {
@@ -20632,7 +20630,7 @@ public final class QueryLanguageFunctionUtils {
         }
         final BigDecimal bbd = BigDecimal.valueOf(b);
         return new BigDecimal(a)
-            .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
+                .divide(bbd, max(bbd.scale(), DEFAULT_SCALE), ROUNDING_MODE);
     }
 
     public static BigDecimal divide(float a, BigInteger b) {
@@ -20641,10 +20639,9 @@ public final class QueryLanguageFunctionUtils {
         }
         BigDecimal bba = BigDecimal.valueOf(a);
         return bba.divide(
-            new BigDecimal(b),
-            max(bba.scale(), DEFAULT_SCALE),
-                ROUNDING_MODE
-        );
+                new BigDecimal(b),
+                max(bba.scale(), DEFAULT_SCALE),
+                ROUNDING_MODE);
     }
 
     public static boolean eq(BigInteger a, BigInteger b) {

@@ -13500,7 +13500,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         };
         long ex = 0;
         for (int i = 0; i < DEFAULT_SCALE; ++i) {
-            ex = ex*10 + 3;
+            ex = ex * 10 + 3;
         }
         final BigDecimal expected = new BigDecimal(BigInteger.valueOf(ex), DEFAULT_SCALE);
         for (BigDecimal r : results) {
@@ -13511,7 +13511,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal bv2Left = BigDecimal.valueOf(1).setScale(biggerScale);
         ex = 0;
         for (int i = 0; i < biggerScale; ++i) {
-            ex = ex*10 + 3;
+            ex = ex * 10 + 3;
         }
         final BigDecimal expected2 = new BigDecimal(BigInteger.valueOf(ex), biggerScale);
         TestCase.assertEquals(0, expected2.compareTo(divide(bv2Left, 3.0)));
