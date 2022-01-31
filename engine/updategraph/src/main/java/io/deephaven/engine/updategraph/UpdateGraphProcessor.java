@@ -508,7 +508,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     /**
      * Enable the loop watchdog with the specified timeout. A value of 0 disables the watchdog.
      *
-     * @implNote Any timeout < 0 will be clamped to 0.
+     * @implNote Any timeout less than 0 will be clamped to 0.
      *
      * @param watchDogMillis The time in milliseconds to set the watchdog, or 0 to disable.
      */
