@@ -17,9 +17,30 @@ controls how frequently purchases are triggered.
 How to run
 ==========
 
+First, if you are building from sources, follow the instructions
+in https://deephaven.io/core/docs/how-to-guides/launch-build,
+and ensure you can launch a regular version of Deephaven
+as per the instructions there.  Once that works, stop that
+Deephaven instance, and continue below.
+
 Start docker-compose with the compose file in this
-directory, then start a Deephaven web console in python mode,
-and cut & paste from `demo.py`.
+directory:
+
+```
+cd debezium-demo
+docker-compose up
+```
+
+Then start a Deephaven web console (will be in python mode
+by default per the command above) by navigating to
+
+```
+http://localhost:10000/ide
+```
+
+and cut & paste to it from `demo.py`.  If Deephaven is running
+on a different host from your browser, you can replace `localhost`
+with the right hostname.
 
 Suggesting that you cut&paste instead of automatically setting
 the script to run is intentional, so that you can see tables
