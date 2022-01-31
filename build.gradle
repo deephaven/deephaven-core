@@ -90,7 +90,6 @@ idea {
 }
 
 project.version = '0.9.0'
-ext.versionSource = versionSource
 ext.globalVersion = project.version
 
 Set<Project> modsAreBasic = subprojects.findAll {it.name in [
