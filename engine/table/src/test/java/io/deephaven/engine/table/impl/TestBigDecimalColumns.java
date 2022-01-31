@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.util.TableTools;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;

@@ -13,6 +13,7 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 @SuppressWarnings({"unused", "WeakerAccess", "NumericOverflow"})
 public final class TestQueryLanguageFunctionUtils extends TestCase {
@@ -14179,7 +14180,7 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         final BigDecimal expected = BigDecimal.valueOf(45.5)
                 .setScale(
                         QueryLanguageFunctionUtils.defaultScale(),
-                        QueryLanguageFunctionUtils.roundingMode());
+                        RoundingMode.HALF_UP);
         for (BigDecimal r : results) {
             TestCase.assertEquals(0, expected.compareTo(r));
         }

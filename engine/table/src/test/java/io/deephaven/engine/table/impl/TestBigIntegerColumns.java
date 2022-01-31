@@ -11,11 +11,12 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 public class TestBigIntegerColumns {
 
     private static BigDecimal atScale(final double v, final int scale) {
-        return BigDecimal.valueOf(v).setScale(scale);
+        return BigDecimal.valueOf(v).setScale(scale, RoundingMode.HALF_UP);
     }
 
     @Test

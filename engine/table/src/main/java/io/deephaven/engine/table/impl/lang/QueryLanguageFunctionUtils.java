@@ -22,29 +22,10 @@ public final class QueryLanguageFunctionUtils {
     private static final int defaultScale = Configuration.getInstance()
             .getIntegerForClassWithDefault(QueryLanguageFunctionUtils.class, DEFAULT_SCALE_PROPERTY, 8);
 
-    public static final RoundingMode roundingMode = getRoundingModeFromString(
-            Configuration.getInstance().getStringForClassWithDefault(
-                    QueryLanguageFunctionUtils.class,
-                    "roundingMode",
-                    "HALF_UP"));
-
-    private static RoundingMode getRoundingModeFromString(final String roundingModeStr) {
-        for (final RoundingMode mode : RoundingMode.class.getEnumConstants()) {
-            if (mode.name().equals(roundingModeStr)) {
-                return mode;
-            }
-        }
-        throw new IllegalArgumentException("String '" + roundingModeStr + "' for configuration " +
-                QueryLanguageFunctionUtils.class.getSimpleName() + "." + DEFAULT_SCALE_PROPERTY +
-                " not recognized as a rounding mode name.");
-    }
+    private static final RoundingMode roundingMode = RoundingMode.HALF_UP;
 
     public static int defaultScale() {
         return defaultScale;
-    }
-
-    public static RoundingMode roundingMode() {
-        return roundingMode;
     }
 
     public static boolean eq(Object obj1, Object obj2) {
