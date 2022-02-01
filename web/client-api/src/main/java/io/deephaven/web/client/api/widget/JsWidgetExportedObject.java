@@ -7,6 +7,7 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -28,21 +29,21 @@ public class JsWidgetExportedObject {
 
     @JsMethod
     public Promise<Object> fetch() {
-        if (!getType().equals(JsVariableChanges.TABLE)) {
-            // TODO (deephaven-core#62) implement fetch for tablemaps
-            assert false : getType() + " found in widget, not yet supported";
-            return null;
+        if (getType().equals(JsVariableChanges.TABLE)) {
+            return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
+                        connection.metadata(),
+                        c::apply);
+            }).then(etcr -> {
+                ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
+                JsTable table = new JsTable(connection, cts);
+                // never attempt a reconnect, since we might have a different widget schema entirely
+                table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                return Promise.resolve(table);
+            });
+        } else {
+            return this.connection.getObject(
+                    new JsVariableDefinition(ticket.getType(), null, ticket.getTicket().getTicket_asB64(), null));
         }
-
-        return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-            connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(), connection.metadata(),
-                    c::apply);
-        }).then(etcr -> {
-            ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
-            JsTable table = new JsTable(connection, cts);
-            // never attempt a reconnect, since we might have a different widget schema entirely
-            table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-            return Promise.resolve(table);
-        });
     }
 }
