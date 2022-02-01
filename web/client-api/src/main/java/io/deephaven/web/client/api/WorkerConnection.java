@@ -83,6 +83,7 @@ import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
+import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
@@ -699,9 +700,9 @@ public class WorkerConnection {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        if ("Table".equals(definition.getType())) {
+        if (definition.getType().equals(VariableType.Table.toString())) {
             return (Promise) getTable(definition, null);
-        } else if ("Figure".equals(definition.getType())) {
+        } else if (definition.getType().equals(VariableType.Figure.toString())) {
             return (Promise) getFigure(definition);
         } else {
             return (Promise) getWidget(definition);

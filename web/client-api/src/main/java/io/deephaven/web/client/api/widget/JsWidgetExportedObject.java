@@ -7,6 +7,7 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.state.ClientTableState;
+import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -27,7 +28,7 @@ public class JsWidgetExportedObject {
 
     @JsMethod
     Promise<Object> fetch() {
-        if (!getType().equals("Table")) {
+        if (!getType().equals(VariableType.Table.toString())) {
             // TODO (deephaven-core#62) implement fetch for tablemaps
             assert false : getType() + " found in widget, not yet supported";
             return null;
