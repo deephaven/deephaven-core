@@ -62,10 +62,22 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         self.assertGreaterEqual(diff_nanos(dt, dt1), 100000000)
 
     def test_datetime_at_midnight(self):
-        dt = now()
+        datetime_str = "2021-12-10T02:59:59"
+        timezone_str = "NY"
+        dt = to_datetime(f"{datetime_str} {timezone_str}")
         mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
         mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
-        self.assertGreaterEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt), 0)
+        self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt)//10**9, -21*60*60 )
+
+        # DST ended in NY but not in PT
+        datetime_str = "2021-11-08T02:59:59"
+        timezone_str = "NY"
+        dt = to_datetime(f"{datetime_str} {timezone_str}")
+        mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
+        mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
+        print(nanos(mid_night_time_ny))
+        print(nanos(mid_night_time_pt))
+        self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt)//10**9, -22*60*60 )
 
     def test_day_of_month(self):
         dt = now()
