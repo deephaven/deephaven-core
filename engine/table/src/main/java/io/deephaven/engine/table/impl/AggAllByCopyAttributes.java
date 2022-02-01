@@ -23,19 +23,13 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
     public void visit(AggSpecApproximatePercentile approxPct) {}
 
     @Override
+    public void visit(AggSpecAvg avg) {}
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {}
 
     @Override
     public void visit(AggSpecDistinct distinct) {}
-
-    @Override
-    public void visit(AggSpecFreeze freeze) {}
-
-    @Override
-    public void visit(AggSpecGroup group) {}
-
-    @Override
-    public void visit(AggSpecAvg avg) {}
 
     @Override
     public void visit(AggSpecFirst first) {
@@ -44,6 +38,12 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecFormula formula) {}
+
+    @Override
+    public void visit(AggSpecFreeze freeze) {}
+
+    @Override
+    public void visit(AggSpecGroup group) {}
 
     @Override
     public void visit(AggSpecLast last) {

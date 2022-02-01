@@ -41,6 +41,11 @@ class AggAllByUseTable implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecAvg avg) {
+        drop();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         drop();
     }
@@ -51,27 +56,22 @@ class AggAllByUseTable implements AggSpec.Visitor {
     }
 
     @Override
-    public void visit(AggSpecFreeze freeze) {
-        keep();
-    }
-
-    @Override
-    public void visit(AggSpecGroup group) {
-        drop();
-    }
-
-    @Override
-    public void visit(AggSpecAvg avg) {
-        drop();
-    }
-
-    @Override
     public void visit(AggSpecFirst first) {
         keep();
     }
 
     @Override
     public void visit(AggSpecFormula formula) {
+        drop();
+    }
+
+    @Override
+    public void visit(AggSpecFreeze freeze) {
+        keep();
+    }
+
+    @Override
+    public void visit(AggSpecGroup group) {
         drop();
     }
 

@@ -169,19 +169,19 @@ public interface AggSpec {
 
         void visit(AggSpecApproximatePercentile approxPct);
 
+        void visit(AggSpecAvg avg);
+
         void visit(AggSpecCountDistinct countDistinct);
 
         void visit(AggSpecDistinct distinct);
 
-        void visit(AggSpecFreeze freeze);
-
-        void visit(AggSpecGroup group);
-
-        void visit(AggSpecAvg avg);
-
         void visit(AggSpecFirst first);
 
         void visit(AggSpecFormula formula);
+
+        void visit(AggSpecFreeze freeze);
+
+        void visit(AggSpecGroup group);
 
         void visit(AggSpecLast last);
 

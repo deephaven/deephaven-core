@@ -31,6 +31,11 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecAvg avg) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         out = Collections.emptySet();
     }
@@ -41,27 +46,22 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
-    public void visit(AggSpecFreeze freeze) {
-        out = Collections.emptySet();
-    }
-
-    @Override
-    public void visit(AggSpecGroup group) {
-        out = Collections.emptySet();
-    }
-
-    @Override
-    public void visit(AggSpecAvg avg) {
-        out = Collections.emptySet();
-    }
-
-    @Override
     public void visit(AggSpecFirst first) {
         out = Collections.emptySet();
     }
 
     @Override
     public void visit(AggSpecFormula formula) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecFreeze freeze) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecGroup group) {
         out = Collections.emptySet();
     }
 

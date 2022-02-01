@@ -661,6 +661,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecAvg avg) {
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, false));
+        }
+
+        @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
             addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), false, false));
         }
@@ -668,22 +673,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
             addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), false, false));
-        }
-
-        @Override
-        public void visit(AggSpecFreeze freeze) {
-            addFreezeOperators();
-        }
-
-        @Override
-        public void visit(@NotNull final AggSpecGroup group) {
-            streamUnsupported("Group");
-            addNoInputOperator(new GroupByChunkedOperator(table, true, MatchPair.fromPairs(resultPairs)));
-        }
-
-        @Override
-        public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, false));
         }
 
         @Override
@@ -699,6 +688,17 @@ public class AggregationProcessor implements AggregationContextFactory {
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
                     true, formula.formula(), formula.formulaParam(), MatchPair.fromPairs(resultPairs));
             addNoInputOperator(formulaChunkedOperator);
+        }
+
+        @Override
+        public void visit(AggSpecFreeze freeze) {
+            addFreezeOperators();
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecGroup group) {
+            streamUnsupported("Group");
+            addNoInputOperator(new GroupByChunkedOperator(table, true, MatchPair.fromPairs(resultPairs)));
         }
 
         @Override
@@ -921,6 +921,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecAvg avg) {
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
+        }
+
+        @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
             addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), true, false));
         }
@@ -928,11 +933,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
             addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), true, false));
-        }
-
-        @Override
-        public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
         }
 
         @Override
@@ -1052,6 +1052,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecAvg avg) {
+            reaggregateAvgOperator();
+        }
+
+        @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
             reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeCountDistinctOperator(
                     ssmSrc.getComponentType(), n, countDistinct.countNulls(), true, true));
@@ -1061,11 +1066,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final AggSpecDistinct distinct) {
             reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeDistinctOperator(
                     priorResultSrc.getComponentType(), n, distinct.includeNulls(), true, true));
-        }
-
-        @Override
-        public void visit(@NotNull final AggSpecAvg avg) {
-            reaggregateAvgOperator();
         }
 
         @Override

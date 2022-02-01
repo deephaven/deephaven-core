@@ -692,6 +692,11 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(AggSpecAvg avg) {
+            out = of(AggType.AVG, pairs).build();
+        }
+
+        @Override
         public void visit(AggSpecCountDistinct countDistinct) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
@@ -699,6 +704,17 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AggSpecDistinct distinct) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecFirst first) {
+            out = of(AggType.FIRST, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecFormula formula) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
@@ -712,22 +728,6 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AggSpecGroup group) {
             out = of(AggType.GROUP, pairs).build();
-        }
-
-        @Override
-        public void visit(AggSpecAvg avg) {
-            out = of(AggType.AVG, pairs).build();
-        }
-
-        @Override
-        public void visit(AggSpecFirst first) {
-            out = of(AggType.FIRST, pairs).build();
-        }
-
-        @Override
-        public void visit(AggSpecFormula formula) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override

@@ -2,6 +2,7 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecFreeze;
 import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.agg.util.Sentinel;
 
@@ -118,6 +119,10 @@ public interface Aggregation extends Serializable {
 
     static Aggregation AggFormula(String formula, String formulaParam, String... pairs) {
         return of(AggSpec.formula(formula, formulaParam), pairs);
+    }
+
+    static Aggregation AggFreeze(String... pairs) {
+        return of(AggSpec.freeze(), pairs);
     }
 
     static Aggregation AggGroup(String... pairs) {
