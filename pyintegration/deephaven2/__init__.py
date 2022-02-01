@@ -20,7 +20,7 @@ else:
     from .csv import read as read_csv
     from .csv import write as write_csv
     from .table_factory import empty_table, time_table, merge, merge_sorted, new_table
-    from .utils import get_workspace_root
+    from .config import get_workspace_root
     from .stream.kafka import consumer as kafka_consumer
     from .stream.kafka import producer as kafka_producer
 

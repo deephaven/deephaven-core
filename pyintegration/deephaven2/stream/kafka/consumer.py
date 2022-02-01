@@ -7,16 +7,18 @@ from typing import Any, Dict
 
 import jpy
 
+from deephaven2 import dtypes
 from deephaven2.column import Column
 from deephaven2.dherror import DHError
 from deephaven2.dtypes import DType
-from deephaven2.stream.kafka._utils import _dict_to_j_properties, _dict_to_j_map, _dict_to_j_func, IDENTITY
 from deephaven2.table import Table
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JStreamTableTools = jpy.get_type("io.deephaven.engine.table.impl.StreamTableTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
+_JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
+
 SEEK_TO_BEGINNING = getattr(_JKafkaTools, 'SEEK_TO_BEGINNING')
 DONT_SEEK = getattr(_JKafkaTools, 'DONT_SEEK')
 SEEK_TO_END = getattr(_JKafkaTools, 'SEEK_TO_END')
@@ -26,6 +28,14 @@ ALL_PARTITIONS = getattr(_JKafkaTools, 'ALL_PARTITIONS')
 ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_JKafkaTools, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
 ALL_PARTITIONS_DONT_SEEK = getattr(_JKafkaTools, 'ALL_PARTITIONS_DONT_SEEK')
 ALL_PARTITIONS_SEEK_TO_END = getattr(_JKafkaTools, 'ALL_PARTITIONS_SEEK_TO_END')
+IDENTITY = object()  # Ensure IDENTITY is unique.
+
+
+def _dict_to_j_func(dict_mapping: Dict, default_value):
+    java_map = dtypes.HashMap(dict_mapping)
+    if default_value is IDENTITY:
+        return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
+    return _JPythonTools.functionFromMapWithDefault(java_map, default_value)
 
 
 def _build_j_column_definition(col_name: str, data_type: DType, component_type=None):
@@ -147,7 +157,7 @@ def consume(
     if table_type_enum is None:
         raise ValueError("unknown value " + table_type + " for argument 'table_type'")
 
-    kafka_config = _dict_to_j_properties(kafka_config)
+    kafka_config = dtypes.Properties(kafka_config)
     try:
         return Table(
             j_table=_JKafkaTools.consumeToTable(kafka_config, topic, partitions, offsets, key, value, table_type_enum))
@@ -258,7 +268,7 @@ def json(col_defs, mapping: dict = None):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
-    mapping = _dict_to_j_map(mapping)
+    mapping = dtypes.HashMap(mapping)
     try:
         return _JKafkaTools_Consume.jsonSpec(col_defs, mapping)
     except Exception as e:

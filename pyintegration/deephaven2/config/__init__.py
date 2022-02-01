@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" Utility module for working with the Deephaven server. """
+""" This module provides access to the Deephaven server configuration. """
 import jpy
 
 

@@ -7,7 +7,7 @@ Each data type is represented by a DType instance which supports creating arrays
 """
 from __future__ import annotations
 
-from typing import Iterable, Any, Sequence, Callable, Optional
+from typing import Iterable, Any, Sequence, Callable, Optional, Dict, Set
 
 import jpy
 
@@ -53,7 +53,7 @@ class DType:
         if not self.is_primitive:
             return self.j_type(*args, **kwargs)
         else:
-            raise DHError(message=f"Non-primitive type {self.j_name} are not callable.")
+            raise DHError(message=f"primitive type {self.j_name} is not callable.")
 
     def array(self, size: int):
         """ Creates a Java array of the same data type of the specified size.
@@ -101,10 +101,7 @@ class DType:
 
 
 class CharDType(DType):
-    """ The class for char type. """
-
-    def __init__(self):
-        super().__init__(j_name="char", qst_type=_JQstType.charType(), is_primitive=True)
+    """ The class that wraps Java char type. """
 
     def array_from(self, seq: Sequence, remap: Callable[[Any], Any] = None):
         if isinstance(seq, str) and not remap:
@@ -117,7 +114,7 @@ byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True)
 int8 = byte
 short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True)
 int16 = short
-char = CharDType()
+char = CharDType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True)
 int_ = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True)
 int32 = int_
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True)
@@ -136,14 +133,63 @@ DateTime = DType(j_name="io.deephaven.time.DateTime")
 Period = DType(j_name="io.deephaven.time.Period")
 
 
-def j_array_list(values: Iterable):
-    j_list = jpy.get_type("java.util.ArrayList")()
-    try:
-        for v in values:
+class PropertiesDType(DType):
+    """ The class that wraps java Properties. """
+
+    def __call__(self, d: Dict) -> Any:
+        if d is None:
+            return None
+        r = self.j_type()
+        for key, value in d.items():
+            if value is None:
+                value = ''
+            r.setProperty(key, value)
+        return r
+
+
+class HashMapDType(DType):
+    """ The class that wraps java HashMap. """
+
+    def __call__(self, d: Dict) -> Any:
+        if d is None:
+            return None
+        r = self.j_type()
+        for key, value in d.items():
+            if value is None:
+                value = ''
+            r.put(key, value)
+        return r
+
+
+class HashSetDType(DType):
+    """ The case the wraps java Set. """
+
+    def __call__(self, s: Set):
+        if s is None:
+            return None
+        r = self.j_type()
+        for v in s:
+            r.add(v)
+        return r
+
+
+class ArrayListDType(DType):
+    """ The case the wraps java Set. """
+
+    def __call__(self, it: Iterable):
+        if not it:
+            return None
+
+        j_list = self.j_type()
+        for v in it:
             j_list.add(v)
         return j_list
-    except Exception as e:
-        raise DHError(e, "failed to create a Java ArrayList from the Python collection.") from e
+
+
+Properties = PropertiesDType(j_name="java.util.Properties")
+HashMap = HashMapDType(j_name="java.util.HashMap")
+HashSet = HashSetDType(j_name="java.util.HashSet")
+ArrayList = ArrayListDType(j_name="java.util.ArrayList")
 
 
 def is_java_type(obj: Any) -> bool:

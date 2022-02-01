@@ -4,8 +4,7 @@
 """ The Kafka producer module. """
 import jpy
 
-from deephaven2 import DHError
-from deephaven2.stream.kafka._utils import _dict_to_j_properties, _dict_to_j_map, _seq_to_j_set
+from deephaven2 import DHError, dtypes
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JAvroSchema = jpy.get_type("org.apache.avro.Schema")
@@ -58,7 +57,7 @@ def produce(
         raise ValueError(
             "at least one argument for 'key' or 'value' must be different from IGNORE")
 
-    kafka_config = _dict_to_j_properties(kafka_config)
+    kafka_config = dtypes.Properties(kafka_config)
     try:
         runnable = _JKafkaTools.produceFromTable(table.j_table, kafka_config, topic, key, value, last_by_key_columns)
     except Exception as e:
@@ -144,11 +143,11 @@ def avro(schema,
             "argument 'column_properties' is excpected to be of dict type, " +
             "instead got " + str(column_properties) + " of type " + type(column_properties).__name__)
 
-    field_to_col_mapping = _dict_to_j_map(field_to_col_mapping)
-    column_properties = _dict_to_j_properties(column_properties)
-    include_only_columns = _seq_to_j_set(include_only_columns)
+    field_to_col_mapping = dtypes.HashMap(field_to_col_mapping)
+    column_properties = dtypes.Properties(column_properties)
+    include_only_columns = dtypes.HashSet(include_only_columns)
     include_only_columns = _JKafkaTools.predicateFromSet(include_only_columns)
-    exclude_columns = _seq_to_j_set(exclude_columns)
+    exclude_columns = dtypes.HashSet(exclude_columns)
     exclude_columns = _JKafkaTools.predicateFromSet(exclude_columns)
     publish_schema = bool(publish_schema)
 
@@ -204,8 +203,8 @@ def json(include_columns=None,
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
-    exclude_columns = _seq_to_j_set(exclude_columns)
-    mapping = _dict_to_j_map(mapping)
+    exclude_columns = dtypes.HashSet(exclude_columns)
+    mapping = dtypes.HashMap(mapping)
     try:
         return _JKafkaTools_Produce.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls,
                                              timestamp_field)

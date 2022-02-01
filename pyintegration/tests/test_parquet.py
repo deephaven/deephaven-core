@@ -9,7 +9,7 @@ from deephaven2 import empty_table, dtypes, new_table
 from deephaven2.column import InputColumn
 from deephaven2.parquet import write_table, write_tables, read_table, delete_table, ColumnInstruction
 
-from deephaven2.utils import get_workspace_root
+from deephaven2.config import get_workspace_root
 from tests.testbase import BaseTestCase
 
 

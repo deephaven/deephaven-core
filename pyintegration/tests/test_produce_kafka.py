@@ -112,7 +112,7 @@ class KafkaProducerTestCase(BaseTestCase):
             """ % schema_str
 
         r = os.system(sys_str)
-        self.assertEquals(0, r)
+        self.assertEqual(0, r)
 
         t = table_helper()
         cleanup = pk.produce(
