@@ -14225,17 +14225,18 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         for (int i = 0; i < DEFAULT_SCALE; ++i) {
             vAt *= 10;
         }
-        final long[] vs = new long[] { vAt, vAt*10 };
+        final long[] vs = new long[] {vAt, vAt * 10};
         for (final long v : vs) {
             final BigInteger bv1Left = BigInteger.valueOf(1);
             final BigInteger bv1Right = BigInteger.valueOf(v);
-            final BigDecimal[] results = new BigDecimal[]{
+            final BigDecimal[] results = new BigDecimal[] {
                     divide(bv1Left, bv1Right),
                     divide(bv1Left, (double) v),
                     divide(1.0, bv1Right),
                     divide(1.0F, bv1Right),
             };
-            final BigDecimal expected = new BigDecimal(bv1Left).divide(BigDecimal.valueOf(v), DEFAULT_SCALE, ROUNDING_MODE);
+            final BigDecimal expected =
+                    new BigDecimal(bv1Left).divide(BigDecimal.valueOf(v), DEFAULT_SCALE, ROUNDING_MODE);
             for (BigDecimal r : results) {
                 TestCase.assertEquals(0, expected.compareTo(r));
             }
