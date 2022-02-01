@@ -19690,10 +19690,6 @@ public final class QueryLanguageFunctionUtils {
         return a.divide(b, scale, ROUNDING_MODE);
     }
 
-    private static BigDecimal scaled(long x, int scale) {
-        return BigDecimal.valueOf(x).setScale(scale, ROUNDING_MODE);
-    }
-
     private static BigDecimal divideNoNull(BigDecimal a, long b) {
         return a.divide(
                 BigDecimal.valueOf(b),
