@@ -6,8 +6,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Typ
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -28,7 +28,7 @@ public class JsWidgetExportedObject {
 
     @JsMethod
     public Promise<Object> fetch() {
-        if (!getType().equals(VariableType.Table.toString())) {
+        if (!getType().equals(JsVariableChanges.TABLE)) {
             // TODO (deephaven-core#62) implement fetch for tablemaps
             assert false : getType() + " found in widget, not yet supported";
             return null;
