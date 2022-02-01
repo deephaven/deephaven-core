@@ -259,7 +259,7 @@ public class BarrageStreamGenerator implements
         }
 
         public final StreamReaderOptions options() {
-            return StreamReaderOptions.of(this.options);
+            return this.options;
         }
 
         public final RowSet keyspaceViewport() {
@@ -331,7 +331,7 @@ public class BarrageStreamGenerator implements
         }
 
         public final StreamReaderOptions options() {
-            return StreamReaderOptions.of(this.options);
+            return this.options;
         }
 
         public final RowSet keyspaceViewport() {
@@ -368,13 +368,6 @@ public class BarrageStreamGenerator implements
         public RowSet keyspaceViewport() {
             return null;
         }
-    }
-
-    /**
-     * Treats the visitor with FlightData InputStream's to fulfill a DoGet.
-     */
-    public void forEachDoGetStream(final SnapshotView view, final Consumer<InputStream> visitor) throws IOException {
-        visitor.accept(getInputStream(view, null, view.generator::appendAddColumns));
     }
 
     @FunctionalInterface
@@ -629,56 +622,6 @@ public class BarrageStreamGenerator implements
             metadata.addOffset(offset);
             return true;
         });
-        final int nodesOffset = metadata.endVector();
-
-        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, view.hasAddBatch ? 1 : 0);
-        BarrageUpdateMetadata.addNumModBatches(metadata, view.hasModBatch ? 1 : 0);
-        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
-        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
-        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
-        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
-        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
-        BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
-        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
-        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
-        BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
-        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
-
-        final FlatBufferBuilder header = new FlatBufferBuilder();
-        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
-        BarrageMessageWrapper.startBarrageMessageWrapper(header);
-        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
-        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
-        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
-        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
-
-        return header.dataBuffer().slice();
-    }
-
-    private ByteBuffer getSnapshotMetadata(final SnapshotView view) throws IOException {
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int effectiveViewportOffset = 0;
-        if (isSnapshot && view.isViewport()) {
-            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
-                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
-            }
-        }
-
-        int effectiveColumnSetOffset = 0;
-        if (isSnapshot && view.subscribedColumns != null) {
-            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
-        }
-
-        final int rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);;
-        final int rowsRemovedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);;
-        final int addedRowsIncludedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);;
-
-        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
-
-        BarrageUpdateMetadata.startModColumnNodesVector(metadata, 0);
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);

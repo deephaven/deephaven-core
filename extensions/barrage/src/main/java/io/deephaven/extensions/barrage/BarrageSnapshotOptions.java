@@ -7,12 +7,13 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSnapshotOptions {
+public abstract class BarrageSnapshotOptions extends StreamReaderOptions {
     public static Builder builder() {
         return ImmutableBarrageSnapshotOptions.builder();
     }
@@ -24,7 +25,7 @@ public abstract class BarrageSnapshotOptions {
         final byte mode = options.columnConversionMode();
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
-                .columnConversionMode(conversionModeFbToEnum(mode))
+                .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .batchSize(options.batchSize())
                 .build();
     }
@@ -58,33 +59,8 @@ public abstract class BarrageSnapshotOptions {
 
     public int appendTo(FlatBufferBuilder builder) {
         return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
-                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(), batchSize());
-    }
-
-    private static ColumnConversionMode conversionModeFbToEnum(final byte mode) {
-        switch (mode) {
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify:
-                return ColumnConversionMode.Stringify;
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.JavaSerialization:
-                return ColumnConversionMode.JavaSerialization;
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.ThrowError:
-                return ColumnConversionMode.ThrowError;
-            default:
-                throw new UnsupportedOperationException("Unexpected column conversion mode " + mode + " (byte)");
-        }
-    }
-
-    private static byte conversionModeEnumToFb(final ColumnConversionMode mode) {
-        switch (mode) {
-            case Stringify:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify;
-            case JavaSerialization:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.JavaSerialization;
-            case ThrowError:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.ThrowError;
-            default:
-                throw new UnsupportedOperationException("Unexpected column conversion mode " + mode + " (enum)");
-        }
+                builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
+                batchSize());
     }
 
     public interface Builder {

@@ -162,21 +162,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
 
         /**
-         * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+         * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single requestor.
          *
          * @param options serialization options for this specific view
-         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+         * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
          */
         MessageView getSnapshotView(BarrageSnapshotOptions options);
 
         /**
-         * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
+         * Obtain a View of this StreamGenerator that can be sent to a single requestor.
          *
          * @param options serialization options for this specific view
          * @param viewport is the position-space viewport
          * @param keyspaceViewport is the key-space viewport
          * @param subscribedColumns are the columns subscribed for this view
-         * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+         * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
          */
         MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
                 @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);

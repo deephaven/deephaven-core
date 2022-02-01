@@ -51,6 +51,8 @@ public class BarrageStreamReader implements StreamReader {
         Message header = null;
         try {
             boolean bodyParsed = false;
+            boolean nullMetadata = false;
+
             final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
             for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
@@ -153,6 +155,9 @@ public class BarrageStreamReader implements StreamReader {
 
                 // snapshots may not provide metadata, generate it now
                 if (msg == null) {
+                    // note that initial metadata was not provided
+                    nullMetadata = true;
+
                     msg = new BarrageMessage();
 
                     // generate a default set of column selectors
@@ -174,8 +179,7 @@ public class BarrageStreamReader implements StreamReader {
 
                     // generate empty row sets
                     msg.rowsRemoved = RowSetFactory.empty();
-                    msg.shifted = new RowSetShiftData.Builder().build();
-
+                    msg.shifted = RowSetShiftData.EMPTY;
 
                     msg.isSnapshot = true;
                     numAddBatchesRemaining = 1;
@@ -220,8 +224,8 @@ public class BarrageStreamReader implements StreamReader {
                             msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
                                     columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, ois);
 
-                            // test for zero-data columns and remove from snapshot columns bitset
-                            if (msg.addColumnData[ci].data.size() == 0 && msg.snapshotColumns != null) {
+                            // for generated metadata, remove zero length columns from snapshot columns bitset
+                            if (nullMetadata && msg.addColumnData[ci].data.size() == 0) {
                                 msg.snapshotColumns.clear(ci);
                             }
                         }
