@@ -7,7 +7,15 @@ import io.deephaven.plugin.type.ObjectType;
  *
  * @see ObjectType
  */
-public interface Plugin {
+public interface Plugin extends Registration {
+
+    /**
+     * Registers {@code this} plugin into the {@code callback}.
+     *
+     * @param callback the callback.
+     */
+    @Override
+    void registerInto(Callback callback);
 
     <T, V extends Visitor<T>> T walk(V visitor);
 
