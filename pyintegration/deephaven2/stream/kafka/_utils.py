@@ -2,6 +2,8 @@
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 """ The private utility module for kafka. """
+from typing import Dict, Set
+
 import jpy
 
 _JProperties = jpy.get_type("java.util.Properties")
@@ -11,7 +13,9 @@ _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 IDENTITY = object()  # Ensure IDENTITY is unique.
 
 
-def _dict_to_j_properties(d):
+def _dict_to_j_properties(d: Dict):
+    if d is None:
+        return None
     r = _JProperties()
     for key, value in d.items():
         if value is None:
@@ -20,7 +24,7 @@ def _dict_to_j_properties(d):
     return r
 
 
-def _dict_to_j_map(d):
+def _dict_to_j_map(d: Dict):
     if d is None:
         return None
     r = _JHashMap()
@@ -31,14 +35,14 @@ def _dict_to_j_map(d):
     return r
 
 
-def _dict_to_j_func(dict_mapping, default_value):
+def _dict_to_j_func(dict_mapping: Dict, default_value):
     java_map = _dict_to_j_map(dict_mapping)
     if default_value is IDENTITY:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, default_value)
 
 
-def _seq_to_j_set(s):
+def _seq_to_j_set(s: Set):
     if s is None:
         return None
     r = _JHashSet()

@@ -70,7 +70,16 @@ def produce(
     return cleanup
 
 
-def avro(schema, schema_version: str = None, field_to_col_mapping=None, timestamp_field=None):
+def avro(schema,
+         schema_version: str = None,
+         field_to_col_mapping=None,
+         timestamp_field=None,
+         include_only_columns=None,
+         exclude_columns=None,
+         publish_schema: bool = False,
+         schema_namespace: str = None,
+         column_properties=None
+         ):
     """ Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
     Args:
@@ -86,6 +95,21 @@ def avro(schema, schema_version: str = None, field_to_col_mapping=None, timestam
             If this argument is None, all schema fields are mapped to columns of the same name.
         timestamp_field: a string for the name of an additional timestamp field to include,
             or None for no such field.
+        include_only_columns: If not None, a sequence of column names in the source table to include
+           in the generated output.   Only one of include_only_columns and exclude_columns can be different from None.
+           Defaults to None.
+        exclude_columns: If not None, a sequence of column names to exclude from the generated output (every other column
+           will be included).   Only one of include_only_columns and exclude_columns can be different from None.
+           Defaults to None.
+        publish_schema: If True, publish the given schema name to Schema Registry Server, according to an Avro schema
+            generated from the table definition, for the columns and fields implied by field_to_col_mapping,
+            include_only_columns, and exclude_columns.  When true, if a schema_version is provided and the resulting
+            version after publishing does not match, an exception results.
+        schema_namespace: When publish_schema is True, the namespace for the generated schema to be restered in
+            Schema Registry Server.
+        column_properties: When publish_schema is True, a dict containing string properties for columns specifying
+            string properties implying particular Avro type mappings for them.   In particular, column X of BigDecimal
+            type should specify string properties 'x.precision' and 'x.scale'.
 
     Returns:
         a Kafka Key or Value spec object to use in a call to produceFromTable.
@@ -115,11 +139,27 @@ def avro(schema, schema_version: str = None, field_to_col_mapping=None, timestam
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(field_to_col_mapping) + " of type " + type(field_to_col_mapping).__name__)
+    if column_properties is not None and not isinstance(column_properties, dict):
+        raise TypeError(
+            "argument 'column_properties' is excpected to be of dict type, " +
+            "instead got " + str(column_properties) + " of type " + type(column_properties).__name__)
+
     field_to_col_mapping = _dict_to_j_map(field_to_col_mapping)
+    column_properties = _dict_to_j_properties(column_properties)
+    include_only_columns = _seq_to_j_set(include_only_columns)
+    include_only_columns = _JKafkaTools.predicateFromSet(include_only_columns)
+    exclude_columns = _seq_to_j_set(exclude_columns)
+    exclude_columns = _JKafkaTools.predicateFromSet(exclude_columns)
+    publish_schema = bool(publish_schema)
+
     try:
         if have_actual_schema:
-            return _JKafkaTools_Produce.avroSpec(schema, field_to_col_mapping, timestamp_field)
-        return _JKafkaTools_Produce.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
+            return _JKafkaTools_Produce.avroSpec(schema, field_to_col_mapping, timestamp_field,
+                                                 include_only_columns, exclude_columns, publish_schema,
+                                                 schema_namespace, column_properties)
+        return _JKafkaTools_Produce.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field,
+                                             include_only_columns, exclude_columns, publish_schema,
+                                             schema_namespace, column_properties)
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 

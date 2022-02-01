@@ -53,7 +53,7 @@ class DType:
         if not self.is_primitive:
             return self.j_type(*args, **kwargs)
         else:
-            raise DHError(message="primitive types are not callable.")
+            raise DHError(message=f"Non-primitive type {self.j_name} are not callable.")
 
     def array(self, size: int):
         """ Creates a Java array of the same data type of the specified size.
@@ -146,5 +146,5 @@ def j_array_list(values: Iterable):
         raise DHError(e, "failed to create a Java ArrayList from the Python collection.") from e
 
 
-def is_java_type(obj):
+def is_java_type(obj: Any) -> bool:
     return isinstance(obj, jpy.JType)

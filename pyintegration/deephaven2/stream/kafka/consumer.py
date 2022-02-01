@@ -3,6 +3,7 @@
 #
 """ The Kafka consumer module. """
 import collections
+from typing import Any, Dict
 
 import jpy
 
@@ -27,12 +28,12 @@ ALL_PARTITIONS_DONT_SEEK = getattr(_JKafkaTools, 'ALL_PARTITIONS_DONT_SEEK')
 ALL_PARTITIONS_SEEK_TO_END = getattr(_JKafkaTools, 'ALL_PARTITIONS_SEEK_TO_END')
 
 
-def _build_column_definition(col_name: str, data_type, component_type=None):
+def _build_j_column_definition(col_name: str, data_type: DType, component_type=None):
     col = Column(name=col_name, data_type=data_type, component_type=component_type)
     return col.j_column_definition
 
 
-def _build_column_definitions(ts):
+def _build_j_column_definitions(ts):
     """ Convert a sequence of tuples of the form ('Price', double_type)
         or ('Prices', double_array_type, double_type) TODO vector type, check with Cristian
         to a list of ColumnDefinition objects.
@@ -45,28 +46,28 @@ def _build_column_definitions(ts):
     """
     r = []
     for t in ts:
-        r.append(_build_column_definition(*t))
+        r.append(_build_j_column_definition(*t))
     return r
 
 
 def consume(
-        kafka_config: dict,
+        kafka_config: Dict,
         topic: str,
-        partitions=None,
-        offsets=None,
-        key=None,
-        value=None,
-        table_type='stream'
+        partitions: Any = None,
+        offsets: Any = None,
+        key: Any = None,
+        value: Any = None,
+        table_type: str = 'stream'
 ):
     """ Consume from Kafka to a Deephaven table.
 
     Args:
-        kafka_config: dictionary with properties to configure the associated kafka consumer and
+        kafka_config (Dict): dictionary with properties to configure the associated Kafka consumer and
             also the resulting table.  Once the table-specific properties are stripped, the result is
             passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any
             KafkaConsumer specific desired configuration here.
-        topic: the topic name
-        partitions: either a sequence of integer partition numbers or the predefined constant
+        topic (str): the topic name
+        partitions : either a sequence of integer partition numbers or the predefined constant
             ALL_PARTITIONS for all partitions.
         offsets: either a dict mapping partition numbers to offset numbers, or one of the predefined constants
             ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
@@ -80,7 +81,7 @@ def consume(
             one of the methods simple, avro or json in this module, or None to obtain a single column specified in the
             kafka_config param via the keys 'deephaven.value.column.name' for column name and
             'deephaven.value.column.type' for the column type; both should have string values associated to them.
-        table_type: a string specifying the resulting table type: one of 'stream' (default), 'append', 'stream_map'
+        table_type (str): a string specifying the resulting table type: one of 'stream' (default), 'append', 'stream_map'
             or 'append_map'.
 
     Returns:
@@ -97,14 +98,14 @@ def consume(
         partitions = ALL_PARTITIONS
     elif isinstance(partitions, collections.Sequence):
         try:
-            jarr = jpy.array('int', partitions)
+            j_arr = jpy.array('int', partitions)
         except Exception as e:
             raise ValueError(
                 "when not one of the predefined constants, keyword argument 'partitions' has to " +
                 "represent a sequence of integer partition with values >= 0, instead got " +
                 str(partitions) + " of type " + type(partitions).__name__
             ) from e
-        partitions = _JKafkaTools.partitionFilterFromArray(jarr)
+        partitions = _JKafkaTools.partitionFilterFromArray(j_arr)
     elif not isinstance(partitions, jpy.JType):
         raise TypeError(
             "argument 'partitions' has to be of str or sequence type, " +
@@ -248,7 +249,7 @@ def json(col_defs, mapping: dict = None):
             "'col_defs' argument needs to be a sequence of tuples, instead got " +
             str(col_defs) + " of type " + type(col_defs).__name__)
     try:
-        col_defs = _build_column_definitions(col_defs)
+        col_defs = _build_j_column_definitions(col_defs)
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
@@ -286,4 +287,3 @@ def simple(column_name: str, data_type: DType = None):
         return _JKafkaTools_Consume.simpleSpec(column_name, data_type.qst_type.clazz())
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
-
