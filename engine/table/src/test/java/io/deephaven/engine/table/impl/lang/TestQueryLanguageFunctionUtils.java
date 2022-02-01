@@ -14220,6 +14220,28 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         }
     }
 
+    public static void test_biginteger_divide_floating_actual() {
+        long vAt = 1;
+        for (int i = 0; i < DEFAULT_SCALE; ++i) {
+            vAt *= 10;
+        }
+        final long[] vs = new long[] { vAt, vAt*10 };
+        for (final long v : vs) {
+            final BigInteger bv1Left = BigInteger.valueOf(1);
+            final BigInteger bv1Right = BigInteger.valueOf(v);
+            final BigDecimal[] results = new BigDecimal[]{
+                    divide(bv1Left, bv1Right),
+                    divide(bv1Left, (double) v),
+                    divide(1.0, bv1Right),
+                    divide(1.0F, bv1Right),
+            };
+            final BigDecimal expected = new BigDecimal(bv1Left).divide(BigDecimal.valueOf(v), DEFAULT_SCALE, ROUNDING_MODE);
+            for (BigDecimal r : results) {
+                TestCase.assertEquals(0, expected.compareTo(r));
+            }
+        }
+    }
+
     public static void test_biginteger_arithmetic_op_primitives_null() {
         final BigInteger bv1 = BigInteger.valueOf(10);
         final byte yv1 = QueryConstants.NULL_BYTE;
