@@ -10,19 +10,20 @@ import static io.deephaven.engine.util.TableTools.*;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 
-public class TestBigDecimalColumns {
+public class TestBigIntegerColumns {
 
     private static BigDecimal atScale(final double v, final int scale) {
         return BigDecimal.valueOf(v).setScale(scale, RoundingMode.HALF_UP);
     }
 
     @Test
-    public void testBigDecimalOps() {
+    public void testBigIntegerOps() {
         final Table input = TableTools.newTable(
-                col("BD", BigDecimal.valueOf(1), BigDecimal.valueOf(2), BigDecimal.valueOf(3)),
-                col("BD2", BigDecimal.valueOf(0), BigDecimal.valueOf(2), BigDecimal.valueOf(4)),
+                col("BI", BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3)),
+                col("BI2", BigInteger.valueOf(0), BigInteger.valueOf(2), BigInteger.valueOf(4)),
                 byteCol("Y", (byte) 7, (byte) 8, (byte) 9),
                 shortCol("S", (short) 7, (short) 8, (short) 9),
                 longCol("L", 4, 5, 6),
@@ -33,49 +34,50 @@ public class TestBigDecimalColumns {
                 doubleCol("D", 10.5, 11.5, 12.5),
                 floatCol("F", 13.5f, 14.5f, 15.5f));
         final Table result = input.select(
-                "VPLUS = BD+BD2",
-                "VMINUS = (BD-BD2)",
-                "VMUL = BD*BD2",
-                "VDIV = (BD2 == 0) ? null : (BD/BD2)",
-                "V1 = BD*BD",
-                "V2 = BD+L",
-                "V2A = L+BD",
-                "V3 = BD*I < D",
-                "V3A = I*BD < D",
-                "V3Y = BD*Y < D",
-                "V3YA = Y*BD < D",
-                "V3S = BD*S < D",
-                "V3SA = S*BD < D",
-                "V4 = F-BD",
-                "V5 = L/BD",
-                "V6 = (BD == I2)",
-                "V6A = (I2 == BD)",
-                "V6Y = (BD == Y2)",
-                "V6YA = (Y2 == BD)",
-                "V6S = (BD == S2)",
-                "V6SA = (S2 == BD)",
-                "V6B = (BD == BD2)",
-                "V7 = (BD < I2)",
-                "V7A = (I2 < BD)",
-                "V7B = (BD2 < BD)",
-                "V8 = (BD <= I2)",
-                "V8A = (I2 <= BD)",
-                "V8B = (BD2 <= BD)",
-                "V9 = (BD > I2)",
-                "V9A = (I2 > BD)",
-                "V9B = (BD2 > BD)",
-                "V10 = (BD >= I2)",
-                "V10A = (I2 >= BD)",
-                "V10B = (BD2 >= BD)");
+                "VPLUS = BI+BI2",
+                "VMINUS = (BI-BI2)",
+                "VMUL = BI*BI2",
+                "VDIV = (BI2 == 0) ? null : (BI/BI2)",
+                "V1 = BI*BI",
+                "V2 = BI+L",
+                "V2A = L+BI",
+                "V3 = BI*I < D",
+                "V3A = I*BI < D",
+                "V3Y = BI*Y < D",
+                "V3YA = Y*BI < D",
+                "V3S = BI*S < D",
+                "V3SA = S*BI < D",
+                "V4 = F-BI",
+                "V5 = L/BI",
+                "V6 = (BI == I2)",
+                "V6A = (I2 == BI)",
+                "V6Y = (BI == Y2)",
+                "V6YA = (Y2 == BI)",
+                "V6S = (BI == S2)",
+                "V6SA = (S2 == BI)",
+                "V6B = (BI == BI2)",
+                "V7 = (BI < I2)",
+                "V7A = (I2 < BI)",
+                "V7B = (BI2 < BI)",
+                "V8 = (BI <= I2)",
+                "V8A = (I2 <= BI)",
+                "V8B = (BI2 <= BI)",
+                "V9 = (BI > I2)",
+                "V9A = (I2 > BI)",
+                "V9B = (BI2 > BI)",
+                "V10 = (BI >= I2)",
+                "V10A = (I2 >= BI)",
+                "V10B = (BI2 >= BI)");
+
         final int divScale = QueryLanguageFunctionUtils.DEFAULT_SCALE;
         final Table expected = TableTools.newTable(
-                col("VPLUS", BigDecimal.valueOf(1), BigDecimal.valueOf(4), BigDecimal.valueOf(7)),
-                col("VMINUS", BigDecimal.valueOf(1), BigDecimal.valueOf(0), BigDecimal.valueOf(-1)),
-                col("VMUL", BigDecimal.valueOf(0), BigDecimal.valueOf(4), BigDecimal.valueOf(12)),
+                col("VPLUS", BigInteger.valueOf(1), BigInteger.valueOf(4), BigInteger.valueOf(7)),
+                col("VMINUS", BigInteger.valueOf(1), BigInteger.valueOf(0), BigInteger.valueOf(-1)),
+                col("VMUL", BigInteger.valueOf(0), BigInteger.valueOf(4), BigInteger.valueOf(12)),
                 col("VDIV", null, atScale(1, divScale), atScale(0.75, divScale)),
-                col("V1", BigDecimal.valueOf(1), BigDecimal.valueOf(4), BigDecimal.valueOf(9)),
-                col("V2", BigDecimal.valueOf(5), BigDecimal.valueOf(7), BigDecimal.valueOf(9)),
-                col("V2A", BigDecimal.valueOf(5), BigDecimal.valueOf(7), BigDecimal.valueOf(9)),
+                col("V1", BigInteger.valueOf(1), BigInteger.valueOf(4), BigInteger.valueOf(9)),
+                col("V2", BigInteger.valueOf(5), BigInteger.valueOf(7), BigInteger.valueOf(9)),
+                col("V2A", BigInteger.valueOf(5), BigInteger.valueOf(7), BigInteger.valueOf(9)),
                 col("V3", true, false, false),
                 col("V3A", true, false, false),
                 col("V3Y", true, false, false),
