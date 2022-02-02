@@ -1599,6 +1599,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private interface NumericConverter {
         BigInteger toBigInteger(@Nullable final Number value);
+
         BigDecimal toBigDecimal(@Nullable final Number value);
 
         private static NumericConverter lookup(@NotNull final Class<?> numberClass) {
@@ -1624,8 +1625,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         private final BigInteger upperBound;
 
         IntegralType(@NotNull final Function<Number, BigInteger> toBigInteger,
-                     @Nullable final Number lowerBound,
-                     @Nullable final Number upperBound) {
+                @Nullable final Number lowerBound,
+                @Nullable final Number upperBound) {
             this.toBigInteger = toBigInteger;
             this.lowerBound = toBigInteger(lowerBound);
             this.upperBound = toBigInteger(upperBound);
@@ -1670,8 +1671,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         private final BigDecimal upperBound;
 
         FloatingPointType(@NotNull final Function<Number, BigDecimal> toBigDecimal,
-                          @Nullable final Number lowerBound,
-                          @Nullable final Number upperBound) {
+                @Nullable final Number lowerBound,
+                @Nullable final Number upperBound) {
             this.toBigDecimal = toBigDecimal;
             this.lowerBound = toBigDecimal(lowerBound);
             this.upperBound = toBigDecimal(upperBound);
@@ -1705,7 +1706,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     private static boolean isNumericallyCompatible(@NotNull final Number value,
-                                                   @NotNull final Class<?> expected) {
+            @NotNull final Class<?> expected) {
         final NumericConverter valueConverter = NumericConverter.lookup(value.getClass());
         if (valueConverter == null) {
             // value is not a recognized type
