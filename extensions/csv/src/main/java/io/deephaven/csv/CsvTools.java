@@ -5,31 +5,79 @@
 package io.deephaven.csv;
 
 import io.deephaven.base.Procedure;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.csv.reading.CsvReader;
+import io.deephaven.csv.sinks.Sink;
+import io.deephaven.csv.sinks.SinkFactory;
+import io.deephaven.csv.sinks.Source;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.BooleanArraySource;
+import io.deephaven.engine.table.impl.sources.ByteArraySource;
+import io.deephaven.engine.table.impl.sources.CharacterArraySource;
+import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
+import io.deephaven.engine.table.impl.sources.DoubleArraySource;
+import io.deephaven.engine.table.impl.sources.FloatArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.ShortArraySource;
 import io.deephaven.engine.util.PathUtil;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.streams.BzipFileOutputStream;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.TimeZone;
+import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utilities for reading and writing CSV files to and from {@link Table}s
@@ -151,7 +199,20 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readCsv(InputStream stream, CsvSpecs specs) throws CsvReaderException {
-        return specs.parse(stream);
+        final CsvReader.Result result = CsvReader.read(specs, stream, makeMySinkFactory());
+        final String[] columnNames = result.columnNames();
+        final Sink<?>[] sinks = result.columns();
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        long maxSize = 0;
+        for (int ii = 0; ii < columnNames.length; ++ii) {
+            final String columnName = columnNames[ii];
+            final MySinkBase<?, ?> sink = (MySinkBase<?, ?>) sinks[ii];
+            maxSize = Math.max(maxSize, sink.resultSize());
+            columns.put(columnName, sink.result());
+        }
+        final TableDefinition tableDef = TableDefinition.inferFrom(columns);
+        final TrackingRowSet rowSet = RowSetFactory.flat(maxSize).toTracking();
+        return InMemoryTable.from(tableDef, rowSet, columns);
     }
 
     /**
@@ -166,7 +227,7 @@ public class CsvTools {
     @ScriptApi
     public static Table readCsv(URL url, CsvSpecs specs) throws CsvReaderException {
         try {
-            return specs.parse(url.openStream());
+            return readCsv(url.openStream(), specs);
         } catch (IOException inner) {
             throw new CsvReaderException("Caught exception", inner);
         }
@@ -189,7 +250,7 @@ public class CsvTools {
     @ScriptApi
     public static Table readCsv(Path path, CsvSpecs specs) throws CsvReaderException {
         try {
-            return specs.parse(PathUtil.open(path));
+            return readCsv(PathUtil.open(path), specs);
         } catch (IOException inner) {
             throw new CsvReaderException("Caught exception", inner);
         }
@@ -256,7 +317,7 @@ public class CsvTools {
     @ScriptApi
     @Deprecated
     public static Table readCsv(InputStream is, final String format) throws CsvReaderException {
-        final CsvSpecs specs = CsvSpecs.fromLegacyFormat(format);
+        final CsvSpecs specs = fromLegacyFormat(format);
         if (specs == null) {
             throw new IllegalArgumentException(String.format("Unable to map legacy format '%s' into CsvSpecs", format));
         }
@@ -276,7 +337,7 @@ public class CsvTools {
     @ScriptApi
     @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws CsvReaderException {
-        return CsvSpecs.builder().delimiter(separator).build().parse(is);
+        return readCsv(is, CsvSpecs.builder().delimiter(separator).build());
     }
 
     private static boolean isStandardFile(URL url) {
@@ -875,5 +936,292 @@ public class CsvTools {
         } finally {
             nugget.done();
         }
+    }
+
+    public static CsvSpecs fromLegacyFormat(String format) {
+        if (format == null) {
+            return CsvSpecs.csv();
+        } else if (format.length() == 1) {
+            return CsvSpecs.builder().delimiter(format.charAt(0)).build();
+        } else if ("TRIM".equals(format)) {
+            return CsvSpecs.builder().trim(true).build();
+        } else if ("DEFAULT".equals(format)) {
+            return CsvSpecs.builder().ignoreSurroundingSpaces(false).build();
+        } else if ("TDF".equals(format)) {
+            return CsvSpecs.tsv();
+        }
+        return null;
+    }
+
+    private static abstract class MySinkBase<TYPE, TARRAY> implements Sink<TARRAY> {
+        protected final ArrayBackedColumnSource<TYPE> result;
+        protected long resultSize;
+        protected final WritableColumnSource<?> reinterpreted;
+        protected final ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker;
+
+        public MySinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+                ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker) {
+            this.result = result;
+            this.resultSize = 0;
+            if (interpClass != null) {
+                reinterpreted = (WritableColumnSource<?>) result.reinterpret(interpClass);
+            } else {
+                reinterpreted = result;
+            }
+            this.chunkWrapInvoker = chunkWrapInvoker;
+        }
+
+        @Override
+        public final void write(final TARRAY src, final boolean[] isNull, final long destBegin, final long destEnd,
+                boolean appending_unused) {
+            if (destBegin == destEnd) {
+                return;
+            }
+            final int size = Math.toIntExact(destEnd - destBegin);
+            nullFlagsToValues(src, isNull, size);
+            reinterpreted.ensureCapacity(destEnd);
+            resultSize = Math.max(resultSize, destEnd);
+            try (final ChunkSink.FillFromContext context = reinterpreted.makeFillFromContext(size);
+                    final RowSequence range = RowSequenceFactory.forRange(destBegin, destEnd - 1)) {
+                Chunk<? extends Values> chunk = chunkWrapInvoker.apply(src, 0, size);
+                reinterpreted.fillFromChunk(context, chunk, range);
+            }
+        }
+
+        protected abstract void nullFlagsToValues(final TARRAY values, final boolean[] isNull, final int size);
+
+        public ArrayBackedColumnSource<TYPE> result() {
+            return result;
+        }
+
+        public long resultSize() {
+            return resultSize;
+        }
+
+        protected interface ChunkWrapInvoker<TARRAY, TRESULT> {
+            TRESULT apply(final TARRAY data, final int offset, final int capacity);
+        }
+    }
+
+    private static abstract class MySourceAndSinkBase<TYPE, TARRAY> extends MySinkBase<TYPE, TARRAY>
+            implements Source<TARRAY>, Sink<TARRAY> {
+        private final ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writableChunkWrapInvoker;
+
+        public MySourceAndSinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+                ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker,
+                ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writeableChunkWrapInvoker) {
+            super(result, interpClass, chunkWrapInvoker);
+            this.writableChunkWrapInvoker = writeableChunkWrapInvoker;
+        }
+
+        @Override
+        public final void read(TARRAY dest, boolean[] isNull, long srcBegin, long srcEnd) {
+            if (srcBegin == srcEnd) {
+                return;
+            }
+            final int size = Math.toIntExact(srcEnd - srcBegin);
+            try (final ChunkSink.FillContext context = reinterpreted.makeFillContext(size);
+                    final RowSequence range = RowSequenceFactory.forRange(srcBegin, srcEnd - 1)) {
+                WritableChunk<? super Values> chunk = writableChunkWrapInvoker.apply(dest, 0, size);
+                reinterpreted.fillChunk(context, chunk, range);
+            }
+            valuesToNullFlags(dest, isNull, size);
+        }
+
+        protected abstract void valuesToNullFlags(final TARRAY values, final boolean[] isNull, final int size);
+    }
+
+    private static final class MyCharSink extends MySinkBase<Character, char[]> {
+        public MyCharSink() {
+            super(new CharacterArraySource(), null, CharChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final char[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_CHAR;
+                }
+            }
+        }
+    }
+
+    private static final class MyBooleanAsByteSink extends MySinkBase<Boolean, byte[]> {
+        public MyBooleanAsByteSink() {
+            super(new BooleanArraySource(), byte.class, ByteChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final byte[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+                }
+            }
+        }
+    }
+
+    private static final class MyByteSink extends MySourceAndSinkBase<Byte, byte[]> {
+        public MyByteSink() {
+            super(new ByteArraySource(), null, ByteChunk::chunkWrap, WritableByteChunk::writableChunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final byte[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_BYTE;
+                }
+            }
+        }
+
+        @Override
+        protected void valuesToNullFlags(final byte[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                isNull[ii] = values[ii] == QueryConstants.NULL_BYTE;
+            }
+        }
+    }
+
+    private static final class MyShortSink extends MySourceAndSinkBase<Short, short[]> {
+        public MyShortSink() {
+            super(new ShortArraySource(), null, ShortChunk::chunkWrap, WritableShortChunk::writableChunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final short[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_SHORT;
+                }
+            }
+        }
+
+        @Override
+        protected void valuesToNullFlags(final short[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                isNull[ii] = values[ii] == QueryConstants.NULL_SHORT;
+            }
+        }
+    }
+
+    private static final class MyIntSink extends MySourceAndSinkBase<Integer, int[]> {
+        public MyIntSink() {
+            super(new IntegerArraySource(), null, IntChunk::chunkWrap, WritableIntChunk::writableChunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final int[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_INT;
+                }
+            }
+        }
+
+        @Override
+        protected void valuesToNullFlags(final int[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                isNull[ii] = values[ii] == QueryConstants.NULL_INT;
+            }
+        }
+    }
+
+    private static final class MyLongSink extends MySourceAndSinkBase<Long, long[]> {
+        public MyLongSink() {
+            super(new LongArraySource(), null, LongChunk::chunkWrap, WritableLongChunk::writableChunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_LONG;
+                }
+            }
+        }
+
+        @Override
+        protected void valuesToNullFlags(final long[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii < size; ++ii) {
+                isNull[ii] = values[ii] == QueryConstants.NULL_LONG;
+            }
+        }
+
+    }
+
+    private static final class MyFloatSink extends MySinkBase<Float, float[]> {
+        public MyFloatSink() {
+            super(new FloatArraySource(), null, FloatChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final float[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_FLOAT;
+                }
+            }
+        }
+    }
+
+    private static final class MyDoubleSink extends MySinkBase<Double, double[]> {
+        public MyDoubleSink() {
+            super(new DoubleArraySource(), null, DoubleChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final double[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_DOUBLE;
+                }
+            }
+        }
+    }
+
+    private static final class MyStringSink extends MySinkBase<String, String[]> {
+        public MyStringSink() {
+            super(new ObjectArraySource<>(String.class), null, ObjectChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final String[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = null;
+                }
+            }
+        }
+    }
+
+    private static final class MyDateTimeAsLongSink extends MySinkBase<DateTime, long[]> {
+        public MyDateTimeAsLongSink() {
+            super(new DateTimeArraySource(), long.class, LongChunk::chunkWrap);
+        }
+
+        @Override
+        protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
+            for (int ii = 0; ii != size; ++ii) {
+                if (isNull[ii]) {
+                    values[ii] = QueryConstants.NULL_LONG;
+                }
+            }
+        }
+    }
+
+    private static SinkFactory makeMySinkFactory() {
+        return SinkFactory.of(
+                MyByteSink::new, QueryConstants.NULL_BYTE_BOXED,
+                MyShortSink::new, QueryConstants.NULL_SHORT_BOXED,
+                MyIntSink::new, QueryConstants.NULL_INT_BOXED,
+                MyLongSink::new, QueryConstants.NULL_LONG_BOXED,
+                MyFloatSink::new, QueryConstants.NULL_FLOAT_BOXED,
+                MyDoubleSink::new, QueryConstants.NULL_DOUBLE_BOXED,
+                MyBooleanAsByteSink::new,
+                MyCharSink::new, QueryConstants.NULL_CHAR,
+                MyStringSink::new, null,
+                MyDateTimeAsLongSink::new, QueryConstants.NULL_LONG,
+                MyDateTimeAsLongSink::new, QueryConstants.NULL_LONG);
     }
 }
