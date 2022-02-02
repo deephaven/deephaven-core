@@ -3,7 +3,7 @@ package io.deephaven.server.object;
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectType.Exporter.Reference;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase {
 
+    public static final String MY_OBJECT_TYPE_NAME = MyObject.class.getName();
+    public static final String MY_REF_OBJECT_TYPE_NAME = MyRefObject.class.getName();
     private static final String MY_OBJECT_SOME_STRING = "some string";
     private static final int MY_OBJECT_SOME_INT = 42;
     private static final MyRefObject REF = new MyRefObject();
@@ -71,18 +73,18 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     private void fetchMyObject(Ticket ticket, String expectedSomeString, int expectedSomeInt) throws IOException {
         final FetchObjectRequest request = FetchObjectRequest.newBuilder()
                 .setSourceId(TypedTicket.newBuilder()
-                        .setType(MyObjectRegistration.MY_OBJECT_TYPE_NAME)
+                        .setType(MY_OBJECT_TYPE_NAME)
                         .setTicket(ticket)
                         .build())
                 .build();
         final FetchObjectResponse response = channel().objectBlocking().fetchObject(request);
 
-        assertThat(response.getType()).isEqualTo(MyObjectRegistration.MY_OBJECT_TYPE_NAME);
+        assertThat(response.getType()).isEqualTo(MY_OBJECT_TYPE_NAME);
         assertThat(response.getTypedExportIdCount()).isEqualTo(4);
         assertThat(response.getTypedExportId(0).getType()).isEqualTo("Table");
-        assertThat(response.getTypedExportId(1).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportId(1).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
         assertThat(response.getTypedExportId(2).getType()).isEmpty();
-        assertThat(response.getTypedExportId(3).getType()).isEqualTo(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+        assertThat(response.getTypedExportId(3).getType()).isEqualTo(MY_REF_OBJECT_TYPE_NAME);
 
         final DataInputStream dis = new DataInputStream(response.getData().newInput());
 
@@ -111,20 +113,6 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         assertThat(in.readInt()).isEqualTo(expected);
     }
 
-    @AutoService(Registration.class)
-    public static class MyObjectRegistration implements Registration {
-
-        public static final String MY_OBJECT_TYPE_NAME = MyObject.class.getName();
-
-        public static final String MY_REF_OBJECT_TYPE_NAME = MyRefObject.class.getName();
-
-        @Override
-        public void registerInto(Callback callback) {
-            callback.register(new MyObjectType());
-            callback.register(new MyRefObjectType());
-        }
-    }
-
     public static class MyObject {
         private final String someString;
         private final int someInt;
@@ -149,9 +137,10 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
     public static class MyUnregisteredObject {
     }
 
-    private static class MyObjectType extends ObjectTypeClassBase<MyObject> {
+    @AutoService(ObjectType.class)
+    public static class MyObjectType extends ObjectTypeClassBase<MyObject> {
         public MyObjectType() {
-            super(MyObjectRegistration.MY_OBJECT_TYPE_NAME, MyObject.class);
+            super(MY_OBJECT_TYPE_NAME, MyObject.class);
         }
 
         @Override
@@ -166,10 +155,10 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
             final Optional<Reference> dontAllowUnknown = exporter.reference(new Object(), false, false);
 
             assertThat(tableRef.type()).contains("Table");
-            assertThat(objRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(objRef.type()).contains(MY_REF_OBJECT_TYPE_NAME);
             assertThat(unknownRef.type()).isEmpty();
             assertThat(extraTableRef.type()).contains("Table");
-            assertThat(extraNewObjRef.type()).contains(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME);
+            assertThat(extraNewObjRef.type()).contains(MY_REF_OBJECT_TYPE_NAME);
             assertThat(dontAllowUnknown).isEmpty();
 
             assertThat(tableRef.index()).isEqualTo(extraTableRef.index());
@@ -195,9 +184,10 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
         }
     }
 
-    private static class MyRefObjectType extends ObjectTypeClassBase<MyRefObject> {
+    @AutoService(ObjectType.class)
+    public static class MyRefObjectType extends ObjectTypeClassBase<MyRefObject> {
         public MyRefObjectType() {
-            super(MyObjectRegistration.MY_REF_OBJECT_TYPE_NAME, MyRefObject.class);
+            super(MY_REF_OBJECT_TYPE_NAME, MyRefObject.class);
         }
 
         @Override

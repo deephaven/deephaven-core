@@ -1,9 +1,11 @@
 package io.deephaven.plugin.type;
 
+import io.deephaven.plugin.PluginBase;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
-public abstract class ObjectTypeBase implements ObjectType {
+public abstract class ObjectTypeBase extends PluginBase implements ObjectType {
 
     public abstract void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out) throws IOException;
 

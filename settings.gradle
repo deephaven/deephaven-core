@@ -213,6 +213,9 @@ project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':plugin')
 
+include(':plugin-dagger')
+project(':plugin-dagger').projectDir = file('plugin/dagger')
+
 include(':plugin-figure')
 project(':plugin-figure').projectDir = file('plugin/figure')
 
