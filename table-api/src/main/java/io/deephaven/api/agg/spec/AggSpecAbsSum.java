@@ -3,6 +3,9 @@ package io.deephaven.api.agg.spec;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * Specifies an aggregation that supplies the absolute sum for each group. Only works with numeric input types.
+ */
 @Immutable
 @SimpleStyle
 public abstract class AggSpecAbsSum extends AggSpecEmptyBase {
