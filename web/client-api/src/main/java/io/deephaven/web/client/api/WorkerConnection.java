@@ -38,6 +38,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Lo
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
@@ -72,6 +73,7 @@ import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -81,7 +83,6 @@ import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
@@ -698,22 +699,12 @@ public class WorkerConnection {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        switch (VariableType.valueOf(definition.getType())) {
-            case Table:
-                return (Promise) getTable(definition, null);
-            case TreeTable:
-                return (Promise) getTreeTable(definition);
-            case Figure:
-                return (Promise) getFigure(definition);
-            case Pandas:
-                return (Promise) getPandas(definition);
-            // case OtherWidget:
-            // return (Promise) getWidget(definition.getName());
-            // case TableMap:
-            // return (Promise) getTableMap(definition.getName());
-            default:
-                return Promise.reject(
-                        new Error("Object " + definition.getTitle() + " unknown type " + definition.getType() + "."));
+        if (definition.getType().equals(JsVariableChanges.TABLE)) {
+            return (Promise) getTable(definition, null);
+        } else if (definition.getType().equals(JsVariableChanges.FIGURE)) {
+            return (Promise) getFigure(definition);
+        } else {
+            return (Promise) getWidget(definition);
         }
     }
 
@@ -833,6 +824,18 @@ public class WorkerConnection {
                     request.setSourceId(typedTicket);
                     objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
+    }
+
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return whenServerReady("get a widget")
+                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
+                })).then(response -> Promise.resolve(new JsWidget(this, response)));
     }
 
     public void registerFigure(JsFigure figure) {
