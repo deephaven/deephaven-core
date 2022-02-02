@@ -2025,7 +2025,7 @@ class IncrementalChunkedNaturalJoinStateManager
     private long getResultRightIndex(long hashSlot) {
         final long rightIndex = getRightIndex(hashSlot);
         if (rightIndex == DUPLICATE_RIGHT_VALUE) {
-            throw new IllegalStateException("Duplicate right key for " + keyString(hashSlot));
+            throw new IllegalStateException("Natural Join found duplicate right key for " + keyString(hashSlot));
         }
         return rightIndex;
     }
