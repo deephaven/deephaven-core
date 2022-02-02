@@ -3,13 +3,21 @@
 #
 """ This module provides access to the Deephaven server configuration. """
 import jpy
-
+from deephaven2.time import TimeZone
 
 _JDHConfig = jpy.get_type("io.deephaven.configuration.Configuration")
+_JDateTimeZone = jpy.get_type("org.joda.time.DateTimeZone")
 
 
-def get_workspace_root() -> str:
-    """
-    Helper function for extracting the root directory for the workspace configuration
-    """
-    return _JDHConfig.getInstance().getWorkspacePath()
+def get_log_dir() -> str:
+    """ Returns the server's log directory. """
+    return _JDHConfig.getInstance().getLogDir()
+
+
+def get_server_timezone() -> TimeZone:
+    """ Returns the server's time zone. """
+    j_timezone = _JDateTimeZone.forTimeZone(_JDHConfig.getInstance().getServerTimezone())
+    for tz in TimeZone:
+        if j_timezone == tz.value.getTimeZone():
+            return tz
+    return None

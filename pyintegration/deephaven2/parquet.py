@@ -44,7 +44,7 @@ def _build_parquet_instructions(col_instructions: List[ColumnInstruction] = None
             if not for_read and not ci.column_name:
                 raise ValueError("must specify the table column name for write.")
 
-            builder.addColumnNameMapping(ci.column_name, ci.parquet_column_name)
+            builder.addColumnNameMapping(ci.parquet_column_name, ci.column_name)
             if ci.column_name:
                 if ci.codec_name:
                     builder.addColumnCodec(ci.column_name, ci.codec_name, ci.codec_args)

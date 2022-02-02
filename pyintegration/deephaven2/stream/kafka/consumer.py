@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ The Kafka consumer module. """
 import collections
@@ -24,10 +24,12 @@ DONT_SEEK = getattr(_JKafkaTools, 'DONT_SEEK')
 SEEK_TO_END = getattr(_JKafkaTools, 'SEEK_TO_END')
 FROM_PROPERTIES = getattr(_JKafkaTools, 'FROM_PROPERTIES')
 IGNORE = getattr(_JKafkaTools_Consume, 'IGNORE')
+
 ALL_PARTITIONS = getattr(_JKafkaTools, 'ALL_PARTITIONS')
 ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_JKafkaTools, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
 ALL_PARTITIONS_DONT_SEEK = getattr(_JKafkaTools, 'ALL_PARTITIONS_DONT_SEEK')
 ALL_PARTITIONS_SEEK_TO_END = getattr(_JKafkaTools, 'ALL_PARTITIONS_SEEK_TO_END')
+
 IDENTITY = object()  # Ensure IDENTITY is unique.
 
 

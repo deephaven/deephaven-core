@@ -193,4 +193,5 @@ ArrayList = ArrayListDType(j_name="java.util.ArrayList")
 
 
 def is_java_type(obj: Any) -> bool:
+    """ Returns True if the object is originated in Java. """
     return isinstance(obj, jpy.JType)
