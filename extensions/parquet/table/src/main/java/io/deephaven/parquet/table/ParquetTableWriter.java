@@ -187,9 +187,11 @@ public class ParquetTableWriter {
                         .map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
-                    final String groupingPath = groupingPathFactory.apply(groupingColumns[gci]);
+                    final String parquetColumnName =
+                            writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumns[gci]);
+                    final String groupingPath = groupingPathFactory.apply(parquetColumnName);
                     cleanupPaths.add(groupingPath);
-                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci],
+                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(Paths.get(groupingPath)).toString()));
                     write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath,
                             Collections.emptyMap());
@@ -448,7 +450,8 @@ public class ParquetTableWriter {
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
         }
 
-        ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
+        ColumnWriter columnWriter = rowGroupWriter.addColumn(
+                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name));
 
         boolean usedDictionary = false;
         if (supportsDictionary(columnSource.getType())) {
