@@ -17,7 +17,7 @@ Now we decorate the data by adding its day of the week.
 daily_data = daily_data.update("DayOfWeekInt = dayOfWeek(DateTime, TZ_NY)")
 ```
 
-And now we convert the day of week to a string representation.
+Next,  we convert the day of week to a string representation.
 
 ```python
 import calendar
@@ -56,7 +56,7 @@ vowels = daily_data.whereIn(vowels_table, "Character = Vowels")
 consonants = daily_data.whereNotIn(vowels_table, "Character = Vowels")
 ```
 
-You can also define custom functions to perform filtering. Here, the custom function will omit weekend days.
+You can also define custom functions to perform filtering. Here, we omit weekend days.
 
 ```python
 def is_weekday(day_of_week):
