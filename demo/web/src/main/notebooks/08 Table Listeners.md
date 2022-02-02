@@ -41,11 +41,11 @@ def log_table_update_with_row(update):
 log_table_update_with_row_handler = listen(table, log_table_update_with_row)
 ```
 
-This example covers just the bare minimum of using listeners. Any code that you'd want to execute can be used as a listener. This allows you to do things such as HTTP webhooks, Slack notifications, or email notifications using your listener.
+This example covers just the bare minimum of using listeners. Any code can be used as a listener. This allows you to do things such as trigger HTTP webhooks, Slack notifications, or email notifications.
 
 ## Parameterizing the listener
 
-What if we had two time tables and wanted to reuse the same listener method with them? We can't change the listener's signature, so parameterizing the tables that way won't work. We definitely don't want to copy-paste the code into separate functions that reference the two tables as well. Instead, we can create a function that takes a table, and returns a function that takes the `update` object. If you're familiar with functional programming, this is very similar to [currying](https://en.wikipedia.org/wiki/Currying).
+What if we had two time tables and wanted to reuse the same listener method? We can't change the listener's signature, so parameterizing the tables that way won't work. And we definitely don't want to copy-paste the code into separate functions that reference the two tables. Instead, we can create a function that takes a table and returns a function that takes the `update` object. If you're familiar with functional programming, this is very similar to [currying](https://en.wikipedia.org/wiki/Currying).
 
 Let's start with our two time tables.
 
@@ -83,4 +83,4 @@ table_one_handler = listen(table_one, table_one_listener)
 table_two_handler = listen(table_two, table_two_listener)
 ```
 
-And now we have reused our base listener across two tables.
+We've successfully reused our base listener across two tables! To learn more about table listeners, see [How to create table listeners in Python].
