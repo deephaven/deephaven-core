@@ -83,4 +83,4 @@ table_one_handler = listen(table_one, table_one_listener)
 table_two_handler = listen(table_two, table_two_listener)
 ```
 
-We've successfully reused our base listener across two tables! To learn more about table listeners, see [How to create table listeners in Python].
+We've successfully reused our base listener across two tables! To learn more about table listeners, see [How to create table listeners in Python](https://deephaven.io/core/docs/how-to-guides/table-listeners-python/).
