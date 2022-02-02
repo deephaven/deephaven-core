@@ -2,15 +2,13 @@
 
 This notebook will demonstrate how to switch from DataFrames to tables in Deephaven.
 
-It will also familiarize you with some of the options related to Pandas compared to tables.
 
 [Pandas](http://pandas.pydata.org/) is one of the most used libraries for data analysis and manipulation in Python.
 \
 With Deephaven, you have all the familiar tools from Pandas but with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven allows multithreading, easy partitioning, and collecting data.
 
-Not only that - these are possible in Deephaven with very large data.
+Not only that - these tasks are possible in Deephaven with very large data.
 \
-In this notebook, we will show you some of your familiar DataFrame tools used the Deephaven way.
 
 A [`DataFrame`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html?highlight=dataframe#pandas.DataFrame) is a two-dimensional tabular data structure that is native to Pandas. With Deephaven, we can convert between Deephaven tables and Pandas DataFrames.
 \
@@ -38,6 +36,9 @@ data_frame = tableToDataFrame(source)
 print(data_frame)
 ```
 
+
+**DataFrame to Table**
+
 Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`dataFrameToTable`](https://deephaven.io/core/pydoc/code/deephaven.html#deephaven.dataFrameToTable) method.
 
 ```python
@@ -58,9 +59,11 @@ meta_table = new_table.getMeta()
 Pandas uses `float32` and `float64` data types, which are equivalent to `float` and `double` in Deephaven. These are the same type and require the same memory. A `String` in Deephaven is an `object` in Pandas.
 \
 \
-Pandas has fewer data types than Deephaven, to learn more about creating tables with specific types, see our guide [How to create a table with newTable](https://deephaven.io/core/docs/how-to-guides/new-table/).
+Pandas has fewer data types than Deephaven. To learn more about creating tables with specific types, see our guide [How to create a table with newTable](https://deephaven.io/core/docs/how-to-guides/new-table/).
 \
 \
+**Table operations **
+
 Deephaven tables and Pandas DataFrames both contain tabular data. In both cases, users want to perform the same kinds of operations, such as creating tables, filtering tables, and aggregating tables. Below we present how to do the same operations with both Pandas and Deephaven.
 \
 \
@@ -121,7 +124,7 @@ print(data_frame)
 renamed_table = table.renameColumns("X = A")
 ```
 
-Deephaven offers several types of filters. See our article on [how to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
+Deephaven offers several types of filters. See our article, [How to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
 \
 Filtering in Deephaven and Pandas has the same logic.
 
@@ -147,7 +150,7 @@ table = newTable(
 )
 ```
 
-We can limit the columns to certain values that match a formula. See our article on [how to use formulas](https://deephaven.io/core/docs/formulas-how-to/).
+We can limit the columns to certain values that match a formula. See our article, [How to use formulas](https://deephaven.io/core/docs/formulas-how-to/).
 
 ```python
 filtered_data_frame = data_frame[data_frame.A < 2]
@@ -157,7 +160,7 @@ filtered_table = table.where("A < 2")
 ```
 
 
-We can also return just the [head](https://deephaven.io/core/docs/reference/table-operations/filter/head/) or [tail](https://deephaven.io/core/docs/reference/table-operations/filter/tail/) of the DataFrame or table. Below, we request the first three rows:
+We can also return just the first rows ([head](https://deephaven.io/core/docs/reference/table-operations/filter/head/)) or last rows ([tail](https://deephaven.io/core/docs/reference/table-operations/filter/tail/)) of the DataFrame or table. Below, we request the first three rows:
 
 ```python
 head_data_frame = data_frame.iloc[:3]
@@ -177,9 +180,9 @@ tail_table = table.tail(3)
 ```
 
 
-Sorting changes the order of values in a data set based upon comparison operations. All data is still in the data set but in a different order. In Deephaven, data can be sorted by query or from the UI. UI sorting only changes how the data is displayed. It does not change the underlying data.
+Sorting changes the order of values in a dataset based upon comparison operations. All data is still in the dataset but in a different order. In Deephaven, data can be sorted by query or from the UI - UI sorting only changes how the data is displayed. It does not change the underlying data.
 \
-For this example, we want a slightly larger data set:
+For this example, we want a slightly larger dataset:
 
 ```python
 import pandas as pd
@@ -204,7 +207,7 @@ table = newTable(
 ```
 
 
-We can [sort](https://deephaven.io/core/docs/reference/table-operations/sort/sort/) in ascending order on a data set for a DataFrame or table:
+We can [sort](https://deephaven.io/core/docs/reference/table-operations/sort/sort/) in ascending order on a dataset for a DataFrame or table:
 
 ```python
 sorted_data_frame = data_frame.sort_values(by = 'B')
@@ -215,7 +218,7 @@ sorted_table = table.sort("B")
 ```
 
 
-We can [sort descending](https://deephaven.io/core/docs/reference/table-operations/sort/sort-descending/) on a data set for a DataFrame or table:
+We can [sort descending](https://deephaven.io/core/docs/reference/table-operations/sort/sort-descending/) on a dataset for a DataFrame or table:
 
 ```python
 sorted_data_frame = data_frame.sort_values(by = 'B', ascending = False)
@@ -367,7 +370,7 @@ table = newTable(
 )
 ```
 
-We can filter the data sets to remove the missing values.
+We can filter the datasets to remove the missing values.
 
 ```python
 remove_values_data_frame = data_frame.dropna()
@@ -387,7 +390,7 @@ print(replace_values_data_frame)
 replace_values_table = table.update("B = isNull(B) ? 0.0 : B")
 ```
 
-[Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
+The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
 
 ```python
 print("Go to https://deephaven.io/core/docs/tutorials/quickstart/ to download pre-built Docker images.")
