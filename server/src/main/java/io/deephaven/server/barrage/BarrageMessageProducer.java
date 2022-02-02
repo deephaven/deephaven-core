@@ -175,11 +175,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          * @param options serialization options for this specific view
          * @param viewport is the position-space viewport
          * @param keyspaceViewport is the key-space viewport
-         * @param subscribedColumns are the columns subscribed for this view
+         * @param snapshotColumns are the columns included for this view
          * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
          */
         MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
-                @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+                @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
     }
 

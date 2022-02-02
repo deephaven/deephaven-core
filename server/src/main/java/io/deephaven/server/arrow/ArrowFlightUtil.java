@@ -11,7 +11,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.barrage.flatbuf.DoGetRequest;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -436,15 +435,11 @@ public class ArrowFlightUtil {
 
                 // ensure synchronization with parent class functions
                 synchronized (DoExchangeMarshaller.this) {
-
-                    final DoGetRequest doGetRequest = DoGetRequest
-                            .getRootAsDoGetRequest(message.app_metadata.msgPayloadAsByteBuffer());
-
-                    final SessionState.ExportObject<BaseTable> parent =
-                            ticketRouter.resolve(session, doGetRequest.ticketAsByteBuffer(), "ticket");
-
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+                    final SessionState.ExportObject<BaseTable> parent =
+                            ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
                     session.nonExport()
                             .require(parent)

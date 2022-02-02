@@ -44,6 +44,7 @@ public class BarrageStreamReader implements StreamReader {
 
     @Override
     public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
+            final BitSet expectedColumns,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
@@ -51,7 +52,6 @@ public class BarrageStreamReader implements StreamReader {
         Message header = null;
         try {
             boolean bodyParsed = false;
-            boolean nullMetadata = false;
 
             final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
@@ -155,13 +155,10 @@ public class BarrageStreamReader implements StreamReader {
 
                 // snapshots may not provide metadata, generate it now
                 if (msg == null) {
-                    // note that initial metadata was not provided
-                    nullMetadata = true;
-
                     msg = new BarrageMessage();
 
                     // generate a default set of column selectors
-                    msg.snapshotColumns = new BitSet(columnTypes.length);
+                    msg.snapshotColumns = expectedColumns;
 
                     // create and fill the add column metadata from the schema
                     msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
@@ -169,9 +166,6 @@ public class BarrageStreamReader implements StreamReader {
                         msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
                         msg.addColumnData[ci].type = columnTypes[ci];
                         msg.addColumnData[ci].componentType = componentTypes[ci];
-
-                        // set the column selector active by default
-                        msg.snapshotColumns.set(ci);
                     }
 
                     // no mod column data
@@ -223,11 +217,6 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
                                     columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, ois);
-
-                            // for generated metadata, remove zero length columns from snapshot columns bitset
-                            if (nullMetadata && msg.addColumnData[ci].data.size() == 0) {
-                                msg.snapshotColumns.clear(ci);
-                            }
                         }
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {

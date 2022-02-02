@@ -15,7 +15,7 @@ dependencies {
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':log-factory')
-    api "io.deephaven.barrage:barrage-format:0.3.1-SNAPSHOT"
+    api "io.deephaven.barrage:barrage-format:0.4.0"
 
     Classpaths.inheritFlatbuffer(project, 'implementation')
 

@@ -47,6 +47,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private final BarrageTable resultTable;
 
+    private volatile BitSet expectedColumns;
+
     private volatile boolean sealed = false;
     private Throwable exceptionWhileSealing = null;
 
@@ -149,6 +151,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             throw new UncheckedDeephavenException(this + " is not connected");
         }
 
+        // store this for streamreader parser
+        expectedColumns = columns;
+
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
@@ -250,7 +255,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return wrapper.dataBuffer();
     }
 
-    public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
+    private static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
             final MethodDescriptor.MethodType methodType,
             final String serviceName,
             final String methodName,
@@ -278,7 +283,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
      * @param streamReader the stream reader - intended to be thread safe and re-usable
      * @return the client side method descriptor
      */
-    public static MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+    private MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
             final BarrageSnapshotOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
@@ -291,7 +296,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+    private class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
         private final BarrageSnapshotOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
@@ -319,7 +324,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, expectedColumns, columnChunkTypes, columnTypes, componentTypes,
+                    stream);
         }
     }
 }

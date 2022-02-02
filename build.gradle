@@ -60,8 +60,6 @@ allprojects {
                 includeGroup 'org.apache.kafka'
             }
         }
-        mavenLocal()
-
     }
 }
 

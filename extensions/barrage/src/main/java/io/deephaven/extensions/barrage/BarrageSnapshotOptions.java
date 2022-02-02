@@ -13,7 +13,7 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSnapshotOptions extends StreamReaderOptions {
+public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
     public static Builder builder() {
         return ImmutableBarrageSnapshotOptions.builder();
     }
@@ -39,6 +39,7 @@ public abstract class BarrageSnapshotOptions extends StreamReaderOptions {
      *
      * @return whether to use deephaven nulls
      */
+    @Override
     @Default
     public boolean useDeephavenNulls() {
         return false;
@@ -52,6 +53,7 @@ public abstract class BarrageSnapshotOptions extends StreamReaderOptions {
         return 0;
     }
 
+    @Override
     @Default
     public ColumnConversionMode columnConversionMode() {
         return ColumnConversionMode.Stringify;

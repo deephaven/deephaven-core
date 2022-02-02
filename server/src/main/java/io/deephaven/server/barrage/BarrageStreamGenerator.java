@@ -259,7 +259,7 @@ public class BarrageStreamGenerator implements
         }
 
         public final StreamReaderOptions options() {
-            return this.options;
+            return options;
         }
 
         public final RowSet keyspaceViewport() {
@@ -274,15 +274,15 @@ public class BarrageStreamGenerator implements
      * @param options serialization options for this specific view
      * @param viewport is the position-space viewport
      * @param keyspaceViewport is the key-space viewport
-     * @param subscribedColumns are the columns subscribed for this view
+     * @param snapshotColumns are the columns subscribed for this view
      * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
      */
     @Override
     public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
             @Nullable final RowSet keyspaceViewport,
-            @Nullable final BitSet subscribedColumns) {
-        return new SnapshotView(this, options, viewport, keyspaceViewport, subscribedColumns);
+            @Nullable final BitSet snapshotColumns) {
+        return new SnapshotView(this, options, viewport, keyspaceViewport, snapshotColumns);
     }
 
     /**
@@ -331,7 +331,7 @@ public class BarrageStreamGenerator implements
         }
 
         public final StreamReaderOptions options() {
-            return this.options;
+            return options;
         }
 
         public final RowSet keyspaceViewport() {
