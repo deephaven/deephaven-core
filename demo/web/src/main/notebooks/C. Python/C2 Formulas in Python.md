@@ -1,6 +1,6 @@
 # **Python functions in Deephaven**
 
-This notebook will demonstrate how to write a Python function that can be used in the Deephaven Query Language.
+This notebook will demonstrate how to write a Python function that can be used in the Deephaven Query Language. Functions are useful because they allow repeatability of code by just calling one line rather than duplicating efforts.
 
 In this example, a custom, user-defined function is used inside a query string to compute new column values using [`update`](https://deephaven.io/core/docs/reference/table-operations/select/update/).
 

@@ -1,15 +1,13 @@
-# Dynamic data and Pandas
+# **Dynamic data and Pandas**
 
-This notebook demonstrates some of the options for working with Pandas in Deephaven. You'll see how to use familiar DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
-
-
+This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use familiar DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
 \
 With Deephaven, you have all the familiar tools from Pandas but with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven allows multithreading, easy partitioning, and collecting data.
 
 Not only that - these tasks are possible in Deephaven with very large data.
 \
 
-## Table to DataFrame
+**Table to DataFrame**
 
 A [`DataFrame`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html?highlight=dataframe#pandas.DataFrame) is a two-dimensional tabular data structure that is native to Pandas. With Deephaven, we can convert between Deephaven tables and Pandas DataFrames.
 \
@@ -38,7 +36,7 @@ print(data_frame)
 ```
 
 
-## DataFrame to Table
+**DataFrame to Table**
 
 Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`dataFrameToTable`](https://deephaven.io/core/pydoc/code/deephaven.html#deephaven.dataFrameToTable) method.
 
@@ -64,7 +62,7 @@ Pandas has fewer data types than Deephaven. To learn more about creating tables 
 \
 \
 
-## Table operations
+**Table operations**
 
 Deephaven tables and Pandas DataFrames both contain tabular data. In both cases, users want to perform the same kinds of operations, such as creating tables, filtering tables, and aggregating tables. Below we present how to do the same operations with both Pandas and Deephaven.
 \
