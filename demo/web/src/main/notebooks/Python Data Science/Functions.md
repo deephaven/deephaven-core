@@ -61,7 +61,7 @@ resultWords = words.view("Greeting = f(Welcome, Day)")
 
 Now you are ready to use your own Python functions in Deephaven!
 
-[Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
+If you're ready to level up, the [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
 
 ```python
 print("Go to https://deephaven.io/core/docs/tutorials/quickstart/ to download pre-built Docker images.")
