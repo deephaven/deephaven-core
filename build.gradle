@@ -90,7 +90,6 @@ idea {
 }
 
 project.version = '0.9.0'
-ext.versionSource = versionSource
 ext.globalVersion = project.version
 
 Set<Project> modsAreBasic = subprojects.findAll {it.name in [
@@ -469,13 +468,12 @@ tasks.register('nightly') {
 
 tasks.register('quick') {
     it.group 'Deephaven lifecycle'
-    it.description 'A lifecycle task that defines the simple check tasks to be run in CI, see .github/workflows/check-ci.yml'
+    it.description 'A lifecycle task that defines quick tasks to be run in CI, see .github/workflows/quick-ci.yml'
     it.dependsOn allprojects.collect {
         allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 

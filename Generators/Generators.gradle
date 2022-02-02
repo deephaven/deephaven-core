@@ -311,7 +311,7 @@ tasks.register 'generateAll', {
                            ':Generators:generatePlottingConvenience',
                            ':Generators:generateAllPython'
     t.group = '~Deephaven'
-    t.description = 'Runs all code generators; you MUST pass -PwithPy=true and run on a system capable of building python wheels / venvs'
+    t.description = 'Runs all code generators'
 }
 
 check.dependsOn groovyStaticImportGeneratorAssert,

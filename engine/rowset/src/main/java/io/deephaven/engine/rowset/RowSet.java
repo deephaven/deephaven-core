@@ -354,13 +354,13 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
         /**
          * <p>
          * Advance the current iterator (start) position while the current value maintains comp.compareTargetTo(v, dir)
-         * > 0. If next to the last such value there is a value for which comp.compareTargetTo(v, dir) < 0, or no
-         * further values exist, then that last value satisfying comp,.compareTargetTo(v, dir) > 0 is left as the
+         * &gt; 0. If next to the last such value there is a value for which comp.compareTargetTo(v, dir) &lt; 0, or no
+         * further values exist, then that last value satisfying comp,.compareTargetTo(v, dir) &gt; 0 is left as the
          * current position and returned. If there are any elements for which comp.compareTargetTo(v, dir) == 0, one of
          * such elements, no guarantee which one, is left as the current position and returned. If at call entry the
          * iterator was exhausted, -1 is returned. If at call entry the iterator was just constructed and had never been
          * advanced, it is moved to the first element (which becomes the current value). If the current value v is such
-         * that comp.compareTargetTo(v, dir) < 0, -1 is returned and the current position is not moved.
+         * that comp.compareTargetTo(v, dir) &lt; 0, -1 is returned and the current position is not moved.
          * </p>
          *
          * <p>
@@ -373,8 +373,8 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          * @return -1 if the iterator was exhausted at entry or the target was to the left of the initial position at
          *         the time of the call, in which case the iterator is not changed; the resulting current position
          *         otherwise. In this later case the current position is guaranteed to satisfy comp.compareTargetTo(v,
-         *         dir) >= 0 and if also comp.compareTargetTo(v, dir) > 0, then v is the biggest such value for which
-         *         comp.compareTargetTo(v, dir) > 0.
+         *         dir) >= 0 and if also comp.compareTargetTo(v, dir) &gt; 0, then v is the biggest such value for which
+         *         comp.compareTargetTo(v, dir) &gt; 0.
          */
         long binarySearchValue(TargetComparator comp, int dir);
     }

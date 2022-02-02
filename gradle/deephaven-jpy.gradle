@@ -13,16 +13,6 @@ project(':deephaven-jpy') {
     testCompile 'junit:junit:4.13.2' // but we still want tests to compile
   }
 
-  /**
-   * This is a warning against accidentally modifying the py/jpy subtree.
-   * If you know what you are doing, it should be done as a git subtree pull.
-   * After an update to the py/jpy subtree, you should update the deephavenJpyGoldenSha property
-   */
-  task checkSubtree(type: Exec) {
-    workingDir = rootDir
-    commandLine 'git', 'diff', '--quiet', '--exit-code', deephavenJpyGoldenSha, 'py/jpy'
-  }
-
   // For OSS, we need to currently move fast, and will prefer to make edits directly in py/jpy.
   // These can be backported to jpy proper in the future if necessary.
 

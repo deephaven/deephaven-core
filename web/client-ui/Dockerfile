@@ -1,7 +1,7 @@
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-ARG WEB_VERSION=0.9.0
+ARG WEB_VERSION=0.9.1
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

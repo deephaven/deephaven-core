@@ -6,8 +6,8 @@ from typing import List
 
 import jpy
 
-from deephaven2.column import Column
 from deephaven2 import DHError
+from deephaven2.column import InputColumn
 from deephaven2.table import Table
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -55,8 +55,17 @@ def time_table(period: str, start_time: str = None) -> Table:
         raise DHError(e, "failed to create a time table.") from e
 
 
-def new_table(cols: List[Column]) -> Table:
-    """ Creates an in-memory table from a list of columns. Each column must have an equal number of elements.
+def new_table(cols: List[InputColumn]) -> Table:
+    """ Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
+
+    Args:
+        cols (List[InputColumn]): a list of InputColumn
+
+    Returns:
+        a Table
+
+    Raises:
+        DHError
     """
     try:
         return Table(j_table=_JTableFactory.newTable(*[col.j_column for col in cols]))
@@ -72,7 +81,7 @@ def merge(tables: List[Table]):
         tables (List[Table]): the source tables
 
     Returns:
-        a new table
+        a Table
 
     Raises:
         DHError
@@ -83,7 +92,7 @@ def merge(tables: List[Table]):
         raise DHError(e, "merge tables operation failed.") from e
 
 
-def merge_sorted(tables: List[Table], order_by: str):
+def merge_sorted(tables: List[Table], order_by: str) -> Table:
     """ Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
     of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
     followed by sort.
@@ -93,7 +102,7 @@ def merge_sorted(tables: List[Table], order_by: str):
         order_by (str): the name of the key column
 
     Returns:
-         a new table
+         a Table
 
     Raises:
         DHError

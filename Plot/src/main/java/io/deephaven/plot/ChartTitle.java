@@ -32,7 +32,7 @@ public class ChartTitle implements Serializable {
     /**
      * No. of values shown in a dynamic chart title string
      * <p>
-     * {@code maxVisibleRowsCount} < 0 allows all the values to be shown in title string
+     * {@code maxVisibleRowsCount} &lt; 0 allows all the values to be shown in title string
      */
     int maxVisibleRowsCount;
 
