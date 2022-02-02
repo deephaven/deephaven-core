@@ -119,7 +119,7 @@ docker-compose up -d
 Run the following commands to launch Deephaven for Python server applications with the [TensorFlow](https://www.tensorflow.org/) module pre-installed.
 
 ```bash
-curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containeres/python/TensorFlow/docker-compose.yml -O
+curl https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/TensorFlow/docker-compose.yml -O
 docker-compose pull
 docker-compose up -d
 ```
