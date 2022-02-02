@@ -2,7 +2,7 @@
 
 In our previous notebook, we showed how to create some tables with fake data. In this notebook, we show how to decorate and filter our data.
 
-Let's start by simulating a year's worth of daily measurements. This could simulate something like stock prices, temperatures, etc.
+Let's start by simulating a year's worth of daily measurements. This could represent something like stock prices, temperatures, etc.
 
 ```python
 start_time = convertDateTime("2020-01-01T00:00:00 NY")
@@ -17,7 +17,7 @@ Now we decorate the data by adding its day of the week.
 daily_data = daily_data.update("DayOfWeekInt = dayOfWeek(DateTime, TZ_NY)")
 ```
 
-Next,  we convert the day of week to a string representation.
+Next, we convert the day of week to a string representation.
 
 ```python
 import calendar
