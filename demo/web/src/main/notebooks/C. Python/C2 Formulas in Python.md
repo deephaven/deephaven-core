@@ -1,4 +1,4 @@
-# **Python functions in Deephaven**
+# user-defined Python functions
 
 This notebook will demonstrate how to write a Python function that can be used in the Deephaven Query Language. Functions are useful because they allow repeatability of code by just calling one line rather than duplicating efforts.
 
