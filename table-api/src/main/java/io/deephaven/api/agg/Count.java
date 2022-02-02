@@ -5,6 +5,12 @@ import io.deephaven.api.ColumnName;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * An {@link Aggregation aggregation} that provides a single output column with the number of rows in each aggregation
+ * group.
+ *
+ * @see io.deephaven.api.TableOperations#countBy
+ */
 @Immutable
 @SimpleStyle
 public abstract class Count implements Aggregation {

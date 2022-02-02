@@ -7,7 +7,8 @@ import org.immutables.value.Value.Parameter;
 
 /**
  * A ColumnAggregation is an {@link Aggregation} that is composed of a {@link #spec() spec} and a single input/output
- * column {@link #pair() pair}.
+ * column {@link #pair() pair}. The spec defines the aggregation operation to apply to the input column in order to
+ * produce the paired output column.
  */
 @Immutable
 @SimpleStyle

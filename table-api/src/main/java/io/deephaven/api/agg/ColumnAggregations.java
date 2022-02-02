@@ -9,7 +9,8 @@ import java.util.List;
 
 /**
  * ColumnAggregations is an {@link Aggregation} that is composed of a {@link #spec() spec} and multiple input/output
- * column {@link #pairs() pairs}.
+ * column {@link #pairs() pairs}. The spec defines the aggregation operation to apply to each input column in order to
+ * produce the paired output column.
  */
 @Immutable
 @BuildableStyle
