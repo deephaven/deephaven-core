@@ -20,6 +20,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
@@ -627,16 +628,33 @@ public class TestAggBy extends RefreshingTableTestCase {
                 intCol("IntCol", NULL_INT, 99999, 100000, 200000),
                 longCol("LongCol", NULL_LONG, 44444444L, 55555555L, 66666666L),
                 floatCol("FloatCol", NULL_FLOAT, 1.2345f, 2.3456f, 3.4567f),
-                doubleCol("DoubleCol", NULL_DOUBLE, 1.1E22d, 2.2E22d, 3.3E22d));
+                doubleCol("DoubleCol", NULL_DOUBLE, 1.1E22d, 2.2E22d, 3.3E22d),
+                c("BigIntCol", null,
+                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(2)),
+                        BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(1)),
+                        BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(2))),
+                c("BigDecCol", null,
+                        BigDecimal.valueOf(MAX_FINITE_DOUBLE).add(BigDecimal.valueOf(2)),
+                        BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(1)),
+                        BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(2))));
 
         // First try mixing column types and values
         expectException(IllegalArgumentException.class,
                 "Attempted to use no key/non unique values of incorrect types for aggregated columns!",
                 () -> dataTable.aggBy(AggUnique(false, Sentinel(2), "StringCol", "BoolCol", "DatTime", "CharCol",
-                        "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol"), "USym").sort("USym"));
+                        "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "BigIntCol",
+                        "BigDecCol"), "USym").sort("USym"));
 
         dataTable.aggBy(AggUnique(false, Sentinel(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
-                "DoubleCol"), "USym").sort("USym");
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
+
+        dataTable.aggBy(AggUnique(false, Sentinel(BigInteger.valueOf(-2)),
+                "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
+
+        dataTable.aggBy(AggUnique(false, Sentinel(BigDecimal.valueOf(-2)),
+                "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
         // Byte out of range
         testUniqueOutOfRangeParams(Byte.class, dataTable, ((short) Byte.MIN_VALUE - 1), Byte.MIN_VALUE,
@@ -650,6 +668,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                 Long.MIN_VALUE, BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE), Long.MAX_VALUE, "LongCol",
                 "FloatCol", "DoubleCol");
 
+        testUniqueOutOfRangeParams(Long.class, dataTable, -2.2,
+                Long.MIN_VALUE, BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE), Long.MAX_VALUE, "LongCol",
+                "FloatCol", "DoubleCol");
     }
 
     private void testUniqueOutOfRangeParams(Class<?> type, Table dataTable, Number invalidLow, Number validLow,

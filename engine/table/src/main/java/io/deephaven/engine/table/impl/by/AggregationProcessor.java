@@ -138,13 +138,16 @@ import static io.deephaven.engine.table.impl.RollupAttributeCopier.DEFAULT_INSTA
 import static io.deephaven.engine.table.impl.RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
 import static io.deephaven.engine.table.impl.RollupInfo.ROLLUP_COLUMN;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
-import static io.deephaven.engine.table.impl.by.RollupConstants.*;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NAN_COUNT_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NI_COUNT_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NONNULL_COUNT_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_PI_COUNT_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM2_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM_COLUMN_ID;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_PREFIX;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.TypeUtils.isNumeric;
 import static io.deephaven.util.type.TypeUtils.unbox;
@@ -1554,13 +1557,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             return reaggregated
                     ? new ShortRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
-        } else {
-            return reaggregated
-                    ? new ObjectRollupUniqueOperator(type, resultName, includeNulls, onlyNullsSentinel,
-                            nonUniqueSentinel)
-                    : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onlyNullsSentinel,
-                            nonUniqueSentinel);
         }
+        final Object onsAsType = maybeConvertType(type, onlyNullsSentinel);
+        final Object nusAsType = maybeConvertType(type, nonUniqueSentinel);
+        return reaggregated
+                ? new ObjectRollupUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
     }
 
     private static void checkType(@NotNull final String name, @NotNull final String valueIntent,
@@ -1568,11 +1570,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         expected = getBoxedType(expected);
         if (value != null && !expected.isAssignableFrom(value.getClass())) {
             if (isNumeric(expected) && isNumeric(value.getClass())) {
-                if (checkNumericCompatibility((Number) value, expected)) {
+                if (isNumericallyCompatible((Number) value, expected)) {
                     return;
                 }
                 throw new IllegalArgumentException(
-                        String.format("For result column %s the %s %s is larger than can be represented with a %s",
+                        String.format("For result column %s the %s %s is out of range for %s",
                                 name, valueIntent, value, expected.getName()));
             }
             throw new IllegalArgumentException(
@@ -1581,23 +1583,166 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
-    private static boolean checkNumericCompatibility(@NotNull final Number value, @NotNull final Class<?> expected) {
-        if (expected == Byte.class) {
-            return Byte.MIN_VALUE <= value.longValue() && value.longValue() <= Byte.MAX_VALUE;
-        } else if (expected == Short.class) {
-            return Short.MIN_VALUE <= value.longValue() && value.longValue() <= Short.MAX_VALUE;
-        } else if (expected == Integer.class) {
-            return Integer.MIN_VALUE <= value.longValue() && value.longValue() <= Integer.MAX_VALUE;
-        } else if (expected == Long.class) {
-            return new BigInteger(value.toString()).compareTo(BigInteger.valueOf(Long.MIN_VALUE)) >= 0 &&
-                    new BigInteger(value.toString()).compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0;
-        } else if (expected == Float.class) {
-            return value.getClass() != Double.class;
-        } else if (expected == Double.class) {
-            return value.getClass() != BigDecimal.class;
-        } else {
-            return expected == BigDecimal.class || expected == BigInteger.class;
+    private static Object maybeConvertType(@NotNull Class<?> expected, final Object value) {
+        // We expect that checkType was already called and didn't throw...
+        if (value == null) {
+            return null;
         }
+        if (expected.isAssignableFrom(value.getClass())) {
+            return value;
+        }
+        if (expected == BigInteger.class) {
+            return NumericConverter.lookup(value.getClass()).toBigInteger((Number) value);
+        }
+        return NumericConverter.lookup(value.getClass()).toBigDecimal((Number) value);
+    }
+
+    private interface NumericConverter {
+        BigInteger toBigInteger(@Nullable final Number value);
+        BigDecimal toBigDecimal(@Nullable final Number value);
+
+        private static NumericConverter lookup(@NotNull final Class<?> numberClass) {
+            final IntegralType integralType = IntegralType.lookup(numberClass);
+            if (integralType != null) {
+                return integralType;
+            }
+            return FloatingPointType.lookup(numberClass);
+        }
+    }
+
+    private enum IntegralType implements NumericConverter {
+        // @formatter:off
+        BYTE      (n -> BigInteger.valueOf(n.byteValue()),  MIN_BYTE,  MAX_BYTE ),
+        SHORT     (n -> BigInteger.valueOf(n.shortValue()), MIN_SHORT, MAX_SHORT),
+        INTEGER   (n -> BigInteger.valueOf(n.intValue()),   MIN_INT,   MAX_INT  ),
+        LONG      (n -> BigInteger.valueOf(n.longValue()),  MIN_LONG,  MAX_LONG ),
+        BIGINTEGER(n -> (BigInteger) n,                     null,      null     );
+        // @formatter:on
+
+        private final Function<Number, BigInteger> toBigInteger;
+        private final BigInteger lowerBound;
+        private final BigInteger upperBound;
+
+        IntegralType(@NotNull final Function<Number, BigInteger> toBigInteger,
+                     @Nullable final Number lowerBound,
+                     @Nullable final Number upperBound) {
+            this.toBigInteger = toBigInteger;
+            this.lowerBound = toBigInteger(lowerBound);
+            this.upperBound = toBigInteger(upperBound);
+        }
+
+        @Override
+        public BigInteger toBigInteger(@Nullable final Number value) {
+            return value == null ? null : toBigInteger.apply(value);
+        }
+
+        @Override
+        public BigDecimal toBigDecimal(@Nullable final Number value) {
+            return value == null ? null : new BigDecimal(toBigInteger.apply(value));
+        }
+
+        private boolean inRange(@Nullable final BigInteger value) {
+            if (value == null) {
+                return true;
+            }
+            return (lowerBound == null || lowerBound.compareTo(value) <= 0) &&
+                    (upperBound == null || upperBound.compareTo(value) >= 0);
+        }
+
+        private static IntegralType lookup(@NotNull final Class<?> numberClass) {
+            try {
+                return valueOf(numberClass.getSimpleName().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+
+    private enum FloatingPointType implements NumericConverter {
+        // @formatter:off
+        FLOAT(     n -> BigDecimal.valueOf(n.floatValue()),   MIN_FINITE_FLOAT,  MAX_FINITE_FLOAT ),
+        DOUBLE(    n -> BigDecimal.valueOf(n.doubleValue()), MIN_FINITE_DOUBLE, MAX_FINITE_DOUBLE),
+        BIGDECIMAL(n -> (BigDecimal) n,                      null,              null             );
+        // @formatter:on
+
+        private final Function<Number, BigDecimal> toBigDecimal;
+        private final BigDecimal lowerBound;
+        private final BigDecimal upperBound;
+
+        FloatingPointType(@NotNull final Function<Number, BigDecimal> toBigDecimal,
+                          @Nullable final Number lowerBound,
+                          @Nullable final Number upperBound) {
+            this.toBigDecimal = toBigDecimal;
+            this.lowerBound = toBigDecimal(lowerBound);
+            this.upperBound = toBigDecimal(upperBound);
+        }
+
+        @Override
+        public BigInteger toBigInteger(@Nullable final Number value) {
+            return value == null ? null : toBigDecimal.apply(value).toBigIntegerExact();
+        }
+
+        @Override
+        public BigDecimal toBigDecimal(@Nullable final Number value) {
+            return value == null ? null : toBigDecimal.apply(value);
+        }
+
+        private boolean inRange(@Nullable final BigDecimal value) {
+            if (value == null) {
+                return true;
+            }
+            return (lowerBound == null || lowerBound.compareTo(value) <= 0) &&
+                    (upperBound == null || upperBound.compareTo(value) >= 0);
+        }
+
+        private static FloatingPointType lookup(@NotNull final Class<?> numberClass) {
+            try {
+                return valueOf(numberClass.getSimpleName().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+
+    private static boolean isNumericallyCompatible(@NotNull final Number value,
+                                                   @NotNull final Class<?> expected) {
+        final NumericConverter valueConverter = NumericConverter.lookup(value.getClass());
+        if (valueConverter == null) {
+            // value is not a recognized type
+            return false;
+        }
+
+        final IntegralType expectedIntegralType = IntegralType.lookup(expected);
+        if (expectedIntegralType != null) {
+            // expected is a recognized integral type, just check range as a big int
+            try {
+                return expectedIntegralType.inRange(valueConverter.toBigInteger(value));
+            } catch (ArithmeticException e) {
+                // value is a floating point number with a fractional part
+                return false;
+            }
+        }
+
+        final FloatingPointType expectedFloatingPointType = FloatingPointType.lookup(expected);
+        if (expectedFloatingPointType == null) {
+            // expected is not a recognized type
+            return false;
+        }
+
+        // check range as a big decimal
+        if (expectedFloatingPointType.inRange(valueConverter.toBigDecimal(value))) {
+            return true;
+        }
+
+        // value might be out of range, or might not be finite...
+        if (expectedFloatingPointType == FloatingPointType.BIGDECIMAL ||
+                (valueConverter != FloatingPointType.FLOAT && valueConverter != FloatingPointType.DOUBLE)) {
+            // no way to represent NaN or infinity, so value is just out of range
+            return false;
+        }
+
+        // if we're not finite, we can cast to a float or double successfully
+        return !Double.isFinite(value.doubleValue());
     }
 
     private static IterativeChunkedAggregationOperator makeAvgOperator(
