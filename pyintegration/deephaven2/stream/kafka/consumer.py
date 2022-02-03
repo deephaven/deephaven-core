@@ -15,8 +15,6 @@ from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
-_JStreamTableTools = jpy.get_type("io.deephaven.engine.table.impl.StreamTableTools")
-_JAvroSchema = jpy.get_type("org.apache.avro.Schema")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 _JTableType = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
@@ -61,8 +59,7 @@ class KeyValueSpec(JObjectWrapper):
         return self._j_spec
 
 
-_j_ignore = KeyValueSpec(_JKafkaTools_Consume.IGNORE)
-KeyValueSpec.IGNORE = _j_ignore
+KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Consume.IGNORE)
 KeyValueSpec.NONE = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
 
 
@@ -83,26 +80,25 @@ def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
 
 def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offsets: Dict[int, int] = None,
             key_spec: KeyValueSpec = None, value_spec: KeyValueSpec = None,
-            table_type: TableType = TableType.Stream):
+            table_type: TableType = TableType.Stream) -> Table:
     """ Consume from Kafka to a Deephaven table.
 
     Args:
-        kafka_config (Dict): dictionary with properties to configure the associated Kafka consumer and
-            also the resulting table.  Once the table-specific properties are stripped, the result is
-            passed to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any
-            KafkaConsumer specific desired configuration here.
+        kafka_config (Dict): configuration for the associated Kafka consumer and also the resulting table.
+            Once the table-specific properties are stripped, the remaining one is used to call the constructor of
+            org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
         partitions (List[int]) : a list of integer partition numbers, default is None which means all partitions
         offsets (Dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
-        key_spec (KeyValueSpec): to specify how to map the Key field in Kafka messages to Deephaven column(s).
+        key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple(),avro() or json() in this module, or
             the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same as
             KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
             'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting column name and type
-        value_spec (KeyValueSpec): to specify how to map the Value field in Kafka messages to Deephaven column(s).
+        value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple(),avro() or json() in this module, or
             the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same as
             KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
@@ -110,7 +106,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
         table_type (TableType): a TableType enum, default is TableType.Stream
 
     Returns:
-        a Deephaven live table that will update based on Kafka messages consumed for the given topic.
+        a Deephaven live table that will update based on Kafka messages consumed for the given topic
 
     Raises:
         DHError
@@ -155,8 +151,8 @@ def avro(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = 
 
     Args:
         schema (str): the name for a schema registered in a Confluent compatible Schema Server. The associated
-            kafka_config dict in the call to consume() should include the key 'schema.registry.url' with the value of
-            the Schema Server URL for fetching the schema definition
+            'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
+            the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
         mapping (Dict[str, str]): a mapping from Avro field name to Deephaven table column name; the fields specified in
             the mapping will have their column names defined by it; if 'mapped_only' parameter is False, any other fields
@@ -209,7 +205,7 @@ def json(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpe
 
 
 def simple(col_name: str, data_type: DType = None) -> KeyValueSpec:
-    """ Specify a single value when consuming a Kafka stream to a Deephaven table.
+    """ Specify a single column when consuming a Kafka stream to a Deephaven table.
 
     Args:
         col_name (str): the Deephaven column name

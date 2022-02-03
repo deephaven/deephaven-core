@@ -6,6 +6,7 @@ import unittest
 
 from deephaven2 import kafka_producer as pk, new_table
 from deephaven2.column import string_col, int_col, double_col
+from deephaven2.stream.kafka.producer import KeyValueSpec
 from tests.testbase import BaseTestCase
 
 
@@ -29,7 +30,7 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check that the basic constants are imported and visible.
         """
-        self.assertIsNotNone(pk.IGNORE)
+        self.assertIsNotNone(KeyValueSpec.IGNORE)
 
     def test_simple(self):
         """
@@ -40,8 +41,8 @@ class KafkaProducerTestCase(BaseTestCase):
             t,
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
-            key=pk.IGNORE,
-            value=pk.simple('Price')
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.simple('Price')
         )
 
         self.assertIsNotNone(cleanup)
@@ -53,8 +54,8 @@ class KafkaProducerTestCase(BaseTestCase):
             t,
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
-            key=pk.IGNORE,
-            value=pk.json(['Symbol', 'Price']),
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.json(['Symbol', 'Price']),
             last_by_key_columns=False
         )
 
@@ -67,8 +68,8 @@ class KafkaProducerTestCase(BaseTestCase):
             t,
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
-            key=pk.IGNORE,
-            value=pk.json(
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.json(
                 ['Symbol', 'Price'],
                 mapping={'Symbol': 'jSymbol', 'Price': 'jPrice'},
                 timestamp_field='jTs'
@@ -122,8 +123,8 @@ class KafkaProducerTestCase(BaseTestCase):
                 'schema.registry.url': 'http://redpanda:8081'
             },
             'share_price_timestamped',
-            key=pk.IGNORE,
-            value=pk.avro(
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=pk.avro(
                 'share_price_timestamped_record',
                 timestamp_field='Timestamp'
             ),
