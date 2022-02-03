@@ -46,7 +46,6 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      */
     BarrageTable entireTable() throws InterruptedException;
 
-
     /**
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
      * the data that is received.

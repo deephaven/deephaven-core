@@ -134,6 +134,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     @Override
     public synchronized BarrageTable entireTable() {
+        return partialTable(null, null);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
@@ -141,7 +146,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!subscribed) {
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(null, null, options)))
+                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
                     .build());
             subscribed = true;
         }

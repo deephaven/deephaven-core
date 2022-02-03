@@ -1,11 +1,10 @@
 package io.deephaven.server.uri;
 
-import io.deephaven.client.impl.BarrageSession;
-import io.deephaven.client.impl.BarrageSessionFactoryBuilder;
-import io.deephaven.client.impl.BarrageSubscription;
-import io.deephaven.client.impl.ChannelHelper;
+import io.deephaven.client.impl.*;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -24,12 +23,7 @@ import org.apache.arrow.memory.BufferAllocator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -47,7 +41,11 @@ public final class BarrageTableResolver implements UriResolver {
     /**
      * The default options, which uses {@link BarrageSubscriptionOptions#useDeephavenNulls()}.
      */
-    public static final BarrageSubscriptionOptions OPTIONS = BarrageSubscriptionOptions.builder()
+    public static final BarrageSubscriptionOptions SUB_OPTIONS = BarrageSubscriptionOptions.builder()
+            .useDeephavenNulls(true)
+            .build();
+
+    public static final BarrageSnapshotOptions SNAP_OPTIONS = BarrageSnapshotOptions.builder()
             .useDeephavenNulls(true)
             .build();
 
@@ -97,7 +95,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     /**
-     * Create a full-subscription to the remote URI. Uses {@link #OPTIONS}.
+     * Create a full-subscription to the remote URI. Uses {@link #SUB_OPTIONS}.
      *
      * @param remoteUri the remote URI
      * @return the subscribed table
@@ -105,18 +103,18 @@ public final class BarrageTableResolver implements UriResolver {
     public Table subscribe(RemoteUri remoteUri) throws InterruptedException, TableHandleException {
         final DeephavenTarget target = remoteUri.target();
         final TableSpec table = RemoteResolver.of(remoteUri);
-        return subscribe(target, table, OPTIONS);
+        return subscribe(target, table, SUB_OPTIONS);
     }
 
     /**
-     * Create a full-subscription to the {@code table} via the {@code targetUri}. Uses {@link #OPTIONS}.
+     * Create a full-subscription to the {@code table} via the {@code targetUri}. Uses {@link #SUB_OPTIONS}.
      *
      * @param targetUri the target URI
      * @param table the table spec
      * @return the subscribed table
      */
     public Table subscribe(String targetUri, TableSpec table) throws TableHandleException, InterruptedException {
-        return subscribe(DeephavenTarget.of(URI.create(targetUri)), table, OPTIONS);
+        return subscribe(DeephavenTarget.of(URI.create(targetUri)), table, SUB_OPTIONS);
     }
 
     /**
@@ -133,6 +131,101 @@ public final class BarrageTableResolver implements UriResolver {
         final BarrageSubscription sub = session.subscribe(table, options);
         return sub.entireTable();
     }
+
+    /**
+     * Create a partial table subscription to the {@code table} via the {@code targetUri}. Uses {@link #SNAP_OPTIONS}.
+     *
+     * @param targetUri the target URI
+     * @param table the table spec
+     * @return the subscribed table
+     */
+    public Table subscribe(String targetUri, TableSpec table, RowSet viewport, BitSet columns)
+            throws TableHandleException, InterruptedException {
+        return subscribe(DeephavenTarget.of(URI.create(targetUri)), table, SUB_OPTIONS, viewport, columns);
+    }
+
+    /**
+     * Create a partial table subscription to the {@code table} via the {@code target}.
+     *
+     * @param target the target
+     * @param table the table
+     * @param options the options
+     * @return the subscribed table
+     */
+    public Table subscribe(DeephavenTarget target, TableSpec table, BarrageSubscriptionOptions options, RowSet viewport,
+            BitSet columns)
+            throws TableHandleException, InterruptedException {
+        final BarrageSession session = session(target);
+        final BarrageSubscription sub = session.subscribe(table, options);
+        return sub.partialTable(viewport, columns);
+    }
+
+    /**
+     * Create a full snapshot of the remote URI. Uses {@link #SUB_OPTIONS}.
+     *
+     * @param remoteUri the remote URI
+     * @return the table to snapshot
+     */
+    public Table snapshot(RemoteUri remoteUri) throws InterruptedException, TableHandleException {
+        final DeephavenTarget target = remoteUri.target();
+        final TableSpec table = RemoteResolver.of(remoteUri);
+        return snapshot(target, table, SNAP_OPTIONS);
+    }
+
+    /**
+     * Create a full snapshot to the {@code table} via the {@code targetUri}. Uses {@link #SNAP_OPTIONS}.
+     *
+     * @param targetUri the target URI
+     * @param table the table spec
+     * @return the table to snapshot
+     */
+    public Table snapshot(String targetUri, TableSpec table) throws TableHandleException, InterruptedException {
+        return snapshot(DeephavenTarget.of(URI.create(targetUri)), table, SNAP_OPTIONS);
+    }
+
+    /**
+     * Create a full snapshot to the {@code table} via the {@code target}.
+     *
+     * @param target the target
+     * @param table the table
+     * @param options the options
+     * @return the table to snapshot
+     */
+    public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSnapshotOptions options)
+            throws TableHandleException, InterruptedException {
+        final BarrageSession session = session(target);
+        final BarrageSnapshot snap = session.snapshot(table, options);
+        return snap.entireTable();
+    }
+
+    /**
+     * Create a partial table snapshot to the {@code table} via the {@code targetUri}. Uses {@link #SNAP_OPTIONS}.
+     *
+     * @param targetUri the target URI
+     * @param table the table spec
+     * @return the table to snapshot
+     */
+    public Table snapshot(String targetUri, TableSpec table, RowSet viewport, BitSet columns)
+            throws TableHandleException, InterruptedException {
+        return snapshot(DeephavenTarget.of(URI.create(targetUri)), table, SNAP_OPTIONS, viewport, columns);
+    }
+
+    /**
+     * Create a partial table snapshot to the {@code table} via the {@code target}.
+     *
+     * @param target the target
+     * @param table the table
+     * @param options the options
+     * @return the table to snapshot
+     */
+    public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSnapshotOptions options, RowSet viewport,
+            BitSet columns)
+            throws TableHandleException, InterruptedException {
+        final BarrageSession session = session(target);
+        final BarrageSnapshot snap = session.snapshot(table, options);
+        return snap.partialTable(viewport, columns);
+    }
+
 
     private BarrageSession session(DeephavenTarget target) {
         // TODO (deephaven-core#1482): BarrageTableResolver cleanup

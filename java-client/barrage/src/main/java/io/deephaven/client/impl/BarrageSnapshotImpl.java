@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.locks.Condition;
 
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
     private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);
@@ -46,13 +48,16 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;
+    private volatile Condition sealedCondition;
 
     private volatile BitSet expectedColumns;
 
     private volatile boolean sealed = false;
-    private Throwable exceptionWhileSealing = null;
+    private volatile Throwable exceptionWhileSealing = null;
 
     private volatile boolean connected = true;
+
+    private boolean prevUsed = false;
 
     /**
      * Represents a BarrageSnapshot.
@@ -147,6 +152,23 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     @Override
     public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        // notify user when connection has already been used and closed
+        if (prevUsed) {
+            throw new UnsupportedOperationException("Cannot create multiple snapshots on a single connection");
+        }
+
+        // test lock conditions
+        if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+            throw new UnsupportedOperationException(
+                    "Cannot snapshot while holding the UpdateGraphProcessor shared lock");
+        }
+
+        prevUsed = true;
+
+        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            sealedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+        }
+
         if (!connected) {
             throw new UncheckedDeephavenException(this + " is not connected");
         }
@@ -162,7 +184,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         observer.onCompleted();
 
         while (!sealed && exceptionWhileSealing == null) {
-            wait();
+            // handle the condition where this function may have the exclusive lock
+            if (sealedCondition != null) {
+                sealedCondition.await();
+            } else {
+                wait(); // barragesnapshotimpl lock
+            }
         }
 
         if (exceptionWhileSealing == null) {
@@ -174,32 +201,40 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
 
     @Override
-    protected synchronized void destroy() {
+    protected void destroy() {
         super.destroy();
         close();
     }
 
-    private synchronized void handleDisconnect() {
+    private void handleDisconnect() {
         if (!connected) {
             return;
         }
 
         resultTable.sealTable(() -> {
-            synchronized (BarrageSnapshotImpl.this) {
-                sealed = true;
-                BarrageSnapshotImpl.this.notifyAll();
+            sealed = true;
+            if (sealedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            } else {
+                synchronized (BarrageSnapshotImpl.this) {
+                    BarrageSnapshotImpl.this.notifyAll();
+                }
             }
         }, () -> {
-            synchronized (BarrageSnapshotImpl.this) {
-                exceptionWhileSealing = new Exception();
-                BarrageSnapshotImpl.this.notifyAll();
+            exceptionWhileSealing = new Exception();
+            if (sealedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            } else {
+                synchronized (BarrageSnapshotImpl.this) {
+                    BarrageSnapshotImpl.this.notifyAll();
+                }
             }
         });
         cleanup();
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         if (!connected) {
             return;
         }
