@@ -41,7 +41,7 @@ services:
       - SYS_PTRACE
 
   web:
-    image: deephaven/web:local-build
+    image: js-plugin-matplotlib:local-build
     expose:
       - "80"
     volumes:
