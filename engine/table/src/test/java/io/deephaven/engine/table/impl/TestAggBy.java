@@ -4,12 +4,10 @@
 
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Selectable;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.vector.CharVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -18,22 +16,22 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.by.AggregationFormulaSpec;
-import io.deephaven.engine.table.impl.by.MinMaxBySpecImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -45,10 +43,6 @@ public class TestAggBy extends RefreshingTableTestCase {
         super.setUp();
     }
 
-    private static Table by(Table table, AggregationSpec spec, String... groupByColumns) {
-        return ((QueryTable) table).by(spec, SelectColumn.from(Selectable.from(groupByColumns)));
-    }
-
     public void testBy() {
         ColumnHolder aHolder = c("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder bHolder = c("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -57,14 +51,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(10, table.size());
         assertEquals(2, table.groupBy("A").size());
 
-        AggregationFormulaSpec minFactory = new AggregationFormulaSpec("min(each)", "each");
-        AggregationFormulaSpec maxFactory = new AggregationFormulaSpec("max(each)", "each");
-
-        AggregationFactory minMaxFactory =
-                new AggregationFactory(new AggregationElementImpl(minFactory, "Min=B"),
-                        new AggregationElementImpl(maxFactory, "Max=B"));
-
-        Table minMax = by(table, minMaxFactory, "A");
+        Table minMax = table.aggBy(
+                List.of(
+                        AggFormula("min(each)", "each", "Min=B"),
+                        AggFormula("max(each)", "each", "Max=B")),
+                "A");
         show(minMax);
         assertEquals(2, minMax.size());
         DataColumn dc = minMax.getColumn("Min");
@@ -74,9 +65,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(10, dc.get(0));
         assertEquals(8, dc.get(1));
 
-        AggregationFactory doubleCountFactory = new AggregationFactory(
-                new CountAggregationElement("Count1"), new CountAggregationElement("Count2"));
-        Table doubleCounted = by(table, doubleCountFactory, "A");
+        Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
@@ -97,7 +86,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         // minFactory = new AggregationFormulaSpec("min(each)", "each");
         // maxFactory = new AggregationFormulaSpec("max(each)", "each");
 
-        AggregationFactory summaryStatisticsFactory = AggCombo(
+        Collection<? extends Aggregation> summaryStatistics = List.of(
                 AggCount("Count"),
                 AggMin("MinB=B", "MinC=C"),
                 AggMed("MedB=B", "MedC=C"),
@@ -108,7 +97,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                 AggCountDistinct("DistinctA=A"),
                 AggCountDistinct("DistinctB=B"));
 
-        AggregationFactory percentilesFactory = AggCombo(
+        Collection<? extends Aggregation> percentiles = List.of(
                 AggPct(0.25, "Pct01B=B", "Pct01C=C"),
                 AggPct(0.25, "Pct25B=B", "Pct25C=C"),
                 AggPct(0.75, "Pct75B=B", "Pct75C=C"),
@@ -127,15 +116,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         ColumnHolder cHolder = c("C", doubles);
         table = TableTools.newTable(aHolder, bHolder, cHolder);
         show(table);
-        Table summary = by(table, summaryStatisticsFactory, "A");
+        Table summary = table.aggBy(summaryStatistics, "A");
         show(summary);
 
-        // System.out.println("Percentiles (keyed):");
-        // Table percentiles = table.groupBy(percentilesFactory, "A");
-        // show(percentiles);
-
         System.out.println("\nPercentiles (overall):");
-        Table percentilesAll = by(table, percentilesFactory);
+        Table percentilesAll = table.aggBy(percentiles);
         show(percentilesAll);
     }
 
@@ -162,24 +147,15 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new TstUtils.BigDecimalGenerator()));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget
-                        .from(() -> by(queryTable, AggCombo(AggMin(queryTable.getDefinition().getColumnNamesArray())))),
-                EvalNugget
-                        .from(() -> by(queryTable, AggCombo(AggMax(queryTable.getDefinition().getColumnNamesArray())))),
+                EvalNugget.from(() -> queryTable.aggAllBy(AggSpec.min())),
+                EvalNugget.from(() -> queryTable.aggAllBy(AggSpec.max())),
                 new QueryTableTest.TableComparator(
-                        by(queryTable, AggCombo(AggMin(queryTable.getDefinition().getColumnNamesArray()))),
-                        "AggCombo",
-                        queryTable.minBy(),
-                        "MinBy"),
-                EvalNugget.Sorted.from(
-                        () -> by(queryTable, AggCombo(AggMin(queryTable.getDefinition().getColumnNamesArray())), "Sym"),
-                        "Sym"),
+                        queryTable.aggAllBy(AggSpec.min()), "aggAllBy",
+                        queryTable.minBy(), "minBy"),
+                EvalNugget.Sorted.from(() -> queryTable.aggAllBy(AggSpec.min(), "Sym"), "Sym"),
                 new QueryTableTest.TableComparator(
-                        by(queryTable, AggCombo(AggMin(queryTable.getDefinition().getColumnNamesArray())), "Sym")
-                                .sort("Sym"),
-                        "AggCombo",
-                        queryTable.minBy("Sym").sort("Sym"),
-                        "MinBy"),
+                        queryTable.aggAllBy(AggSpec.min(), "Sym").sort("Sym"), "aggAllBy",
+                        queryTable.minBy("Sym").sort("Sym"), "minBy"),
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {
@@ -198,7 +174,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
     private void testComboByIncremental(final String ctxt, final int size) {
         Random random = new Random(0);
-        ColumnInfo columnInfo[];
+        ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo =
                         initColumnInfos(new String[] {"Sym", "intCol", "intColNulls", "doubleCol", "doubleColNulls"},
@@ -210,65 +186,63 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         QueryLibrary.importClass(TestAggBy.class);
 
-        final AggregationElement reusedCount = AggCount("Count");
-        EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        String[] groupByColumns = new String[0];
+        EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable, AggCombo(Agg(AggType.Avg, "MeanI=intCol", "MeanD=doubleCol"),
-                                Agg(AggType.Std, "StdI=intCol", "StdD=doubleCol")), "Sym").sort("Sym");
+                        return queryTable.aggBy(List.of(
+                                AggAvg("MeanI=intCol", "MeanD=doubleCol"),
+                                AggStd("StdI=intCol", "StdD=doubleCol")), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return by(queryTable, AggCombo(AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
+                        return queryTable.aggBy(List.of(
+                                AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
                                 AggFormula("max(each)", "each", "MaxI=intCol")), "Sym").sort("Sym");
                     }
                 },
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MinD=min(doubleCol)").sort("Sym"),
-                        "UpdateView",
-                        by(queryTable,
-                                new AggregationFactory(
-                                        Agg(new MinMaxBySpecImpl(true), "MinI=intCol", "MinD=doubleCol")),
-                                "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "view",
+                        queryTable.aggBy(AggMin("MinI=intCol", "MinD=doubleCol"), "Sym").sort("Sym"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MaxI=max(intCol)", "MaxD=max(doubleCol)").sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, AggCombo(Agg(AggType.Max, "MaxI=intCol", "MaxD=doubleCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "view",
+                        queryTable.aggBy(AggMax("MaxI=intCol", "MaxD=doubleCol"), "Sym").sort("Sym"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MaxI=max(intCol)").sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, new AggregationFactory(Agg(new MinMaxBySpecImpl(true), "MinI=intCol"),
-                                Agg(new MinMaxBySpecImpl(false), "MaxI=intCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "view",
+                        queryTable.aggBy(List.of(AggMin("MinI=intCol"), AggMax("MaxI=intCol")), "Sym").sort("Sym"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MinD=min(doubleCol)", "MaxD=max(doubleCol)").sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, AggCombo(Agg(new MinMaxBySpecImpl(true), "MinD=doubleCol"),
-                                Agg(new MinMaxBySpecImpl(false), "MaxD=doubleCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "view",
+                        queryTable.aggBy(List.of(AggMin("MinD=doubleCol"), AggMax("MaxD=doubleCol")), "Sym")
+                                .sort("Sym"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym")
                                 .view("Sym", "MinD=min(doubleCol)", "MaxI=max(intCol)", "FirstD=first(doubleCol)",
                                         "LastI=last(intCol)")
                                 .sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, AggCombo(
+                        "view",
+                        queryTable.aggBy(List.of(
                                 AggMin("MinD=doubleCol"),
                                 AggMax("MaxI=intCol"),
                                 AggFirst("FirstD=doubleCol"),
                                 AggLast("LastI=intCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym")
                                 .view("Sym", "MinD=min(doubleCol)", "MaxD=max(doubleCol)", "MinI=min(intCol)",
                                         "MaxI=max(intCol)", "LastD=last(doubleCol)", "FirstD=first(doubleCol)",
                                         "FirstI=first(intCol)", "LastI=last(intCol)")
                                 .sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, AggCombo(
+                        "view",
+                        queryTable.aggBy(List.of(
                                 AggMin("MinD=doubleCol"),
                                 AggMax("MaxD=doubleCol"),
                                 AggMin("MinI=intCol"),
@@ -277,14 +251,14 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggFirst("FirstD=doubleCol"),
                                 AggFirst("FirstI=intCol"),
                                 AggLast("LastI=intCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy().view("MinD=min(doubleCol)", "MaxI=max(intCol)", "MaxD=max(doubleCol)",
                                 "MinI=min(intCol)",
                                 "FirstD=first(doubleCol)", "LastI=last(intCol)", "LastD=last(doubleCol)",
                                 "FirstI=first(intCol)"),
-                        "UpdateView",
-                        by(queryTable, AggCombo(
+                        "view",
+                        queryTable.aggBy(List.of(
                                 AggMin("MinD=doubleCol"),
                                 AggMax("MaxI=intCol"),
                                 AggMax("MaxD=doubleCol"),
@@ -292,21 +266,21 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggFirst("FirstD=doubleCol"),
                                 AggLast("LastI=intCol"),
                                 AggLast("LastD=doubleCol"),
-                                AggFirst("FirstI=intCol"))),
-                        "AggregationElement"),
+                                AggFirst("FirstI=intCol")), groupByColumns),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym")
                                 .view("Sym", "AvgD=avg(doubleCol)", "SumD=sum(doubleCol)", "VarD=var(doubleCol)",
                                         "StdD=std(doubleCol)", "intCol")
                                 .sort("Sym"),
-                        "UpdateView",
-                        by(queryTable, new AggregationFactory(
+                        "view",
+                        queryTable.aggBy(List.of(
                                 AggAvg("AvgD=doubleCol"),
                                 AggSum("SumD=doubleCol"),
                                 AggVar("VarD=doubleCol"),
                                 AggStd("StdD=doubleCol"),
                                 AggGroup("intCol")), "Sym").sort("Sym"),
-                        "AggregationElement"),
+                        "aggBy"),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym",
                                 "MedD=median(doubleCol)",
@@ -324,7 +298,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 "Pct90I=(int)TestAggBy.percentile(intCol, 0.90)",
                                 "Pct99D=percentile(doubleCol, 0.99)",
                                 "Pct99I=(int)TestAggBy.percentile(intCol, 0.99)").sort("Sym"),
-                        by(queryTable, AggCombo(
+                        queryTable.aggBy(List.of(
                                 AggMed("MedD=doubleCol"),
                                 AggPct(0.01, "Pct01D=doubleCol", "Pct01I=intCol"),
                                 AggPct(0.05, "Pct05D=doubleCol", "Pct05I=intCol"),
@@ -337,15 +311,15 @@ public class TestAggBy extends RefreshingTableTestCase {
                         queryTable.view("Sym", "intCol", "doubleCol").wavgBy("doubleCol", "Sym")
                                 .renameColumns("WAvg=intCol"),
                         "WAvgBy",
-                        by(queryTable, AggCombo(
+                        queryTable.aggBy(List.of(
                                 AggWAvg("doubleCol", "WAvg=intCol")), "Sym"),
                         "AggWAvg"),
                 new QueryTableTest.TableComparator(
                         queryTable.view("Sym", "intCol", "doubleCol").countBy("Count"), "Count",
-                        by(queryTable, AggCombo(reusedCount), CollectionUtil.ZERO_LENGTH_STRING_ARRAY), "AggCount"),
+                        queryTable.aggBy(AggCount("Count")), "AggCount"),
                 new QueryTableTest.TableComparator(
                         queryTable.view("Sym", "intCol", "doubleCol").countBy("Count"), "Count",
-                        by(queryTable, AggCombo(reusedCount), CollectionUtil.ZERO_LENGTH_STRING_ARRAY), "AggCount"),
+                        queryTable.aggBy(AggCount("Count")), "AggCount"),
                 new QueryTableTestBase.TableComparator(
                         queryTable.groupBy("Sym").view("Sym",
                                 "cdi=countDistinct(intCol)",
@@ -362,13 +336,13 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 "uidN=uniqueValue(doubleColNulls, true)")
                                 .sort("Sym"),
                         "countDistinctView",
-                        by(queryTable, AggCombo(AggCountDistinct("cdi=intCol", "ddi=doubleCol"),
+                        queryTable.aggBy(List.of(AggCountDistinct("cdi=intCol", "ddi=doubleCol"),
                                 AggCountDistinct(true, "cdiN=intColNulls", "ddiN=doubleColNulls"),
                                 AggDistinct("dic=intCol", "did=doubleCol"),
                                 AggDistinct(true, "dicN=intColNulls", "didN=doubleColNulls"),
                                 AggUnique("uic=intCol", "uid=doubleCol"),
                                 AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")), "Sym")
-                                        .sort("Sym"),
+                                .sort("Sym"),
                         "AggCountDistinct")
         };
         final int steps = 100; // 8;
@@ -380,24 +354,23 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
     }
 
-    public void testComboByDoubleClaim() throws IOException {
+    public void testComboByDoubleClaim() {
         final int size = 10;
         final Random random = new Random(0);
-        final ColumnInfo columnInfo[];
+        final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new TstUtils.SetGenerator<>("a", "b", "c", "d"),
                         new TstUtils.IntGenerator(10, 100),
                         new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
-        final AggregationElement reusedCount = AggCount("Count");
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(
                         queryTable.view("Sym", "intCol", "doubleCol").countBy("Count"), "Count",
-                        by(queryTable, AggCombo(reusedCount), CollectionUtil.ZERO_LENGTH_STRING_ARRAY), "AggCount"),
+                        queryTable.aggBy(AggCount("Count")), "AggCount"),
                 new QueryTableTest.TableComparator(
                         queryTable.view("Sym", "intCol", "doubleCol").countBy("Count"), "Count",
-                        by(queryTable, AggCombo(reusedCount), CollectionUtil.ZERO_LENGTH_STRING_ARRAY), "AggCount")
+                        queryTable.aggBy(AggCount("Count")), "AggCount")
         };
         final int steps = 100; // 8;
         for (int i = 0; i < steps; i++) {
@@ -413,9 +386,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                 charCol("Let", 'a', 'b', 'c', 'd'));
 
         final Table tail = dataTable.tail(10);
-        final Table result = by(tail, AggCombo(AggDistinct("Let")), "Grp");
+        final Table result = tail.aggBy(AggDistinct("Let"), "Grp");
 
-        // noinspection unchecked
         final ColumnSource<CharVector> cs = result.getColumnSource("Let");
         assertEquals(4, result.size());
         assertArrayEquals(new char[] {'a'}, cs.get(0).toArray());
@@ -503,8 +475,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                 longCol("Account", 1, 1, 2, 1, 3, 2, 4, 2, 5, 5),
                 intCol("Qty", 100, 100, 200, 300, 50, 100, 150, 200, 50, 50));
 
-        Table result = by(dataTable, AggCombo(AggCountDistinct("Account", "Qty")), "USym").sort("USym");
-        Table countNulls = by(dataTable, AggCombo(AggCountDistinct(true, "Account", "Qty")), "USym").sort("USym");
+        Table result = dataTable.aggBy(AggCountDistinct("Account", "Qty"), "USym").sort("USym");
+        Table countNulls = dataTable.aggBy(AggCountDistinct(true, "Account", "Qty"), "USym").sort("USym");
         assertEquals(4, result.size());
         assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, result.getRecord(0));
         assertArrayEquals(new Object[] {"GOOG", 2L, 2L}, result.getRecord(1));
@@ -556,10 +528,9 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     public void testComboByAggUnique() {
-        final DateTime dtdefault = convertDateTime("1987-10-20T07:45:00.000 NY");
+        final DateTime dtDefault = convertDateTime("1987-10-20T07:45:00.000 NY");
         final DateTime dt1 = convertDateTime("2021-01-01T00:00:01.000 NY");
         final DateTime dt2 = convertDateTime("2021-01-01T00:00:02.000 NY");
-        final DateTime dt3 = convertDateTime("2021-01-01T00:00:03.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 c("USym", "AAPL", "AAPL", "AAPL", /**/ "GOOG", "GOOG", /**/ "SPY", "SPY", "SPY", "SPY", /**/ "VXX"),
@@ -567,15 +538,17 @@ public class TestAggBy extends RefreshingTableTestCase {
                 intCol("Qty", 100, 100, 100, /**/ 300, 50, /**/ 100, 150, 200, 50, /**/ 50),
                 c("Whee", dt1, dt1, dt1, /**/ dt1, dt2, /**/ dt2, dt2, dt2, dt2, /**/ null));
 
-        Table result = by(dataTable, AggCombo(AggUnique(false, null, -1, "Account", "Qty"),
-                AggUnique(false, null, dtdefault, "Whee")), "USym").sort("USym");
+        Table result = dataTable.aggBy(List.of(
+                AggUnique(false, Sentinel(-1), "Account", "Qty"),
+                AggUnique(false, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
 
-        Table countNulls = by(dataTable, AggCombo(AggUnique(true, null, -1, "Account", "Qty"),
-                AggUnique(true, null, dtdefault, "Whee")), "USym").sort("USym");
+        Table countNulls = dataTable.aggBy(List.of(
+                AggUnique(true, Sentinel(-1), "Account", "Qty"),
+                AggUnique(true, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
 
         assertEquals(4, result.size());
         assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, result.getRecord(0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtdefault}, result.getRecord(1));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, result.getRecord(1));
         assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, result.getRecord(2));
         assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, result.getRecord(3));
         assertTableEquals(result, countNulls);
@@ -585,12 +558,12 @@ public class TestAggBy extends RefreshingTableTestCase {
                     c("USym", "AAPL", "VXX"),
                     longCol("Account", 1, 5),
                     intCol("Qty", 100, QueryConstants.NULL_INT),
-                    c("Whee", (DateTime) null, (DateTime) null));
+                    c("Whee", null, (DateTime) null));
             dataTable.notifyListeners(i(10), i(), i(2));
         });
 
         assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, result.getRecord(0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtdefault}, result.getRecord(1));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, result.getRecord(1));
         assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, result.getRecord(2));
         assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, result.getRecord(3));
 
@@ -608,11 +581,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         });
 
         assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, result.getRecord(0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtdefault}, result.getRecord(1));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, result.getRecord(1));
         assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, result.getRecord(2));
         assertArrayEquals(new Object[] {"USO", 2L, 200, dt1}, result.getRecord(3));
 
-        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dtdefault}, countNulls.getRecord(0));
+        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dtDefault}, countNulls.getRecord(0));
 
         //
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -631,13 +604,13 @@ public class TestAggBy extends RefreshingTableTestCase {
                     c("USym", "GOOG", "GOOG", "VXX", "VXX"),
                     longCol("Account", 2L, 2L, QueryConstants.NULL_LONG, 99),
                     intCol("Qty", 350, 350, 50, 50),
-                    c("Whee", dt2, dt2, (DateTime) null, dt1));
+                    c("Whee", dt2, dt2, null, dt1));
             dataTable.notifyListeners(i(9, 10), i(), i(3, 4));
         });
 
         assertArrayEquals(new Object[] {"GOOG", 2L, 350, dt2}, result.getRecord(1));
         assertArrayEquals(new Object[] {"VXX", 99L, 50, dt1}, result.getRecord(4));
-        assertArrayEquals(new Object[] {"VXX", -1L, 50, dtdefault}, countNulls.getRecord(4));
+        assertArrayEquals(new Object[] {"VXX", -1L, 50, dtDefault}, countNulls.getRecord(4));
     }
 
     public void testAggUniqueDefaultValues() {
@@ -655,18 +628,33 @@ public class TestAggBy extends RefreshingTableTestCase {
                 intCol("IntCol", NULL_INT, 99999, 100000, 200000),
                 longCol("LongCol", NULL_LONG, 44444444L, 55555555L, 66666666L),
                 floatCol("FloatCol", NULL_FLOAT, 1.2345f, 2.3456f, 3.4567f),
-                doubleCol("DoubleCol", NULL_DOUBLE, 1.1E22d, 2.2E22d, 3.3E22d));
+                doubleCol("DoubleCol", NULL_DOUBLE, 1.1E22d, 2.2E22d, 3.3E22d),
+                c("BigIntCol", null,
+                        BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(2)),
+                        BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(1)),
+                        BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(2))),
+                c("BigDecCol", null,
+                        BigDecimal.valueOf(MAX_FINITE_DOUBLE).add(BigDecimal.valueOf(2)),
+                        BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(1)),
+                        BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(2))));
 
         // First try mixing column types and values
-        Table result;
         expectException(IllegalArgumentException.class,
                 "Attempted to use no key/non unique values of incorrect types for aggregated columns!",
-                () -> by(dataTable, AggCombo(AggUnique(false, -1, -2, "StringCol", "BoolCol", "DatTime", "CharCol",
-                        "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol")), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(2), "StringCol", "BoolCol", "DatTime", "CharCol",
+                        "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "BigIntCol",
+                        "BigDecCol"), "USym").sort("USym"));
 
-        result = by(dataTable,
-                AggCombo(AggUnique(false, -1, -2, "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol")),
-                "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, Sentinel(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
+
+        dataTable.aggBy(AggUnique(false, Sentinel(BigInteger.valueOf(-2)),
+                "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
+
+        dataTable.aggBy(AggUnique(false, Sentinel(BigDecimal.valueOf(-2)),
+                "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+                "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
         // Byte out of range
         testUniqueOutOfRangeParams(Byte.class, dataTable, ((short) Byte.MIN_VALUE - 1), Byte.MIN_VALUE,
@@ -680,32 +668,28 @@ public class TestAggBy extends RefreshingTableTestCase {
                 Long.MIN_VALUE, BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE), Long.MAX_VALUE, "LongCol",
                 "FloatCol", "DoubleCol");
 
+        testUniqueOutOfRangeParams(Long.class, dataTable, -2.2,
+                Long.MIN_VALUE, BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE), Long.MAX_VALUE, "LongCol",
+                "FloatCol", "DoubleCol");
     }
 
     private void testUniqueOutOfRangeParams(Class<?> type, Table dataTable, Number invalidLow, Number validLow,
             Number invalidHigh, Number validHigh, String... aggCols) {
         // Byte out of range
         expectException(IllegalArgumentException.class,
-                "Attempted to use no key values too small for " + type.getName() + "!",
-                () -> by(dataTable, AggCombo(AggUnique(false, invalidLow, -1, aggCols)), "USym").sort("USym"));
-
-        expectException(IllegalArgumentException.class,
-                "Attempted to use no key values too large for " + type.getName() + "!",
-                () -> by(dataTable, AggCombo(AggUnique(false, invalidHigh, -1, aggCols)), "USym").sort("USym"));
-
-        expectException(IllegalArgumentException.class,
                 "Attempted to non unique values too small for " + type.getName() + "!",
-                () -> by(dataTable, AggCombo(AggUnique(false, -1, invalidLow, aggCols)), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidLow), aggCols), "USym").sort("USym"));
 
         expectException(IllegalArgumentException.class,
                 "Attempted to use non unique values too large for " + type.getName() + "!",
-                () -> by(dataTable, AggCombo(AggUnique(false, -1, invalidHigh, aggCols)), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidHigh), aggCols), "USym").sort("USym"));
 
-        by(dataTable, AggCombo(AggUnique(false, validLow, validLow, aggCols)), "USym").sort("USym");
-        by(dataTable, AggCombo(AggUnique(false, validHigh, validHigh, aggCols)), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, Sentinel(validLow), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, Sentinel(validHigh), aggCols), "USym").sort("USym");
     }
 
-    private static <T extends Throwable> void expectException(Class<T> excType, String failMessage, Runnable action) {
+    private static <T extends Throwable> void expectException(@SuppressWarnings("SameParameterValue") Class<T> excType,
+            String failMessage, Runnable action) {
         try {
             action.run();
             fail(failMessage);
@@ -717,7 +701,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
     }
 
-    // used in a query test
+    @SuppressWarnings("unused") // used in a query test
     public static double percentile(int[] a, double percentile) {
         if (percentile < 0 || percentile > 1) {
             throw new RuntimeException("Invalid percentile = " + percentile);
@@ -733,5 +717,4 @@ public class TestAggBy extends RefreshingTableTestCase {
             return copy[idx];
         }
     }
-
 }

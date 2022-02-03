@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectTypeRegistration",
+ "methods": {
+  "register": "Register objectType.\n\n:param objectType: (io.deephaven.plugin.type.ObjectType) - the object type"
+ },
+ "path": "io.deephaven.plugin.type.ObjectTypeRegistration",
+ "text": "The ObjectType specific registration.",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.object.ObjectServiceGrpcImpl",
+ "methods": {
+  "fetchObject": ":param request: io.deephaven.proto.backplane.grpc.FetchObjectRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.FetchObjectResponse>"
+ },
+ "path": "io.deephaven.server.object.ObjectServiceGrpcImpl",
+ "typeName": "class"
+}

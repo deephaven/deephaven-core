@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.FetchObjectRequestOrBuilder",
+ "methods": {
+  "getSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.TypedTicket) The sourceId.",
+  "getSourceIdOrBuilder": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+  "hasSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: (boolean) Whether the sourceId field is set."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.FetchObjectRequestOrBuilder",
+ "typeName": "interface"
+}

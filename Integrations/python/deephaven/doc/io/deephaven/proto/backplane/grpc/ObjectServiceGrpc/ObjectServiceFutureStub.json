@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc$ObjectServiceFutureStub",
+ "methods": {
+  "fetchObject": ":param request: io.deephaven.proto.backplane.grpc.FetchObjectRequest\n:return: com.google.common.util.concurrent.ListenableFuture<io.deephaven.proto.backplane.grpc.FetchObjectResponse>"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceFutureStub",
+ "typeName": "class"
+}

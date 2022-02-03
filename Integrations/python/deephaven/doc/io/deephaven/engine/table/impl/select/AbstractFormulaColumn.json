@@ -13,6 +13,7 @@
   "isRetain": ":return: boolean",
   "newDestInstance": "Create a new WritableColumnSource.\n\n The returned column source must be capable of handling updates.\n\n:param size: (long) - A hint as to the number of rows that will be used\n:return: (io.deephaven.engine.table.WritableColumnSource<?>) a new WritableColumnSource",
   "newFlatDestInstance": "Create a new immutable WritableColumnSource.\n\n The returned column source should be flat, and need not handle updates.\n\n:param size: (long) - A hint as to the number of rows that will be used\n:return: (io.deephaven.engine.table.WritableColumnSource<?>) a new WritableColumnSource",
+  "preventsParallelization": ":return: boolean",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.table.impl.select.AbstractFormulaColumn",

@@ -144,7 +144,7 @@ public class ObjectStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
         Assert.assertion(downstream.removed().isEmpty() && downstream.shifted().empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
-        // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in
+        // In a combo-agg, we may get modifications from other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
         try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
             copyStreamToResult(changedDestinations);

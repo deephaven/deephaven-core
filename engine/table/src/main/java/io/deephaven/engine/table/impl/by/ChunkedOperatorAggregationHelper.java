@@ -580,9 +580,6 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.modified = modifiedStatesBuilder.build();
                     downstream.modified().writableCast().remove(downstream.added());
                     downstream.modified().writableCast().remove(downstream.removed());
-                    if (ac.addedBackModified()) {
-                        downstream.modified().writableCast().insert(addedBack);
-                    }
                 }
 
                 ac.propagateChangesToOperators(downstream, newStates);

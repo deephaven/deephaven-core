@@ -808,9 +808,7 @@ public class QueryFactory {
      * @return A string that contains all common things that are needed to use generateQuery()
      */
     public String getTablePreamble(Long tableSeed) {
-        return "\n\nimport io.deephaven.engine.table.impl.by.SortedFirstBy;\n" +
-                "import io.deephaven.engine.table.impl.by.SortedLastBy;\n\n\n" +
-                "import io.deephaven.engine.table.impl.by.PercentileBySpecImpl;\n" +
+        return "\n\nimport static io.deephaven.api.agg.Aggregation.*;\n" +
                 "tableSeed = " + tableSeed + " as long;\n" +
                 "size = 100 as int;\n" +
                 "scale = 1000 as int;\n" +

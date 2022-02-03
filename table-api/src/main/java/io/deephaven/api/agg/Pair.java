@@ -7,8 +7,8 @@ import java.io.Serializable;
 /**
  * A column pair represents an {@link #input() input} and an {@link #output() output} column.
  *
- * @see NormalAggregation
- * @see NormalAggregations
+ * @see ColumnAggregation
+ * @see ColumnAggregations
  */
 public interface Pair extends Serializable {
 

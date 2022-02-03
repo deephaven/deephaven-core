@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.ColumnAggregations$Builder",
+ "methods": {
+  "addAllPairs": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.agg.Pair>\n:return: io.deephaven.api.agg.ColumnAggregations.Builder",
+  "addPairs": "*Overload 1*  \n  :param element: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.ColumnAggregations.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.ColumnAggregations.Builder",
+  "build": ":return: io.deephaven.api.agg.ColumnAggregations",
+  "spec": ":param spec: io.deephaven.api.agg.spec.AggSpec\n:return: io.deephaven.api.agg.ColumnAggregations.Builder"
+ },
+ "path": "io.deephaven.api.agg.ColumnAggregations.Builder",
+ "typeName": "interface"
+}

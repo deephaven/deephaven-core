@@ -1,19 +1,15 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
-import io.deephaven.engine.table.impl.by.AggregationMemoKey;
-import io.deephaven.engine.table.impl.by.AggregationSpec;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Indices for memoized operations on QueryTable.
@@ -99,16 +95,12 @@ public abstract class MemoizedOperationKey {
         return new TreeTable(idColumn, parentColumn);
     }
 
-    public static MemoizedOperationKey by(AggregationSpec aggregationSpec,
+    public static MemoizedOperationKey aggBy(Collection<? extends Aggregation> aggregations,
             SelectColumn[] groupByColumns) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }
-        final AggregationMemoKey aggregationMemoKey = aggregationSpec.getMemoKey();
-        if (aggregationMemoKey == null) {
-            return null;
-        }
-        return new GroupBy(aggregationMemoKey, groupByColumns);
+        return new AggBy(aggregations.toArray(new Aggregation[0]), groupByColumns);
     }
 
     public static MemoizedOperationKey partitionBy(boolean dropKeys, SelectColumn[] groupByColumns) {
@@ -118,22 +110,17 @@ public abstract class MemoizedOperationKey {
         return new PartitionBy(dropKeys, groupByColumns);
     }
 
+    public static MemoizedOperationKey rollup(Collection<? extends Aggregation> aggregations,
+            SelectColumn[] groupByColumns, boolean includeConstituents) {
+        if (!isMemoizable(groupByColumns)) {
+            return null;
+        }
+        return new Rollup(aggregations.toArray(new Aggregation[0]), groupByColumns, includeConstituents);
+    }
+
     private static boolean isMemoizable(SelectColumn[] selectColumn) {
         return Arrays.stream(selectColumn)
                 .allMatch(sc -> sc instanceof SourceColumn || sc instanceof ReinterpretedColumn);
-    }
-
-    public static MemoizedOperationKey rollup(AggregationFactory aggregationFactory, SelectColumn[] columns,
-            boolean includeConstituents) {
-        if (!isMemoizable(columns)) {
-            return null;
-        }
-
-        final AggregationMemoKey aggregationMemoKey = aggregationFactory.getMemoKey();
-        if (aggregationMemoKey == null) {
-            return null;
-        }
-        return new Rollup(aggregationMemoKey, columns, includeConstituents);
     }
 
     private static class Flatten extends AttributeAgnosticMemoizedOperationKey {
@@ -349,12 +336,13 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class GroupBy extends AttributeAgnosticMemoizedOperationKey {
-        private final AggregationMemoKey aggregationKey;
+    private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
+
+        private final Aggregation[] aggregations;
         private final SelectColumn[] groupByColumns;
 
-        private GroupBy(@NotNull AggregationMemoKey aggregationKey, SelectColumn[] groupByColumns) {
-            this.aggregationKey = aggregationKey;
+        private AggBy(Aggregation[] aggregations, SelectColumn[] groupByColumns) {
+            this.aggregations = aggregations;
             this.groupByColumns = groupByColumns;
         }
 
@@ -364,18 +352,17 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final GroupBy groupBy = (GroupBy) o;
-            return Objects.equals(aggregationKey, groupBy.aggregationKey) &&
-                    Arrays.equals(groupByColumns, groupBy.groupByColumns);
+            final AggBy aggBy = (AggBy) o;
+            return Arrays.equals(aggregations, aggBy.aggregations) &&
+                    Arrays.equals(groupByColumns, aggBy.groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            int result = Objects.hash(aggregationKey);
+            int result = Arrays.hashCode(aggregations);
             result = 31 * result + Arrays.hashCode(groupByColumns);
             return result;
         }
-
 
         @Override
         BaseTable.CopyAttributeOperation copyType() {
@@ -384,6 +371,7 @@ public abstract class MemoizedOperationKey {
     }
 
     static class PartitionBy extends MemoizedOperationKey {
+
         private final boolean dropKeys;
         private final SelectColumn[] groupByColumns;
 
@@ -398,31 +386,32 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final PartitionBy by = (PartitionBy) o;
-            return dropKeys == by.dropKeys &&
-                    Arrays.equals(groupByColumns, by.groupByColumns);
+            final PartitionBy partitionBy = (PartitionBy) o;
+            return dropKeys == partitionBy.dropKeys &&
+                    Arrays.equals(groupByColumns, partitionBy.groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            int result = Objects.hash(dropKeys);
+            int result = Boolean.hashCode(dropKeys);
             result = 31 * result + Arrays.hashCode(groupByColumns);
             return result;
         }
     }
 
     private static class Rollup extends AttributeAgnosticMemoizedOperationKey {
-        private final GroupBy groupBy;
+
+        private final AggBy aggBy;
         private final boolean includeConstituents;
 
-        Rollup(@NotNull AggregationMemoKey aggregationKey, SelectColumn[] groupByColumns, boolean includeConstituents) {
+        Rollup(Aggregation[] aggregations, SelectColumn[] groupByColumns, boolean includeConstituents) {
             this.includeConstituents = includeConstituents;
-            this.groupBy = new GroupBy(aggregationKey, groupByColumns);
+            this.aggBy = new AggBy(aggregations, groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            return 31 * groupBy.hashCode() + Boolean.hashCode(includeConstituents);
+            return 31 * aggBy.hashCode() + Boolean.hashCode(includeConstituents);
         }
 
         @Override
@@ -432,7 +421,7 @@ public abstract class MemoizedOperationKey {
             if (o == null || getClass() != o.getClass())
                 return false;
             final Rollup rollup = (Rollup) o;
-            return Objects.equals(groupBy, rollup.groupBy) && includeConstituents == rollup.includeConstituents;
+            return Objects.equals(aggBy, rollup.aggBy) && includeConstituents == rollup.includeConstituents;
         }
 
         @Override
@@ -462,7 +451,7 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public final boolean equals(final Object other) {
+        public boolean equals(final Object other) {
             if (this == other) {
                 return true;
             }
@@ -475,7 +464,7 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public final int hashCode() {
+        public int hashCode() {
             return 31 * System.identityHashCode(symbolTableSource) + Boolean.hashCode(useLookupCaching);
         }
     }

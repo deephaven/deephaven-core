@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecTDigest",
+ "methods": {
+  "compression": "T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.\n\n:return: (double) The T-Digest compression factor",
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecTDigest\n  \n*Overload 2*  \n  :param compression: double\n  :return: io.deephaven.api.agg.spec.AggSpecTDigest",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecTDigest",
+ "text": "Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest) with the specified\n compression().\n \n May be used to implement parallel percentile calculations by splitting inputs and accumulating results into a single\n downstream TDigest.\n \n May only be used on static or add-only tables.",
+ "typeName": "class"
+}

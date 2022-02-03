@@ -2,28 +2,8 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
-import io.deephaven.api.agg.spec.AggSpecAbsSum;
-import io.deephaven.api.agg.spec.AggSpecAvg;
-import io.deephaven.api.agg.spec.AggSpecCountDistinct;
-import io.deephaven.api.agg.spec.AggSpecDistinct;
-import io.deephaven.api.agg.spec.AggSpecFirst;
-import io.deephaven.api.agg.spec.AggSpecFormula;
-import io.deephaven.api.agg.spec.AggSpecGroup;
-import io.deephaven.api.agg.spec.AggSpecLast;
-import io.deephaven.api.agg.spec.AggSpecMax;
-import io.deephaven.api.agg.spec.AggSpecMedian;
-import io.deephaven.api.agg.spec.AggSpecMin;
-import io.deephaven.api.agg.spec.AggSpecPercentile;
-import io.deephaven.api.agg.spec.AggSpecSortedFirst;
-import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecStd;
-import io.deephaven.api.agg.spec.AggSpecSum;
-import io.deephaven.api.agg.spec.AggSpecUnique;
-import io.deephaven.api.agg.spec.AggSpecVar;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +36,16 @@ final class AggAllByExclusions implements Visitor {
     }
 
     @Override
+    public void visit(AggSpecApproximatePercentile approxPct) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecAvg avg) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         out = Collections.emptySet();
     }
@@ -66,22 +56,22 @@ final class AggAllByExclusions implements Visitor {
     }
 
     @Override
-    public void visit(AggSpecGroup group) {
-        out = Collections.emptySet();
-    }
-
-    @Override
-    public void visit(AggSpecAvg avg) {
-        out = Collections.emptySet();
-    }
-
-    @Override
     public void visit(AggSpecFirst first) {
         out = Collections.emptySet();
     }
 
     @Override
     public void visit(AggSpecFormula formula) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecFreeze freeze) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecGroup group) {
         out = Collections.emptySet();
     }
 
@@ -127,6 +117,11 @@ final class AggAllByExclusions implements Visitor {
 
     @Override
     public void visit(AggSpecSum sum) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecTDigest tDigest) {
         out = Collections.emptySet();
     }
 

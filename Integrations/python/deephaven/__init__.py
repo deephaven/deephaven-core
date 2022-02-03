@@ -9,8 +9,6 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Calendars imported as cals
 
-* AggregationFactory imported as af
-
 * DateTimeUtils imported as dtu
 
 * MovingAverages imported as mavg
@@ -58,7 +56,7 @@ __all__ = [
     'Aggregation', 'ColumnName', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
     'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortColumn', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "af", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
+    "cals", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
 
     "read_csv", "write_csv" # from csv
 ]
@@ -81,7 +79,6 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 
 
 from . import Calendars as cals, \
-    AggregationFactory as af, \
     DateTimeUtils as dtu, \
     MovingAverages as mavg, \
     ConsumeKafka as ck, \
@@ -107,7 +104,6 @@ def initialize():
 
     # ensure that all the symbols are called and reimport the broken symbols
     cals._defineSymbols()
-    af._defineSymbols()
     dtu._defineSymbols()
     dh._defineSymbols()
     ck._defineSymbols()

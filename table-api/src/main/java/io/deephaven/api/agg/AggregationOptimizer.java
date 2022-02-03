@@ -10,10 +10,13 @@ import java.util.List;
 import java.util.Map.Entry;
 
 /**
- * Optimizes a collection of {@link Aggregation aggregations} by grouping like-speccedd aggregations together.
+ * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together.
  */
 public final class AggregationOptimizer implements Aggregation.Visitor {
+
     private static final Object COUNT_OBJ = new Object();
+    private static final Object FIRST_ROW_KEY_OBJ = new Object();
+    private static final Object LAST_ROW_KEY_OBJ = new Object();
 
     /**
      * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together. The
@@ -39,13 +42,39 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                 for (Pair pair : e.getValue()) {
                     out.add(Count.of((ColumnName) pair));
                 }
+            } else if (e.getKey() == FIRST_ROW_KEY_OBJ) {
+                for (Pair pair : e.getValue()) {
+                    out.add(FirstRowKey.of((ColumnName) pair));
+                }
+            } else if (e.getKey() == LAST_ROW_KEY_OBJ) {
+                for (Pair pair : e.getValue()) {
+                    out.add(LastRowKey.of((ColumnName) pair));
+                }
+            } else if (e.getValue() == null) {
+                out.add((Aggregation) e.getKey());
             } else if (e.getValue().size() == 1) {
-                out.add(NormalAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
+                out.add(ColumnAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
-                out.add(NormalAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
+                out.add(ColumnAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
             }
         }
         return out;
+    }
+
+    @Override
+    public void visit(Aggregations aggregations) {
+        aggregations.aggregations().forEach(a -> a.walk(this));
+    }
+
+    @Override
+    public void visit(ColumnAggregation columnAgg) {
+        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
+    }
+
+    @Override
+    public void visit(ColumnAggregations columnAggs) {
+        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>())
+                .addAll(columnAggs.pairs());
     }
 
     @Override
@@ -54,13 +83,12 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(NormalAggregation normalAgg) {
-        visitOrder.computeIfAbsent(normalAgg.spec(), k -> new ArrayList<>()).add(normalAgg.pair());
+    public void visit(FirstRowKey firstRowKey) {
+        visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey.column());
     }
 
     @Override
-    public void visit(NormalAggregations normalAggs) {
-        visitOrder.computeIfAbsent(normalAggs.spec(), k -> new ArrayList<>())
-                .addAll(normalAggs.pairs());
+    public void visit(LastRowKey lastRowKey) {
+        visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
     }
 }

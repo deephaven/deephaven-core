@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 
 abstract class FpChunkedNonNormalCounter {
     // individual state values for nan, positive infinity, and negative infinity
@@ -203,20 +203,21 @@ abstract class FpChunkedNonNormalCounter {
     Map<String, ColumnSource<?>> fpInternalColumnSources(final String name) {
         final Map<String, ColumnSource<?>> results = new LinkedHashMap<>();
         if (nanCount != null) {
-            results.put(name + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nanCount);
+            results.put(name + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nanCount);
         } else {
-            results.put(name + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, new WrappedLongArraySource(() -> nanCount));
+            results.put(name + ROLLUP_NAN_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
+                    new WrappedLongArraySource(() -> nanCount));
         }
         if (positiveInfinityCount != null) {
-            results.put(name + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, positiveInfinityCount);
+            results.put(name + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, positiveInfinityCount);
         } else {
-            results.put(name + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
+            results.put(name + ROLLUP_PI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
                     new WrappedLongArraySource(() -> positiveInfinityCount));
         }
         if (negativeInfinityCount != null) {
-            results.put(name + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, negativeInfinityCount);
+            results.put(name + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, negativeInfinityCount);
         } else {
-            results.put(name + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
+            results.put(name + ROLLUP_NI_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
                     new WrappedLongArraySource(() -> negativeInfinityCount));
         }
         return results;
