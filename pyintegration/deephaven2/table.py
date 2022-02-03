@@ -9,6 +9,7 @@ from typing import List
 import jpy
 
 from deephaven2 import DHError, dtypes
+from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
@@ -21,7 +22,7 @@ _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 
 
-class Table:
+class Table(JObjectWrapper):
     """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
     Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
@@ -79,6 +80,10 @@ class Table:
                                        component_type=DType.from_jtype(j_col.getComponentType()),
                                        column_type=ColumnType(j_col.getColumnType())))
         return self._schema
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table
 
     def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
         """ Returns the first few rows of a table as a pipe-delimited string.

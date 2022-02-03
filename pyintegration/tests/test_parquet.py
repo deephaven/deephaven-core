@@ -83,16 +83,17 @@ class ParquetTestCase(BaseTestCase):
         # Writing
         col_inst = ColumnInstruction(column_name="x", parquet_column_name="px")
         col_inst1 = ColumnInstruction(column_name="y", parquet_column_name="py")
-        # col_inst1 = ColumnInstruction(column_name="y", parquet_column_name="py", codec_name="LZ4")
 
         with self.subTest(msg="write_table(Table, str, max_dictionary_keys)"):
             write_table(table, file_location, max_dictionary_keys=10)
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
+
         with self.subTest(msg="write_table(Table, str, col_instructions, max_dictionary_keys)"):
             write_table(table, file_location, col_instructions=[col_inst, col_inst1], max_dictionary_keys=10)
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
+
         with self.subTest(msg="write_tables(Table[], destinations, col_definitions, "):
             write_tables([table, table], [file_location, file_location2], col_definitions,
                          col_instructions=[col_inst, col_inst1])
@@ -107,9 +108,7 @@ class ParquetTestCase(BaseTestCase):
         # Reading
         with self.subTest(msg="read_table(str)"):
             table2 = read_table(path=file_location, col_instructions=[col_inst, col_inst1])
-            # TODO Ryan is looking into the failure, will add back and more after he has identified
-            # the problem and merged his fix.
-            # self.assertEqual(table, table2)
+            self.assertEqual(table, table2)
 
         # Delete
         with self.subTest(msg="delete(str)"):

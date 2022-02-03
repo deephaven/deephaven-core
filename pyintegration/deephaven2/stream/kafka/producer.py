@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" The Kafka producer module. """
+""" The kafka.producer module allows publishing Deephavne tables to Kafka streams. """
 import jpy
 
 from deephaven2 import DHError, dtypes
@@ -28,12 +28,12 @@ def produce(
         topic: the topic name
         key: a specification for how to map table column(s) to the Key field in produced
             Kafka messages.  This should be the result of calling one of the methods
-            simple, avro or json in this module, or the constant IGNORE.
+            simple, avro or json in this module, or the constant _IGNORE.
         value: a specification for how to map table column(s) to the Value field in produced
             Kafka messages.  This should be the result of calling one of the methods
-            simple, avro or json in this module, or the constant IGNORE.
+            simple, avro or json in this module, or the constant _IGNORE.
         last_by_key_columns:  Whether to publish only the last record for each unique key.
-            Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
+            Ignored if key is _IGNORE.  If key is not _IGNORE and last_by_key_columns is false,
             it is expected that table updates will not produce any row shifts; that is, the publisher
             expects keyed tables to be streams, add-only, or aggregated.
 
@@ -55,7 +55,7 @@ def produce(
         raise ValueError("argument 'value' is None")
     if key is IGNORE and value is IGNORE:
         raise ValueError(
-            "at least one argument for 'key' or 'value' must be different from IGNORE")
+            "at least one argument for 'key' or 'value' must be different from _IGNORE")
 
     kafka_config = dtypes.Properties(kafka_config)
     try:

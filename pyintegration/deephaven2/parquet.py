@@ -122,7 +122,7 @@ def write_table(table: Table, destination: str, col_definitions: List[Column] = 
         col_definitions (List[Column]): the column definitions to use, default is None
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
         compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20,
+        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20
 
     Raises:
         DHError

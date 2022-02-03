@@ -5,6 +5,7 @@ import os
 import unittest
 
 from deephaven2 import kafka_consumer as ck
+from deephaven2.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven2 import dtypes
 
@@ -12,12 +13,12 @@ from deephaven2 import dtypes
 class KafkaConsumerTestCase(BaseTestCase):
 
     def _assert_common_cols(self, cols):
-        self.assertEquals("KafkaPartition", cols[0].name)
-        self.assertEquals(dtypes.int32, cols[0].data_type)
-        self.assertEquals("KafkaOffset", cols[1].name)
-        self.assertEquals(dtypes.long, cols[1].data_type)
-        self.assertEquals("KafkaTimestamp", cols[2].name)
-        self.assertEquals(dtypes.DateTime, cols[2].data_type)
+        self.assertEqual("KafkaPartition", cols[0].name)
+        self.assertEqual(dtypes.int32, cols[0].data_type)
+        self.assertEqual("KafkaOffset", cols[1].name)
+        self.assertEqual(dtypes.long, cols[1].data_type)
+        self.assertEqual("KafkaTimestamp", cols[2].name)
+        self.assertEqual(dtypes.DateTime, cols[2].data_type)
 
     def test_basic_constants(self):
         """
@@ -26,9 +27,6 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertIsNotNone(ck.SEEK_TO_BEGINNING)
         self.assertIsNotNone(ck.DONT_SEEK)
         self.assertIsNotNone(ck.SEEK_TO_END)
-        self.assertIsNotNone(ck.FROM_PROPERTIES)
-        self.assertIsNotNone(ck.IGNORE)
-        self.assertIsNotNone(ck.ALL_PARTITIONS)
         self.assertIsNotNone(ck.ALL_PARTITIONS_SEEK_TO_BEGINNING)
         self.assertIsNotNone(ck.ALL_PARTITIONS_SEEK_TO_END)
         self.assertIsNotNone(ck.ALL_PARTITIONS_DONT_SEEK)
@@ -40,14 +38,14 @@ class KafkaConsumerTestCase(BaseTestCase):
         t = ck.consume(
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
-            key=ck.IGNORE,
-            value=ck.simple('Price', dtypes.double))
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=ck.simple('Price', dtypes.double))
 
         cols = t.columns
-        self.assertEquals(4, len(cols))
+        self.assertEqual(4, len(cols))
         self._assert_common_cols(cols)
-        self.assertEquals("Price", cols[3].name)
-        self.assertEquals(dtypes.double, cols[3].data_type)
+        self.assertEqual("Price", cols[3].name)
+        self.assertEqual(dtypes.double, cols[3].data_type)
 
     def test_json(self):
         """
@@ -57,8 +55,8 @@ class KafkaConsumerTestCase(BaseTestCase):
         t = ck.consume(
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
-            key=ck.IGNORE,
-            value=ck.json(
+            key_spec=KeyValueSpec.IGNORE,
+            value_spec=ck.json(
                 [('Symbol', dtypes.string),
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
@@ -72,23 +70,23 @@ class KafkaConsumerTestCase(BaseTestCase):
                     'jts': 'Tstamp'
                 }
             ),
-            table_type='append'
+            table_type=TableType.Append
         )
 
         cols = t.columns
-        self.assertEquals(8, len(cols))
+        self.assertEqual(8, len(cols))
         self._assert_common_cols(cols)
 
-        self.assertEquals("Symbol", cols[3].name)
-        self.assertEquals(dtypes.string, cols[3].data_type)
-        self.assertEquals("Side", cols[4].name)
-        self.assertEquals(dtypes.string, cols[4].data_type)
-        self.assertEquals("Price", cols[5].name)
-        self.assertEquals(dtypes.double, cols[5].data_type)
-        self.assertEquals("Qty", cols[6].name)
-        self.assertEquals(dtypes.int_, cols[6].data_type)
-        self.assertEquals("Tstamp", cols[7].name)
-        self.assertEquals(dtypes.DateTime, cols[7].data_type)
+        self.assertEqual("Symbol", cols[3].name)
+        self.assertEqual(dtypes.string, cols[3].data_type)
+        self.assertEqual("Side", cols[4].name)
+        self.assertEqual(dtypes.string, cols[4].data_type)
+        self.assertEqual("Price", cols[5].name)
+        self.assertEqual(dtypes.double, cols[5].data_type)
+        self.assertEqual("Qty", cols[6].name)
+        self.assertEqual(dtypes.int_, cols[6].data_type)
+        self.assertEqual("Tstamp", cols[7].name)
+        self.assertEqual(dtypes.DateTime, cols[7].data_type)
 
     def test_avro(self):
         """
@@ -130,23 +128,23 @@ class KafkaConsumerTestCase(BaseTestCase):
                     'schema.registry.url': 'http://redpanda:8081'
                 },
                 'share_price',
-                key=ck.IGNORE,
-                value=ck.avro('share_price_record', schema_version='1'),
-                table_type='append'
+                key_spec=KeyValueSpec.IGNORE,
+                value_spec=ck.avro('share_price_record', schema_version='1'),
+                table_type=TableType.Append
             )
 
             cols = t.columns
-            self.assertEquals(7, len(cols))
+            self.assertEqual(7, len(cols))
             self._assert_common_cols(cols)
 
-            self.assertEquals("Symbol", cols[3].name)
-            self.assertEquals(dtypes.string, cols[3].data_type)
-            self.assertEquals("Side", cols[4].name)
-            self.assertEquals(dtypes.string, cols[4].data_type)
-            self.assertEquals("Qty", cols[5].name)
-            self.assertEquals(dtypes.int_, cols[5].data_type)
-            self.assertEquals("Price", cols[6].name)
-            self.assertEquals(dtypes.double, cols[6].data_type)
+            self.assertEqual("Symbol", cols[3].name)
+            self.assertEqual(dtypes.string, cols[3].data_type)
+            self.assertEqual("Side", cols[4].name)
+            self.assertEqual(dtypes.string, cols[4].data_type)
+            self.assertEqual("Qty", cols[5].name)
+            self.assertEqual(dtypes.int_, cols[5].data_type)
+            self.assertEqual("Price", cols[6].name)
+            self.assertEqual(dtypes.double, cols[6].data_type)
 
         with self.subTest(msg='mapping_only (filter out some schema fields)'):
             m = {'Symbol': 'Ticker', 'Price': 'Dollars'}
@@ -156,19 +154,19 @@ class KafkaConsumerTestCase(BaseTestCase):
                     'schema.registry.url': 'http://redpanda:8081'
                 },
                 'share_price',
-                key=ck.IGNORE,
-                value=ck.avro('share_price_record', mapping_only=m),
-                table_type='append'
+                key_spec=KeyValueSpec.IGNORE,
+                value_spec=ck.avro('share_price_record', mapping=m, mapped_only=True),
+                table_type=TableType.Append
             )
 
             cols = t.columns
-            self.assertEquals(5, len(cols))
+            self.assertEqual(5, len(cols))
             self._assert_common_cols(cols)
 
-            self.assertEquals("Ticker", cols[3].name)
-            self.assertEquals(dtypes.string, cols[3].data_type)
-            self.assertEquals("Dollars", cols[4].name)
-            self.assertEquals(dtypes.double, cols[4].data_type)
+            self.assertEqual("Ticker", cols[3].name)
+            self.assertEqual(dtypes.string, cols[3].data_type)
+            self.assertEqual("Dollars", cols[4].name)
+            self.assertEqual(dtypes.double, cols[4].data_type)
 
         with self.subTest(msg='mapping (rename some fields)'):
             m = {'Symbol': 'Ticker', 'Qty': 'Quantity'}
@@ -178,23 +176,23 @@ class KafkaConsumerTestCase(BaseTestCase):
                     'schema.registry.url': 'http://redpanda:8081'
                 },
                 'share_price',
-                key=ck.IGNORE,
-                value=ck.avro('share_price_record', mapping=m),
-                table_type='append'
+                key_spec=KeyValueSpec.IGNORE,
+                value_spec=ck.avro('share_price_record', mapping=m),
+                table_type=TableType.Append
             )
 
             cols = t.columns
-            self.assertEquals(7, len(cols))
+            self.assertEqual(7, len(cols))
             self._assert_common_cols(cols)
 
-            self.assertEquals("Ticker", cols[3].name)
-            self.assertEquals(dtypes.string, cols[3].data_type)
-            self.assertEquals("Side", cols[4].name)
-            self.assertEquals(dtypes.string, cols[4].data_type)
-            self.assertEquals("Quantity", cols[5].name)
-            self.assertEquals(dtypes.int_, cols[5].data_type)
-            self.assertEquals("Price", cols[6].name)
-            self.assertEquals(dtypes.double, cols[6].data_type)
+            self.assertEqual("Ticker", cols[3].name)
+            self.assertEqual(dtypes.string, cols[3].data_type)
+            self.assertEqual("Side", cols[4].name)
+            self.assertEqual(dtypes.string, cols[4].data_type)
+            self.assertEqual("Quantity", cols[5].name)
+            self.assertEqual(dtypes.int_, cols[5].data_type)
+            self.assertEqual("Price", cols[6].name)
+            self.assertEqual(dtypes.double, cols[6].data_type)
 
 
 if __name__ == "__main__":
