@@ -133,7 +133,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public synchronized BarrageTable entireTable() {
+    public BarrageTable entireTable() {
         return partialTable(null, null);
     }
 

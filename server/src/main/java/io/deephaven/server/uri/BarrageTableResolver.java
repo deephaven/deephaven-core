@@ -133,7 +133,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     /**
-     * Create a partial table subscription to the {@code table} via the {@code targetUri}. Uses {@link #SNAP_OPTIONS}.
+     * Create a partial table subscription to the {@code table} via the {@code targetUri}. Uses {@link #SUB_OPTIONS}.
      *
      * @param targetUri the target URI
      * @param table the table spec
@@ -161,7 +161,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     /**
-     * Create a full snapshot of the remote URI. Uses {@link #SUB_OPTIONS}.
+     * Create a full snapshot of the remote URI. Uses {@link #SNAP_OPTIONS}.
      *
      * @param remoteUri the remote URI
      * @return the table to snapshot

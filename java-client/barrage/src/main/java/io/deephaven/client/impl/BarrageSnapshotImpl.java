@@ -48,10 +48,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final ClientCallStreamObserver<FlightData> observer;
 
     private final BarrageTable resultTable;
-    private volatile Condition sealedCondition;
 
     private volatile BitSet expectedColumns;
 
+    private volatile Condition sealedCondition;
     private volatile boolean sealed = false;
     private volatile Throwable exceptionWhileSealing = null;
 
@@ -154,7 +154,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
         // notify user when connection has already been used and closed
         if (prevUsed) {
-            throw new UnsupportedOperationException("Cannot create multiple snapshots on a single connection");
+            throw new UnsupportedOperationException("Snapshot object already used");
         }
 
         // test lock conditions

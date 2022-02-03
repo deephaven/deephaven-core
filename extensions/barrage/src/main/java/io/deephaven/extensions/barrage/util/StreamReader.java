@@ -23,9 +23,10 @@ public interface StreamReader {
      * @return a BarrageMessage filled out by the stream's payload
      */
     BarrageMessage safelyParseFrom(final StreamReaderOptions options,
-            BitSet expectedColumns, final ChunkType[] columnChunkTypes,
-            final Class<?>[] columnTypes,
-            final Class<?>[] componentTypes,
-            final InputStream stream);
+            BitSet expectedColumns,
+            ChunkType[] columnChunkTypes,
+            Class<?>[] columnTypes,
+            Class<?>[] componentTypes,
+            InputStream stream);
 
 }
