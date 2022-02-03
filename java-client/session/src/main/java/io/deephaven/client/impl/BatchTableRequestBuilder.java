@@ -742,7 +742,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AggSpecMedian median) {
-            if (!median.averageMedian()) {
+            if (!median.averageEvenlyDivided()) {
                 throw new UnsupportedOperationException(
                         "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }
@@ -756,7 +756,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AggSpecPercentile pct) {
-            if (pct.averageMedian()) {
+            if (pct.averageEvenlyDivided()) {
                 throw new UnsupportedOperationException(
                         "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }

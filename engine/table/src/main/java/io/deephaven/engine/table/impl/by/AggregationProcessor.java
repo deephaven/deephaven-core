@@ -689,7 +689,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                    true, formula.formula(), formula.formulaParam(), MatchPair.fromPairs(resultPairs));
+                    true, formula.formula(), formula.paramToken(), MatchPair.fromPairs(resultPairs));
             addNoInputOperator(formulaChunkedOperator);
         }
 
@@ -716,7 +716,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, 0.50d, median.averageMedian(), n));
+            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, 0.50d, median.averageEvenlyDivided(), n));
         }
 
         @Override
@@ -726,7 +726,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageMedian(), n));
+            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageEvenlyDivided(), n));
         }
 
         @Override

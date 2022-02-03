@@ -4,6 +4,9 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * Specifies an aggregation that outputs the count of distinct values for each group.
+ */
 @Immutable
 @BuildableStyle
 public abstract class AggSpecCountDistinct extends AggSpecBase {
@@ -21,6 +24,11 @@ public abstract class AggSpecCountDistinct extends AggSpecBase {
         return "count distinct" + (countNulls() ? " (counting nulls)" : "");
     }
 
+    /**
+     * Whether {@code null} input values should be included when counting the distinct input values.
+     * 
+     * @return Whether to count nulls
+     */
     @Default
     public boolean countNulls() {
         return false;

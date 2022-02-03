@@ -6,8 +6,8 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 /**
- * <p>
- * Aggregates input column into a TDigest output column with the specified compression.
+ * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest) with the specified
+ * {@link #compression()}.
  * <p>
  * May be used to implement parallel percentile calculations by splitting inputs and accumulating results into a single
  * downstream TDigest.

@@ -2,6 +2,16 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
+import io.deephaven.api.agg.spec.AggSpecCountDistinct;
+import io.deephaven.api.agg.spec.AggSpecDistinct;
+import io.deephaven.api.agg.spec.AggSpecFormula;
+import io.deephaven.api.agg.spec.AggSpecMedian;
+import io.deephaven.api.agg.spec.AggSpecPercentile;
+import io.deephaven.api.agg.spec.AggSpecTDigest;
+import io.deephaven.api.agg.spec.AggSpecUnique;
+import io.deephaven.api.agg.spec.AggSpecWAvg;
+import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.agg.util.Sentinel;
 
@@ -24,10 +34,10 @@ import java.util.function.BiFunction;
 public interface Aggregation extends Serializable {
 
     /**
-     * Combine an {@link AggSpec} and a {@link Pair column name pair} into a {@link ColumnAggregation}.
+     * Combine an {@link AggSpec} and an input/output {@link Pair column name pair} into a {@link ColumnAggregation}.
      *
-     * @param spec The aggregation specifier to apply to the column pair
-     * @param pair The input/output column name pair
+     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair
+     * @param pair The {@link ColumnAggregation#pair() input/output column name pair}
      * @return The aggregation
      */
     static ColumnAggregation of(AggSpec spec, String pair) {
@@ -35,11 +45,12 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Combine an {@link AggSpec} and one or more {@link Pair column name pairs} into a {@link ColumnAggregation} or
-     * {@link ColumnAggregations}.
+     * Combine an {@link AggSpec} and one or more input/output {@link Pair column name pairs} into a
+     * {@link ColumnAggregation} or {@link ColumnAggregations}.
      *
-     * @param spec The aggregation specifier to apply to the column pair
-     * @param pairs The input/output column name pairs
+     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair(s)
+     * @param pairs The input/output column name {@link ColumnAggregation#pair() pair} or
+     *        {@link ColumnAggregations#pairs() pairs}
      * @return The aggregation
      */
     static Aggregation of(AggSpec spec, String... pairs) {
@@ -56,7 +67,7 @@ public interface Aggregation extends Serializable {
     /**
      * Pass through a single {@link Aggregation}, or combine many into an {@link Aggregations}.
      *
-     * @param aggregations The aggregations to combine
+     * @param aggregations The {@link Aggregations#aggregations() aggregations} to combine
      * @return The combined aggregation
      */
     static Aggregation of(Aggregation... aggregations) {
@@ -70,7 +81,8 @@ public interface Aggregation extends Serializable {
      * Create a single or compound {@link Aggregation} from a single input column and one or more per-aggregation input
      * values.
      *
-     * @param columnAggFactory A factory for combining an input column and input value into an aggregation
+     * @param columnAggFactory A factory for combining an input column and input value into a {@link ColumnAggregation
+     *        aggregation}
      * @param inputColumn The input column for each component of the resulting aggregation
      * @param inputs The input values to combine with the input column via the factory
      * @return The combined aggregation
@@ -102,9 +114,11 @@ public interface Aggregation extends Serializable {
 
     /**
      * Create an {@link io.deephaven.api.agg.spec.AggSpecApproximatePercentile approximate percentile} aggregation for
-     * the supplied percentile and column name pairs with the default T-Digest compression factor.
+     * the supplied percentile and column name pairs with the default T-Digest
+     * {@link AggSpecApproximatePercentile#compression() compression} factor.
      *
-     * @param percentile The percentile to use for all component aggregations
+     * @param percentile The {@link AggSpecApproximatePercentile#percentile() percentile} to use for all component
+     *        aggregations
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -116,8 +130,10 @@ public interface Aggregation extends Serializable {
      * Create an {@link io.deephaven.api.agg.spec.AggSpecApproximatePercentile approximate percentile} aggregation for
      * the supplied percentile, T-Digest compression factor, and column name pairs.
      *
-     * @param percentile The percentile to use for all component aggregations
-     * @param compression T-Digest compression factor; must be &gt; 1, should probably be &lt; 1000
+     * @param percentile The {@link AggSpecApproximatePercentile#percentile() percentile} to use for all component
+     *        aggregations
+     * @param compression T-Digest {@link AggSpecTDigest#compression() compression} factor; must be &gt; 1, should
+     *        probably be &lt; 1000
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -127,11 +143,12 @@ public interface Aggregation extends Serializable {
 
     /**
      * Create an {@link io.deephaven.api.agg.spec.AggSpecApproximatePercentile approximate percentile} aggregation for
-     * the supplied input column name and percentile/output column name pairs with the default T-Digest compression
-     * factor.
+     * the supplied input column name and percentile/output column name pairs with the default T-Digest
+     * {@link AggSpecApproximatePercentile#compression() compression} factor.
      *
      * @param inputColumn The input column name
-     * @param percentileOutputs The percentile/output column name pairs for the component aggregations
+     * @param percentileOutputs The {@link PercentileOutput percentile/output column name pairs} for the component
+     *        aggregations; see {@link #PctOut(double, String)}.
      * @return The aggregation
      */
     static Aggregation AggApproxPct(String inputColumn, PercentileOutput... percentileOutputs) {
@@ -145,8 +162,10 @@ public interface Aggregation extends Serializable {
      * the supplied input column name, T-Digest compression factor, and percentile/output column name pairs.
      *
      * @param inputColumn The input column name
-     * @param compression T-Digest compression factor; must be &gt; 1, should probably be &lt; 1000
-     * @param percentileOutputs The percentile/output column name pairs for the component aggregations
+     * @param compression T-Digest {@link AggSpecTDigest#compression() compression} factor; must be &gt; 1, should
+     *        probably be &lt; 1000
+     * @param percentileOutputs The {@link PercentileOutput percentile/output column name pairs} for the component
+     *        aggregations; see {@link #PctOut(double, String)}.
      * @return The aggregation
      */
     static Aggregation AggApproxPct(String inputColumn, double compression, PercentileOutput... percentileOutputs) {
@@ -170,7 +189,7 @@ public interface Aggregation extends Serializable {
     /**
      * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
      *
-     * @param resultColumn The output column name
+     * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation
      */
     static Aggregation AggCount(String resultColumn) {
@@ -193,7 +212,7 @@ public interface Aggregation extends Serializable {
      * column name pairs. This will count {@code null} values from the input column(s) if {@code countNulls} is
      * {@code true}.
      *
-     * @param countNulls Whether {@code null} values should be counted
+     * @param countNulls Whether {@code null} values should be counted; see {@link AggSpecCountDistinct#countNulls()}}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -214,9 +233,9 @@ public interface Aggregation extends Serializable {
 
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecDistinct distinct} aggregation for the supplied column name
-     * pairs. This will include {@code null} values it the output column(s) if {@code includeNulls} is {@code true}.
+     * pairs. This will include {@code null} values in the output column(s) if {@code includeNulls} is {@code true}.
      *
-     * @param includeNulls Whether {@code null} values should be included
+     * @param includeNulls Whether {@code null} values should be included; see {@link AggSpecDistinct#includeNulls()}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -237,7 +256,7 @@ public interface Aggregation extends Serializable {
     /**
      * Create a {@link io.deephaven.api.agg.FirstRowKey first row key} aggregation with the supplied result column.
      *
-     * @param resultColumn The output column name
+     * @param resultColumn The {@link FirstRowKey#column() output column} name
      * @return The aggregation
      */
     static Aggregation AggFirstRowKey(String resultColumn) {
@@ -246,15 +265,17 @@ public interface Aggregation extends Serializable {
 
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula},
-     * {@code formulaParam}, and column name pairs.
+     * {@code paramToken}, and column name pairs.
      *
-     * @param formula The formula to use for all input columns to produce all output columns
-     * @param formulaParam The token to replace with the input column name in {@code formula}
+     * @param formula The {@link AggSpecFormula#formula() formula} to use for all input columns to produce all output
+     *        columns
+     * @param paramToken The {@link AggSpecFormula#paramToken() parameter token} to replace with the input column
+     *        name in {@code formula}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static Aggregation AggFormula(String formula, String formulaParam, String... pairs) {
-        return of(AggSpec.formula(formula, formulaParam), pairs);
+    static Aggregation AggFormula(String formula, String paramToken, String... pairs) {
+        return of(AggSpec.formula(formula, paramToken), pairs);
     }
 
     /**
@@ -290,7 +311,7 @@ public interface Aggregation extends Serializable {
     /**
      * Create a {@link io.deephaven.api.agg.LastRowKey last row key} aggregation with the supplied result column.
      *
-     * @param resultColumn The output column name
+     * @param resultColumn The {@link LastRowKey#column() output column} name
      * @return The aggregation
      */
     static Aggregation AggLastRowKey(String resultColumn) {
@@ -323,7 +344,8 @@ public interface Aggregation extends Serializable {
      * For numeric types, if there are an even number of values the result will be an average of the two middle values
      * if {@code average} is {@code true}, else the result will be the lower of the two middle values.
      *
-     * @param average Whether to average the middle two values for even-sized result sets of numeric types
+     * @param average Whether to average the middle two values for even-sized result sets of numeric types; see
+     *        {@link AggSpecMedian#averageEvenlyDivided()}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -342,10 +364,10 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create an {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied percentile
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied percentile
      * and column name pairs.
      *
-     * @param percentile The percentile to use for all component aggregations
+     * @param percentile The {@link AggSpecPercentile#percentile() percentile} to use for all component aggregations
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -354,12 +376,13 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create an {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied percentile
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied percentile
      * and column name pairs. If the percentile equally divides the value space, the result will be the average of the
-     * values immediately below an above if {@code average} is {@code true}.
+     * values immediately below and above if {@code average} is {@code true}.
      *
-     * @param percentile The percentile to use for all component aggregations
-     * @param average
+     * @param percentile The {@link AggSpecPercentile#percentile() percentile} to use for all component aggregations
+     * @param average Whether to average the lower and higher values for evenly divided result sets of numeric types;
+     *        see {@link AggSpecPercentile#averageEvenlyDivided()}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -368,11 +391,12 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create an {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied input
-     * column name and percentile/output column name pairs.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied input column
+     * name and percentile/output column name pairs.
      *
      * @param inputColumn The input column name
-     * @param percentileOutputs The percentile/output column name pairs for the component aggregations
+     * @param percentileOutputs The {@link PercentileOutput percentile/output column name pairs} for the component
+     *        aggregations; see {@link #PctOut(double, String)}.
      * @return The aggregation
      */
     static Aggregation AggPct(String inputColumn, PercentileOutput... percentileOutputs) {
@@ -382,12 +406,15 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Create an {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied input
-     * column name and percentile/output column name pairs. If the percentile equally divides the value space, the
-     * result will be the average of the values immediately below an above if {@code average} is {@code true}.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecPercentile percentile} aggregation for the supplied input column
+     * name and percentile/output column name pairs. If the percentile equally divides the value space, the result will
+     * be the average of the values immediately below and above if {@code average} is {@code true}.
      *
      * @param inputColumn The input column name
-     * @param percentileOutputs The percentile/output column name pairs for the component aggregations
+     * @param average Whether to average the lower and higher values for evenly divided result sets of numeric types;
+     *        see {@link AggSpecPercentile#averageEvenlyDivided()}
+     * @param percentileOutputs The {@link PercentileOutput percentile/output column name pairs} for the component
+     *        aggregations; see {@link #PctOut(double, String)}.
      * @return The aggregation
      */
     static Aggregation AggPct(String inputColumn, boolean average, PercentileOutput... percentileOutputs) {
@@ -396,34 +423,95 @@ public interface Aggregation extends Serializable {
         return of(aggFactory, inputColumn, percentileOutputs);
     }
 
-    static Aggregation AggSortedFirst(String sortedColumn, String... pairs) {
-        return of(AggSpec.sortedFirst(sortedColumn), pairs);
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecSortedFirst sorted first} aggregation for the supplied sort
+     * column name and input/output column name pairs.
+     *
+     * @param sortColumn The sort column name
+     * @param pairs The input/output column name pairs for the component aggregations
+     * @return The aggregation
+     */
+    static Aggregation AggSortedFirst(String sortColumn, String... pairs) {
+        return of(AggSpec.sortedFirst(sortColumn), pairs);
     }
 
-    static Aggregation AggSortedFirst(Collection<? extends String> sortedColumns, String... pairs) {
-        return of(AggSpec.sortedFirst(sortedColumns), pairs);
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecSortedFirst sorted first} aggregation for the supplied sort
+     * column names and input/output column name pairs.
+     *
+     * @param sortColumns The sort column names
+     * @param pairs The input/output column name pairs for the component aggregations
+     * @return The aggregation
+     */
+    static Aggregation AggSortedFirst(Collection<? extends String> sortColumns, String... pairs) {
+        return of(AggSpec.sortedFirst(sortColumns), pairs);
     }
 
-    static Aggregation AggSortedLast(String sortedColumn, String... pairs) {
-        return of(AggSpec.sortedLast(sortedColumn), pairs);
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecSortedLast sorted last} aggregation for the supplied sort column
+     * name and input/output column name pairs.
+     *
+     * @param sortColumn The sort column name
+     * @param pairs The input/output column name pairs for the component aggregations
+     * @return The aggregation
+     */
+    static Aggregation AggSortedLast(String sortColumn, String... pairs) {
+        return of(AggSpec.sortedLast(sortColumn), pairs);
     }
 
-    static Aggregation AggSortedLast(Collection<? extends String> sortedColumns, String... pairs) {
-        return of(AggSpec.sortedLast(sortedColumns), pairs);
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecSortedLast sorted last} aggregation for the supplied sort column
+     * names and input/output column name pairs.
+     *
+     * @param sortColumns The sort column names
+     * @param pairs The input/output column name pairs for the component aggregations
+     * @return The aggregation
+     */
+    static Aggregation AggSortedLast(Collection<? extends String> sortColumns, String... pairs) {
+        return of(AggSpec.sortedLast(sortColumns), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecStd standard deviation} aggregation for the supplied column name
+     * pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggStd(String... pairs) {
         return of(AggSpec.std(), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecSum sum} aggregation for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggSum(String... pairs) {
         return of(AggSpec.sum(), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecTDigest T-Digest} aggregation for the supplied column name pairs
+     * with the default T-Digest {@link AggSpecTDigest#compression() compression} factor.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggTDigest(String... pairs) {
         return of(AggSpec.tDigest(), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecTDigest T-Digest} aggregation for the supplied column name pairs
+     * with the supplied {@code compression} factor.
+     *
+     * @param compression T-Digest {@link AggSpecTDigest#compression() compression} factor; must be &gt; 1, should
+     *        probably be &lt; 1000
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggTDigest(double compression, String... pairs) {
         return of(AggSpec.tDigest(compression), pairs);
     }
@@ -445,7 +533,8 @@ public interface Aggregation extends Serializable {
      * This will consider {@code null} values when determining if a group has a single unique value if
      * {@code includeNulls} is {@code true}. Non-unique groups will have {@code null} values in the output column.
      *
-     * @param includeNulls Whether to consider {@code null} values towards uniqueness
+     * @param includeNulls Whether to consider {@code null} values towards uniqueness; see
+     *        {@link AggSpecUnique#includeNulls()}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -468,18 +557,52 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.unique(includeNulls, nonUniqueSentinel.value()), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecVar variance} aggregation for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggVar(String... pairs) {
         return of(AggSpec.var(), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecWAvg weighted average} aggregation for the supplied weight
+     * column name and column name pairs.
+     *
+     * @param weightColumn The {@link AggSpecWAvg#weight() weight column name}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggWAvg(String weightColumn, String... pairs) {
         return of(AggSpec.wavg(weightColumn), pairs);
     }
 
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecWSum weighted sum} aggregation for the supplied weight column
+     * name and column name pairs.
+     *
+     * @param weightColumn The {@link AggSpecWSum#weight() weight column name}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
     static Aggregation AggWSum(String weightColumn, String... pairs) {
         return of(AggSpec.wsum(weightColumn), pairs);
     }
 
+    /**
+     * Make a {@link PercentileOutput percentile/output column name pair}. This allows for strongly-typed input to
+     * various approximate percentile and percentile aggregation factory methods.
+     *
+     * @param percentile The percentile for the aggregation
+     * @param outputColumn The output column name to associate with the percentile
+     * @return The percentile/output column name pair
+     * @see #AggApproxPct(String, PercentileOutput...)
+     * @see #AggApproxPct(String, double, PercentileOutput...)
+     * @see #AggPct(String, PercentileOutput...)
+     * @see #AggPct(String, boolean, PercentileOutput...)
+     */
     static PercentileOutput PctOut(double percentile, String outputColumn) {
         return PercentileOutput.of(percentile, outputColumn);
     }

@@ -7,8 +7,14 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 /**
- * Approximate percentile aggregation using a T-Digest for calculation. Efficiently supports multiple output percentiles
- * based on a single input column. May only be used on static or add-only tables.
+ * Specifies an aggregation that outputs a percentile approximated using a T-Digest with the specified
+ * {@link #compression()}.
+ * <p>
+ * Efficiently supports multiple output percentiles based on a single input column.
+ * <p>
+ * May only be used on static or add-only tables.
+ * <p>
+ * Only supported for numeric types.
  */
 @Immutable
 @BuildableStyle

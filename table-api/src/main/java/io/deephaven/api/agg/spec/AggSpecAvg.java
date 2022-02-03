@@ -3,6 +3,11 @@ package io.deephaven.api.agg.spec;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
+/**
+ * Specifies an aggregation that outputs the arithmetic mean for each group. Only works with numeric input types.
+ *
+ * @see io.deephaven.api.TableOperations#avgBy
+ */
 @Immutable
 @SimpleStyle
 public abstract class AggSpecAvg extends AggSpecEmptyBase {

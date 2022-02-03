@@ -83,10 +83,10 @@ public interface AggSpec {
     }
 
     /**
-     * @return {@link AggSpecFormula#of(String, String)} for {@code formula} and {@code formulaParam}
+     * @return {@link AggSpecFormula#of(String, String)} for {@code formula} and {@code paramToken}
      */
-    static AggSpecFormula formula(String formula, String formulaParam) {
-        return AggSpecFormula.of(formula, formulaParam);
+    static AggSpecFormula formula(String formula, String paramToken) {
+        return AggSpecFormula.of(formula, paramToken);
     }
 
     /**
@@ -125,10 +125,10 @@ public interface AggSpec {
     }
 
     /**
-     * @return {@link AggSpecMedian#of(boolean)} for {@code averageMedian}
+     * @return {@link AggSpecMedian#of(boolean)} for {@code averageEvenlyDivided}
      */
-    static AggSpecMedian median(boolean averageMedian) {
-        return AggSpecMedian.of(averageMedian);
+    static AggSpecMedian median(boolean averageEvenlyDivided) {
+        return AggSpecMedian.of(averageEvenlyDivided);
     }
 
     /**
@@ -146,10 +146,10 @@ public interface AggSpec {
     }
 
     /**
-     * @return {@link AggSpecPercentile#of(double, boolean)} for {@code percentile} and {@code averageMedian}
+     * @return {@link AggSpecPercentile#of(double, boolean)} for {@code percentile} and {@code averageEvenlyDivided}
      */
-    static AggSpecPercentile percentile(double percentile, boolean averageMedian) {
-        return AggSpecPercentile.of(percentile, averageMedian);
+    static AggSpecPercentile percentile(double percentile, boolean averageEvenlyDivided) {
+        return AggSpecPercentile.of(percentile, averageEvenlyDivided);
     }
 
     /**

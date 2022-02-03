@@ -6,6 +6,10 @@ import org.immutables.value.Value.Immutable;
 
 import javax.annotation.Nullable;
 
+/**
+ * Specifies an aggregation that outputs the single unique input value for groups that have one, {@code null} if all
+ * input values are {@code null}, or {@link #nonUniqueSentinel()} if there is more than one distinct value.
+ */
 @Immutable
 @BuildableStyle
 public abstract class AggSpecUnique extends AggSpecBase {
@@ -43,11 +47,22 @@ public abstract class AggSpecUnique extends AggSpecBase {
         return "unique" + (includeNulls() ? " (including nulls)" : "");
     }
 
+    /**
+     * Whether to include {@code null} values as a distinct value for determining if there is only one unique value to
+     * output.
+     *
+     * @return Whether to include nulls
+     */
     @Default
     public boolean includeNulls() {
         return false;
     }
 
+    /**
+     * The output value to use for groups that don't have a single unique input value.
+     *
+     * @return The non-unique sentinel value
+     */
     @Nullable
     @Default
     public Object nonUniqueSentinel() {

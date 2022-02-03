@@ -4,12 +4,12 @@ import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * Aggregation that freezes the first value for each group and ignores subsequent changes. When groups are removed, the
- * corresponding output row is removed. When groups are re-added (on a subsequent update cycle), the newly added value
- * is then frozen.
- * <p>
- * Only one row per group is allowed in the output, because the operation has no way to determine which row to freeze
- * otherwise. This is a constraint on the input data.
+ * Specifies an aggregation that freezes the first value for each group and ignores subsequent changes. When groups are
+ * removed, the corresponding output row is removed. When groups are re-added (on a subsequent update cycle), the newly
+ * added value is then frozen.
+ * 
+ * @implNote Only one row per group is allowed in the output, because the operation has no way to determine which row to
+ *           freeze otherwise. This is a constraint on the input data.
  */
 @Immutable
 @SimpleStyle

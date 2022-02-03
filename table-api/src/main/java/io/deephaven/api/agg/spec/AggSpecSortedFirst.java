@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Note: the sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
- *
+ * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on
+ * the {@link #columns() sort columns}.
+ * 
+ * @implNote The sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
  * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast aggregations with sort
  *      direction</a>
  */
@@ -27,6 +29,11 @@ public abstract class AggSpecSortedFirst extends AggSpecBase {
         return "first sorted by " + columns().stream().map(sc -> sc.column().name()).collect(Collectors.joining(", "));
     }
 
+    /**
+     * The columns to sort on to determine the order within each group.
+     *
+     * @return The sort columns
+     */
     public abstract List<SortColumn> columns();
 
     @Override
