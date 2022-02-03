@@ -269,8 +269,8 @@ public interface Aggregation extends Serializable {
      *
      * @param formula The {@link AggSpecFormula#formula() formula} to use for all input columns to produce all output
      *        columns
-     * @param paramToken The {@link AggSpecFormula#paramToken() parameter token} to replace with the input column
-     *        name in {@code formula}
+     * @param paramToken The {@link AggSpecFormula#paramToken() parameter token} to replace with the input column name
+     *        in {@code formula}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */

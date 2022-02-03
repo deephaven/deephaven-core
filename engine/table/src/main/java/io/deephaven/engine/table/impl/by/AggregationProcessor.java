@@ -726,7 +726,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageEvenlyDivided(), n));
+            addBasicOperators(
+                    (t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageEvenlyDivided(), n));
         }
 
         @Override

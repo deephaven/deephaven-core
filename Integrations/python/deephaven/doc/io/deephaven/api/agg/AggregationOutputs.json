@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.api.agg.AggregationOutputs",
- "methods": {},
- "path": "io.deephaven.api.agg.AggregationOutputs",
- "text": "Helper to get the ordered output column names for aggregations.",
- "typeName": "class"
-}

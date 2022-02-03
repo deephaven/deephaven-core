@@ -293,8 +293,8 @@ public interface AggSpec {
     <V extends Visitor> V walk(V visitor);
 
     /*
-     * Visitor interface. Combines with {@link #walk(Visitor) in order to allow for type-safe AggSpec evaluation
-     * without switch statements or if-else blocks.
+     * Visitor interface. Combines with {@link #walk(Visitor) in order to allow for type-safe AggSpec evaluation without
+     * switch statements or if-else blocks.
      */
     interface Visitor {
         void visit(AggSpecAbsSum absSum);
