@@ -8,9 +8,11 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -32,10 +34,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import static io.deephaven.server.arrow.ArrowFlightUtil.ZERO_MOD_COLUMNS;
+
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    private static final BarrageSubscriptionOptions DEFAULT_DESER_OPTIONS =
+    static final BarrageSubscriptionOptions DEFAULT_SUB_DESER_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
+    static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
+            BarrageSnapshotOptions.builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -147,11 +153,16 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionState session = sessionService.getCurrentSession();
             final SessionState.ExportObject<BaseTable> export =
                     ticketRouter.resolve(session, request, "request");
+
             session.nonExport()
                     .require(export)
                     .onError(responseObserver)
                     .submit(() -> {
                         final BaseTable table = export.get();
+
+                        // create an adapter for the response observer
+                        final StreamObserver<BarrageStreamGenerator.View> listener =
+                                ArrowModule.provideListenerAdapter().adapt(responseObserver);
 
                         // Send Schema wrapped in Message
                         final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -161,26 +172,24 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                                 org.apache.arrow.flatbuf.MessageHeader.Schema));
                         final ByteBuffer serializedMessage = builder.dataBuffer();
 
-                        final byte[] msgBytes = Flight.FlightData.newBuilder()
-                                .setDataHeader(ByteStringAccess.wrap(serializedMessage))
-                                .build()
-                                .toByteArray();
-                        responseObserver.onNext(
-                                new BarrageStreamGenerator.DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
+                        // leverage the stream generator SchemaView constructor
+                        final BarrageStreamGenerator.SchemaView schemaView =
+                                new BarrageStreamGenerator.SchemaView(serializedMessage);
+
+                        // push the schema to the listener
+                        listener.onNext(schemaView);
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
-                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
-                                                                                 // DoGet
+                        msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
-                            bsg.forEachDoGetStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false),
-                                    responseObserver::onNext);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException(e); // unexpected
+                        // translate the viewport to keyspace and make the call
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);) {
+                            listener.onNext(
+                                    bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }
 
-                        responseObserver.onCompleted();
+                        listener.onCompleted();
                     });
         });
     }

@@ -35,9 +35,9 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
@@ -88,7 +88,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> getStreamGeneratorFactory();
+        BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -159,7 +159,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final BarrageTable barrageTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer;
+        private final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator replicatedTUV;
@@ -173,13 +173,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
+                final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer,
                 final String name) {
             this(viewport, subscribedColumns, barrageMessageProducer, name, false);
         }
 
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
+                final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer,
                 final String name, final boolean deferSubscription) {
             this.viewport = viewport;
             this.subscribedColumns = subscribedColumns;
@@ -323,7 +323,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final QueryTable originalTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer;
+        private final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator originalTUV;
@@ -1262,12 +1262,12 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static class BarrageMarshaller
-            extends BarrageSubscriptionImpl.BarrageDataMarshaller<BarrageSubscriptionOptions> {
+            extends BarrageSubscriptionImpl.BarrageDataMarshaller {
         public BarrageMarshaller(final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<BarrageSubscriptionOptions> streamReader) {
+                final StreamReader streamReader) {
             super(options, columnChunkTypes, columnTypes, componentTypes, streamReader);
         }
     }

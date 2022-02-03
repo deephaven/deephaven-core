@@ -10,10 +10,7 @@ import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.WireFormat;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
-import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -25,10 +22,12 @@ import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
@@ -57,27 +56,34 @@ import java.util.function.Consumer;
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
 public class BarrageStreamGenerator implements
-        BarrageMessageProducer.StreamGenerator<BarrageSubscriptionOptions, BarrageStreamGenerator.View> {
+        BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
 
     public interface View {
+
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
+
+        boolean isViewport();
+
+        StreamReaderOptions options();
+
+        RowSet keyspaceViewport();
     }
 
     @Singleton
     public static class Factory
-            implements BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, View> {
+            implements BarrageMessageProducer.StreamGenerator.Factory<View> {
         @Inject
         public Factory() {}
 
         @Override
-        public BarrageMessageProducer.StreamGenerator<BarrageSubscriptionOptions, View> newGenerator(
+        public BarrageMessageProducer.StreamGenerator<View> newGenerator(
                 final BarrageMessage message) {
             return new BarrageStreamGenerator(message);
         }
 
         @Override
-        public View getSchemaView(final BarrageSubscriptionOptions options, final TableDefinition table,
+        public View getSchemaView(final TableDefinition table,
                 final Map<String, Object> attributes) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
@@ -108,7 +114,7 @@ public class BarrageStreamGenerator implements
     public final RowSetGenerator rowsAdded;
     public final RowSetGenerator rowsIncluded;
     public final RowSetGenerator rowsRemoved;
-    public final IndexShiftDataGenerator shifted;
+    public final RowSetShiftDataGenerator shifted;
 
     public final ChunkInputStreamGenerator[] addColumnData;
     public final ModColumnData[] modColumnData;
@@ -129,7 +135,7 @@ public class BarrageStreamGenerator implements
             rowsAdded = new RowSetGenerator(message.rowsAdded);
             rowsIncluded = new RowSetGenerator(message.rowsIncluded);
             rowsRemoved = new RowSetGenerator(message.rowsRemoved);
-            shifted = new IndexShiftDataGenerator(message.shifted);
+            shifted = new RowSetShiftDataGenerator(message.shifted);
 
             addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
@@ -238,7 +244,7 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
-            ByteBuffer metadata = generator.getMetadata(this);
+            ByteBuffer metadata = generator.getSubscriptionMetadata(this);
             if (hasAddBatch) {
                 visitor.accept(generator.getInputStream(this, metadata, generator::appendAddColumns));
                 metadata = null;
@@ -251,6 +257,86 @@ public class BarrageStreamGenerator implements
         public boolean isViewport() {
             return this.viewport != null;
         }
+
+        public final StreamReaderOptions options() {
+            return options;
+        }
+
+        public final RowSet keyspaceViewport() {
+            return this.keyspaceViewport;
+        };
+
+    }
+
+    /**
+     * Obtain a View of this StreamGenerator that can be sent to a single snapshot requestor.
+     *
+     * @param options serialization options for this specific view
+     * @param viewport is the position-space viewport
+     * @param keyspaceViewport is the key-space viewport
+     * @param snapshotColumns are the columns subscribed for this view
+     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
+     */
+    @Override
+    public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
+            @Nullable final RowSet viewport,
+            @Nullable final RowSet keyspaceViewport,
+            @Nullable final BitSet snapshotColumns) {
+        return new SnapshotView(this, options, viewport, keyspaceViewport, snapshotColumns);
+    }
+
+    /**
+     * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single snapshot requestor.
+     *
+     * @param options serialization options for this specific view
+     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
+     */
+    @Override
+    public SnapshotView getSnapshotView(BarrageSnapshotOptions options) {
+        return getSnapshotView(options, null, null, null);
+    }
+
+    public static class SnapshotView implements View {
+        public final BarrageStreamGenerator generator;
+        public final BarrageSnapshotOptions options;
+        public final RowSet viewport;
+        public final RowSet keyspaceViewport;
+        public final BitSet subscribedColumns;
+        public final boolean hasAddBatch;
+        public final boolean hasModBatch;
+
+        public SnapshotView(final BarrageStreamGenerator generator,
+                final BarrageSnapshotOptions options,
+                @Nullable final RowSet viewport,
+                @Nullable final RowSet keyspaceViewport,
+                @Nullable final BitSet subscribedColumns) {
+            this.generator = generator;
+            this.options = options;
+            this.viewport = viewport;
+            this.keyspaceViewport = keyspaceViewport;
+            this.subscribedColumns = subscribedColumns;
+            this.hasModBatch = false;
+            this.hasAddBatch = generator.rowsIncluded.original.isNonempty();
+        }
+
+        @Override
+        public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            if (hasAddBatch) {
+                visitor.accept(generator.getInputStream(this, null, generator::appendAddColumns));
+            }
+        }
+
+        public boolean isViewport() {
+            return this.viewport != null;
+        }
+
+        public final StreamReaderOptions options() {
+            return options;
+        }
+
+        public final RowSet keyspaceViewport() {
+            return this.keyspaceViewport;
+        };
     }
 
     public static class SchemaView implements View {
@@ -267,18 +353,26 @@ public class BarrageStreamGenerator implements
         public void forEachStream(Consumer<InputStream> visitor) {
             visitor.accept(new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
         }
-    }
 
-    /**
-     * Treats the visitor with FlightData InputStream's to fulfill a DoGet.
-     */
-    public void forEachDoGetStream(final SubView view, final Consumer<InputStream> visitor) throws IOException {
-        visitor.accept(getInputStream(view, null, view.generator::appendAddColumns));
+        @Override
+        public boolean isViewport() {
+            return false;
+        }
+
+        @Override
+        public StreamReaderOptions options() {
+            return null;
+        }
+
+        @Override
+        public RowSet keyspaceViewport() {
+            return null;
+        }
     }
 
     @FunctionalInterface
     private interface ColumnVisitor {
-        long visit(final SubView view,
+        long visit(final View view,
                 final Consumer<InputStream> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
@@ -292,7 +386,7 @@ public class BarrageStreamGenerator implements
      * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final SubView view, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
+    private InputStream getInputStream(final View view, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
             throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
@@ -388,8 +482,6 @@ public class BarrageStreamGenerator implements
         }
     }
 
-
-
     private static int createByteVector(final FlatBufferBuilder builder, final byte[] data, final int offset,
             final int length) {
         builder.startVector(1, length, 1);
@@ -405,7 +497,7 @@ public class BarrageStreamGenerator implements
         return builder.endVector();
     }
 
-    private long appendAddColumns(final SubView view,
+    private long appendAddColumns(final View view,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
@@ -413,7 +505,7 @@ public class BarrageStreamGenerator implements
         final RowSet myAddedOffsets;
         if (view.isViewport()) {
             // only include added rows that are within the viewport
-            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport.intersect(rowsIncluded.original));
+            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport().intersect(rowsIncluded.original));
         } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
             // there are scoped rows included in the chunks that need to be removed
             myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
@@ -425,7 +517,7 @@ public class BarrageStreamGenerator implements
         // add the add-column streams
         for (final ChunkInputStreamGenerator col : addColumnData) {
             final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    col.getInputStream(view.options, myAddedOffsets);
+                    col.getInputStream(view.options(), myAddedOffsets);
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
 
@@ -435,7 +527,7 @@ public class BarrageStreamGenerator implements
         return rowsAdded.original.size();
     }
 
-    private long appendModColumns(final SubView view,
+    private long appendModColumns(final View view,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
@@ -446,14 +538,14 @@ public class BarrageStreamGenerator implements
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
                 myModOffsets =
-                        mcd.rowsModified.original.invert(view.keyspaceViewport.intersect(mcd.rowsModified.original));
+                        mcd.rowsModified.original.invert(view.keyspaceViewport().intersect(mcd.rowsModified.original));
                 numRows = Math.max(numRows, myModOffsets.size());
             } else {
                 numRows = Math.max(numRows, mcd.rowsModified.original.size());
             }
 
             final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    mcd.data.getInputStream(view.options, myModOffsets);
+                    mcd.data.getInputStream(view.options(), myModOffsets);
 
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
@@ -481,7 +573,7 @@ public class BarrageStreamGenerator implements
         return false;
     }
 
-    private ByteBuffer getMetadata(final SubView view) throws IOException {
+    private ByteBuffer getSubscriptionMetadata(final SubView view) throws IOException {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int effectiveViewportOffset = 0;
@@ -641,10 +733,10 @@ public class BarrageStreamGenerator implements
         }
     }
 
-    public static class IndexShiftDataGenerator extends ByteArrayGenerator {
+    public static class RowSetShiftDataGenerator extends ByteArrayGenerator {
         public final RowSetShiftData original;
 
-        public IndexShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
+        public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
             this.original = shifted;
 
             final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();

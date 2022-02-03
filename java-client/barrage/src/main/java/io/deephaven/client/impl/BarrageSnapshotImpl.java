@@ -7,17 +7,17 @@ package io.deephaven.client.impl;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
@@ -37,29 +37,37 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.locks.Condition;
 
-public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
-    private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
+public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
+    private static final Logger log = LoggerFactory.getLogger(BarrageSnapshotImpl.class);
 
     private final String logName;
     private final TableHandle tableHandle;
-    private final BarrageSubscriptionOptions options;
+    private final BarrageSnapshotOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
 
-    private BarrageTable resultTable;
+    private final BarrageTable resultTable;
 
-    private boolean subscribed = false;
+    private volatile BitSet expectedColumns;
+
+    private volatile Condition sealedCondition;
+    private volatile boolean sealed = false;
+    private volatile Throwable exceptionWhileSealing = null;
+
     private volatile boolean connected = true;
 
+    private boolean prevUsed = false;
+
     /**
-     * Represents a BarrageSubscription.
+     * Represents a BarrageSnapshot.
      *
      * @param session the Deephaven session that this export belongs to
-     * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
-     * @param options the transport level options for this subscription
+     * @param tableHandle the tableHandle to snapshot (ownership is transferred to the snapshot)
+     * @param options the transport level options for this snapshot
      */
-    public BarrageSubscriptionImpl(
-            final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+    public BarrageSnapshotImpl(
+            final BarrageSession session, final TableHandle tableHandle, final BarrageSnapshotOptions options) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
@@ -70,7 +78,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         resultTable = BarrageTable.make(tableDefinition, false);
         resultTable.addParentReference(this);
 
-        final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
+        final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
                         resultTable.getWireComponentTypes(), new BarrageStreamReader());
 
@@ -81,7 +89,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+            call = session.channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }
@@ -108,14 +116,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 if (!connected || listener == null) {
                     return;
                 }
+
+                // override server-supplied data and regenerate local rowsets
+                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.addColumnData[0].data.size());
+                barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
+
                 listener.handleBarrageMessage(barrageMessage);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            log.error().append(BarrageSubscriptionImpl.this)
-                    .append(": Error detected in subscription: ")
+            log.error().append(BarrageSnapshotImpl.this)
+                    .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
             final Listener listener = resultTable;
@@ -133,75 +146,125 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public BarrageTable entireTable() {
+    public BarrageTable entireTable() throws InterruptedException {
         return partialTable(null, null);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) {
-        if (!connected) {
-            throw new UncheckedDeephavenException(
-                    this + " is no longer an active subscription and cannot be retained further");
-        }
-        if (!subscribed) {
-            // Send the initial subscription:
-            observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
-                    .build());
-            subscribed = true;
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        // notify user when connection has already been used and closed
+        if (prevUsed) {
+            throw new UnsupportedOperationException("Snapshot object already used");
         }
 
-        return resultTable;
+        // test lock conditions
+        if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+            throw new UnsupportedOperationException(
+                    "Cannot snapshot while holding the UpdateGraphProcessor shared lock");
+        }
+
+        prevUsed = true;
+
+        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            sealedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+        }
+
+        if (!connected) {
+            throw new UncheckedDeephavenException(this + " is not connected");
+        }
+
+        // store this for streamreader parser
+        expectedColumns = columns;
+
+        // Send the snapshot request:
+        observer.onNext(FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
+                .build());
+
+        observer.onCompleted();
+
+        while (!sealed && exceptionWhileSealing == null) {
+            // handle the condition where this function may have the exclusive lock
+            if (sealedCondition != null) {
+                sealedCondition.await();
+            } else {
+                wait(); // barragesnapshotimpl lock
+            }
+        }
+
+        if (exceptionWhileSealing == null) {
+            return resultTable;
+        } else {
+            throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileSealing);
+        }
     }
 
+
     @Override
-    protected synchronized void destroy() {
+    protected void destroy() {
         super.destroy();
         close();
     }
 
-    private synchronized void handleDisconnect() {
+    private void handleDisconnect() {
         if (!connected) {
             return;
         }
-        log.error().append(this).append(": unexpectedly closed by other host").endl();
+
+        resultTable.sealTable(() -> {
+            sealed = true;
+            if (sealedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            } else {
+                synchronized (BarrageSnapshotImpl.this) {
+                    BarrageSnapshotImpl.this.notifyAll();
+                }
+            }
+        }, () -> {
+            exceptionWhileSealing = new Exception();
+            if (sealedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            } else {
+                synchronized (BarrageSnapshotImpl.this) {
+                    BarrageSnapshotImpl.this.notifyAll();
+                }
+            }
+        });
         cleanup();
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         if (!connected) {
             return;
         }
-        observer.onCompleted();
         cleanup();
     }
 
     private void cleanup() {
         this.connected = false;
         this.tableHandle.close();
-        resultTable = null;
     }
 
     @Override
     public LogOutput append(final LogOutput logOutput) {
-        return logOutput.append("Barrage/ClientSubscription/").append(logName).append("/")
+        return logOutput.append("Barrage/ClientSnapshot/").append(logName).append("/")
                 .append(System.identityHashCode(this)).append("/");
     }
 
     private ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
-            @Nullable BarrageSubscriptionOptions options) {
+            @Nullable BarrageSnapshotOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;
         if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
         }
         int vpOffset = 0;
         if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(
+            vpOffset = BarrageSnapshotRequest.createViewportVector(
                     metadata, BarrageProtoUtil.toByteBuffer(viewport));
         }
         int optOffset = 0;
@@ -209,25 +272,25 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
-        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
-        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
-        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
-        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
-        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
+        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
+        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+        BarrageSnapshotRequest.addColumns(metadata, colOffset);
+        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();
         final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
         wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
                 wrapper,
                 BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
+                BarrageMessageType.BarrageSnapshotRequest,
                 innerOffset));
         return wrapper.dataBuffer();
     }
 
-    public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
+    private static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
             final MethodDescriptor.MethodType methodType,
             final String serviceName,
             final String methodName,
@@ -255,8 +318,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param streamReader the stream reader - intended to be thread safe and re-usable
      * @return the client side method descriptor
      */
-    public static MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final BarrageSubscriptionOptions options,
+    private MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+            final BarrageSnapshotOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
@@ -268,15 +331,15 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
-        private final BarrageSubscriptionOptions options;
+    private class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+        private final BarrageSnapshotOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
         private final StreamReader streamReader;
 
         public BarrageDataMarshaller(
-                final BarrageSubscriptionOptions options,
+                final BarrageSnapshotOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
@@ -296,7 +359,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, null, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, expectedColumns, columnChunkTypes, columnTypes, componentTypes,
+                    stream);
         }
     }
 }

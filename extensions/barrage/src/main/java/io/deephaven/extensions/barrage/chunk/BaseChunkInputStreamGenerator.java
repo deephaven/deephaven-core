@@ -9,7 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.util.pools.PoolableChunk;
@@ -58,11 +58,11 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     }
 
     abstract class BaseChunkInputStream extends DrainableColumn {
-        protected final BarrageSubscriptionOptions options;
+        protected final StreamReaderOptions options;
         protected final RowSequence subset;
         protected boolean read = false;
 
-        BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final RowSet subset) {
+        BaseChunkInputStream(final T chunk, final StreamReaderOptions options, final RowSet subset) {
             this.options = options;
             this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);

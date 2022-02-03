@@ -12,9 +12,9 @@ package io.deephaven.extensions.barrage.chunk;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
@@ -37,12 +37,12 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
         return new IntChunkInputStream(options, subset);
     }
 
     private class IntChunkInputStream extends BaseChunkInputStream {
-        private IntChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private IntChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -146,7 +146,7 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
 
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -156,7 +156,7 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
 
     static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final IntConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

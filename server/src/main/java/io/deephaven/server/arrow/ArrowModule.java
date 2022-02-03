@@ -28,7 +28,7 @@ public abstract class ArrowModule {
 
     @Binds
     @Singleton
-    abstract BarrageMessageProducer.StreamGenerator.Factory<BarrageSubscriptionOptions, BarrageStreamGenerator.View> bindStreamGenerator(
+    abstract BarrageMessageProducer.StreamGenerator.Factory<BarrageStreamGenerator.View> bindStreamGenerator(
             BarrageStreamGenerator.Factory factory);
 
     @Provides
