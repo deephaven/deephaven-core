@@ -1028,32 +1028,20 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?> rhType = getTypeWithCaching(rightExpr);
 
         if ((lhType == String.class || rhType == String.class) && op == BinaryExpr.Operator.PLUS) {
-
             if (printer.hasStringBuilder()) {
                 leftExpr.accept(this, printer);
-            }
-
-            printer.append(getOperatorSymbol(op));
-
-            if (printer.hasStringBuilder()) {
+                printer.append(getOperatorSymbol(op));
                 rightExpr.accept(this, printer);
             }
-
             return String.class;
         }
 
         if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND) {
-
             if (printer.hasStringBuilder()) {
                 leftExpr.accept(this, printer);
-            }
-
-            printer.append(getOperatorSymbol(op));
-
-            if (printer.hasStringBuilder()) {
+                printer.append(getOperatorSymbol(op));
                 rightExpr.accept(this, printer);
             }
-
             return boolean.class;
         }
 
