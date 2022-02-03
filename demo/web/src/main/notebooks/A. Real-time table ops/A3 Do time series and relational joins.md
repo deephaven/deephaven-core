@@ -49,4 +49,3 @@ joined_data_raj = daily_data_0.raj(daily_data_1, "DateTime", "Number1 = Number, 
 
 And now we have our table joined as expected.
 
-[The next notebook](A4%20Group%20and%20aggregate.md) will show how to group and aggregate this data.
