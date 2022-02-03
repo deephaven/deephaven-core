@@ -182,6 +182,29 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testWriteTableRenames() {
+        final String path = testRoot + File.separator + "Table_W_Renames.parquet";
+        final File pathFile = new File(path);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping("X", "StringKeys")
+                .addColumnNameMapping("Y", "GroupedInts")
+                .build();
+        ParquetTools.writeTable(table1, pathFile, instructions);
+
+        final Table resultDefault = ParquetTools.readTable(pathFile);
+        TableTools.show(table1);
+        TableTools.show(resultDefault);
+        TstUtils.assertTableEquals(table1.view("X=StringKeys", "Y=GroupedInts"), resultDefault);
+        resultDefault.close();
+
+        final Table resultRenamed = ParquetTools.readTable(pathFile, instructions);
+        TableTools.show(table1);
+        TableTools.show(resultRenamed);
+        TstUtils.assertTableEquals(table1, resultRenamed);
+        resultRenamed.close();
+    }
+
+    @Test
     public void testWriteTableEmpty() {
         final File dest = new File(testRoot + File.separator + "Empty.parquet");
         ParquetTools.writeTable(emptyTable, dest);

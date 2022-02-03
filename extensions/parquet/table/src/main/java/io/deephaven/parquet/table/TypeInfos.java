@@ -375,6 +375,8 @@ class TypeInfos {
                 @NotNull final ParquetInstructions instructions) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
+            final String parquetColumnName =
+                    instructions.getParquetColumnNameFromColumnNameOrDefault(columnDefinition.getName());
 
             final PrimitiveBuilder<PrimitiveType> builder;
             final boolean isRepeating;
@@ -393,12 +395,12 @@ class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
-                return builder.named(columnDefinition.getName());
+                return builder.named(parquetColumnName);
             }
             return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(columnDefinition.getName()))
-                    .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
+                            builder.named("item")).named(parquetColumnName))
+                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
 
         PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);
