@@ -9,7 +9,6 @@
 
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
-import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
@@ -22,7 +21,6 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -73,7 +71,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
         }
         // endregion ResultAssignment
 
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

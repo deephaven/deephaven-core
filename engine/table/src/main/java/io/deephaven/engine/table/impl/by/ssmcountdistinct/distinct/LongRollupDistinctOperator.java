@@ -9,9 +9,8 @@
 
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
-import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -20,10 +19,6 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactory;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctRollupContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -71,7 +66,7 @@ public class LongRollupDistinctOperator implements IterativeChunkedAggregationOp
             externalResult = internalResult;
         }
         // endregion ResultAssignment
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(DistinctOperatorFactory.NODE_SIZE);
+        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(SsmDistinctContext.NODE_SIZE);
     }
 
     //region Bucketed Updates

@@ -5,8 +5,6 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
-import java.util.Objects;
-
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
@@ -38,7 +36,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
         ObjectSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if(ssm == null) {
             //region CreateNew
-            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));
+            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));
             //endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
