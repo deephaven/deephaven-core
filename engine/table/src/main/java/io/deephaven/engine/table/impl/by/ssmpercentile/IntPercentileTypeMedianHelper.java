@@ -42,9 +42,9 @@ public class IntPercentileTypeMedianHelper extends IntPercentileTypeHelper {
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                // region averageMedian
+                // region averageEvenlyDivided
                 return setResult(destination, (((IntSegmentedSortedMultiset)ssmLo).getMaxInt() + ((IntSegmentedSortedMultiset)ssmHi).getMinInt()) / 2.0);
-                // endregion averageMedian
+                // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((IntSegmentedSortedMultiset)ssmLo).getMaxInt());
             }

@@ -37,9 +37,9 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                // region averageMedian
+                // region averageEvenlyDivided
                 return setResult(destination, (((CharSegmentedSortedMultiset)ssmLo).getMaxChar() + ((CharSegmentedSortedMultiset)ssmHi).getMinChar()) / 2.0);
-                // endregion averageMedian
+                // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((CharSegmentedSortedMultiset)ssmLo).getMaxChar());
             }
