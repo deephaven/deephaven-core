@@ -96,6 +96,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'deephaven-wheel',
     'deephaven2-wheel',
     'envoy',
+    'grpc-java',
     'grpc-proxy',
     'web',
     'web-client-ui',
@@ -105,6 +106,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'docker-runtime-base',
     'docker-server',
     'docker-server-slim',
+    'docker-web',
     'raw-js-openapi',
 ] }
 
