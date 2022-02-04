@@ -119,27 +119,9 @@ profile_views = pageviews_stg \
         'viewer_id = user_id',
         'received_at'
     ).sort(
-        'owner_id',
         'received_at'
     ).tailBy(10, 'owner_id')
 
-# This is an alternative definition for profile_views;
-# is a lot more complicated, but should be more efficient in that
-# it sorts smaller tables.
-#profile_views = pageviews_stg \
-#    .view(
-#        'owner_id = target_id',
-#        'viewer_id = user_id',
-#        'received_at'
-#    ).partitionBy(
-#        'owner_id'
-#    ).transformTables(
-#        tmapfun(lambda t : t
-#            .sortDescending('received_at')
-#            .head(10)
-#        )
-#    ).merge()
-    
 profile_views_enriched = profile_views \
     .naturalJoin(users, 'owner_id = id', 'owner_email = email') \
     .naturalJoin(users, 'viewer_id = id', 'viewer_email = email') \
