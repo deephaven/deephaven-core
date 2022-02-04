@@ -79,7 +79,8 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
 
 def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict[str, str] = None,
          timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
-         publish_schema: bool = False, schema_namespace: str = None, column_properties: Dict[str, str] = None):
+         publish_schema: bool = False, schema_namespace: str = None,
+         column_properties: Dict[str, str] = None) -> KeyValueSpec:
     """ Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
     Args:
@@ -90,7 +91,7 @@ def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict
         field_to_col_mapping (Dict[str, str]): a mapping from Avro field names in the schema to column names in
             the Deephaven table. Any fields in the schema not present in the dict as keys are mapped to columns of the
             same name. The default is None, meaning all schema fields are mapped to columns of the same name.
-        timestamp_field (str): the name of an additional timestamp field to include, default is None
+        timestamp_field: the name of a publishing timestamp field to include, default is None
         include_only_columns (List[str]): the list of column names in the source table to include in the generated
             output, default is None. When not None, the 'exclude_columns' parameter must be None
         exclude_columns (List[str]):  the list of column names to exclude from the generated output (every other column
@@ -127,7 +128,7 @@ def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict
 
 
 def json(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
-         nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None):
+         nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
     """ Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
     Args:
@@ -139,12 +140,12 @@ def json(include_columns: List[str] = None, exclude_columns: List[str] = None, m
         mapping (Dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
             arguments and not included as a key in the map implies a field of the same name. default is None,
             meaning all columns will be mapped to JSON fields of the same name.
-        nested_delim: if nested JSON fields are desired, the field separator that is used for the fieldNames
+        nested_delim: if nested JSON fields are desired, the field separator that is used for the field names
             parameter, or None for no nesting (default). For instance, if a particular column should be mapped
             to JSON field X nested inside field Y, the corresponding field name value for the column key
             in the mapping dict can be the string "X.Y", in which case the value for nested_delim should be "."
         output_nulls: when False (default), do not output a field for null column values
-        timestamp_field: the name of an additional timestamp field to include, default is None
+        timestamp_field: the name of a publishing timestamp field to include, default is None
 
     Returns:
         a KeyValueSpec
@@ -164,7 +165,7 @@ def json(include_columns: List[str] = None, exclude_columns: List[str] = None, m
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 
 
-def simple(col_name: str):
+def simple(col_name: str) -> KeyValueSpec:
     """  Specify a single column when producing to a Kafka Key or Value field
 
     Args:
