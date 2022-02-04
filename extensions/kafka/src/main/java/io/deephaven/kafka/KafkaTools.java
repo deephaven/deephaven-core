@@ -1382,8 +1382,8 @@ public class KafkaTools {
      * @param valueSpec Conversion specification for Kafka record values from table column data.
      * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when {@code keySpec}
      *        is {@code IGNORE}. If {@code lastByKeyColumns == true}, it is expected that {@code table} is an add-only
-     *        stream, or the result of an aggregation; a general refreshing table where rows can change position
-     *        in arbitrary ways (eg, the result of {@code sort}) is not allowed. In DH engine technical terms, when
+     *        stream, or the result of an aggregation; a general refreshing table where rows can change position in
+     *        arbitrary ways (eg, the result of {@code sort}) is not allowed. In DH engine technical terms, when
      *        {@code lastByKeyColumns == true} the updates to {@code table} should not produce any row shifts. A table
      *        generated from a Kafka stream via {@code consumeToTable} trivially satisfies this constraint. Any
      *        operations over such a table that do not reorder rows also satisfy the constraint.
