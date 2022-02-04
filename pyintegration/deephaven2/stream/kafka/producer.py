@@ -43,10 +43,12 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
         value_spec (KeyValueSpec): specifies how to map table column(s) to the Value field in produced Kafka messages.
             This should be the result of calling one of the methods simple, avro or json in this module, or the constant
             KeyValueSpec.IGNORE
-        last_by_key_columns (bool): whether to publish only the last record for each unique key.
-            Ignored if key_spec is KeyValueSpec.IGNORE.  If key is not KeyValueSpec.IGNORE and last_by_key_columns is
-            false, it is expected that table updates will not produce any row shifts; that is, the publisher
-            expects keyed tables to be streams, add-only, or aggregated
+        last_by_key_columns (bool): whether to publish only the last record for each unique key, the flag is ignored
+            when the key_spec is KeyValueSpec.IGNORE, default is False. When True and not ignored, it is expected that
+            the source table is an add-only stream, or the result of an aggregation; other kinds of refreshing tables
+            where rows can change position in arbitrary ways (eg, the result of sorting) is not allowed. A table
+            generated from a Kafka stream via kafka.consumer trivially satisfies this constraint. Any operations over
+            such a table that do not reorder rows also satisfy the constraint.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.
@@ -81,7 +83,7 @@ def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict
          timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
          publish_schema: bool = False, schema_namespace: str = None,
          column_properties: Dict[str, str] = None) -> KeyValueSpec:
-    """ Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
+    """ Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
 
     Args:
         schema (str):  the name for a schema registered in a Confluent compatible Schema Server. The associated
@@ -129,7 +131,7 @@ def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict
 
 def json(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
          nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
-    """ Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
+    """ Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 
     Args:
         include_columns (List[str]): the list of Deephaven column names to include in the JSON output as fields,
@@ -166,7 +168,8 @@ def json(include_columns: List[str] = None, exclude_columns: List[str] = None, m
 
 
 def simple(col_name: str) -> KeyValueSpec:
-    """  Specify a single column when producing to a Kafka Key or Value field
+    """  Creates a spec that defines a single column to be published as either the key or value of a Kafka message when
+    producing a Kafka stream from a Deephaven table.
 
     Args:
         col_name (str): the Deephaven column name

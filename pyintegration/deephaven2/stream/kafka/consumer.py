@@ -147,7 +147,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
 
 def avro(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = None,
          mapped_only: bool = False) -> KeyValueSpec:
-    """ Specify an Avro schema to use when consuming a Kafka stream to a Deephaven table.
+    """ Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
     Args:
         schema (str): the name for a schema registered in a Confluent compatible Schema Server. The associated
@@ -179,7 +179,7 @@ def avro(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = 
 
 
 def json(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
-    """ Specify how to use JSON data when consuming a Kafka stream to a Deephaven table.
+    """ Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
         col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
@@ -205,7 +205,8 @@ def json(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpe
 
 
 def simple(col_name: str, data_type: DType = None) -> KeyValueSpec:
-    """ Specify a single column when consuming a Kafka stream to a Deephaven table.
+    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consume a Kafka
+    stream to a Deephaven table.
 
     Args:
         col_name (str): the Deephaven column name
