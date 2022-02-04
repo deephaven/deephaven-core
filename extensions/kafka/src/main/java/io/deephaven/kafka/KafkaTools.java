@@ -1385,7 +1385,7 @@ public class KafkaTools {
      *        stream, or the result of an aggregation; a general refreshing table where rows can change position
      *        in arbitrary ways (eg, the result of {@code sort}) is not allowed. In DH engine technical terms, when
      *        {@code lastByKeyColumns == true} the updates to {@code table} should not produce any row shifts. A table
-     *        generated from a Kafka stream via {@code consumeToTable} trivially satisfies this contraint. Any
+     *        generated from a Kafka stream via {@code consumeToTable} trivially satisfies this constraint. Any
      *        operations over such a table that do not reorder rows also satisfy the constraint.
      *
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
