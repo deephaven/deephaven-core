@@ -1383,10 +1383,10 @@ public class KafkaTools {
      * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when {@code keySpec}
      *        is {@code IGNORE}. If {@code lastByKeyColumns == true}, it is expected that {@code table} is an add-only
      *        stream, or the result of an aggregation; a general refreshing table where rows can change position
-     *        arbitrary ways (eg, the result of {@code sort}) is not allowed. In DH engine technical terms, when
+     *        in arbitrary ways (eg, the result of {@code sort}) is not allowed. In DH engine technical terms, when
      *        {@code lastByKeyColumns == true} the updates to {@code table} should not produce any row shifts. A table
      *        generated from a Kafka stream via {@code consumeToTable} trivially satisfies this contraint. Any
-     *        operations over such a table that does not reorder rows also satisfies the constraint.
+     *        operations over such a table that do not reorder rows also satisfy the constraint.
      *
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
