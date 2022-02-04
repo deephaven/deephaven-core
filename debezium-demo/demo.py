@@ -76,6 +76,7 @@ item_summary = items \
     .naturalJoin(purchases_by_item, 'item_id') \
     .naturalJoin(pageviews_by_item, 'item_id') \
     .dropColumns('item_id') \
+    .moveColumnsDown('revenue', 'pageviews') \
     .updateView('conversion_rate = orders / (double) pageviews')
 
 # These two 'top_*' tables match the 'Business Intelligence: Metabase' / dashboard
@@ -99,10 +100,7 @@ profile_views_per_minute_last_10 = \
     ).where(
         'in_last_10min = true'
     ).updateView(
-        'received_at_nanos = nanos(received_at)',
-        'received_at_minutes = received_at_nanos - received_at_nanos % minute_in_nanos'
-    ).updateView(
-        'received_at_minute = new DateTime(received_at_minutes)'
+        'received_at_minute = lowerBin(received_at, minute_in_nanos)'
     ).view(
         'user_id = target_id',
         'received_at_minute'
@@ -120,18 +118,14 @@ profile_views = pageviews_stg \
         'owner_id = target_id',
         'viewer_id = user_id',
         'received_at'
-    ).partitionBy(
-        'owner_id'
-    ).transformTables(
-        tmapfun(lambda t : t
-            .sortDescending('received_at')
-            .head(10)
-        )
-    ).merge()
-    
+    ).sort(
+        'received_at'
+    ).tailBy(10, 'owner_id')
+
 profile_views_enriched = profile_views \
     .naturalJoin(users, 'owner_id = id', 'owner_email = email') \
-    .naturalJoin(users, 'viewer_id = id', 'viewer_email = email')
+    .naturalJoin(users, 'viewer_id = id', 'viewer_email = email') \
+    .moveColumnsDown('received_at')
 
 dd_flagged_profiles = ck.consumeToTable(
     consume_properties,
@@ -143,7 +137,7 @@ dd_flagged_profiles = ck.consumeToTable(
 ).view('user_id = Long.parseLong(user_id_str.substring(1, user_id_str.length() - 1))')  # strip quotes
 
 dd_flagged_profile_view = dd_flagged_profiles \
-    .naturalJoin(pageviews_stg, 'user_id')
+    .join(pageviews_stg, 'user_id')
 
 high_value_users = purchases \
     .updateView(
@@ -156,7 +150,8 @@ high_value_users = purchases \
         'user_id'
     ) \
     .where('lifetime_value > 10000') \
-    .naturalJoin(users, 'user_id = id', 'email')
+    .naturalJoin(users, 'user_id = id', 'email') \
+    .view('id = user_id', 'email', 'lifetime_value', 'purchases')  # column rename and reorder
 
 schema_namespace = 'io.deephaven.examples'
 
