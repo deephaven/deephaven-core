@@ -66,7 +66,8 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
 
     public void testShifts() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
-        for (int seed = 0; seed < 20; ++seed) {
+        final int nSeeds = scaleToDesiredTestLength(20);
+        for (int seed = 0; seed < nSeeds; ++seed) {
             for (int tableSize = 10; tableSize <= 10000; tableSize *= 10) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
                     testShifts(desc.reset(seed, tableSize, nodeSize));
