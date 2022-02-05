@@ -57,7 +57,7 @@ class IncrementalChunkedOperatorAggregationStateManager
 {
     // region constants
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
-    private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
+    public static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
     // endregion constants
 

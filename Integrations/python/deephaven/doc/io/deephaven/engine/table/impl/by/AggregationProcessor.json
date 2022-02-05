@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationProcessor",
+ "methods": {
+  "forAggregation": "Convert a collection of aggregations to an AggregationContextFactory.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - The aggregations. Must not be further mutated by the caller. Will not be\n        mutated by AggregationProcessor.\n:return: (io.deephaven.engine.table.impl.by.AggregationContextFactory) The AggregationContextFactory",
+  "forRollupBase": "Convert a collection of aggregations to an AggregationContextFactory for use in\n computing the base level of a rollup.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - The aggregations. Must not be further mutated by the caller. Will not be\n        mutated by AggregationProcessor.\n:param includeConstituents: (boolean) - Whether constituents should be included via a partition aggregation\n:return: (io.deephaven.engine.table.impl.by.AggregationContextFactory) The AggregationContextFactory",
+  "forRollupReaggregated": "Convert a collection of aggregations to an AggregationContextFactory for use in\n computing a reaggregated level of a rollup.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - The aggregations. Must not be further mutated by the caller. Will not be\n        mutated by AggregationProcessor.\n:param nullColumns: (java.util.Map<java.lang.String,java.lang.Class<?>>) - Map of group-by column names and data types to aggregate with a null-column aggregation\n:return: (io.deephaven.engine.table.impl.by.AggregationContextFactory) The AggregationContextFactory",
+  "forSelectDistinct": "Create a trivial AggregationContextFactory to implement select distinct.\n\n:return: (io.deephaven.engine.table.impl.by.AggregationContextFactory) The AggregationContextFactory",
+  "makeAggregationContext": "Make an AggregationContext for this aggregation.\n\n:param table: (io.deephaven.engine.table.Table) - The source Table to aggregate\n:param groupByColumnNames: (java.lang.String...) - The key column names\n:return: (io.deephaven.engine.table.impl.by.AggregationContext) A new or safely reusable AggregationContext",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationProcessor",
+ "text": "Conversion tool to generate an AggregationContextFactory for a collection of aggregations.",
+ "typeName": "class"
+}

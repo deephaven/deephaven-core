@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plugin.Plugin",
+ "methods": {
+  "walk": "Note: Java generics information - <T,\nV extends io.deephaven.plugin.Plugin.Visitor<T>>\n\n:param visitor: V\n:return: T"
+ },
+ "path": "io.deephaven.plugin.Plugin",
+ "text": "A plugin is a structured extension point for user-definable behavior.",
+ "typeName": "interface"
+}

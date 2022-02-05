@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.RollupAggregationBase",
+ "methods": {
+  "walk": "Glue method to deliver this Aggregation to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.RollupAggregationBase",
+ "typeName": "class"
+}

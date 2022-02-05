@@ -10,8 +10,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
@@ -76,11 +75,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
 
 /**
  * Primary coalesced table implementation.
@@ -148,8 +147,6 @@ public class QueryTable extends BaseTable {
     private static final long serialVersionUID = 1L;
 
     static final Logger log = LoggerFactory.getLogger(QueryTable.class);
-
-    private static final Pattern COLUMN_NAME = Pattern.compile("[a-zA-Z_$][a-zA-Z0-9_$]*");
 
     private final TrackingRowSet rowSet;
     private final LinkedHashMap<String, ColumnSource<?>> columns;
@@ -466,53 +463,38 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
-        final List<AggregationFactory.AggregationElement> converted =
-                AggregationFactory.AggregationElement.convert(aggregations);
-        return rollup(new AggregationFactory(converted), includeConstituents, SelectColumn.from(groupByColumns));
-    }
-
-    // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    // uses the AggregationFactory as a specifier.
-    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents, SelectColumn... columns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
-        return memoizeResult(MemoizedOperationKey.rollup(aggregationFactory, columns, includeConstituents), () -> {
-            final AggregationFactory withRollup = aggregationFactory.forRollup(includeConstituents);
-            AggregationFactory aggregationStateFactory = withRollup;
+        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+        final MemoizedOperationKey rollupKey =
+                MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents);
+        return memoizeResult(rollupKey, () -> {
+            final QueryTable baseLevel = aggNoMemo(
+                    AggregationProcessor.forRollupBase(aggregations, includeConstituents), gbsColumns);
 
-            final QueryTable lowestLevel = byNoMemo(withRollup, columns);
-            // now we need to reaggregate at each of the levels, combining the results
-            final List<SelectColumn> reaggregateColumns = new ArrayList<>(Arrays.asList(columns));
-
-            final AggregationFactory rollupFactory = withRollup.rollupFactory();
-
-            final List<String> nullColumns = new ArrayList<>(reaggregateColumns.size());
-
-            QueryTable lastLevel = lowestLevel;
-            while (!reaggregateColumns.isEmpty()) {
-                final SelectColumn removedColumn = reaggregateColumns.remove(reaggregateColumns.size() - 1);
-
-                nullColumns.add(0, removedColumn.getName());
-
-                final Map<String, Class<?>> nullColumnsMap = new LinkedHashMap<>(nullColumns.size());
-                final Table fLastLevel = lastLevel;
-                nullColumns
-                        .forEach(nc -> nullColumnsMap.put(nc, fLastLevel.getDefinition().getColumn(nc).getDataType()));
-
-                aggregationStateFactory = rollupFactory.withNulls(nullColumnsMap);
-                lastLevel = lastLevel.byNoMemo(aggregationStateFactory,
-                        reaggregateColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns));
+            final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length);
+            QueryTable lastLevel = baseLevel;
+            while (!gbsColumnsToReaggregate.isEmpty()) {
+                nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName());
+                final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
+                final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
+                        Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
+                        Assert::neverInvoked, LinkedHashMap::new));
+                lastLevel = lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
+                        gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
             }
 
-            final String[] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream()
-                    .filter(cn -> cn.endsWith(AggregationFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(rollupsToDrop);
+            final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
+                    .map(ColumnDefinition::getName)
+                    .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop);
             final Object reverseLookup =
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
             finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregationFactory, columns,
+            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
                     includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
             result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             copyAttributes(result, CopyAttributeOperation.Rollup);
@@ -620,14 +602,20 @@ public class QueryTable extends BaseTable {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
         }
-        final Table tableToUse = AggAllByUseTable.of(this, spec);
-        final Table result = tableToUse.aggBy(agg.get(), groupByList);
-        spec.walk(new AggAllByCopyAttributes(this, result));
-        return result;
+        final QueryTable tableToUse = (QueryTable) AggAllByUseTable.of(this, spec);
+        final List<? extends Aggregation> aggs = List.of(agg.get());
+        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(aggs, gbsColumns);
+        return tableToUse.memoizeResult(aggKey, () -> {
+            final QueryTable result = tableToUse.aggNoMemo(AggregationProcessor.forAggregation(aggs), gbsColumns);
+            spec.walk(new AggAllByCopyAttributes(this, result));
+            return result;
+        });
     }
 
     @Override
-    public Table aggBy(final Collection<? extends Aggregation> aggregations,
+    public Table aggBy(
+            final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
         if (aggregations.isEmpty()) {
             throw new IllegalArgumentException(
@@ -635,25 +623,20 @@ public class QueryTable extends BaseTable {
                             + toString(groupByColumns));
         }
 
-        final List<AggregationFactory.AggregationElement> optimized =
-                AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
+        final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
+        final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+        final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, gbsColumns);
+        final Table aggregationTable =
+                memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forAggregation(optimized), gbsColumns));
 
-        final List<ColumnName> optimizedOrder = optimized.stream()
-                .map(AggregationFactory.AggregationElement::getResultPairs)
-                .flatMap(Stream::of)
-                .map(MatchPair::leftColumn)
-                .map(ColumnName::of)
-                .collect(Collectors.toList());
-        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
-
-        final Table aggregationTable = by(new AggregationFactory(optimized), SelectColumn.from(groupByColumns));
-
+        final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }
 
         // We need to re-order the result columns to match the user-provided order
-        List<ColumnName> resultOrder =
+        final List<ColumnName> resultOrder =
                 Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
                         .collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
@@ -663,123 +646,15 @@ public class QueryTable extends BaseTable {
     public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> {
-                    if (!COLUMN_NAME.matcher(countColumnName).matches()) { // TODO: Test more columns this way
-                        throw new RuntimeException(countColumnName + " is not a valid column name");
-                    }
-                    return by(new CountBySpecImpl(countColumnName), SelectColumn.from(groupByColumns));
-                });
+                () -> aggBy(Aggregation.AggCount(countColumnName), Arrays.asList(groupByColumns)));
     }
 
-    // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    // uses the AggregationFactory as a specifier.
-    public Table by(final AggregationSpec inputAggregationSpec, final SelectColumn... groupByColumns) {
-        return memoizeResult(MemoizedOperationKey.by(inputAggregationSpec, groupByColumns),
-                () -> byNoMemo(inputAggregationSpec, groupByColumns));
-    }
-
-    private QueryTable byNoMemo(AggregationSpec inputAggregationSpec,
-            final SelectColumn... groupByColumns) {
-        final String description = "by(" + inputAggregationSpec + ", " + Arrays.toString(groupByColumns) + ")";
-
-        return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(), () -> {
-
-            final boolean isBy = inputAggregationSpec.getClass() == AggregationGroupSpec.class;
-            final boolean isApplyToAllBy =
-                    inputAggregationSpec.getClass() == AggregationFormulaSpec.class;
-            final boolean isNumeric = inputAggregationSpec.getClass() == SumSpec.class ||
-                    inputAggregationSpec.getClass() == AbsSumSpec.class ||
-                    inputAggregationSpec.getClass() == AvgSpec.class ||
-                    inputAggregationSpec.getClass() == VarSpec.class ||
-                    inputAggregationSpec.getClass() == StdSpec.class;
-            final boolean isSelectDistinct =
-                    inputAggregationSpec.getClass() == SelectDistinctSpecImpl.class;
-            final boolean isCount = inputAggregationSpec.getClass() == CountBySpecImpl.class;
-            final boolean isMinMax = inputAggregationSpec instanceof MinMaxBySpecImpl;
-            final boolean isPercentile = inputAggregationSpec.getClass() == PercentileBySpecImpl.class;
-            final boolean isWeightedAvg =
-                    inputAggregationSpec.getClass() == WeightedAverageSpecImpl.class;
-            final boolean isWeightedSum = inputAggregationSpec.getClass() == WeightedSumSpecImpl.class;
-            final boolean isSortedFirstOrLast = inputAggregationSpec instanceof SortedFirstOrLastByFactoryImpl;
-            final boolean isFirst = inputAggregationSpec.getClass() == FirstBySpecImpl.class
-                    || inputAggregationSpec.getClass() == TrackingFirstBySpecImpl.class;
-            final boolean isLast = inputAggregationSpec.getClass() == LastBySpecImpl.class
-                    || inputAggregationSpec.getClass() == TrackingLastBySpecImpl.class;
-            final boolean isCombo = inputAggregationSpec instanceof AggregationFactory;
-
-            if (isBy) {
-                if (isStream()) {
-                    throw streamUnsupported("groupBy");
-                }
-                if (USE_OLDER_CHUNKED_BY) {
-                    return AggregationHelper.by(this, groupByColumns);
-                }
-                return GroupByAggregationFactory.by(this, groupByColumns);
-            } else if (isApplyToAllBy) {
-                if (isStream()) {
-                    throw streamUnsupported("applyToAllBy");
-                }
-                final String formula = ((AggregationFormulaSpec) inputAggregationSpec).getFormula();
-                final String columnParamName =
-                        ((AggregationFormulaSpec) inputAggregationSpec).getColumnParamName();
-                return FormulaAggregationFactory.applyToAllBy(this, formula, columnParamName, groupByColumns);
-            } else if (isNumeric) {
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(
-                        (IterativeChunkedOperatorFactory) inputAggregationSpec), this, groupByColumns);
-            } else if (isSortedFirstOrLast) {
-                final boolean isSortedFirst =
-                        ((SortedFirstOrLastByFactoryImpl) inputAggregationSpec).isSortedFirst();
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        new SortedFirstOrLastByAggregationFactory(isSortedFirst, false,
-                                ((SortedFirstOrLastByFactoryImpl) inputAggregationSpec).getSortColumnNames()),
-                        this, groupByColumns);
-            } else if (isFirst || isLast) {
-                return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this,
-                        groupByColumns);
-            } else if (isMinMax) {
-                final boolean isMin = ((MinMaxBySpecImpl) inputAggregationSpec).isMinimum();
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        new NonKeyColumnAggregationFactory(
-                                new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())),
-                        this, groupByColumns);
-            } else if (isPercentile) {
-                final double percentile = ((PercentileBySpecImpl) inputAggregationSpec).getPercentile();
-                final boolean averageMedian =
-                        ((PercentileBySpecImpl) inputAggregationSpec).getAverageMedian();
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        new NonKeyColumnAggregationFactory(
-                                new PercentileIterativeOperatorFactory(percentile, averageMedian)),
-                        this, groupByColumns);
-            } else if (isWeightedAvg || isWeightedSum) {
-                final String weightName;
-                if (isWeightedAvg) {
-                    weightName = ((WeightedAverageSpecImpl) inputAggregationSpec).getWeightName();
-                } else {
-                    weightName = ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
-                }
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        new WeightedAverageSumAggregationFactory(weightName, isWeightedSum), this, groupByColumns);
-            } else if (isCount) {
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        new CountAggregationFactory(
-                                ((CountBySpecImpl) inputAggregationSpec).getCountName()),
-                        this, groupByColumns);
-            } else if (isSelectDistinct) {
-                if (getColumnSourceMap().isEmpty()) {
-                    // if we have no input columns, then the only thing we can do is have an empty result
-                    return new QueryTable(RowSetFactory.empty().toTracking(),
-                            Collections.emptyMap());
-                }
-                return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this,
-                        groupByColumns);
-            } else if (isCombo) {
-                return ChunkedOperatorAggregationHelper.aggregation(
-                        ((AggregationFactory) inputAggregationSpec).makeAggregationContextFactory(), this,
-                        groupByColumns);
-            }
-
-            throw new RuntimeException("Unknown aggregation : " + inputAggregationSpec);
-        });
+    private QueryTable aggNoMemo(@NotNull final AggregationContextFactory aggregationContextFactory,
+            @NotNull final SelectColumn... groupByColumns) {
+        final String description = "aggregation(" + aggregationContextFactory
+                + ", " + Arrays.toString(groupByColumns) + ")";
+        return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
+                () -> ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, this, groupByColumns));
     }
 
     private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
@@ -1722,7 +1597,7 @@ public class QueryTable extends BaseTable {
                     for (MatchPair pair : pairs) {
                         if (pair.leftColumn == null || pair.leftColumn.equals("")) {
                             throw new IllegalArgumentException(
-                                    "Bad left column in rename pair \"" + pair.toString() + "\"");
+                                    "Bad left column in rename pair \"" + pair + "\"");
                         }
                         if (null == columns.get(pair.rightColumn)) {
                             throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
@@ -3002,7 +2877,11 @@ public class QueryTable extends BaseTable {
     public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
-                () -> by(new SelectDistinctSpecImpl(), SelectColumn.from(groupByColumns)));
+                () -> {
+                    final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns);
+                    final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(Collections.emptyList(), gbsColumns);
+                    return memoizeResult(aggKey, () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), gbsColumns));
+                });
     }
 
     @Override

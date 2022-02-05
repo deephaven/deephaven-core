@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.FirstRowKey",
+ "methods": {
+  "column": ":return: io.deephaven.api.ColumnName",
+  "of": "*Overload 1*  \n  :param name: io.deephaven.api.ColumnName\n  :return: io.deephaven.api.agg.FirstRowKey\n  \n*Overload 2*  \n  :param x: java.lang.String\n  :return: io.deephaven.api.agg.FirstRowKey",
+  "walk": "Glue method to deliver this Aggregation to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.FirstRowKey",
+ "text": "An aggregation that provides a single output column with the first row key from the input table\n for each aggregation group in the result.\n \n The primary use case for this aggregation is to allow for a subsequent sort on the output column to order aggregated data by current first occurrence in the input table rather than\n encounter order.",
+ "typeName": "class"
+}

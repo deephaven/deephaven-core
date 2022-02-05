@@ -1296,7 +1296,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupUnique() {
         testSimpleRollup(List.of(AggUnique("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
-        testSimpleRollup(List.of(AggUnique(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggUnique(true, Sentinel(), "IntCol", "DoubleCol", "FloatNullCol", "StringCol",
+                "BoolCol")));
     }
 
     private void testSimpleRollup(Collection<? extends Aggregation> comboAgg) {
@@ -1548,7 +1549,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupUniqueIncremental() {
         testIncrementalSimple(AggUnique("IntCol"));
-        testIncrementalSimple(AggUnique(true, "IntCol"));
+        testIncrementalSimple(AggUnique(true, Sentinel(), "IntCol"));
         // TODO (https://github.com/deephaven/deephaven-core/issues/991): Re-enable these sub-tests
         // testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
         // testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
@@ -1616,7 +1617,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             simpleTable.rollup(List.of(AggCount("MyString"), AggMin("MyString")), "MyDouble");
             TestCase.fail("No exception generated with duplicate output column names.");
         } catch (IllegalArgumentException iae) {
-            assertEquals("Duplicate output columns: MyString used 2 times", iae.getMessage());
+            assertEquals("Duplicate output columns found: MyString used 2 times", iae.getMessage());
         }
     }
 
@@ -1679,7 +1680,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 AggDistinct(true, "SDistinctN=StringNulls", "DistinctBoolColN=BoolCol",
                         "DNIntCol=IntSet", "DNLongCol=LongSet", "DNDoubleCol=DoubleSet",
                         "DNFloatCol=FloatSet", "DNCharCol=CharSet", "DNShortCol=ShortSet", "DNByteCol=ByteSet"),
-                AggUnique(true, "SUniqueN=StringNulls", "UniqueBoolColN=BoolCol",
+                AggUnique(true, Sentinel(), "SUniqueN=StringNulls", "UniqueBoolColN=BoolCol",
                         "UNIntCol=IntSet", "UNLongCol=LongSet", "UNDoubleCol=DoubleSet",
                         "UNFloatCol=FloatSet", "UNCharCol=CharSet", "UNShortCol=ShortSet", "UNByteCol=ByteSet"));
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {

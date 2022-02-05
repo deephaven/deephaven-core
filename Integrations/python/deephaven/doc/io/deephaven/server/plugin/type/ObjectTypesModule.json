@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.plugin.type.ObjectTypesModule",
+ "methods": {
+  "bindsCallback": ":param types: io.deephaven.server.plugin.type.ObjectTypes\n:return: io.deephaven.plugin.type.ObjectTypeRegistration",
+  "bindsLookup": ":param types: io.deephaven.server.plugin.type.ObjectTypes\n:return: io.deephaven.plugin.type.ObjectTypeLookup"
+ },
+ "path": "io.deephaven.server.plugin.type.ObjectTypesModule",
+ "text": "Binds ObjectTypes as ObjectTypeLookup and ObjectTypeRegistration.",
+ "typeName": "interface"
+}

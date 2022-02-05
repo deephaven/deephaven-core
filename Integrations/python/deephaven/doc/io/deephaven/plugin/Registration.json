@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plugin.Registration",
+ "methods": {
+  "registerInto": "The registration entrypoint.\n\n \n May be called multiple times.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the callback."
+ },
+ "path": "io.deephaven.plugin.Registration",
+ "text": "The registration interface for plugins.",
+ "typeName": "interface"
+}

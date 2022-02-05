@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.Object",
+ "methods": {
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.FileDescriptor",
+  "registerAllExtensions": "*Overload 1*  \n  :param registry: com.google.protobuf.ExtensionRegistryLite\n  \n*Overload 2*  \n  :param registry: com.google.protobuf.ExtensionRegistry"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.Object",
+ "typeName": "class"
+}

@@ -17,8 +17,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusDouble;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 
 class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements IterativeChunkedAggregationOperator {
     private final String name;

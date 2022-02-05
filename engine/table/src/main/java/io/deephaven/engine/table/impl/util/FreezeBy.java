@@ -1,9 +1,7 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 
 import java.util.Collection;
@@ -34,7 +32,7 @@ public class FreezeBy {
      * @return a frozen copy of the input table
      */
     public static Table freezeBy(Table input) {
-        return freezeBy(input, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return input.aggAllBy(AggSpec.freeze());
     }
 
     /**
@@ -51,7 +49,7 @@ public class FreezeBy {
      * @return a copy of the input table frozen by key
      */
     public static Table freezeBy(Table input, String... groupByColumns) {
-        return freezeBy(input, SelectColumnFactory.getExpressions(groupByColumns));
+        return input.aggAllBy(AggSpec.freeze(), groupByColumns);
     }
 
     /**
@@ -68,7 +66,7 @@ public class FreezeBy {
      * @return a copy of the input table frozen by key
      */
     public static Table freezeBy(Table input, Collection<String> groupByColumns) {
-        return freezeBy(input, SelectColumnFactory.getExpressions(groupByColumns));
+        return input.aggAllBy(AggSpec.freeze(), groupByColumns);
     }
 
     /**
@@ -85,7 +83,6 @@ public class FreezeBy {
      * @return a copy of the input table frozen by key
      */
     public static Table freezeBy(Table input, SelectColumn... groupByColumns) {
-        return ChunkedOperatorAggregationHelper.aggregation(new FreezeByAggregationFactory(),
-                (QueryTable) input.coalesce(), groupByColumns);
+        return input.aggAllBy(AggSpec.freeze(), groupByColumns);
     }
 }

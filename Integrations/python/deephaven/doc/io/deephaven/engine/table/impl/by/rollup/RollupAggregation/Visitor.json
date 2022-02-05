@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.RollupAggregation$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param nullColumns: io.deephaven.engine.table.impl.by.rollup.NullColumns\n  \n*Overload 2*  \n  :param partition: io.deephaven.engine.table.impl.by.rollup.Partition"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.RollupAggregation.Visitor",
+ "typeName": "interface"
+}

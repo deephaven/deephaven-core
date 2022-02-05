@@ -1,18 +1,14 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.by.AggType;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -20,6 +16,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.Table.TOTALS_TABLE_ATTRIBUTE;
 
 /**
@@ -30,8 +28,46 @@ import static io.deephaven.engine.table.Table.TOTALS_TABLE_ATTRIBUTE;
  * </p>
  */
 @ScriptApi
-public class TotalsTableBuilder implements Serializable {
-    public static final long serialVersionUID = 1;
+public class TotalsTableBuilder {
+
+    /**
+     * Enumeration representing valid aggregation types for {@link TotalsTableBuilder}.
+     */
+    public enum AggType {
+        /** Return the number of rows in each group. */
+        Count,
+        /** Return the minimum value of each group. */
+        Min,
+        /** Return the maximum value of each group. */
+        Max,
+        /** Return the sum of values in each group. */
+        Sum,
+        /** Return the sum of absolute values in each group. */
+        AbsSum,
+        /** Return the variance of values in each group. */
+        Var,
+        /** Return the average of values in each group. */
+        Avg,
+        /** Return the standard deviation of each group. */
+        Std,
+        /** Return the first value of each group. */
+        First,
+        /** Return the last value of each group. */
+        Last,
+        /** Return the values of each group as a Vector. */
+        Group,
+        /** Return the number of unique values in each group */
+        CountDistinct,
+        /** Collect the distinct items from the column */
+        Distinct,
+        /**
+         * Display the singular value from the column if it is unique, or a default value if none are present, or it is
+         * not unique
+         */
+        Unique,
+        /** Only valid in a TotalsTableBuilder to indicate we should not perform any aggregation. */
+        Skip
+    }
 
     private boolean showTotalsByDefault = false;
     private boolean showGrandTotalsByDefault = false;
@@ -498,11 +534,10 @@ public class TotalsTableBuilder implements Serializable {
      * @return an aggregated totals table
      */
     public static Table makeTotalsTable(Table source, TotalsTableBuilder builder, String... groupByColumns) {
-        final AggregationFactory aggregationFactory = makeAggregationFactory(source, builder);
+        final Collection<? extends Aggregation> aggregations = makeAggregations(source, builder);
         final String[] formatSpecs = makeColumnFormats(source, builder);
 
-        Table totalsTable = ((QueryTable) source.coalesce())
-                .by(aggregationFactory, SelectColumnFactory.getExpressions(groupByColumns));
+        Table totalsTable = source.aggBy(aggregations, List.of(SelectColumnFactory.getExpressions(groupByColumns)));
         if (formatSpecs.length > 0) {
             totalsTable = totalsTable.formatColumns(makeColumnFormats(source, builder));
         }
@@ -554,19 +589,19 @@ public class TotalsTableBuilder implements Serializable {
             }
         });
 
-        return formatSpecs.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return formatSpecs.toArray(ZERO_LENGTH_STRING_ARRAY);
     }
 
 
     /**
-     * Produce a AggregationFactory from a source table and builder.
+     * Produce {@link Aggregation aggregations}from a source table and builder.
      *
      * @param source the source table
      * @param builder the TotalsTableBuilder
      *
-     * @return the {@link AggregationFactory} described by source and builder.
+     * @return the {@link Aggregation aggregations} described by source and builder.
      */
-    public static AggregationFactory makeAggregationFactory(Table source, TotalsTableBuilder builder) {
+    public static Collection<? extends Aggregation> makeAggregations(Table source, TotalsTableBuilder builder) {
         ensureColumnsExist(source, builder.operationMap.keySet());
 
         final Set<AggType> defaultOperations = EnumSet.of(builder.defaultOperation);
@@ -597,48 +632,41 @@ public class TotalsTableBuilder implements Serializable {
             }
         }
 
-        final List<AggregationFactory.AggregationElement> aggregations = new ArrayList<>();
-        columnsByType.entrySet().stream().flatMap(e -> makeOperation(e.getKey(), e.getValue()))
-                .forEach(aggregations::add);
-        return new AggregationFactory(aggregations);
+        return columnsByType.entrySet().stream()
+                .flatMap(e -> makeOperation(e.getKey(), e.getValue().toArray(ZERO_LENGTH_STRING_ARRAY)))
+                .collect(Collectors.toList());
     }
 
-    private static Stream<AggregationFactory.AggregationElement> makeOperation(AggType operation, List<String> values) {
+    private static Stream<? extends Aggregation> makeOperation(AggType operation, String... columnNames) {
         switch (operation) {
             case Group:
-                throw new IllegalArgumentException("Can not use Array aggregation in totals table.");
+                throw new IllegalArgumentException("Can not use Group aggregation in totals table.");
             case Count:
-                return values.stream().map(AggregationFactory::AggCount);
+                return Stream.of(columnNames).map(Aggregation::AggCount);
             case Min:
-                return Stream.of(AggregationFactory.AggMin(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggMin(columnNames));
             case Max:
-                return Stream.of(AggregationFactory.AggMax(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggMax(columnNames));
             case First:
-                return Stream
-                        .of(AggregationFactory.AggFirst(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggFirst(columnNames));
             case Last:
-                return Stream
-                        .of(AggregationFactory.AggLast(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggLast(columnNames));
             case Sum:
-                return Stream.of(AggregationFactory.AggSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggSum(columnNames));
             case AbsSum:
-                return Stream
-                        .of(AggregationFactory.AggAbsSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggAbsSum(columnNames));
             case Avg:
-                return Stream.of(AggregationFactory.AggAvg(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggAvg(columnNames));
             case Std:
-                return Stream.of(AggregationFactory.AggStd(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggStd(columnNames));
             case Var:
-                return Stream.of(AggregationFactory.AggVar(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggVar(columnNames));
             case Unique:
-                return Stream
-                        .of(AggregationFactory.AggUnique(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggUnique(columnNames));
             case CountDistinct:
-                return Stream.of(AggregationFactory
-                        .AggCountDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggCountDistinct(columnNames));
             case Distinct:
-                return Stream
-                        .of(AggregationFactory.AggDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggDistinct(columnNames));
             default:
                 throw new IllegalStateException();
         }

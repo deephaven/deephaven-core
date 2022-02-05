@@ -42,9 +42,9 @@ public class ShortPercentileTypeMedianHelper extends ShortPercentileTypeHelper {
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                // region averageMedian
+                // region averageEvenlyDivided
                 return setResult(destination, (((ShortSegmentedSortedMultiset)ssmLo).getMaxShort() + ((ShortSegmentedSortedMultiset)ssmHi).getMinShort()) / 2.0);
-                // endregion averageMedian
+                // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((ShortSegmentedSortedMultiset)ssmLo).getMaxShort());
             }

@@ -2,7 +2,7 @@
  "className": "io.deephaven.client.impl.ApplicationService$Listener",
  "methods": {
   "onError": ":param t: java.lang.Throwable",
-  "onNext": ":param fields: io.deephaven.proto.backplane.grpc.FieldsChangeUpdate"
+  "onNext": ":param fields: io.deephaven.client.impl.FieldChanges"
  },
  "path": "io.deephaven.client.impl.ApplicationService.Listener",
  "typeName": "interface"

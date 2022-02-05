@@ -1,26 +1,6 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecAbsSum;
-import io.deephaven.api.agg.spec.AggSpecAvg;
-import io.deephaven.api.agg.spec.AggSpecCountDistinct;
-import io.deephaven.api.agg.spec.AggSpecDistinct;
-import io.deephaven.api.agg.spec.AggSpecFirst;
-import io.deephaven.api.agg.spec.AggSpecFormula;
-import io.deephaven.api.agg.spec.AggSpecGroup;
-import io.deephaven.api.agg.spec.AggSpecLast;
-import io.deephaven.api.agg.spec.AggSpecMax;
-import io.deephaven.api.agg.spec.AggSpecMedian;
-import io.deephaven.api.agg.spec.AggSpecMin;
-import io.deephaven.api.agg.spec.AggSpecPercentile;
-import io.deephaven.api.agg.spec.AggSpecSortedFirst;
-import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecStd;
-import io.deephaven.api.agg.spec.AggSpecSum;
-import io.deephaven.api.agg.spec.AggSpecUnique;
-import io.deephaven.api.agg.spec.AggSpecVar;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.agg.spec.*;
 import io.deephaven.engine.table.Table;
 
 import java.util.Objects;
@@ -56,6 +36,16 @@ class AggAllByUseTable implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecApproximatePercentile approxPct) {
+        drop();
+    }
+
+    @Override
+    public void visit(AggSpecAvg avg) {
+        drop();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         drop();
     }
@@ -66,22 +56,22 @@ class AggAllByUseTable implements AggSpec.Visitor {
     }
 
     @Override
-    public void visit(AggSpecGroup group) {
-        drop();
-    }
-
-    @Override
-    public void visit(AggSpecAvg avg) {
-        drop();
-    }
-
-    @Override
     public void visit(AggSpecFirst first) {
         keep();
     }
 
     @Override
     public void visit(AggSpecFormula formula) {
+        drop();
+    }
+
+    @Override
+    public void visit(AggSpecFreeze freeze) {
+        keep();
+    }
+
+    @Override
+    public void visit(AggSpecGroup group) {
         drop();
     }
 
@@ -127,6 +117,11 @@ class AggAllByUseTable implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecSum sum) {
+        drop();
+    }
+
+    @Override
+    public void visit(AggSpecTDigest tDigest) {
         drop();
     }
 

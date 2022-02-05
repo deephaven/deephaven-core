@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 
 /**
  * Iterative variance operator.

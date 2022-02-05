@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.tokenization.external.FastDoubleParser",
- "methods": {
-  "parseDouble": "**Incompatible overloads text - text from the first overload:**\n\nConvenience method for calling parseDouble(CharSequence, int, int).\n\n*Overload 1*  \n  :param str: (java.lang.CharSequence) - the string to be parsed\n  :return: (double) the parsed double value\n  \n*Overload 2*  \n  :param str: (java.lang.CharSequence) - the string to be parsed\n  :param offset: (int) - The index of the first character to parse\n  :param length: (int) - The number of characters to parse\n  :return: (double) the parsed double value"
- },
- "path": "io.deephaven.csv.tokenization.external.FastDoubleParser",
- "text": "This is a C++ to Java port of Daniel Lemire's fast_double_parser.\n \n The code has been changed, so that it parses the same syntax as Double.parseDouble(String).\n \n References:\n \nDaniel Lemire, fast_double_parser, 4x faster than strtod. Apache License 2.0 or Boost Software License.\ngithub.com\nDaniel Lemire, fast_float number parsing library: 4x faster than strtod. Apache License 2.0.\ngithub.com\nDaniel Lemire, Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51 (8), 2021.\n arXiv.2101.11408v3 [cs.DS] 24 Feb 2021\narxiv.org",
- "typeName": "class"
-}
