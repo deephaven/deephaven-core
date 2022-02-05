@@ -52,7 +52,12 @@ By default only runs in CI; to run locally:
             dependsOn project.tasks.findByName('testClasses')
 
             if (parallel) {
-                maxParallelForks = 12
+                if (project.hasProperty('maxParallelForks'))
+                    maxParallelForks = project.maxParallelForks as int
+                else
+                    maxParallelForks = 12
+                if (project.hasProperty('forkEvery'))
+                    forkEvery = project.forkEvery as int
             } else {
                 maxParallelForks = 1
                 // == safe for strings in groovy
