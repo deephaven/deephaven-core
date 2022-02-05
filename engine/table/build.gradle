@@ -117,8 +117,11 @@ TestTools.addEngineTest(project, 'OutOfBand', allowParallel, false, false)
 
 // The configuration of this with respect to the build environment isn't very tight.
 // Ideally, the build environment would be able to configure this as appropriate.
-tasks.testParallel.maxHeapSize = '6g'
-tasks.testSerial.maxHeapSize = '6g'
-tasks.testOutOfBand.maxHeapSize = '6g'
-tasks.test.maxHeapSize = '6g'
+
+def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'
+
+tasks.testParallel.maxHeapSize = maxHeapSize
+tasks.testSerial.maxHeapSize = maxHeapSize
+tasks.testOutOfBand.maxHeapSize = maxHeapSize
+tasks.test.maxHeapSize = maxHeapSize
 
