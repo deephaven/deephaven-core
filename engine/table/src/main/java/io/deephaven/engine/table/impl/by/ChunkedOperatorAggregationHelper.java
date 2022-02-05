@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.GroupingUtils;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.by.typed.TypedStaticChunkedOperatorAggregationStateManager;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -54,6 +55,9 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
+    static boolean USE_TYPED_STATE_MANAGER =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
+                    true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
@@ -124,9 +128,15 @@ public class ChunkedOperatorAggregationHelper {
                     reinterpretedKeySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                     control.getTargetLoadFactor());
         } else {
-            stateManager = new StaticChunkedOperatorAggregationStateManager(reinterpretedKeySources,
-                    control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
-                    control.getTargetLoadFactor());
+            if (USE_TYPED_STATE_MANAGER && reinterpretedKeySources.length == 1) {
+                stateManager = TypedStaticChunkedOperatorAggregationStateManager.make(reinterpretedKeySources,
+                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else {
+                stateManager = new StaticChunkedOperatorAggregationStateManager(reinterpretedKeySources,
+                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            }
             incrementalStateManager = null;
         }
         setReverseLookupFunction(keySources, ac, stateManager);

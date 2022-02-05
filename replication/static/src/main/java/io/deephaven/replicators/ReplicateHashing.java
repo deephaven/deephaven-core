@@ -22,6 +22,12 @@ public class ReplicateHashing {
                 charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         fixupObjectChunkHasher(objectHasher);
 
+        // for aggregations
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/typed/CharTypedHasher.java");
+        final String objectTypedHasher =
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/by/typed/CharTypedHasher.java");
+        fixupObjectChunkHasher(objectTypedHasher);
+
         charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
         charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
         charToIntegers(
@@ -63,7 +69,8 @@ public class ReplicateHashing {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
         FileUtils.writeLines(objectFile, globalReplacements(fixupChunkAttributes(lines), "Object.hashCode",
-                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value"));
+                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value", "QueryConstants.NULL_OBJECT",
+                "null"));
     }
 
     private static void fixupObjectChunkEquals(String objectPath) throws IOException {
