@@ -31,8 +31,6 @@ import java.util.function.Supplier;
 abstract public class RefreshingTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
     public static boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
-    public static boolean SHORT_TEST = Configuration.getInstance()
-            .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "shortTest", false);
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "CompilerTools.logEnabled", false);
 
@@ -47,8 +45,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     List<Throwable> errors;
 
     public static int scaleToDesiredTestLength(final int maxIter) {
-        final double shortFactor = 0.2;
-        return (int) Math.ceil(maxIter * shortFactor);
+        return TstUtils.scaleToDesiredTestLength(maxIter);
     }
 
     @Override
