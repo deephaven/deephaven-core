@@ -1561,10 +1561,10 @@ public class QueryTableAggregationTest {
     @Test
     public void testSumByIncremental() {
         final int[] sizes;
-        if (SHORT_TEST) {
-            sizes = new int[] {100, 2000, 6000};
+        if (SHORT_TESTS) {
+            sizes = new int[] {100, 2_000};
         } else {
-            sizes = new int[] {10, 100, 4000, 10000};
+            sizes = new int[] {10, 100, 4_000, 10_000};
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {

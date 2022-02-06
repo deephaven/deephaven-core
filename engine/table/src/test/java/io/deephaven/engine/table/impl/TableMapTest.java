@@ -260,7 +260,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 }
         };
 
-        final int iterations = SHORT_TEST ? 40 : 100;
+        final int iterations = SHORT_TESTS ? 40 : 100;
         for (int ii = 0; ii < iterations; ++ii) {
             final int iteration = ii + 1;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

@@ -558,7 +558,7 @@ public class QueryTableAjTest {
         final int maxRightSize;
         final int leftFactor;
         final int rightFactor;
-        if (SHORT_TEST) {
+        if (SHORT_TESTS) {
             maxLeftSize = 1_250;
             maxRightSize = 1_250;
             leftFactor = 5;
@@ -668,7 +668,7 @@ public class QueryTableAjTest {
         final int initialTableSize = 10;
         final int tableMultiplier;
         final int maximumTableSize;
-        if (SHORT_TEST) {
+        if (SHORT_TESTS) {
             tableMultiplier = 5;
             maximumTableSize = 250;
 

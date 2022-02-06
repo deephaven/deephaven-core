@@ -50,8 +50,8 @@ public class TestWindowCheck {
         final int size = 100;
         final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
         final DateTime endTime;
-        if (SHORT_TEST) {
-            endTime = DateTimeUtils.convertDateTime("2018-02-23T12:30:00 NY");
+        if (SHORT_TESTS) {
+            endTime = DateTimeUtils.convertDateTime("2018-02-23T10:30:00 NY");
         } else {
             endTime = DateTimeUtils.convertDateTime("2018-02-23T16:00:00 NY");
         }

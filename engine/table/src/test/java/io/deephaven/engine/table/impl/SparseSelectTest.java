@@ -32,7 +32,7 @@ public class SparseSelectTest {
     @Test
     public void testSparseSelect() {
         final int[] sizes;
-        if (SHORT_TEST) {
+        if (SHORT_TESTS) {
             sizes = new int[] {20, 4_000};
         } else {
             sizes = new int[] {1000, 10_000};

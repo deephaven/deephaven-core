@@ -274,7 +274,11 @@ configure modsRegular,
             forkEvery = 32
         }
 
-        systemProperty 'Configuration.rootFile', 'dh-tests.prop'
+        if (findProperty('shortTests') == 'true') {
+            systemProperty 'Configuration.rootFile', 'dh-short-tests.prop'
+        } else {
+            systemProperty 'Configuration.rootFile', 'dh-tests.prop'
+        }
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"
         systemProperty 'configuration.quiet', 'true'

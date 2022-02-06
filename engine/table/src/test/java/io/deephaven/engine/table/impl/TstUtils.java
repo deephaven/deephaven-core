@@ -45,11 +45,11 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
 public class TstUtils {
-    public static boolean SHORT_TEST = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TstUtils.class, "shortTest", false);
+    public static boolean SHORT_TESTS = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TstUtils.class, "shortTests", false);
 
     public static int scaleToDesiredTestLength(final int maxIter) {
-        if (!SHORT_TEST) {
+        if (!SHORT_TESTS) {
             return maxIter;
         }
         final double shortTestFactor = 0.2;

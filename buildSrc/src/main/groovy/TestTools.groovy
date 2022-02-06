@@ -26,7 +26,13 @@ class TestTools {
 
     static final String TEST_GROUP = "~Deephaven Test"
 
-    static Test addEngineTest(Project project, String type, boolean parallel=false, boolean passwordEnabled=false, boolean isolated=false) {
+    static Test addEngineTest(
+        Project project,
+        String type,
+        boolean parallel = false,
+        boolean passwordEnabled = false,
+        boolean isolated = false
+    ) {
         Test mainTest = project.tasks.getByName('test') as Test
         Test t = project.tasks.create("test$type", Test)
 
