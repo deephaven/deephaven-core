@@ -67,8 +67,11 @@ public class TestDoubleSegmentedSortedArray extends RefreshingTableTestCase {
     public void testShifts() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds = scaleToDesiredTestLength(20);
+        final int tableSizeSteps = scaleToDesiredTestLength(1000);
+        final int maxTableSize = 10000;
+        final int tableSizeStep = maxTableSize / tableSizeSteps;
         for (int seed = 0; seed < nSeeds; ++seed) {
-            for (int tableSize = 10; tableSize <= 10000; tableSize *= 10) {
+            for (int tableSize = 10; tableSize <= maxTableSize; tableSize *= tableSizeStep) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
                     testShifts(desc.reset(seed, tableSize, nodeSize));
                 }
