@@ -52,8 +52,8 @@ public class TstUtils {
         if (!SHORT_TEST) {
             return maxIter;
         }
-        final double shortFactor = 0.2;
-        return (int) Math.ceil(maxIter * shortFactor);
+        final double shortTestFactor = 0.2;
+        return (int) Math.ceil(maxIter * shortTestFactor);
     }
 
     public static <T> ColumnHolder c(String name, T... data) {

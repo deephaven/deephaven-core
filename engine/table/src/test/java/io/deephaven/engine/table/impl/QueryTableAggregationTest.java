@@ -1562,9 +1562,9 @@ public class QueryTableAggregationTest {
     public void testSumByIncremental() {
         final int[] sizes;
         if (SHORT_TEST) {
-            sizes = new int[]{100, 2000, 6000};
+            sizes = new int[] {100, 2000, 6000};
         } else {
-            sizes = new int[]{10, 100, 4000, 10000};
+            sizes = new int[] {10, 100, 4000, 10000};
         }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
