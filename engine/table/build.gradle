@@ -111,7 +111,7 @@ def allowParallel = Boolean.parseBoolean(findProperty('allowParallel') as String
 
 TestTools.addEngineTest(project, 'Parallel', allowParallel, false, !allowParallel)
 // testSerial: non-parallel, not a engine test, isolated
-TestTools.addEngineTest(project, 'Serial', false, false, true)
+TestTools.addEngineTest(project, 'Serial', allowParallel, false, true)
 // testOutOfBand: non-parallel, not a engine test, not isolated
 TestTools.addEngineTest(project, 'OutOfBand', allowParallel, false, false)
 
