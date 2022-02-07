@@ -31,7 +31,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertIsNotNone(ck.ALL_PARTITIONS_SEEK_TO_END)
         self.assertIsNotNone(ck.ALL_PARTITIONS_DONT_SEEK)
 
-    def test_simple(self):
+    def test_simple_spec(self):
         """
         Check a simple Kafka subscription creates the right table.
         """
@@ -39,7 +39,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=ck.simple('Price', dtypes.double))
+            value_spec=ck.simple_spec('Price', dtypes.double))
 
         cols = t.columns
         self.assertEqual(4, len(cols))
@@ -47,7 +47,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Price", cols[3].name)
         self.assertEqual(dtypes.double, cols[3].data_type)
 
-    def test_json(self):
+    def test_json_spec(self):
         """
         Check a JSON Kafka subscription creates the right table.
         """
@@ -56,7 +56,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=ck.json(
+            value_spec=ck.json_spec(
                 [('Symbol', dtypes.string),
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
@@ -88,7 +88,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Tstamp", cols[7].name)
         self.assertEqual(dtypes.DateTime, cols[7].data_type)
 
-    def test_avro(self):
+    def test_avro_spec(self):
         """
         Check an Avro Kafka subscription creates the right table.
         """
@@ -129,7 +129,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 },
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro('share_price_record', schema_version='1'),
+                value_spec=ck.avro_spec('share_price_record', schema_version='1'),
                 table_type=TableType.Append
             )
 
@@ -155,7 +155,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 },
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro('share_price_record', mapping=m, mapped_only=True),
+                value_spec=ck.avro_spec('share_price_record', mapping=m, mapped_only=True),
                 table_type=TableType.Append
             )
 
@@ -177,7 +177,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 },
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro('share_price_record', mapping=m),
+                value_spec=ck.avro_spec('share_price_record', mapping=m),
                 table_type=TableType.Append
             )
 

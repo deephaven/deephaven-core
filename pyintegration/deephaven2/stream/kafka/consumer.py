@@ -94,14 +94,14 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
         key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
-            It can be the result of calling one of the functions: simple(),avro() or json() in this module, or
-            the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same as
-            KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
+            It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same
+            as KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
             'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting column name and type
         value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
-            It can be the result of calling one of the functions: simple(),avro() or json() in this module, or
-            the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same as
-            KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
+            It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same
+            as KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
             'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting column name and type
         table_type (TableType): a TableType enum, default is TableType.Stream
 
@@ -145,7 +145,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
 
-def avro(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = None,
+def avro_spec(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = None,
          mapped_only: bool = False) -> KeyValueSpec:
     """ Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
@@ -178,7 +178,7 @@ def avro(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = 
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def json(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
+def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
     """ Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
@@ -204,7 +204,7 @@ def json(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpe
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def simple(col_name: str, data_type: DType = None) -> KeyValueSpec:
+def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
     """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consume a Kafka
     stream to a Deephaven table.
 

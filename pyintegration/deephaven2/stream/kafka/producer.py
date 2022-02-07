@@ -38,11 +38,11 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
         kafka_config (Dict): configuration for the associated kafka producer
         topic (str): the topic name
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
-            This should be the result of calling one of the methods simple, avro or json in this module, or the constant
-            KeyValueSpec.IGNORE
+            This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
+            module, or the constant KeyValueSpec.IGNORE
         value_spec (KeyValueSpec): specifies how to map table column(s) to the Value field in produced Kafka messages.
-            This should be the result of calling one of the methods simple, avro or json in this module, or the constant
-            KeyValueSpec.IGNORE
+            This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this,
+            or the constant KeyValueSpec.IGNORE
         last_by_key_columns (bool): whether to publish only the last record for each unique key, the flag is ignored
             when the key_spec is KeyValueSpec.IGNORE, default is False. When True and not ignored, it is expected that
             the source table is an add-only stream, or the result of an aggregation; other kinds of refreshing tables
@@ -79,7 +79,7 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
         raise DHError(e, "failed to start producing Kafka messages.") from e
 
 
-def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict[str, str] = None,
+def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict[str, str] = None,
          timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
          publish_schema: bool = False, schema_namespace: str = None,
          column_properties: Dict[str, str] = None) -> KeyValueSpec:
@@ -129,7 +129,7 @@ def avro(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 
 
-def json(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
+def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
          nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
     """ Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 
@@ -167,7 +167,7 @@ def json(include_columns: List[str] = None, exclude_columns: List[str] = None, m
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 
 
-def simple(col_name: str) -> KeyValueSpec:
+def simple_spec(col_name: str) -> KeyValueSpec:
     """  Creates a spec that defines a single column to be published as either the key or value of a Kafka message when
     producing a Kafka stream from a Deephaven table.
 

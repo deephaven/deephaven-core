@@ -32,7 +32,7 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         self.assertIsNotNone(KeyValueSpec.IGNORE)
 
-    def test_simple(self):
+    def test_simple_spec(self):
         """
         Check a simple Kafka subscription creates the right table.
         """
@@ -42,34 +42,34 @@ class KafkaProducerTestCase(BaseTestCase):
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple('Price')
+            value_spec=pk.simple_spec('Price')
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_json_only_columns(self):
+    def test_json_spec_only_columns(self):
         t = table_helper()
         cleanup = pk.produce(
             t,
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.json(['Symbol', 'Price']),
+            value_spec=pk.json_spec(['Symbol', 'Price']),
             last_by_key_columns=False
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_json_all_arguments(self):
+    def test_json_spec_all_arguments(self):
         t = table_helper()
         cleanup = pk.produce(
             t,
             {'bootstrap.servers': 'redpanda:29092'},
             'orders',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.json(
+            value_spec=pk.json_spec(
                 ['Symbol', 'Price'],
                 mapping={'Symbol': 'jSymbol', 'Price': 'jPrice'},
                 timestamp_field='jTs'
@@ -80,7 +80,7 @@ class KafkaProducerTestCase(BaseTestCase):
         self.assertIsNotNone(cleanup)
         cleanup()
 
-    def test_avro(self):
+    def test_avro_spec(self):
         schema = \
             """
             { "type" : "record",
@@ -124,7 +124,7 @@ class KafkaProducerTestCase(BaseTestCase):
             },
             'share_price_timestamped',
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.avro(
+            value_spec=pk.avro_spec(
                 'share_price_timestamped_record',
                 timestamp_field='Timestamp'
             ),
