@@ -110,18 +110,38 @@ class TableFactoryTestCase(BaseTestCase):
             bool_col(name="Boolean", data=[True, j_al])
 
     def test_dynamic_table_writer(self):
-        col_defs = {"Numbers": dtypes.int32, "Words": dtypes.string}
-        with DynamicTableWriter(col_defs) as table_writer:
-            table_writer.write_row(1, "Testing")
-            table_writer.write_row(2, "Dynamic")
-            table_writer.write_row(3, "Table")
-            table_writer.write_row(4, "Writer")
-            result = table_writer.table
-            self.assertTrue(result.is_refreshing)
+        with self.subTest("Correct Input"):
+            col_defs = {"Numbers": dtypes.int32, "Words": dtypes.string}
+            with DynamicTableWriter(col_defs) as table_writer:
+                table_writer.write_row(1, "Testing")
+                table_writer.write_row(2, "Dynamic")
+                table_writer.write_row(3, "Table")
+                table_writer.write_row(4, "Writer")
+                result = table_writer.table
+                self.assertTrue(result.is_refreshing)
 
-        with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
-            table_writer.write_row(1, "Testing", "shouldn't be here")
-        self.assertIn("RuntimeError", cm.exception.root_cause)
+        with self.subTest("One too many values in the arguments"):
+            with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
+                table_writer.write_row(1, "Testing", "shouldn't be here")
+            self.assertIn("RuntimeError", cm.exception.root_cause)
+
+        with self.subTest("Proper numerical value conversion"):
+            col_defs = {
+                "Double": dtypes.double,
+                "Float": dtypes.float32,
+                "Long": dtypes.long,
+                "Int32": dtypes.int32,
+                "Short": dtypes.short,
+                "Byte": dtypes.byte
+            }
+            with DynamicTableWriter(col_defs) as table_writer:
+                table_writer.write_row(10, 10, 10, 10, 10, 10)
+                table_writer.write_row(10.1, 10.1, 10.1, 10.1, 10.1, 10.1)
+
+        with self.subTest("Incorrect value types"):
+            with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
+                table_writer.write_row(10, '10', 10, 10, 10, '10')
+            self.assertIn("RuntimeError", cm.exception.root_cause)
 
     def test_historical_tale_replayer(self):
         dt1 = to_datetime("2000-01-01T00:00:01 NY")

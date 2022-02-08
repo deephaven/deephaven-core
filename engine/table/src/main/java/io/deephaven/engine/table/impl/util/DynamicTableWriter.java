@@ -481,7 +481,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setByte(value == null ? QueryConstants.NULL_BYTE : (Byte) value);
+            setByte(value == null ? QueryConstants.NULL_BYTE : ((Number)value).byteValue());
         }
 
         @Override
@@ -527,7 +527,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setInt(value == null ? QueryConstants.NULL_INT : (Integer) value);
+            setInt(value == null ? QueryConstants.NULL_INT : ((Number)value).intValue());
         }
 
         @Override
@@ -550,7 +550,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setDouble(value == null ? QueryConstants.NULL_DOUBLE : (Double) value);
+            setDouble(value == null ? QueryConstants.NULL_DOUBLE : ((Number)value).doubleValue());
         }
 
         @Override
@@ -573,7 +573,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setFloat(value == null ? QueryConstants.NULL_FLOAT : (Float) value);
+            setFloat(value == null ? QueryConstants.NULL_FLOAT : ((Number) value).floatValue());
         }
 
         @Override
@@ -596,7 +596,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setLong(value == null ? QueryConstants.NULL_LONG : (Long) value);
+            setLong(value == null ? QueryConstants.NULL_LONG : ((Number)value).longValue());
         }
 
         @Override
@@ -619,7 +619,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setShort(value == null ? QueryConstants.NULL_SHORT : (Short) value);
+            setShort(value == null ? QueryConstants.NULL_SHORT : ((Number)value).shortValue());
         }
 
         @Override
