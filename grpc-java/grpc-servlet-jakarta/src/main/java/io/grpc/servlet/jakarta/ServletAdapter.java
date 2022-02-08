@@ -11,13 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package io.grpc.servlet;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.FINEST;
+package io.grpc.servlet.jakarta;
 
 import com.google.common.io.BaseEncoding;
 import io.grpc.Attributes;
@@ -32,6 +26,13 @@ import io.grpc.internal.GrpcUtil;
 import io.grpc.internal.ReadableBuffers;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -44,13 +45,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.FINEST;
 
 /**
  * An adapter that transforms {@link HttpServletRequest} into gRPC request and lets a gRPC server process it, and
@@ -316,7 +316,7 @@ public final class ServletAdapter {
         public void onAllDataRead() {
             logger.log(FINE, "[{0}] onAllDataRead", logId);
             stream.transportState().runOnTransportThread(
-                    () -> stream.transportState().inboundDataReceived(ReadableBuffers.wrap(new byte[] {}), true));
+                    () -> stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true));
         }
 
         @Override

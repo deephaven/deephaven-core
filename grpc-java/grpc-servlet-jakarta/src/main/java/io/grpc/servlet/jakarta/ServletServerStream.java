@@ -11,15 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package io.grpc.servlet;
-
-import static io.grpc.internal.GrpcUtil.CONTENT_TYPE_GRPC;
-import static io.grpc.internal.GrpcUtil.CONTENT_TYPE_KEY;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.FINEST;
-import static java.util.logging.Level.WARNING;
+package io.grpc.servlet.jakarta;
 
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -35,6 +27,11 @@ import io.grpc.internal.StatsTraceContext;
 import io.grpc.internal.TransportFrameUtil;
 import io.grpc.internal.TransportTracer;
 import io.grpc.internal.WritableBuffer;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletResponse;
+
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -44,10 +41,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import javax.annotation.Nullable;
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServletResponse;
+
+import static io.grpc.internal.GrpcUtil.CONTENT_TYPE_GRPC;
+import static io.grpc.internal.GrpcUtil.CONTENT_TYPE_KEY;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.WARNING;
 
 final class ServletServerStream extends AbstractServerStream {
 
@@ -77,9 +78,9 @@ final class ServletServerStream extends AbstractServerStream {
         this.logId = logId;
         this.asyncCtx = asyncCtx;
         this.resp = (HttpServletResponse) asyncCtx.getResponse();
-        resp.getOutputStream().setWriteListener(new GrpcWriteListener());
         this.writer = new AsyncServletOutputStreamWriter(
-                asyncCtx, resp.getOutputStream(), transportState, logId);
+                asyncCtx, transportState, logId);
+        resp.getOutputStream().setWriteListener(new GrpcWriteListener());
     }
 
     @Override

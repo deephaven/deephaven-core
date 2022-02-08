@@ -1,6 +1,6 @@
 package io.deephaven.server.jetty;
 
-import io.grpc.servlet.ServletAdapter;
+import io.grpc.servlet.jakarta.ServletAdapter;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

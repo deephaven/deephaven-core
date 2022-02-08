@@ -11,12 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package io.grpc.servlet;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
+package io.grpc.servlet.jakarta;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,7 +24,6 @@ import io.grpc.InternalLogId;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerStreamTracer;
-import io.grpc.ServerStreamTracer.Factory;
 import io.grpc.Status;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.internal.InternalServer;
@@ -39,14 +33,19 @@ import io.grpc.internal.ServerTransport;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.SharedResourceHolder;
 
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.NotThreadSafe;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 
 /**
  * Builder to build a gRPC server that can run as a servlet. This is for advanced custom settings. Normally, users
@@ -121,8 +120,8 @@ public final class ServletServerBuilder extends ForwardingServerBuilder<ServletS
         return internalServer.serverListener.transportCreated(serverTransport);
     }
 
-    protected InternalServer buildTransportServers(
-            List<? extends Factory> streamTracerFactories) {
+    @VisibleForTesting
+    InternalServer buildTransportServers(List<? extends ServerStreamTracer.Factory> streamTracerFactories) {
         checkNotNull(streamTracerFactories, "streamTracerFactories");
         this.streamTracerFactories = streamTracerFactories;
         internalServer = new InternalServerImpl();
