@@ -114,3 +114,5 @@ tasks.testParallel.maxHeapSize = maxHeapSize
 tasks.testSerial.maxHeapSize = maxHeapSize
 tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
+
+tasks.testOutOfBand.jvmArgs '-XX:Tier4CompileThreshold=1000'
