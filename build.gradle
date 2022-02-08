@@ -96,6 +96,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'deephaven-wheel',
     'deephaven2-wheel',
     'envoy',
+    'grpc-java',
     'grpc-proxy',
     'web',
     'web-client-ui',
@@ -105,6 +106,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'docker-runtime-base',
     'docker-server',
     'docker-server-slim',
+    'docker-web',
     'raw-js-openapi',
 ] }
 
@@ -272,6 +274,9 @@ configure modsRegular,
             forkEvery = 32
         }
 
+        if (findProperty('shortTests') == 'true') {
+            systemProperty 'TstUtils.shortTests', 'true'
+        }
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"

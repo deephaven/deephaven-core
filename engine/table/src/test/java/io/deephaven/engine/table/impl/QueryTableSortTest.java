@@ -266,7 +266,13 @@ public class QueryTableSortTest extends QueryTableTestBase {
     public void testMultiColumnRuns() {
         final Random random = new Random(0);
         final ColumnInfo columnInfo[];
-        final QueryTable queryTable = getTable(10000, random,
+        final int tableSize;
+        if (SHORT_TESTS) {
+            tableSize = 1_000;
+        } else {
+            tableSize = 10_000;
+        }
+        final QueryTable queryTable = getTable(tableSize, random,
                 columnInfo = initColumnInfos(new String[] {"bool1", "bool2", "bool3", "bool4", "bool5", "Sentinel"},
                         new BooleanGenerator(0.25, 0.25),
                         new BooleanGenerator(0.50, 0.25),
@@ -300,7 +306,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         };
         final int steps = 50;
         for (int step = 0; step < steps; step++) {
-            simulateShiftAwareStep(" step == " + step, 10000, random, queryTable, columnInfo, en);
+            simulateShiftAwareStep(" step == " + step, tableSize, random, queryTable, columnInfo, en);
         }
     }
 

@@ -132,7 +132,9 @@ public class FuzzerTest {
 
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
 
-        for (int step = 0; step < 100; ++step) {
+        final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
+
+        for (int step = 0; step < steps; ++step) {
             final int fstep = step;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 System.out.println("Step = " + fstep);
@@ -200,7 +202,8 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
         final long seed1 = DateTime.now().getNanos();
-        for (long iteration = 0; iteration < 5; ++iteration) {
+        final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
+        for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {

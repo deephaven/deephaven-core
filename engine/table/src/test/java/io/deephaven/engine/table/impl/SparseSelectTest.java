@@ -31,18 +31,18 @@ public class SparseSelectTest {
 
     @Test
     public void testSparseSelect() {
-        int size = 1000;
-        for (int seed = 0; seed < 1; ++seed) {
-            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
-            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-                testSparseSelect(size, seed);
-            }
+        final int[] sizes;
+        if (SHORT_TESTS) {
+            sizes = new int[] {20, 4_000};
+        } else {
+            sizes = new int[] {1000, 10_000};
         }
-        size = 10000;
-        for (int seed = 0; seed < 1; ++seed) {
-            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
-            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-                testSparseSelect(size, seed);
+        for (final int size : sizes) {
+            for (int seed = 0; seed < 1; ++seed) {
+                System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
+                try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                    testSparseSelect(size, seed);
+                }
             }
         }
     }
