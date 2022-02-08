@@ -4,9 +4,12 @@ import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTime;
+import org.apache.commons.io.input.ReaderInputStream;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -28,11 +31,13 @@ public class DeephavenCsvTest {
         final Table expected = TableTools.newTable(
                 TableTools.col("Timestamp", DATETIME_A, null, DATETIME_B));
 
-        invokeTest(input, CsvSpecs.csv(), expected);
+        invokeTest(input, CsvTools.builder().build(), expected);
     }
 
     private static void invokeTest(String input, CsvSpecs specs, Table expected) throws CsvReaderException {
-        final Table actual = specs.parse(input);
+        final StringReader reader = new StringReader(input);
+        final ReaderInputStream inputStream = new ReaderInputStream(reader, StandardCharsets.UTF_8);
+        final Table actual = CsvTools.readCsv(inputStream, specs);
         final String differences = TableTools.diff(actual, expected, 25);
         Assertions.assertThat(differences).isEmpty();
     }
