@@ -10,51 +10,16 @@ from typing import Dict, Any, List
 import jpy
 
 from deephaven2 import DHError
-from deephaven2.dtypes import DType
+import deephaven2.dtypes as dh
 from deephaven2.table import Table
 
-_JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
-_JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
-_JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
 _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
-
-
-class Inference(Enum):
-    """ An Enum of predefined inference specs.
-
-    Inference specifications contains the configuration and logic for inferring an acceptable parser from string values.
-    """
-
-    STRINGS = _JInferenceSpecs.strings()
-    """ Configured parsers: strings only.
-    """
-
-    MINIMAL = _JInferenceSpecs.minimal()
-    """ Configured parsers: BOOL, LONG, DOUBLE, INSTANT, STRING.
-    """
-
-    STANDARD = _JInferenceSpecs.standard()
-    """ Configured parsers: BOOL, INT, LONG, DOUBLE, DATETIME, CHAR, STRING.
-    """
-
-    STANDARD_TIMES = _JInferenceSpecs.standardTimes()
-    """ Configured parsers: BOOL, DATETIME, CHAR, STRING, SECONDS.
-    """
-
-def _build_header(header: Dict[str, DType] = None):
-    if not header:
-        return None
-
-    table_header_builder = _JTableHeader.builder()
-    for k, v in header.items():
-        table_header_builder.putHeaders(k, v.qst_type)
-
-    return table_header_builder.build()
+_JParsers = jpy.get_type("io.deephaven.csv.parsers.Parsers")
+_JArrays = jpy.get_type("java.util.Arrays")
 
 
 def read(path: str,
-         header: Dict[str, DType] = None,
-         inference: Any = Inference.STANDARD,
+         header: Dict[str, dh.DType] = None,
          headless: bool = False,
          delimiter: str = ",",
          quote: str = "\"",
@@ -65,7 +30,6 @@ def read(path: str,
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
-        inference (csv.Inference): an Enum value specifying the rules for data type inference, default is STANDARD_TIMES
         headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
@@ -80,14 +44,26 @@ def read(path: str,
         DHError
     """
     try:
-        csv_specs_builder = _JCsvSpecs.builder()
+        csv_specs_builder = _JCsvTools.builder()
 
-        # build the head spec
-        table_header = _build_header(header)
-        if table_header:
-            csv_specs_builder.header(table_header)
+        if header:
+            csv_specs_builder.headers(_JArrays.asList(list(header.keys())))
+            parser_map = {
+                dh.bool_ : _JParsers.BOOLEAN,
+                dh.byte : _JParsers.BYTE,
+                dh.char : _JParsers.CHAR,
+                dh.short : _JParsers.SHORT,
+                dh.int_ : _JParsers.INT,
+                dh.long : _JParsers.LONG,
+                dh.float_ : _JParsers.FLOAT_FAST,
+                dh.double : _JParsers.DOUBLE,
+                dh.string : _JParsers.STRING,
+                dh.DateTime : _JParsers.DATETIME
+            }
+            for column_name, column_type in header.items():
+                csv_specs_builder.putParserForName(column_name, parser_map[column_type])
 
-        csv_specs = (csv_specs_builder.inference(inference.value)
+        csv_specs = (csv_specs_builder
                      .hasHeaderRow(not headless)
                      .delimiter(ord(delimiter))
                      .quote(ord(quote))
