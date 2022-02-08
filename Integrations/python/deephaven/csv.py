@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 import jpy
 import wrapt
 
-import deephaven.Types as dh
+import deephaven.Types as dht
 
 _JCsvHelpers = None
 _JTableHeader = None
@@ -59,7 +59,7 @@ def _passThrough(wrapped, instance, args, kwargs):
 
 @_passThrough
 def read(path: str,
-         header: Dict[str, dh.DataType] = None,
+         header: Dict[str, dht.DataType] = None,
          headless: bool = False,
          delimiter: str = ",",
          quote: str = "\"",
@@ -91,16 +91,16 @@ def read(path: str,
     if header:
         csv_specs_builder.headers(_JArrays.asList(list(header.keys())))
         parser_map = {
-            dh.bool_ : _JParsers.BOOLEAN,
-            dh.byte : _JParsers.BYTE,
-            dh.char : _JParsers.CHAR,
-            dh.short : _JParsers.SHORT,
-            dh.int_ : _JParsers.INT,
-            dh.long_ : _JParsers.LONG,
-            dh.float_ : _JParsers.FLOAT_FAST,
-            dh.double : _JParsers.DOUBLE,
-            dh.string : _JParsers.STRING,
-            dh.datetime : _JParsers.DATETIME
+            dht.bool_ : _JParsers.BOOLEAN,
+            dht.byte : _JParsers.BYTE,
+            dht.char : _JParsers.CHAR,
+            dht.short : _JParsers.SHORT,
+            dht.int_ : _JParsers.INT,
+            dht.long_ : _JParsers.LONG,
+            dht.float_ : _JParsers.FLOAT_FAST,
+            dht.double : _JParsers.DOUBLE,
+            dht.string : _JParsers.STRING,
+            dht.datetime : _JParsers.DATETIME
         }
         for column_name, column_type in header.items():
             csv_specs_builder.putParserForName(column_name, parser_map[column_type])
