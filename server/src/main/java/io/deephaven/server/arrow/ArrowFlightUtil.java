@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.chunk.ChunkType;
@@ -296,6 +297,8 @@ public class ArrowFlightUtil {
 
         private boolean isClosed = false;
 
+        private boolean isFirstMsg = true;
+
         private final TicketRouter ticketRouter;
         private final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter;
@@ -336,29 +339,61 @@ public class ArrowFlightUtil {
             GrpcUtil.rpcWrapper(log, listener, () -> {
                 BarrageProtoUtil.MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
                 synchronized (this) {
-                    if (message.app_metadata == null
-                            || message.app_metadata.magic() != BarrageUtil.FLATBUFFER_MAGIC) {
-                        log.warn().append(myPrefix).append("received a message without app_metadata").endl();
-                        return;
-                    }
 
-                    // handle the different message types that can come over DoExchange
-                    if (requestHandler == null) {
+                    // `FlightData` messages from Barrage clients will provide app_metadata describing the request but
+                    // official Flight implementations may force a NULL metadata field in the first message. In that
+                    // case, identify a valid Barrage connection by verifying the `FlightDescriptor.CMD` field contains
+                    // a valid `BarrageMessageWrapper` object
+
+                    if (message.app_metadata != null) {
                         // handle the different message types that can come over DoExchange
-                        switch (message.app_metadata.msgType()) {
-                            case BarrageMessageType.BarrageSubscriptionRequest:
-                                requestHandler = new SubscriptionRequestHandler();
-                                break;
-                            case BarrageMessageType.BarrageSnapshotRequest:
-                                requestHandler = new SnapshotRequestHandler();
-                                break;
-                            default:
+                        if (requestHandler == null) {
+                            // handle the different message types that can come over DoExchange
+                            switch (message.app_metadata.msgType()) {
+                                case BarrageMessageType.BarrageSubscriptionRequest:
+                                    requestHandler = new SubscriptionRequestHandler();
+                                    break;
+                                case BarrageMessageType.BarrageSnapshotRequest:
+                                    requestHandler = new SnapshotRequestHandler();
+                                    break;
+                                default:
+                                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                            myPrefix + "received a message with unhandled BarrageMessageType");
+                            }
+                        }
+
+                        // rely on the handler to verify message type
+                        requestHandler.handleMessage(message);
+
+                    } else {
+                        // handle the possible error cases
+                        if (!isFirstMsg) {
+                            // only the first messages is allowed to have null metadata
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    myPrefix + "failed to receive Barrage request metadata");
+                        } else {
+                            // test whether the FlightDescriptor cmd field contains a valid Barrage object
+                            try {
+                                // verify the bytes contain a valid Barrage object
+                                BarrageMessageWrapper bmw = BarrageMessageWrapper
+                                        .getRootAsBarrageMessageWrapper(
+                                                message.descriptor.getCmd().asReadOnlyByteBuffer());
+
+                                if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
+                                        || bmw.msgType() != BarrageMessageType.None) {
+                                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                            myPrefix + "expected BarrageMessageType.None");
+                                }
+                            } catch (NullPointerException nullPointerException) {
                                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        myPrefix + "received a message with unhandled BarrageMessageType");
+                                        myPrefix + "received a message with malformed metadata in FlightDescriptor");
+
+                            }
                         }
                     }
-                    // rely on the handler to verify message type
-                    requestHandler.handleMessage(message);
+
+                    isFirstMsg = false;
+
                 }
             });
         }
