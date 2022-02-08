@@ -116,6 +116,18 @@ TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
 // Ideally, the build environment would be able to configure this as appropriate.
 tasks.testParallel.maxHeapSize = '6g'
 tasks.testSerial.maxHeapSize = '6g'
-tasks.testOutOfBand.maxHeapSize = '6g'
+tasks.testOutOfBand.maxHeapSize = '16g'
 tasks.test.maxHeapSize = '6g'
 
+tasks.testOutOfBand.jvmArgs '-XX:+PrintFlagsFinal'
+tasks.testOutOfBand.jvmArgs '-XX:Tier4CompileThreshold=1000'
+tasks.testOutOfBand.jvmArgs '-XX:+PrintCompilation'
+tasks.testOutOfBand.jvmArgs '-XX:+UnlockDiagnosticVMOptions'
+tasks.testOutOfBand.jvmArgs '-XX:CompilerDirectivesFile=/Users/rcaudy/dev/deephaven/community/review/core/test-configs/c2-excludes.txt'
+
+//tasks.testOutOfBand.jvmArgs '-XX:+UnlockExperimentalVMOptions'
+//tasks.testOutOfBand.jvmArgs '-XX:+EnableJVMCI'
+//tasks.testOutOfBand.jvmArgs '-XX:+UseJVMCICompiler'
+//tasks.testOutOfBand.jvmArgs '-Djvmci.Compiler=graal'
+//tasks.testOutOfBand.jvmArgs '-XX:+EagerJVMCI'
+//tasks.testOutOfBand.jvmArgs '-Dgraal.ShowConfiguration=info'

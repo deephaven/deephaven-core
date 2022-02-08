@@ -1,0 +1,8 @@
+[
+    {
+        match: ["io.deephaven.engine.table.impl.by.ssmpercentile.DoublePercentileTypeMedianHelper::setResult"],
+        c2: {
+            Exclude:true,
+        },
+    },
+]

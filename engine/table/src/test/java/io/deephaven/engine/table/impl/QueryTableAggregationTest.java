@@ -2424,19 +2424,21 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testMedianByIncremental() {
-        final int[] sizes = {10, 50, 200};
+        final int[] sizes = {10, 50, 200/*, 1000*/};
         for (int size : sizes) {
-            testMedianByIncremental(size);
+            for (int seed = 0; seed < 1000; ++seed) {
+                testMedianByIncremental(size, seed);
+            }
         }
     }
 
-    private void testMedianByIncremental(int size) {
-        final Random random = new Random(0);
+    private void testMedianByIncremental(final int size, final long seed) {
+        final Random random = new Random(seed);
         final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "floatCol"},
+                columnInfo = initColumnInfos(new String[] {"Sym", /*"intCol", */"doubleCol", "floatCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
-                        new IntGenerator(10, 100),
+                        // new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 100.0f)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
@@ -2448,11 +2450,11 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.view("doubleCol").medianBy()),
                 EvalNugget.Sorted.from(() -> queryTable.medianBy("Sym"), "Sym"),
                 new UpdateValidatorNugget(queryTable.medianBy("Sym")),
-                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.25), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.1), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.99), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").aggAllBy(percentile(0.99), "Sym").sort("Sym"))
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.25, true), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.75, true), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.1, true), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.99, true), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").aggAllBy(percentile(0.99, true), "Sym").sort("Sym"))
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
