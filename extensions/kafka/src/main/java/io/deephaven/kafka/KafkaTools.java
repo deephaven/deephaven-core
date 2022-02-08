@@ -1373,17 +1373,38 @@ public class KafkaTools {
     }
 
     /**
-     * Consume from Kafka to a Deephaven table.
+     * Produce a Kafka stream from a Deephaven table.
+     * <p>
+     * Note that {@code table} must only change in ways that are meaningful when turned into a stream of events over
+     * Kafka.
+     * <p>
+     * Two primary use cases are considered:
+     * <ol>
+     * <li><b>A stream of changes (puts and removes) to a key-value data set.</b> In order to handle this efficiently
+     * and allow for correct reconstruction of the state at a consumer, it is assumed that the input data is the result
+     * of a Deephaven aggregation, e.g. {@link Table#aggAllBy}, {@link Table#aggBy}, or {@link Table#lastBy}. This means
+     * that key columns (as specified by {@code keySpec}) must not be modified, and no rows should be shifted if there
+     * are any key columns. Note that specifying {@code lastByKeyColumns=true} can make it easy to satisfy this
+     * constraint if the input data is not already aggregated.</li>
+     * <li><b>A stream of independent log records.</b> In this case, the input table should either be a
+     * {@link Table#STREAM_TABLE_ATTRIBUTE stream table} or should only ever add rows (regardless of whether the
+     * {@link Table#ADD_ONLY_TABLE_ATTRIBUTE attribute} is specified).</li>
+     * </ol>
+     * <p>
+     * If other use cases are identified, a publication mode or extensible listener framework may be introduced at a
+     * later date.
      *
      * @param table The table used as a source of data to be sent to Kafka.
      * @param kafkaProperties Properties to be passed to create the associated KafkaProducer.
      * @param topic Kafka topic name
-     * @param keySpec Conversion specification for Kafka record keys from table column data.
+     * @param keySpec Conversion specification for Kafka record keys from table column data. If not
+     *        {@link DataFormat#IGNORE Ignore}, must specify a key serializer that maps each input tuple to a unique
+     *        output key.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
      * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when {@code keySpec}
-     *        is {@code IGNORE}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that {@code table} will
-     *        not produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
-     *        aggregated.
+     *        is {@code IGNORE}. Otherwise, if {@code lastByKeycolumns == true} this method will internally perform a
+     *        {@link Table#lastBy(String...) lastBy} aggregation on {@code table} grouped by the input columns of
+     *        {@code keySpec} and publish to Kafka from the result.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
      */
