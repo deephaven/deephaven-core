@@ -31,7 +31,7 @@ public class DeephavenCsvTest {
         final Table expected = TableTools.newTable(
                 TableTools.col("Timestamp", DATETIME_A, null, DATETIME_B));
 
-        invokeTest(input, CsvSpecs.csv(), expected);
+        invokeTest(input, CsvTools.builder().build(), expected);
     }
 
     private static void invokeTest(String input, CsvSpecs specs, Table expected) throws CsvReaderException {

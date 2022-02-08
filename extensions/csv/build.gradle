@@ -6,7 +6,7 @@ description 'CSV: Support to read and write engine tables from/to CSV'
 
 dependencies {
     api project(':engine-api')
-    api 'io.deephaven:deephaven-csv:0.0.1-SNAPSHOT'
+    api 'io.deephaven:deephaven-csv:0.1.0'
 
     implementation project(':engine-table'),
             project(':engine-base')

@@ -60,13 +60,6 @@ allprojects {
                 includeGroup 'org.apache.kafka'
             }
         }
-        // TODO: don't check this in
-        maven {
-            url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            mavenContent {
-                snapshotsOnly()
-            }
-        }
     }
 }
 

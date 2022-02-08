@@ -21,6 +21,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.csv.CsvSpecs.Builder;
 import io.deephaven.csv.containers.ByteSlice;
 import io.deephaven.csv.reading.CsvReader;
 import io.deephaven.csv.sinks.Sink;
@@ -28,6 +29,7 @@ import io.deephaven.csv.sinks.SinkFactory;
 import io.deephaven.csv.sinks.Source;
 import io.deephaven.csv.tokenization.RangeTests;
 import io.deephaven.csv.tokenization.Tokenizer;
+import io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.csv.util.MutableLong;
 import io.deephaven.csv.util.MutableObject;
@@ -98,6 +100,15 @@ public class CsvTools {
     public final static boolean NULLS_AS_EMPTY_DEFAULT = true;
 
     /**
+     * Creates a {@link Builder} with {@link CsvTools}-specific values. Includes a {@link CustomTimeZoneParser}.
+     *
+     * @return the builder
+     */
+    public static Builder builder() {
+        return CsvSpecs.builder().customTimeZoneParser(new DeephavenTimeZoneParser());
+    }
+
+    /**
      * Creates an in-memory table from {@code path} by importing CSV data.
      *
      * <p>
@@ -114,7 +125,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readCsv(String path) throws CsvReaderException {
-        return readCsv(path, CsvSpecs.csv());
+        return readCsv(path, builder().build());
     }
 
     /**
@@ -128,7 +139,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readCsv(InputStream stream) throws CsvReaderException {
-        return readCsv(stream, CsvSpecs.csv());
+        return readCsv(stream, builder().build());
     }
 
     /**
@@ -141,7 +152,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readCsv(URL url) throws CsvReaderException {
-        return readCsv(url, CsvSpecs.csv());
+        return readCsv(url, builder().build());
     }
 
     /**
@@ -158,7 +169,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readCsv(Path path) throws CsvReaderException {
-        return readCsv(path, CsvSpecs.csv());
+        return readCsv(path, builder().build());
     }
 
     /**
@@ -200,17 +211,12 @@ public class CsvTools {
      * {@code stream} will be closed upon return.
      *
      * @param stream The stream
-     * @param specs The CSV specs. Note that as a special case, if the caller leaves the {@link CsvSpecs#customTimeZoneParser()}
-     *              field unset, we will supply the {@link DeephavenTimeZoneParser} here.
+     * @param specs The CSV specs.
      * @return The table.
      * @throws CsvReaderException If some error occurs.
      */
     @ScriptApi
     public static Table readCsv(InputStream stream, CsvSpecs specs) throws CsvReaderException {
-        // Provide the DeephavenTimeZonerParser if an alternate one was not already specified.
-        if (specs.customTimeZoneParser() == null) {
-            specs = ImmutableCsvSpecs.builder().from(specs).customTimeZoneParser(new DeephavenTimeZoneParser()).build();
-        }
         final CsvReader.Result result = CsvReader.read(specs, stream, makeMySinkFactory());
         final String[] columnNames = result.columnNames();
         final Sink<?>[] sinks = result.columns();
@@ -299,20 +305,22 @@ public class CsvTools {
 
     /**
      * Equivalent to
-     * {@code CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));}
+     * {@code CsvTools.readCsv(filePath, CsvTools.builder().hasHeaderRow(false).build()).renameColumns(renamesForHeaderless(columnNames));}
      */
     @ScriptApi
     public static Table readHeaderlessCsv(String filePath, Collection<String> columnNames) throws CsvReaderException {
-        return CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));
+        return CsvTools.readCsv(filePath, builder().hasHeaderRow(false).build())
+                .renameColumns(renamesForHeaderless(columnNames));
     }
 
     /**
      * Equivalent to
-     * {@code CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));}
+     * {@code CsvTools.readCsv(filePath, CsvTools.builder().hasHeaderRow(false).build()).renameColumns(renamesForHeaderless(columnNames));}
      */
     @ScriptApi
     public static Table readHeaderlessCsv(String filePath, String... columnNames) throws CsvReaderException {
-        return CsvTools.readCsv(filePath, CsvSpecs.headerless()).renameColumns(renamesForHeaderless(columnNames));
+        return CsvTools.readCsv(filePath, builder().hasHeaderRow(false).build())
+                .renameColumns(renamesForHeaderless(columnNames));
     }
 
     /**
@@ -349,7 +357,7 @@ public class CsvTools {
     @ScriptApi
     @Deprecated
     public static Table readCsv(InputStream is, final char separator) throws CsvReaderException {
-        return readCsv(is, CsvSpecs.builder().delimiter(separator).build());
+        return readCsv(is, builder().delimiter(separator).build());
     }
 
     private static boolean isStandardFile(URL url) {
@@ -951,16 +959,17 @@ public class CsvTools {
     }
 
     public static CsvSpecs fromLegacyFormat(String format) {
+        final Builder builder = builder();
         if (format == null) {
-            return CsvSpecs.csv();
+            return builder.build();
         } else if (format.length() == 1) {
-            return CsvSpecs.builder().delimiter(format.charAt(0)).build();
+            return builder.delimiter(format.charAt(0)).build();
         } else if ("TRIM".equals(format)) {
-            return CsvSpecs.builder().trim(true).build();
+            return builder.trim(true).build();
         } else if ("DEFAULT".equals(format)) {
-            return CsvSpecs.builder().ignoreSurroundingSpaces(false).build();
+            return builder.ignoreSurroundingSpaces(false).build();
         } else if ("TDF".equals(format)) {
-            return CsvSpecs.tsv();
+            return builder.delimiter('\t').build();
         }
         return null;
     }
