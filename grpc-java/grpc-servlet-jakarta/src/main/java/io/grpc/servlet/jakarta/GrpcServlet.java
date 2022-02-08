@@ -11,16 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package io.grpc.servlet;
+package io.grpc.servlet.jakarta;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.BindableService;
 import io.grpc.ExperimentalApi;
-import java.io.IOException;
-import java.util.List;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * A simple servlet backed by a gRPC server. Must set {@code asyncSupported} to true. The {@code

@@ -20,4 +20,4 @@
  * feedback by commenting on <a href=https://github.com/grpc/grpc-java/issues/5066>the tracking issue</a>.
  */
 @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/5066")
-package io.grpc.servlet;
+package io.grpc.servlet.jakarta;
