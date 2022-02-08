@@ -3,16 +3,25 @@
 #
 import unittest
 from dataclasses import dataclass
+from time import sleep
 
 import jpy
 import numpy as np
+from deephaven2.time import to_datetime
 
 from deephaven2 import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
+from deephaven2.table_factory import DynamicTableWriter, TableReplayer
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
+
+
+@dataclass
+class CustomClass:
+    f1: int
+    f2: str
 
 
 class TableFactoryTestCase(BaseTestCase):
@@ -100,11 +109,51 @@ class TableFactoryTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             bool_col(name="Boolean", data=[True, j_al])
 
+    def test_dynamic_table_writer(self):
+        col_defs = {"Numbers": dtypes.int32, "Words": dtypes.string}
+        with DynamicTableWriter(col_defs) as table_writer:
+            table_writer.write_row(1, "Testing")
+            table_writer.write_row(2, "Dynamic")
+            table_writer.write_row(3, "Table")
+            table_writer.write_row(4, "Writer")
+            result = table_writer.table
+            self.assertTrue(result.is_refreshing)
 
-@dataclass
-class CustomClass:
-    f1: int
-    f2: str
+        with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
+            table_writer.write_row(1, "Testing", "shouldn't be here")
+        self.assertIn("RuntimeError", cm.exception.root_cause)
+
+    def test_historical_tale_replayer(self):
+        dt1 = to_datetime("2000-01-01T00:00:01 NY")
+        dt2 = to_datetime("2000-01-01T00:00:03 NY")
+        dt3 = to_datetime("2000-01-01T00:00:06 NY")
+
+        hist_table = new_table([
+            datetime_col("DateTime", [dt1, dt2, dt3]),
+            int_col("Number", [1, 3, 6])]
+        )
+
+        start_time = to_datetime("2000-01-01T00:00:00 NY")
+        end_time = to_datetime("2000-01-01T00:00:07 NY")
+
+        replayer = TableReplayer(start_time, end_time)
+        replay_table = replayer.add_table(hist_table, "DateTime")
+        replay_table2 = replayer.add_table(hist_table, "DateTime")
+        self.assertEqual(replay_table, replay_table2)
+
+        replayer.start()
+        self.assertTrue(replay_table.is_refreshing)
+        self.assertTrue(replay_table2.is_refreshing)
+        sleep(1)
+        replayer.shutdown()
+
+        with self.assertRaises(DHError) as cm:
+            replay_table3 = replayer.add_table(hist_table, "DateTime")
+        self.assertIn("RuntimeError", cm.exception.root_cause)
+
+        with self.assertRaises(DHError) as cm:
+            replayer.start()
+        self.assertIn("RuntimeError", cm.exception.root_cause)
 
 
 if __name__ == '__main__':
