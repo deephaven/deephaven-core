@@ -56,4 +56,12 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      */
     BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
 
+    /**
+     * Request a partial subscription of the data limited by viewport or column set and populate a {@link BarrageTable}
+     * with the data that is received. Allows the viewport to be reversed.
+     *
+     * @return the {@code BarrageTable}
+     */
+    BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
+
 }

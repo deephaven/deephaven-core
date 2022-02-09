@@ -347,6 +347,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * notes on {@link Subscription} for details of the subscription life cycle.
      */
     private RowSet activeViewport = null;
+    private RowSet activeReverseViewport = null;
+
     private RowSet postSnapshotViewport = null;
     private final BitSet activeColumns = new BitSet();
     private final BitSet postSnapshotColumns = new BitSet();
@@ -454,11 +456,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
         RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
+        boolean reverseViewport = false; // treat the provided viewport as reversed (from end of set not beginning)
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
-                final @Nullable RowSet initialViewport) {
+                final @Nullable RowSet initialViewport,
+                final boolean reverseViewport) {
             this.options = options;
             this.listener = listener;
             this.logPrefix = "Sub{" + Integer.toHexString(System.identityHashCode(listener)) + "}: ";
@@ -466,6 +470,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.subscribedColumns = new BitSet();
             this.pendingColumns = subscribedColumns;
             this.pendingViewport = initialViewport;
+            this.reverseViewport = reverseViewport;
         }
 
         public boolean isViewport() {
@@ -484,7 +489,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     public void addSubscription(final StreamObserver<MessageView> listener,
             final BarrageSubscriptionOptions options,
             final @Nullable BitSet columnsToSubscribe,
-            final @Nullable RowSet initialViewport) {
+            final @Nullable RowSet initialViewport,
+            final boolean reverseViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
@@ -500,7 +506,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             } else {
                 cols = (BitSet) columnsToSubscribe.clone();
             }
-            final Subscription subscription = new Subscription(listener, options, cols, initialViewport);
+            final Subscription subscription = new Subscription(listener, options, cols, initialViewport, reverseViewport);
 
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)

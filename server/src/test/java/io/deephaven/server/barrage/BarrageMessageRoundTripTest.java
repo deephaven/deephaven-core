@@ -220,7 +220,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns,
-                    viewport == null ? null : viewport.copy());
+                    viewport == null ? null : viewport.copy(), false);
         }
 
         public void validate(final String msg, QueryTable expected) {

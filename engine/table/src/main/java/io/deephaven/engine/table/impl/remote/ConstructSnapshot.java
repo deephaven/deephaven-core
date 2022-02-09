@@ -539,9 +539,10 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot) {
+            @Nullable final RowSet positionsToSnapshot,
+            @Nullable final RowSet reversePositionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, makeSnapshotControl(false, table));
+                positionsToSnapshot, reversePositionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     /**
@@ -559,6 +560,7 @@ public class ConstructSnapshot {
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet positionsToSnapshot,
+            @Nullable final RowSet reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
@@ -567,7 +569,7 @@ public class ConstructSnapshot {
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
             final RowSet keysToSnapshot;
-            if (positionsToSnapshot == null) {
+            if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
                 try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {

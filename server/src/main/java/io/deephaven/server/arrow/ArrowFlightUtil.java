@@ -468,10 +468,14 @@ public class ArrowFlightUtil {
                                         hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
 
                                 final boolean hasViewport = snapshotRequest.viewportVector() != null;
-                                final RowSet viewport =
+                                RowSet viewport =
                                         hasViewport
                                                 ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
                                                 : null;
+
+                                final boolean reverseViewport = snapshotRequest.reverseViewport();
+
+                                // do we need to reverse the viewport here
 
                                 // get ourselves some data!
                                 final BarrageMessage msg =
@@ -604,7 +608,9 @@ public class ArrowFlightUtil {
                 final RowSet viewport =
                         isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport);
+                final boolean reverseViewport = subscriptionRequest.reverseViewport();
+
+                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport, reverseViewport);
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                     apply(request);
