@@ -2,7 +2,7 @@
 
 Throughout this demo notebook series, we show many of the ways to interact with real-time data in Deephaven. Here, we create some tables with fake data; in other notebooks, we show how to perform table operations on that data. Knowing how to create fake ticking tables is useful for familiarizing yourself with Deephaven, but also for working on proof of concepts without necessarily having a complete dataset.
 
-The following Python code contains a method that creates a table of random integers, characters, and booleans, with each row in the table also containing a timestamp.
+`timeTable` is a great tool to simulate real-time data. We can use this and Python's `random` library to generate some fake data.
 
 ```python
 from deephaven.TableTools import timeTable
@@ -17,6 +17,14 @@ def random_character():
 def random_boolean():
     return random.choice([True, False])
 
+table = timeTable("00:00:01").update("Number = (int)random_int()")\
+    .update("Character = (String)random_character()")\
+    .update("Boolean = (boolean)random_boolean()")
+```
+
+Let's wrap `timeTable` with a method and parameterize the time intervals and start times. This will allow us to reuse it throughout the notebooks.
+
+```python
 def create_random_table(time_interval, start_time=None):
     """
     Creates a Deephaven table containing rows of random integers from 1 to 99, random
