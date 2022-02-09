@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
@@ -336,12 +335,8 @@ public class TypedStaticChunkedOperatorAggregationStateManager {
         return IntStream.range(0, chunkTypes.length).mapToObj(x -> "eq(overflowKeySource" + x + ".getUnsafe(overflowLocation), v" + x + ")").collect(Collectors.joining(" && "));
     }
 
-    private static Class<?> chunkHasherByChunkType(ChunkType chunkType) {
-        try {
-            return Class.forName(CharChunkHasher.class.getCanonicalName().replace("Char", chunkType.name()));
-        } catch (ClassNotFoundException cnfe) {
-            throw new UncheckedDeephavenException(cnfe);
-        }
+    private static ClassName chunkHasherByChunkType(ChunkType chunkType) {
+        return ClassName.get(CharChunkHasher.class.getPackageName(), chunkType.name() + "ChunkHasher");
     }
 
     static Class<? extends ArrayBackedColumnSource> arraySourceType(ChunkType chunkType) {
