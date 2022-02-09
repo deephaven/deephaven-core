@@ -43,12 +43,9 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
         value_spec (KeyValueSpec): specifies how to map table column(s) to the Value field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this,
             or the constant KeyValueSpec.IGNORE
-        last_by_key_columns (bool): whether to publish only the last record for each unique key, the flag is ignored
-            when the key_spec is KeyValueSpec.IGNORE, default is False. When True and not ignored, it is expected that
-            the source table is an add-only stream, or the result of an aggregation; other kinds of refreshing tables
-            where rows can change position in arbitrary ways (eg, the result of sorting) is not allowed. A table
-            generated from a Kafka stream via kafka.consumer trivially satisfies this constraint. Any operations over
-            such a table that do not reorder rows also satisfy the constraint.
+        last_by_key_columns (bool): whether to publish only the last record for each unique key, Ignored if key_spec is
+            KeyValueSpec.IGNORE. Otherwise, if last_by_key_columns is true this method will internally perform a last_by
+            aggregation on table grouped by the input columns of key_spec and publish to Kafka from the result.
 
     Returns:
         a callback that, when invoked, stops publishing and cleans up subscriptions and resources.
