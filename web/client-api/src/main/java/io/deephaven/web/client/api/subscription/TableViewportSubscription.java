@@ -15,12 +15,19 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.DoGetRequest;
-import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.HasEventHandling;
+import io.deephaven.web.client.api.JsRangeSet;
+import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -282,17 +289,16 @@ public class TableViewportSubscription extends HasEventHandling {
                         makeUint8ArrayFromBitset(columnBitset));
                 double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
                         Collections.singleton(rows.getRange())));
-                double serializationOptionsOffset = BarrageSubscriptionOptions
-                        .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0,
-                                0);
+                double serializationOptionsOffset = BarrageSnapshotOptions
+                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(doGetRequest, state.getHandle().getTicket());
-                DoGetRequest.startDoGetRequest(doGetRequest);
-                DoGetRequest.addTicket(doGetRequest, tableTicketOffset);
-                DoGetRequest.addColumns(doGetRequest, columnsOffset);
-                DoGetRequest.addSubscriptionOptions(doGetRequest, serializationOptionsOffset);
-                DoGetRequest.addViewport(doGetRequest, viewportOffset);
-                doGetRequest.finish(DoGetRequest.endDoGetRequest(doGetRequest));
+                BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
+                BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
+                BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
+                BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
+                BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
+                doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
 
                 FlightData request = new FlightData();
                 request.setAppMetadata(
