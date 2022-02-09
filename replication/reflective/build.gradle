@@ -6,7 +6,8 @@ description 'Reflective Replicators: Source code generators and replicators with
 
 dependencies {
     implementation project(':replication-util'),
-            project(':engine-table')
+            project(':engine-table'),
+	    'com.squareup:javapoet:1.9.0'
 
     runtimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
@@ -16,4 +17,5 @@ dependencies {
 
 task replicateAll {
     dependsOn Tasks.registerMainExecTask(project, 'replicateHashTable', 'io.deephaven.replicators.ReplicateHashTable')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateTypedHashers', 'io.deephaven.replicators.ReplicateTypedHashers')
 }

@@ -11,6 +11,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
+import io.deephaven.engine.table.impl.by.typed.gen.TypedHashDispatcher;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
@@ -28,65 +29,28 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class TypedStaticChunkedOperatorAggregationStateManager {
-    private static final boolean USE_PREGENERATED_HASHERS = Configuration.getInstance().getBooleanWithDefault("TypedStaticChunkedOperatorAggregationStateManager.usePregeneratedHashers", false);
+    private static final boolean USE_PREGENERATED_HASHERS = Configuration.getInstance().getBooleanWithDefault("TypedStaticChunkedOperatorAggregationStateManager.usePregeneratedHashers", true);
 
     public static StaticChunkedOperatorAggregationStateManagerTypedBase make(ColumnSource<?>[] tableKeySources
             , int tableSize
             , double maximumLoadFactor
             , double targetLoadFactor) {
         final ChunkType[] chunkTypes = Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
-        if (USE_PREGENERATED_HASHERS && chunkTypes.length == 1) {
-            StaticChunkedOperatorAggregationStateManagerTypedBase pregeneratedHasher = getPregeneratedHasher(chunkTypes[0], tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+        if (USE_PREGENERATED_HASHERS) {
+            StaticChunkedOperatorAggregationStateManagerTypedBase pregeneratedHasher = TypedHashDispatcher.dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             if (pregeneratedHasher != null) {
                 return pregeneratedHasher;
             }
         }
 
-        final String className = "TypedHasher" + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
-        final String packageName = "io.deephaven.engine.table.impl.by.typed.gen";
+        final String className = hasherName(chunkTypes);
 
-        final TypeSpec.Builder hasherBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.FINAL).superclass(StaticChunkedOperatorAggregationStateManagerTypedBase.class);
-
-
-        CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
-        constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
-
-        final List<FieldSpec> keySources = new ArrayList<>();
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            Class<?> type = arraySourceType(chunkTypes[ii]);
-            keySources.add(FieldSpec.builder(type, "keySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
-            keySources.add(FieldSpec.builder(type, "overflowKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
-            constructorCodeBuilder.addStatement("this.keySource$L = ($T) super.keySources[$L]", ii, type, ii);
-            constructorCodeBuilder.addStatement("this.overflowKeySource$L = ($T) super.overflowKeySources[$L]", ii, type, ii);
-        }
-
-        keySources.forEach(hasherBuilder::addField);
-
-        final MethodSpec constructor = MethodSpec.constructorBuilder().addParameter(ColumnSource[].class, "tableKeySources").addParameter(int.class, "tableSize").addParameter(double.class, "maximumLoadFactor").addParameter(double.class, "targetLoadFactor").addModifiers(Modifier.PUBLIC)
-                .addCode(constructorCodeBuilder.build())
-                .build();
-
-        final MethodSpec build = createBuildMethod(chunkTypes);
-        final MethodSpec hash = createHashMethod(chunkTypes);
-        final MethodSpec rehashBucket = createRehashBucketMethod(chunkTypes);
-        final MethodSpec maybeMoveMainBucket = createMaybeMoveMainBucket(chunkTypes);
-        final MethodSpec findOverflow = createFindOverflow(chunkTypes);
-        final MethodSpec findPositionForKey = createFindPositionForKey(chunkTypes);
-
-        final TypeSpec hasher = hasherBuilder.addMethod(constructor).addMethod(build).addMethod(hash).addMethod(rehashBucket).addMethod(maybeMoveMainBucket).addMethod(findOverflow).addMethod(findPositionForKey).build();
-
-        final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher);
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            fileBuilder.addStaticImport(ClassName.get(CharComparisons.class.getPackageName(), chunkTypes[ii].name() + "Comparisons"), "eq");
-        }
-        JavaFile javaFile = fileBuilder.build();
+        JavaFile javaFile = generateHasher(chunkTypes, className, packageName());
 
         String [] javaStrings = javaFile.toString().split("\n");
-        final String javaString = Arrays.stream(javaStrings).skip(1).collect(Collectors.joining("\n"));
+        final String javaString = Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
 
-        System.out.println(javaString);
-
-        final Class<?> clazz = CompilerTools.compile(className, javaString, packageName);
+        final Class<?> clazz = CompilerTools.compile(className, javaString, packageName());
         if (!StaticChunkedOperatorAggregationStateManagerTypedBase.class.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Generated class is not a StaticChunkedOperatorAggregationStateManagerNonVector!");
         }
@@ -103,34 +67,59 @@ public class TypedStaticChunkedOperatorAggregationStateManager {
         return retVal;
     }
 
-    @Nullable
-    private static StaticChunkedOperatorAggregationStateManagerTypedBase getPregeneratedHasher(ChunkType chunkType1, ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
-        final ChunkType chunkType = chunkType1;
-        if (chunkType == ChunkType.Char) {
-            return new CharTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+    @NotNull
+    public static String packageName() {
+        return "io.deephaven.engine.table.impl.by.typed.gen";
+    }
+
+    @NotNull
+    public static String hasherName(ChunkType[] chunkTypes) {
+        return "TypedHasher" + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
+    }
+
+    @NotNull
+    public static JavaFile generateHasher(ChunkType[] chunkTypes, String className, String packageName) {
+        final TypeSpec.Builder hasherBuilder = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.FINAL).superclass(StaticChunkedOperatorAggregationStateManagerTypedBase.class);
+
+
+        CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
+        constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+        addKeySourceFields(chunkTypes, hasherBuilder, constructorCodeBuilder);
+
+        final MethodSpec constructor = MethodSpec.constructorBuilder().addParameter(ColumnSource[].class, "tableKeySources").addParameter(int.class, "tableSize").addParameter(double.class, "maximumLoadFactor").addParameter(double.class, "targetLoadFactor").addModifiers(Modifier.PUBLIC)
+                .addCode(constructorCodeBuilder.build())
+                .build();
+
+        final MethodSpec build = createBuildMethod(chunkTypes);
+        final MethodSpec hash = createHashMethod(chunkTypes);
+        final MethodSpec rehashBucket = createRehashBucketMethod(chunkTypes);
+        final MethodSpec maybeMoveMainBucket = createMaybeMoveMainBucket(chunkTypes);
+        final MethodSpec findOverflow = createFindOverflow(chunkTypes);
+        final MethodSpec findPositionForKey = createFindPositionForKey(chunkTypes);
+
+        final TypeSpec hasher = hasherBuilder.addMethod(constructor).addMethod(build).addMethod(hash).addMethod(rehashBucket).addMethod(maybeMoveMainBucket).addMethod(findOverflow).addMethod(findPositionForKey).build();
+
+        final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher);
+        fileBuilder.addFileComment("DO NOT EDIT THIS CLASS, AUTOMATICALLY GENERATED BY " + TypedStaticChunkedOperatorAggregationStateManager.class.getCanonicalName() + "\n" +
+                "Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending\n");
+
+        for (ChunkType chunkType : chunkTypes) {
+            fileBuilder.addStaticImport(ClassName.get(CharComparisons.class.getPackageName(), chunkType.name() + "Comparisons"), "eq");
         }
-        if (chunkType == ChunkType.Byte) {
-            return new ByteTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+        JavaFile javaFile = fileBuilder.build();
+        return javaFile;
+    }
+
+    private static void addKeySourceFields(ChunkType[] chunkTypes, TypeSpec.Builder hasherBuilder, CodeBlock.Builder constructorCodeBuilder) {
+        final List<FieldSpec> keySources = new ArrayList<>();
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            Class<?> type = arraySourceType(chunkTypes[ii]);
+            keySources.add(FieldSpec.builder(type, "keySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
+            keySources.add(FieldSpec.builder(type, "overflowKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
+            constructorCodeBuilder.addStatement("this.keySource$L = ($T) super.keySources[$L]", ii, type, ii);
+            constructorCodeBuilder.addStatement("this.overflowKeySource$L = ($T) super.overflowKeySources[$L]", ii, type, ii);
         }
-        if (chunkType == ChunkType.Short) {
-            return new ShortTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        if (chunkType == ChunkType.Int) {
-            return new IntTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        if (chunkType == ChunkType.Long) {
-            return new LongTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        if (chunkType == ChunkType.Float) {
-            return new FloatTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        if (chunkType == ChunkType.Double) {
-            return new DoubleTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        if (chunkType == ChunkType.Object) {
-            return new ObjectTypedHasher(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-        }
-        return null;
+        keySources.forEach(hasherBuilder::addField);
     }
 
     @NotNull
@@ -257,7 +246,7 @@ public class TypedStaticChunkedOperatorAggregationStateManager {
         }
 
         builder.addStatement("freeOverflowLocation(overflowLocation)");
-        builder.addStatement("mainInsertLocation = -1;");
+        builder.addStatement("mainInsertLocation = -1");
         builder.nextControlFlow("else");
         builder.addStatement("final int oldOverflowLocation = overflowLocationSource.getUnsafe(overflowTableLocation)");
         builder.addStatement("overflowLocationSource.set(overflowTableLocation, overflowLocation)");
