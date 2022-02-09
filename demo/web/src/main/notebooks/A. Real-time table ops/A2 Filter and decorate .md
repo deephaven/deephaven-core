@@ -2,19 +2,22 @@
 
 In our previous notebook, we showed how to create some tables with fake data. In this notebook, we show how to decorate and filter our data.
 
-Let's start by simulating a year's worth of daily measurements. This could represent something like stock prices, temperatures, etc.
+Let's start by simulating measurements of our values every minute. This could represent something like stock prices, temperatures, etc.
 
 ```python
-start_time = convertDateTime("2020-01-01T00:00:00 NY")
+from deephaven.DateTimeUtils import currentTime, expressionToNanos, minus
 
-time_offset = Period("1D")
-daily_data = create_random_table(365, start_time, time_offset)
+time_interval = expressionToNanos("T1M")
+offset = expressionToNanos("10D")
+now = currentTime()
+
+daily_data = create_random_table(time_interval, start_time=minus(now, offset))
 ```
 
 Now we decorate the data by adding its day of the week.
 
 ```python
-daily_data = daily_data.update("DayOfWeekInt = dayOfWeek(DateTime, TZ_NY)")
+daily_data = daily_data.update("DayOfWeekInt = dayOfWeek(Timestamp, TZ_NY)")
 ```
 
 Next, we convert the day of week to a string representation.
