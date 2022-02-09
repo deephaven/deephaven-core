@@ -129,6 +129,7 @@ public class CharTypedHasher extends StaticChunkedOperatorAggregationStateManage
         return false;
     }
 
+    @Override
     public int findPositionForKey(Object value) {
         final char key = TypeUtils.unbox((Character)value);
         int hash = hash(key);

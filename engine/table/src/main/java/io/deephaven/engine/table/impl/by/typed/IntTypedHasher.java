@@ -63,7 +63,6 @@ public class IntTypedHasher extends StaticChunkedOperatorAggregationStateManager
 
     @Override
     protected void rehashBucket(StaticAggHashHandler handler, int bucket, int destBucket, int bucketsToAdd) {
-
         final int position = stateSource.getUnsafe(bucket);
         if (position == EMPTY_RIGHT_VALUE) {
             return;

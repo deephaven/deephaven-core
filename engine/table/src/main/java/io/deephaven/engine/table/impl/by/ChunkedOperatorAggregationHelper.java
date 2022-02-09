@@ -128,7 +128,7 @@ public class ChunkedOperatorAggregationHelper {
                     reinterpretedKeySources, control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                     control.getTargetLoadFactor());
         } else {
-            if (USE_TYPED_STATE_MANAGER && reinterpretedKeySources.length == 1) {
+            if (USE_TYPED_STATE_MANAGER) {
                 stateManager = TypedStaticChunkedOperatorAggregationStateManager.make(reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());

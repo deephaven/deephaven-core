@@ -283,7 +283,7 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         );
     }
 
-    protected class StaticAggHashHandler implements HashHandler {
+    public class StaticAggHashHandler implements HashHandler {
         private final MutableInt outputPosition;
         private final WritableIntChunk<RowKeys> outputPositions;
 
@@ -390,8 +390,8 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 
     // mixin rehash
     public void doRehash(StaticAggHashHandler handler
-                         // region extra rehash arguments
-                         // endregion extra rehash arguments
+    // region extra rehash arguments
+    // endregion extra rehash arguments
     ) {
         while (rehashRequired()) {
             // region rehash loop start
