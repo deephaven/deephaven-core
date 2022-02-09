@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
@@ -36,12 +35,8 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 {
     // region constants
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
-    private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
     // endregion constants
-
-    static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
-    static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
 
     // region preamble variables
     // endregion preamble variables
@@ -50,21 +45,9 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     // @NullStateValue@ from \QQueryConstants.NULL_INT\E, @StateValueType@ from \Qint\E
     protected static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;
 
-    // mixin getStateValue
-    // region overflow pivot
-    // endregion overflow pivot
-    // endmixin getStateValue
-
     // the number of slots in our table
-    // mixin rehash
     private int tableSize;
-    // endmixin rehash
-    // altmixin rehash: private final int tableSize;
 
-    // how many key columns we have
-    private final int keyColumnCount;
-
-    // mixin rehash
     protected long numEntries = 0;
 
     /**
@@ -86,14 +69,13 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     // or if it falls below minimum load factor we will instead contract the table
-    private double targetLoadFactor = DEFAULT_TARGET_LOAD_FACTOR;
-    private double maximumLoadFactor = DEFAULT_MAX_LOAD_FACTOR;
+    private final double targetLoadFactor;
+    private final double maximumLoadFactor;
     // TODO: We do not yet support contraction
     // private final double minimumLoadFactor = 0.5;
 
     private final IntegerArraySource freeOverflowLocations = new IntegerArraySource();
     private int freeOverflowCount = 0;
-    // endmixin rehash
 
     // the keys for our hash entries
     protected final ArrayBackedColumnSource<?>[] keySources;
@@ -119,48 +101,29 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
             = new IntegerArraySource();
 
-    // the type of each of our key chunks
-    private final ChunkType[] keyChunkTypes;
-
-    // the operators for hashing and various equality methods
-    private final ChunkHasher[] chunkHashers;
-
     // region extra variables
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     // endregion extra variables
 
-    protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize
-    // region constructor arguments
-            , double maximumLoadFactor, double targetLoadFactor
-    // endregion constructor arguments
-    ) {
+    protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
         // region super
         // endregion super
-        keyColumnCount = tableKeySources.length;
 
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
-        // mixin rehash
         this.tableHashPivot = tableSize;
-        // endmixin rehash
 
-        overflowKeySources = new ArrayBackedColumnSource[keyColumnCount];
-        keySources = new ArrayBackedColumnSource[keyColumnCount];
+        overflowKeySources = new ArrayBackedColumnSource[tableKeySources.length];
+        keySources = new ArrayBackedColumnSource[tableKeySources.length];
 
-        keyChunkTypes = new ChunkType[keyColumnCount];
-        chunkHashers = new ChunkHasher[keyColumnCount];
-
-        for (int ii = 0; ii < keyColumnCount; ++ii) {
+        for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table
             keySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
-            keyChunkTypes[ii] = tableKeySources[ii].getChunkType();
 
             overflowKeySources[ii] =
                     ArrayBackedColumnSource.getMemoryColumnSource(CHUNK_SIZE, tableKeySources[ii].getType());
-
-            chunkHashers[ii] = ChunkHasher.makeHasher(keyChunkTypes[ii]);
         }
 
         // region constructor
@@ -174,7 +137,7 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     private void ensureCapacity(int tableSize) {
         stateSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
-        for (int ii = 0; ii < keyColumnCount; ++ii) {
+        for (int ii = 0; ii < keySources.length; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
         }
         // region ensureCapacity
@@ -182,13 +145,10 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     }
 
     private void ensureOverflowCapacity(final int locationsToAllocate) {
-        // mixin rehash
         if (freeOverflowCount >= locationsToAllocate) {
             return;
         }
         final int newCapacity = nextOverflowLocation + locationsToAllocate - freeOverflowCount;
-        // endmixin rehash
-        // altmixin rehash: final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
         overflowStateSource.ensureCapacity(newCapacity);
         // noinspection ForLoopReplaceableByForEach
@@ -248,7 +208,6 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
             buildContexts = makeGetContexts(buildSources, sharedBuildContext, chunkSize);
             // region build context constructor
             // endregion build context constructor
-            // endmixin rehash
         }
 
         private void resetSharedContexts() {
@@ -388,7 +347,6 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         // endregion post build loop
     }
 
-    // mixin rehash
     public void doRehash(StaticAggHashHandler handler
     // region extra rehash arguments
     // endregion extra rehash arguments
@@ -424,22 +382,10 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         return numEntries > (tableHashPivot * maximumLoadFactor) && tableHashPivot < MAX_TABLE_SIZE;
     }
 
-    void setTargetLoadFactor(final double targetLoadFactor) {
-        this.targetLoadFactor = targetLoadFactor;
-    }
-
-    void setMaximumLoadFactor(final double maximumLoadFactor) {
-        this.maximumLoadFactor = maximumLoadFactor;
-    }
-
-    // endmixin rehash
-
     protected int allocateOverflowLocation() {
-        // mixin rehash
         if (freeOverflowCount > 0) {
             return freeOverflowLocations.getUnsafe(--freeOverflowCount);
         }
-        // endmixin rehash
         return nextOverflowLocation++;
     }
 
@@ -458,18 +404,11 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     // region probe wrappers
     // endregion probe wrappers
 
-    protected int hashToTableLocation(
-            // mixin rehash
-            int pivotPoint,
-            // endmixin rehash
-            int hash) {
-        // altmixin rehash: final \
+    protected int hashToTableLocation(int pivotPoint, int hash) {
         int location = hash & (tableSize - 1);
-        // mixin rehash
         if (location >= pivotPoint) {
             location -= (tableSize >> 1);
         }
-        // endmixin rehash
         return location;
     }
 
@@ -478,8 +417,8 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     public ColumnSource[] getKeyHashTableSources() {
         final WritableRowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
-        final ColumnSource[] keyHashTableSources = new ColumnSource[keyColumnCount];
-        for (int kci = 0; kci < keyColumnCount; ++kci) {
+        final ColumnSource[] keyHashTableSources = new ColumnSource[keySources.length];
+        for (int kci = 0; kci < keySources.length; ++kci) {
             // noinspection unchecked
             keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot,
                     new HashTableColumnSource(keySources[kci], overflowKeySources[kci]));
