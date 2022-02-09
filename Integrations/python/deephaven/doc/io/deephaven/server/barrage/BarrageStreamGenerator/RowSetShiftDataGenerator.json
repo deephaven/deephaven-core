@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageStreamGenerator$RowSetShiftDataGenerator",
+ "methods": {},
+ "path": "io.deephaven.server.barrage.BarrageStreamGenerator.RowSetShiftDataGenerator",
+ "typeName": "class"
+}
