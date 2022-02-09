@@ -12,7 +12,6 @@ import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
@@ -28,7 +27,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -51,7 +49,7 @@ public
 // endregion class visibility
 class StaticChunkedOperatorAggregationStateManager
     // region extensions
-    implements ChunkedOperatorAggregationStateManager
+    implements OperatorAggregationStateManager
     // endregion extensions
 {
     // region constants

@@ -12,4 +12,6 @@ public interface HashHandler {
     void moveMain(int oldTableLocation, int newTableLocation);
 
     void promoteOverflow(int overflowLocation, int mainInsertLocation);
+
+    void nextChunk(int size);
 }

@@ -6,8 +6,9 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
-import io.deephaven.engine.table.impl.by.typed.TypedStaticChunkedOperatorAggregationStateManager;
+import io.deephaven.engine.table.impl.by.typed.TypeChunkedHashFactory;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -15,13 +16,18 @@ import java.io.IOException;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
-        final String packageName = TypedStaticChunkedOperatorAggregationStateManager.packageName();
+        generatePackage("staticagg", StaticChunkedOperatorAggregationStateManagerTypedBase.class);
+        generatePackage("incagg", IncrementalChunkedOperatorAggregationStateManagerTypedBase.class);
+    }
+
+    private static void generatePackage(String packageMiddle, Class<?> baseClass) throws IOException {
+        final String packageName = TypeChunkedHashFactory.packageName(packageMiddle);
         final File sourceRoot = new File("engine/table/src/main/java/");
 
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType");
-        addHasherParametersAndReturnType(singleDispatchBuilder);
+        addHasherParametersAndReturnType(singleDispatchBuilder, baseClass);
 
         singleDispatchBuilder.beginControlFlow("switch (chunkType)");
         singleDispatchBuilder.addCode("default:");
@@ -34,9 +40,9 @@ public class ReplicateTypedHashers {
                 continue;
             }
             array[0] = chunkType;
-            final String name = TypedStaticChunkedOperatorAggregationStateManager.hasherName(array);
+            final String name = TypeChunkedHashFactory.hasherName(array);
             final JavaFile javaFile =
-                    TypedStaticChunkedOperatorAggregationStateManager.generateHasher(array, name, packageName);
+                    TypeChunkedHashFactory.generateHasher(baseClass, array, name, packageName);
 
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
@@ -52,7 +58,7 @@ public class ReplicateTypedHashers {
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType0")
                 .addParameter(ChunkType.class, "chunkType1");
-        addHasherParametersAndReturnType(doubleDispatchBuilder);
+        addHasherParametersAndReturnType(doubleDispatchBuilder, baseClass);
 
         doubleDispatchBuilder.beginControlFlow("switch (chunkType0)");
         doubleDispatchBuilder.addCode("default:");
@@ -79,9 +85,9 @@ public class ReplicateTypedHashers {
 
                 array2[1] = chunkType1;
 
-                final String name = TypedStaticChunkedOperatorAggregationStateManager.hasherName(array2);
+                final String name = TypeChunkedHashFactory.hasherName(array2);
                 final JavaFile javaFile =
-                        TypedStaticChunkedOperatorAggregationStateManager.generateHasher(array2, name, packageName);
+                        TypeChunkedHashFactory.generateHasher(baseClass, array2, name, packageName);
 
                 System.out.println("Generating " + name + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);
@@ -97,7 +103,7 @@ public class ReplicateTypedHashers {
 
         final MethodSpec.Builder dispatchMethodBuilder = MethodSpec.methodBuilder("dispatch")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC);
-        addHasherParametersAndReturnType(dispatchMethodBuilder);
+        addHasherParametersAndReturnType(dispatchMethodBuilder, baseClass);
         dispatchMethodBuilder.addStatement(
                 "final ChunkType[] chunkTypes = $T.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);",
                 java.util.Arrays.class);
@@ -130,9 +136,9 @@ public class ReplicateTypedHashers {
         dispatcherFile.writeTo(sourceRoot);
     }
 
-    private static void addHasherParametersAndReturnType(MethodSpec.Builder doubleDispatchBuilder) {
+    private static void addHasherParametersAndReturnType(MethodSpec.Builder doubleDispatchBuilder, Class<?> returnType) {
         doubleDispatchBuilder
-                .returns(StaticChunkedOperatorAggregationStateManagerTypedBase.class)
+                .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
                 .addParameter(int.class, "tableSize")
                 .addParameter(double.class, "maximumLoadFactor")

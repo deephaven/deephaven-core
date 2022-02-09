@@ -3,27 +3,33 @@
  */
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.chunk.*;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.Nullable;
 
 public
-abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends OperatorAggregationStateManagerTypedBase
+abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase extends OperatorAggregationStateManagerTypedBase implements IncrementalOperatorAggregationStateManager
 {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
+    private final LongArraySource rowCountSource = new LongArraySource();
+    private final WritableRowRedirection resultIndexToHashSlot = new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
 
     // state variables that exist as part of the update
     private MutableInt outputPosition;
     private WritableIntChunk<RowKeys> outputPositions;
+    @Nullable WritableIntChunk<RowKeys> reincarnatedPositions;
 
-    protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
     }
 
@@ -50,6 +56,7 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends Ope
         outputPositions.set(chunkPosition, position);
         stateSource.set(tableLocation, position);
         outputPositionToHashSlot.set(position, tableLocation);
+        rowCountSource.set(position, 1L);
     }
 
     @Override
@@ -66,17 +73,33 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends Ope
     @Override
     public void nextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
+        rowCountSource.ensureCapacity(outputPosition.intValue() + size);
     }
 
     @Override
     public void doMainFound(int tableLocation, int chunkPosition) {
-        outputPositions.set(chunkPosition, stateSource.getUnsafe(tableLocation));
+        final int foundPosition = stateSource.getUnsafe(tableLocation);
+        outputPositions.set(chunkPosition, foundPosition);
+
+        final long oldRowCount = rowCountSource.getUnsafe(foundPosition);
+        Assert.geqZero(oldRowCount, "oldRowCount");
+        if (reincarnatedPositions != null && oldRowCount == 0) {
+            reincarnatedPositions.add(foundPosition);
+        }
+        rowCountSource.set(foundPosition, oldRowCount + 1);
     }
 
     @Override
     public void doOverflowFound(int overflowLocation, int chunkPosition) {
         final int position = overflowStateSource.getUnsafe(overflowLocation);
         outputPositions.set(chunkPosition, position);
+
+        final long oldRowCount = rowCountSource.getUnsafe(position);
+        Assert.geqZero(oldRowCount, "oldRowCount");
+        if (reincarnatedPositions != null && oldRowCount == 0) {
+            reincarnatedPositions.add(position);
+        }
+        rowCountSource.set(position, oldRowCount + 1);
     }
 
     @Override
@@ -85,6 +108,7 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends Ope
         overflowStateSource.set(overflowLocation, position);
         outputPositions.set(chunkPosition, position);
         outputPositionToHashSlot.set(position, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
+        rowCountSource.set(position, 1L);
     }
 
     @Override
@@ -99,4 +123,35 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends Ope
         }
         return keyHashTableSources;
     }
+
+    @Override
+    public void startTrackingPrevValues() {
+        resultIndexToHashSlot.startTrackingPrevValues();
+    }
+
+    @Override
+    public void setRowSize(int outputPosition, long size) {
+        rowCountSource.set(outputPosition, size);
+    }
+
+    @Override
+    public SafeCloseable makeProbeContext(ColumnSource<?>[] probeSources, long maxSize) {
+        return null;
+    }
+
+    @Override
+    public void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions) {
+        throw new UnsupportedOperationException();
+    }
+
 }

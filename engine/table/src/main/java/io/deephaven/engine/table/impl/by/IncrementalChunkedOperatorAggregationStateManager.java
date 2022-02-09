@@ -12,7 +12,6 @@ import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
@@ -28,7 +27,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -52,7 +50,7 @@ public
 // endregion class visibility
 class IncrementalChunkedOperatorAggregationStateManager
     // region extensions
-    implements ChunkedOperatorAggregationStateManager
+    implements IncrementalOperatorAggregationStateManager
     // endregion extensions
 {
     // region constants
@@ -249,7 +247,8 @@ class IncrementalChunkedOperatorAggregationStateManager
         buildTable((BuildContext) bc, rowSequence, sources, nextOutputPosition, outputPositions, null);
     }
 
-    void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+    @Override
+    public void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
         if (leftIndex.isEmpty()) {
             return;
         }
@@ -1282,18 +1281,20 @@ class IncrementalChunkedOperatorAggregationStateManager
     // endmixin prev
 
     // region probe wrappers
-    void remove(final ProbeContext pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
+    @Override
+    public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
         if (indexToRemove.isEmpty()) {
             return;
         }
-        decorationProbe(pc, indexToRemove, sources, true, true, outputPositions, emptiedPositions);
+        decorationProbe((ProbeContext)pc, indexToRemove, sources, true, true, outputPositions, emptiedPositions);
     }
 
-    void findModifications(final ProbeContext pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions)  {
+    @Override
+    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions)  {
         if (modifiedIndex.isEmpty()) {
             return;
         }
-        decorationProbe(pc, modifiedIndex, leftSources, false, false, outputPositions, null);
+        decorationProbe((ProbeContext)pc, modifiedIndex, leftSources, false, false, outputPositions, null);
     }
     // endregion probe wrappers
 
@@ -1420,7 +1421,8 @@ class IncrementalChunkedOperatorAggregationStateManager
         }
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
+    @Override
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
                                   // region makeProbeContext args
                                   // endregion makeProbeContext args
@@ -1697,11 +1699,13 @@ class IncrementalChunkedOperatorAggregationStateManager
         return true;
     }
 
-    void startTrackingPrevValues() {
+    @Override
+    public void startTrackingPrevValues() {
         resultIndexToHashSlot.startTrackingPrevValues();
     }
 
-    void setRowSize(int outputPosition, long size) {
+    @Override
+    public void setRowSize(int outputPosition, long size) {
         rowCountSource.set(outputPosition, size);
     }
     // endregion extraction functions
