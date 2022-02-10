@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.reading.ParseDenseStorageToColumn",
- "methods": {
-  "doit": ":param dsr: (io.deephaven.csv.densestorage.DenseStorageReader) - A reader for the input.\n:param dsrAlt: (io.deephaven.csv.densestorage.DenseStorageReader) - A second reader for the same input (used to perform the second pass over the data, if type\n        inference deems a second pass to be necessary).\n:param parsers: (java.util.List<io.deephaven.csv.parsers.Parser<?>>) - The set of parsers to try. If null, then Parsers.DEFAULT will be used.\n:param nullParser: (io.deephaven.csv.parsers.Parser<?>) - The Parser to use if parsers.size() > 1 but the column contains all null values. This is needed\n        as a backstop because otherwise type inference would have no way to choose among the multiple parsers.\n:param customTimeZoneParser: io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser\n:param nullValueLiteral: (java.lang.String) - If a cell text is equal to this value, it will be interpreted as the null value.\n        Typically set to the empty string.\n:param sinkFactory: (io.deephaven.csv.sinks.SinkFactory) - Factory that makes all of the Sinks of various types, used to consume the data we produce.\n:return: (io.deephaven.csv.sinks.Sink<?>) The Sink, provided by the caller's SinkFactory, that was selected to hold the column\n         data."
- },
- "path": "io.deephaven.csv.reading.ParseDenseStorageToColumn",
- "text": "The job of this class is to take a column of cell text, as prepared by ParseInputToDenseStorage, do type\n inference if appropriate, and parse the text into typed data.",
- "typeName": "class"
-}

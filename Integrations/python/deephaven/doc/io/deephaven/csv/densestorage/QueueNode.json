@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.QueueNode",
- "methods": {},
- "path": "io.deephaven.csv.densestorage.QueueNode",
- "text": "Linked list node that holds data for a DenseStorageWriter or DenseStorageReader. All fields are\n immutable except the \"next\" field. Synchronization for reading/writing the \"next\" field is managed by the\n DenseStorageWriter and DenseStorageReader.",
- "typeName": "class"
-}

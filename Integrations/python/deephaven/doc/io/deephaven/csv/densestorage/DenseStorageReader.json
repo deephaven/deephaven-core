@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.DenseStorageReader",
- "methods": {
-  "tryGetNextSlice": "Tries to get the next slice from one of the inner QueueReaders. Uses data in the 'controlReader' to figure out\n which QueueReader the next slice is coming from.\n\n:param bs: (io.deephaven.csv.containers.ByteSlice) - If the method returns true, the contents of this parameter will be updated.\n:return: (boolean) true if there is more data, and the ByteSlice has been populated. Otherwise, false."
- },
- "path": "io.deephaven.csv.densestorage.DenseStorageReader",
- "text": "Companion to the DenseStorageWriter. See the documentation there for details.",
- "typeName": "class"
-}
