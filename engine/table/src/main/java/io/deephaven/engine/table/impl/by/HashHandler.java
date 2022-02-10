@@ -14,4 +14,6 @@ public interface HashHandler {
     void promoteOverflow(int overflowLocation, int mainInsertLocation);
 
     void nextChunk(int size);
+
+    default void doMissing(int chunkPosition) {}
 }

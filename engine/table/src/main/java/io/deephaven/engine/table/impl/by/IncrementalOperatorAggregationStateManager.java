@@ -14,7 +14,7 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     void setRowSize(int outputPosition, long size);
 
-    void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions);
+    void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions);
 
     void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions);
 

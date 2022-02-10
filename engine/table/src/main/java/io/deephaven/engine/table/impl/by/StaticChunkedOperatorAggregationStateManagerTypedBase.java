@@ -14,16 +14,16 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-public
-abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends OperatorAggregationStateManagerTypedBase
-{
+public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
+        extends OperatorAggregationStateManagerTypedBase {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
     private MutableInt outputPosition;
     private WritableIntChunk<RowKeys> outputPositions;
 
-    protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
+            double maximumLoadFactor, double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
     }
 
@@ -85,6 +85,12 @@ abstract class StaticChunkedOperatorAggregationStateManagerTypedBase extends Ope
         overflowStateSource.set(overflowLocation, position);
         outputPositions.set(chunkPosition, position);
         outputPositionToHashSlot.set(position, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
+    }
+
+    @Override
+    public void doMissing(int chunkPosition) {
+        // we never probe
+        throw new IllegalStateException();
     }
 
     @Override

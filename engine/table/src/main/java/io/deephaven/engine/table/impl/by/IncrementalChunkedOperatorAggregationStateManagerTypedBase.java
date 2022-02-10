@@ -17,19 +17,21 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-public
-abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase extends OperatorAggregationStateManagerTypedBase implements IncrementalOperatorAggregationStateManager
-{
+public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
+        extends OperatorAggregationStateManagerTypedBase implements IncrementalOperatorAggregationStateManager {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     private final LongArraySource rowCountSource = new LongArraySource();
-    private final WritableRowRedirection resultIndexToHashSlot = new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
+    private final WritableRowRedirection resultIndexToHashSlot =
+            new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
 
     // state variables that exist as part of the update
     private MutableInt outputPosition;
     private WritableIntChunk<RowKeys> outputPositions;
-    @Nullable WritableIntChunk<RowKeys> reincarnatedPositions;
+    @Nullable
+    WritableIntChunk<RowKeys> reincarnatedPositions;
 
-    protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
+            int tableSize, double maximumLoadFactor, double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
     }
 
@@ -48,6 +50,7 @@ abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase extend
         this.outputPositions = outputPositions;
         outputPositions.setSize(rowSequence.intSize());
         buildTable((BuildContext) bc, rowSequence, sources);
+        reset();
     }
 
     @Override
@@ -112,6 +115,12 @@ abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase extend
     }
 
     @Override
+    public void doMissing(int chunkPosition) {
+        throw new IllegalStateException("Failed to find aggregation slot for key!");
+//        throw new IllegalStateException("Failed to find aggregation slot for key " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, chunkPosition));
+    }
+
+    @Override
     public ColumnSource[] getKeyHashTableSources() {
         final WritableRowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
@@ -140,18 +149,37 @@ abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase extend
     }
 
     @Override
-    public void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+    public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
+            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
+            WritableIntChunk<RowKeys> reincarnatedPositions) {
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+        this.outputPosition = nextOutputPosition;
+        this.outputPositions = outputPositions;
+        this.reincarnatedPositions = reincarnatedPositions;
+        outputPositions.setSize(rowSequence.intSize());
+        buildTable((BuildContext) bc, rowSequence, sources);
+        reset();
+    }
+
+    @Override
+    public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?>[] sources,
+            WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+        reset();
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?>[] leftSources,
+            WritableIntChunk<RowKeys> outputPositions) {
+        reset();
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions) {
-        throw new UnsupportedOperationException();
+    private void reset() {
+        this.outputPosition = null;
+        this.outputPositions = null;
+        this.reincarnatedPositions = null;
     }
-
 }

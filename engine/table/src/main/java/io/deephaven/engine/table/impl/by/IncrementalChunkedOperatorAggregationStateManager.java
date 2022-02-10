@@ -248,11 +248,11 @@ class IncrementalChunkedOperatorAggregationStateManager
     }
 
     @Override
-    public void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
-        if (leftIndex.isEmpty()) {
+    public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        buildTable((BuildContext) bc, leftIndex, sources, nextOutputPosition, outputPositions, reincarnatedPositions);
+        buildTable((BuildContext) bc, rowSequence, sources, nextOutputPosition, outputPositions, reincarnatedPositions);
     }
 
     @Override

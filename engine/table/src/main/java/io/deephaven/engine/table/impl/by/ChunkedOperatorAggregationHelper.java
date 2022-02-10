@@ -124,8 +124,9 @@ public class ChunkedOperatorAggregationHelper {
         final OperatorAggregationStateManager stateManager;
         final IncrementalOperatorAggregationStateManager incrementalStateManager;
         if (withView.isRefreshing()) {
-            if (USE_TYPED_STATE_MANAGER && false) {
-                stateManager = incrementalStateManager = TypeChunkedHashFactory.make("incagg", IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
+            if (USE_TYPED_STATE_MANAGER) {
+                stateManager = incrementalStateManager = TypeChunkedHashFactory.make("incagg",
+                        IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
@@ -135,7 +136,8 @@ public class ChunkedOperatorAggregationHelper {
             }
         } else {
             if (USE_TYPED_STATE_MANAGER) {
-                stateManager = TypeChunkedHashFactory.make("staticagg", StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
+                stateManager = TypeChunkedHashFactory.make("staticagg",
+                        StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             } else {
@@ -457,7 +459,8 @@ public class ChunkedOperatorAggregationHelper {
             slotsModifiedByOperator = toClose.add(WritableBooleanChunk.makeWritableChunk(chunkSize));
 
             if (buildSize > 0) {
-                bc = toClose.add(incrementalStateManager.makeAggregationStateBuildContext(reinterpretedKeySources, buildSize));
+                bc = toClose.add(
+                        incrementalStateManager.makeAggregationStateBuildContext(reinterpretedKeySources, buildSize));
                 reincarnatedSlots = toClose.add(WritableIntChunk.makeWritableChunk(buildChunkSize));
             } else {
                 bc = null;

@@ -19,10 +19,8 @@ import io.deephaven.util.QueryConstants;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 
-public
-abstract class OperatorAggregationStateManagerTypedBase
-        implements OperatorAggregationStateManager, HashHandler
-{
+public abstract class OperatorAggregationStateManagerTypedBase
+        implements OperatorAggregationStateManager, HashHandler {
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
 
@@ -89,7 +87,8 @@ abstract class OperatorAggregationStateManagerTypedBase
     // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
             = new IntegerArraySource();
 
-    protected OperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    protected OperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
+            double maximumLoadFactor, double targetLoadFactor) {
         // region super
         // endregion super
 
@@ -143,6 +142,8 @@ abstract class OperatorAggregationStateManagerTypedBase
 
     protected abstract void build(HashHandler handler, RowSequence rowSequence,
             Chunk<Values>[] sourceKeyChunks);
+
+    protected void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks) {}
 
     static class BuildContext implements Context {
         final int chunkSize;
@@ -208,8 +209,7 @@ abstract class OperatorAggregationStateManagerTypedBase
 
     protected void buildTable(final BuildContext bc,
             final RowSequence buildRows,
-            final ColumnSource<?>[] buildSources
-    ) {
+            final ColumnSource<?>[] buildSources) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];

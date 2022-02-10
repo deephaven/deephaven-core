@@ -136,7 +136,8 @@ public class ReplicateTypedHashers {
         dispatcherFile.writeTo(sourceRoot);
     }
 
-    private static void addHasherParametersAndReturnType(MethodSpec.Builder doubleDispatchBuilder, Class<?> returnType) {
+    private static void addHasherParametersAndReturnType(MethodSpec.Builder doubleDispatchBuilder,
+            Class<?> returnType) {
         doubleDispatchBuilder
                 .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
