@@ -199,7 +199,8 @@ public class TypeChunkedHashFactory {
                 if (element == Object.class) {
                     builder.addStatement("final $T v$L = va[$L]", element, ii, ii);
                 } else {
-                    builder.addStatement("final $T v$L = $T.unbox(($T)va[$L])", element, ii, TypeUtils.class, TypeUtils.getBoxedType(element), ii);
+                    builder.addStatement("final $T v$L = $T.unbox(($T)va[$L])", element, ii, TypeUtils.class,
+                            TypeUtils.getBoxedType(element), ii);
                 }
             }
         } else {
