@@ -335,8 +335,7 @@ public class DynamicTableWriter implements TableWriter {
             final int allocatedSize) {
         this.allocatedSize = 256;
         this.table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
-        final int nCols = sources.size();
-        ;
+        final int nCols = sources.size();;
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
         int ii = 0;
