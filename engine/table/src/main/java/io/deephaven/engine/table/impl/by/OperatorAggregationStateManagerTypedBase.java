@@ -12,7 +12,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.impl.HashTableAnnotations;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.util.QueryConstants;
@@ -24,11 +23,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
 
-    // region preamble variables
-    // endregion preamble variables
-
-    @HashTableAnnotations.EmptyStateValue
-    // @NullStateValue@ from \QQueryConstants.NULL_INT\E, @StateValueType@ from \Qint\E
     protected static final int EMPTY_STATE_VALUE = QueryConstants.NULL_INT;
 
     // the number of slots in our table
@@ -69,29 +63,17 @@ public abstract class OperatorAggregationStateManagerTypedBase
     protected final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @HashTableAnnotations.StateColumnSource
-    // @StateColumnSourceType@ from \QIntegerArraySource\E
-    protected final IntegerArraySource stateSource
-    // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
-            = new IntegerArraySource();
+    protected final IntegerArraySource stateSource = new IntegerArraySource();
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
     protected final ArrayBackedColumnSource<?>[] overflowKeySources;
     // the location of the next key in an overflow bucket
     protected final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the state source
-    @HashTableAnnotations.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QIntegerArraySource\E
-    protected final IntegerArraySource overflowStateSource
-    // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
-            = new IntegerArraySource();
+    protected final IntegerArraySource overflowStateSource = new IntegerArraySource();
 
     protected OperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
-        // region super
-        // endregion super
-
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
@@ -121,8 +103,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
         for (int ii = 0; ii < keySources.length; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
         }
-        // region ensureCapacity
-        // endregion ensureCapacity
     }
 
     private void ensureOverflowCapacity(final int locationsToAllocate) {
@@ -136,8 +116,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
         }
-        // region ensureOverflowCapacity
-        // endregion ensureOverflowCapacity
     }
 
     protected abstract void build(HashHandler handler, RowSequence rowSequence,

@@ -67,7 +67,7 @@ public interface HashHandler {
     void doMissing(int chunkPosition);
 
     /**
-     * When building, this operations is never invoked, extending this class makes it simpler to have a probe only
+     * When building, this operation is never invoked. Extending this class makes it simpler to have a build only
      * callback.
      */
     abstract class BuildHandler implements HashHandler {
@@ -78,7 +78,7 @@ public interface HashHandler {
     }
 
     /**
-     * When probing, these operations are never invoked, extending this class makes it simpler to have a probe only
+     * When probing, these operations are never invoked. Extending this class makes it simpler to have a probe only
      * callback.
      */
     abstract class ProbeHandler implements HashHandler {
