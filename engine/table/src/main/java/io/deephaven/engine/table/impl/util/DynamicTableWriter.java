@@ -225,7 +225,7 @@ public class DynamicTableWriter implements TableWriter {
         }
         for (final Map.Entry<String, Object> value : values.entrySet()) {
             // noinspection unchecked
-            getSetter(value.getKey()).setPermissive(value.getValue());
+            getSetter(value.getKey()).set(value.getValue());
         }
         writeRow();
         flush();
@@ -238,6 +238,47 @@ public class DynamicTableWriter implements TableWriter {
      */
     @SuppressWarnings("unused")
     public void logRow(Object... values) {
+        if (values.length != factoryMap.size()) {
+            throw new RuntimeException(
+                    "Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
+        }
+        for (int ii = 0; ii < values.length; ++ii) {
+            // noinspection unchecked
+            getSetter(columnNames[ii]).set(values[ii]);
+        }
+        writeRow();
+        flush();
+    }
+
+    /**
+     * This is a convenience function so that you can log an entire row at a time using a Map. You must specify all
+     * values in the setters map (and can't have any extras). The type of the value must be convertible (safely or
+     * unsafely) to the type of the permissive setter.
+     *
+     * @param values a map from column name to value for the row to be logged
+     */
+    @SuppressWarnings("unused")
+    public void logRowPermissive(Map<String, Object> values) {
+        if (values.size() != factoryMap.size()) {
+            throw new RuntimeException("Incompatible logRow call: " + values.keySet() + " != " + factoryMap.keySet());
+        }
+        for (final Map.Entry<String, Object> value : values.entrySet()) {
+            // noinspection unchecked
+            getSetter(value.getKey()).setPermissive(value.getValue());
+        }
+        writeRow();
+        flush();
+    }
+
+    /**
+     * This is a convenience function so that you can log an entire row at a time. You must specify all values in the
+     * setters map (and can't have any extras). The type of the value must be convertible (safely or unsafely) to the
+     * type of the permissive setter.
+     *
+     * @param values an array containing values to be logged, in order of the fields specified by the constructor
+     */
+    @SuppressWarnings("unused")
+    public void logRowPermissive(Object... values) {
         if (values.length != factoryMap.size()) {
             throw new RuntimeException(
                     "Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
@@ -380,7 +421,7 @@ public class DynamicTableWriter implements TableWriter {
         return new ObjectRowSetterImpl(buffer, type);
     }
 
-    private interface PermissiveRowSetter<T> extends RowSetter<T> {
+    public interface PermissiveRowSetter<T> extends RowSetter<T> {
         void setPermissive(T value);
     }
 

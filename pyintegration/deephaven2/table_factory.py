@@ -166,7 +166,7 @@ class DynamicTableWriter:
              DHError
         """
         try:
-            self._j_table_writer.logRow(*values)
+            self._j_table_writer.logRowPermissive(*values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e
 
