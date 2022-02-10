@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.util.Renderer",
- "methods": {
-  "renderList": "**Incompatible overloads text - text from the first overload:**\n\nRender the items in items to the StringBuilder sb, using the separator separator, and the\n custom rendering function renderer.\n\n*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param items: (java.lang.Iterable<T>) - The items.\n  :return: (java.lang.String) The items rendered as a String, separated by separator.\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param items: (java.lang.Iterable<T>) - The items.\n  :param separator: (java.lang.String) - The separator.\n  :return: (java.lang.String) The items rendered as a String, separated by separator.\n  \n*Overload 3*  \n  Note: Java generics information - <T>\n  \n  :param items: (java.lang.Iterable<T>) - The items.\n  :param separator: (java.lang.String) - The separator.\n  :param renderer: (java.util.function.Function<T,java.lang.String>) - The renderer.\n  :return: (java.lang.String) The items rendered as a String, separated by separator.\n  \n*Overload 4*  \n  Note: Java generics information - <T>\n  \n  :param sb: (java.lang.StringBuilder) - The destination where the text is written to.\n  :param items: (java.lang.Iterable<T>) - The items to render.\n  :param separator: (java.lang.String) - THe separator to use.\n  :param renderer: (java.util.function.Function<T,java.lang.String>) - A function that renders an individual item as a string.\n  :return: (java.lang.StringBuilder) The passed in StringBuilder sb."
- },
- "path": "io.deephaven.csv.util.Renderer",
- "text": "Utility class for rendering Iterables as a string. The methods can intersperse a comma (or other separator), and can\n take a custom function to render the item as a string.",
- "typeName": "class"
-}

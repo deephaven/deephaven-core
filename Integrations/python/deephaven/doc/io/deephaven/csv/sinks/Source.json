@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.sinks.Source",
- "methods": {
-  "read": "Read a chunk of data from the src data structure. Sample implementation: \n     int destIndex = 0;\n     for (long srcIndex = srcBegin; srcIndex != srcEnd; ++srcIndex) {\n         if (myColumn.hasNullAt(srcIndex)) {\n             isNull[destIndex] = true;\n         } else {\n             dest[destIndex] = myColumn.getValueAt(srcIndex);\n             isNull[destIndex] = false;\n         }\n         ++destIndex;\n     }\n     \n\n:param dest: (Source.TARRAY) - The chunk of data used to store values copied from the caller's column data structure.\n:param isNull: (boolean[]) - A boolean array, with the same range of valid elements. A \"true\" value at position i means\n        the the corresponding element refers to the \"null value\" of the source data structure. A \"false\" value\n        means that dest[i] should be interpreted normally.\n:param srcBegin: (long) - The inclusive start index of the source range.\n:param srcEnd: (long) - The exclusive end index of the source range."
- },
- "path": "io.deephaven.csv.sinks.Source",
- "text": "The system uses this interface to read from the caller's column data structures. The system only needs to do so in a\n limited number of cases, namely TARRAY = byte[], short[], int[], and long[]. This interface is used when the type\n inference process guesses wrong and needs a fast path to read the data back from a narrower data structure and write\n it to a wider one.",
- "typeName": "interface"
-}

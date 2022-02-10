@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.QueueWriter$IntWriter",
- "methods": {
-  "addInt": "Add an int to the queue.\n\n:param value: int\n:return: (boolean) true if the add caused a flush to happen prior to the write, false if no flush happened."
- },
- "path": "io.deephaven.csv.densestorage.QueueWriter.IntWriter",
- "text": "A QueueWriter specialized for ints.",
- "typeName": "class"
-}

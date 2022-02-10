@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.parsers.Parser$GlobalContext",
- "methods": {
-  "isNullCell": "Determines whether the iterator's current text contains the null value literal. The notion of \"null value\n literal\" is user-configurable on a per-column basis, but is typically the empty string.\n\n:param ih: io.deephaven.csv.parsers.IteratorHolder\n:return: (boolean) whether the iterator's current text contains the null cell.",
-  "nullChunk": ":return: boolean[]"
- },
- "path": "io.deephaven.csv.parsers.Parser.GlobalContext",
- "typeName": "class"
-}
