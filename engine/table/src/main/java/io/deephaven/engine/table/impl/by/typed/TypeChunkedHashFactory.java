@@ -118,7 +118,8 @@ public class TypeChunkedHashFactory {
         final MethodSpec findPositionForKey = createFindPositionForKey(chunkTypes);
 
         final TypeSpec hasher =
-                hasherBuilder.addMethod(constructor).addMethod(build).addMethod(probe).addMethod(hash).addMethod(rehashBucket)
+                hasherBuilder.addMethod(constructor).addMethod(build).addMethod(probe).addMethod(hash)
+                        .addMethod(rehashBucket)
                         .addMethod(maybeMoveMainBucket).addMethod(findOverflow).addMethod(findPositionForKey).build();
 
         final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher);

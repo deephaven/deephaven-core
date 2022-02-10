@@ -18,7 +18,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
-        extends OperatorAggregationStateManagerTypedBase implements IncrementalOperatorAggregationStateManager, HashHandler {
+        extends OperatorAggregationStateManagerTypedBase
+        implements IncrementalOperatorAggregationStateManager, HashHandler {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     private final LongArraySource rowCountSource = new LongArraySource();
     private final WritableRowRedirection resultIndexToHashSlot =
@@ -123,7 +124,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     @Override
     public void doMissing(int chunkPosition) {
         throw new IllegalStateException("Failed to find aggregation slot for key!");
-//        throw new IllegalStateException("Failed to find aggregation slot for key " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, chunkPosition));
+        // throw new IllegalStateException("Failed to find aggregation slot for key " +
+        // ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, chunkPosition));
     }
 
     @Override
@@ -172,7 +174,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         this.outputPositions.setSize(indexToRemove.intSize());
         this.emptiedPositions = emptiedPositions;
         this.emptiedPositions.setSize(0);
-        probeTable(removeHandler, (ProbeContext)pc, indexToRemove, true, sources);
+        probeTable(removeHandler, (ProbeContext) pc, indexToRemove, true, sources);
         reset();
     }
 
@@ -182,7 +184,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         reset();
         this.outputPositions = outputPositions;
         this.outputPositions.setSize(modifiedIndex.intSize());
-        probeTable(modifyHandler, (ProbeContext)pc, modifiedIndex, false, sources);
+        probeTable(modifyHandler, (ProbeContext) pc, modifiedIndex, false, sources);
         reset();
     }
 
@@ -223,8 +225,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
 
         @Override
-        public void nextChunk(int size) {
-        }
+        public void nextChunk(int size) {}
 
         @Override
         public void doMissing(int chunkPosition) {
@@ -246,8 +247,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         }
 
         @Override
-        public void nextChunk(int size) {
-        }
+        public void nextChunk(int size) {}
 
         @Override
         public void doMissing(int chunkPosition) {

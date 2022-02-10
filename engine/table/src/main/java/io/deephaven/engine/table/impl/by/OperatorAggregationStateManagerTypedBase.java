@@ -308,6 +308,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
         }
 
     }
+
     private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
             Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
