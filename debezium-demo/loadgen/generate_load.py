@@ -1,4 +1,4 @@
-import asyncio, barnum, json, math, random, requests, signal, time
+import asyncio, barnum, json, math, random, requests, signal, sys, time
 from mysql.connector import connect, Error
 from kafka import KafkaProducer
 
@@ -7,6 +7,7 @@ userSeedCount      = 10000
 itemSeedCount      = 1000
 purchaseGenPerSecond = 10
 pageviewGenPerSecond = 750
+logPeriodSeconds   = 10
 itemInventoryMin   = 1000
 itemInventoryMax   = 5000
 itemPriceMin       = 5
@@ -74,6 +75,7 @@ def initialize_database(connection, cursor):
         );"""
     )
     connection.commit()
+    print("Initializing shop database DONE.")
 
 def seed_data(connection, cursor):
     print("Seeding data...")
@@ -98,23 +100,37 @@ def seed_data(connection, cursor):
         ]
     )
     connection.commit()
+    print("Seeding data DONE.")
 
 def get_item_prices(cursor):
     print("Getting item ID and PRICEs...")
     cursor.execute("SELECT id, price FROM shop.items")
+    print("Getting item ID and PRICEs DONE.")
     return [(row[0], row[1]) for row in cursor]
 
-async def loop(f, period_s, stop_event):
+async def loop(action_fun, period_s, stop_event, action_desc):
     start = time.time()
     i = 0
+    time_last_log = start
+    sent_since_last_log = 0
+    print(f"Simulating {action_desc} actions with a period of {period_s} seconds.")
     while not stop_event.is_set():
-        f()
+        action_fun()
         i += 1
+        sent_since_last_log += 1
+        now = time.time()
+        time_last_log_diff = now - time_last_log
+        if time_last_log_diff >= logPeriodSeconds:
+            period_str = "%.1f" % time_last_log_diff
+            print(f"Simulated {sent_since_last_log} {action_desc} actions in the last {period_str} seconds.")
+            time_last_log = now
+            sent_since_last_log = 0
         sleep_s = start + i*period_s - time.time()
         await asyncio.sleep(sleep_s)
+    print(f"Stopped simulating {action_desc} actions.")
 
 async def loop_purchases(connection, cursor, producer, item_prices, period_s, stop_event):
-    print("Preparing to loop + seed kafka pageviews and purchases")
+    print("Preparing to loop + seed kafka pageviews and purchases.")
     def make_purchase():
         # Get a user and item to purchase
         purchase_item = random.choice(item_prices)
@@ -135,7 +151,7 @@ async def loop_purchases(connection, cursor, producer, item_prices, period_s, st
             )
         )
         connection.commit()
-    await loop(make_purchase, period_s, stop_event)
+    await loop(make_purchase, period_s, stop_event, "purchases")
 
 async def loop_random_pageviews(producer, period_s, stop_event):
     # Write random pageviews to products or profiles
@@ -144,7 +160,7 @@ async def loop_random_pageviews(producer, period_s, stop_event):
         rand_page_type = random.choice(['products', 'profiles'])
         target_id_max_range = itemSeedCount if rand_page_type == 'products' else userSeedCount
         producer.send(kafkaTopic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
-    await loop(make_random_pageview, period_s, stop_event)
+    await loop(make_random_pageview, period_s, stop_event, "pageviews")
 
 #Initialize Debezium (Kafka Connect Component)
 requests.post(('http://%s/connectors' % debeziumHostPort),
@@ -171,7 +187,7 @@ producer = KafkaProducer(bootstrap_servers=[kafkaHostPort],
                          json.dumps(x).encode('utf-8'))
 
 stop_event = asyncio.Event()
-event_loop = asyncio.get_event_loop()
+exit_code = 0
 
 try:
     with connect(
@@ -179,36 +195,34 @@ try:
         user=mysqlUser,
         password=mysqlPass,
     ) as connection:
-        async def shutdown():
-            print("Starting shut down")
-            print("Closing database connection")
-            connection.close()
-            event_loop.stop()
-        signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-        async def handle_signal(signal):
-            stop_event.set()
-        for s in signals:
-            loop.add_signal_handler(
-                s, lambda s=s: asyncio.create_task(handle_signal(s)))
         with connection.cursor() as cursor:
             initialize_database(connection, cursor)
             seed_data(connection, cursor)
             item_prices = get_item_prices(cursor)
-            tasks = asyncio.gather(
-                loop_purchases(connection, cursor, producer, item_prices, 1.0/purchaseGenPerSecond, stop_event),
-                loop_random_pageviews(producer, 1.0/pageviewGenPerSecond, stop_event)
-            )
-            print("Starting loops")
+            async def run_async():
+                event_loop = asyncio.get_event_loop()
+                signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+                async def handle_signal(signal):
+                    stop_event.set()
+                for s in signals:
+                    event_loop.add_signal_handler(
+                        s, lambda s=s: asyncio.create_task(handle_signal(s)))
+                await asyncio.gather(
+                    loop_purchases(connection, cursor, producer, item_prices, 1.0/purchaseGenPerSecond, stop_event),
+                    loop_random_pageviews(producer, 1.0/pageviewGenPerSecond, stop_event)
+                )
+            print("Starting simulation loops.")
             try:
-                event_loop.run_until_complete(tasks)
+                asyncio.run(run_async())
             except Error as e:
                 print(e)
+                exit_code = 1
             finally:
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
                 connection.close()
 except Error as e:
     print(e)
+    exit_code = 1
 finally:
     print("Finished.")
+
+sys.exit(exit_code)
