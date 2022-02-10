@@ -269,7 +269,7 @@ public class DynamicTableWriter implements TableWriter {
     @SuppressWarnings("unused")
     public void logRowPermissive(Map<String, Object> values) {
         if (values.size() != factoryMap.size()) {
-            throw new RuntimeException("Incompatible logRow call: " + values.keySet() + " != " + factoryMap.keySet());
+            throw new RuntimeException("Incompatible logRowPermissive call: " + values.keySet() + " != " + factoryMap.keySet());
         }
         for (final Map.Entry<String, Object> value : values.entrySet()) {
             // noinspection unchecked
@@ -290,7 +290,7 @@ public class DynamicTableWriter implements TableWriter {
     public void logRowPermissive(Object... values) {
         if (values.length != factoryMap.size()) {
             throw new RuntimeException(
-                    "Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
+                    "Incompatible logRowPermissive call, values length=" + values.length + " != setters=" + factoryMap.size());
         }
         for (int ii = 0; ii < values.length; ++ii) {
             // noinspection unchecked
