@@ -158,9 +158,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         }
         this.outputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
+        this.outputPositions.setSize(rowSequence.intSize());
         this.reincarnatedPositions = reincarnatedPositions;
-        reincarnatedPositions.setSize(0);
-        outputPositions.setSize(rowSequence.intSize());
+        this.reincarnatedPositions.setSize(0);
         buildTable(this, (BuildContext) bc, rowSequence, sources);
         reset();
     }
@@ -169,8 +169,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
         this.outputPositions = outputPositions;
+        this.outputPositions.setSize(indexToRemove.intSize());
         this.emptiedPositions = emptiedPositions;
-        emptiedPositions.setSize(0);
+        this.emptiedPositions.setSize(0);
         probeTable(removeHandler, (ProbeContext)pc, indexToRemove, true, sources);
         reset();
     }
@@ -180,6 +181,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
             WritableIntChunk<RowKeys> outputPositions) {
         reset();
         this.outputPositions = outputPositions;
+        this.outputPositions.setSize(modifiedIndex.intSize());
         probeTable(modifyHandler, (ProbeContext)pc, modifiedIndex, false, sources);
         reset();
     }
