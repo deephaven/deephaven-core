@@ -20,10 +20,12 @@ import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
@@ -169,6 +171,13 @@ public class DynamicTableWriter implements TableWriter {
         return primaryRow.getSetter(name);
     }
 
+    private RowSetterImpl getSetter(final int columnIndex) {
+        if (primaryRow == null) {
+            primaryRow = new DynamicTableRow();
+        }
+        return primaryRow.setters[columnIndex];
+    }
+
     @Override
     public void setFlags(Row.Flags flags) {
         if (primaryRow == null) {
@@ -244,7 +253,7 @@ public class DynamicTableWriter implements TableWriter {
         }
         for (int ii = 0; ii < values.length; ++ii) {
             // noinspection unchecked
-            getSetter(columnNames[ii]).set(values[ii]);
+            getSetter(ii).set(values[ii]);
         }
         writeRow();
         flush();
@@ -285,7 +294,7 @@ public class DynamicTableWriter implements TableWriter {
         }
         for (int ii = 0; ii < values.length; ++ii) {
             // noinspection unchecked
-            getSetter(columnNames[ii]).setPermissive(values[ii]);
+            getSetter(ii).setPermissive(values[ii]);
         }
         writeRow();
         flush();
@@ -346,6 +355,7 @@ public class DynamicTableWriter implements TableWriter {
             final IntFunction<Class<?>> columnTypes,
             final Map<String, Object> constantValues,
             final int allocatedSize) {
+
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
@@ -744,14 +754,21 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     private class DynamicTableRow implements Row {
+        private final RowSetterImpl[] setters;
+        private final Map<String, RowSetterImpl> columnToSetter;
         private int row = lastSetterRow;
-        private final Map<String, RowSetterImpl> setterMap = factoryMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
         private Row.Flags flags = Flags.SingleRow;
+
+        private DynamicTableRow() {
+            setters = Arrays.stream(columnNames).map(cn -> factoryMap.get(cn).apply(row)).toArray(RowSetterImpl[]::new);
+            final MutableInt ci = new MutableInt(0);
+            columnToSetter = Arrays.stream(columnNames)
+                    .collect(Collectors.toMap(Function.identity(), cn -> setters[ci.getAndIncrement()]));
+        }
 
         @Override
         public PermissiveRowSetter getSetter(final String name) {
-            final PermissiveRowSetter rowSetter = setterMap.get(name);
+            final PermissiveRowSetter rowSetter = columnToSetter.get(name);
             if (rowSetter == null) {
                 if (table.getColumnSourceMap().containsKey(name)) {
                     throw new RuntimeException("Column has a constant value, can not get setter " + name);
@@ -784,7 +801,7 @@ public class DynamicTableWriter implements TableWriter {
             // Before this row can be returned to a pool, it needs to ensure that the underlying sources
             // are appropriately sized to avoid race conditions.
             ensureCapacity(row);
-            setterMap.values().forEach((x) -> x.setRow(row));
+            columnToSetter.values().forEach((x) -> x.setRow(row));
 
             // The row has been committed during set, we just need to insert the row keys into the table
             if (doFlush) {
