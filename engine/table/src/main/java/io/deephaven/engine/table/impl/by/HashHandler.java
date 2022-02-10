@@ -59,6 +59,16 @@ public interface HashHandler {
     void doMissing(int chunkPosition);
 
     /**
+     * When building, this operations is never invoked, extending this class makes it simpler to have a probe only callback.
+     */
+    abstract class BuildHandler implements HashHandler {
+        @Override
+        public void doMissing(int chunkPosition) {
+            throw new IllegalStateException();
+        }
+    }
+
+    /**
      * When probing, these operations are never invoked, extending this class makes it simpler to have a probe only callback.
      */
     abstract class ProbeHandler implements HashHandler {

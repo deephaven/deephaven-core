@@ -15,27 +15,17 @@ import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.jetbrains.annotations.Nullable;
 
+/**
+ * Incremental aggregation state manager that is extended by code generated typed hashers.
+ */
 public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         extends OperatorAggregationStateManagerTypedBase
-        implements IncrementalOperatorAggregationStateManager, HashHandler {
+        implements IncrementalOperatorAggregationStateManager {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     private final LongArraySource rowCountSource = new LongArraySource();
     private final WritableRowRedirection resultIndexToHashSlot =
             new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
-    private final HashHandler removeHandler = new RemoveHandler();
-    private final HashHandler modifyHandler = new ModifyHandler();
-
-    // state variables that exist as part of the update
-    @Nullable
-    private MutableInt outputPosition;
-    @Nullable
-    private WritableIntChunk<RowKeys> outputPositions;
-    @Nullable
-    WritableIntChunk<RowKeys> reincarnatedPositions;
-    @Nullable
-    WritableIntChunk<RowKeys> emptiedPositions;
 
     protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             int tableSize, double maximumLoadFactor, double targetLoadFactor) {
@@ -53,79 +43,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         if (rowSequence.isEmpty()) {
             return;
         }
-        this.outputPosition = nextOutputPosition;
-        this.outputPositions = outputPositions;
         outputPositions.setSize(rowSequence.intSize());
-        buildTable(this, (BuildContext) bc, rowSequence, sources);
-        reset();
-    }
-
-    @Override
-    public void doMainInsert(int tableLocation, int chunkPosition) {
-        int position = outputPosition.getAndIncrement();
-        outputPositions.set(chunkPosition, position);
-        stateSource.set(tableLocation, position);
-        outputPositionToHashSlot.set(position, tableLocation);
-        rowCountSource.set(position, 1L);
-    }
-
-    @Override
-    public void moveMain(int oldTableLocation, int newTableLocation) {
-        final int position = stateSource.getUnsafe(newTableLocation);
-        outputPositionToHashSlot.set(position, newTableLocation);
-    }
-
-    @Override
-    public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
-        outputPositionToHashSlot.set(stateSource.getUnsafe(mainInsertLocation), mainInsertLocation);
-    }
-
-    @Override
-    public void nextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
-        rowCountSource.ensureCapacity(outputPosition.intValue() + size);
-    }
-
-    @Override
-    public void doMainFound(int tableLocation, int chunkPosition) {
-        final int outputPosition = stateSource.getUnsafe(tableLocation);
-        outputPositions.set(chunkPosition, outputPosition);
-
-        final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
-        Assert.geqZero(oldRowCount, "oldRowCount");
-        if (reincarnatedPositions != null && oldRowCount == 0) {
-            reincarnatedPositions.add(outputPosition);
-        }
-        rowCountSource.set(outputPosition, oldRowCount + 1);
-    }
-
-    @Override
-    public void doOverflowFound(int overflowLocation, int chunkPosition) {
-        final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
-        outputPositions.set(chunkPosition, outputPosition);
-
-        final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
-        Assert.geqZero(oldRowCount, "oldRowCount");
-        if (reincarnatedPositions != null && oldRowCount == 0) {
-            reincarnatedPositions.add(outputPosition);
-        }
-        rowCountSource.set(outputPosition, oldRowCount + 1);
-    }
-
-    @Override
-    public void doOverflowInsert(int overflowLocation, int chunkPosition) {
-        final int position = outputPosition.getAndIncrement();
-        overflowStateSource.set(overflowLocation, position);
-        outputPositions.set(chunkPosition, position);
-        outputPositionToHashSlot.set(position, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
-        rowCountSource.set(position, 1L);
-    }
-
-    @Override
-    public void doMissing(int chunkPosition) {
-        throw new IllegalStateException("Failed to find aggregation slot for key!");
-        // throw new IllegalStateException("Failed to find aggregation slot for key " +
-        // ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, chunkPosition));
+        buildTable(new AddInitialHandler(nextOutputPosition, outputPositions), (BuildContext) bc, rowSequence, sources);
     }
 
     @Override
@@ -158,44 +77,141 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         if (rowSequence.isEmpty()) {
             return;
         }
-        this.outputPosition = nextOutputPosition;
-        this.outputPositions = outputPositions;
-        this.outputPositions.setSize(rowSequence.intSize());
-        this.reincarnatedPositions = reincarnatedPositions;
-        this.reincarnatedPositions.setSize(0);
-        buildTable(this, (BuildContext) bc, rowSequence, sources);
-        reset();
+        outputPositions.setSize(rowSequence.intSize());
+        buildTable(new AddUpdateHandler(nextOutputPosition, outputPositions, reincarnatedPositions), (BuildContext) bc, rowSequence, sources);
     }
 
     @Override
     public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
-        this.outputPositions = outputPositions;
-        this.outputPositions.setSize(indexToRemove.intSize());
-        this.emptiedPositions = emptiedPositions;
-        this.emptiedPositions.setSize(0);
-        probeTable(removeHandler, (ProbeContext) pc, indexToRemove, true, sources);
-        reset();
+        outputPositions.setSize(indexToRemove.intSize());
+        probeTable(new RemoveHandler(outputPositions, emptiedPositions), (ProbeContext) pc, indexToRemove, true, sources);
     }
 
     @Override
     public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions) {
-        reset();
-        this.outputPositions = outputPositions;
-        this.outputPositions.setSize(modifiedIndex.intSize());
-        probeTable(modifyHandler, (ProbeContext) pc, modifiedIndex, false, sources);
-        reset();
+        outputPositions.setSize(modifiedIndex.intSize());
+        probeTable(new ModifyHandler(outputPositions), (ProbeContext) pc, modifiedIndex, false, sources);
     }
 
-    private void reset() {
-        this.outputPosition = null;
-        this.outputPositions = null;
-        this.reincarnatedPositions = null;
-        this.emptiedPositions = null;
+    private abstract class AddHandler extends HashHandler.BuildHandler {
+        final MutableInt outputPosition;
+        final WritableIntChunk<RowKeys> outputPositions;
+
+        public AddHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+            this.outputPosition = nextOutputPosition;
+            this.outputPositions = outputPositions;
+        }
+
+        @Override
+        public void doMainInsert(int tableLocation, int chunkPosition) {
+            int position = outputPosition.getAndIncrement();
+            outputPositions.set(chunkPosition, position);
+            stateSource.set(tableLocation, position);
+            outputPositionToHashSlot.set(position, tableLocation);
+            rowCountSource.set(position, 1L);
+        }
+
+        @Override
+        public void moveMain(int oldTableLocation, int newTableLocation) {
+            final int position = stateSource.getUnsafe(newTableLocation);
+            outputPositionToHashSlot.set(position, newTableLocation);
+        }
+
+        @Override
+        public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
+            outputPositionToHashSlot.set(stateSource.getUnsafe(mainInsertLocation), mainInsertLocation);
+        }
+
+        @Override
+        public void nextChunk(int size) {
+            outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
+            rowCountSource.ensureCapacity(outputPosition.intValue() + size);
+        }
+
+        @Override
+        public void doOverflowInsert(int overflowLocation, int chunkPosition) {
+            final int position = outputPosition.getAndIncrement();
+            overflowStateSource.set(overflowLocation, position);
+            outputPositions.set(chunkPosition, position);
+            outputPositionToHashSlot.set(position, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
+            rowCountSource.set(position, 1L);
+        }
+    }
+
+    class AddInitialHandler extends AddHandler {
+        public AddInitialHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
+            super(nextOutputPosition, outputPositions);
+        }
+
+        @Override
+        public void doMainFound(int tableLocation, int chunkPosition) {
+            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            outputPositions.set(chunkPosition, outputPosition);
+
+            final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
+            Assert.geqZero(oldRowCount, "oldRowCount");
+            rowCountSource.set(outputPosition, oldRowCount + 1);
+        }
+
+        @Override
+        public void doOverflowFound(int overflowLocation, int chunkPosition) {
+            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            outputPositions.set(chunkPosition, outputPosition);
+
+            final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
+            Assert.geqZero(oldRowCount, "oldRowCount");
+            rowCountSource.set(outputPosition, oldRowCount + 1);
+        }
+    }
+
+    class AddUpdateHandler extends AddHandler {
+        private final WritableIntChunk<RowKeys> reincarnatedPositions;
+
+        public AddUpdateHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+            super(nextOutputPosition, outputPositions);
+            this.reincarnatedPositions = reincarnatedPositions;
+            reincarnatedPositions.setSize(0);
+        }
+
+        @Override
+        public void doMainFound(int tableLocation, int chunkPosition) {
+            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            outputPositions.set(chunkPosition, outputPosition);
+
+            final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
+            Assert.geqZero(oldRowCount, "oldRowCount");
+            if (oldRowCount == 0) {
+                reincarnatedPositions.add(outputPosition);
+            }
+            rowCountSource.set(outputPosition, oldRowCount + 1);
+        }
+
+        @Override
+        public void doOverflowFound(int overflowLocation, int chunkPosition) {
+            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            outputPositions.set(chunkPosition, outputPosition);
+
+            final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
+            Assert.geqZero(oldRowCount, "oldRowCount");
+            if (oldRowCount == 0) {
+                reincarnatedPositions.add(outputPosition);
+            }
+            rowCountSource.set(outputPosition, oldRowCount + 1);
+        }
     }
 
     class RemoveHandler extends HashHandler.ProbeHandler {
+        private final WritableIntChunk<RowKeys> outputPositions;
+        private final WritableIntChunk<RowKeys> emptiedPositions;
+
+        public RemoveHandler(WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+            this.outputPositions = outputPositions;
+            this.emptiedPositions = emptiedPositions;
+            this.emptiedPositions.setSize(0);
+        }
+
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
             final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
@@ -234,6 +250,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     }
 
     class ModifyHandler extends HashHandler.ProbeHandler {
+        private final WritableIntChunk<RowKeys> outputPositions;
+
+        public ModifyHandler(WritableIntChunk<RowKeys> outputPositions) {
+            this.outputPositions = outputPositions;
+        }
+
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
             final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
