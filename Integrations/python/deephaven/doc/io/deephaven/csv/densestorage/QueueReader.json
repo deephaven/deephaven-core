@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.QueueReader",
- "methods": {},
- "path": "io.deephaven.csv.densestorage.QueueReader",
- "text": "Companion to the QueueWriter. See the documentation there for details.",
- "typeName": "class"
-}

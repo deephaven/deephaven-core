@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.csv.reading.TypeConverter",
- "methods": {
-  "copy": "Note: Java generics information - <TARRAY,\nUARRAY>\n\n:param source: io.deephaven.csv.sinks.Source<TARRAY>\n:param dest: io.deephaven.csv.sinks.Sink<UARRAY>\n:param srcBegin: long\n:param srcEnd: long\n:param destBegin: long\n:param srcChunk: TARRAY\n:param destChunk: UARRAY\n:param isNull: boolean[]"
- },
- "path": "io.deephaven.csv.reading.TypeConverter",
- "typeName": "class"
-}
