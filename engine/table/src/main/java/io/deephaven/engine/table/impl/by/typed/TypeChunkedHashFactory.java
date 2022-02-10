@@ -28,10 +28,26 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * Produces typed hashers (e.g. byte * object * float * double * int) on-demand or using a set of pregenerated and
+ * precompiled hashers for singleton and pairs of types.
+ */
 public class TypeChunkedHashFactory {
     private static final boolean USE_PREGENERATED_HASHERS =
             Configuration.getInstance().getBooleanWithDefault("TypeChunkedHashFactory.usePregeneratedHashers", true);
 
+    /**
+     * Produce a hasher for the given base class and column sources.
+     *
+     * @param packageMiddle the intermediate package name for this hasher (e.g. "staticagg" or "incagg")
+     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase)} that the generated hasher extends from
+     * @param tableKeySources the key sources
+     * @param tableSize the initial table size
+     * @param maximumLoadFactor the maximum load factor of the for the table
+     * @param targetLoadFactor the load factor that we will rehash to
+     * @param <T> the base class
+     * @return an instantiated hasher
+     */
     public static <T> T make(String packageMiddle, Class<T> baseClass, ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         final ChunkType[] chunkTypes =

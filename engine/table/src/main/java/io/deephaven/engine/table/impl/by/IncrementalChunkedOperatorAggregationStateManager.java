@@ -1290,11 +1290,11 @@ class IncrementalChunkedOperatorAggregationStateManager
     }
 
     @Override
-    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions)  {
+    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions)  {
         if (modifiedIndex.isEmpty()) {
             return;
         }
-        decorationProbe((ProbeContext)pc, modifiedIndex, leftSources, false, false, outputPositions, null);
+        decorationProbe((ProbeContext)pc, modifiedIndex, sources, false, false, outputPositions, null);
     }
     // endregion probe wrappers
 

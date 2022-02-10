@@ -7,6 +7,9 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+/**
+ * Interface for ChunkedOperatorAggregationHelper to process incremental updates.
+ */
 public interface IncrementalOperatorAggregationStateManager extends OperatorAggregationStateManager {
     SafeCloseable makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 
@@ -18,5 +21,5 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions);
 
-    void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions);
+    void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions);
 }
