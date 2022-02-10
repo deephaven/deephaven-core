@@ -168,8 +168,8 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
   @Override
   public int findPositionForKey(Object value) {
     final Object [] va = (Object[])value;
-    final Object v0 = (Object)va[0];
-    final Object v1 = (Object)va[1];
+    final Object v0 = va[0];
+    final Object v1 = va[1];
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);

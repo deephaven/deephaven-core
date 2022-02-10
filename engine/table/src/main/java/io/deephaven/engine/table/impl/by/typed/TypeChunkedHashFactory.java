@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateMa
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -195,7 +196,11 @@ public class TypeChunkedHashFactory {
             builder.addStatement("final Object [] va = (Object[])value");
             for (int ii = 0; ii < chunkTypes.length; ++ii) {
                 final Class<?> element = elementType(chunkTypes[ii]);
-                builder.addStatement("final $T v$L = ($T)va[$L]", element, ii, element, ii);
+                if (element == Object.class) {
+                    builder.addStatement("final $T v$L = va[$L]", element, ii, ii);
+                } else {
+                    builder.addStatement("final $T v$L = $T.unbox(($T)va[$L])", element, ii, TypeUtils.class, TypeUtils.getBoxedType(element), ii);
+                }
             }
         } else {
             final Class<?> element = elementType(chunkTypes[0]);

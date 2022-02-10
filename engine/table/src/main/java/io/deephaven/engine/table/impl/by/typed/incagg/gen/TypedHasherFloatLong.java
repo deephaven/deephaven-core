@@ -19,6 +19,9 @@ import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationSt
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
+import java.lang.Float;
+import java.lang.Long;
 import java.lang.Object;
 import java.lang.Override;
 
@@ -172,8 +175,8 @@ final class TypedHasherFloatLong extends IncrementalChunkedOperatorAggregationSt
   @Override
   public int findPositionForKey(Object value) {
     final Object [] va = (Object[])value;
-    final float v0 = (float)va[0];
-    final long v1 = (long)va[1];
+    final float v0 = TypeUtils.unbox((Float)va[0]);
+    final long v1 = TypeUtils.unbox((Long)va[1]);
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);

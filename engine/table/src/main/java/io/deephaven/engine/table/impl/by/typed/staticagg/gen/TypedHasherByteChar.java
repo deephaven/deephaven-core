@@ -19,6 +19,9 @@ import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateMa
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
+import java.lang.Byte;
+import java.lang.Character;
 import java.lang.Object;
 import java.lang.Override;
 
@@ -172,8 +175,8 @@ final class TypedHasherByteChar extends StaticChunkedOperatorAggregationStateMan
   @Override
   public int findPositionForKey(Object value) {
     final Object [] va = (Object[])value;
-    final byte v0 = (byte)va[0];
-    final char v1 = (char)va[1];
+    final byte v0 = TypeUtils.unbox((Byte)va[0]);
+    final char v1 = TypeUtils.unbox((Character)va[1]);
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);

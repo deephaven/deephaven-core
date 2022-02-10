@@ -19,6 +19,9 @@ import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateMa
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
+import java.lang.Character;
+import java.lang.Double;
 import java.lang.Object;
 import java.lang.Override;
 
@@ -172,8 +175,8 @@ final class TypedHasherCharDouble extends StaticChunkedOperatorAggregationStateM
   @Override
   public int findPositionForKey(Object value) {
     final Object [] va = (Object[])value;
-    final char v0 = (char)va[0];
-    final double v1 = (double)va[1];
+    final char v0 = TypeUtils.unbox((Character)va[0]);
+    final double v1 = TypeUtils.unbox((Double)va[1]);
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);
