@@ -396,9 +396,9 @@ public class ChunkedOperatorAggregationHelper {
                             : 0;
             final long probeSizeWithoutShifts = Math.max(upstream.removed().size(), probeSizeForModifies);
             final long probeSize =
-                    Math.toIntExact(processShifts
+                    processShifts
                             ? UpdateSizeCalculator.chunkSize(probeSizeWithoutShifts, upstream.shifted(), CHUNK_SIZE)
-                            : probeSizeWithoutShifts);
+                            : probeSizeWithoutShifts;
             buildChunkSize = chunkSize(buildSize);
             probeChunkSize = chunkSize(probeSize);
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
