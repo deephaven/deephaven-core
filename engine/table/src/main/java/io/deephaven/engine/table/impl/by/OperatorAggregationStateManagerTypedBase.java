@@ -49,8 +49,8 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     // or if it falls below minimum load factor we will instead contract the table
-    private final double targetLoadFactor;
     private final double maximumLoadFactor;
+    private final double targetLoadFactor;
     // TODO: We do not yet support contraction
     // private final double minimumLoadFactor = 0.5;
 
@@ -59,17 +59,20 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
     // the keys for our hash entries
     protected final ArrayBackedColumnSource<?>[] keySources;
-    // the location of any overflow entry in this bucket
+    // the location of the first overflow entry in this bucket, parallel to keySources
     protected final IntegerArraySource overflowLocationSource = new IntegerArraySource();
-
-    // we are going to also reuse this for our state entry, so that we do not need additional storage
+    // the state value for the bucket, parallel to keySources (the state is an output row key for the aggregation)
     protected final IntegerArraySource stateSource = new IntegerArraySource();
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
+
+    // the overflow chains, logically a linked list using integer pointers into these three parallel array sources
     protected final ArrayBackedColumnSource<?>[] overflowKeySources;
-    // the location of the next key in an overflow bucket
+    // the location of the next key in an overflow bucket, parallel with overflowKeySources
     protected final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
+    // the state value for an overflow entry, parallel with overflowKeySources (the state is an output row key for the
+    // aggregation)
     protected final IntegerArraySource overflowStateSource = new IntegerArraySource();
 
     protected OperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
@@ -80,15 +83,14 @@ public abstract class OperatorAggregationStateManagerTypedBase
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         this.tableHashPivot = tableSize;
 
-        overflowKeySources = new ArrayBackedColumnSource[tableKeySources.length];
         keySources = new ArrayBackedColumnSource[tableKeySources.length];
+        overflowKeySources = new ArrayBackedColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table
             keySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
-
             overflowKeySources[ii] =
-                    ArrayBackedColumnSource.getMemoryColumnSource(CHUNK_SIZE, tableKeySources[ii].getType());
+                    ArrayBackedColumnSource.getMemoryColumnSource(0, tableKeySources[ii].getType());
         }
 
         this.maximumLoadFactor = maximumLoadFactor;
@@ -136,16 +138,13 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
     static class BuildOrProbeContext implements Context {
         final int chunkSize;
-
         final SharedContext sharedContext;
         final ChunkSource.GetContext[] getContexts;
-
-        final boolean haveSharedContexts;
 
         private BuildOrProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             Assert.gtZero(chunkSize, "chunkSize");
             this.chunkSize = chunkSize;
-            haveSharedContexts = buildSources.length > 1;
+            final boolean haveSharedContexts = buildSources.length > 1;
             if (haveSharedContexts) {
                 sharedContext = SharedContext.makeSharedContext();
             } else {
@@ -156,17 +155,15 @@ public abstract class OperatorAggregationStateManagerTypedBase
         }
 
         void resetSharedContexts() {
-            if (!haveSharedContexts) {
-                return;
+            if (sharedContext != null) {
+                sharedContext.reset();
             }
-            sharedContext.reset();
         }
 
         void closeSharedContexts() {
-            if (!haveSharedContexts) {
-                return;
+            if (sharedContext != null) {
+                sharedContext.close();
             }
-            sharedContext.close();
         }
 
         @Override
@@ -194,9 +191,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
 
             while (rsIt.hasMore()) {
-                // we reset early to avoid carrying around state for old RowSequence which can't be reused.
-                bc.resetSharedContexts();
-
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 ensureOverflowCapacity(chunkOk.intSize());
                 handler.nextChunk(chunkOk.intSize());
@@ -204,9 +198,11 @@ public abstract class OperatorAggregationStateManagerTypedBase
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 build(handler, chunkOk, sourceKeyChunks);
-            }
 
-            doRehash(handler);
+                bc.resetSharedContexts();
+
+                doRehash(handler);
+            }
         }
     }
 
@@ -221,9 +217,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
             final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
 
             while (rsIt.hasMore()) {
-                // we reset early to avoid carrying around state for old RowSequence which can't be reused.
-                pc.resetSharedContexts();
-
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
                 ensureOverflowCapacity(chunkOk.intSize());
                 handler.nextChunk(chunkOk.intSize());
@@ -235,6 +228,8 @@ public abstract class OperatorAggregationStateManagerTypedBase
                 }
 
                 probe(handler, chunkOk, sourceKeyChunks);
+
+                pc.resetSharedContexts();
             }
         }
     }
@@ -243,18 +238,18 @@ public abstract class OperatorAggregationStateManagerTypedBase
         while (rehashRequired()) {
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
-                ensureCapacity(tableSize);
             }
 
             final long targetBuckets = Math.min(MAX_TABLE_SIZE, (long) (numEntries / targetLoadFactor));
             final int bucketsToAdd = Math.max(1, (int) Math.min(targetBuckets, tableSize) - tableHashPivot);
+
+            ensureCapacity(tableHashPivot + bucketsToAdd);
 
             freeOverflowLocations.ensureCapacity(freeOverflowCount + bucketsToAdd, false);
 
             for (int ii = 0; ii < bucketsToAdd; ++ii) {
                 int checkBucket = tableHashPivot + ii - (tableSize >> 1);
                 int destBucket = tableHashPivot + ii;
-                // if we were more complicated, we would need a handler for promotion and moving slots
                 rehashBucket(handler, checkBucket, destBucket, bucketsToAdd);
             }
             tableHashPivot += bucketsToAdd;
@@ -284,7 +279,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
-
     }
 
     private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
