@@ -27,47 +27,82 @@ class DoExchange extends FlightExampleBase {
     protected void execute(FlightSession flight) throws Exception {
 
 
-        try (final FlightStream stream = flight.stream(ticket)) {
+        ///////////////////////////////////////////////
+        // Passing case
+        ///////////////////////////////////////////////
 
-            ///////////////////////////////////////////////
-            // Passing case
-            ///////////////////////////////////////////////
+        // create a BarrageMessage byte array equating to BarrageMessage.NONE
 
-            // create a BarrageMessage byte array
+        byte[] cmd = new byte[] {12, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 100, 112, 104, 110};
 
-            byte[] cmd = new byte[] {12, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 100, 112, 104, 110};
+        FlightDescriptor fd = FlightDescriptor.command(cmd);
 
-            FlightDescriptor fd = FlightDescriptor.command(cmd);
+        try (FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-            try (FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd);
-                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+            // BarrageSnapshotRequest for ticket 's/timetable'
+            cmd = new byte[] {16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 8, 0, 7, 0, 12, 0, 10, 0, 0, 0, 0, 0, 0, 7, 100, 112,
+                    104, 110, 4, 0, 0, 0, 52, 0, 0, 0, 16, 0, 0, 0, 12, 0, 12, 0, 4, 0, 0, 0, 0, 0, 8, 0, 12, 0, 0, 0,
+                    8, 0, 0, 0, 24, 0, 0, 0, 11, 0, 0, 0, 115, 47, 116, 105, 109, 101, 116, 97, 98, 108, 101, 0, 4, 0,
+                    4, 0, 4, 0, 0, 0};
 
-                cmd = new byte[] {16, 0, 0, 0, 0, 0, 10, 0, 16, 0, 8, 0, 7, 0, 12, 0, 10, 0, 0, 0, 0, 0, 0, 7, 100, 112,
-                        104, 110, 4, 0, 0, 0, 48, 0, 0, 0, 16, 0, 0, 0, 12, 0, 12, 0, 4, 0, 0, 0, 0, 0, 8, 0, 12, 0, 0,
-                        0, 8, 0, 0, 0, 20, 0, 0, 0, 5, 0, 0, 0, 101, 1, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 4, 0, 0, 0};
+            ArrowBuf data = allocator.buffer(cmd.length);
+            data.writeBytes(cmd);
+            erw.getWriter().putMetadata(data);
+            erw.getWriter().completed();
 
-                ArrowBuf data = allocator.buffer(cmd.length);
-                data.writeBytes(cmd);
-                erw.getWriter().putMetadata(data);
-                // erw.getWriter().putNext();
-
-                // erw.getWriter().completed();
-                Thread.sleep(1000000000);
+            // read everything from the server
+            while (erw.getReader().next()) {
+                // NOP
             }
 
-            ///////////////////////////////////////////////
-            // Failing case 1 - null FlightDescriptor
-            ///////////////////////////////////////////////
+            System.out.println(erw.getReader().getSchema().toString());
+            System.out.println(erw.getReader().getRoot().contentToTSVString());
 
-            // cmd = new byte[] { };
-            // fd = FlightDescriptor.command(cmd);
-            // try ( FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd)) {
-            //
-            // // now pass in a Barrage
-            //
-            // erw.getWriter().completed();
-            // }
+            Thread.sleep(2000);
+
         }
+
+        ///////////////////////////////////////////////
+        // Failing case 1 - empty FlightDescriptor
+        ///////////////////////////////////////////////
+
+        cmd = new byte[0];
+        fd = FlightDescriptor.command(cmd);
+        try (FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd);
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+            cmd = new byte[0];
+
+            ArrowBuf data = allocator.buffer(cmd.length);
+            data.writeBytes(cmd);
+            erw.getWriter().putMetadata(data);
+
+            erw.getWriter().completed();
+
+            Thread.sleep(2000);
+        }
+
+        ///////////////////////////////////////////////
+        // Failing case 2 - valid FlightDescriptor, empty metadata
+        ///////////////////////////////////////////////
+
+        cmd = new byte[] {12, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 100, 112, 104, 110};
+        fd = FlightDescriptor.command(cmd);
+        try (FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd);
+             final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+            cmd = new byte[0];
+
+            ArrowBuf data = allocator.buffer(cmd.length);
+            data.writeBytes(cmd);
+            erw.getWriter().putMetadata(data);
+
+            erw.getWriter().completed();
+
+            Thread.sleep(2000);
+        }
+
     }
 
     public static void main(String[] args) {

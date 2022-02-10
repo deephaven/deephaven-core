@@ -377,22 +377,22 @@ public class ArrowFlightUtil {
 
                     isFirstMsg = false;
 
-                    // // test whether the FlightDescriptor cmd field contains a valid Barrage object
-                    // try {
-                    // // verify the bytes contain a valid Barrage object
-                    // BarrageMessageWrapper bmw = BarrageMessageWrapper
-                    // .getRootAsBarrageMessageWrapper(
-                    // message.descriptor.getCmd().asReadOnlyByteBuffer());
-                    //
-                    // if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
-                    // || bmw.msgType() != BarrageMessageType.None) {
-                    // throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    // myPrefix + "expected BarrageMessageType.None");
-                    // }
-                    // } catch (IndexOutOfBoundsException exception) {
-                    // throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    // myPrefix + "received a message with malformed metadata in FlightDescriptor");
-                    // }
+                    // test whether the FlightDescriptor cmd field contains a valid Barrage object
+                    try {
+                        // verify the bytes contain a valid Barrage object
+                        BarrageMessageWrapper bmw = BarrageMessageWrapper
+                                .getRootAsBarrageMessageWrapper(
+                                        message.descriptor.getCmd().asReadOnlyByteBuffer());
+
+                        if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
+                                || bmw.msgType() != BarrageMessageType.None) {
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    myPrefix + "expected BarrageMessageType.None");
+                        }
+                    } catch (IndexOutOfBoundsException exception) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                myPrefix + "received a message with malformed metadata in FlightDescriptor");
+                    }
                 }
             });
         }
