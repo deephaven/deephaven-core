@@ -345,55 +345,54 @@ public class ArrowFlightUtil {
                     // case, identify a valid Barrage connection by verifying the `FlightDescriptor.CMD` field contains
                     // a valid `BarrageMessageWrapper` object
 
-                    if (message.app_metadata != null) {
-                        // handle the different message types that can come over DoExchange
-                        if (requestHandler == null) {
-                            // handle the different message types that can come over DoExchange
-                            switch (message.app_metadata.msgType()) {
-                                case BarrageMessageType.BarrageSubscriptionRequest:
-                                    requestHandler = new SubscriptionRequestHandler();
-                                    break;
-                                case BarrageMessageType.BarrageSnapshotRequest:
-                                    requestHandler = new SnapshotRequestHandler();
-                                    break;
-                                default:
-                                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                            myPrefix + "received a message with unhandled BarrageMessageType");
-                            }
-                        }
-
+                    if (requestHandler != null) {
                         // rely on the handler to verify message type
                         requestHandler.handleMessage(message);
+                        return;
+                    }
 
-                    } else {
-                        // handle the possible error cases
-                        if (!isFirstMsg) {
-                            // only the first messages is allowed to have null metadata
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    myPrefix + "failed to receive Barrage request metadata");
-                        } else {
-                            // test whether the FlightDescriptor cmd field contains a valid Barrage object
-                            try {
-                                // verify the bytes contain a valid Barrage object
-                                BarrageMessageWrapper bmw = BarrageMessageWrapper
-                                        .getRootAsBarrageMessageWrapper(
-                                                message.descriptor.getCmd().asReadOnlyByteBuffer());
-
-                                if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
-                                        || bmw.msgType() != BarrageMessageType.None) {
-                                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                            myPrefix + "expected BarrageMessageType.None");
-                                }
-                            } catch (NullPointerException nullPointerException) {
+                    if (message.app_metadata != null) {
+                        // handle the different message types that can come over DoExchange
+                        switch (message.app_metadata.msgType()) {
+                            case BarrageMessageType.BarrageSubscriptionRequest:
+                                requestHandler = new SubscriptionRequestHandler();
+                                break;
+                            case BarrageMessageType.BarrageSnapshotRequest:
+                                requestHandler = new SnapshotRequestHandler();
+                                break;
+                            default:
                                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        myPrefix + "received a message with malformed metadata in FlightDescriptor");
-
-                            }
+                                        myPrefix + "received a message with unhandled BarrageMessageType");
                         }
+                        requestHandler.handleMessage(message);
+                        return;
+                    }
+
+                    // handle the possible error cases
+                    if (!isFirstMsg) {
+                        // only the first messages is allowed to have null metadata
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                myPrefix + "failed to receive Barrage request metadata");
                     }
 
                     isFirstMsg = false;
 
+                    // // test whether the FlightDescriptor cmd field contains a valid Barrage object
+                    // try {
+                    // // verify the bytes contain a valid Barrage object
+                    // BarrageMessageWrapper bmw = BarrageMessageWrapper
+                    // .getRootAsBarrageMessageWrapper(
+                    // message.descriptor.getCmd().asReadOnlyByteBuffer());
+                    //
+                    // if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
+                    // || bmw.msgType() != BarrageMessageType.None) {
+                    // throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    // myPrefix + "expected BarrageMessageType.None");
+                    // }
+                    // } catch (IndexOutOfBoundsException exception) {
+                    // throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    // myPrefix + "received a message with malformed metadata in FlightDescriptor");
+                    // }
                 }
             });
         }
