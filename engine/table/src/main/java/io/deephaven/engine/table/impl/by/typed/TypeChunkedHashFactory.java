@@ -206,7 +206,7 @@ public class TypeChunkedHashFactory {
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
         builder.addStatement("final int positionValue = stateSource.getUnsafe(tableLocation)");
-        builder.beginControlFlow("if (positionValue == EMPTY_RIGHT_VALUE)");
+        builder.beginControlFlow("if (positionValue == EMPTY_STATE_VALUE)");
         builder.addStatement("return -1");
         builder.endControlFlow();
 
@@ -244,11 +244,11 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int mainInsertLocation");
         builder.beginControlFlow("if (location == bucket)");
         builder.addStatement("mainInsertLocation = destBucket");
-        builder.addStatement("stateSource.set(destBucket, EMPTY_RIGHT_VALUE)");
+        builder.addStatement("stateSource.set(destBucket, EMPTY_STATE_VALUE)");
         builder.nextControlFlow("else");
         builder.addStatement("mainInsertLocation = bucket");
         builder.addStatement("stateSource.set(destBucket, stateSource.getUnsafe(bucket))");
-        builder.addStatement("stateSource.set(bucket, EMPTY_RIGHT_VALUE)");
+        builder.addStatement("stateSource.set(bucket, EMPTY_STATE_VALUE)");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("keySource$L.set(destBucket, v$L)", ii, ii);
             builder.addStatement("keySource$L.set(bucket, $L)", ii, elementNull(chunkTypes[ii]));
@@ -266,7 +266,7 @@ public class TypeChunkedHashFactory {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("final int position = stateSource.getUnsafe(bucket)");
-        builder.beginControlFlow("if (position == EMPTY_RIGHT_VALUE)");
+        builder.beginControlFlow("if (position == EMPTY_STATE_VALUE)");
         builder.addStatement("return");
         builder.endControlFlow();
 
@@ -337,7 +337,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE)");
+        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)");
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("keySource$L.set(tableLocation, v$L)", ii, ii);
@@ -392,7 +392,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE)");
+        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)");
         builder.addStatement("handler.doMissing(chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");

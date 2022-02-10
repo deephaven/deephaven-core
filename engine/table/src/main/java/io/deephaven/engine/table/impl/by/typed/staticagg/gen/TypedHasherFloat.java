@@ -37,7 +37,7 @@ final class TypedHasherFloat extends StaticChunkedOperatorAggregationStateManage
       final float v0 = keyChunk0.get(chunkPosition);
       final int hash = hash(v0);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         numEntries++;
         keySource0.set(tableLocation, v0);
         handler.doMainInsert(tableLocation, chunkPosition);
@@ -64,7 +64,7 @@ final class TypedHasherFloat extends StaticChunkedOperatorAggregationStateManage
       final float v0 = keyChunk0.get(chunkPosition);
       final int hash = hash(v0);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         handler.doMissing(chunkPosition);
       } else if (eq(keySource0.getUnsafe(tableLocation), v0)) {
         handler.doMainFound(tableLocation, chunkPosition);
@@ -85,7 +85,7 @@ final class TypedHasherFloat extends StaticChunkedOperatorAggregationStateManage
   @Override
   protected void rehashBucket(HashHandler handler, int bucket, int destBucket, int bucketsToAdd) {
     final int position = stateSource.getUnsafe(bucket);
-    if (position == EMPTY_RIGHT_VALUE) {
+    if (position == EMPTY_STATE_VALUE) {
       return;
     }
     int mainInsertLocation = maybeMoveMainBucket(handler, bucket, destBucket, bucketsToAdd);
@@ -122,11 +122,11 @@ final class TypedHasherFloat extends StaticChunkedOperatorAggregationStateManage
     final int mainInsertLocation;
     if (location == bucket) {
       mainInsertLocation = destBucket;
-      stateSource.set(destBucket, EMPTY_RIGHT_VALUE);
+      stateSource.set(destBucket, EMPTY_STATE_VALUE);
     } else {
       mainInsertLocation = bucket;
       stateSource.set(destBucket, stateSource.getUnsafe(bucket));
-      stateSource.set(bucket, EMPTY_RIGHT_VALUE);
+      stateSource.set(bucket, EMPTY_STATE_VALUE);
       keySource0.set(destBucket, v0);
       keySource0.set(bucket, QueryConstants.NULL_FLOAT);
       handler.moveMain(bucket, destBucket);
@@ -152,7 +152,7 @@ final class TypedHasherFloat extends StaticChunkedOperatorAggregationStateManage
     int hash = hash(v0);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);
-    if (positionValue == EMPTY_RIGHT_VALUE) {
+    if (positionValue == EMPTY_STATE_VALUE) {
       return -1;
     }
     if (eq(keySource0.getUnsafe(tableLocation), v0)) {

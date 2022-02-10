@@ -49,7 +49,7 @@ final class TypedHasherObjectDouble extends IncrementalChunkedOperatorAggregatio
       final double v1 = keyChunk1.get(chunkPosition);
       final int hash = hash(v0, v1);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         numEntries++;
         keySource0.set(tableLocation, v0);
         keySource1.set(tableLocation, v1);
@@ -80,7 +80,7 @@ final class TypedHasherObjectDouble extends IncrementalChunkedOperatorAggregatio
       final double v1 = keyChunk1.get(chunkPosition);
       final int hash = hash(v0, v1);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         handler.doMissing(chunkPosition);
       } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
         handler.doMainFound(tableLocation, chunkPosition);
@@ -102,7 +102,7 @@ final class TypedHasherObjectDouble extends IncrementalChunkedOperatorAggregatio
   @Override
   protected void rehashBucket(HashHandler handler, int bucket, int destBucket, int bucketsToAdd) {
     final int position = stateSource.getUnsafe(bucket);
-    if (position == EMPTY_RIGHT_VALUE) {
+    if (position == EMPTY_STATE_VALUE) {
       return;
     }
     int mainInsertLocation = maybeMoveMainBucket(handler, bucket, destBucket, bucketsToAdd);
@@ -143,11 +143,11 @@ final class TypedHasherObjectDouble extends IncrementalChunkedOperatorAggregatio
     final int mainInsertLocation;
     if (location == bucket) {
       mainInsertLocation = destBucket;
-      stateSource.set(destBucket, EMPTY_RIGHT_VALUE);
+      stateSource.set(destBucket, EMPTY_STATE_VALUE);
     } else {
       mainInsertLocation = bucket;
       stateSource.set(destBucket, stateSource.getUnsafe(bucket));
-      stateSource.set(bucket, EMPTY_RIGHT_VALUE);
+      stateSource.set(bucket, EMPTY_STATE_VALUE);
       keySource0.set(destBucket, v0);
       keySource0.set(bucket, null);
       keySource1.set(destBucket, v1);
@@ -177,7 +177,7 @@ final class TypedHasherObjectDouble extends IncrementalChunkedOperatorAggregatio
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
     final int positionValue = stateSource.getUnsafe(tableLocation);
-    if (positionValue == EMPTY_RIGHT_VALUE) {
+    if (positionValue == EMPTY_STATE_VALUE) {
       return -1;
     }
     if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {

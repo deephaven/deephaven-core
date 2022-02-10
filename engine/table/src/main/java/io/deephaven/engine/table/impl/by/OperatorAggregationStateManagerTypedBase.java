@@ -29,7 +29,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
     @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \QQueryConstants.NULL_INT\E, @StateValueType@ from \Qint\E
-    protected static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;
+    protected static final int EMPTY_STATE_VALUE = QueryConstants.NULL_INT;
 
     // the number of slots in our table
     private int tableSize;
