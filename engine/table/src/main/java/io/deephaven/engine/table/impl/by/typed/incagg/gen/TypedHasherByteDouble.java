@@ -22,7 +22,7 @@ import io.deephaven.util.QueryConstants;
 import java.lang.Object;
 import java.lang.Override;
 
-public final class TypedHasherByteDouble extends IncrementalChunkedOperatorAggregationStateManagerTypedBase {
+final class TypedHasherByteDouble extends IncrementalChunkedOperatorAggregationStateManagerTypedBase {
   private final ByteArraySource keySource0;
 
   private final ByteArraySource overflowKeySource0;

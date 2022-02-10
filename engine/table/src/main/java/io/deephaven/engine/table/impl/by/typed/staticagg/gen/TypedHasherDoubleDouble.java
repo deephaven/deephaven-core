@@ -18,7 +18,7 @@ import io.deephaven.util.QueryConstants;
 import java.lang.Object;
 import java.lang.Override;
 
-public final class TypedHasherDoubleDouble extends StaticChunkedOperatorAggregationStateManagerTypedBase {
+final class TypedHasherDoubleDouble extends StaticChunkedOperatorAggregationStateManagerTypedBase {
   private final DoubleArraySource keySource0;
 
   private final DoubleArraySource overflowKeySource0;

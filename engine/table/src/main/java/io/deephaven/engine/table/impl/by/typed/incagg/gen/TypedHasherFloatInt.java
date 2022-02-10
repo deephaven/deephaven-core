@@ -22,7 +22,7 @@ import io.deephaven.util.QueryConstants;
 import java.lang.Object;
 import java.lang.Override;
 
-public final class TypedHasherFloatInt extends IncrementalChunkedOperatorAggregationStateManagerTypedBase {
+final class TypedHasherFloatInt extends IncrementalChunkedOperatorAggregationStateManagerTypedBase {
   private final FloatArraySource keySource0;
 
   private final FloatArraySource overflowKeySource0;

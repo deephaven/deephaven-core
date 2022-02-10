@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.by.typed.TypeChunkedHashFactory;
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
@@ -42,7 +43,7 @@ public class ReplicateTypedHashers {
             array[0] = chunkType;
             final String name = TypeChunkedHashFactory.hasherName(array);
             final JavaFile javaFile =
-                    TypeChunkedHashFactory.generateHasher(baseClass, array, name, packageName);
+                    TypeChunkedHashFactory.generateHasher(baseClass, array, name, packageName, Optional.empty());
 
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
@@ -87,7 +88,7 @@ public class ReplicateTypedHashers {
 
                 final String name = TypeChunkedHashFactory.hasherName(array2);
                 final JavaFile javaFile =
-                        TypeChunkedHashFactory.generateHasher(baseClass, array2, name, packageName);
+                        TypeChunkedHashFactory.generateHasher(baseClass, array2, name, packageName, Optional.empty());
 
                 System.out.println("Generating " + name + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);

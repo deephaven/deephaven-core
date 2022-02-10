@@ -21,10 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -72,7 +69,7 @@ public class TypeChunkedHashFactory {
 
         final String className = hasherName(chunkTypes);
 
-        JavaFile javaFile = generateHasher(baseClass, chunkTypes, className, packageName(packageMiddle));
+        JavaFile javaFile = generateHasher(baseClass, chunkTypes, className, packageName(packageMiddle), Optional.of(Modifier.PUBLIC));
 
         String[] javaStrings = javaFile.toString().split("\n");
         final String javaString =
@@ -109,9 +106,10 @@ public class TypeChunkedHashFactory {
 
     @NotNull
     public static <T> JavaFile generateHasher(Class<T> baseClass, ChunkType[] chunkTypes, String className,
-            String packageName) {
+                                              String packageName, Optional<Modifier> visibility) {
         final TypeSpec.Builder hasherBuilder =
-                TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.FINAL).superclass(baseClass);
+                TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(baseClass);
+        visibility.ifPresent(hasherBuilder::addModifiers);
 
 
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
