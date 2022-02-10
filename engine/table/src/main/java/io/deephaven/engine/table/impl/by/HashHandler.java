@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 public interface HashHandler {
     /**
      * Called after a value is inserted into the main hash table
+     * 
      * @param tableLocation location of insertion
      * @param chunkPosition the position in the chunk
      */
@@ -13,6 +14,7 @@ public interface HashHandler {
 
     /**
      * Called after a value is found in the main hash table
+     * 
      * @param tableLocation location in the table
      * @param chunkPosition the position in the chunk
      */
@@ -20,6 +22,7 @@ public interface HashHandler {
 
     /**
      * Called after a value is inserted into the overflow hash table
+     * 
      * @param overflowLocation location of insertion
      * @param chunkPosition the position in the chunk
      */
@@ -27,6 +30,7 @@ public interface HashHandler {
 
     /**
      * Called after a value is found in the overflow hash table
+     * 
      * @param overflowLocation location in the overflow table
      * @param chunkPosition the position in the chunk
      */
@@ -34,6 +38,7 @@ public interface HashHandler {
 
     /**
      * Called during rehash when a value is moved in the main table
+     * 
      * @param oldTableLocation the old location in the main table
      * @param newTableLocation the new location in the main table
      */
@@ -41,6 +46,7 @@ public interface HashHandler {
 
     /**
      * Called during rehash when a value is promoted from overflow to the main table
+     * 
      * @param overflowLocation the old location in the overflow table
      * @param mainInsertLocation the new location in the main table
      */
@@ -48,18 +54,21 @@ public interface HashHandler {
 
     /**
      * Called when the next chunk of data is being processed in build or probe.
+     * 
      * @param size the size of the next chunk
      */
     void nextChunk(int size);
 
     /**
      * Called during probe when a value is not found in main or overflow.
+     * 
      * @param chunkPosition the position in the chunk
      */
     void doMissing(int chunkPosition);
 
     /**
-     * When building, this operations is never invoked, extending this class makes it simpler to have a probe only callback.
+     * When building, this operations is never invoked, extending this class makes it simpler to have a probe only
+     * callback.
      */
     abstract class BuildHandler implements HashHandler {
         @Override
@@ -69,7 +78,8 @@ public interface HashHandler {
     }
 
     /**
-     * When probing, these operations are never invoked, extending this class makes it simpler to have a probe only callback.
+     * When probing, these operations are never invoked, extending this class makes it simpler to have a probe only
+     * callback.
      */
     abstract class ProbeHandler implements HashHandler {
         @Override

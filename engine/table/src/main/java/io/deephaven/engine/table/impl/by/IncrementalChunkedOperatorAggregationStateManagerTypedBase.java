@@ -78,14 +78,16 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
             return;
         }
         outputPositions.setSize(rowSequence.intSize());
-        buildTable(new AddUpdateHandler(nextOutputPosition, outputPositions, reincarnatedPositions), (BuildContext) bc, rowSequence, sources);
+        buildTable(new AddUpdateHandler(nextOutputPosition, outputPositions, reincarnatedPositions), (BuildContext) bc,
+                rowSequence, sources);
     }
 
     @Override
     public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?>[] sources,
             WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
         outputPositions.setSize(indexToRemove.intSize());
-        probeTable(new RemoveHandler(outputPositions, emptiedPositions), (ProbeContext) pc, indexToRemove, true, sources);
+        probeTable(new RemoveHandler(outputPositions, emptiedPositions), (ProbeContext) pc, indexToRemove, true,
+                sources);
     }
 
     @Override
@@ -135,7 +137,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
             final int position = outputPosition.getAndIncrement();
             overflowStateSource.set(overflowLocation, position);
             outputPositions.set(chunkPosition, position);
-            outputPositionToHashSlot.set(position, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
+            outputPositionToHashSlot.set(position,
+                    HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
             rowCountSource.set(position, 1L);
         }
     }
@@ -169,7 +172,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     class AddUpdateHandler extends AddHandler {
         private final WritableIntChunk<RowKeys> reincarnatedPositions;
 
-        public AddUpdateHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+        public AddUpdateHandler(MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
+                WritableIntChunk<RowKeys> reincarnatedPositions) {
             super(nextOutputPosition, outputPositions);
             this.reincarnatedPositions = reincarnatedPositions;
             reincarnatedPositions.setSize(0);

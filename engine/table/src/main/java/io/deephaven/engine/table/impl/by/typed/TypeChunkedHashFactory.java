@@ -37,7 +37,8 @@ public class TypeChunkedHashFactory {
      * Produce a hasher for the given base class and column sources.
      *
      * @param packageMiddle the intermediate package name for this hasher (e.g. "staticagg" or "incagg")
-     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase)} that the generated hasher extends from
+     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase)} that the
+     *        generated hasher extends from
      * @param tableKeySources the key sources
      * @param tableSize the initial table size
      * @param maximumLoadFactor the maximum load factor of the for the table
@@ -69,7 +70,8 @@ public class TypeChunkedHashFactory {
 
         final String className = hasherName(chunkTypes);
 
-        JavaFile javaFile = generateHasher(baseClass, chunkTypes, className, packageName(packageMiddle), Optional.of(Modifier.PUBLIC));
+        JavaFile javaFile = generateHasher(baseClass, chunkTypes, className, packageName(packageMiddle),
+                Optional.of(Modifier.PUBLIC));
 
         String[] javaStrings = javaFile.toString().split("\n");
         final String javaString =
@@ -106,7 +108,7 @@ public class TypeChunkedHashFactory {
 
     @NotNull
     public static <T> JavaFile generateHasher(Class<T> baseClass, ChunkType[] chunkTypes, String className,
-                                              String packageName, Optional<Modifier> visibility) {
+            String packageName, Optional<Modifier> visibility) {
         final TypeSpec.Builder hasherBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(baseClass);
         visibility.ifPresent(hasherBuilder::addModifiers);
