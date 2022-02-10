@@ -23,8 +23,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
+import java.util.*;
 import java.util.function.LongConsumer;
 
 public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements WritableRowSet, Externalizable {
@@ -356,6 +355,18 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return iter.hasMore();
         });
         return builder.build();
+    }
+
+    @Override
+    public final WritableRowSet subSetForReversePositions(RowSet posRowSet) {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+
+        posRowSet.forEachRowKeyRange((start, end) -> {
+            builder.addRange(this.size() - end - 1, this.size() - start - 1);
+            return true;
+        });
+
+        return subSetForPositions(builder.build());
     }
 
     @Override

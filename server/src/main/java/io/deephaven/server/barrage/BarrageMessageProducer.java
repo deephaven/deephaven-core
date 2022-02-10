@@ -350,6 +350,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private RowSet activeReverseViewport = null;
 
     private RowSet postSnapshotViewport = null;
+    private RowSet postSnapshotReverseViewport = null;
+
     private final BitSet activeColumns = new BitSet();
     private final BitSet postSnapshotColumns = new BitSet();
     private final BitSet objectColumnsToClear = new BitSet();
@@ -506,7 +508,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             } else {
                 cols = (BitSet) columnsToSubscribe.clone();
             }
-            final Subscription subscription = new Subscription(listener, options, cols, initialViewport, reverseViewport);
+            final Subscription subscription =
+                    new Subscription(listener, options, cols, initialViewport, reverseViewport);
 
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)
@@ -938,6 +941,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean firstSubscription = false;
         BitSet snapshotColumns = null;
         RowSetBuilderRandom snapshotRows = null;
+        RowSetBuilderRandom reverseSnapshotRows = null;
+
         List<Subscription> updatedSubscriptions = null;
 
         // first, we take out any new subscriptions (under the lock)
@@ -962,6 +967,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         needsSnapshot = true;
                         snapshotColumns = new BitSet();
                         snapshotRows = RowSetFactory.builderRandom();
+                        reverseSnapshotRows = RowSetFactory.builderRandom();
                     }
 
                     subscription.hasPendingUpdate = false;
@@ -982,7 +988,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         subscription.snapshotViewport = subscription.pendingViewport;
                         subscription.pendingViewport = null;
                         if (!needsFullSnapshot) {
-                            snapshotRows.addRowSet(subscription.snapshotViewport);
+                            // track forward and reverse viewport rows separately
+                            if (subscription.reverseViewport) {
+                                reverseSnapshotRows.addRowSet(subscription.snapshotViewport);
+                            } else {
+                                snapshotRows.addRowSet(subscription.snapshotViewport);
+                            }
                         }
                     }
 
@@ -994,11 +1005,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             needsFullSnapshot = true;
                         }
                     }
-                }
+                } // end updatedSubscriptions loop
 
                 boolean haveViewport = false;
                 postSnapshotColumns.clear();
+
                 final RowSetBuilderRandom postSnapshotViewportBuilder = RowSetFactory.builderRandom();
+                final RowSetBuilderRandom postSnapshotReverseViewportBuilder = RowSetFactory.builderRandom();
 
                 for (int i = 0; i < activeSubscriptions.size(); ++i) {
                     final Subscription sub = activeSubscriptions.get(i);
@@ -1015,13 +1028,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                     if (sub.isViewport()) {
                         haveViewport = true;
-                        postSnapshotViewportBuilder
-                                .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
+                        // handle forward and reverse snapshots separately
+                        if (sub.reverseViewport) {
+                            postSnapshotReverseViewportBuilder
+                                    .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
+                        } else {
+                            postSnapshotViewportBuilder
+                                    .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
+                        }
                     }
                     postSnapshotColumns.or(sub.snapshotColumns != null ? sub.snapshotColumns : sub.subscribedColumns);
                 }
 
                 postSnapshotViewport = haveViewport ? postSnapshotViewportBuilder.build() : null;
+                postSnapshotReverseViewport = haveViewport ? postSnapshotReverseViewportBuilder.build() : null;
 
                 if (!needsSnapshot) {
                     // i.e. We have only removed subscriptions; we can update this state immediately.
@@ -1037,9 +1057,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // then we spend the effort to take a snapshot
         if (needsSnapshot) {
-            try (final RowSet snapshotRowSet = snapshotRows.build()) {
+            try (final RowSet snapshotRowSet = snapshotRows.build();
+                    final RowSet reverseSnapshotRowSet = reverseSnapshotRows.build()) {
                 snapshot =
-                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
+                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet,
+                                needsFullSnapshot ? null : reverseSnapshotRowSet);
             }
         }
 
@@ -1574,7 +1596,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.activeViewport.close();
         }
         this.activeViewport = this.postSnapshotViewport;
+        this.activeReverseViewport = this.postSnapshotReverseViewport;
+
+        // clean up the temporary objects
         this.postSnapshotViewport = null;
+        this.postSnapshotReverseViewport = null;
 
         // Pre-condition: activeObjectColumns == objectColumns & activeColumns
         this.objectColumnsToClear.or(postSnapshotColumns);
@@ -1654,7 +1680,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     @VisibleForTesting
     BarrageMessage getSnapshot(final List<Subscription> snapshotSubscriptions,
             final BitSet columnsToSnapshot,
-            final RowSet positionsToSnapshot) {
+            final RowSet positionsToSnapshot,
+            final RowSet reversePositionsToSnapshot) {
         if (onGetSnapshot != null) {
             onGetSnapshot.run();
         }
@@ -1663,7 +1690,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // TODO: Let notification-indifferent use cases skip notification test
         final SnapshotControl snapshotControl = new SnapshotControl(snapshotSubscriptions);
         return ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
-                this, parent, columnsToSnapshot, positionsToSnapshot, snapshotControl);
+                this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
+                snapshotControl);
     }
 
     ////////////////////////////////////////////////////

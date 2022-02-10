@@ -475,12 +475,15 @@ public class ArrowFlightUtil {
 
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
-                                // do we need to reverse the viewport here
-
-                                // get ourselves some data!
-                                final BarrageMessage msg =
-                                        ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
-                                                table, columns, viewport);
+                                // get ourselves some data (reversing viewport as instructed)
+                                final BarrageMessage msg;
+                                if (reverseViewport) {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, null, viewport);
+                                } else {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, viewport, null);
+                                }
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
@@ -610,7 +613,8 @@ public class ArrowFlightUtil {
 
                 final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
-                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport, reverseViewport);
+                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport,
+                        reverseViewport);
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                     apply(request);

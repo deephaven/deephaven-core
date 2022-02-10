@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -522,7 +523,7 @@ public class ConstructSnapshot {
      */
     public static BarrageMessage constructBackplaneSnapshot(final Object logIdentityObject,
             final BaseTable table) {
-        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null);
+        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null, null);
     }
 
     /**
@@ -568,15 +569,33 @@ public class ConstructSnapshot {
         snapshot.shifted = RowSetShiftData.EMPTY;
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final RowSet keysToSnapshot;
-            if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
-                keysToSnapshot = null;
-            } else if (usePrev) {
-                try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
-                    keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
+            RowSet keysToSnapshot = null;
+            if (positionsToSnapshot != null || reversePositionsToSnapshot != null) {
+                if (usePrev) {
+                    // perform actions on the previous rowset
+                    try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
+                        if (positionsToSnapshot != null && reversePositionsToSnapshot != null) {
+                            // union both key sets from forward and reverse viewports
+                            keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
+                            keysToSnapshot.union(prevRowSet.subSetForReversePositions(reversePositionsToSnapshot));
+                        } else if (positionsToSnapshot != null) {
+                            keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
+                        } else {
+                            keysToSnapshot = prevRowSet.subSetForReversePositions(reversePositionsToSnapshot);
+                        }
+                    }
+                } else {
+                    // perform actions on the current rowset
+                    if (positionsToSnapshot != null && reversePositionsToSnapshot != null) {
+                        // union both key sets from forward and reverse viewports
+                        keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
+                        keysToSnapshot.union(table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot));
+                    } else if (positionsToSnapshot != null) {
+                        keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
+                    } else {
+                        keysToSnapshot = table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot);
+                    }
                 }
-            } else {
-                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };

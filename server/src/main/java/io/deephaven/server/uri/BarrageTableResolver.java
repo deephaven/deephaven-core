@@ -141,7 +141,8 @@ public final class BarrageTableResolver implements UriResolver {
      */
     public Table subscribe(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
             throws TableHandleException, InterruptedException {
-        return subscribe(DeephavenTarget.of(URI.create(targetUri)), table, SUB_OPTIONS, viewport, columns, reverseViewport);
+        return subscribe(DeephavenTarget.of(URI.create(targetUri)), table, SUB_OPTIONS, viewport, columns,
+                reverseViewport);
     }
 
     /**
@@ -207,7 +208,8 @@ public final class BarrageTableResolver implements UriResolver {
      */
     public Table snapshot(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
             throws TableHandleException, InterruptedException {
-        return snapshot(DeephavenTarget.of(URI.create(targetUri)), table, SNAP_OPTIONS, viewport, columns, reverseViewport);
+        return snapshot(DeephavenTarget.of(URI.create(targetUri)), table, SNAP_OPTIONS, viewport, columns,
+                reverseViewport);
     }
 
     /**
