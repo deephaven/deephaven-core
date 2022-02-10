@@ -1560,7 +1560,12 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testSumByIncremental() {
-        final int[] sizes = {10, 100, 4000, 10000};
+        final int[] sizes;
+        if (SHORT_TESTS) {
+            sizes = new int[] {100, 1_000};
+        } else {
+            sizes = new int[] {10, 100, 4_000, 10_000};
+        }
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
                 ChunkPoolReleaseTracking.enableStrict();

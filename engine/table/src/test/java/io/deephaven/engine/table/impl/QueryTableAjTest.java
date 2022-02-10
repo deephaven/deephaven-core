@@ -554,9 +554,24 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjRandomLeftIncrementalRightStatic() {
+        final int maxLeftSize;
+        final int maxRightSize;
+        final int leftFactor;
+        final int rightFactor;
+        if (SHORT_TESTS) {
+            maxLeftSize = 1_250;
+            maxRightSize = 1_250;
+            leftFactor = 5;
+            rightFactor = 5;
+        } else {
+            maxLeftSize = 10_000;
+            maxRightSize = 10_000;
+            leftFactor = 10;
+            rightFactor = 10;
+        }
         for (int seed = 0; seed < 2; ++seed) {
-            for (int leftSize = 10; leftSize <= 10000; leftSize *= 10) {
-                for (int rightSize = 10; rightSize <= 10000; rightSize *= 10) {
+            for (int leftSize = 10; leftSize <= maxLeftSize; leftSize *= leftFactor) {
+                for (int rightSize = 10; rightSize <= maxRightSize; rightSize *= rightFactor) {
                     System.out.println("Seed=" + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
                     try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                         testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false);
@@ -650,9 +665,17 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjCharIncremental() {
-        final int tableMultiplier = 10;
         final int initialTableSize = 10;
-        final int maximumTableSize = 1000;
+        final int tableMultiplier;
+        final int maximumTableSize;
+        if (SHORT_TESTS) {
+            tableMultiplier = 5;
+            maximumTableSize = 250;
+
+        } else {
+            tableMultiplier = 10;
+            maximumTableSize = 1000;
+        }
         final int nodeMultiplier = 8;
         final int initialNodeSize = 4;
         final int maximumNodeSize = 256;

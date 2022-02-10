@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSnapshot",
+ "methods": {
+  "entireTable": "Request a full snapshot of the data and populate a BarrageTable with the data that is received.\n\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable",
+  "partialTable": "Request a partial snapshot of the data limited by viewport or column set and populate a BarrageTable with\n the data that is received.\n\n:param viewport: io.deephaven.engine.rowset.RowSet\n:param columns: java.util.BitSet\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable"
+ },
+ "path": "io.deephaven.client.impl.BarrageSnapshot",
+ "text": "A BarrageSnapshot represents a snapshot of a table that may or may not be filtered to a viewport of the\n remote source table.",
+ "typeName": "interface"
+}

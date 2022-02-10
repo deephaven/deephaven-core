@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 abstract public class RefreshingTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
-    static public boolean printTableUpdates = Configuration.getInstance()
+    public static boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "CompilerTools.logEnabled", false);
@@ -43,6 +43,10 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private boolean oldCheckLtm;
 
     List<Throwable> errors;
+
+    public static int scaleToDesiredTestLength(final int maxIter) {
+        return TstUtils.scaleToDesiredTestLength(maxIter);
+    }
 
     @Override
     protected void setUp() throws Exception {

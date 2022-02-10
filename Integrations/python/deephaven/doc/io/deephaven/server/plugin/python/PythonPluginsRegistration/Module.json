@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.plugin.python.PythonPluginsRegistration$Module",
+ "methods": {
+  "bindsPythonPluginsRegistration": ":param registration: io.deephaven.server.plugin.python.PythonPluginsRegistration\n:return: io.deephaven.plugin.Registration"
+ },
+ "path": "io.deephaven.server.plugin.python.PythonPluginsRegistration.Module",
+ "text": "Binds PythonPluginsRegistration into the set of Registration.",
+ "typeName": "interface"
+}

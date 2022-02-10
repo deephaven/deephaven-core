@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.csv.DeephavenTimeZoneParser",
+ "methods": {
+  "tryParse": ":param bs: io.deephaven.csv.containers.ByteSlice\n:param zoneId: io.deephaven.csv.util.MutableObject<java.time.ZoneId>\n:param offsetSeconds: io.deephaven.csv.util.MutableLong\n:return: boolean"
+ },
+ "path": "io.deephaven.csv.DeephavenTimeZoneParser",
+ "typeName": "class"
+}
