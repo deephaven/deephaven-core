@@ -71,6 +71,28 @@ public final class TypedHasherIntFloat extends StaticChunkedOperatorAggregationS
     }
   }
 
+  @Override
+  protected void probe(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
+    final FloatChunk<Values> keyChunk1 = sourceKeyChunks[1].asFloatChunk();
+    for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition) {
+      final int v0 = keyChunk0.get(chunkPosition);
+      final float v1 = keyChunk1.get(chunkPosition);
+      final int hash = hash(v0, v1);
+      final int tableLocation = hashToTableLocation(tableHashPivot, hash);
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+        handler.doMissing(chunkPosition);
+      } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
+        handler.doMainFound(tableLocation, chunkPosition);
+      } else {
+        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        if (!findOverflow(handler, v0, v1, chunkPosition, overflowLocation)) {
+          handler.doMissing(chunkPosition);
+        }
+      }
+    }
+  }
+
   private int hash(int v0, float v1) {
     int hash = IntChunkHasher.hashInitialSingle(v0);
     hash = FloatChunkHasher.hashUpdateSingle(hash, v1);

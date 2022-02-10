@@ -110,6 +110,7 @@ public class TypeChunkedHashFactory {
                         .build();
 
         final MethodSpec build = createBuildMethod(chunkTypes);
+        final MethodSpec probe = createProbeMethod(chunkTypes);
         final MethodSpec hash = createHashMethod(chunkTypes);
         final MethodSpec rehashBucket = createRehashBucketMethod(chunkTypes);
         final MethodSpec maybeMoveMainBucket = createMaybeMoveMainBucket(chunkTypes);
@@ -117,7 +118,7 @@ public class TypeChunkedHashFactory {
         final MethodSpec findPositionForKey = createFindPositionForKey(chunkTypes);
 
         final TypeSpec hasher =
-                hasherBuilder.addMethod(constructor).addMethod(build).addMethod(hash).addMethod(rehashBucket)
+                hasherBuilder.addMethod(constructor).addMethod(build).addMethod(probe).addMethod(hash).addMethod(rehashBucket)
                         .addMethod(maybeMoveMainBucket).addMethod(findOverflow).addMethod(findPositionForKey).build();
 
         final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher);
@@ -346,6 +347,49 @@ public class TypeChunkedHashFactory {
 
 
         return MethodSpec.methodBuilder("build")
+                .addParameter(HashHandler.class, "handler")
+                .addParameter(RowSequence.class, "rowSequence")
+                .addParameter(Chunk[].class, "sourceKeyChunks")
+                .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
+                .addAnnotation(Override.class).build();
+    }
+
+    @NotNull
+    private static MethodSpec createProbeMethod(ChunkType[] chunkTypes) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            final ClassName chunkName =
+                    ClassName.get(CharChunk.class.getPackageName(), chunkTypes[ii].name() + "Chunk");
+            final ClassName valuesName = ClassName.get(Values.class);
+            final ParameterizedTypeName chunkTypeName = chunkTypes[ii] == ChunkType.Object
+                    ? ParameterizedTypeName.get(chunkName, ClassName.get(Object.class), valuesName)
+                    : ParameterizedTypeName.get(chunkName, valuesName);
+            builder.addStatement("final $T keyChunk$L = sourceKeyChunks[$L].as$LChunk()", chunkTypeName, ii, ii,
+                    chunkTypes[ii].name());
+        }
+        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition)");
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            final Class<?> element = elementType(chunkTypes[ii]);
+            builder.addStatement("final $T v$L = keyChunk$L.get(chunkPosition)", element, ii, ii);
+        }
+        builder.addStatement("final int hash = hash("
+                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
+        builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
+        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE)");
+        builder.addStatement("handler.doMissing(chunkPosition)");
+        builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
+        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
+        builder.nextControlFlow("else");
+        builder.addStatement("int overflowLocation = overflowLocationSource.getUnsafe(tableLocation)");
+        builder.beginControlFlow("if (!findOverflow(handler, "
+                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", "))
+                + ", chunkPosition, overflowLocation))");
+        builder.addStatement("handler.doMissing(chunkPosition)");
+        builder.endControlFlow();
+        builder.endControlFlow();
+        builder.endControlFlow();
+
+        return MethodSpec.methodBuilder("probe")
                 .addParameter(HashHandler.class, "handler")
                 .addParameter(RowSequence.class, "rowSequence")
                 .addParameter(Chunk[].class, "sourceKeyChunks")

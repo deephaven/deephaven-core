@@ -15,5 +15,27 @@ public interface HashHandler {
 
     void nextChunk(int size);
 
-    default void doMissing(int chunkPosition) {}
+    void doMissing(int chunkPosition);
+
+    abstract class ProbeHandler implements HashHandler {
+        @Override
+        final public void doMainInsert(int tableLocation, int chunkPosition) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        final public void doOverflowInsert(int overflowLocation, int chunkPosition) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        final public void moveMain(int oldTableLocation, int newTableLocation) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        final public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
+            throw new IllegalStateException();
+        }
+    }
 }

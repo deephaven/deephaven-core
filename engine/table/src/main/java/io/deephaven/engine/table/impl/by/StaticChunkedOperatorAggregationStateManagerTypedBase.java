@@ -15,7 +15,7 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
-        extends OperatorAggregationStateManagerTypedBase {
+        extends OperatorAggregationStateManagerTypedBase implements HashHandler {
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
@@ -41,7 +41,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         this.outputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         outputPositions.setSize(rowSequence.intSize());
-        buildTable((BuildContext) bc, rowSequence, sources);
+        buildTable(this, (BuildContext) bc, rowSequence, sources);
     }
 
     @Override

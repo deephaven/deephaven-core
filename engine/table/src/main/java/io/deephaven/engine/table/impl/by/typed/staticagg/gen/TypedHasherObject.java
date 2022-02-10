@@ -57,6 +57,26 @@ public final class TypedHasherObject extends StaticChunkedOperatorAggregationSta
     }
   }
 
+  @Override
+  protected void probe(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
+    for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition) {
+      final Object v0 = keyChunk0.get(chunkPosition);
+      final int hash = hash(v0);
+      final int tableLocation = hashToTableLocation(tableHashPivot, hash);
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+        handler.doMissing(chunkPosition);
+      } else if (eq(keySource0.getUnsafe(tableLocation), v0)) {
+        handler.doMainFound(tableLocation, chunkPosition);
+      } else {
+        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        if (!findOverflow(handler, v0, chunkPosition, overflowLocation)) {
+          handler.doMissing(chunkPosition);
+        }
+      }
+    }
+  }
+
   private int hash(Object v0) {
     int hash = ObjectChunkHasher.hashInitialSingle(v0);
     return hash;

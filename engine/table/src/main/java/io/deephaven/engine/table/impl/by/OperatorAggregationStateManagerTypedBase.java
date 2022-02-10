@@ -20,7 +20,7 @@ import io.deephaven.util.QueryConstants;
 import static io.deephaven.util.SafeCloseable.closeArray;
 
 public abstract class OperatorAggregationStateManagerTypedBase
-        implements OperatorAggregationStateManager, HashHandler {
+        implements OperatorAggregationStateManager {
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
 
@@ -143,71 +143,72 @@ public abstract class OperatorAggregationStateManagerTypedBase
     protected abstract void build(HashHandler handler, RowSequence rowSequence,
             Chunk<Values>[] sourceKeyChunks);
 
-    protected void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks) {}
+    protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
-    static class BuildContext implements Context {
+    static class BuildContext extends BuildOrProbeContext {
+        private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+    }
+    static class ProbeContext extends BuildOrProbeContext {
+        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+    }
+
+    static class BuildOrProbeContext implements Context {
         final int chunkSize;
 
-        final SharedContext sharedBuildContext;
-        final ChunkSource.GetContext[] buildContexts;
-
-        // region build context
-        // endregion build context
+        final SharedContext sharedContext;
+        final ChunkSource.GetContext[] getContexts;
 
         final boolean haveSharedContexts;
 
-        private BuildContext(ColumnSource<?>[] buildSources,
-                int chunkSize
-        // region build context constructor args
-        // endregion build context constructor args
-        ) {
+        private BuildOrProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             Assert.gtZero(chunkSize, "chunkSize");
             this.chunkSize = chunkSize;
             haveSharedContexts = buildSources.length > 1;
             if (haveSharedContexts) {
-                sharedBuildContext = SharedContext.makeSharedContext();
+                sharedContext = SharedContext.makeSharedContext();
             } else {
                 // no point in the additional work implied by these not being null.
-                sharedBuildContext = null;
+                sharedContext = null;
             }
-            buildContexts = makeGetContexts(buildSources, sharedBuildContext, chunkSize);
-            // region build context constructor
-            // endregion build context constructor
+            getContexts = makeGetContexts(buildSources, sharedContext, chunkSize);
         }
 
-        private void resetSharedContexts() {
+        void resetSharedContexts() {
             if (!haveSharedContexts) {
                 return;
             }
-            sharedBuildContext.reset();
+            sharedContext.reset();
         }
 
-        private void closeSharedContexts() {
+        void closeSharedContexts() {
             if (!haveSharedContexts) {
                 return;
             }
-            sharedBuildContext.close();
+            sharedContext.close();
         }
 
         @Override
         public void close() {
-            closeArray(buildContexts);
+            closeArray(getContexts);
             closeSharedContexts();
         }
     }
 
-    BuildContext makeBuildContext(ColumnSource<?>[] buildSources,
-            long maxSize
-    // region makeBuildContext args
-    // endregion makeBuildContext args
-    ) {
-        return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize)
-        // region makeBuildContext arg pass
-        // endregion makeBuildContext arg pass
-        );
+    BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
+        return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    protected void buildTable(final BuildContext bc,
+    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
+    }
+
+    protected void buildTable(
+            final HashHandler handler,
+            final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
@@ -220,18 +221,47 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 ensureOverflowCapacity(chunkOk.intSize());
-                nextChunk(chunkOk.intSize());
+                handler.nextChunk(chunkOk.intSize());
 
-                getKeyChunks(buildSources, bc.buildContexts, sourceKeyChunks, chunkOk);
+                getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
-                build(this, chunkOk, sourceKeyChunks);
+                build(handler, chunkOk, sourceKeyChunks);
             }
 
-            doRehash();
+            doRehash(handler);
         }
     }
 
-    public void doRehash() {
+    protected void probeTable(
+            final HashHandler handler,
+            final ProbeContext pc,
+            final RowSequence probeRows,
+            final boolean usePrev,
+            final ColumnSource<?>[] probeSources) {
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
+            // noinspection unchecked
+            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
+
+            while (rsIt.hasMore()) {
+                // we reset early to avoid carrying around state for old RowSequence which can't be reused.
+                pc.resetSharedContexts();
+
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+                ensureOverflowCapacity(chunkOk.intSize());
+                handler.nextChunk(chunkOk.intSize());
+
+                if (usePrev) {
+                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                } else {
+                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                }
+
+                probe(handler, chunkOk, sourceKeyChunks);
+            }
+        }
+    }
+
+    public void doRehash(HashHandler handler) {
         while (rehashRequired()) {
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
@@ -247,7 +277,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
                 int checkBucket = tableHashPivot + ii - (tableSize >> 1);
                 int destBucket = tableHashPivot + ii;
                 // if we were more complicated, we would need a handler for promotion and moving slots
-                rehashBucket(this, checkBucket, destBucket, bucketsToAdd);
+                rehashBucket(handler, checkBucket, destBucket, bucketsToAdd);
             }
             tableHashPivot += bucketsToAdd;
         }
@@ -275,6 +305,13 @@ public abstract class OperatorAggregationStateManagerTypedBase
             Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
+        }
+
+    }
+    private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
+            Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
+        for (int ii = 0; ii < chunks.length; ++ii) {
+            chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);
         }
     }
 

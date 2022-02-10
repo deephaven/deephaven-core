@@ -71,6 +71,28 @@ public final class TypedHasherShortDouble extends StaticChunkedOperatorAggregati
     }
   }
 
+  @Override
+  protected void probe(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    final ShortChunk<Values> keyChunk0 = sourceKeyChunks[0].asShortChunk();
+    final DoubleChunk<Values> keyChunk1 = sourceKeyChunks[1].asDoubleChunk();
+    for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition) {
+      final short v0 = keyChunk0.get(chunkPosition);
+      final double v1 = keyChunk1.get(chunkPosition);
+      final int hash = hash(v0, v1);
+      final int tableLocation = hashToTableLocation(tableHashPivot, hash);
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+        handler.doMissing(chunkPosition);
+      } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
+        handler.doMainFound(tableLocation, chunkPosition);
+      } else {
+        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        if (!findOverflow(handler, v0, v1, chunkPosition, overflowLocation)) {
+          handler.doMissing(chunkPosition);
+        }
+      }
+    }
+  }
+
   private int hash(short v0, double v1) {
     int hash = ShortChunkHasher.hashInitialSingle(v0);
     hash = DoubleChunkHasher.hashUpdateSingle(hash, v1);

@@ -57,6 +57,26 @@ public final class TypedHasherByte extends IncrementalChunkedOperatorAggregation
     }
   }
 
+  @Override
+  protected void probe(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
+    for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition) {
+      final byte v0 = keyChunk0.get(chunkPosition);
+      final int hash = hash(v0);
+      final int tableLocation = hashToTableLocation(tableHashPivot, hash);
+      if (stateSource.getUnsafe(tableLocation) == EMPTY_RIGHT_VALUE) {
+        handler.doMissing(chunkPosition);
+      } else if (eq(keySource0.getUnsafe(tableLocation), v0)) {
+        handler.doMainFound(tableLocation, chunkPosition);
+      } else {
+        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        if (!findOverflow(handler, v0, chunkPosition, overflowLocation)) {
+          handler.doMissing(chunkPosition);
+        }
+      }
+    }
+  }
+
   private int hash(byte v0) {
     int hash = ByteChunkHasher.hashInitialSingle(v0);
     return hash;
