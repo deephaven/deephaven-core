@@ -41,6 +41,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             int tableSize, double maximumLoadFactor, double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+        ensureCapacity(tableSize);
     }
 
     @Override

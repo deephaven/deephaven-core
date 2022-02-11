@@ -89,8 +89,6 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
         this.maximumLoadFactor = maximumLoadFactor;
         this.targetLoadFactor = targetLoadFactor;
-
-        ensureCapacity(tableSize);
     }
 
     protected void ensureCapacity(int tableSize) {

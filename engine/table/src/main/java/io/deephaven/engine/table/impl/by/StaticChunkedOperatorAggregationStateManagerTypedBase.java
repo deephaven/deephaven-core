@@ -36,6 +36,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     protected StaticChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+        ensureCapacity(tableSize);
     }
 
     @Override
