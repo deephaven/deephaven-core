@@ -17,12 +17,13 @@ import java.util.Optional;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
-        generatePackage("staticagg", StaticChunkedOperatorAggregationStateManagerTypedBase.class);
-        generatePackage("incagg", IncrementalChunkedOperatorAggregationStateManagerTypedBase.class);
+        generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class);
+        generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class);
     }
 
-    private static void generatePackage(String packageMiddle, Class<?> baseClass) throws IOException {
-        final String packageName = TypeChunkedHashFactory.packageName(packageMiddle);
+    private static void generatePackage(Class<?> baseClass) throws IOException {
+        final TypeChunkedHashFactory.HasherConfig<?> hasherConfig = TypeChunkedHashFactory.hasherConfigForBase(baseClass);
+        final String packageName = TypeChunkedHashFactory.packageName(hasherConfig.packageMiddle);
         final File sourceRoot = new File("engine/table/src/main/java/");
 
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
@@ -43,7 +44,7 @@ public class ReplicateTypedHashers {
             array[0] = chunkType;
             final String name = TypeChunkedHashFactory.hasherName(array);
             final JavaFile javaFile =
-                    TypeChunkedHashFactory.generateHasher(baseClass, array, name, packageName, Optional.empty());
+                    TypeChunkedHashFactory.generateHasher(hasherConfig, array, name, Optional.empty());
 
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
@@ -88,7 +89,7 @@ public class ReplicateTypedHashers {
 
                 final String name = TypeChunkedHashFactory.hasherName(array2);
                 final JavaFile javaFile =
-                        TypeChunkedHashFactory.generateHasher(baseClass, array2, name, packageName, Optional.empty());
+                        TypeChunkedHashFactory.generateHasher(hasherConfig, array2, name, Optional.empty());
 
                 System.out.println("Generating " + name + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);

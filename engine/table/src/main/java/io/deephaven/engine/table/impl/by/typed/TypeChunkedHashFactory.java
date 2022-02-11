@@ -37,7 +37,6 @@ public class TypeChunkedHashFactory {
     /**
      * Produce a hasher for the given base class and column sources.
      *
-     * @param packageMiddle the intermediate package name for this hasher (e.g. "staticagg" or "incagg")
      * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase)} that the
      *        generated hasher extends from
      * @param tableKeySources the key sources
@@ -47,19 +46,71 @@ public class TypeChunkedHashFactory {
      * @param <T> the base class
      * @return an instantiated hasher
      */
-    public static <T> T make(String packageMiddle, Class<T> baseClass, ColumnSource<?>[] tableKeySources, int tableSize,
+    public static <T> T make(Class<T> baseClass, ColumnSource<?>[] tableKeySources, int tableSize,
+            double maximumLoadFactor, double targetLoadFactor) {
+        return make(hasherConfigForBase(baseClass), tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+    }
+
+    @NotNull
+    public static <T> HasherConfig<T> hasherConfigForBase(Class<T> baseClass) {
+        final String packageMiddle;
+        final String mainStateName;
+        final String overflowStateName;
+        if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            packageMiddle = "staticagg";
+            mainStateName = "mainOutputPosition";
+            overflowStateName = "overflowOutputPosition";
+        }
+        else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            packageMiddle = "incagg";
+            mainStateName = "mainOutputPosition";
+            overflowStateName = "overflowOutputPosition";
+        }
+        else {
+            throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
+        }
+        final HasherConfig<T> hasherConfig = new HasherConfig<>(baseClass, packageMiddle, mainStateName, overflowStateName);
+        return hasherConfig;
+    }
+
+    public static class HasherConfig<T> {
+        final Class<T> baseClass;
+        public final String packageMiddle;
+        final String mainStateName;
+        final String overflowStateName;
+
+        HasherConfig(Class<T> baseClass, String packageMiddle, String mainStateName, String overflowStateName) {
+            this.baseClass = baseClass;
+            this.packageMiddle = packageMiddle;
+            this.mainStateName = mainStateName;
+            this.overflowStateName = overflowStateName;
+        }
+    }
+
+    /**
+     * Produce a hasher for the given base class and column sources.
+     *
+     * @param hasherConfig the configuration of the class to generate
+     * @param tableKeySources the key sources
+     * @param tableSize the initial table size
+     * @param maximumLoadFactor the maximum load factor of the for the table
+     * @param targetLoadFactor the load factor that we will rehash to
+     * @param <T> the base class
+     * @return an instantiated hasher
+     */
+    public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         final ChunkType[] chunkTypes =
                 Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
         if (USE_PREGENERATED_HASHERS) {
-            if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
-            } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            } else if (hasherConfig.baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
@@ -71,16 +122,15 @@ public class TypeChunkedHashFactory {
 
         final String className = hasherName(chunkTypes);
 
-        JavaFile javaFile = generateHasher(baseClass, chunkTypes, className, packageName(packageMiddle),
-                Optional.of(Modifier.PUBLIC));
+        JavaFile javaFile = generateHasher(hasherConfig, chunkTypes, className, Optional.of(Modifier.PUBLIC));
 
         String[] javaStrings = javaFile.toString().split("\n");
         final String javaString =
                 Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
 
-        final Class<?> clazz = CompilerTools.compile(className, javaString, packageName(packageMiddle));
-        if (!baseClass.isAssignableFrom(clazz)) {
-            throw new IllegalStateException("Generated class is not a " + baseClass.getCanonicalName());
+        final Class<?> clazz = CompilerTools.compile(className, javaString, packageName(hasherConfig.packageMiddle));
+        if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
+            throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
         }
 
         final Class<? extends T> castedClass = (Class<? extends T>) clazz;
@@ -108,10 +158,13 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    public static <T> JavaFile generateHasher(Class<T> baseClass, ChunkType[] chunkTypes, String className,
-            String packageName, Optional<Modifier> visibility) {
+    public static <T> JavaFile generateHasher(final HasherConfig<T> hasherConfig,
+                                              final ChunkType[] chunkTypes,
+                                              final String className,
+            Optional<Modifier> visibility) {
+        final String packageName = packageName(hasherConfig.packageMiddle);
         final TypeSpec.Builder hasherBuilder =
-                TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(baseClass);
+                TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
         visibility.ifPresent(hasherBuilder::addModifiers);
 
 
@@ -126,13 +179,13 @@ public class TypeChunkedHashFactory {
                         .addCode(constructorCodeBuilder.build())
                         .build();
 
-        final MethodSpec build = createBuildMethod(chunkTypes);
-        final MethodSpec probe = createProbeMethod(chunkTypes);
+        final MethodSpec build = createBuildMethod(hasherConfig, chunkTypes);
+        final MethodSpec probe = createProbeMethod(hasherConfig, chunkTypes);
         final MethodSpec hash = createHashMethod(chunkTypes);
-        final MethodSpec rehashBucket = createRehashBucketMethod(chunkTypes);
-        final MethodSpec maybeMoveMainBucket = createMaybeMoveMainBucket(chunkTypes);
+        final MethodSpec rehashBucket = createRehashBucketMethod(hasherConfig, chunkTypes);
+        final MethodSpec maybeMoveMainBucket = createMaybeMoveMainBucket(hasherConfig, chunkTypes);
         final MethodSpec findOverflow = createFindOverflow(chunkTypes);
-        final MethodSpec findPositionForKey = createFindPositionForKey(chunkTypes);
+        final MethodSpec findPositionForKey = createFindPositionForKey(hasherConfig, chunkTypes);
 
         final TypeSpec hasher =
                 hasherBuilder.addMethod(constructor).addMethod(build).addMethod(probe).addMethod(hash)
@@ -189,7 +242,7 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    private static MethodSpec createFindPositionForKey(ChunkType[] chunkTypes) {
+    private static MethodSpec createFindPositionForKey(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         MethodSpec.Builder builder = MethodSpec.methodBuilder("findPositionForKey").addParameter(Object.class, "value")
                 .returns(int.class).addModifiers(Modifier.PUBLIC).addAnnotation(Override.class);
         if (chunkTypes.length != 1) {
@@ -211,7 +264,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.addStatement("final int positionValue = stateSource.getUnsafe(tableLocation)");
+        builder.addStatement("final int positionValue = $L.getUnsafe(tableLocation)", hasherConfig.mainStateName);
         builder.beginControlFlow("if (positionValue == EMPTY_STATE_VALUE)");
         builder.addStatement("return -1");
         builder.endControlFlow();
@@ -224,7 +277,7 @@ public class TypeChunkedHashFactory {
 
         builder.beginControlFlow("while (overflowLocation != QueryConstants.NULL_INT)");
         builder.beginControlFlow("if (" + getEqualsStatementOverflow(chunkTypes) + ")");
-        builder.addStatement("return overflowStateSource.getUnsafe(overflowLocation)");
+        builder.addStatement("return $L.getUnsafe(overflowLocation)", hasherConfig.overflowStateName);
         builder.endControlFlow();
 
         builder.addStatement("overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation);");
@@ -234,7 +287,7 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    private static MethodSpec createMaybeMoveMainBucket(ChunkType[] chunkTypes) {
+    private static MethodSpec createMaybeMoveMainBucket(HasherConfig hasherConfig, ChunkType[] chunkTypes) {
         MethodSpec.Builder builder =
                 MethodSpec.methodBuilder("maybeMoveMainBucket").addParameter(HashHandler.class, "handler")
                         .addParameter(int.class, "bucket").addParameter(int.class, "destBucket")
@@ -250,11 +303,11 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int mainInsertLocation");
         builder.beginControlFlow("if (location == bucket)");
         builder.addStatement("mainInsertLocation = destBucket");
-        builder.addStatement("stateSource.set(destBucket, EMPTY_STATE_VALUE)");
+        builder.addStatement("$L.set(destBucket, EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         builder.nextControlFlow("else");
         builder.addStatement("mainInsertLocation = bucket");
-        builder.addStatement("stateSource.set(destBucket, stateSource.getUnsafe(bucket))");
-        builder.addStatement("stateSource.set(bucket, EMPTY_STATE_VALUE)");
+        builder.addStatement("$L.set(destBucket, $L.getUnsafe(bucket))", hasherConfig.mainStateName, hasherConfig.mainStateName);
+        builder.addStatement("$L.set(bucket, EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("keySource$L.set(destBucket, v$L)", ii, ii);
             builder.addStatement("keySource$L.set(bucket, $L)", ii, elementNull(chunkTypes[ii]));
@@ -268,10 +321,10 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    private static MethodSpec createRehashBucketMethod(ChunkType[] chunkTypes) {
+    private static MethodSpec createRehashBucketMethod(HasherConfig hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("final int position = stateSource.getUnsafe(bucket)");
+        builder.addStatement("final int position = $L.getUnsafe(bucket)", hasherConfig.mainStateName);
         builder.beginControlFlow("if (position == EMPTY_STATE_VALUE)");
         builder.addStatement("return");
         builder.endControlFlow();
@@ -296,9 +349,9 @@ public class TypeChunkedHashFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("keySource$L.set(mainInsertLocation, overflowKey$L)", ii, ii);
         }
-        builder.addStatement("stateSource.set(mainInsertLocation, overflowStateSource.getUnsafe(overflowLocation))");
+        builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName, hasherConfig.overflowStateName);
         builder.addStatement("handler.promoteOverflow(overflowLocation, mainInsertLocation)");
-        builder.addStatement("overflowStateSource.set(overflowLocation, QueryConstants.NULL_INT)");
+        builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)", hasherConfig.overflowStateName);
 
         // key source loop
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -323,7 +376,7 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    private static MethodSpec createBuildMethod(ChunkType[] chunkTypes) {
+    private static MethodSpec createBuildMethod(HasherConfig hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final ClassName chunkName =
@@ -343,7 +396,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)");
+        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("keySource$L.set(tableLocation, v$L)", ii, ii);
@@ -378,7 +431,7 @@ public class TypeChunkedHashFactory {
     }
 
     @NotNull
-    private static MethodSpec createProbeMethod(ChunkType[] chunkTypes) {
+    private static MethodSpec createProbeMethod(HasherConfig hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final ClassName chunkName =
@@ -398,7 +451,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)");
+        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         builder.addStatement("handler.doMissing(chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");

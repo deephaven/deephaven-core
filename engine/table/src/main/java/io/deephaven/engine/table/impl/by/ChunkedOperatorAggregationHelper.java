@@ -125,7 +125,7 @@ public class ChunkedOperatorAggregationHelper {
         final IncrementalOperatorAggregationStateManager incrementalStateManager;
         if (withView.isRefreshing()) {
             if (USE_TYPED_STATE_MANAGER) {
-                stateManager = incrementalStateManager = TypeChunkedHashFactory.make("incagg",
+                stateManager = incrementalStateManager = TypeChunkedHashFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
@@ -136,7 +136,7 @@ public class ChunkedOperatorAggregationHelper {
             }
         } else {
             if (USE_TYPED_STATE_MANAGER) {
-                stateManager = TypeChunkedHashFactory.make("staticagg",
+                stateManager = TypeChunkedHashFactory.make(
                         StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
