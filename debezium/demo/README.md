@@ -10,9 +10,11 @@ The demo follows closely the one defined for Materialize here:
 https://github.com/MaterializeInc/ecommerce-demo/blob/main/README_RPM.md
 
 The load generation script is in `loadgen/generate_load.py`.
-At the beginning of the script the constant `purchaseGenEveryMS`
-controls how frequently purchases are triggered.
 
+It is possible to configure the update rate for both purchase
+(mysql updates) and pageviews (kafka pageview events) via
+ENVIRONMENT arguments set for the loadgen image in the docker-compose.yml
+file.
 
 How to run
 ==========
@@ -27,8 +29,8 @@ Start docker-compose with the compose file in this
 directory:
 
 ```
-cd debezium-demo
-docker-compose up
+cd debezium/demo
+docker-compose up --build
 ```
 
 Then start a Deephaven web console (will be in python mode

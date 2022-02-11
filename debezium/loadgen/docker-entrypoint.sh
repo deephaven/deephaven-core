@@ -7,5 +7,4 @@ wait-for-it --timeout 60 --service debezium:8083
 
 cd /loadgen
 
-# -u for unbuffered STDOUT so that we get docker-compose log visibility.
-exec python -u generate_load.py
+exec python generate_load.py
