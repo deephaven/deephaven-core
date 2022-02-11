@@ -31,15 +31,15 @@ public class TypedHashDispatcher {
             ColumnSource[] tableKeySources, int tableSize, double maximumLoadFactor,
             double targetLoadFactor) {
         switch (chunkType) {
-            default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType);
-            case Char:return new TypedHasherChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Byte:return new TypedHasherByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Short:return new TypedHasherShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Int:return new TypedHasherInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Long:return new TypedHasherLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Float:return new TypedHasherFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Double:return new TypedHasherDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Object:return new TypedHasherObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType);
+            case Char: return new IncrementalAggHasherChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Byte: return new IncrementalAggHasherByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Short: return new IncrementalAggHasherShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Int: return new IncrementalAggHasherInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Long: return new IncrementalAggHasherLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Float: return new IncrementalAggHasherFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Double: return new IncrementalAggHasherDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Object: return new IncrementalAggHasherObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
         }
     }
 
@@ -47,94 +47,94 @@ public class TypedHashDispatcher {
             ChunkType chunkType1, ColumnSource[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         switch (chunkType0) {
-            default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType0);
+            default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType0);
             case Char:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherCharChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherCharByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherCharShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherCharInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherCharLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherCharFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherCharDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherCharObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherCharChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherCharByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherCharShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherCharInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherCharLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherCharFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherCharDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherCharObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Byte:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherByteChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherByteByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherByteShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherByteInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherByteLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherByteFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherByteDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherByteObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherByteChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherByteByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherByteShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherByteInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherByteLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherByteFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherByteDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherByteObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Short:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherShortChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherShortByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherShortShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherShortInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherShortLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherShortFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherShortDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherShortObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherShortChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherShortByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherShortShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherShortInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherShortLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherShortFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherShortDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherShortObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Int:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherIntChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherIntByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherIntShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherIntInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherIntLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherIntFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherIntDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherIntObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherIntChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherIntByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherIntShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherIntInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherIntLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherIntFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherIntDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherIntObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Long:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherLongChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherLongByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherLongShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherLongInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherLongLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherLongFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherLongDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherLongObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherLongChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherLongByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherLongShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherLongInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherLongLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherLongFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherLongDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherLongObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Float:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherFloatChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherFloatByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherFloatShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherFloatInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherFloatLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherFloatFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherFloatDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherFloatObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherFloatChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherFloatByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherFloatShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherFloatInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherFloatLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherFloatFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherFloatDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherFloatObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Double:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherDoubleChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherDoubleByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherDoubleShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherDoubleInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherDoubleLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherDoubleFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherDoubleDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherDoubleObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherDoubleChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherDoubleByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherDoubleShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherDoubleInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherDoubleLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherDoubleFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherDoubleDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherDoubleObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
             case Object:switch (chunkType1) {
-                default:throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
-                case Char:return new TypedHasherObjectChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Byte:return new TypedHasherObjectByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Short:return new TypedHasherObjectShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Int:return new TypedHasherObjectInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Long:return new TypedHasherObjectLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Float:return new TypedHasherObjectFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Double:return new TypedHasherObjectDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                case Object:return new TypedHasherObjectObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType1);
+                case Char: return new IncrementalAggHasherObjectChar(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Byte: return new IncrementalAggHasherObjectByte(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Short: return new IncrementalAggHasherObjectShort(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Int: return new IncrementalAggHasherObjectInt(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Long: return new IncrementalAggHasherObjectLong(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Float: return new IncrementalAggHasherObjectFloat(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Double: return new IncrementalAggHasherObjectDouble(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                case Object: return new IncrementalAggHasherObjectObject(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
             }
         }
     }
