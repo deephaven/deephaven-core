@@ -62,17 +62,16 @@ public class TypedHasherFactory {
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
-        }
-        else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
+        } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             packageMiddle = "incagg";
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
-        }
-        else {
+        } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
-        final HasherConfig<T> hasherConfig = new HasherConfig<>(baseClass, packageMiddle, mainStateName, overflowStateName, emptyStateName);
+        final HasherConfig<T> hasherConfig =
+                new HasherConfig<>(baseClass, packageMiddle, mainStateName, overflowStateName, emptyStateName);
         return hasherConfig;
     }
 
@@ -83,7 +82,8 @@ public class TypedHasherFactory {
         final String overflowStateName;
         final String emptyStateName;
 
-        HasherConfig(Class<T> baseClass, String packageMiddle, String mainStateName, String overflowStateName, String emptyStateName) {
+        HasherConfig(Class<T> baseClass, String packageMiddle, String mainStateName, String overflowStateName,
+                String emptyStateName) {
             this.baseClass = baseClass;
             this.packageMiddle = packageMiddle;
             this.mainStateName = mainStateName;
@@ -115,7 +115,8 @@ public class TypedHasherFactory {
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
-            } else if (hasherConfig.baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
@@ -164,8 +165,8 @@ public class TypedHasherFactory {
 
     @NotNull
     public static <T> JavaFile generateHasher(final HasherConfig<T> hasherConfig,
-                                              final ChunkType[] chunkTypes,
-                                              final String className,
+            final ChunkType[] chunkTypes,
+            final String className,
             Optional<Modifier> visibility) {
         final String packageName = packageName(hasherConfig.packageMiddle);
         final TypeSpec.Builder hasherBuilder =
@@ -215,7 +216,8 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             Class<?> type = arraySourceType(chunkTypes[ii]);
             keySources.add(
-                    FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
+                    FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+                            .build());
             keySources.add(FieldSpec.builder(type, "overflowKeySource" + ii)
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
             constructorCodeBuilder.addStatement("this.mainKeySource$L = ($T) super.mainKeySources[$L]", ii, type, ii);
@@ -324,7 +326,8 @@ public class TypedHasherFactory {
         builder.addStatement("$L.set(destBucket, $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
         builder.nextControlFlow("else");
         builder.addStatement("mainInsertLocation = sourceBucket");
-        builder.addStatement("$L.set(destBucket, $L.getUnsafe(sourceBucket))", hasherConfig.mainStateName, hasherConfig.mainStateName);
+        builder.addStatement("$L.set(destBucket, $L.getUnsafe(sourceBucket))", hasherConfig.mainStateName,
+                hasherConfig.mainStateName);
         builder.addStatement("$L.set(sourceBucket, $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(destBucket, k$L)", ii, ii);
@@ -347,7 +350,8 @@ public class TypedHasherFactory {
         builder.addStatement("return");
         builder.endControlFlow();
 
-        builder.addStatement("int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd)");
+        builder.addStatement(
+                "int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd)");
         builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(sourceBucket)");
         builder.addStatement("mainOverflowLocationSource.set(sourceBucket, QueryConstants.NULL_INT)");
         builder.addStatement("mainOverflowLocationSource.set(destBucket, QueryConstants.NULL_INT)");
@@ -367,7 +371,8 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(mainInsertLocation, overflowKey$L)", ii, ii);
         }
-        builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName, hasherConfig.overflowStateName);
+        builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName,
+                hasherConfig.overflowStateName);
         builder.addStatement("handler.doPromoteOverflow(overflowLocation, mainInsertLocation)");
         builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)", hasherConfig.overflowStateName);
 
@@ -379,7 +384,8 @@ public class TypedHasherFactory {
         builder.addStatement("freeOverflowLocation(overflowLocation)");
         builder.addStatement("mainInsertLocation = -1");
         builder.nextControlFlow("else");
-        builder.addStatement("final int oldOverflowLocation = mainOverflowLocationSource.getUnsafe(overflowTableLocation)");
+        builder.addStatement(
+                "final int oldOverflowLocation = mainOverflowLocationSource.getUnsafe(overflowTableLocation)");
         builder.addStatement("mainOverflowLocationSource.set(overflowTableLocation, overflowLocation)");
         builder.addStatement("overflowOverflowLocationSource.set(overflowLocation, oldOverflowLocation)");
         builder.endControlFlow();
@@ -415,7 +421,8 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
+                hasherConfig.emptyStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
@@ -471,7 +478,8 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
+                hasherConfig.emptyStateName);
         builder.addStatement("handler.doMissing(chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");

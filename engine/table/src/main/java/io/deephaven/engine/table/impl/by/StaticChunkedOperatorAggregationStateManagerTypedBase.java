@@ -95,7 +95,8 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         final int nextOutputPosition = outputPosition.getAndIncrement();
         overflowOutputPosition.set(overflowLocation, nextOutputPosition);
         outputPositions.set(chunkPosition, nextOutputPosition);
-        outputPositionToHashSlot.set(nextOutputPosition, HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
+        outputPositionToHashSlot.set(nextOutputPosition,
+                HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
     }
 
     @Override

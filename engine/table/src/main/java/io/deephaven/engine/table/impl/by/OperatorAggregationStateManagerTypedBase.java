@@ -82,7 +82,8 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table
-            mainKeySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
+            mainKeySources[ii] =
+                    ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
             overflowKeySources[ii] =
                     ArrayBackedColumnSource.getMemoryColumnSource(0, tableKeySources[ii].getType());
         }
@@ -118,18 +119,18 @@ public abstract class OperatorAggregationStateManagerTypedBase
 
     protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
-    static class BuildContext extends BuildOrProbeContext {
+    public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
     }
-    static class ProbeContext extends BuildOrProbeContext {
+    public static class ProbeContext extends BuildOrProbeContext {
         private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
     }
 
-    static class BuildOrProbeContext implements Context {
+    private static class BuildOrProbeContext implements Context {
         final int chunkSize;
         final SharedContext sharedContext;
         final ChunkSource.GetContext[] getContexts;
