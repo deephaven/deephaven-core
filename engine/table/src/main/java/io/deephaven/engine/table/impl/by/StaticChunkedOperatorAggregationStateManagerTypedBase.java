@@ -60,17 +60,17 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     }
 
     @Override
-    public void moveMain(int oldTableLocation, int newTableLocation) {
+    public void doMoveMain(int oldTableLocation, int newTableLocation) {
         outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(newTableLocation), newTableLocation);
     }
 
     @Override
-    public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
+    public void doPromoteOverflow(int overflowLocation, int mainInsertLocation) {
         outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(mainInsertLocation), mainInsertLocation);
     }
 
     @Override
-    public void nextChunk(int size) {
+    public void onNextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
     }
 

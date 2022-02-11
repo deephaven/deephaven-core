@@ -42,7 +42,7 @@ public interface HashHandler {
      * @param oldTableLocation the old location in the main table
      * @param newTableLocation the new location in the main table
      */
-    void moveMain(int oldTableLocation, int newTableLocation);
+    void doMoveMain(int oldTableLocation, int newTableLocation);
 
     /**
      * Called during rehash when a value is promoted from overflow to the main table
@@ -50,14 +50,14 @@ public interface HashHandler {
      * @param overflowLocation the old location in the overflow table
      * @param mainInsertLocation the new location in the main table
      */
-    void promoteOverflow(int overflowLocation, int mainInsertLocation);
+    void doPromoteOverflow(int overflowLocation, int mainInsertLocation);
 
     /**
      * Called when the next chunk of data is being processed in build or probe.
      * 
      * @param size the size of the next chunk
      */
-    void nextChunk(int size);
+    void onNextChunk(int size);
 
     /**
      * Called during probe when a value is not found in main or overflow.
@@ -93,12 +93,12 @@ public interface HashHandler {
         }
 
         @Override
-        final public void moveMain(int oldTableLocation, int newTableLocation) {
+        final public void doMoveMain(int oldTableLocation, int newTableLocation) {
             throw new IllegalStateException();
         }
 
         @Override
-        final public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
+        final public void doPromoteOverflow(int overflowLocation, int mainInsertLocation) {
             throw new IllegalStateException();
         }
     }

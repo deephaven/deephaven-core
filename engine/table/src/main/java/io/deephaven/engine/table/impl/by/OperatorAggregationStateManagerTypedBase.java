@@ -190,7 +190,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 ensureOverflowCapacity(chunkOk.intSize());
-                handler.nextChunk(chunkOk.intSize());
+                handler.onNextChunk(chunkOk.intSize());
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
@@ -216,7 +216,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
                 ensureOverflowCapacity(chunkOk.intSize());
-                handler.nextChunk(chunkOk.intSize());
+                handler.onNextChunk(chunkOk.intSize());
 
                 if (usePrev) {
                     getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);

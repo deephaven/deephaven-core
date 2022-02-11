@@ -25,20 +25,20 @@ import java.lang.Override;
 import java.lang.Short;
 
 final class TypedHasherShortObject extends StaticChunkedOperatorAggregationStateManagerTypedBase {
-  private final ShortArraySource keySource0;
+  private final ShortArraySource mainKeySource0;
 
   private final ShortArraySource overflowKeySource0;
 
-  private final ObjectArraySource keySource1;
+  private final ObjectArraySource mainKeySource1;
 
   private final ObjectArraySource overflowKeySource1;
 
   public TypedHasherShortObject(ColumnSource[] tableKeySources, int tableSize,
       double maximumLoadFactor, double targetLoadFactor) {
     super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-    this.keySource0 = (ShortArraySource) super.mainKeySources[0];
+    this.mainKeySource0 = (ShortArraySource) super.mainKeySources[0];
     this.overflowKeySource0 = (ShortArraySource) super.overflowKeySources[0];
-    this.keySource1 = (ObjectArraySource) super.mainKeySources[1];
+    this.mainKeySource1 = (ObjectArraySource) super.mainKeySources[1];
     this.overflowKeySource1 = (ObjectArraySource) super.overflowKeySources[1];
   }
 
@@ -53,10 +53,10 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
       if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         numEntries++;
-        keySource0.set(tableLocation, v0);
-        keySource1.set(tableLocation, v1);
+        mainKeySource0.set(tableLocation, v0);
+        mainKeySource1.set(tableLocation, v1);
         handler.doMainInsert(tableLocation, chunkPosition);
-      } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
+      } else if (eq(mainKeySource0.getUnsafe(tableLocation), v0) && eq(mainKeySource1.getUnsafe(tableLocation), v1)) {
         handler.doMainFound(tableLocation, chunkPosition);
       } else {
         int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);
@@ -77,14 +77,15 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
   protected void probe(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
     final ShortChunk<Values> keyChunk0 = sourceKeyChunks[0].asShortChunk();
     final ObjectChunk<Object, Values> keyChunk1 = sourceKeyChunks[1].asObjectChunk();
-    for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition) {
+    final int chunkSize = keyChunk0.size();
+    for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
       final short v0 = keyChunk0.get(chunkPosition);
       final Object v1 = keyChunk1.get(chunkPosition);
       final int hash = hash(v0, v1);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
       if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         handler.doMissing(chunkPosition);
-      } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
+      } else if (eq(mainKeySource0.getUnsafe(tableLocation), v0) && eq(mainKeySource1.getUnsafe(tableLocation), v1)) {
         handler.doMainFound(tableLocation, chunkPosition);
       } else {
         int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);
@@ -118,10 +119,10 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
       final int overflowHash = hash(overflowKey0, overflowKey1);
       final int overflowTableLocation = hashToTableLocation(tableHashPivot + bucketsToAdd, overflowHash);
       if (overflowTableLocation == mainInsertLocation) {
-        keySource0.set(mainInsertLocation, overflowKey0);
-        keySource1.set(mainInsertLocation, overflowKey1);
+        mainKeySource0.set(mainInsertLocation, overflowKey0);
+        mainKeySource1.set(mainInsertLocation, overflowKey1);
         mainOutputPosition.set(mainInsertLocation, overflowOutputPosition.getUnsafe(overflowLocation));
-        handler.promoteOverflow(overflowLocation, mainInsertLocation);
+        handler.doPromoteOverflow(overflowLocation, mainInsertLocation);
         overflowOutputPosition.set(overflowLocation, QueryConstants.NULL_INT);
         overflowKeySource0.set(overflowLocation, QueryConstants.NULL_SHORT);
         overflowKeySource1.set(overflowLocation, null);
@@ -138,8 +139,8 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
 
   private int maybeMoveMainBucket(HashHandler handler, int bucket, int destBucket,
       int bucketsToAdd) {
-    final short v0 = keySource0.getUnsafe(bucket);
-    final Object v1 = keySource1.getUnsafe(bucket);
+    final short v0 = mainKeySource0.getUnsafe(bucket);
+    final Object v1 = mainKeySource1.getUnsafe(bucket);
     final int hash = hash(v0, v1);
     final int location = hashToTableLocation(tableHashPivot + bucketsToAdd, hash);
     final int mainInsertLocation;
@@ -150,11 +151,11 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
       mainInsertLocation = bucket;
       mainOutputPosition.set(destBucket, mainOutputPosition.getUnsafe(bucket));
       mainOutputPosition.set(bucket, EMPTY_STATE_VALUE);
-      keySource0.set(destBucket, v0);
-      keySource0.set(bucket, QueryConstants.NULL_SHORT);
-      keySource1.set(destBucket, v1);
-      keySource1.set(bucket, null);
-      handler.moveMain(bucket, destBucket);
+      mainKeySource0.set(destBucket, v0);
+      mainKeySource0.set(bucket, QueryConstants.NULL_SHORT);
+      mainKeySource1.set(destBucket, v1);
+      mainKeySource1.set(bucket, null);
+      handler.doMoveMain(bucket, destBucket);
     }
     return mainInsertLocation;
   }
@@ -182,7 +183,7 @@ final class TypedHasherShortObject extends StaticChunkedOperatorAggregationState
     if (positionValue == EMPTY_STATE_VALUE) {
       return -1;
     }
-    if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
+    if (eq(mainKeySource0.getUnsafe(tableLocation), v0) && eq(mainKeySource1.getUnsafe(tableLocation), v1)) {
       return positionValue;
     }
     int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);

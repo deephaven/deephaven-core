@@ -134,18 +134,18 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         }
 
         @Override
-        public void moveMain(int oldTableLocation, int newTableLocation) {
+        public void doMoveMain(int oldTableLocation, int newTableLocation) {
             final int position = mainOutputPosition.getUnsafe(newTableLocation);
             outputPositionToHashSlot.set(position, newTableLocation);
         }
 
         @Override
-        public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
+        public void doPromoteOverflow(int overflowLocation, int mainInsertLocation) {
             outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(mainInsertLocation), mainInsertLocation);
         }
 
         @Override
-        public void nextChunk(int size) {
+        public void onNextChunk(int size) {
             outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
             rowCountSource.ensureCapacity(outputPosition.intValue() + size);
         }
@@ -263,7 +263,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
 
         @Override
-        public void nextChunk(int size) {}
+        public void onNextChunk(int size) {}
 
         @Override
         public void doMissing(int chunkPosition) {
@@ -291,7 +291,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         }
 
         @Override
-        public void nextChunk(int size) {}
+        public void onNextChunk(int size) {}
 
         @Override
         public void doMissing(int chunkPosition) {

@@ -210,10 +210,10 @@ public class TypeChunkedHashFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             Class<?> type = arraySourceType(chunkTypes[ii]);
             keySources.add(
-                    FieldSpec.builder(type, "keySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
+                    FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
             keySources.add(FieldSpec.builder(type, "overflowKeySource" + ii)
                     .addModifiers(Modifier.PRIVATE, Modifier.FINAL).build());
-            constructorCodeBuilder.addStatement("this.keySource$L = ($T) super.keySources[$L]", ii, type, ii);
+            constructorCodeBuilder.addStatement("this.mainKeySource$L = ($T) super.mainKeySources[$L]", ii, type, ii);
             constructorCodeBuilder.addStatement("this.overflowKeySource$L = ($T) super.overflowKeySources[$L]", ii,
                     type, ii);
         }
@@ -273,7 +273,7 @@ public class TypeChunkedHashFactory {
         builder.addStatement("return positionValue");
         builder.endControlFlow();
 
-        builder.addStatement("int overflowLocation = overflowLocationSource.getUnsafe(tableLocation)");
+        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
 
         builder.beginControlFlow("while (overflowLocation != QueryConstants.NULL_INT)");
         builder.beginControlFlow("if (" + getEqualsStatementOverflow(chunkTypes) + ")");
@@ -295,7 +295,7 @@ public class TypeChunkedHashFactory {
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T v$L = keySource$L.getUnsafe(bucket)", element, ii, ii);
+            builder.addStatement("final $T v$L = mainKeySource$L.getUnsafe(bucket)", element, ii, ii);
         }
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", ")) + ")");
@@ -309,10 +309,10 @@ public class TypeChunkedHashFactory {
         builder.addStatement("$L.set(destBucket, $L.getUnsafe(bucket))", hasherConfig.mainStateName, hasherConfig.mainStateName);
         builder.addStatement("$L.set(bucket, EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("keySource$L.set(destBucket, v$L)", ii, ii);
-            builder.addStatement("keySource$L.set(bucket, $L)", ii, elementNull(chunkTypes[ii]));
+            builder.addStatement("mainKeySource$L.set(destBucket, v$L)", ii, ii);
+            builder.addStatement("mainKeySource$L.set(bucket, $L)", ii, elementNull(chunkTypes[ii]));
         }
-        builder.addStatement("handler.moveMain(bucket, destBucket)");
+        builder.addStatement("handler.doMoveMain(bucket, destBucket)");
         builder.endControlFlow();
         builder.addStatement("return mainInsertLocation");
 
@@ -330,9 +330,9 @@ public class TypeChunkedHashFactory {
         builder.endControlFlow();
 
         builder.addStatement("int mainInsertLocation = maybeMoveMainBucket(handler, bucket, destBucket, bucketsToAdd)");
-        builder.addStatement("int overflowLocation = overflowLocationSource.getUnsafe(bucket)");
-        builder.addStatement("overflowLocationSource.set(bucket, QueryConstants.NULL_INT)");
-        builder.addStatement("overflowLocationSource.set(destBucket, QueryConstants.NULL_INT)");
+        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(bucket)");
+        builder.addStatement("mainOverflowLocationSource.set(bucket, QueryConstants.NULL_INT)");
+        builder.addStatement("mainOverflowLocationSource.set(destBucket, QueryConstants.NULL_INT)");
 
         builder.beginControlFlow("while (overflowLocation != QueryConstants.NULL_INT)");
         builder.addStatement(
@@ -347,10 +347,10 @@ public class TypeChunkedHashFactory {
                 "final int overflowTableLocation = hashToTableLocation(tableHashPivot + bucketsToAdd, overflowHash)");
         builder.beginControlFlow("if (overflowTableLocation == mainInsertLocation)");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("keySource$L.set(mainInsertLocation, overflowKey$L)", ii, ii);
+            builder.addStatement("mainKeySource$L.set(mainInsertLocation, overflowKey$L)", ii, ii);
         }
         builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName, hasherConfig.overflowStateName);
-        builder.addStatement("handler.promoteOverflow(overflowLocation, mainInsertLocation)");
+        builder.addStatement("handler.doPromoteOverflow(overflowLocation, mainInsertLocation)");
         builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)", hasherConfig.overflowStateName);
 
         // key source loop
@@ -361,8 +361,8 @@ public class TypeChunkedHashFactory {
         builder.addStatement("freeOverflowLocation(overflowLocation)");
         builder.addStatement("mainInsertLocation = -1");
         builder.nextControlFlow("else");
-        builder.addStatement("final int oldOverflowLocation = overflowLocationSource.getUnsafe(overflowTableLocation)");
-        builder.addStatement("overflowLocationSource.set(overflowTableLocation, overflowLocation)");
+        builder.addStatement("final int oldOverflowLocation = mainOverflowLocationSource.getUnsafe(overflowTableLocation)");
+        builder.addStatement("mainOverflowLocationSource.set(overflowTableLocation, overflowLocation)");
         builder.addStatement("overflowOverflowLocationSource.set(overflowLocation, oldOverflowLocation)");
         builder.endControlFlow();
         builder.addStatement("overflowLocation = nextOverflowLocation");
@@ -399,13 +399,13 @@ public class TypeChunkedHashFactory {
         builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == EMPTY_STATE_VALUE)", hasherConfig.mainStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("keySource$L.set(tableLocation, v$L)", ii, ii);
+            builder.addStatement("mainKeySource$L.set(tableLocation, v$L)", ii, ii);
         }
         builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
         builder.nextControlFlow("else");
-        builder.addStatement("int overflowLocation = overflowLocationSource.getUnsafe(tableLocation)");
+        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
         builder.beginControlFlow("if (!findOverflow(handler, "
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", "))
                 + ", chunkPosition, overflowLocation))");
@@ -413,7 +413,7 @@ public class TypeChunkedHashFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("overflowKeySource$L.set(newOverflowLocation, v$L)", ii, ii);
         }
-        builder.addStatement("overflowLocationSource.set(tableLocation, newOverflowLocation)");
+        builder.addStatement("mainOverflowLocationSource.set(tableLocation, newOverflowLocation)");
         builder.addStatement("overflowOverflowLocationSource.set(newOverflowLocation, overflowLocation)");
         builder.addStatement("numEntries++");
         builder.addStatement("handler.doOverflowInsert(newOverflowLocation, chunkPosition)");
@@ -443,7 +443,8 @@ public class TypeChunkedHashFactory {
             builder.addStatement("final $T keyChunk$L = sourceKeyChunks[$L].as$LChunk()", chunkTypeName, ii, ii,
                     chunkTypes[ii].name());
         }
-        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < keyChunk0.size(); ++chunkPosition)");
+        builder.addStatement("final int chunkSize = keyChunk0.size()");
+        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition)");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
             builder.addStatement("final $T v$L = keyChunk$L.get(chunkPosition)", element, ii, ii);
@@ -456,7 +457,7 @@ public class TypeChunkedHashFactory {
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
         builder.nextControlFlow("else");
-        builder.addStatement("int overflowLocation = overflowLocationSource.getUnsafe(tableLocation)");
+        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
         builder.beginControlFlow("if (!findOverflow(handler, "
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "v" + x).collect(Collectors.joining(", "))
                 + ", chunkPosition, overflowLocation))");
@@ -476,7 +477,7 @@ public class TypeChunkedHashFactory {
     @NotNull
     private static MethodSpec createHashMethod(ChunkType[] chunkTypes) {
         final MethodSpec.Builder builder =
-                MethodSpec.methodBuilder("hash").returns(int.class).addModifiers(Modifier.PRIVATE);
+                MethodSpec.methodBuilder("hash").returns(int.class).addModifiers(Modifier.PRIVATE, Modifier.STATIC);
         final CodeBlock.Builder hashCodeBuilder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final ChunkType chunkType = chunkTypes[ii];
@@ -495,7 +496,7 @@ public class TypeChunkedHashFactory {
     @NotNull
     private static String getEqualsStatement(ChunkType[] chunkTypes) {
         return IntStream.range(0, chunkTypes.length)
-                .mapToObj(x -> "eq(keySource" + x + ".getUnsafe(tableLocation), v" + x + ")")
+                .mapToObj(x -> "eq(mainKeySource" + x + ".getUnsafe(tableLocation), v" + x + ")")
                 .collect(Collectors.joining(" && "));
     }
 
