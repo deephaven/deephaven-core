@@ -1,3 +1,5 @@
+import groovy.json.JsonBuilder
+
 plugins {
   id 'java'
 }
@@ -74,33 +76,67 @@ tasks.withType(JavaCompile).configureEach {
   }
 }
 
-def extraJvmArgs = { runtimeJavaVersion ->
+def tier4CompilationExcludes = [
+  'io.deephaven.engine.table.impl.by.ssmpercentile.DoublePercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.FloatPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager':['buildTable'],
+  'io.deephaven.engine.table.impl.RightIncrementalChunkedCrossJoinStateManager':['addToIndex', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.IncrementalChunkedNaturalJoinStateManager':['buildTable', 'decorationProbe'],
+]
+def createCompilerDirectives = tasks.register('createCompilerDirectives') {
+  def c2ExcludesFile = project.layout.buildDirectory.file('c2-excludes.txt')
+  it.outputs.file(c2ExcludesFile)
+
+  doFirst {
+    def excludesAsList = []
+    tier4CompilationExcludes.forEach({type, methods ->
+      methods.forEach {method ->
+        excludesAsList += "${type}::${method}"
+      }
+    })
+    def builder = new JsonBuilder()
+    builder([{
+              match excludesAsList
+              c2 {
+                Exclude true
+              }
+            }])
+    c2ExcludesFile.get().asFile.text = builder.toPrettyString()
+  }
+}
+
+def extraJvmArgs = { int runtimeJavaVersion, File c2ExcludesFile ->
+  def args = [
+          '-XX:Tier4CompileThreshold=1000',
+//          '-XX:+PrintFlagsFinal',
+//          '-XX:+PrintCompilation',
+          '-XX:+UnlockDiagnosticVMOptions',
+          "-XX:CompilerDirectivesFile=${c2ExcludesFile}",
+  ]
   if (runtimeJavaVersion > 8) {
     // Allow reflection, disable broken jit
-    return [
+    args += [
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.DoublePercentileTypeMedianHelper::setResult',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.SsmChunkedPercentileOperator::addChunk',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedByAggregationStateManager::buildTable',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedOperatorAggregationStateManager::buildTable',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.RightIncrementalChunkedCrossJoinStateManager::addToIndex',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::buildTable',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::decorationProbe',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedOperatorAggregationStateManager::buildTable',
     ]
   }
-  return []
+  return args
 }
 
 tasks.withType(JavaExec).configureEach {
+  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+  inputs.files c2ExcludesFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += extraJvmArgs(runtimeVersion)
+  jvmArgs += extraJvmArgs(runtimeVersion, c2ExcludesFile.singleFile)
   // todo: configure create start scripts
 }
 
 tasks.withType(Test).configureEach {
+  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+  inputs.files c2ExcludesFile
+
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += extraJvmArgs(testRuntimeVersion)
+  jvmArgs += extraJvmArgs(testRuntimeVersion, c2ExcludesFile.singleFile)
 }
 
 tasks.withType(GroovyCompile).configureEach {
