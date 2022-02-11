@@ -33,10 +33,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     // aggregation)
     protected final IntegerArraySource overflowOutputPosition = new IntegerArraySource();
 
+    // used as a row redirection for the output key sources
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
-    private final LongArraySource rowCountSource = new LongArraySource();
     private final WritableRowRedirection resultIndexToHashSlot =
             new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
+
+    // how many values are in each state, addressed by output row key
+    private final LongArraySource rowCountSource = new LongArraySource();
 
     protected IncrementalChunkedOperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             int tableSize, double maximumLoadFactor, double targetLoadFactor) {

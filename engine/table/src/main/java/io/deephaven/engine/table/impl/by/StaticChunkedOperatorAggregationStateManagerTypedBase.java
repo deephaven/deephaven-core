@@ -27,6 +27,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     // aggregation)
     protected final IntegerArraySource overflowOutputPosition = new IntegerArraySource();
 
+    // used as a row redirection for the output key sources
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
