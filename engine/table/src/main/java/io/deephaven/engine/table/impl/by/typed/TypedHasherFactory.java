@@ -280,7 +280,7 @@ public class TypedHasherFactory {
         builder.addStatement("return $L.getUnsafe(overflowLocation)", hasherConfig.overflowStateName);
         builder.endControlFlow();
 
-        builder.addStatement("overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation);");
+        builder.addStatement("overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation)");
         builder.endControlFlow();
         builder.addStatement("return -1");
         return builder.build();
