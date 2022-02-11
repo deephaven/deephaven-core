@@ -37,7 +37,7 @@ public class TypedHasherFactory {
     /**
      * Produce a hasher for the given base class and column sources.
      *
-     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase)} that the
+     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase} that the
      *        generated hasher extends from
      * @param tableKeySources the key sources
      * @param tableSize the initial table size

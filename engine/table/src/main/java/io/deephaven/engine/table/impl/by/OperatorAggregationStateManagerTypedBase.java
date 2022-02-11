@@ -32,9 +32,9 @@ public abstract class OperatorAggregationStateManagerTypedBase
      * Our table size must be 2^L (i.e. a power of two); and the pivot is between 2^(L-1) and 2^L.
      *
      * <p>
-     * When hashing a value, if hashCode % 2^L < tableHashPivot; then the destination location is hashCode % 2^L. If
-     * hashCode % 2^L >= tableHashPivot, then the destination location is hashCode % 2^(L-1). Once the pivot reaches the
-     * table size, we can simply double the table size and repeat the process.
+     * When hashing a value, if hashCode % 2^L &lt; tableHashPivot; then the destination location is hashCode % 2^L. If
+     * hashCode % 2^L &gt;= tableHashPivot, then the destination location is hashCode % 2^(L-1). Once the pivot reaches
+     * the table size, we can simply double the table size and repeat the process.
      * </p>
      *
      * <p>
