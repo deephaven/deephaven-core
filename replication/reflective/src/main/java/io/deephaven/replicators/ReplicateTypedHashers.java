@@ -32,7 +32,7 @@ public class ReplicateTypedHashers {
         addHasherParametersAndReturnType(singleDispatchBuilder, baseClass);
 
         singleDispatchBuilder.beginControlFlow("switch (chunkType)");
-        singleDispatchBuilder.addCode("default:");
+        singleDispatchBuilder.addCode("default: ");
         singleDispatchBuilder.addStatement("throw new UnsupportedOperationException($S + chunkType)",
                 "Invalid chunk type for typed hashers: ");
 
@@ -48,7 +48,7 @@ public class ReplicateTypedHashers {
 
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
-            singleDispatchBuilder.addCode("case " + chunkType.name() + ":");
+            singleDispatchBuilder.addCode("case " + chunkType.name() + ": ");
             singleDispatchBuilder.addStatement(
                     "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                     ClassName.get(packageName, name));
@@ -63,7 +63,7 @@ public class ReplicateTypedHashers {
         addHasherParametersAndReturnType(doubleDispatchBuilder, baseClass);
 
         doubleDispatchBuilder.beginControlFlow("switch (chunkType0)");
-        doubleDispatchBuilder.addCode("default:");
+        doubleDispatchBuilder.addCode("default: ");
         doubleDispatchBuilder.addStatement("throw new UnsupportedOperationException($S + chunkType0)",
                 "Invalid chunk type for typed hashers: ");
 
@@ -76,7 +76,7 @@ public class ReplicateTypedHashers {
 
             doubleDispatchBuilder.addCode("case " + chunkType0.name() + ":");
             doubleDispatchBuilder.beginControlFlow("switch (chunkType1)");
-            doubleDispatchBuilder.addCode("default:");
+            doubleDispatchBuilder.addCode("default: ");
             doubleDispatchBuilder.addStatement("throw new UnsupportedOperationException($S + chunkType1)",
                     "Invalid chunk type for typed hashers: ");
 
@@ -94,7 +94,7 @@ public class ReplicateTypedHashers {
                 System.out.println("Generating " + name + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);
 
-                doubleDispatchBuilder.addCode("case " + chunkType1.name() + ":");
+                doubleDispatchBuilder.addCode("case " + chunkType1.name() + ": ");
                 doubleDispatchBuilder.addStatement(
                         "return new $T(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
                         ClassName.get(packageName, name));
@@ -138,9 +138,9 @@ public class ReplicateTypedHashers {
         dispatcherFile.writeTo(sourceRoot);
     }
 
-    private static void addHasherParametersAndReturnType(MethodSpec.Builder doubleDispatchBuilder,
+    private static void addHasherParametersAndReturnType(MethodSpec.Builder dispatchBuilder,
             Class<?> returnType) {
-        doubleDispatchBuilder
+        dispatchBuilder
                 .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
                 .addParameter(int.class, "tableSize")

@@ -10,7 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -59,7 +59,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 
     @Override
     public void doMainInsert(int tableLocation, int chunkPosition) {
-        int nextOutputPosition = outputPosition.getAndIncrement();
+        final int nextOutputPosition = outputPosition.getAndIncrement();
         outputPositions.set(chunkPosition, nextOutputPosition);
         mainOutputPosition.set(tableLocation, nextOutputPosition);
         outputPositionToHashSlot.set(nextOutputPosition, tableLocation);
@@ -93,8 +93,8 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     @Override
     public void doOverflowInsert(int overflowLocation, int chunkPosition) {
         final int nextOutputPosition = outputPosition.getAndIncrement();
-        overflowOutputPosition.set(overflowLocation, nextOutputPosition);
         outputPositions.set(chunkPosition, nextOutputPosition);
+        overflowOutputPosition.set(overflowLocation, nextOutputPosition);
         outputPositionToHashSlot.set(nextOutputPosition,
                 HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
     }
@@ -106,9 +106,8 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
     }
 
     @Override
-    protected void ensureCapacity(int tableSize) {
+    protected void ensureMainState(int tableSize) {
         mainOutputPosition.ensureCapacity(tableSize);
-        super.ensureCapacity(tableSize);
     }
 
     @Override
@@ -118,7 +117,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 
     @Override
     public ColumnSource[] getKeyHashTableSources() {
-        final WritableRowRedirection resultIndexToHashSlot =
+        final RowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
         final ColumnSource[] keyHashTableSources = new ColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {

@@ -92,11 +92,14 @@ public abstract class OperatorAggregationStateManagerTypedBase
         this.targetLoadFactor = targetLoadFactor;
     }
 
+    protected abstract void ensureMainState(int tableSize);
+
     protected void ensureCapacity(int tableSize) {
         mainOverflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             mainKeySources[ii].ensureCapacity(tableSize);
         }
+        ensureMainState(tableSize);
     }
 
     protected abstract void ensureOverflowState(int newCapacity);
@@ -138,11 +141,9 @@ public abstract class OperatorAggregationStateManagerTypedBase
         private BuildOrProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             Assert.gtZero(chunkSize, "chunkSize");
             this.chunkSize = chunkSize;
-            final boolean haveSharedContexts = buildSources.length > 1;
-            if (haveSharedContexts) {
+            if (buildSources.length > 1) {
                 sharedContext = SharedContext.makeSharedContext();
             } else {
-                // no point in the additional work implied by these not being null.
                 sharedContext = null;
             }
             getContexts = makeGetContexts(buildSources, sharedContext, chunkSize);

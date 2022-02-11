@@ -105,8 +105,6 @@ public class TypedHasherFactory {
      */
     public static <T> T make(HasherConfig<T> hasherConfig, ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
-        final ChunkType[] chunkTypes =
-                Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
         if (USE_PREGENERATED_HASHERS) {
             if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
@@ -126,6 +124,8 @@ public class TypedHasherFactory {
             }
         }
 
+        final ChunkType[] chunkTypes =
+                Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
         final String className = hasherName(chunkTypes);
 
         JavaFile javaFile = generateHasher(hasherConfig, chunkTypes, className, Optional.of(Modifier.PUBLIC));

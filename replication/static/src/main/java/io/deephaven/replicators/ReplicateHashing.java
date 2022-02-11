@@ -63,8 +63,7 @@ public class ReplicateHashing {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
         FileUtils.writeLines(objectFile, globalReplacements(fixupChunkAttributes(lines), "Object.hashCode",
-                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value", "QueryConstants.NULL_OBJECT",
-                "null"));
+                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value"));
     }
 
     private static void fixupObjectChunkEquals(String objectPath) throws IOException {

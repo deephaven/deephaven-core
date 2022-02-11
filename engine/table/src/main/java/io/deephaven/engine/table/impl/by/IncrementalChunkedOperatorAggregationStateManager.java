@@ -1284,19 +1284,19 @@ class IncrementalChunkedOperatorAggregationStateManager
 
     // region probe wrappers
     @Override
-    public void remove(final SafeCloseable pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
-        if (indexToRemove.isEmpty()) {
+    public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        decorationProbe((ProbeContext)pc, indexToRemove, sources, true, true, outputPositions, emptiedPositions);
+        decorationProbe((ProbeContext)pc, rowSequence, sources, true, true, outputPositions, emptiedPositions);
     }
 
     @Override
-    public void findModifications(final SafeCloseable pc, RowSequence modifiedIndex, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions)  {
-        if (modifiedIndex.isEmpty()) {
+    public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions)  {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        decorationProbe((ProbeContext)pc, modifiedIndex, sources, false, false, outputPositions, null);
+        decorationProbe((ProbeContext)pc, rowSequence, sources, false, false, outputPositions, null);
     }
     // endregion probe wrappers
 
