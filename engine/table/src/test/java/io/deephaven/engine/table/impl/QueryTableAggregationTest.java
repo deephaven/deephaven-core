@@ -2439,9 +2439,8 @@ public class QueryTableAggregationTest {
         final Random random = new Random(0);
         final ColumnInfo[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "floatCol"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "doubleCol", "floatCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
-                        new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 100.0f)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
