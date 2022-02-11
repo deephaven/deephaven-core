@@ -42,7 +42,7 @@ public class ReplicateTypedHashers {
                 continue;
             }
             array[0] = chunkType;
-            final String name = TypedHasherFactory.hasherName(array);
+            final String name = TypedHasherFactory.hasherName(hasherConfig, array);
             final JavaFile javaFile =
                     TypedHasherFactory.generateHasher(hasherConfig, array, name, Optional.empty());
 
@@ -87,7 +87,7 @@ public class ReplicateTypedHashers {
 
                 array2[1] = chunkType1;
 
-                final String name = TypedHasherFactory.hasherName(array2);
+                final String name = TypedHasherFactory.hasherName(hasherConfig, array2);
                 final JavaFile javaFile =
                         TypedHasherFactory.generateHasher(hasherConfig, array2, name, Optional.empty());
 

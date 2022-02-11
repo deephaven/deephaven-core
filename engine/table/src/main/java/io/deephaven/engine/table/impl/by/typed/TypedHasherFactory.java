@@ -53,16 +53,19 @@ public class TypedHasherFactory {
 
     @NotNull
     public static <T> HasherConfig<T> hasherConfigForBase(Class<T> baseClass) {
+        final String classPrefix;
         final String packageMiddle;
         final String mainStateName;
         final String overflowStateName;
         final String emptyStateName;
         if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            classPrefix = "StaticAggHasher";
             packageMiddle = "staticagg";
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
+            classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
@@ -71,20 +74,24 @@ public class TypedHasherFactory {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
         final HasherConfig<T> hasherConfig =
-                new HasherConfig<>(baseClass, packageMiddle, mainStateName, overflowStateName, emptyStateName);
+                new HasherConfig<>(baseClass, classPrefix, packageMiddle, mainStateName, overflowStateName,
+                        emptyStateName);
         return hasherConfig;
     }
 
     public static class HasherConfig<T> {
         final Class<T> baseClass;
+        public final String classPrefix;
         public final String packageMiddle;
         final String mainStateName;
         final String overflowStateName;
         final String emptyStateName;
 
-        HasherConfig(Class<T> baseClass, String packageMiddle, String mainStateName, String overflowStateName,
+        HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, String mainStateName,
+                String overflowStateName,
                 String emptyStateName) {
             this.baseClass = baseClass;
+            this.classPrefix = classPrefix;
             this.packageMiddle = packageMiddle;
             this.mainStateName = mainStateName;
             this.overflowStateName = overflowStateName;
@@ -126,7 +133,7 @@ public class TypedHasherFactory {
 
         final ChunkType[] chunkTypes =
                 Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
-        final String className = hasherName(chunkTypes);
+        final String className = hasherName(hasherConfig, chunkTypes);
 
         JavaFile javaFile = generateHasher(hasherConfig, chunkTypes, className, Optional.of(Modifier.PUBLIC));
 
@@ -159,8 +166,9 @@ public class TypedHasherFactory {
     }
 
     @NotNull
-    public static String hasherName(ChunkType[] chunkTypes) {
-        return "TypedHasher" + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
+    public static String hasherName(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+        return hasherConfig.classPrefix
+                + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
     }
 
     @NotNull
