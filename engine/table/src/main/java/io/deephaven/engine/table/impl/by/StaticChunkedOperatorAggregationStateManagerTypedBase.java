@@ -11,11 +11,15 @@ import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         extends OperatorAggregationStateManagerTypedBase implements HashHandler {
+    // our state value used when nothing is there
+    protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
+
     // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
     protected final IntegerArraySource mainOutputPosition = new IntegerArraySource();
 

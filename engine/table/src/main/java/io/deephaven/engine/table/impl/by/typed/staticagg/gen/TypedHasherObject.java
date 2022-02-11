@@ -38,7 +38,7 @@ final class TypedHasherObject extends StaticChunkedOperatorAggregationStateManag
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
+            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_OUTPUT_POSITION) {
                 numEntries++;
                 mainKeySource0.set(tableLocation, k0);
                 handler.doMainInsert(tableLocation, chunkPosition);
@@ -66,7 +66,7 @@ final class TypedHasherObject extends StaticChunkedOperatorAggregationStateManag
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
+            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_OUTPUT_POSITION) {
                 handler.doMissing(chunkPosition);
             } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 handler.doMainFound(tableLocation, chunkPosition);
@@ -88,7 +88,7 @@ final class TypedHasherObject extends StaticChunkedOperatorAggregationStateManag
     protected void rehashBucket(HashHandler handler, int sourceBucket, int destBucket,
             int bucketsToAdd) {
         final int position = mainOutputPosition.getUnsafe(sourceBucket);
-        if (position == EMPTY_STATE_VALUE) {
+        if (position == EMPTY_OUTPUT_POSITION) {
             return;
         }
         int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd);
@@ -125,11 +125,11 @@ final class TypedHasherObject extends StaticChunkedOperatorAggregationStateManag
         final int mainInsertLocation;
         if (location == sourceBucket) {
             mainInsertLocation = destBucket;
-            mainOutputPosition.set(destBucket, EMPTY_STATE_VALUE);
+            mainOutputPosition.set(destBucket, EMPTY_OUTPUT_POSITION);
         } else {
             mainInsertLocation = sourceBucket;
             mainOutputPosition.set(destBucket, mainOutputPosition.getUnsafe(sourceBucket));
-            mainOutputPosition.set(sourceBucket, EMPTY_STATE_VALUE);
+            mainOutputPosition.set(sourceBucket, EMPTY_OUTPUT_POSITION);
             mainKeySource0.set(destBucket, k0);
             mainKeySource0.set(sourceBucket, null);
             handler.doMoveMain(sourceBucket, destBucket);
@@ -155,7 +155,7 @@ final class TypedHasherObject extends StaticChunkedOperatorAggregationStateManag
         int hash = hash(k0);
         final int tableLocation = hashToTableLocation(tableHashPivot, hash);
         final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
-        if (positionValue == EMPTY_STATE_VALUE) {
+        if (positionValue == EMPTY_OUTPUT_POSITION) {
             return -1;
         }
         if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {

@@ -8,7 +8,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
-import io.deephaven.engine.table.impl.by.typed.TypeChunkedHashFactory;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -22,8 +22,8 @@ public class ReplicateTypedHashers {
     }
 
     private static void generatePackage(Class<?> baseClass) throws IOException {
-        final TypeChunkedHashFactory.HasherConfig<?> hasherConfig = TypeChunkedHashFactory.hasherConfigForBase(baseClass);
-        final String packageName = TypeChunkedHashFactory.packageName(hasherConfig.packageMiddle);
+        final TypedHasherFactory.HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
+        final String packageName = TypedHasherFactory.packageName(hasherConfig.packageMiddle);
         final File sourceRoot = new File("engine/table/src/main/java/");
 
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
@@ -42,9 +42,9 @@ public class ReplicateTypedHashers {
                 continue;
             }
             array[0] = chunkType;
-            final String name = TypeChunkedHashFactory.hasherName(array);
+            final String name = TypedHasherFactory.hasherName(array);
             final JavaFile javaFile =
-                    TypeChunkedHashFactory.generateHasher(hasherConfig, array, name, Optional.empty());
+                    TypedHasherFactory.generateHasher(hasherConfig, array, name, Optional.empty());
 
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
@@ -87,9 +87,9 @@ public class ReplicateTypedHashers {
 
                 array2[1] = chunkType1;
 
-                final String name = TypeChunkedHashFactory.hasherName(array2);
+                final String name = TypedHasherFactory.hasherName(array2);
                 final JavaFile javaFile =
-                        TypeChunkedHashFactory.generateHasher(hasherConfig, array2, name, Optional.empty());
+                        TypedHasherFactory.generateHasher(hasherConfig, array2, name, Optional.empty());
 
                 System.out.println("Generating " + name + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);

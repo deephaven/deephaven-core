@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.GroupingUtils;
 import io.deephaven.engine.table.impl.PrevColumnSource;
-import io.deephaven.engine.table.impl.by.typed.TypeChunkedHashFactory;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -125,7 +125,7 @@ public class ChunkedOperatorAggregationHelper {
         final IncrementalOperatorAggregationStateManager incrementalStateManager;
         if (withView.isRefreshing()) {
             if (USE_TYPED_STATE_MANAGER) {
-                stateManager = incrementalStateManager = TypeChunkedHashFactory.make(
+                stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
@@ -136,7 +136,7 @@ public class ChunkedOperatorAggregationHelper {
             }
         } else {
             if (USE_TYPED_STATE_MANAGER) {
-                stateManager = TypeChunkedHashFactory.make(
+                stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
