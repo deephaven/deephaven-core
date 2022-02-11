@@ -60,7 +60,7 @@ services:
     environment:
       - PAGEVIEWS_PER_SECOND_START=750
       - PURCHASES_PER_SECOND_START=10
-      - COMMAND_ENDPOINT=127.0.0.1:8090
+      - COMMAND_ENDPOINT=0.0.0.0:8090
     depends_on:
       mysql:
         condition: service_started
