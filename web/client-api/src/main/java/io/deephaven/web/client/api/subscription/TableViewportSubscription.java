@@ -1,5 +1,6 @@
 package io.deephaven.web.client.api.subscription;
 
+import elemental2.core.Int8Array;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -302,8 +303,9 @@ public class TableViewportSubscription extends HasEventHandling {
 
                 FlightData request = new FlightData();
                 request.setAppMetadata(
-                        BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
+                        BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
                 stream.send(request);
+                stream.end();
                 stream.onData(flightData -> {
 
                     Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
@@ -313,15 +315,18 @@ public class TableViewportSubscription extends HasEventHandling {
                     }
                     assert message.headerType() == MessageHeader.RecordBatch;
                     RecordBatch header = message.header(new RecordBatch());
-                    BarrageMessageWrapper barrageMessageWrapper =
-                            BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                            flightData.getAppMetadata_asU8()));
+                    Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
+                    BarrageUpdateMetadata update = null;
+                    if (appMetadataBytes.length != 0) {
+                        BarrageMessageWrapper barrageMessageWrapper =
+                                BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
+                                        new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
+                                                appMetadataBytes));
 
-                    BarrageUpdateMetadata update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                            new ByteBuffer(
-                                    new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
-
+                        update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
+                                new ByteBuffer(
+                                        new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
+                    }
                     TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
                             BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
                             true,

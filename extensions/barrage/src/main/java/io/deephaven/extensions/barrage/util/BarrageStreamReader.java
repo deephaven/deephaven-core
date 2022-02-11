@@ -182,6 +182,7 @@ public class BarrageStreamReader implements StreamReader {
                 bodyParsed = true;
                 final int size = decoder.readRawVarint32();
                 final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
+                msg.length = batch.length();
 
                 // noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois =

@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -502,29 +503,37 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // Added Chunk Data:
-        final RowSet myAddedOffsets;
-        if (view.isViewport()) {
-            // only include added rows that are within the viewport
-            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport().intersect(rowsIncluded.original));
-        } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-            // there are scoped rows included in the chunks that need to be removed
-            myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
-        } else {
-            // use chunk data as-is
-            myAddedOffsets = null;
-        }
+        RowSet myAddedOffsets = null;
+        try {
+            if (view.isViewport()) {
+                // only include added rows that are within the viewport
+                try (WritableRowSet intersect = view.keyspaceViewport().intersect(rowsIncluded.original)) {
+                    myAddedOffsets = rowsIncluded.original.invert(intersect);
+                }
+            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+                // there are scoped rows included in the chunks that need to be removed
+                myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
+            } else {
+                // use chunk data as-is
+                myAddedOffsets = null;
+            }
 
-        // add the add-column streams
-        for (final ChunkInputStreamGenerator col : addColumnData) {
-            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    col.getInputStream(view.options(), myAddedOffsets);
-            drainableColumn.visitFieldNodes(fieldNodeListener);
-            drainableColumn.visitBuffers(bufferListener);
+            // add the add-column streams
+            for (final ChunkInputStreamGenerator col : addColumnData) {
+                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                        col.getInputStream(view.options(), myAddedOffsets);
+                drainableColumn.visitFieldNodes(fieldNodeListener);
+                drainableColumn.visitBuffers(bufferListener);
 
-            // Add the drainable last as it is allowed to immediately close a row set the visitors need
-            addStream.accept(drainableColumn);
+                // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                addStream.accept(drainableColumn);
+            }
+            return myAddedOffsets != null ? myAddedOffsets.size() : rowsAdded.original.size();
+        } finally {
+            if (myAddedOffsets != null) {
+                myAddedOffsets.close();
+            }
         }
-        return rowsAdded.original.size();
     }
 
     private long appendModColumns(final View view,
@@ -534,24 +543,32 @@ public class BarrageStreamGenerator implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
-            RowSet myModOffsets = null;
-            if (view.isViewport()) {
-                // only include added rows that are within the viewport
-                myModOffsets =
-                        mcd.rowsModified.original.invert(view.keyspaceViewport().intersect(mcd.rowsModified.original));
-                numRows = Math.max(numRows, myModOffsets.size());
-            } else {
-                numRows = Math.max(numRows, mcd.rowsModified.original.size());
+            RowSet myModOffsets = null;//needs to be closed, if non-null
+            try {
+                if (view.isViewport()) {
+                    // only include modified rows that are within the viewport
+                    try (WritableRowSet intersect = view.keyspaceViewport().intersect(mcd.rowsModified.original)) {
+                        myModOffsets =
+                                mcd.rowsModified.original.invert(intersect);
+                    }
+                    numRows = Math.max(numRows, myModOffsets.size());
+                } else {
+                    numRows = Math.max(numRows, mcd.rowsModified.original.size());
+                }
+
+                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                        mcd.data.getInputStream(view.options(), myModOffsets);
+
+                drainableColumn.visitFieldNodes(fieldNodeListener);
+                drainableColumn.visitBuffers(bufferListener);
+
+                // See comment in appendAddColumns
+                addStream.accept(drainableColumn);
+            } finally {
+                if (myModOffsets != null) {
+                    myModOffsets.close();
+                }
             }
-
-            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    mcd.data.getInputStream(view.options(), myModOffsets);
-
-            drainableColumn.visitFieldNodes(fieldNodeListener);
-            drainableColumn.visitBuffers(bufferListener);
-
-            // See comment in appendAddColumns
-            addStream.accept(drainableColumn);
         }
         return numRows;
     }

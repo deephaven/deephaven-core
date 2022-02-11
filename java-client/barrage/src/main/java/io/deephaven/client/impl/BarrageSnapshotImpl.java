@@ -118,7 +118,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 }
 
                 // override server-supplied data and regenerate local rowsets
-                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.addColumnData[0].data.size());
+                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.length);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
 
                 listener.handleBarrageMessage(barrageMessage);
