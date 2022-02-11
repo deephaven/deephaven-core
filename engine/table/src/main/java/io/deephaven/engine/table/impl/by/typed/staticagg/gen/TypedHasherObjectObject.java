@@ -30,9 +30,9 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
   public TypedHasherObjectObject(ColumnSource[] tableKeySources, int tableSize,
       double maximumLoadFactor, double targetLoadFactor) {
     super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-    this.keySource0 = (ObjectArraySource) super.keySources[0];
+    this.keySource0 = (ObjectArraySource) super.mainKeySources[0];
     this.overflowKeySource0 = (ObjectArraySource) super.overflowKeySources[0];
-    this.keySource1 = (ObjectArraySource) super.keySources[1];
+    this.keySource1 = (ObjectArraySource) super.mainKeySources[1];
     this.overflowKeySource1 = (ObjectArraySource) super.overflowKeySources[1];
   }
 
@@ -45,7 +45,7 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
       final Object v1 = keyChunk1.get(chunkPosition);
       final int hash = hash(v0, v1);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
+      if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         numEntries++;
         keySource0.set(tableLocation, v0);
         keySource1.set(tableLocation, v1);
@@ -53,12 +53,12 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
       } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
         handler.doMainFound(tableLocation, chunkPosition);
       } else {
-        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);
         if (!findOverflow(handler, v0, v1, chunkPosition, overflowLocation)) {
           final int newOverflowLocation = allocateOverflowLocation();
           overflowKeySource0.set(newOverflowLocation, v0);
           overflowKeySource1.set(newOverflowLocation, v1);
-          overflowLocationSource.set(tableLocation, newOverflowLocation);
+          mainOverflowLocationSource.set(tableLocation, newOverflowLocation);
           overflowOverflowLocationSource.set(newOverflowLocation, overflowLocation);
           numEntries++;
           handler.doOverflowInsert(newOverflowLocation, chunkPosition);
@@ -76,12 +76,12 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
       final Object v1 = keyChunk1.get(chunkPosition);
       final int hash = hash(v0, v1);
       final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-      if (stateSource.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
+      if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_STATE_VALUE) {
         handler.doMissing(chunkPosition);
       } else if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
         handler.doMainFound(tableLocation, chunkPosition);
       } else {
-        int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+        int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);
         if (!findOverflow(handler, v0, v1, chunkPosition, overflowLocation)) {
           handler.doMissing(chunkPosition);
         }
@@ -97,14 +97,14 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
 
   @Override
   protected void rehashBucket(HashHandler handler, int bucket, int destBucket, int bucketsToAdd) {
-    final int position = stateSource.getUnsafe(bucket);
+    final int position = mainOutputPosition.getUnsafe(bucket);
     if (position == EMPTY_STATE_VALUE) {
       return;
     }
     int mainInsertLocation = maybeMoveMainBucket(handler, bucket, destBucket, bucketsToAdd);
-    int overflowLocation = overflowLocationSource.getUnsafe(bucket);
-    overflowLocationSource.set(bucket, QueryConstants.NULL_INT);
-    overflowLocationSource.set(destBucket, QueryConstants.NULL_INT);
+    int overflowLocation = mainOverflowLocationSource.getUnsafe(bucket);
+    mainOverflowLocationSource.set(bucket, QueryConstants.NULL_INT);
+    mainOverflowLocationSource.set(destBucket, QueryConstants.NULL_INT);
     while (overflowLocation != QueryConstants.NULL_INT) {
       final int nextOverflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation);
       final Object overflowKey0 = overflowKeySource0.getUnsafe(overflowLocation);
@@ -114,16 +114,16 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
       if (overflowTableLocation == mainInsertLocation) {
         keySource0.set(mainInsertLocation, overflowKey0);
         keySource1.set(mainInsertLocation, overflowKey1);
-        stateSource.set(mainInsertLocation, overflowStateSource.getUnsafe(overflowLocation));
+        mainOutputPosition.set(mainInsertLocation, overflowOutputPosition.getUnsafe(overflowLocation));
         handler.promoteOverflow(overflowLocation, mainInsertLocation);
-        overflowStateSource.set(overflowLocation, QueryConstants.NULL_INT);
+        overflowOutputPosition.set(overflowLocation, QueryConstants.NULL_INT);
         overflowKeySource0.set(overflowLocation, null);
         overflowKeySource1.set(overflowLocation, null);
         freeOverflowLocation(overflowLocation);
         mainInsertLocation = -1;
       } else {
-        final int oldOverflowLocation = overflowLocationSource.getUnsafe(overflowTableLocation);
-        overflowLocationSource.set(overflowTableLocation, overflowLocation);
+        final int oldOverflowLocation = mainOverflowLocationSource.getUnsafe(overflowTableLocation);
+        mainOverflowLocationSource.set(overflowTableLocation, overflowLocation);
         overflowOverflowLocationSource.set(overflowLocation, oldOverflowLocation);
       }
       overflowLocation = nextOverflowLocation;
@@ -139,11 +139,11 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
     final int mainInsertLocation;
     if (location == bucket) {
       mainInsertLocation = destBucket;
-      stateSource.set(destBucket, EMPTY_STATE_VALUE);
+      mainOutputPosition.set(destBucket, EMPTY_STATE_VALUE);
     } else {
       mainInsertLocation = bucket;
-      stateSource.set(destBucket, stateSource.getUnsafe(bucket));
-      stateSource.set(bucket, EMPTY_STATE_VALUE);
+      mainOutputPosition.set(destBucket, mainOutputPosition.getUnsafe(bucket));
+      mainOutputPosition.set(bucket, EMPTY_STATE_VALUE);
       keySource0.set(destBucket, v0);
       keySource0.set(bucket, null);
       keySource1.set(destBucket, v1);
@@ -172,17 +172,17 @@ final class TypedHasherObjectObject extends StaticChunkedOperatorAggregationStat
     final Object v1 = va[1];
     int hash = hash(v0, v1);
     final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-    final int positionValue = stateSource.getUnsafe(tableLocation);
+    final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
     if (positionValue == EMPTY_STATE_VALUE) {
       return -1;
     }
     if (eq(keySource0.getUnsafe(tableLocation), v0) && eq(keySource1.getUnsafe(tableLocation), v1)) {
       return positionValue;
     }
-    int overflowLocation = overflowLocationSource.getUnsafe(tableLocation);
+    int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation);
     while (overflowLocation != QueryConstants.NULL_INT) {
       if (eq(overflowKeySource0.getUnsafe(overflowLocation), v0) && eq(overflowKeySource1.getUnsafe(overflowLocation), v1)) {
-        return overflowStateSource.getUnsafe(overflowLocation);
+        return overflowOutputPosition.getUnsafe(overflowLocation);
       }
       overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation);;
     }

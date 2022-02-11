@@ -58,11 +58,9 @@ public abstract class OperatorAggregationStateManagerTypedBase
     private int freeOverflowCount = 0;
 
     // the keys for our hash entries
-    protected final ArrayBackedColumnSource<?>[] keySources;
+    protected final ArrayBackedColumnSource<?>[] mainKeySources;
     // the location of the first overflow entry in this bucket, parallel to keySources
-    protected final IntegerArraySource overflowLocationSource = new IntegerArraySource();
-    // the state value for the bucket, parallel to keySources (the state is an output row key for the aggregation)
-    protected final IntegerArraySource stateSource = new IntegerArraySource();
+    protected final IntegerArraySource mainOverflowLocationSource = new IntegerArraySource();
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
@@ -71,9 +69,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
     protected final ArrayBackedColumnSource<?>[] overflowKeySources;
     // the location of the next key in an overflow bucket, parallel with overflowKeySources
     protected final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the state value for an overflow entry, parallel with overflowKeySources (the state is an output row key for the
-    // aggregation)
-    protected final IntegerArraySource overflowStateSource = new IntegerArraySource();
+
 
     protected OperatorAggregationStateManagerTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
@@ -83,12 +79,12 @@ public abstract class OperatorAggregationStateManagerTypedBase
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         this.tableHashPivot = tableSize;
 
-        keySources = new ArrayBackedColumnSource[tableKeySources.length];
+        mainKeySources = new ArrayBackedColumnSource[tableKeySources.length];
         overflowKeySources = new ArrayBackedColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table
-            keySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
+            mainKeySources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(tableSize, tableKeySources[ii].getType());
             overflowKeySources[ii] =
                     ArrayBackedColumnSource.getMemoryColumnSource(0, tableKeySources[ii].getType());
         }
@@ -99,13 +95,14 @@ public abstract class OperatorAggregationStateManagerTypedBase
         ensureCapacity(tableSize);
     }
 
-    private void ensureCapacity(int tableSize) {
-        stateSource.ensureCapacity(tableSize);
-        overflowLocationSource.ensureCapacity(tableSize);
-        for (int ii = 0; ii < keySources.length; ++ii) {
-            keySources[ii].ensureCapacity(tableSize);
+    protected void ensureCapacity(int tableSize) {
+        mainOverflowLocationSource.ensureCapacity(tableSize);
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            mainKeySources[ii].ensureCapacity(tableSize);
         }
     }
+
+    protected abstract void ensureOverflowState(int newCapacity);
 
     private void ensureOverflowCapacity(final int locationsToAllocate) {
         if (freeOverflowCount >= locationsToAllocate) {
@@ -113,7 +110,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
         }
         final int newCapacity = nextOverflowLocation + locationsToAllocate - freeOverflowCount;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowStateSource.ensureCapacity(newCapacity);
+        ensureOverflowState(newCapacity);
         // noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);

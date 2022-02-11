@@ -22,6 +22,13 @@ import org.apache.commons.lang3.mutable.MutableInt;
 public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         extends OperatorAggregationStateManagerTypedBase
         implements IncrementalOperatorAggregationStateManager {
+    // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
+    protected final IntegerArraySource mainOutputPosition = new IntegerArraySource();
+
+    // the state value for an overflow entry, parallel with overflowKeySources (the state is an output row key for the
+    // aggregation)
+    protected final IntegerArraySource overflowOutputPosition = new IntegerArraySource();
+
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
     private final LongArraySource rowCountSource = new LongArraySource();
     private final WritableRowRedirection resultIndexToHashSlot =
@@ -51,11 +58,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     public ColumnSource[] getKeyHashTableSources() {
         final WritableRowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
-        final ColumnSource[] keyHashTableSources = new ColumnSource[keySources.length];
-        for (int kci = 0; kci < keySources.length; ++kci) {
+        final ColumnSource[] keyHashTableSources = new ColumnSource[mainKeySources.length];
+        for (int kci = 0; kci < mainKeySources.length; ++kci) {
             // noinspection unchecked
             keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot,
-                    new HashTableColumnSource(keySources[kci], overflowKeySources[kci]));
+                    new HashTableColumnSource(mainKeySources[kci], overflowKeySources[kci]));
         }
         return keyHashTableSources;
     }
@@ -97,6 +104,17 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         probeTable(new ModifyHandler(outputPositions), (ProbeContext) pc, modifiedIndex, false, sources);
     }
 
+    @Override
+    protected void ensureCapacity(int tableSize) {
+        mainOutputPosition.ensureCapacity(tableSize);
+        super.ensureCapacity(tableSize);
+    }
+
+    @Override
+    protected void ensureOverflowState(int newCapacity) {
+        overflowOutputPosition.ensureCapacity(newCapacity);
+    }
+
     private abstract class AddHandler extends HashHandler.BuildHandler {
         final MutableInt outputPosition;
         final WritableIntChunk<RowKeys> outputPositions;
@@ -110,20 +128,20 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         public void doMainInsert(int tableLocation, int chunkPosition) {
             int position = outputPosition.getAndIncrement();
             outputPositions.set(chunkPosition, position);
-            stateSource.set(tableLocation, position);
+            mainOutputPosition.set(tableLocation, position);
             outputPositionToHashSlot.set(position, tableLocation);
             rowCountSource.set(position, 1L);
         }
 
         @Override
         public void moveMain(int oldTableLocation, int newTableLocation) {
-            final int position = stateSource.getUnsafe(newTableLocation);
+            final int position = mainOutputPosition.getUnsafe(newTableLocation);
             outputPositionToHashSlot.set(position, newTableLocation);
         }
 
         @Override
         public void promoteOverflow(int overflowLocation, int mainInsertLocation) {
-            outputPositionToHashSlot.set(stateSource.getUnsafe(mainInsertLocation), mainInsertLocation);
+            outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(mainInsertLocation), mainInsertLocation);
         }
 
         @Override
@@ -135,7 +153,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
         @Override
         public void doOverflowInsert(int overflowLocation, int chunkPosition) {
             final int position = outputPosition.getAndIncrement();
-            overflowStateSource.set(overflowLocation, position);
+            overflowOutputPosition.set(overflowLocation, position);
             outputPositions.set(chunkPosition, position);
             outputPositionToHashSlot.set(position,
                     HashTableColumnSource.overflowLocationToHashLocation(overflowLocation));
@@ -150,7 +168,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doMainFound(int tableLocation, int chunkPosition) {
-            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            final int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
@@ -160,7 +178,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
-            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            final int outputPosition = overflowOutputPosition.getUnsafe(overflowLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
@@ -181,7 +199,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doMainFound(int tableLocation, int chunkPosition) {
-            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            final int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
@@ -194,7 +212,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
-            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            final int outputPosition = overflowOutputPosition.getUnsafe(overflowLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
@@ -218,7 +236,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
-            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            final int outputPosition = overflowOutputPosition.getUnsafe(overflowLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
@@ -231,7 +249,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doMainFound(int tableLocation, int chunkPosition) {
-            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            final int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
             outputPositions.set(chunkPosition, outputPosition);
 
             // decrement the row count
@@ -262,13 +280,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void doOverflowFound(int overflowLocation, int chunkPosition) {
-            final int outputPosition = overflowStateSource.getUnsafe(overflowLocation);
+            final int outputPosition = overflowOutputPosition.getUnsafe(overflowLocation);
             outputPositions.set(chunkPosition, outputPosition);
         }
 
         @Override
         public void doMainFound(int tableLocation, int chunkPosition) {
-            final int outputPosition = stateSource.getUnsafe(tableLocation);
+            final int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
             outputPositions.set(chunkPosition, outputPosition);
         }
 
