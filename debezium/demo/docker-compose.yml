@@ -66,5 +66,5 @@ services:
         condition: service_started
       debezium:
         condition: service_started
-    expose:
-      - 8090
+    ports:
+      - "127.0.0.1:8090:8090"

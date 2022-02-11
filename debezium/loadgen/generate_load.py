@@ -182,25 +182,35 @@ async def loop_random_pageviews(producer):
         producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
     await loop(make_random_pageview, 'pageviews_per_second', "pageview")
 
+def chomp(s):
+    return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
 #
 # Simple socket-based command interface.
 #
 async def handle_command_client(reader, writer):
     peer = reader._transport.get_extra_info('peername')
-    log(f"Command interface connected to {peer}.")
+    me = f"Command interface to {peer}"
+    log(f"{me} connected.")
     async def send(msg):
-        msg += "\n"
-        writer.write(msg.encode('utf8'))
+        out_bytes = (msg + "\n").encode('utf8')
+        writer.write(out_bytes)
         await writer.drain()
+        log(f"{me} sent: '{msg}'.")
     await send("LOADGEN Connected.")
     try:
         while True:
-            request = (await reader.readline()).decode('utf8')
-            cmd_words = request.split()
+            in_bytes = await reader.readline()
+            if len(in_bytes) == 0:
+                log(f"{me} received zero bytes.")
+                break;
+            in_str = chomp(in_bytes.decode('utf8'))
+            log(f"{me} received: '{in_str}'.")
+            cmd_words = in_str.split()
             if len(cmd_words) == 0:
                 await send("Empty request.")
                 continue
             if cmd_words[0].lower() == 'quit':
+                await send("Goodbye.")
                 break
             if cmd_words[0].lower() != "set":
                 await send(f"Unrecognized command: '{cmd_words[0]}'.")
@@ -220,7 +230,7 @@ async def handle_command_client(reader, writer):
                     await send(f"Invalid value: '{cmd_words[2]}'.")
                     continue
                 old_value = params[key]
-                params[key] = 1.0/value
+                params[key] = value
                 await send(f"Setting {key}: old value was {old_value}, new value is {value}.")
                 continue
             await send(f"Unrecognized key '{key}' for {cmd_words[0]} command.")
