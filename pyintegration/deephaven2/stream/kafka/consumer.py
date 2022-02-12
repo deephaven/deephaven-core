@@ -3,7 +3,7 @@
 #
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
 from enum import Enum
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Callable
 
 import jpy
 
@@ -24,24 +24,29 @@ _ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 class TableType(Enum):
     """ A Enum that defines the supported Table Type for consuming Kafka. """
     Stream = _JTableType.Stream
+    """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
+     to downstream operations and visualizations."""
     Append = _JTableType.Append
+    """ Consume all partitions into a single interleaved in-memory append-only table."""
     StreamMap = _JTableType.StreamMap
+    """ Similar to Stream, but each partition is mapped to a distinct stream table."""
     AppendMap = _JTableType.AppendMap
+    """ Similar to Append, but each partition is mapped to a distinct in-memory append-only table. """
 
 
 SEEK_TO_BEGINNING = _JKafkaTools.SEEK_TO_BEGINNING
-""" start consuming at the beginning of a partition. """
+""" Start consuming at the beginning of a partition. """
 DONT_SEEK = _JKafkaTools.DONT_SEEK
-""" start consuming at the current position of a partition. """
+""" Start consuming at the current position of a partition. """
 SEEK_TO_END = _JKafkaTools.SEEK_TO_END
-""" start consuming at the end of a partition. """
+""" Start consuming at the end of a partition. """
 
 ALL_PARTITIONS_SEEK_TO_BEGINNING = {-1: SEEK_TO_BEGINNING}
-""" for all partitions, start consuming at the beginning. """
+""" For all partitions, start consuming at the beginning. """
 ALL_PARTITIONS_DONT_SEEK = {-1: DONT_SEEK}
-""" for all partitions, start consuming at the current position."""
+""" For all partitions, start consuming at the current position."""
 ALL_PARTITIONS_SEEK_TO_END = {-1: SEEK_TO_END}
-""" for all partitions, start consuming at the end. """
+""" For all partitions, start consuming at the end. """
 
 _ALL_PARTITIONS_SEEK_TO_BEGINNING = _JKafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING
 _ALL_PARTITIONS_DONT_SEEK = _JKafkaTools.ALL_PARTITIONS_DONT_SEEK
@@ -60,10 +65,15 @@ class KeyValueSpec(JObjectWrapper):
 
 
 KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Consume.IGNORE)
-KeyValueSpec.NONE = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
+""" The spec for explicitly ignoring either key or value in a Kafka message when consuming a Kafka stream. """
+
+KeyValueSpec.FROM_PROPERTIES = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
+""" The spec for specifying that when consuming a Kafka stream, the names for the key or value columns can be provided
+in the properties as "key.column.name" or "value.column.name" in the config, and otherwise default to "key" or "value".
+"""
 
 
-def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool):
+def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], str]:
     java_map = dtypes.HashMap(dict_mapping)
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
@@ -95,14 +105,16 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
         key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
-            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same
-            as KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
-            'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting column name and type
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
+            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
+            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            column name and type
         value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
-            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.NONE. The default is None which works the same
-            as KeyValueSpec.NONE, in which case, the kafka_config param should include values for dictionary keys
-            'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting column name and type
+            module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
+            works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
+            for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
+            column name and type
         table_type (TableType): a TableType enum, default is TableType.Stream
 
     Returns:
@@ -130,12 +142,12 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
             offsets_array = jpy.array('long', list(offsets.values()))
             offsets = _JKafkaTools.partitionToOffsetFromParallelArrays(partitions_array, offsets_array)
 
-        key_spec = KeyValueSpec.NONE if key_spec is None else key_spec
-        value_spec = KeyValueSpec.NONE if value_spec is None else value_spec
+        key_spec = KeyValueSpec.FROM_PROPERTIES if key_spec is None else key_spec
+        value_spec = KeyValueSpec.FROM_PROPERTIES if value_spec is None else value_spec
 
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
             raise ValueError(
-                "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE.IGNORE")
+                "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
         kafka_config = dtypes.Properties(kafka_config)
         return Table(j_table=_JKafkaTools.consumeToTable(kafka_config, topic, partitions, offsets, key_spec.j_object,
@@ -205,7 +217,7 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
 
 
 def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
-    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consume a Kafka
+    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a Kafka
     stream to a Deephaven table.
 
     Args:

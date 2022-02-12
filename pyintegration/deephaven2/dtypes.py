@@ -3,13 +3,14 @@
 #
 """ This module defines the data types supported by the Deephaven engine.
 
-Each data type is represented by a DType instance which supports creating arrays of the same type and more.
+Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
 from __future__ import annotations
 
-from typing import Iterable, Any, Sequence, Callable, Optional, Dict, Set
+from typing import Iterable, Any, Sequence, Callable, Dict, Type, Set
 
 import jpy
+import numpy as np
 
 from deephaven2 import DHError
 
@@ -24,25 +25,47 @@ def _qst_custom_type(cls_name: str):
 class DType:
     """ A class representing a data type in Deephaven."""
 
-    _j_name_type_map = {}
+    _j_name_type_map: Dict[str, DType] = {}
 
     @classmethod
-    def from_jtype(cls, j_class: Any) -> Optional[DType]:
+    def from_jtype(cls, j_class: Any) -> DType:
+        """ look up a DType that matches the java type, if not found, create a DType for it. """
         if not j_class:
             return None
 
         j_name = j_class.getName()
         dtype = DType._j_name_type_map.get(j_name)
         if not dtype:
-            return cls(j_name=j_name, j_type=j_class)
+            return cls(j_name=j_name, j_type=j_class, np_type=np.object_)
         else:
             return dtype
 
-    def __init__(self, j_name: str, j_type: Any = None, qst_type: Any = None, is_primitive: bool = False):
+    @classmethod
+    def from_np_dtype(cls, np_dtype: np.dtype) -> DType:
+        """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+        for _, dtype in DType._j_name_type_map.items():
+            if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
+                return dtype
+
+        return PyObject
+
+    def __init__(self, j_name: str, j_type: Type = None, qst_type: jpy.JType = None, is_primitive: bool = False,
+                 np_type=None, factory: Callable = None):
+        """
+        Args:
+             j_name (str): the full qualified name of the Java class
+             j_type (Type): the mapped Python class created by JPY
+             qst_type (JType): the JPY wrapped object for a instance of QST Type
+             is_primitive (bool): whether this instance represents a primitive Java type
+             np_type: an instance of numpy dtype (dtype("int64")or numpy class (e.g. np.int16)
+             factory: a callable that returns an instance of the wrapped Java class
+        """
         self.j_name = j_name
         self.j_type = j_type if j_type else jpy.get_type(j_name)
         self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
         self.is_primitive = is_primitive
+        self.np_type = np_type
+        self._factory = factory
 
         DType._j_name_type_map[j_name] = self
 
@@ -50,10 +73,12 @@ class DType:
         return self.j_name
 
     def __call__(self, *args, **kwargs):
-        if not self.is_primitive:
+        try:
+            if self._factory:
+                return self._factory(*args, **kwargs)
             return self.j_type(*args, **kwargs)
-        else:
-            raise DHError(message=f"primitive type {self.j_name} is not callable.")
+        except Exception as e:
+            raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
     def array(self, size: int):
         """ Creates a Java array of the same data type of the specified size.
@@ -101,7 +126,10 @@ class DType:
 
 
 class CharDType(DType):
-    """ The class that wraps Java char type. """
+    """ The class for char type. """
+
+    def __init__(self):
+        super().__init__(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
 
     def array_from(self, seq: Sequence, remap: Callable[[Any], Any] = None):
         if isinstance(seq, str) and not remap:
@@ -109,87 +137,76 @@ class CharDType(DType):
         return super().array_from(seq, remap)
 
 
-bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType())
-byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True)
+bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
+byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
 int8 = byte
-short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True)
+short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
 int16 = short
-char = CharDType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True)
-int_ = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True)
-int32 = int_
-long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True)
+char = CharDType()
+int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
+long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
 int64 = long
-float_ = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True)
+int_ = int32
+float_ = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
 single = float_
 float32 = float_
-double = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True)
+double = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
 float64 = double
-string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
-BigDecimal = DType(j_name="java.math.BigDecimal")
-StringSet = DType(j_name="io.deephaven.stringset.StringSet")
-PyObject = DType(j_name="org.jpy.PyObject")
-JObject = DType(j_name="java.lang.Object")
-DateTime = DType(j_name="io.deephaven.time.DateTime")
-Period = DType(j_name="io.deephaven.time.Period")
+string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.object_)
+BigDecimal = DType(j_name="java.math.BigDecimal", np_type=np.object_)
+StringSet = DType(j_name="io.deephaven.stringset.StringSet", np_type=np.object_)
+DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
+Period = DType(j_name="io.deephaven.time.Period", np_type=np.object_)
+PyObject = DType(j_name="org.jpy.PyObject", np_type=np.object_)
+JObject = DType(j_name="java.lang.Object", np_type=np.object_)
 
 
-class PropertiesDType(DType):
-    """ The class that wraps java Properties. """
-
-    def __call__(self, d: Dict) -> Any:
-        if d is None:
-            return None
-        r = self.j_type()
-        for key, value in d.items():
-            if value is None:
-                value = ''
-            r.setProperty(key, value)
-        return r
+def _j_array_list(values: Iterable):
+    if values is None:
+        return None
+    r = jpy.get_type("java.util.ArrayList")(len(list(values)))
+    for v in values:
+        r.add(v)
+    return r
 
 
-class HashMapDType(DType):
-    """ The class that wraps java HashMap. """
+def _j_hashmap(d: Dict):
+    if d is None:
+        return None
 
-    def __call__(self, d: Dict) -> Any:
-        if d is None:
-            return None
-        r = self.j_type()
-        for key, value in d.items():
-            if value is None:
-                value = ''
-            r.put(key, value)
-        return r
+    r = jpy.get_type("java.util.HashMap")()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.put(key, value)
+    return r
 
 
-class HashSetDType(DType):
-    """ The case the wraps java Set. """
+def _j_hashset(s: Set):
+    if s is None:
+        return None
 
-    def __call__(self, s: Set):
-        if s is None:
-            return None
-        r = self.j_type()
-        for v in s:
-            r.add(v)
-        return r
+    r = jpy.get_type("java.util.HashSet")()
+    for v in s:
+        r.add(v)
+    return r
 
 
-class ArrayListDType(DType):
-    """ The case the wraps java Set. """
-
-    def __call__(self, it: Iterable):
-        if not it:
-            return None
-
-        j_list = self.j_type()
-        for v in it:
-            j_list.add(v)
-        return j_list
+def _j_properties(d: Dict):
+    if d is None:
+        return None
+    r = jpy.get_type("java.util.Properties")()
+    for key, value in d.items():
+        if value is None:
+            value = ''
+        r.setProperty(key, value)
+    return r
 
 
-Properties = PropertiesDType(j_name="java.util.Properties")
-HashMap = HashMapDType(j_name="java.util.HashMap")
-HashSet = HashSetDType(j_name="java.util.HashSet")
-ArrayList = ArrayListDType(j_name="java.util.ArrayList")
+HashSet = DType(j_name="java.util.HashSet", np_type=np.object_, factory=_j_hashset)
+HashMap = DType(j_name="java.util.HashMap", np_type=np.object_, factory=_j_hashmap)
+ArrayList = DType(j_name="java.util.ArrayList", np_type=np.object_, factory=_j_array_list)
+Properties = DType(j_name="java.util.Properties", np_type=np.object_, factory=_j_properties)
 
 
 def is_java_type(obj: Any) -> bool:

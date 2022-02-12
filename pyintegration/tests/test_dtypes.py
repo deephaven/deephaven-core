@@ -6,7 +6,6 @@ import math
 import time
 import unittest
 
-import numpy
 import numpy as np
 import pandas as pd
 
@@ -40,6 +39,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
         self.assertEqual(dtypes.int_.j_type, jpy.get_type("int"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
+        self.assertEqual(dtypes.int_.j_type, jpy.get_type("int"))
         self.assertEqual(dtypes.float_.j_type, jpy.get_type("float"))
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
@@ -65,17 +65,18 @@ class DTypesTestCase(BaseTestCase):
         j_array = dtypes.int_.array(5)
         for i in range(5):
             j_array[i] = i
-        np_array = numpy.frombuffer(j_array, numpy.int32)
-        self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
+        np_array = np.frombuffer(j_array, np.int32)
+        self.assertTrue(np.array_equal(np_array, np.array([0, 1, 2, 3, 4], dtype=np.int32)))
 
     def test_array_from(self):
         j_array = dtypes.int_.array_from(range(5))
-        np_array = numpy.frombuffer(j_array, numpy.int32)
-        self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
+        np_array = np.frombuffer(j_array, np.int32)
+        expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+        self.assertTrue(np.array_equal(np_array, expected))
 
-        j_array = dtypes.int_.array_from([0, 1, 2, 3, 4])
-        np_array = numpy.frombuffer(j_array, numpy.int32)
-        self.assertTrue((np_array == numpy.array([0, 1, 2, 3, 4], dtype=numpy.int32)).all())
+        j_array = dtypes.int64.array_from([0, 1, 2, 3, 4])
+        np_array = np.frombuffer(j_array, dtype=np.int64)
+        self.assertTrue(np.array_equal(np_array, expected))
 
     def test_integer_array_from(self):
         np_array = np.array([float('nan'), NULL_DOUBLE, 1.123, np.inf], dtype=np.float64)

@@ -122,7 +122,7 @@ def write_table(table: Table, destination: str, col_definitions: List[Column] = 
         col_definitions (List[Column]): the column definitions to use, default is None
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
         compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20
+        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
 
     Raises:
         DHError
@@ -159,6 +159,8 @@ def write_tables(tables: List[Table], destinations: List[str], col_definitions: 
     If you specify grouping columns, there must already be grouping information for those columns in the sources.
     This can be accomplished with .groupBy(<grouping columns>).ungroup() or .sort(<grouping column>).
 
+    Note that either all the tables are written out successfully or none is.
+
     Args:
         tables (List[Table]): the source tables
         destinations (List[str]): the destinations paths. Any non existing directories in the paths provided are
@@ -167,7 +169,7 @@ def write_tables(tables: List[Table], destinations: List[str], col_definitions: 
         col_definitions (List[Column]): the column definitions to use
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing
         compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20
+        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20(1,048,576)
         grouping_cols (List[str]): the group column names
 
     Raises:
