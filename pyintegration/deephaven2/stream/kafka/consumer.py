@@ -74,7 +74,7 @@ in the properties as "key.column.name" or "value.column.name" in the config, and
 
 
 def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], str]:
-    java_map = dtypes.HashMap(dict_mapping)
+    java_map = dtypes.j_hashmap(dict_mapping)
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
@@ -128,7 +128,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
         if partitions is None:
             partitions = _ALL_PARTITIONS
         else:
-            j_array = dtypes.int32.array_from(partitions)
+            j_array = dtypes.array(dtypes.int32, partitions)
             partitions = _JKafkaTools.partitionFilterFromArray(j_array)
 
         if offsets is None or offsets == ALL_PARTITIONS_DONT_SEEK:
@@ -149,7 +149,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
             raise ValueError(
                 "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
-        kafka_config = dtypes.Properties(kafka_config)
+        kafka_config = dtypes.j_properties(kafka_config)
         return Table(j_table=_JKafkaTools.consumeToTable(kafka_config, topic, partitions, offsets, key_spec.j_object,
                                                          value_spec.j_object,
                                                          table_type.value))
@@ -210,7 +210,7 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         col_defs = [c.j_column_definition for c in _build_column_definitions(col_defs)]
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
-        mapping = dtypes.HashMap(mapping)
+        mapping = dtypes.j_hashmap(mapping)
         return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs, mapping))
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e

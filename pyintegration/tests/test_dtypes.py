@@ -62,23 +62,16 @@ class DTypesTestCase(BaseTestCase):
         self.assertIn("12.88", str(big_decimal2))
 
     def test_array(self):
-        j_array = dtypes.int_.array(5)
-        for i in range(5):
-            j_array[i] = i
-        np_array = np.frombuffer(j_array, np.int32)
-        self.assertTrue(np.array_equal(np_array, np.array([0, 1, 2, 3, 4], dtype=np.int32)))
-
-    def test_array_from(self):
-        j_array = dtypes.int_.array_from(range(5))
+        j_array = dtypes.array(dtypes.int_, range(5))
         np_array = np.frombuffer(j_array, np.int32)
         expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         self.assertTrue(np.array_equal(np_array, expected))
 
-        j_array = dtypes.int64.array_from([0, 1, 2, 3, 4])
+        j_array = dtypes.array(dtypes.int64, [0, 1, 2, 3, 4])
         np_array = np.frombuffer(j_array, dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
 
-    def test_integer_array_from(self):
+    def test_integer_array(self):
         np_array = np.array([float('nan'), NULL_DOUBLE, 1.123, np.inf], dtype=np.float64)
 
         nulls = {dtypes.int64: NULL_LONG, dtypes.int32: NULL_INT, dtypes.short: NULL_SHORT, dtypes.byte: NULL_BYTE}
@@ -86,25 +79,25 @@ class DTypesTestCase(BaseTestCase):
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt}"):
                 expected = [nv, nv, 1, nv]
-                j_array = dt.array_from(np_array, remap=map_fn)
+                j_array = dtypes.array(dt, np_array, remap=map_fn)
                 py_array = [x for x in j_array]
                 self.assertEqual(expected, py_array)
 
         with self.subTest("int array from Python list"):
             expected = [1, 2, 3]
-            j_array = dtypes.int32.array_from([1.1, 2.2, 3.3])
+            j_array = dtypes.array(dtypes.int32, [1.1, 2.2, 3.3])
             self.assertIn("[I", str(type(j_array)))
             py_array = [x for x in j_array]
             self.assertEqual(expected, py_array)
 
         with self.subTest("byte array from Python list, down cast"):
             expected = [1000, 2000, 3000]
-            j_array = dtypes.byte.array_from(expected)
+            j_array = dtypes.array(dtypes.byte, expected)
             self.assertIn("[B", str(type(j_array)))
             py_array = [x for x in j_array]
             self.assertNotEqual(expected, py_array)
 
-    def test_floating_array_from(self):
+    def test_floating_array(self):
 
         nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
@@ -113,7 +106,7 @@ class DTypesTestCase(BaseTestCase):
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt} with mapping"):
                 expected = [nv, 1.7976931348623157e+300, nv, 1.1, nv]
-                j_array = dt.array_from(np_array, remap=map_fn)
+                j_array = dtypes.array(dt, np_array, remap=map_fn)
                 py_array = [x for x in j_array]
                 for i in range(4):
                     # downcast from double to float results in inf when the value is outside of float range
@@ -122,7 +115,7 @@ class DTypesTestCase(BaseTestCase):
         with self.subTest("double array from numpy array"):
             np_array = np.array([float('nan'), NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
             pd_series = pd.Series(np_array)
-            j_array = dtypes.double.array_from(pd_series)
+            j_array = dtypes.array(dtypes.double, pd_series)
             py_array = [x for x in j_array]
             expected = [float('nan'), NULL_DOUBLE, 1.1, float('inf')]
             self.assertTrue(math.isnan(py_array[0]))
@@ -131,7 +124,7 @@ class DTypesTestCase(BaseTestCase):
         with self.subTest("double array from numpy long array"):
             expected = [NULL_LONG, 1, 2, 3]
             np_array = np.array(expected, dtype=np.int64)
-            j_array = dtypes.float64.array_from(np_array)
+            j_array = dtypes.array(dtypes.float64, np_array)
             self.assertIn("[D", str(type(j_array)))
             py_array = [x for x in j_array]
             for i in range(4):
@@ -139,12 +132,12 @@ class DTypesTestCase(BaseTestCase):
 
         with self.subTest("double array from Python list of integer"):
             expected = [NULL_LONG, 1, 2, 3]
-            j_array = dtypes.float64.array_from(expected)
+            j_array = dtypes.array(dtypes.float64, expected)
             py_array = [x for x in j_array]
             for i in range(3):
                 self.assertAlmostEqual(expected[i], py_array[i])
 
-    def test_char_array_from(self):
+    def test_char_array(self):
         def remap_char(v):
             if v is None:
                 return NULL_CHAR
@@ -160,14 +153,14 @@ class DTypesTestCase(BaseTestCase):
                 return NULL_CHAR
 
         test_str = "abcdefg0123456"
-        j_array = dtypes.char.array_from(test_str)
+        j_array = dtypes.array(dtypes.char, test_str)
         self.assertIn("[C", str(type(j_array)))
         py_array = [chr(x) for x in j_array]
         self.assertEqual(test_str, "".join(py_array))
 
         test_list = [None, "abc", {}, 69]
         expected = [NULL_CHAR, ord("a"), NULL_CHAR, ord("E")]
-        j_array = dtypes.char.array_from(test_list, remap=remap_char)
+        j_array = dtypes.array(dtypes.char, test_list, remap=remap_char)
         py_array = [x for x in j_array]
         self.assertIn("[C", str(type(j_array)))
         self.assertEqual(expected, py_array)
@@ -176,7 +169,7 @@ class DTypesTestCase(BaseTestCase):
         dt1 = DateTime(round(time.time()))
         dt2 = now()
         values = [dt1, dt2, None]
-        j_array = DateTime.array_from(values)
+        j_array = dtypes.array(DateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
 
 

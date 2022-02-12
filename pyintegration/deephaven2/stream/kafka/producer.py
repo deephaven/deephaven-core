@@ -60,7 +60,7 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
             raise ValueError(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE")
 
-        kafka_config = dtypes.Properties(kafka_config)
+        kafka_config = dtypes.j_properties(kafka_config)
         runnable = _JKafkaTools.produceFromTable(table.j_table, kafka_config, topic, key_spec.j_object,
                                                  value_spec.j_object,
                                                  last_by_key_columns)
@@ -112,11 +112,11 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
         DHError
     """
     try:
-        field_to_col_mapping = dtypes.HashMap(field_to_col_mapping)
-        column_properties = dtypes.Properties(column_properties)
-        include_only_columns = dtypes.HashSet(include_only_columns)
+        field_to_col_mapping = dtypes.j_hashmap(field_to_col_mapping)
+        column_properties = dtypes.j_properties(column_properties)
+        include_only_columns = dtypes.j_hashset(include_only_columns)
         include_only_columns = _JKafkaTools.predicateFromSet(include_only_columns)
-        exclude_columns = dtypes.HashSet(exclude_columns)
+        exclude_columns = dtypes.j_hashset(exclude_columns)
         exclude_columns = _JKafkaTools.predicateFromSet(exclude_columns)
 
         return KeyValueSpec(_JKafkaTools_Produce.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field,
@@ -155,8 +155,8 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
     try:
         if include_columns is not None and exclude_columns is not None:
             raise ValueError("One of include_columns and exclude_columns must be None.")
-        exclude_columns = dtypes.HashSet(exclude_columns)
-        mapping = dtypes.HashMap(mapping)
+        exclude_columns = dtypes.j_hashset(exclude_columns)
+        mapping = dtypes.j_hashmap(mapping)
         return KeyValueSpec(
             _JKafkaTools_Produce.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls,
                                           timestamp_field))

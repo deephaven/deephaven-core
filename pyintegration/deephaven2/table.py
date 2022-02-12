@@ -13,7 +13,6 @@ from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
-from deephaven2.dtypes import DType
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -76,8 +75,8 @@ class Table(JObjectWrapper):
         for i in range(j_col_list.size()):
             j_col = j_col_list.get(i)
             self._schema.append(Column(name=j_col.getName(),
-                                       data_type=DType.from_jtype(j_col.getDataType()),
-                                       component_type=DType.from_jtype(j_col.getComponentType()),
+                                       data_type=dtypes.from_jtype(j_col.getDataType()),
+                                       component_type=dtypes.from_jtype(j_col.getComponentType()),
                                        column_type=ColumnType(j_col.getColumnType())))
         return self._schema
 
@@ -551,7 +550,7 @@ class Table(JObjectWrapper):
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                j_sc_list = dtypes.ArrayList(sort_columns)
+                j_sc_list = dtypes.j_array_list(sort_columns)
                 return Table(j_table=self.j_table.sort(j_sc_list))
             else:
                 return Table(j_table=self.j_table.sort(*order_by))
@@ -1001,7 +1000,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            j_agg_list = dtypes.ArrayList([agg.j_agg for agg in aggs])
+            j_agg_list = dtypes.j_array_list([agg.j_agg for agg in aggs])
             return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e

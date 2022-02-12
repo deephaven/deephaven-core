@@ -7,7 +7,7 @@ Each data type is represented by a DType class which supports creating arrays of
 """
 from __future__ import annotations
 
-from typing import Iterable, Any, Sequence, Callable, Dict, Type, Set
+from typing import Iterable, Any, Sequence, Callable, Dict, Type, Set, Union
 
 import jpy
 import numpy as np
@@ -17,6 +17,8 @@ from deephaven2 import DHError
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
+_j_name_type_map: Dict[str, DType] = {}
+
 
 def _qst_custom_type(cls_name: str):
     return _JQstType.find(_JTableTools.typeFromName(cls_name))
@@ -24,30 +26,6 @@ def _qst_custom_type(cls_name: str):
 
 class DType:
     """ A class representing a data type in Deephaven."""
-
-    _j_name_type_map: Dict[str, DType] = {}
-
-    @classmethod
-    def from_jtype(cls, j_class: Any) -> DType:
-        """ look up a DType that matches the java type, if not found, create a DType for it. """
-        if not j_class:
-            return None
-
-        j_name = j_class.getName()
-        dtype = DType._j_name_type_map.get(j_name)
-        if not dtype:
-            return cls(j_name=j_name, j_type=j_class, np_type=np.object_)
-        else:
-            return dtype
-
-    @classmethod
-    def from_np_dtype(cls, np_dtype: np.dtype) -> DType:
-        """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
-        for _, dtype in DType._j_name_type_map.items():
-            if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
-                return dtype
-
-        return PyObject
 
     def __init__(self, j_name: str, j_type: Type = None, qst_type: jpy.JType = None, is_primitive: bool = False,
                  np_type=None, factory: Callable = None):
@@ -67,12 +45,15 @@ class DType:
         self.np_type = np_type
         self._factory = factory
 
-        DType._j_name_type_map[j_name] = self
+        _j_name_type_map[j_name] = self
 
     def __repr__(self):
         return self.j_name
 
     def __call__(self, *args, **kwargs):
+        if self.is_primitive:
+            raise DHError(message=f"primitive type {self.j_name} is not callable.")
+
         try:
             if self._factory:
                 return self._factory(*args, **kwargs)
@@ -80,69 +61,13 @@ class DType:
         except Exception as e:
             raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
-    def array(self, size: int):
-        """ Creates a Java array of the same data type of the specified size.
-
-        Args:
-            size (int): the size of the array
-
-        Returns:
-            a Java array
-
-        Raises:
-            DHError
-        """
-        try:
-            return jpy.array(self.j_name, size)
-        except Exception as e:
-            raise DHError("failed to create a Java array.") from e
-
-    def array_from(self, seq: Sequence, remap: Callable[[Any], Any] = None):
-        """ Creates a Java array of the same data type populated with values from a sequence.
-
-        Note:
-            this method does unsafe casting, meaning precision and values might be lost with down cast
-
-        Args:
-            seq: a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
-            remap (optional): a callable that takes one value and maps it to another, for handling the translation of
-                special DH values such as NULL_INT, NAN_INT between Python and the DH engine
-
-        Returns:
-            a Java array
-
-        Raises:
-            DHError
-        """
-        try:
-            if remap:
-                if not callable(remap):
-                    raise ValueError("Not a callable")
-                seq = [remap(v) for v in seq]
-
-            return jpy.array(self.j_name, seq)
-        except Exception as e:
-            raise DHError(e, f"failed to create a Java {self.j_name} array.") from e
-
-
-class CharDType(DType):
-    """ The class for char type. """
-
-    def __init__(self):
-        super().__init__(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
-
-    def array_from(self, seq: Sequence, remap: Callable[[Any], Any] = None):
-        if isinstance(seq, str) and not remap:
-            return super().array_from(seq, remap=ord)
-        return super().array_from(seq, remap)
-
 
 bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
 byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
 int8 = byte
 short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
 int16 = short
-char = CharDType()
+char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
 int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
 int64 = long
@@ -161,7 +86,66 @@ PyObject = DType(j_name="org.jpy.PyObject", np_type=np.object_)
 JObject = DType(j_name="java.lang.Object", np_type=np.object_)
 
 
-def _j_array_list(values: Iterable):
+def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
+    """ Creates a Java array of the specified data type populated with values from a sequence.
+
+    Note:
+        this method does unsafe casting, meaning precision and values might be lost with down cast
+
+    Args:
+        dtype (DType): the component type of the array
+        seq (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        remap (optional): a callable that takes one value and maps it to another, for handling the translation of
+            special DH values such as NULL_INT, NAN_INT between Python and the DH engine
+
+    Returns:
+        a Java array
+
+    Raises:
+        DHError
+    """
+    try:
+        if remap:
+            if not callable(remap):
+                raise ValueError("Not a callable")
+            seq = [remap(v) for v in seq]
+        else:
+            if isinstance(seq, str) and dtype == char:
+                return array(char, seq, remap=ord)
+
+        return jpy.array(dtype.j_type, seq)
+    except Exception as e:
+        raise DHError(e, f"failed to create a Java {dtype.j_name} array.") from e
+
+
+def from_jtype(j_class: Any) -> DType:
+    """ look up a DType that matches the java type, if not found, create a DType for it. """
+    if not j_class:
+        return None
+
+    j_name = j_class.getName()
+    dtype = _j_name_type_map.get(j_name)
+    if not dtype:
+        return DType(j_name=j_name, j_type=j_class, np_type=np.object_)
+    else:
+        return dtype
+
+
+def from_np_dtype(np_dtype: np.dtype) -> DType:
+    """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+    for _, dtype in _j_name_type_map.items():
+        if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
+            return dtype
+
+    return PyObject
+
+
+def is_java_type(obj: Any) -> bool:
+    """ Returns True if the object is originated in Java. """
+    return isinstance(obj, jpy.JType)
+
+
+def j_array_list(values: Iterable):
     if values is None:
         return None
     r = jpy.get_type("java.util.ArrayList")(len(list(values)))
@@ -170,7 +154,7 @@ def _j_array_list(values: Iterable):
     return r
 
 
-def _j_hashmap(d: Dict):
+def j_hashmap(d: Dict):
     if d is None:
         return None
 
@@ -182,7 +166,7 @@ def _j_hashmap(d: Dict):
     return r
 
 
-def _j_hashset(s: Set):
+def j_hashset(s: Set):
     if s is None:
         return None
 
@@ -192,7 +176,7 @@ def _j_hashset(s: Set):
     return r
 
 
-def _j_properties(d: Dict):
+def j_properties(d: Dict):
     if d is None:
         return None
     r = jpy.get_type("java.util.Properties")()
@@ -201,14 +185,3 @@ def _j_properties(d: Dict):
             value = ''
         r.setProperty(key, value)
     return r
-
-
-HashSet = DType(j_name="java.util.HashSet", np_type=np.object_, factory=_j_hashset)
-HashMap = DType(j_name="java.util.HashMap", np_type=np.object_, factory=_j_hashmap)
-ArrayList = DType(j_name="java.util.ArrayList", np_type=np.object_, factory=_j_array_list)
-Properties = DType(j_name="java.util.Properties", np_type=np.object_, factory=_j_properties)
-
-
-def is_java_type(obj: Any) -> bool:
-    """ Returns True if the object is originated in Java. """
-    return isinstance(obj, jpy.JType)
