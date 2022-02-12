@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
@@ -21,7 +22,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
 
     // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
-    protected final IntegerArraySource mainOutputPosition = new IntegerArraySource();
+    protected final ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
 
     // used as a row redirection for the output key sources
     private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
@@ -94,11 +95,6 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     public void doMissing(int chunkPosition) {
         // we never probe
         throw new IllegalStateException();
-    }
-
-    @Override
-    protected void ensureMainState(int tableSize) {
-        mainOutputPosition.ensureCapacity(tableSize);
     }
 
     @Override

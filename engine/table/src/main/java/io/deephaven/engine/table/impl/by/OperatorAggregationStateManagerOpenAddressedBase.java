@@ -9,9 +9,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.FlatArraySource;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
@@ -22,7 +20,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
 
     // the number of slots in our table
-    private int tableSize;
+    protected int tableSize;
 
     protected long numEntries = 0;
 
@@ -49,12 +47,10 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         this.maximumLoadFactor = maximumLoadFactor;
     }
 
-    protected abstract void ensureMainState(int tableSize);
-
     protected abstract void build(HashHandler handler, RowSequence rowSequence,
             Chunk<Values>[] sourceKeyChunks);
 
-    protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
+//    protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
     public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
@@ -106,9 +102,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
-        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
-    }
+//    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+//        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
+//    }
 
     protected void buildTable(
             final HashHandler handler,
@@ -134,32 +130,32 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         }
     }
 
-    protected void probeTable(
-            final HashHandler handler,
-            final ProbeContext pc,
-            final RowSequence probeRows,
-            final boolean usePrev,
-            final ColumnSource<?>[] probeSources) {
-        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
-            // noinspection unchecked
-            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
-
-            while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
-                handler.onNextChunk(chunkOk.intSize());
-
-                if (usePrev) {
-                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-                } else {
-                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-                }
-
-                probe(handler, chunkOk, sourceKeyChunks);
-
-                pc.resetSharedContexts();
-            }
-        }
-    }
+//    protected void probeTable(
+//            final HashHandler handler,
+//            final ProbeContext pc,
+//            final RowSequence probeRows,
+//            final boolean usePrev,
+//            final ColumnSource<?>[] probeSources) {
+//        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
+//            // noinspection unchecked
+//            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
+//
+//            while (rsIt.hasMore()) {
+//                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+//                handler.onNextChunk(chunkOk.intSize());
+//
+//                if (usePrev) {
+//                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+//                } else {
+//                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+//                }
+//
+//                probe(handler, chunkOk, sourceKeyChunks);
+//
+//                pc.resetSharedContexts();
+//            }
+//        }
+//    }
 
     public void doRehash(HashHandler handler) {
         while (rehashRequired()) {

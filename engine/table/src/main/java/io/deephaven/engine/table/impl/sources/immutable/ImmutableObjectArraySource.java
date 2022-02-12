@@ -36,7 +36,7 @@ import java.util.Arrays;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DObjectArraySource}.
  */
-public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
+public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious, FlatArraySource<T> {
     private Object[] data;
 
     // region constructor
@@ -223,6 +223,16 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     @Override
     public void ensurePrevious(RowSet rowSet) {
         // we don't track previous values, so we don't care to do any work
+    }
+
+    @Override
+    public Object getArray() {
+        return (T)data;
+    }
+
+    @Override
+    public void setArray(Object array) {
+        data = (Object[])array;
     }
 
     // region reinterpret

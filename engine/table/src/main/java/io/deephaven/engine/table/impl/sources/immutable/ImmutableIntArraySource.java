@@ -37,7 +37,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DIntArraySource}.
  */
-public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt, WritableColumnSource<Integer>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
+public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt, WritableColumnSource<Integer>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious, FlatArraySource<Integer> {
     private int[] data;
 
     // region constructor
@@ -224,6 +224,16 @@ public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSourc
     @Override
     public void ensurePrevious(RowSet rowSet) {
         // we don't track previous values, so we don't care to do any work
+    }
+
+    @Override
+    public Object getArray() {
+        return data;
+    }
+
+    @Override
+    public void setArray(Object array) {
+        data = (int[])array;
     }
 
     // region reinterpret

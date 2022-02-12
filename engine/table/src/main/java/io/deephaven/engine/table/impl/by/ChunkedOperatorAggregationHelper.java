@@ -58,6 +58,9 @@ public class ChunkedOperatorAggregationHelper {
     static boolean USE_TYPED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
                     false);
+    static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
+                    true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
@@ -135,7 +138,12 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         } else {
-            if (USE_TYPED_STATE_MANAGER) {
+            if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+                stateManager = TypedHasherFactory.make(
+                        StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, reinterpretedKeySources,
+                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
