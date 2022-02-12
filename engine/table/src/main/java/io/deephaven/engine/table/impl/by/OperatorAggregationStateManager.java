@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-interface ChunkedOperatorAggregationStateManager {
+interface OperatorAggregationStateManager {
 
     SafeCloseable makeAggregationStateBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 

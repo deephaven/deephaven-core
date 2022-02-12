@@ -35,7 +35,8 @@ dependencies {
             project(':engine-tuple'),
             'com.github.f4b6a3:uuid-creator:3.6.0',
             "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
-            'com.tdunning:t-digest:3.2'
+            'com.tdunning:t-digest:3.2',
+	    'com.squareup:javapoet:1.9.0'
 
     implementation project(':plugin')
 
@@ -82,6 +83,8 @@ spotless {
                 '**/*Double*.java',
                 '**/*Object*.java',
                 '**/*StateManager.java',
+                '**/incagg/gen/*.java',
+                '**/staticagg/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'

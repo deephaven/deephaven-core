@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerTypedBase",
+ "methods": {
+  "doRehash": ":param handler: io.deephaven.engine.table.impl.by.HashHandler",
+  "findPositionForKey": ":param key: java.lang.Object\n:return: int",
+  "makeProbeContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerTypedBase.ProbeContext",
+  "rehashRequired": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerTypedBase",
+ "typeName": "class"
+}

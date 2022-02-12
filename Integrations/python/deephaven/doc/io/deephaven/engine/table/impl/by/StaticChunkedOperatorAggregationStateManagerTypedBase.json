@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase",
+ "methods": {
+  "add": ":param bc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.rowset.RowSequence\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param nextOutputPosition: org.apache.commons.lang3.mutable.MutableInt\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>",
+  "doMainFound": "Called after a value is found in the main hash table\n\n:param tableLocation: (int) - location in the table\n:param chunkPosition: (int) - the position in the chunk",
+  "doMainInsert": "Called after a value is inserted into the main hash table\n\n:param tableLocation: (int) - location of insertion\n:param chunkPosition: (int) - the position in the chunk",
+  "doMissing": "Called during probe when a value is not found in main or overflow.\n\n:param chunkPosition: (int) - the position in the chunk",
+  "doMoveMain": "Called during rehash when a value is moved in the main table\n\n:param oldTableLocation: (int) - the old location in the main table\n:param newTableLocation: (int) - the new location in the main table",
+  "doOverflowFound": "Called after a value is found in the overflow hash table\n\n:param overflowLocation: (int) - location in the overflow table\n:param chunkPosition: (int) - the position in the chunk",
+  "doOverflowInsert": "Called after a value is inserted into the overflow hash table\n\n:param overflowLocation: (int) - location of insertion\n:param chunkPosition: (int) - the position in the chunk",
+  "doPromoteOverflow": "Called during rehash when a value is promoted from overflow to the main table\n\n:param overflowLocation: (int) - the old location in the overflow table\n:param mainInsertLocation: (int) - the new location in the main table",
+  "getKeyHashTableSources": ":return: io.deephaven.engine.table.ColumnSource[]",
+  "makeAggregationStateBuildContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.util.SafeCloseable",
+  "onNextChunk": "Called when the next chunk of data is being processed in build or probe.\n\n:param size: (int) - the size of the next chunk"
+ },
+ "path": "io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase",
+ "typeName": "class"
+}
