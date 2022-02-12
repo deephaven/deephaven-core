@@ -57,7 +57,7 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
     static boolean USE_TYPED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
-                    true);
+                    false);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
