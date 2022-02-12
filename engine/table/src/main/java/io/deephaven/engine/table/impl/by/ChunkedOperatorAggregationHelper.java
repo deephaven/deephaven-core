@@ -59,7 +59,8 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
                     false);
     static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
-            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
+            Configuration.getInstance().getBooleanWithDefault(
+                    "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
                     true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,

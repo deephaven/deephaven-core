@@ -89,7 +89,8 @@ public class TypedHasherFactory {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
         final HasherConfig<T> hasherConfig =
-                new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed,  mainStateName, overflowStateName,
+                new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, mainStateName,
+                        overflowStateName,
                         emptyStateName, int.class);
         return hasherConfig;
     }
@@ -104,7 +105,8 @@ public class TypedHasherFactory {
         final String emptyStateName;
         final Class<?> stateType;
 
-        HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed, String mainStateName,
+        HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
+                String mainStateName,
                 String overflowStateName,
                 String emptyStateName, Class<?> stateType) {
             this.baseClass = baseClass;
@@ -135,6 +137,14 @@ public class TypedHasherFactory {
             if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticagg.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticopenagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
@@ -237,12 +247,14 @@ public class TypedHasherFactory {
     }
 
     @NotNull
-    private static <T> MethodSpec createConstructor(HasherConfig<T> hasherConfig, ChunkType[] chunkTypes, TypeSpec.Builder hasherBuilder) {
+    private static <T> MethodSpec createConstructor(HasherConfig<T> hasherConfig, ChunkType[] chunkTypes,
+            TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
-        if (hasherConfig.openAddressed){
+        if (hasherConfig.openAddressed) {
             constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
         } else {
-            constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+            constructorCodeBuilder
+                    .addStatement("super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
         }
         addKeySourceFields(hasherConfig, chunkTypes, hasherBuilder, constructorCodeBuilder);
 
@@ -253,11 +265,13 @@ public class TypedHasherFactory {
                 .build();
     }
 
-    private static void addKeySourceFields(HasherConfig hasherConfig, ChunkType[] chunkTypes, TypeSpec.Builder hasherBuilder,
+    private static void addKeySourceFields(HasherConfig hasherConfig, ChunkType[] chunkTypes,
+            TypeSpec.Builder hasherBuilder,
             CodeBlock.Builder constructorCodeBuilder) {
         final List<FieldSpec> keySources = new ArrayList<>();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final Class<?> type = hasherConfig.openAddressed ? flatSourceType(chunkTypes[ii]) : arraySourceType(chunkTypes[ii]);
+            final Class<?> type =
+                    hasherConfig.openAddressed ? flatSourceType(chunkTypes[ii]) : arraySourceType(chunkTypes[ii]);
             keySources.add(
                     FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                             .build());
@@ -321,7 +335,8 @@ public class TypedHasherFactory {
         return builder.build();
     }
 
-    private static void findPositionForKeyOpenAddressed(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes, MethodSpec.Builder builder) {
+    private static void findPositionForKeyOpenAddressed(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
+            MethodSpec.Builder builder) {
         builder.addStatement("int tableLocation = hashToTableLocation(hash)");
         builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
 
@@ -336,13 +351,15 @@ public class TypedHasherFactory {
         builder.addStatement("return positionValue");
         builder.endControlFlow();
 
-        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation", "lastTableLocation");
+        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
+                "lastTableLocation");
         builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
 
         builder.endControlFlow();
     }
 
-    private static void findPositionForKeyOverflow(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes, MethodSpec.Builder builder) {
+    private static void findPositionForKeyOverflow(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
+            MethodSpec.Builder builder) {
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
         builder.addStatement("final int positionValue = $L.getUnsafe(tableLocation)", hasherConfig.mainStateName);
         builder.beginControlFlow("if (positionValue == $L)", hasherConfig.emptyStateName);
@@ -480,27 +497,32 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("final $T<$T> moveMainSource = $T.makeWritableChunk((int)numEntries)", WritableIntChunk.class, ChunkPositions.class, WritableIntChunk.class);
-        builder.addStatement("final $T<$T> moveMainDest = $T.makeWritableChunk((int)numEntries)", WritableIntChunk.class, ChunkPositions.class, WritableIntChunk.class);
+        builder.beginControlFlow(
+                "try (final $T<$T> moveMainSource = $T.makeWritableChunk((int)numEntries);\nfinal $T<$T> moveMainDest = $T.makeWritableChunk((int)numEntries))",
+                WritableIntChunk.class, ChunkPositions.class, WritableIntChunk.class, WritableIntChunk.class,
+                ChunkPositions.class, WritableIntChunk.class);
         builder.addStatement("moveMainSource.setSize(0)");
         builder.addStatement("moveMainDest.setSize(0)");
 
         builder.addStatement("final int oldSize = tableSize >> 1");
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("final $T[] destArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii, elementType(chunkTypes[ii]));
+            builder.addStatement("final $T[] destArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
+                    elementType(chunkTypes[ii]));
         }
-        builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType, hasherConfig.stateType);
+        builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType,
+                hasherConfig.stateType);
         builder.addStatement("$T.fill(destState, $L)", Arrays.class, hasherConfig.emptyStateName);
 
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
-        builder.beginControlFlow("if ($L.getUnsafe(sourceBucket) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("if ($L.getUnsafe(sourceBucket) == $L)", hasherConfig.mainStateName,
+                hasherConfig.emptyStateName);
         builder.addStatement("continue");
         builder.endControlFlow();
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T k$L = mainKeySource$L.get(sourceBucket)", element, ii, ii);
+            builder.addStatement("final $T k$L = mainKeySource$L.getUnsafe(sourceBucket)", element, ii, ii);
         }
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
@@ -512,11 +534,14 @@ public class TypedHasherFactory {
             builder.addStatement("destArray$L[tableLocation] = k$L", ii, ii);
         }
         builder.addStatement("destState[tableLocation] = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
+        builder.beginControlFlow("if (sourceBucket != tableLocation)");
         builder.addStatement("moveMainSource.add(sourceBucket)");
         builder.addStatement("moveMainDest.add(tableLocation)");
+        builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
-        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation", "lastTableLocation");
+        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
+                "lastTableLocation");
         builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -528,11 +553,13 @@ public class TypedHasherFactory {
         }
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
-        builder.beginControlFlow("try (final $T sortContext = $T.createContext((int)numEntries))", IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
+        builder.beginControlFlow("try (final $T sortContext = $T.createContext((int)numEntries))",
+                IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
         builder.addStatement("sortContext.sort(moveMainSource, moveMainDest)");
         builder.endControlFlow();
-        builder.beginControlFlow("for (int ii = moveMainSource.size() - 1; ii >= 0; ++ii)");
+        builder.beginControlFlow("for (int ii = moveMainSource.size() - 1; ii >= 0; --ii)");
         builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
+        builder.endControlFlow();
         builder.endControlFlow();
 
         return MethodSpec.methodBuilder("rehashInternal").addParameter(HashHandler.class, "handler")
@@ -634,7 +661,8 @@ public class TypedHasherFactory {
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else");
-        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation", "lastTableLocation");
+        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
+                "lastTableLocation");
         builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
         builder.endControlFlow();
         builder.endControlFlow();

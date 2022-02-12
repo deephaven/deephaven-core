@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.immutable.FlatArraySource",
+ "methods": {
+  "getArray": ":return: java.lang.Object",
+  "setArray": ":param array: java.lang.Object"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.immutable.FlatArraySource",
+ "typeName": "interface"
+}

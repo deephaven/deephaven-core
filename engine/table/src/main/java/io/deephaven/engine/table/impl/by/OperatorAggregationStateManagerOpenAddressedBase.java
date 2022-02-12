@@ -29,9 +29,10 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
-    protected final FlatArraySource [] mainKeySources;
+    protected final FlatArraySource[] mainKeySources;
 
-    protected OperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources, int tableSize, double maximumLoadFactor) {
+    protected OperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources, int tableSize,
+            double maximumLoadFactor) {
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
@@ -41,7 +42,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table, we knwo that they are primitive so this cast works
-            mainKeySources[ii] = (FlatArraySource)InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize, tableKeySources[ii].getType(), null);
+            mainKeySources[ii] = (FlatArraySource) InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    tableKeySources[ii].getType(), null);
         }
 
         this.maximumLoadFactor = maximumLoadFactor;
@@ -50,7 +52,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
     protected abstract void build(HashHandler handler, RowSequence rowSequence,
             Chunk<Values>[] sourceKeyChunks);
 
-//    protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
+    // protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
     public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
@@ -102,9 +104,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-//    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
-//        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
-//    }
+    // public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+    // return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
+    // }
 
     protected void buildTable(
             final HashHandler handler,
@@ -117,48 +119,48 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-                handler.onNextChunk(chunkOk.intSize());
+                final int nextChunkSize = chunkOk.intSize();
+                handler.onNextChunk(nextChunkSize);
+                doRehash(handler, nextChunkSize);
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 build(handler, chunkOk, sourceKeyChunks);
 
                 bc.resetSharedContexts();
-
-                doRehash(handler);
             }
         }
     }
 
-//    protected void probeTable(
-//            final HashHandler handler,
-//            final ProbeContext pc,
-//            final RowSequence probeRows,
-//            final boolean usePrev,
-//            final ColumnSource<?>[] probeSources) {
-//        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
-//            // noinspection unchecked
-//            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
-//
-//            while (rsIt.hasMore()) {
-//                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
-//                handler.onNextChunk(chunkOk.intSize());
-//
-//                if (usePrev) {
-//                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-//                } else {
-//                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-//                }
-//
-//                probe(handler, chunkOk, sourceKeyChunks);
-//
-//                pc.resetSharedContexts();
-//            }
-//        }
-//    }
+    // protected void probeTable(
+    // final HashHandler handler,
+    // final ProbeContext pc,
+    // final RowSequence probeRows,
+    // final boolean usePrev,
+    // final ColumnSource<?>[] probeSources) {
+    // try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
+    // // noinspection unchecked
+    // final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
+    //
+    // while (rsIt.hasMore()) {
+    // final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+    // handler.onNextChunk(chunkOk.intSize());
+    //
+    // if (usePrev) {
+    // getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+    // } else {
+    // getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+    // }
+    //
+    // probe(handler, chunkOk, sourceKeyChunks);
+    //
+    // pc.resetSharedContexts();
+    // }
+    // }
+    // }
 
-    public void doRehash(HashHandler handler) {
-        while (rehashRequired()) {
+    public void doRehash(HashHandler handler, int nextChunkSize) {
+        while (rehashRequired(nextChunkSize)) {
             tableSize *= 2;
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
@@ -169,9 +171,10 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
 
     protected abstract void rehashInternal(HashHandler handler);
 
-    public boolean rehashRequired() {
-        return numEntries > (tableSize * maximumLoadFactor);
+    public boolean rehashRequired(int nextChunkSize) {
+        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
+
     private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
             Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {

@@ -31,9 +31,11 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     private MutableInt outputPosition;
     private WritableIntChunk<RowKeys> outputPositions;
 
-    protected StaticChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources, int tableSize,
-                                                                            double maximumLoadFactor) {
+    protected StaticChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
+            int tableSize,
+            double maximumLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
+        mainOutputPosition.ensureCapacity(tableSize);
     }
 
     @Override

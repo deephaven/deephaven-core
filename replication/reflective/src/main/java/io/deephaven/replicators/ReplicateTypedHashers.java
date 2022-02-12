@@ -20,7 +20,7 @@ import java.util.Optional;
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
         generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class, true);
-        generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, false);
+        generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
     }
 
@@ -76,7 +76,8 @@ public class ReplicateTypedHashers {
     }
 
     @NotNull
-    private static MethodSpec generateSingleDispatch(Class<?> baseClass, TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+    private static MethodSpec generateSingleDispatch(Class<?> baseClass,
+            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType");
@@ -111,7 +112,8 @@ public class ReplicateTypedHashers {
     }
 
     @NotNull
-    private static MethodSpec generateDoubleDispatch(Class<?> baseClass, TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+    private static MethodSpec generateDoubleDispatch(Class<?> baseClass,
+            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder doubleDispatchBuilder = MethodSpec.methodBuilder("dispatchDouble")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType0")

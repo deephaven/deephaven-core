@@ -67,42 +67,45 @@ final class StaticAggOpenHasherLong extends StaticChunkedOperatorAggregationStat
 
     @Override
     protected void rehashInternal(HashHandler handler) {
-        final WritableIntChunk<ChunkPositions> moveMainSource = WritableIntChunk.makeWritableChunk((int)numEntries);
-        final WritableIntChunk<ChunkPositions> moveMainDest = WritableIntChunk.makeWritableChunk((int)numEntries);
-        moveMainSource.setSize(0);
-        moveMainDest.setSize(0);
-        final int oldSize = tableSize >> 1;
-        final long[] destArray0 = new long[tableSize];
-        final int[] destState = new int[tableSize];
-        Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
-        for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            if (mainOutputPosition.getUnsafe(sourceBucket) == EMPTY_OUTPUT_POSITION) {
-                continue;
-            }
-            final long k0 = mainKeySource0.get(sourceBucket);
-            final int hash = hash(k0);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
-            while (true) {
-                if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destArray0[tableLocation] = k0;
-                    destState[tableLocation] = mainOutputPosition.getUnsafe(sourceBucket);
-                    moveMainSource.add(sourceBucket);
-                    moveMainDest.add(tableLocation);
-                    break;
-                } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
+        try (final WritableIntChunk<ChunkPositions> moveMainSource = WritableIntChunk.makeWritableChunk((int)numEntries);
+        final WritableIntChunk<ChunkPositions> moveMainDest = WritableIntChunk.makeWritableChunk((int)numEntries)) {
+            moveMainSource.setSize(0);
+            moveMainDest.setSize(0);
+            final int oldSize = tableSize >> 1;
+            final long[] destArray0 = new long[tableSize];
+            final int[] destState = new int[tableSize];
+            Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
+            for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
+                if (mainOutputPosition.getUnsafe(sourceBucket) == EMPTY_OUTPUT_POSITION) {
+                    continue;
+                }
+                final long k0 = mainKeySource0.getUnsafe(sourceBucket);
+                final int hash = hash(k0);
+                int tableLocation = hashToTableLocation(hash);
+                final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+                while (true) {
+                    if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
+                        destArray0[tableLocation] = k0;
+                        destState[tableLocation] = mainOutputPosition.getUnsafe(sourceBucket);
+                        if (sourceBucket != tableLocation) {
+                            moveMainSource.add(sourceBucket);
+                            moveMainDest.add(tableLocation);
+                        }
+                        break;
+                    } else {
+                        Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
+                        tableLocation = (tableLocation + 1) & (tableSize - 1);
+                    }
                 }
             }
-        }
-        mainKeySource0.setArray(destArray0);
-        mainOutputPosition.setArray(destState);
-        try (final IntIntTimsortKernel.IntIntSortKernelContext sortContext = IntIntTimsortKernel.createContext((int)numEntries)) {
-            sortContext.sort(moveMainSource, moveMainDest);
-        }
-        for (int ii = moveMainSource.size() - 1; ii >= 0; ++ii) {
-            handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii));
+            mainKeySource0.setArray(destArray0);
+            mainOutputPosition.setArray(destState);
+            try (final IntIntTimsortKernel.IntIntSortKernelContext sortContext = IntIntTimsortKernel.createContext((int)numEntries)) {
+                sortContext.sort(moveMainSource, moveMainDest);
+            }
+            for (int ii = moveMainSource.size() - 1; ii >= 0; --ii) {
+                handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii));
+            }
         }
     }
 
