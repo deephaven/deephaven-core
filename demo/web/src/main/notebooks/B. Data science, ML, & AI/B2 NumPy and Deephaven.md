@@ -59,7 +59,7 @@ These data types will be important in Deephaven queries, since they each have a 
 
 ## Basic NumPy array operations
 
-Arrays are the building block of applications that use NumPy.  Thus, there are a wide variety of array operations that NumPy supports.  Here are just a select few.
+Arrays are the building block of applications that use NumPy.  Thus, there are a wide variety of array operations that NumPy supports.  Here are just a few.
 
 ```python
 a_transpose = a.T
@@ -313,4 +313,4 @@ data_plot_live_polyfitted = Plot.plot("Raw Signal", data_table_live, "X", "Y").p
 And there we have it!  Piece of cake.  What kind of real-time data processing applications can you cook up?  Whatever you decide to do, Deephaven will make it easier.
 \
 \
-Got questions for us?  Check out our [gitter](https://gitter.im/deephaven/deephaven) or [GitHub discussions](https://github.com/deephaven/deephaven-core/discussions) pages.  We're happy to help!
+Got questions for us?  Check out our [Slack](https://join.slack.com/t/deephavencommunity/shared_invite/zt-11x3hiufp-DmOMWDAvXv_pNDUlVkagLQ) or [GitHub discussions](https://github.com/deephaven/deephaven-core/discussions) pages.  We're happy to help!
