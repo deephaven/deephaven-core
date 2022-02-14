@@ -40,7 +40,7 @@ by default per the command above) by navigating to
 http://localhost:10000/ide
 ```
 
-and cut & paste to it from `demo.py`.  If Deephaven is running
+and cut & paste to it from `debezium/scripts/demo.py`.  If Deephaven is running
 on a different host from your browser, you can replace `localhost`
 with the right hostname.
 
@@ -49,6 +49,15 @@ the script to run is intentional, so that you can see tables
 as they are created and populated and watch them update
 before you execute the next command.
 
+If you want to load everything in one command, however,
+you can do it as the `demo.py` file is available inside
+the DH server container under `/scripts/demo.py`.
+You can load that in its entirety on the DH console with
+`exec(open('/scripts/demo.py').read())`
+
+The file `debezium/scripts/demo.sql` contains the original
+Materialize script; see
+https://github.com/MaterializeInc/ecommerce-demo/blob/main/README_RPM.md
 
 Attributions
 ============
@@ -56,6 +65,7 @@ Attributions
 Files in this directory are based on demo code by
 Debezium, Redpanda, and Materialize
 
-* Debezium https://github.com/debezium/debezium
-* Redpanda https://github.com/vectorizedio/redpanda
-* Materialize https://github.com/MaterializeInc/materialize
+* Debezium -- https://github.com/debezium/debezium
+* Redpanda -- https://github.com/vectorizedio/redpanda
+* Materialize -- https://github.com/MaterializeInc/materialize
+* Materialize e-commerce demo -- https://github.com/MaterializeInc/ecommerce-demo/blob/main/README_RPM.md

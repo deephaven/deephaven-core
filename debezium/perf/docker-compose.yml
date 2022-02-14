@@ -10,6 +10,8 @@ services:
       service: server
     environment:
       - JAVA_TOOL_OPTIONS=-Xmx8g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+    volumes:
+      - ../scripts:/scripts
 
   web:
     extends:
@@ -63,8 +65,8 @@ services:
       service: loadgen
     environment:
       # Look at extended definition for the rest.
-      - MAX_PARALLEL_PURCHASES=2
-      - MAX_PARALLEL_PAGEVIEWS=6
+      - MAX_PARALLEL_PURCHASES=4
+      - MAX_PARALLEL_PAGEVIEWS=20
     depends_on:
       mysql:
         condition: service_started
@@ -79,4 +81,5 @@ services:
 
   mzcli:
     image: materialize/cli
-      
+    volumes:
+      - ../scripts:/scripts
