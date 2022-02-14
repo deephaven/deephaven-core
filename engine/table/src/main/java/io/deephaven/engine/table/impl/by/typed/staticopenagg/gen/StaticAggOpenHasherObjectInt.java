@@ -124,11 +124,11 @@ final class StaticAggOpenHasherObjectInt extends StaticChunkedOperatorAggregatio
             mainKeySource0.setArray(destArray0);
             mainKeySource1.setArray(destArray1);
             mainOutputPosition.setArray(destState);
-            final int copySize = entries - endMovePointer - 1;
-            moveMainSource.copyFromTypedChunk(moveMainSource, endMovePointer + 1, startMovePointer, copySize);
-            moveMainDest.copyFromTypedChunk(moveMainDest, endMovePointer + 1, startMovePointer, copySize);
-            moveMainSource.setSize(startMovePointer + copySize);
-            moveMainDest.setSize(startMovePointer + copySize);
+            for (int ii = endMovePointer + 1; ii < entries; ++ii) {
+                handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii));
+            }
+            moveMainSource.setSize(startMovePointer);;
+            moveMainDest.setSize(startMovePointer);;
             try (final IntIntTimsortKernel.IntIntSortKernelContext sortContext = IntIntTimsortKernel.createContext((int)numEntries)) {
                 sortContext.sort(moveMainSource, moveMainDest);
             }

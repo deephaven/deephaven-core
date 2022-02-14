@@ -561,11 +561,14 @@ public class TypedHasherFactory {
         }
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
-        builder.addStatement("final int copySize = entries - endMovePointer - 1");
-        builder.addStatement("moveMainSource.copyFromTypedChunk(moveMainSource, endMovePointer + 1, startMovePointer, copySize)");
-        builder.addStatement("moveMainDest.copyFromTypedChunk(moveMainDest, endMovePointer + 1, startMovePointer, copySize)");
-        builder.addStatement("moveMainSource.setSize(startMovePointer + copySize)");
-        builder.addStatement("moveMainDest.setSize(startMovePointer + copySize)");
+        // the end will never overwrite anything, so we can do that first
+        builder.beginControlFlow("for (int ii = endMovePointer + 1; ii < entries; ++ii)");
+        builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
+        builder.endControlFlow();
+
+        // then only sort the beginning where we had something move (probably because it was in a probe bucket)
+        builder.addStatement("moveMainSource.setSize(startMovePointer);");
+        builder.addStatement("moveMainDest.setSize(startMovePointer);");
 
         builder.beginControlFlow("try (final $T sortContext = $T.createContext((int)numEntries))",
                 IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
