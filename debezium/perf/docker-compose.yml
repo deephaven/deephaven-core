@@ -8,6 +8,8 @@ services:
     extends:
       file: ../../docker-compose-common.yml
       service: server
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx8g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
 
   web:
     extends:
@@ -64,3 +66,13 @@ services:
         condition: service_started
       debezium:
         condition: service_started
+
+  materialized:
+    image: materialize/materialized:v0.19.0
+    command: -w2 --disable-telemetry
+    ports:
+      - 6875:6875
+
+  mzcli:
+    image: materialize/cli
+      

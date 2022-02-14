@@ -1,4 +1,4 @@
-import asyncio, barnum, json, math, random, requests, signal, os, socket, sys, time
+import asyncio, barnum, concurrent.futures, json, math, random, requests, signal, os, socket, sys, time
 from datetime import datetime, timezone
 from kafka import KafkaProducer
 from mysql.connector import connect, Error
@@ -7,8 +7,13 @@ from concurrent.futures import CancelledError
 # CONFIG
 user_seed_count     = 10000
 item_seed_count     = 1000
-params              = { 'purchases_per_second' : int(os.environ['PURCHASES_PER_SECOND_START']),
-                        'pageviews_per_second' : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
+max_workers         = 8
+max_parallel_purchases = 2
+max_parallel_pageviews = 6
+purchases_per_second_key = 'purchases_per_second'
+pageviews_per_second_key = 'pageviews_per_second'
+params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
+                         pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
 log_period_seconds  = 10
 item_inventory_min  = 1000
@@ -118,38 +123,64 @@ def get_item_prices(cursor):
     log("Getting item ID and PRICEs DONE.")
     return [(row[0], row[1]) for row in cursor]
 
-async def loop(action_fun, param_key, action_desc):
+async def loop(executor, max_parallel, action_fun, param_key, action_desc):
     start = time.time()
-    i = 0
+    sent_at_rate = 0
     time_last_log = start
     sent_since_last_log = 0
     rate_s = params[param_key]
+    old_rate_s = rate_s
     period_s = 1.0/rate_s
     log(f"Simulating {action_desc} actions with an initial rate of {rate_s} per second.")
+    tight_count = 0
+    futures = {}
+    loop_count = 0
+    event_loop = asyncio.get_event_loop()
     try:
         while True:
-            action_fun()
-            i += 1
+            not_done = 0
+            for k in list(futures.keys()):
+                if futures[k].done():
+                    del futures[k]
+                else:
+                    not_done += 1
+            while not_done > max_parallel - 1:
+                await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
+                not_done -= 1
+            future = event_loop.run_in_executor(executor, action_fun)
+            futures[loop_count] = future
+            loop_count += 1
+            sent_at_rate += 1
             sent_since_last_log += 1
             now = time.time()
             time_last_log_diff = now - time_last_log
             if time_last_log_diff >= log_period_seconds:
                 period_str = "%.1f" % time_last_log_diff
-                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {period_str} seconds.")
+                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {period_str} seconds")
                 time_last_log = now
                 sent_since_last_log = 0
-            sleep_s = start + i*period_s - time.time()
-            await asyncio.sleep(sleep_s)
-            maybe_new_rate_s = params[param_key]
-            if maybe_new_rate_s != rate_s:
-                rate_s = maybe_new_rate_s
+            next_time = start + (sent_at_rate+1)*period_s
+            sleep_s = next_time - time.time()
+            if sleep_s > 0:
+                tight_count = 0
+                await asyncio.sleep(sleep_s)
+            else:
+                tight_count += 1
+            if tight_count * period_s >= 1.0:
+                log(f"Rate {rate_s} is too high, can't honor it.")
+                params[param_key] = math.floor(0.95 * sent_at_rate / (time.time() - start))
+            rate_s = params[param_key]
+            if old_rate_s != rate_s:
+                log(f"Changing {action_desc} rate from {old_rate_s} to {rate_s} per second.")
                 period_s = 1.0/rate_s
-                log(f"Changing {action_desc} rate to {rate_s} per second.")
+                old_rate_s = rate_s
+                start = time.time()
+                sent_at_rate = 0
     except CancelledError:
         pass
     log(f"Stopped simulating {action_desc} actions.")
 
-async def loop_purchases(connection, cursor, producer, item_prices):
+async def loop_purchases(executor, max_parallel, db_resources, producers, item_prices):
     log("Preparing to loop + seed kafka pageviews and purchases.")
     def make_purchase():
         # Get a user and item to purchase
@@ -158,9 +189,12 @@ async def loop_purchases(connection, cursor, producer, item_prices):
         purchase_quantity = random.randint(1,5)
 
         # Write purchaser pageview
+        producer = producers.pop()
         producer.send(kafka_topic, key=str(purchase_user).encode('ascii'), value=generate_pageview(purchase_user, purchase_item[0], 'products'))
+        producers.append(producer)
 
         # Write purchase row
+        (connection, cursor) = db_resources.pop()
         cursor.execute(
             purchase_insert,
             (
@@ -171,16 +205,19 @@ async def loop_purchases(connection, cursor, producer, item_prices):
             )
         )
         connection.commit()
-    await loop(make_purchase, 'purchases_per_second', "purchase")
+        db_resources.append((connection, cursor))
+    await loop(executor, max_parallel, make_purchase, purchases_per_second_key, "purchase")
 
-async def loop_random_pageviews(producer):
+async def loop_random_pageviews(executor, max_parallel, producers):
     # Write random pageviews to products or profiles
     def make_random_pageview():
         rand_user = random.randint(0,user_seed_count)
         rand_page_type = random.choice(['products', 'profiles'])
         target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
+        producer = producers.pop()
         producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
-    await loop(make_random_pageview, 'pageviews_per_second', "pageview")
+        producers.append(producer)
+    await loop(executor, max_parallel, make_random_pageview, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
@@ -224,7 +261,7 @@ async def handle_command_client(reader, writer):
                 except ValueError:
                     return -1
             key = cmd_words[1].lower()
-            if key == 'purchases_per_second' or key == 'pageviews_per_second':
+            if key == purchases_per_second_key or key == pageviews_per_second_key:
                 value = to_int(cmd_words[2])
                 if value <= 0:
                     await send(f"Invalid value: '{cmd_words[2]}'.")
@@ -273,55 +310,66 @@ requests.post(('http://%s/connectors' % debezium_endpoint),
     }
 )
 
-#Initialize Kafka
-producer = KafkaProducer(bootstrap_servers=[kafka_endpoint],
-                         value_serializer=lambda x: 
-                         json.dumps(x).encode('utf-8'))
+# Initialize Kafka
 
+producers = []
+db_resources = []
 exit_code = 0
 
 try:
-    with connect(
-        host=mysql_host,
-        user=mysql_user,
-        password=mysql_pass,
-    ) as connection:
-        with connection.cursor() as cursor:
-            initialize_database(connection, cursor)
-            seed_data(connection, cursor)
-            item_prices = get_item_prices(cursor)
-            async def shutdown():
-                for task in asyncio.Task.all_tasks():
-                        task.cancel()
-            async def run_async():
-                event_loop = asyncio.get_event_loop()
-                signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-                async def handle_signal(signal):
-                    await shutdown()
-                for s in signals:
-                    event_loop.add_signal_handler(
-                        s, lambda s=s: asyncio.create_task(handle_signal(s)))
-                await asyncio.gather(
-                    loop_purchases(connection, cursor, producer, item_prices),
-                    loop_random_pageviews(producer),
-                    run_command_server()
-                )
-            log("Starting simulation loops.")
-            try:
-                asyncio.run(run_async())
-            except Error as e:
-                log(e)
-                exit_code = 1
-            finally:
-                try:
-                    asyncio.run(shutdown())
-                except Error:
-                    pass
-                connection.close()
+    for pi in range(max_parallel_purchases + max_parallel_pageviews):
+        producer = KafkaProducer(bootstrap_servers=[kafka_endpoint],
+                                 value_serializer=lambda x: 
+                                 json.dumps(x).encode('utf-8'))
+        producers.append(producer)
+
+    for di in range(max_parallel_purchases):
+        connection = connect(host=mysql_host, user=mysql_user, password=mysql_pass)
+        cursor = connection.cursor()
+        db_resources.append((connection, cursor))
+
+    (connection, cursor) = db_resources[0]
+    initialize_database(connection, cursor)
+    seed_data(connection, cursor)
+    item_prices = get_item_prices(cursor)
+    async def shutdown():
+        for task in asyncio.Task.all_tasks():
+            task.cancel()
+    async def run_async():
+        event_loop = asyncio.get_event_loop()
+        signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+        async def handle_signal(signal):
+            await shutdown()
+        for s in signals:
+            event_loop.add_signal_handler(
+                s, lambda s=s: asyncio.create_task(handle_signal(s)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            await asyncio.gather(
+                loop_purchases(executor, max_parallel_purchases, db_resources, producers, item_prices),
+                loop_random_pageviews(executor, max_parallel_pageviews, producers),
+                run_command_server()
+            )
+    log("Starting simulation loops.")
+    try:
+        asyncio.run(run_async())
+    except Error as e:
+        log(e)
+        exit_code = 1
+    finally:
+        try:
+            asyncio.run(shutdown())
+        except Error:
+            pass
+    connection.close()
 except Error as e:
     log(e)
     exit_code = 1
 finally:
+    for producer in producers:
+        producer.close()
+    for (connection, cursor) in db_resources:
+        cursor.close()
+        connection.close()
     log("Finished.")
 
 sys.exit(exit_code)
