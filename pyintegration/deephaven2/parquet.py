@@ -4,13 +4,12 @@
 """ This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
 Parquet files. """
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List
 
 import jpy
 
 from deephaven2 import DHError
 from deephaven2.column import Column
-from deephaven2.dtypes import is_java_type
 from deephaven2.table import Table
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
@@ -169,7 +168,7 @@ def write_tables(tables: List[Table], destinations: List[str], col_definitions: 
         col_definitions (List[Column]): the column definitions to use
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing
         compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
-        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20(1,048,576)
+        max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
         grouping_cols (List[str]): the group column names
 
     Raises:

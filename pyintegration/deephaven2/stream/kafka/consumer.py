@@ -8,6 +8,7 @@ from typing import Dict, Tuple, List, Callable
 import jpy
 
 from deephaven2 import dtypes
+from deephaven2._jcompat import j_hashmap, j_properties
 from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.column import Column
 from deephaven2.dherror import DHError
@@ -74,7 +75,7 @@ in the properties as "key.column.name" or "value.column.name" in the config, and
 
 
 def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], str]:
-    java_map = dtypes.j_hashmap(dict_mapping)
+    java_map = j_hashmap(dict_mapping)
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
@@ -149,7 +150,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
             raise ValueError(
                 "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
-        kafka_config = dtypes.j_properties(kafka_config)
+        kafka_config = j_properties(kafka_config)
         return Table(j_table=_JKafkaTools.consumeToTable(kafka_config, topic, partitions, offsets, key_spec.j_object,
                                                          value_spec.j_object,
                                                          table_type.value))
@@ -158,7 +159,7 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
 
 
 def avro_spec(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = None,
-         mapped_only: bool = False) -> KeyValueSpec:
+              mapped_only: bool = False) -> KeyValueSpec:
     """ Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
     Args:
@@ -210,15 +211,15 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         col_defs = [c.j_column_definition for c in _build_column_definitions(col_defs)]
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
-        mapping = dtypes.j_hashmap(mapping)
+        mapping = j_hashmap(mapping)
         return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs, mapping))
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
 def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
-    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a Kafka
-    stream to a Deephaven table.
+    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a
+    Kafka stream to a Deephaven table.
 
     Args:
         col_name (str): the Deephaven column name

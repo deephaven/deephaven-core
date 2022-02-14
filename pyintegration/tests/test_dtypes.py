@@ -61,6 +61,9 @@ class DTypesTestCase(BaseTestCase):
         big_decimal2 = dtypes.BigDecimal("12.88")
         self.assertIn("12.88", str(big_decimal2))
 
+        j_string = dtypes.string("abc")
+        self.assertEqual(j_string.toString(), "abc")
+
     def test_array(self):
         j_array = dtypes.array(dtypes.int_, range(5))
         np_array = np.frombuffer(j_array, np.int32)

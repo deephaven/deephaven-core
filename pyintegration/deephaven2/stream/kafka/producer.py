@@ -6,7 +6,8 @@ from typing import Dict, Callable, List
 
 import jpy
 
-from deephaven2 import DHError, dtypes
+from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
+from deephaven2 import DHError
 from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.table import Table
 
@@ -60,7 +61,7 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
             raise ValueError(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE")
 
-        kafka_config = dtypes.j_properties(kafka_config)
+        kafka_config = j_properties(kafka_config)
         runnable = _JKafkaTools.produceFromTable(table.j_table, kafka_config, topic, key_spec.j_object,
                                                  value_spec.j_object,
                                                  last_by_key_columns)
@@ -77,9 +78,9 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
 
 
 def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict[str, str] = None,
-         timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
-         publish_schema: bool = False, schema_namespace: str = None,
-         column_properties: Dict[str, str] = None) -> KeyValueSpec:
+              timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
+              publish_schema: bool = False, schema_namespace: str = None,
+              column_properties: Dict[str, str] = None) -> KeyValueSpec:
     """ Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
 
     Args:
@@ -90,7 +91,8 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
         field_to_col_mapping (Dict[str, str]): a mapping from Avro field names in the schema to column names in
             the Deephaven table. Any fields in the schema not present in the dict as keys are mapped to columns of the
             same name. The default is None, meaning all schema fields are mapped to columns of the same name.
-        timestamp_field: the name of a publishing timestamp field to include, default is None
+        timestamp_field (str): the name of an extra timestamp field to be included in the produced Kafka message body,
+            it is used mostly for debugging slowdowns,  default is None.
         include_only_columns (List[str]): the list of column names in the source table to include in the generated
             output, default is None. When not None, the 'exclude_columns' parameter must be None
         exclude_columns (List[str]):  the list of column names to exclude from the generated output (every other column
@@ -99,8 +101,8 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
             schema generated from the table definition, for the columns and fields implied by field_to_col_mapping,
             include_only_columns, and exclude_columns; if a schema_version is provided and the resulting version after
             publishing does not match, an exception results. The default is False.
-        schema_namespace (str): when 'publish_schema' is True, the namespace for the generated schema to be registered in
-            Schema Registry Server.
+        schema_namespace (str): when 'publish_schema' is True, the namespace for the generated schema to be registered
+            in Schema Registry Server.
         column_properties (Dict[str, str]): when 'publish_schema' is True, specifies the properties of the columns
             implying particular Avro type mappings for them. In particular, column X of BigDecimal type should specify
             properties 'x.precision' and 'x.scale'.
@@ -112,11 +114,11 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
         DHError
     """
     try:
-        field_to_col_mapping = dtypes.j_hashmap(field_to_col_mapping)
-        column_properties = dtypes.j_properties(column_properties)
-        include_only_columns = dtypes.j_hashset(include_only_columns)
+        field_to_col_mapping = j_hashmap(field_to_col_mapping)
+        column_properties = j_properties(column_properties)
+        include_only_columns = j_hashset(include_only_columns)
         include_only_columns = _JKafkaTools.predicateFromSet(include_only_columns)
-        exclude_columns = dtypes.j_hashset(exclude_columns)
+        exclude_columns = j_hashset(exclude_columns)
         exclude_columns = _JKafkaTools.predicateFromSet(exclude_columns)
 
         return KeyValueSpec(_JKafkaTools_Produce.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field,
@@ -127,9 +129,13 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
 
 
 def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
-         nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
+              nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
     """ Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 
+    If nested JSON fields are desired, the field separator that is used for the field names
+            parameter, or None for no nesting (default). For instance, if a particular column should be mapped
+            to JSON field X nested inside field Y, the corresponding field name value for the column key
+            in the mapping dict can be the string "X.Y", in which case the value for nested_delim should be "."
     Args:
         include_columns (List[str]): the list of Deephaven column names to include in the JSON output as fields,
             default is None, meaning all except the ones mentioned in the 'exclude_columns' argument . If not None,
@@ -139,12 +145,10 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
         mapping (Dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
             arguments and not included as a key in the map implies a field of the same name. default is None,
             meaning all columns will be mapped to JSON fields of the same name.
-        nested_delim: if nested JSON fields are desired, the field separator that is used for the field names
-            parameter, or None for no nesting (default). For instance, if a particular column should be mapped
-            to JSON field X nested inside field Y, the corresponding field name value for the column key
-            in the mapping dict can be the string "X.Y", in which case the value for nested_delim should be "."
-        output_nulls: when False (default), do not output a field for null column values
-        timestamp_field: the name of a publishing timestamp field to include, default is None
+        nested_delim (str): the filed separator for nested JSON fields
+        output_nulls (bool): when False (default), do not output a field for null column values
+        timestamp_field (str): the name of an extra timestamp field to be included in the produced Kafka message body,
+            it is used mostly for debugging slowdowns,  default is None.
 
     Returns:
         a KeyValueSpec
@@ -155,8 +159,8 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
     try:
         if include_columns is not None and exclude_columns is not None:
             raise ValueError("One of include_columns and exclude_columns must be None.")
-        exclude_columns = dtypes.j_hashset(exclude_columns)
-        mapping = dtypes.j_hashmap(mapping)
+        exclude_columns = j_hashset(exclude_columns)
+        mapping = j_hashmap(mapping)
         return KeyValueSpec(
             _JKafkaTools_Produce.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls,
                                           timestamp_field))
