@@ -59,6 +59,10 @@ services:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: loadgen
+    environment:
+      # Look at extended definition for the rest.
+      - MAX_PARALLEL_PURCHASES=1
+      - MAX_PARALLEL_PAGEVIEWS=1
     depends_on:
       mysql:
         condition: service_started

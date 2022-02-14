@@ -8,8 +8,8 @@ from concurrent.futures import CancelledError
 user_seed_count     = 10000
 item_seed_count     = 1000
 max_workers         = 8
-max_parallel_purchases = 2
-max_parallel_pageviews = 6
+max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
+max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
 purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
 params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
