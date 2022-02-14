@@ -543,7 +543,7 @@ public class BarrageStreamGenerator implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
-            RowSet myModOffsets = null;//needs to be closed, if non-null
+            RowSet myModOffsets = null;// needs to be closed, if non-null
             try {
                 if (view.isViewport()) {
                     // only include modified rows that are within the viewport
