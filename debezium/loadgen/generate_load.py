@@ -7,8 +7,10 @@ from concurrent.futures import CancelledError
 # CONFIG
 user_seed_count     = 10000
 item_seed_count     = 1000
-params              = { 'purchases_per_second' : int(os.environ['PURCHASES_PER_SECOND_START']),
-                        'pageviews_per_second' : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
+purchases_per_second_key = 'purchases_per_second'
+pageviews_per_second_key = 'pageviews_per_second'
+params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
+                         pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
 log_period_seconds  = 10
 item_inventory_min  = 1000
@@ -120,16 +122,18 @@ def get_item_prices(cursor):
 
 async def loop(action_fun, param_key, action_desc):
     start = time.time()
-    i = 0
+    sent_at_rate = 0
     time_last_log = start
     sent_since_last_log = 0
     rate_s = params[param_key]
+    old_rate_s = rate_s
     period_s = 1.0/rate_s
     log(f"Simulating {action_desc} actions with an initial rate of {rate_s} per second.")
+    tight_count = 0
     try:
         while True:
             action_fun()
-            i += 1
+            sent_at_rate += 1
             sent_since_last_log += 1
             now = time.time()
             time_last_log_diff = now - time_last_log
@@ -138,13 +142,23 @@ async def loop(action_fun, param_key, action_desc):
                 log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {period_str} seconds.")
                 time_last_log = now
                 sent_since_last_log = 0
-            sleep_s = start + i*period_s - time.time()
-            await asyncio.sleep(sleep_s)
-            maybe_new_rate_s = params[param_key]
-            if maybe_new_rate_s != rate_s:
-                rate_s = maybe_new_rate_s
+            next_time = start + (sent_at_rate+1)*period_s
+            sleep_s = next_time - time.time()
+            if sleep_s > 0:
+                tight_count = 0
+                await asyncio.sleep(sleep_s)
+            else:
+                tight_count += 1
+            if tight_count * period_s >= 1.0:
+                log(f"Rate {rate_s} is too high, can't honor it.")
+                params[param_key] = math.floor(sent_at_rate / (time.time() - start))
+            rate_s = params[param_key]
+            if old_rate_s != rate_s:
+                log(f"Changing {action_desc} rate from {old_rate_s} to {rate_s} per second.")
                 period_s = 1.0/rate_s
-                log(f"Changing {action_desc} rate to {rate_s} per second.")
+                old_rate_s = rate_s
+                start = time.time()
+                sent_at_rate = 0
     except CancelledError:
         pass
     log(f"Stopped simulating {action_desc} actions.")
@@ -171,7 +185,7 @@ async def loop_purchases(connection, cursor, producer, item_prices):
             )
         )
         connection.commit()
-    await loop(make_purchase, 'purchases_per_second', "purchase")
+    await loop(make_purchase, purchases_per_second_key, "purchase")
 
 async def loop_random_pageviews(producer):
     # Write random pageviews to products or profiles
@@ -180,7 +194,7 @@ async def loop_random_pageviews(producer):
         rand_page_type = random.choice(['products', 'profiles'])
         target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
         producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
-    await loop(make_random_pageview, 'pageviews_per_second', "pageview")
+    await loop(make_random_pageview, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
@@ -224,7 +238,7 @@ async def handle_command_client(reader, writer):
                 except ValueError:
                     return -1
             key = cmd_words[1].lower()
-            if key == 'purchases_per_second' or key == 'pageviews_per_second':
+            if key == purchases_per_second_key or key == pageviews_per_second_key:
                 value = to_int(cmd_words[2])
                 if value <= 0:
                     await send(f"Invalid value: '{cmd_words[2]}'.")

@@ -74,7 +74,7 @@ services:
     # for the static content and the websocket proxy.
     image: deephaven/envoy:local-build
     ports:
-      - "${DEEPHAVEN_CONSOLE_PORT}:10000"
+      - "${DEEPHAVEN_PORT}:10000"
 #      - '9090:9090' #envoy admin
     deploy:
       resources:
