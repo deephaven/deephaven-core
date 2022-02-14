@@ -1,6 +1,6 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.java-local'
 }
 
 description = "Converts a list of QSTs into other formats."

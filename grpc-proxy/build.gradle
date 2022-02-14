@@ -4,6 +4,7 @@ import io.deephaven.tools.License
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.basic'
 }
 
 evaluationDependsOn Docker.registryProject('alpine')

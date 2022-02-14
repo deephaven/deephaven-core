@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine Vectors: Array-like data structures for in-place data access'

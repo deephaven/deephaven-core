@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'io.deephaven.project.java-local'
 }
 
 configurations {
@@ -8,7 +9,6 @@ configurations {
 
 dependencies {
     implementation project(':server')
-    implementation project(':application-mode')
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)

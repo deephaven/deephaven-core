@@ -1,5 +1,6 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.java-local'
 }
 
 evaluationDependsOn Docker.registryProject('python')
@@ -7,6 +8,7 @@ evaluationDependsOn Docker.registryProject('python')
 configurations {
     compile.extendsFrom fishConfig, jdom
     testCompile.extendsFrom fishBaseTest
+    combinedJavadoc
 }
 
 dependencies {
@@ -28,6 +30,8 @@ dependencies {
 
     testRuntime project(path: ':configs'),
             project(path: ':test-configs')
+
+    combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }
 
 def workspace = "$rootDir/tmp/workspace"
@@ -173,9 +177,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
             into 'out'
         }
         // Depend on generated javadoc so we can generate JSON from it
-        dependsOn ':allJavadoc'
-        from("$devRoot/build/docs/javadoc") {
-            // input for javadocExtraction.py
+        from(configurations.combinedJavadoc) {
             into 'javadoc'
         }
     }
@@ -312,7 +314,7 @@ tasks.register 'generateAll', {
     t.description = 'Runs all code generators'
 }
 
-check.dependsOn groovyStaticImportGeneratorAssert,
+project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
         generateAxesPlotMethodsAssert,
         generateMultiSeriesAssert,
         generateFigureImmutableAssert,

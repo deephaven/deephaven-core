@@ -49,7 +49,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan allJavadoc
+          arguments: --scan combined-javadoc:allJavadoc
           gradle-version: wrapper
 
       - name: Upload Javadocs

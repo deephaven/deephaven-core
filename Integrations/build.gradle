@@ -1,6 +1,8 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.java-public'
     id 'com.avast.gradle.docker-compose'
+    id 'idea'
 }
 
 evaluationDependsOn ':docker-runtime-base'
@@ -47,7 +49,7 @@ sourceSets {
 // we do want IntelliJ to treat them as resources in IDE.
 idea {
     module {
-        resourceDirs += [file('r'), file('python')] 
+        resourceDirs += [file('r'), file('python')]
         testResourceDirs += [file('python/test')]
     }
 }

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-local'
 }
 
 description 'Engine Benchmark: Benchmarks for Engine modules'

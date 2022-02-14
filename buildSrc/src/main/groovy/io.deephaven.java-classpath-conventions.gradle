@@ -1,4 +1,20 @@
-apply plugin: 'base'
+plugins {
+    id 'base'
+    id 'java'
+}
+
+ext {
+    depAnnotations = 'com.intellij:annotations:5.1'
+    depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
+    depCommonsCodec = 'commons-codec:commons-codec:1.9'
+    depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
+    depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
+    depCommonsNet = 'commons-net:commons-net:3.2'
+    depCommonsEmail = 'org.apache.commons:commons-email:1.4'
+    depCommonsIo = 'commons-io:commons-io:2.5'
+    depJdom2 = 'org.jdom:jdom2:2.0.6'
+    depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
+}
 
 configurations {
 
@@ -30,11 +46,6 @@ configurations {
     dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
-}
-
-// exported properties
-ext {
-    includeFish = project.hasProperty("includeFish") && project.includeFish == 'true'
 }
 
 dependencies {

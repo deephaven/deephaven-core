@@ -1,0 +1,7 @@
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'io.deephaven.java-common-conventions'
+    id 'io.deephaven.bin-conventions'
+}
+
+io.deephaven.project.Type.register(project, 'bin-local', false)

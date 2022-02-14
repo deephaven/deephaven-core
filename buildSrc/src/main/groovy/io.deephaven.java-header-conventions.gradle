@@ -1,0 +1,13 @@
+plugins {
+    // This is old, and should be removed eventually
+    id 'license'
+}
+
+// This is old, and should be removed eventually
+license {
+    header rootProject.file('license-header')
+    include "**/*.java"
+    strictCheck true
+    useDefaultMappings true
+    ignoreFailures true
+}

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine Tuples: Value sequences for use in aggregations, joins, and indexing'

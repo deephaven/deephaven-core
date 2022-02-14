@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+}
+
+jacoco {
+    toolVersion = '0.8.7'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled true
+        html.enabled true
+        //            html.destination "${buildDir}/jacocoHtml"
+    }
+}
+
+project.tasks.withType(Test).all { Test t ->
+    finalizedBy jacocoTestReport
+}

@@ -1,5 +1,6 @@
 plugins {
     id 'groovy'
+    id 'io.deephaven.project.java-public'
 }
 
 apply from: "$rootDir/gradle/web-common.gradle"

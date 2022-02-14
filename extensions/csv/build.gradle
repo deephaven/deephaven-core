@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'CSV: Support to read and write engine tables from/to CSV'

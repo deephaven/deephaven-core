@@ -1,0 +1,10 @@
+plugins {
+    id 'io.deephaven.project.bin-local'
+}
+
+dependencies {
+    // For unit-tests that explicitly (or transitively) depend on Configuration.getInstance(),
+    // we want to make sure that they continue working without having to spin up an etcd backed
+    // store that just contains the same data as we have on the classpath
+    runtimeOnly project(':fishconfig-local')
+}

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine Time: Types and libraries for working with instants, periods, and calendars'

@@ -1,6 +1,7 @@
 plugins {
   id 'com.bmuschko.docker-remote-api'
   id 'java-library'
+  id 'io.deephaven.project.java-public'
 }
 
 evaluationDependsOn Docker.registryProject('protoc-base')
@@ -89,5 +90,3 @@ spotless {
     )
   }
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'

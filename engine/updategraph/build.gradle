@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine Update Graph: Core utilities for maintaining a DAG for update processing'

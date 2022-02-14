@@ -1,0 +1,8 @@
+plugins {
+    // io.deephaven.tools.License depends on java plugin
+    id 'java'
+}
+
+def toolsLicense = io.deephaven.tools.License.createFrom(project)
+toolsLicense.register()
+project.ext.license = toolsLicense

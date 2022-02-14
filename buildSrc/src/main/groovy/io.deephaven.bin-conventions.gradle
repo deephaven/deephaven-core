@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+// our "bin" projects are a little special; the resources that go into the jar
+// are in the same directory as the project root, which is not supported by
+// IntelliJ when using Separate Modules Per SourceSet option.
+// To workaround this, we create arbitrary directories, $rootDir/projects/bin,
+// which act as the project root, and then we hook up the existing source in $rootDir/bin
+// as the sourceset directory.  This works correctly in both IntelliJ and Gradle CLI.
+
+// The projectDir is $rootDir/projects/$b.name, so we avoid using any relative files.
+String resources = "$rootDir/$project.name".toString()
+// Set the sourceSet resources directory.
+project.sourceSets.main.resources.srcDirs = [resources]
+project.sourceSets.main.java.srcDirs = [] // no java source for these modules.
+// This is technically superfluous, but we'll leave it just in case
+(project.tasks.jar as Jar).exclude 'build', 'out', 'build.gradle'
+
+// This is a one-time cleanup; it works better than trying to tell IntelliJ / gradle to ignore the files.
+// We'll leave it in case developers switch to release branches then back to develop.
+// We really _shouldn't_ do file deletion during configuration phase, but this should be very fast once already clean.
+files("$resources/build", "$resources/out").files*.deleteDir()

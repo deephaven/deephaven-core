@@ -1,5 +1,6 @@
 plugins {
   id 'java-library'
+  id 'io.deephaven.project.java-public'
 }
 
 description = 'The Deephaven client session library'
@@ -32,5 +33,3 @@ dependencies {
 test {
   useJUnitPlatform()
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'

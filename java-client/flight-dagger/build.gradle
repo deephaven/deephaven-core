@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description = 'The Deephaven client flight dagger library'
@@ -32,4 +33,3 @@ test {
 }
 
 apply plugin: 'io.deephaven.java-open-nio'
-apply plugin: 'io.deephaven.java-publishing-conventions'

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine API: Engine API module, suitable as a compile-time dependency for most queries'

@@ -1,5 +1,5 @@
 plugins {
-  id 'java'
+  id 'io.deephaven.project.java-local'
 }
 
 description = 'Provides a io.deephaven.configuration.PropertyInputStreamLoader that only loads from the classpath. Useful for unit-testing that shouldn\'t depend on etcd.'

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine Base: Exposes a few classes needed by both engine-tuplesource and engine-table'

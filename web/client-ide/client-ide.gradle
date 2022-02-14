@@ -1,5 +1,6 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.java-local'
 }
 
 evaluationDependsOn Docker.registryProject('nginx-base')
@@ -35,3 +36,5 @@ artifacts {
         builtBy gwtOutput
     }
 }
+
+project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)

@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Deephaven Database',
+                'Implementation-Version': project.version,
+                'Provider': 'gradle'
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    Jar jar ->
+        jar.preserveFileTimestamps = false
+        jar.reproducibleFileOrder = true
+}

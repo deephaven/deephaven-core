@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-local'
 }
 
 description 'Replication Tools: Utilities for source code generation and replication'

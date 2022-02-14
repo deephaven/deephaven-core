@@ -1,7 +1,9 @@
 // Utility project for testing server implementations with vanilla flight client
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-local'
 }
+
 dependencies {
     implementation project(':Base')
     implementation project(':engine-table')//Table, LTM, TableDiff, TableTools, ScriptSession

@@ -2,8 +2,6 @@ plugins {
   id 'java'
 }
 
-def archivesBaseNamePrefix = 'deephaven-'
-
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
@@ -27,8 +25,6 @@ if (runtimeVersion < languageLevel) {
 if (testRuntimeVersion < testLanguageLevel) {
   throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to testLanguageLevel")
 }
-
-archivesBaseName = "${archivesBaseNamePrefix}${project.name}"
 
 java {
   toolchain {
@@ -58,6 +54,7 @@ tasks.withType(JavaCompile).configureEach {
   javaCompiler.set compiler
 
   options.fork = true
+  options.forkOptions.memoryMaximumSize = '2G'
   options.encoding = 'UTF-8'
   options.incremental = true
   options.compilerArgs << '-parameters'
@@ -84,27 +81,4 @@ tasks.withType(Test).configureEach {
 
 tasks.withType(GroovyCompile).configureEach {
   javaLauncher.set groovyCompilerLauncher
-}
-
-tasks.withType(Jar).configureEach {
-  Jar jar ->
-    jar.preserveFileTimestamps = false
-    jar.reproducibleFileOrder = true
-}
-
-tasks.named(LifecycleBasePlugin.CLEAN_TASK_NAME) {
-  Delete d ->
-    d.delete('out')
-}
-
-jar {
-  manifest {
-    attributes 'Implementation-Title': 'Deephaven Database',
-        'Implementation-Version': project.version,
-        'Provider': 'gradle'
-  }
-}
-
-configurations {
-  testOutput.extendsFrom testRuntimeClasspath
 }

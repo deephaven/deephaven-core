@@ -7,6 +7,7 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.basic'
 }
 
 evaluationDependsOn Docker.registryProject('python')

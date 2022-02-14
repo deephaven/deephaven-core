@@ -1,11 +1,13 @@
+plugins {
+    id 'io.deephaven.project.basic'
+}
+
 configurations {
     js
     jsJar {
         transitive = false
     }
 }
-
-archivesBaseName = "deephaven-web"
 
 dependencies {
     js project(path: ':web-client-ui', configuration: 'js')

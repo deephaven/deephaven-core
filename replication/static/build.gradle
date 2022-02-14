@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-local'
 }
 
 description 'Static Replicators: Source code generators and replicators with no compile-time dependency on their inputs'

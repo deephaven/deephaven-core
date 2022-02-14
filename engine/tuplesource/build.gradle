@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description 'Engine TupleSource: Library of TupleSource implementations for combining multiple ColumnSources'

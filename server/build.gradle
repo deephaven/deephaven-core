@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 dependencies {
@@ -16,7 +17,9 @@ dependencies {
     implementation project(':open-api-lang-tools')
     implementation project(':log-factory')
     Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
-    implementation project(':application-mode')
+    api(project(':application-mode')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
     api(project(':Configuration')) {

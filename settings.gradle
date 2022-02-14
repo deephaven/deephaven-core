@@ -37,7 +37,6 @@ String[] webMods = [
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
-        'open-api-shared-rpc', // contains the open api rpc interfaces, and all relevant dependencies
         'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
@@ -60,6 +59,8 @@ pyMods.each {
         include(name)
         project(":$name").projectDir = file(dir)
 }
+
+include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
@@ -278,7 +279,7 @@ include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')
 
 file("${rootDir}/docker/registry").list().each { name ->
-    if (file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {
+    if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
         project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
     }

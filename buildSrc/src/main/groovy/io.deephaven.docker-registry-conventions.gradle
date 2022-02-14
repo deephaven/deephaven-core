@@ -1,5 +1,0 @@
-plugins {
-    id 'com.bmuschko.docker-remote-api'
-}
-
-assemble.dependsOn Docker.registryRegister(project)

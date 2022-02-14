@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.java-public'
 }
 
 description = 'The Deephaven client session dagger library'
@@ -33,5 +34,3 @@ dependencies {
 
 test {
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'
