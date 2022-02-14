@@ -75,10 +75,13 @@ final class StaticAggOpenHasherFloatFloat extends StaticChunkedOperatorAggregati
 
     @Override
     protected void rehashInternal(HashHandler handler) {
-        try (final WritableIntChunk<ChunkPositions> moveMainSource = WritableIntChunk.makeWritableChunk((int)numEntries);
-        final WritableIntChunk<ChunkPositions> moveMainDest = WritableIntChunk.makeWritableChunk((int)numEntries)) {
-            moveMainSource.setSize(0);
-            moveMainDest.setSize(0);
+        final int entries = (int)numEntries;
+        try (final WritableIntChunk<ChunkPositions> moveMainSource = WritableIntChunk.makeWritableChunk(entries);
+        final WritableIntChunk<ChunkPositions> moveMainDest = WritableIntChunk.makeWritableChunk(entries)) {
+            moveMainSource.setSize(entries);
+            moveMainDest.setSize(entries);
+            int startMovePointer = 0;
+            int endMovePointer = entries - 1;
             final int oldSize = tableSize >> 1;
             final float[] destArray0 = new float[tableSize];
             final float[] destArray1 = new float[tableSize];
@@ -99,8 +102,13 @@ final class StaticAggOpenHasherFloatFloat extends StaticChunkedOperatorAggregati
                         destArray1[tableLocation] = k1;
                         destState[tableLocation] = mainOutputPosition.getUnsafe(sourceBucket);
                         if (sourceBucket != tableLocation) {
-                            moveMainSource.add(sourceBucket);
-                            moveMainDest.add(tableLocation);
+                            if (tableLocation < oldSize) {
+                                moveMainSource.set(startMovePointer, sourceBucket);
+                                moveMainDest.set(startMovePointer++, tableLocation);
+                            } else {
+                                moveMainSource.set(endMovePointer, sourceBucket);
+                                moveMainDest.set(endMovePointer--, tableLocation);
+                            }
                         }
                         break;
                     } else {
@@ -112,6 +120,11 @@ final class StaticAggOpenHasherFloatFloat extends StaticChunkedOperatorAggregati
             mainKeySource0.setArray(destArray0);
             mainKeySource1.setArray(destArray1);
             mainOutputPosition.setArray(destState);
+            final int copySize = entries - endMovePointer - 1;
+            moveMainSource.copyFromTypedChunk(moveMainSource, endMovePointer + 1, startMovePointer, copySize);
+            moveMainDest.copyFromTypedChunk(moveMainDest, endMovePointer + 1, startMovePointer, copySize);
+            moveMainSource.setSize(startMovePointer + copySize);
+            moveMainDest.setSize(startMovePointer + copySize);
             try (final IntIntTimsortKernel.IntIntSortKernelContext sortContext = IntIntTimsortKernel.createContext((int)numEntries)) {
                 sortContext.sort(moveMainSource, moveMainDest);
             }

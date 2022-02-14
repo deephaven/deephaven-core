@@ -497,12 +497,15 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
+        builder.addStatement("final int entries = (int)numEntries");
         builder.beginControlFlow(
-                "try (final $T<$T> moveMainSource = $T.makeWritableChunk((int)numEntries);\nfinal $T<$T> moveMainDest = $T.makeWritableChunk((int)numEntries))",
+                "try (final $T<$T> moveMainSource = $T.makeWritableChunk(entries);\nfinal $T<$T> moveMainDest = $T.makeWritableChunk(entries))",
                 WritableIntChunk.class, ChunkPositions.class, WritableIntChunk.class, WritableIntChunk.class,
                 ChunkPositions.class, WritableIntChunk.class);
-        builder.addStatement("moveMainSource.setSize(0)");
-        builder.addStatement("moveMainDest.setSize(0)");
+        builder.addStatement("moveMainSource.setSize(entries)");
+        builder.addStatement("moveMainDest.setSize(entries)");
+        builder.addStatement("int startMovePointer = 0");
+        builder.addStatement("int endMovePointer = entries - 1");
 
         builder.addStatement("final int oldSize = tableSize >> 1");
 
@@ -535,8 +538,13 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[tableLocation] = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
-        builder.addStatement("moveMainSource.add(sourceBucket)");
-        builder.addStatement("moveMainDest.add(tableLocation)");
+        builder.beginControlFlow("if (tableLocation < oldSize)");
+        builder.addStatement("moveMainSource.set(startMovePointer, sourceBucket)");
+        builder.addStatement("moveMainDest.set(startMovePointer++, tableLocation)");
+        builder.nextControlFlow("else");
+        builder.addStatement("moveMainSource.set(endMovePointer, sourceBucket)");
+        builder.addStatement("moveMainDest.set(endMovePointer--, tableLocation)");
+        builder.endControlFlow();
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
@@ -552,6 +560,12 @@ public class TypedHasherFactory {
             builder.addStatement("mainKeySource$L.setArray(destArray$L)", ii, ii);
         }
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
+
+        builder.addStatement("final int copySize = entries - endMovePointer - 1");
+        builder.addStatement("moveMainSource.copyFromTypedChunk(moveMainSource, endMovePointer + 1, startMovePointer, copySize)");
+        builder.addStatement("moveMainDest.copyFromTypedChunk(moveMainDest, endMovePointer + 1, startMovePointer, copySize)");
+        builder.addStatement("moveMainSource.setSize(startMovePointer + copySize)");
+        builder.addStatement("moveMainDest.setSize(startMovePointer + copySize)");
 
         builder.beginControlFlow("try (final $T sortContext = $T.createContext((int)numEntries))",
                 IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
