@@ -199,7 +199,7 @@ public class BarrageStreamGenerator implements
     public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final RowSet viewport,
-            boolean reverseViewport,
+            final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
         return new SubView(this, options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
@@ -537,7 +537,7 @@ public class BarrageStreamGenerator implements
             // Add the drainable last as it is allowed to immediately close a row set the visitors need
             addStream.accept(drainableColumn);
         }
-        return myAddedOffsets == null ? rowsAdded.original.size() : myAddedOffsets.size();
+        return rowsAdded.original.size();
     }
 
     private long appendModColumns(final View view,

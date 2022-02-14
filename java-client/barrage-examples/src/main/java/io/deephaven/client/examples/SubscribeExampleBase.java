@@ -60,8 +60,6 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 public void onUpdate(final TableUpdate upstream) {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
-
-                    System.out.println("    Table size: " + table.
                 }
             });
 
