@@ -431,12 +431,22 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
      *
      * @param posRowSet The RowSet of position-based ranges to extract.
+     * @param reversed use a reversed view of the table (index 0 is last row of table)
+     * @return A new RowSet, containing values at the locations in the provided RowSet.
+     */
+    WritableRowSet subSetForPositions(RowSet posRowSet, boolean reversed);
+
+    /**
+     * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
+     *
+     * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
     WritableRowSet subSetForPositions(RowSet posRowSet);
 
     /**
-     * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
+     * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet} in reversed
+     * position space (index 0 is last row of table)
      *
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.

@@ -8,6 +8,7 @@ import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -42,7 +43,9 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
-            final BarrageTable table = subscription.entireTable();
+//            final BarrageTable table = subscription.entireTable();
+            final BarrageTable table = subscription.partialTable(RowSetFactory.flat(10), null, true);
+
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
             table.listenForUpdates(new InstrumentedTableUpdateListener("example-listener") {
@@ -57,6 +60,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 public void onUpdate(final TableUpdate upstream) {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
+
+                    System.out.println("    Table size: " + table.
                 }
             });
 

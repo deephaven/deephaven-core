@@ -489,10 +489,12 @@ public class ArrowFlightUtil {
                                 // translate the viewport to keyspace and make the call
                                 try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
                                         final RowSet keySpaceViewport =
-                                                hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                                                hasViewport
+                                                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                                        : null) {
                                     listener.onNext(
                                             bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport,
-                                                    keySpaceViewport, columns));
+                                                    reverseViewport, keySpaceViewport, columns));
                                 }
 
                                 listener.onCompleted();

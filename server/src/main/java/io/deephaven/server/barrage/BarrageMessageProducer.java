@@ -9,7 +9,6 @@ import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -154,12 +153,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          * @param options serialization options for this specific view
          * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
          * @param viewport is the position-space viewport
+         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
          * @param keyspaceViewport is the key-space viewport
          * @param subscribedColumns are the columns subscribed for this view
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
         MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot, @Nullable RowSet viewport,
-                @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+                boolean reverseViewport, @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
 
         /**
          * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single requestor.
@@ -174,11 +174,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          *
          * @param options serialization options for this specific view
          * @param viewport is the position-space viewport
-         * @param keyspaceViewport is the key-space viewport
+         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
          * @param snapshotColumns are the columns included for this view
          * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
          */
-        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
+        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport, boolean reverseViewport,
                 @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
     }
@@ -698,8 +698,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
-        } else if (activeViewport != null) {
-            try (final WritableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
+        } else if (activeViewport != null || activeReverseViewport != null) {
+            // build the combined position-space viewport (from forward and reverse)
+            try (final WritableRowSet deltaViewport = RowSetFactory.builderRandom().build()) {
+                if (activeViewport != null) {
+                    deltaViewport.insert(rowSet.subSetForPositions(activeViewport));
+                }
+                if (activeReverseViewport != null) {
+                    deltaViewport.insert(rowSet.subSetForReversePositions(activeReverseViewport));
+                }
                 addsToRecord = deltaViewport.intersect(upstream.added());
                 modsToRecord = deltaViewport.intersect(upstream.modified());
             }
@@ -1115,7 +1122,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 objectColumnsToClear.and(activeColumns);
             }
 
-
             nextFreeDeltaKey = 0;
             for (final Delta delta : pendingDeltas) {
                 delta.close();
@@ -1179,9 +1185,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         : subscription.subscribedColumns;
 
                 try (final RowSet clientView =
-                        subscription.isViewport() ? propRowSetForMessage.subSetForPositions(vp) : null) {
+                        subscription.isViewport()
+                                ? propRowSetForMessage.subSetForPositions(vp, subscription.reverseViewport)
+                                : null) {
                     subscription.listener
-                            .onNext(generator.getSubView(subscription.options, false, vp, clientView, cols));
+                            .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
+                                    clientView, cols));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
@@ -1236,7 +1245,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             final boolean isViewport = subscription.viewport != null;
             try (final RowSet keySpaceViewport =
-                    isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport)
+                    isViewport
+                            ? snapshotGenerator.getMessage().rowsAdded
+                                    .subSetForPositions(subscription.viewport, subscription.reverseViewport)
                             : null) {
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
@@ -1247,7 +1258,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
-                                subscription.viewport, keySpaceViewport, subscription.subscribedColumns));
+                                subscription.viewport, subscription.reverseViewport, keySpaceViewport,
+                                subscription.subscribedColumns));
             } catch (final Exception e) {
                 GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
                 removeSubscription(subscription.listener);
@@ -1595,10 +1607,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (this.activeViewport != null) {
             this.activeViewport.close();
         }
+        if (this.activeReverseViewport != null) {
+            this.activeReverseViewport.close();
+        }
+
         this.activeViewport = this.postSnapshotViewport;
         this.activeReverseViewport = this.postSnapshotReverseViewport;
 
-        // clean up the temporary objects
         this.postSnapshotViewport = null;
         this.postSnapshotReverseViewport = null;
 

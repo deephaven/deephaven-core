@@ -334,6 +334,14 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
+    public final WritableRowSet subSetForPositions(RowSet posRowSet, boolean reversed) {
+        if (reversed) {
+            return subSetForReversePositions(posRowSet);
+        }
+        return subSetForPositions(posRowSet);
+    }
+
+    @Override
     public final WritableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
@@ -361,8 +369,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final WritableRowSet subSetForReversePositions(RowSet posRowSet) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
 
+        long lastIndex = size() - 1;
+
         posRowSet.forEachRowKeyRange((start, end) -> {
-            builder.addRange(this.size() - end - 1, this.size() - start - 1);
+            builder.addRange(lastIndex - end, lastIndex - start);
             return true;
         });
 

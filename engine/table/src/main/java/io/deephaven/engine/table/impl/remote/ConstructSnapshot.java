@@ -10,11 +10,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -569,33 +566,31 @@ public class ConstructSnapshot {
         snapshot.shifted = RowSetShiftData.EMPTY;
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            RowSet keysToSnapshot = null;
-            if (positionsToSnapshot != null || reversePositionsToSnapshot != null) {
+            final RowSet keysToSnapshot;
+            if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
+                keysToSnapshot = null;
+            } else {
+                final RowSetBuilderRandom keyBuilder = RowSetFactory.builderRandom();
                 if (usePrev) {
                     // perform actions on the previous rowset
                     try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
-                        if (positionsToSnapshot != null && reversePositionsToSnapshot != null) {
-                            // union both key sets from forward and reverse viewports
-                            keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
-                            keysToSnapshot.union(prevRowSet.subSetForReversePositions(reversePositionsToSnapshot));
-                        } else if (positionsToSnapshot != null) {
-                            keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
-                        } else {
-                            keysToSnapshot = prevRowSet.subSetForReversePositions(reversePositionsToSnapshot);
+                        if (positionsToSnapshot != null) {
+                            keyBuilder.addRowSet(prevRowSet.subSetForPositions(positionsToSnapshot));
+                        }
+                        if (reversePositionsToSnapshot != null) {
+                            keyBuilder.addRowSet(prevRowSet.subSetForReversePositions(reversePositionsToSnapshot));
                         }
                     }
                 } else {
                     // perform actions on the current rowset
-                    if (positionsToSnapshot != null && reversePositionsToSnapshot != null) {
-                        // union both key sets from forward and reverse viewports
-                        keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
-                        keysToSnapshot.union(table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot));
-                    } else if (positionsToSnapshot != null) {
-                        keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
-                    } else {
-                        keysToSnapshot = table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot);
+                    if (positionsToSnapshot != null) {
+                        keyBuilder.addRowSet(table.getRowSet().subSetForPositions(positionsToSnapshot));
+                    }
+                    if (reversePositionsToSnapshot != null) {
+                        keyBuilder.addRowSet(table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot));
                     }
                 }
+                keysToSnapshot = keyBuilder.build();
             }
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
@@ -1289,20 +1284,20 @@ public class ConstructSnapshot {
      * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
      * uses.
      *
-     * @param usePrev Use previous values?
-     * @param snapshot The snapshot to populate
-     * @param logIdentityObject an object for use with log() messages
+     * @param usePrev            Use previous values?
+     * @param snapshot           The snapshot to populate
+     * @param logIdentityObject  an object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot A RowSet of keys within the table to include, null for all
-     *
+     * @param keysToSnapshot     A RowSet of keys within the table to include, null for all
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
     public static boolean serializeAllTable(final boolean usePrev,
-            final BarrageMessage snapshot,
-            final BaseTable table,
-            final Object logIdentityObject,
-            final BitSet columnsToSerialize,
-            final RowSet keysToSnapshot) {
+                                            final BarrageMessage snapshot,
+                                            final BaseTable table,
+                                            final Object logIdentityObject,
+                                            final BitSet columnsToSerialize,
+                                            final RowSet keysToSnapshot) {
+
         snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
@@ -1322,7 +1317,7 @@ public class ConstructSnapshot {
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         try (final SharedContext sharedContext =
-                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
+                     (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
                     final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
