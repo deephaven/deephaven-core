@@ -106,29 +106,18 @@ def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   }
 }
 
-def extraJvmArgs = { int runtimeJavaVersion, File c2ExcludesFile ->
-  def args = [
-          '-XX:Tier4CompileThreshold=1000',
-//          '-XX:+PrintFlagsFinal',
-//          '-XX:+PrintCompilation',
+def c2ExcludesJvmArgs = { String c2ExcludesFile ->
+  return [
           '-XX:+UnlockDiagnosticVMOptions',
           "-XX:CompilerDirectivesFile=${c2ExcludesFile}",
   ]
-  if (runtimeJavaVersion > 8) {
-    // Allow reflection, disable broken jit
-    args += [
-            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-    ]
-  }
-  return args
 }
 
 tasks.withType(JavaExec).configureEach {
   def c2ExcludesFile = createCompilerDirectives.get().outputs.files
   inputs.files c2ExcludesFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += extraJvmArgs(runtimeVersion, c2ExcludesFile.singleFile)
-  // todo: configure create start scripts
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
 }
 
 tasks.withType(Test).configureEach {
@@ -136,11 +125,25 @@ tasks.withType(Test).configureEach {
   inputs.files c2ExcludesFile
 
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += extraJvmArgs(testRuntimeVersion, c2ExcludesFile.singleFile)
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
 }
 
 tasks.withType(GroovyCompile).configureEach {
   javaLauncher.set groovyCompilerLauncher
+}
+
+plugins.withType(ApplicationPlugin) {
+  applicationDistribution.into('lib') {
+    from(createCompilerDirectives.get().outputs.files)
+  }
+}
+tasks.withType(CreateStartScripts).configureEach {
+  inputs.properties(['scriptVers': Math.random()])
+  windowsStartScriptGenerator.template = resources.text.fromUri(getClass().classLoader.getResource('windowsStartScript.txt'))
+  unixStartScriptGenerator.template = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
+  // Note that we don't call c2ExcludesJvmArgs() at this time, there is no way to template those strings.
+  // Instead, we hard code the expected paths in the above templates to match the path lib/c2-excludes.txt
+//  defaultJvmOpts += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
 }
 
 tasks.withType(Jar).configureEach {
