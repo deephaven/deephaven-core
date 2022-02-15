@@ -566,11 +566,15 @@ public class TypedHasherFactory {
         builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
         builder.endControlFlow();
 
+        builder.beginControlFlow("if (startMovePointer == 0)");
+        builder.addStatement("return");
+        builder.endControlFlow();
+
         // then only sort the beginning where we had something move (probably because it was in a probe bucket)
         builder.addStatement("moveMainSource.setSize(startMovePointer);");
         builder.addStatement("moveMainDest.setSize(startMovePointer);");
 
-        builder.beginControlFlow("try (final $T sortContext = $T.createContext((int)numEntries))",
+        builder.beginControlFlow("try (final $T sortContext = $T.createContext(startMovePointer)",
                 IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
         builder.addStatement("sortContext.sort(moveMainSource, moveMainDest)");
         builder.endControlFlow();

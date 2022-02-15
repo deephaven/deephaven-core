@@ -17,7 +17,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 public abstract class OperatorAggregationStateManagerOpenAddressedBase
         implements OperatorAggregationStateManager {
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
-    private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
+    private static final long MAX_TABLE_SIZE = 1<<30; // maximum array size
 
     // the number of slots in our table
     protected int tableSize;
@@ -37,13 +37,15 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
+        Require.gtZero(maximumLoadFactor, "maximumLoadFactor");
+        Require.leq(maximumLoadFactor, "maximumLoadFactor", 0.95);
 
         mainKeySources = new FlatArraySource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            // the sources that we will use to store our hash table, we knwo that they are primitive so this cast works
+            // the sources that we will use to store our hash table, we know that they are primitive so this cast works
             mainKeySources[ii] = (FlatArraySource) InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    tableKeySources[ii].getType(), null);
+                    tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
 
         this.maximumLoadFactor = maximumLoadFactor;
