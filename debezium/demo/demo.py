@@ -14,13 +14,14 @@ server_name = 'mysql'
 db_name='shop'
 
 kafka_base_properties = {
+    'group.id' : 'dh-server',
     'bootstrap.servers' : 'redpanda:9092',
     'schema.registry.url' : 'http://redpanda:8081',
 }
 
 
 def make_cdc_table(table_name:str):
-    return  cc.consumeToTable(
+    return cc.consumeToTable(
         kafka_base_properties,
         cc.cdc_short_spec(server_name,
                           db_name,

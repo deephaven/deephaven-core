@@ -7,32 +7,32 @@ services:
   redpanda:
     image: docker.vectorized.io/vectorized/redpanda:v21.9.5
     command:
-     - redpanda start
-     - --overprovisioned
-     - --smp 1
-     - --memory 1G
-     - --reserve-memory 0M
-     - --node-id 0
-     - --check=false
-     - --kafka-addr 0.0.0.0:9092
-     - --advertise-kafka-addr redpanda:9092
-     - --pandaproxy-addr 0.0.0.0:8082
-     - --advertise-pandaproxy-addr redpanda:8082
-     - --set redpanda.enable_transactions=true
-     - --set redpanda.enable_idempotence=true
+      - redpanda start
+      - --overprovisioned
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --node-id 0
+      - --check=false
+      - --kafka-addr 0.0.0.0:9092
+      - --advertise-kafka-addr redpanda:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr redpanda:8082
+      - --set redpanda.enable_transactions=true
+      - --set redpanda.enable_idempotence=true
     ports:
-     - 9092:9092
-     - 8081:8081
-     - 8082:8082
+      - 9092:9092
+      - 8081:8081
+      - 8082:8082
 
   mysql:
     image: debezium/example-mysql:1.4
     ports:
-     - 3306:3306
+      - 3306:3306
     environment:
-     - MYSQL_ROOT_PASSWORD=debezium
-     - MYSQL_USER=mysqluser
-     - MYSQL_PASSWORD=mysqlpw
+      - MYSQL_ROOT_PASSWORD=debezium
+      - MYSQL_USER=mysqluser
+      - MYSQL_PASSWORD=mysqlpw
 
   debezium:
     image: debezium/connect:1.4
@@ -46,4 +46,13 @@ services:
       CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
     ports:
-      - 8083:8083
+      - '8083:8083'
+
+  loadgen:
+    build: loadgen
+    environment:
+      - PAGEVIEWS_PER_SECOND_START=750
+      - PURCHASES_PER_SECOND_START=10
+      - COMMAND_ENDPOINT=0.0.0.0:8090
+    ports:
+      - 8090:8090
