@@ -3,6 +3,6 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-io.deephaven.project.Type.register(project, 'docker-registry', false)
+io.deephaven.project.ProjectType.register(project, 'docker-registry', false)
 
 assemble.dependsOn Docker.registryRegister(project)

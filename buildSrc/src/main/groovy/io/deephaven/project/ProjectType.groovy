@@ -6,10 +6,9 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 @CompileStatic
-class Type {
+class ProjectType {
 
     public static final String VERIFY_ALL_PROJECTS_REGISTERED_TASK_NAME = 'verifyAllProjectsRegistered'
 
@@ -24,12 +23,12 @@ class Type {
 
     static void register(Project project, String type, boolean isPublic) {
         def ext = project.extensions.extraProperties
-        if (ext.has(Type.class.name)) {
+        if (ext.has(ProjectType.class.name)) {
             throw new IllegalStateException("Unable to set project type '${project.name}' as '${type}'" +
-                    " - is already registered with the type '${ext.get(Type.class.name)}'")
+                    " - is already registered with the type '${ext.get(ProjectType.class.name)}'")
         }
-        ext.set(Type.class.name, type)
-        ext.set("${Type.class.name}.isPublic", isPublic)
+        ext.set(ProjectType.class.name, type)
+        ext.set("${ProjectType.class.name}.isPublic", isPublic)
         if (isPublic) {
             project.tasks
                     .getByName('quick')
@@ -54,7 +53,7 @@ class Type {
                 .collect { ((ProjectDependency)it).dependencyProject }
                 .each {
                     if (!isPublic(it)) {
-                        throw new IllegalStateException("Project '${project.name}' has a dependency on a non-public project '${it.name}'")
+                        throw new IllegalStateException("Public project '${project.name}' has a dependency on a non-public project '${it.name}'")
                     }
                 }
     }
@@ -71,19 +70,19 @@ class Type {
 
     private static void verifyRegistered(Project project) {
         def ext = project.extensions.extraProperties
-        if (!ext.has(Type.class.name)) {
+        if (!ext.has(ProjectType.class.name)) {
             throw new IllegalStateException("Public project '${project.name}' must declare a type. Please apply the appropriate 'io.deephaven.project.<type>' plugin.")
         }
     }
 
     static String getType(Project project) {
         def ext = project.extensions.extraProperties
-        return ext.get(Type.class.name)
+        return ext.get(ProjectType.class.name)
     }
 
     static boolean isPublic(Project project) {
         def ext = project.extensions.extraProperties
-        return ext.get("${Type.class.name}.isPublic")
+        return ext.get("${ProjectType.class.name}.isPublic")
     }
 }
 

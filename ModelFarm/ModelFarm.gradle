@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id 'io.deephaven.project.java-public' // Note: nothing depends on this
+    id 'io.deephaven.project.java-public'
 }
 
 configurations {
