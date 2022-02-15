@@ -5,12 +5,12 @@ version: '3.4'
 
 services:
   redpanda:
-    image: docker.vectorized.io/vectorized/redpanda:v21.9.5
+    image: docker.vectorized.io/vectorized/redpanda:${REDPANDA_VERSION}
     command:
       - redpanda start
       - --overprovisioned
-      - --smp 1
-      - --memory 1G
+      - --smp ${REDPANDA_SMP}
+      - --memory ${REDPANDA_MEMORY}
       - --reserve-memory 0M
       - --node-id 0
       - --check=false
@@ -26,7 +26,7 @@ services:
       - 8082:8082
 
   mysql:
-    image: debezium/example-mysql:1.4
+    image: debezium/example-mysql:${DEBEZIUM_VERSION}
     ports:
       - 3306:3306
     environment:
@@ -35,7 +35,7 @@ services:
       - MYSQL_PASSWORD=mysqlpw
 
   debezium:
-    image: debezium/connect:1.4
+    image: debezium/connect:${DEBEZIUM_VERSION}
     environment:
       BOOTSTRAP_SERVERS: redpanda:9092
       GROUP_ID: 1
@@ -49,7 +49,9 @@ services:
       - '8083:8083'
 
   loadgen:
-    build: loadgen
+    build:
+      context: loadgen
+      dockerfile: python-Dockerfile
     environment:
       - PAGEVIEWS_PER_SECOND_START=750
       - PURCHASES_PER_SECOND_START=10

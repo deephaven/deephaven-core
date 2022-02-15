@@ -7,7 +7,6 @@ from concurrent.futures import CancelledError
 # CONFIG
 user_seed_count     = 10000
 item_seed_count     = 1000
-max_workers         = 8
 max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
 max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
 purchases_per_second_key = 'purchases_per_second'
@@ -16,6 +15,7 @@ params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PE
                          pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
 log_period_seconds  = 10
+rate_check_seconds  = 30
 item_inventory_min  = 1000
 item_inventory_max  = 5000
 item_price_min      = 5
@@ -124,58 +124,65 @@ def get_item_prices(cursor):
     return [(row[0], row[1]) for row in cursor]
 
 async def loop(executor, max_parallel, action_fun, param_key, action_desc):
-    start = time.time()
-    sent_at_rate = 0
-    time_last_log = start
+    now = time.time()
+    last_log = now
+    last_rate_check = now
     sent_since_last_log = 0
     rate_s = params[param_key]
+    rate_sent = 0
+    rate_start = now
     old_rate_s = rate_s
     period_s = 1.0/rate_s
-    log(f"Simulating {action_desc} actions with an initial rate of {rate_s} per second.")
-    tight_count = 0
+    log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
     futures = {}
+    def reap_futures():
+        for k in list(futures.keys()):
+            if futures[k].done():
+                del futures[k]        
     loop_count = 0
     event_loop = asyncio.get_event_loop()
     try:
         while True:
-            not_done = 0
-            for k in list(futures.keys()):
-                if futures[k].done():
-                    del futures[k]
-                else:
-                    not_done += 1
-            while not_done > max_parallel - 1:
+            reap_futures()
+            while len(futures) > max_parallel - 1:
                 await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
-                not_done -= 1
+                reap_futures()
             future = event_loop.run_in_executor(executor, action_fun)
             futures[loop_count] = future
             loop_count += 1
-            sent_at_rate += 1
+            rate_sent += 1
             sent_since_last_log += 1
             now = time.time()
-            time_last_log_diff = now - time_last_log
-            if time_last_log_diff >= log_period_seconds:
-                period_str = "%.1f" % time_last_log_diff
-                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {period_str} seconds")
-                time_last_log = now
+
+            last_log_diff = now - last_log
+            if last_log_diff >= log_period_seconds:
+                qlen = len(futures)
+                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds, running={qlen}.")
+                last_log = now
                 sent_since_last_log = 0
-            next_time = start + (sent_at_rate+1)*period_s
+
+            last_rate_check_diff = now - last_rate_check
+            if last_rate_check_diff >= rate_check_seconds:
+                last_rate_check = now = time.time()
+                effective_rate_s = rate_sent / (now - rate_start)
+                if abs(effective_rate_s - rate_s)/rate_s > 0.02:
+                    log(f"Warning: rate {rate_s}/s is too high; achieving " +
+                        f"an effective rate of {effective_rate_s:.1f}/s in the last {last_rate_check_diff:.1f} seconds.")
+                
+            next_time = rate_start + (rate_sent + 1)*period_s
             sleep_s = next_time - time.time()
-            if sleep_s > 0:
-                tight_count = 0
+            if sleep_s > 0.002:  # In practice can't sleep for less than 0.001 second.
                 await asyncio.sleep(sleep_s)
-            else:
-                tight_count += 1
-            if tight_count * period_s >= 1.0:
-                log(f"Rate {rate_s} is too high, can't honor it.")
-                params[param_key] = math.floor(0.95 * sent_at_rate / (time.time() - start))
+
             rate_s = params[param_key]
             if old_rate_s != rate_s:
                 log(f"Changing {action_desc} rate from {old_rate_s} to {rate_s} per second.")
                 period_s = 1.0/rate_s
                 old_rate_s = rate_s
-                start = time.time()
-                sent_at_rate = 0
+                now = time.time()
+                rate_start = now
+                rate_sent = 0
+                last_rate_check = now
     except CancelledError:
         pass
     log(f"Stopped simulating {action_desc} actions.")
@@ -343,7 +350,9 @@ try:
         for s in signals:
             event_loop.add_signal_handler(
                 s, lambda s=s: asyncio.create_task(handle_signal(s)))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers = max_parallel_purchases + max_parallel_pageviews
+        ) as executor:
             await asyncio.gather(
                 loop_purchases(executor, max_parallel_purchases, db_resources, producers, item_prices),
                 loop_random_pageviews(executor, max_parallel_pageviews, producers),

@@ -9,7 +9,7 @@ services:
       file: ../../docker-compose-common.yml
       service: server
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx8g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - JAVA_TOOL_OPTIONS=-Xmx${DEEPHAVEN_HEAP} -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
     volumes:
       - ../scripts:/scripts
 
@@ -45,11 +45,28 @@ services:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: redpanda
+    depends_on:
+      - redpanda-optimize
+    tmpfs:
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
+
+  redpanda-optimize:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: redpanda
+    command:
+      - rpk redpanda mode production && rpk redpanda tune all
+    tmpfs:
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
+      
 
   mysql:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: mysql
+    tmpfs:
+      - /run/mysqld:uid=999,gid=999,mode=1777,size=4G
+      - /var/cache:exec,size=256M
 
   debezium:
     extends:
@@ -63,10 +80,13 @@ services:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: loadgen
+    build:
+      context: ../loadgen
+      dockerfile: pypy-Dockerfile
     environment:
       # Look at extended definition for the rest.
       - MAX_PARALLEL_PURCHASES=4
-      - MAX_PARALLEL_PAGEVIEWS=20
+      - MAX_PARALLEL_PAGEVIEWS=40
     depends_on:
       mysql:
         condition: service_started
@@ -74,7 +94,7 @@ services:
         condition: service_started
 
   materialized:
-    image: materialize/materialized:v0.19.0
+    image: materialize/materialized:${MATERIALIZE_VERSION}
     command: -w2 --disable-telemetry
     ports:
       - 6875:6875
