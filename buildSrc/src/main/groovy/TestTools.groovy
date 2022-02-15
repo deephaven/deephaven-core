@@ -8,6 +8,9 @@ import org.gradle.api.reporting.internal.SimpleReport
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.junit.JUnitOptions
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 
 import java.util.concurrent.Callable
 
@@ -147,7 +150,26 @@ By default only runs in CI; to run locally:
                             .replace "${separator}test$separator", "$separator$type$separator"
                     (report as SimpleReport).destination = new File(rebased)
             }
+            // this is not part of the standard class; it is glued on later by jacoco plugin;
+            // we want to give each test it's own output files for jacoco analysis,
+            // so we don't accidentally stomp on previous output.
+            // TODO: verify jenkins is analyzing _all_ information here.
+            (t['jacoco'] as JacocoTaskExtension).with {
+                destinationFile = project.provider({ new File(project.buildDir, "jacoco/${type}.exec".toString()) } as Callable<File>)
+                classDumpDir = new File(project.buildDir, "jacoco/${type}Dumps".toString())
+            }
+            (project['jacocoTestReport'] as JacocoReport).with {
+                reports {
+                    JacocoReportsContainer c ->
+                        c.xml.enabled = true
+                        c.csv.enabled = true
+                        c.html.enabled = true
+                }
+            }
+
         }
+        project.tasks.findByName('jacocoTestReport').mustRunAfter(t)
+
         return t
     }
 

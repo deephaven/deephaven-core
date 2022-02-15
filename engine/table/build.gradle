@@ -118,10 +118,3 @@ tasks.testParallel.maxHeapSize = maxHeapSize
 tasks.testSerial.maxHeapSize = maxHeapSize
 tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
-
-// log lots of progress of the tests as they run
-tasks.withType(Test) {
-    testLogging {
-        events "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR"
-    }
-}

@@ -45,26 +45,29 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: check
-          arguments: --rerun-tasks check testOutOfBand testParallel testSerial
+          arguments: --scan --continue --rerun-tasks check
           gradle-version: wrapper
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: nightly-check-ci-test-results
-          path: |
-            **/build/test-results/*/TEST-*.xml
-            **/build/reports/tests/**
+          name: nightly-check-ci-results
+          path: '**/build/test-results/*/TEST-*.xml'
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nightly-check-ci-reports
+          path: '**/build/reports/tests/**'
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: nightly-check-ci-jvm-err
-          path: |
-            **/*_pid*.log
-            **/core.*
+          path: '**/*_pid*.log'
           if-no-files-found: ignore
 
       - name: Publish Test Results
@@ -77,13 +80,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
-#      - name: Slack Nightly Failure
-#        uses: slackapi/slack-github-action@v1.15.0
-#        id: slack-nightly-failure
-#        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-#        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@v1.15.0
+        id: slack-nightly-failure
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
 
   testSerial:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
@@ -155,13 +158,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
-#      - name: Slack Nightly Failure
-#        uses: slackapi/slack-github-action@v1.15.0
-#        id: slack-nightly-failure
-#        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-#        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@v1.15.0
+        id: slack-nightly-failure
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
 
   testParallel:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
@@ -233,13 +236,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
-#      - name: Slack Nightly Failure
-#        uses: slackapi/slack-github-action@v1.15.0
-#        id: slack-nightly-failure
-#        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-#        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@v1.15.0
+        id: slack-nightly-failure
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
 
   testOutOfBand:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
@@ -311,10 +314,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
-#      - name: Slack Nightly Failure
-#        uses: slackapi/slack-github-action@v1.15.0
-#        id: slack-nightly-failure
-#        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-#        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@v1.15.0
+        id: slack-nightly-failure
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        # TODO(deephaven-core#947): Parameterize nightly ci failure workflow and trigger
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

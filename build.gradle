@@ -125,8 +125,13 @@ Set<Project> modsSpotless = subprojects - modsAreExternal - modsAreBasic - modsA
 
 allprojects {
 
+    apply plugin: 'jacoco'
     apply plugin: 'idea'
     apply plugin: 'license'
+
+    jacoco {
+      toolVersion = '0.8.7'
+    }
 
     license {
         header rootProject.file('license-header')
@@ -191,6 +196,15 @@ configure(modsAreDockerRegistry) {
 // setup standard sourceSets for non-bin modules
 configure modsRegular,
 { Project p ->
+
+    p.tasks.jacocoTestReport {
+        reports {
+            xml.enabled true
+            csv.enabled true
+            html.enabled true
+//            html.destination "${buildDir}/jacocoHtml"
+        }
+    }
 
     p.tasks.create 'sourceJar', Jar, {
         Jar j ->
@@ -292,6 +306,8 @@ configure modsRegular,
         }
 
         exclude 'io/deephaven/**/NoTest*'
+
+        finalizedBy jacocoTestReport
     } }
 }
 
