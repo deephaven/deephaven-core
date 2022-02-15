@@ -12,7 +12,6 @@ jacocoTestReport {
         xml.enabled true
         csv.enabled true
         html.enabled true
-        //            html.destination "${buildDir}/jacocoHtml"
     }
 }
 

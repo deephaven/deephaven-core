@@ -31,8 +31,7 @@ project.tasks.withType(Test).all { Test t ->
         // pass -PforceTest=true to run test again after they've passed once,
         // and input source has not changed (i.e. invalidate caching)
         if (findProperty('forceTest') == 'true') {
-            // not gonna stay uptodate very well like this: :-)
-            inputs.property("forceTest", UUID.randomUUID().toString())
+            outputs.upToDateWhen { false }
         }
 
         enableAssertions = true
@@ -60,10 +59,6 @@ project.tasks.withType(Test).all { Test t ->
         systemProperty 'workspace', "$rootDir/tmp/workspace"
         systemProperty 'configuration.quiet', 'true'
         systemProperty 'java.awt.headless', 'true'
-
-        //testLogging {
-        //showStandardStreams = true
-        //}
 
         if (findProperty('debugCITests') == 'true') {
             Map<CharSequence, Long> times = [:]

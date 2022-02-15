@@ -3,7 +3,7 @@ plugins {
     id 'java'
 }
 
-// TODO(deephaven-core#1976): Use java-platform plugin for dependency constraints
+// TODO(deephaven-core#1162): Adopt java-platform to manage versions
 ext {
     depAnnotations = 'com.intellij:annotations:5.1'
     depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'

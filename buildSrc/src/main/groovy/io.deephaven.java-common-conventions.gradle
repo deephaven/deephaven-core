@@ -20,11 +20,6 @@ configurations.all({ c ->
             }
     })
     c.resolutionStrategy {
-        // by default, we don't use any changing modules.
-        // however, if a developer is working on something where jars
-        // are published to a local filesystem (like mavenLocal()),
-        // they can use `api group: 'com.foo', name: 'blah', version: '1', changing: true`,
-        // and gradle will happily recheck the filesystem for changes.
         cacheChangingModulesFor 0, 'seconds'
     }
 })
