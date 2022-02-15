@@ -25,7 +25,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     protected final ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
 
     // used as a row redirection for the output key sources
-    private final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
+    protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
     private MutableInt outputPosition;
@@ -65,7 +65,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
 
     @Override
     public void doMoveMain(int oldTableLocation, int newTableLocation) {
-        outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(newTableLocation), newTableLocation);
+        throw new IllegalStateException();
     }
 
     @Override

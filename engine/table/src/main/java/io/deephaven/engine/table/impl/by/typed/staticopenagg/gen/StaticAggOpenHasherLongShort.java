@@ -103,7 +103,7 @@ final class StaticAggOpenHasherLongShort extends StaticChunkedOperatorAggregatio
                     destArray1[tableLocation] = k1;
                     destState[tableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != tableLocation) {
-                        handler.doMoveMain(sourceBucket, tableLocation);
+                        outputPositionToHashSlot.set(destState[tableLocation], tableLocation);
                     }
                     break;
                 } else {

@@ -538,7 +538,7 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[tableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
-        builder.addStatement("handler.doMoveMain(sourceBucket, tableLocation)");
+        builder.addStatement("outputPositionToHashSlot.set(destState[tableLocation], tableLocation)");
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
