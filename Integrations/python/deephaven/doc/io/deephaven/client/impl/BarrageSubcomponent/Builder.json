@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSubcomponent$Builder",
+ "methods": {
+  "allocator": ":param bufferAllocator: org.apache.arrow.memory.BufferAllocator\n:return: io.deephaven.client.impl.BarrageSubcomponent.Builder",
+  "build": ":return: io.deephaven.client.impl.BarrageSubcomponent",
+  "managedChannel": ":param channel: io.grpc.ManagedChannel\n:return: io.deephaven.client.impl.BarrageSubcomponent.Builder",
+  "scheduler": ":param scheduler: java.util.concurrent.ScheduledExecutorService\n:return: io.deephaven.client.impl.BarrageSubcomponent.Builder"
+ },
+ "path": "io.deephaven.client.impl.BarrageSubcomponent.Builder",
+ "typeName": "interface"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer",
+ "methods": {
+  "handleChunk": "Create a chunk of output keys or values that correspond to rowSequence. The output chunks should be cached in the context for re-use, but the data returned in them should be functionally\n immutable and not rely on pooled or re-usable objects.\n\n:param context: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) - A KeyOrValueSerializer.Context created by KeyOrValueSerializer.makeContext(int)\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - The row keys to serialize\n:param previous: (boolean) - If previous row values should be used, as with row key removals\n:return: (io.deephaven.chunk.ObjectChunk<SimpleKeyOrValueSerializer.SERIALIZED_TYPE,io.deephaven.chunk.attributes.Values>) A chunk of serialized data keys or values, with ObjectChunk.size() == rowSequence.size()",
+  "makeContext": "Create a context for calling KeyOrValueSerializer.handleChunk(Context, RowSequence, boolean).\n\n:param size: (int) - The maximum number of rows that will be serialized for each chunk\n:return: (io.deephaven.kafka.publish.KeyOrValueSerializer.Context) A Context for the KeyOrValueSerializer"
+ },
+ "path": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer",
+ "typeName": "class"
+}

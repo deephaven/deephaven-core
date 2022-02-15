@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.RowRedirection",
+ "methods": {
+  "fillChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "fillChunkUnordered": "Lookup each element in a LongChunk and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - The row keys to lookup in this RowRedirection",
+  "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "get": "Simple redirected lookup.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getPrev": "Simple redirected lookup, using previous values.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "isWritable": ":return: (boolean) Whether this RowRedirection is actually writable",
+  "makeFillContext": "Make a FillContext for this RowRedirection. The default implementation supplied DEFAULT_FILL_INSTANCE,\n suitable for use with the default implementation of\n fillChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence),\n fillChunkUnordered(ChunkSource.FillContext, WritableLongChunk, LongChunk), and\n fillPrevChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence).\n\n:param chunkCapacity: (int) - The maximum number of mappings that will be retrieved in one operation\n:param sharedContext: (io.deephaven.engine.table.SharedContext) - A SharedContext for use when the same RowRedirection will be used with the same\n        keysToMap by multiple consumers\n:return: (io.deephaven.engine.table.ChunkSource.FillContext) The FillContext to use",
+  "writableCast": "Cast this RowRedirection reference to a WritableRowRedirection.\n\n:return: (io.deephaven.engine.table.impl.util.WritableRowRedirection) this cast to a WritableRowRedirection"
+ },
+ "path": "io.deephaven.engine.table.impl.util.RowRedirection",
+ "text": "Data structure for mapping one \"outer\" row key space to another \"inner\" row key space. Query engine components use\n this when a RowSet must be flattened or re-ordered.",
+ "typeName": "interface"
+}

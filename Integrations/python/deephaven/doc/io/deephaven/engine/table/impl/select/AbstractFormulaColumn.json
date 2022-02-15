@@ -1,0 +1,22 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.AbstractFormulaColumn",
+ "methods": {
+  "disallowRefresh": "Should we disallow use of this column for refreshing tables?\n\n Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those\n values.\n\n:return: boolean",
+  "getColumnArrays": "Get a list of the names of column arrays used in this SelectColumn. Behavior is undefined if none of the init*\n methods have been called yet.\n\n:return: (java.util.List<java.lang.String>) the list of column arrays used",
+  "getColumns": "Get a list of the names of columns used in this SelectColumn. Behavior is undefined if none of the init* methods\n have been called yet.\n\n:return: (java.util.List<java.lang.String>) the columns used in this SelectColumn",
+  "getDataView": "Creates a ColumnSource that will evaluate the result of the formula for a given row on demand\n when it is accessed.\n \n The result of this is the column source produced by calling Table.updateView(java.util.Collection<? extends io.deephaven.api.Selectable>) or Table.view(java.util.Collection<? extends io.deephaven.api.Selectable>) on a\n Table.\n\n:return: (io.deephaven.engine.table.ColumnSource<?>) a ColumnSource",
+  "getLazyView": "Creates a ColumnSource that will evaluate the result of the formula for a given row on demand\n when it is accessed and cache the result\n\n:return: (io.deephaven.engine.table.ColumnSource<?>) the column source produced by calling Table.lazyUpdate(java.util.Collection<? extends io.deephaven.api.Selectable>) on a Table.",
+  "getMatchPair": "Get a MatchPair for this column, if applicable.\n\n:return: io.deephaven.engine.table.MatchPair",
+  "getName": "Get the name of the resultant column.\n\n:return: (java.lang.String) the name of the column",
+  "getReturnedType": "Get the data type stored in the resultant column.\n\n:return: (java.lang.Class<?>) the type",
+  "initInputs": "**Incompatible overloads text - text from the first overload:**\n\nInitialize the SelectColumn using the input table and return a list of underlying columns that this SelectColumn\n is dependent upon.\n\n*Overload 1*  \n  :param table: (io.deephaven.engine.table.Table) - the table to initialize internals from\n  :return: (java.util.List<java.lang.String>) a list containing all columns from 'table' that the result depends on\n  \n*Overload 2*  \n  :param rowSet: (io.deephaven.engine.rowset.TrackingRowSet) - the base row set\n  :param columnsOfInterest: (java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource<?>>) - the input columns\n  :return: (java.util.List<java.lang.String>) a list of columns on which the result of this is dependent",
+  "isRetain": ":return: boolean",
+  "newDestInstance": "Create a new WritableColumnSource.\n\n The returned column source must be capable of handling updates.\n\n:param size: (long) - A hint as to the number of rows that will be used\n:return: (io.deephaven.engine.table.WritableColumnSource<?>) a new WritableColumnSource",
+  "newFlatDestInstance": "Create a new immutable WritableColumnSource.\n\n The returned column source should be flat, and need not handle updates.\n\n:param size: (long) - A hint as to the number of rows that will be used\n:return: (io.deephaven.engine.table.WritableColumnSource<?>) a new WritableColumnSource",
+  "preventsParallelization": ":return: boolean",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.AbstractFormulaColumn",
+ "text": "A SelectColumn that implements a formula computed from the existing columns in the table and a query scope.",
+ "typeName": "class"
+}

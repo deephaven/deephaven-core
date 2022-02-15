@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.ChunkSource$FillContext",
+ "methods": {
+  "supportsUnboundedFill": "Returns true if this Context contains internal state that limits its capacity to the originally requested\n capacity. If false is returned, then fillChunk operations may be arbitrarily large.\n\n:return: (boolean) if this context has a limited capacity"
+ },
+ "path": "io.deephaven.engine.table.ChunkSource.FillContext",
+ "text": "Marker interface for Contexts that are used in\n ChunkSource.fillChunk(FillContext, WritableChunk, RowSequence).",
+ "typeName": "interface"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.util.tables.SwappableTable",
+ "methods": {
+  "addColumn": "Adds a column to the underlying table structures.\n\n:param column: (java.lang.String) - column",
+  "getTableDefinition": "Gets the signature (columns and types) of the table, \\even if the data is transformed.\n\n:return: (io.deephaven.engine.table.TableDefinition) table with the columns and types of the final table",
+  "getTableMapHandle": "Gets the TableHandle for this SwappableTable.\n\n:return: (io.deephaven.plot.util.tables.TableMapHandle) this SwappableTable's TableHandle"
+ },
+ "path": "io.deephaven.plot.util.tables.SwappableTable",
+ "text": "Holds a handle on a table that may get swapped out for another table.",
+ "typeName": "class"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.TableHandle$Lifecycle",
+ "methods": {
+  "onInit": ":param handle: io.deephaven.client.impl.TableHandle",
+  "onRelease": ":param handle: io.deephaven.client.impl.TableHandle"
+ },
+ "path": "io.deephaven.client.impl.TableHandle.Lifecycle",
+ "typeName": "interface"
+}

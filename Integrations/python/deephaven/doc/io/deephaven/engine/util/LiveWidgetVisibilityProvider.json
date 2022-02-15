@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.LiveWidgetVisibilityProvider",
+ "methods": {
+  "getValidGroups": "Provide a list of groups which may view this widget. null indicates that there are no viewing restrictions on\n this widget.\n\n:return: (java.lang.String[]) the list of groups which may view this widget, null for no restrictions"
+ },
+ "path": "io.deephaven.engine.util.LiveWidgetVisibilityProvider",
+ "text": "LiveWidgets may implement this interface to restrict the users who can see a particular widget.\n \n\n This interface only enables the widget developer to limit the users who may open the widget; it does not provide any\n control over what users can see after the widget is opened. The widget itself is responsible for determining which\n data should be presented to the user and applying any appropriate viewer permissions.\n \n\n If widgets do not implement this interface, they are visible to all users of the query.\n \n\n Unlike tables, limiting the visibility of one widget does not affect the visibility of other widgets.",
+ "typeName": "interface"
+}

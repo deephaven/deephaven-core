@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.SwapListener",
+ "methods": {
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
+  "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates.\n:return: (io.deephaven.engine.updategraph.NotificationQueue.Notification) table change notification",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates.",
+  "subscribeForUpdates": "Invoke TableWithDefaults.listenForUpdates(ShiftObliviousListener) for the appropriate subclass of\n SwapListenerBase."
+ },
+ "path": "io.deephaven.engine.table.impl.SwapListener",
+ "typeName": "class"
+}

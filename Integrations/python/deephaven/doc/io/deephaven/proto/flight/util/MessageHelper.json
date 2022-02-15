@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.flight.util.MessageHelper",
+ "methods": {
+  "toIpcBytes": ":param builder: com.google.flatbuffers.FlatBufferBuilder\n:return: byte[]",
+  "wrapInMessage": "*Overload 1*  \n  :param builder: com.google.flatbuffers.FlatBufferBuilder\n  :param headerOffset: int\n  :param headerType: byte\n  :return: int\n  \n*Overload 2*  \n  :param builder: com.google.flatbuffers.FlatBufferBuilder\n  :param headerOffset: int\n  :param headerType: byte\n  :param bodyLength: int\n  :return: int"
+ },
+ "path": "io.deephaven.proto.flight.util.MessageHelper",
+ "typeName": "class"
+}

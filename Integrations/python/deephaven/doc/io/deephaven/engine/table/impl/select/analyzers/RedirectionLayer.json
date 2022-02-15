@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.RedirectionLayer",
+ "methods": {
+  "allowCrossColumnParallelization": "Can all of our columns permit parallel updates?\n\n:return: boolean",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - the upstream update\n:param toClear: (io.deephaven.engine.rowset.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update\n:param jobScheduler: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler\n:param onCompletion: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.SelectLayerCompletionHandler) - Called when an inner column is complete. The outer layer should pass the onCompletion\n        on to other layers and if it and all of its dependencies have been satisfied schedule execution of that\n        column update.",
+  "calcDependsOnRecurse": ":return: java.util.Map<java.lang.String,java.util.Set<java.lang.String>>",
+  "getColumnSourcesRecurse": ":param mode: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.GetMode\n:return: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>",
+  "getInner": ":return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+  "populateModifiedColumnSetRecurse": ":param mcsBuilder: io.deephaven.engine.table.ModifiedColumnSet\n:param remainingDepsToSatisfy: java.util.Set<java.lang.String>",
+  "updateColumnDefinitionsFromTopLayer": ":param columnDefinitions: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>"
+ },
+ "path": "io.deephaven.engine.table.impl.select.analyzers.RedirectionLayer",
+ "text": "A layer that maintains the row redirection for future SelectColumnLayers.",
+ "typeName": "class"
+}

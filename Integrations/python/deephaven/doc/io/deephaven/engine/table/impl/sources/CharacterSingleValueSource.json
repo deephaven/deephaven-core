@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.CharacterSingleValueSource",
+ "methods": {
+  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data rowSequence\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be written",
+  "fillFromChunkUnordered": "Fills the ChunkSink with data from the source, with data corresponding to the keys from the given key chunk.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data RowSequence\n:param keys: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - A LongChunk representing the keys to be written",
+  "getChar": ":param index: long\n:return: char",
+  "getPrevChar": ":param index: long\n:return: char",
+  "set": "*Overload 1*  \n  :param value: java.lang.Character\n  \n*Overload 2*  \n  :param value: char\n  \n*Overload 3*  \n  :param key: long\n  :param value: char"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.CharacterSingleValueSource",
+ "text": "Single value source for Character.\n \n The C-haracterSingleValueSource is replicated to all other types with\n io.deephaven.engine.table.impl.sources.Replicate.\n\n (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).",
+ "typeName": "class"
+}

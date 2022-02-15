@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.table.ops.JoinTablesGrpcImpl$RealTableOperation",
+ "methods": {
+  "apply": ":param lhs: io.deephaven.engine.table.Table\n:param rhs: io.deephaven.engine.table.Table\n:param columnsToMatch: io.deephaven.engine.table.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.table.MatchPair[]\n:param request: JoinTablesGrpcImpl.RealTableOperation.T\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.server.table.ops.JoinTablesGrpcImpl.RealTableOperation",
+ "typeName": "interface"
+}

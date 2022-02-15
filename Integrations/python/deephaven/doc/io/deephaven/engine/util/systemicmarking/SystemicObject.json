@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.systemicmarking.SystemicObject",
+ "methods": {
+  "isSystemicObject": "Returns true if this is a systemically important object (see SystemicObjectTracker).\n\n:return: (boolean) true if this is a systemically important object, false otherwise.",
+  "markSystemic": "Mark this object as systemically important."
+ },
+ "path": "io.deephaven.engine.util.systemicmarking.SystemicObject",
+ "text": "An object that can report if it is systemically important.",
+ "typeName": "interface"
+}

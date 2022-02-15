@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.BasicTableDataListener",
+ "methods": {
+  "handleException": "Notify the listener that an exception was encountered while initiating or maintaining the subscription. Delivery\n of an exception implies that the subscription is no longer valid. This might happen during subscription\n establishment, and consequently should be checked for after subscribe completes.\n\n:param exception: (io.deephaven.engine.table.impl.locations.TableDataException) - The exception"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.BasicTableDataListener",
+ "text": "Common base interface for table data listeners.",
+ "typeName": "interface"
+}

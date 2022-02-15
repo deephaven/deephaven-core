@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.vector.ByteVector$Indirect",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.ByteVector",
+  "hashCode": ":return: int",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.vector.ByteVector.Indirect",
+ "text": "Base class for all \"indirect\" ByteVector implementations.",
+ "typeName": "class"
+}

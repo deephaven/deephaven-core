@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.string.StringUtils$StringKeyedObject",
+ "methods": {
+  "getStringRepresentation": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.util.string.StringUtils.StringKeyedObject",
+ "text": "Interface to make auto-keying by toString() safer and more flexible.",
+ "typeName": "interface"
+}

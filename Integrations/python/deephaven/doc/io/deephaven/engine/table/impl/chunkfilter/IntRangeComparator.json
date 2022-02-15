@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator",
+ "methods": {
+  "makeIntFilter": ":param lower: int\n:param upper: int\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.IntChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator",
+ "typeName": "class"
+}

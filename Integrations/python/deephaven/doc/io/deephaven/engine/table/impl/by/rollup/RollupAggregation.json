@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.RollupAggregation",
+ "methods": {
+  "nullColumns": ":param resultColumns: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.table.impl.by.rollup.RollupAggregation",
+  "partition": ":param includeConstituents: boolean\n:return: io.deephaven.engine.table.impl.by.rollup.RollupAggregation",
+  "walk": "Glue method to deliver this Aggregation to a AggSpec.Visitor.\n\n*Overload 1*  \n  Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n  \n  :param visitor: (V) - The visitor\n  :return: (V) The visitor\n  \n*Overload 2*  \n  Note: Java generics information - <V extends io.deephaven.engine.table.impl.by.rollup.RollupAggregation.Visitor>\n  \n  :param visitor: V\n  :return: V"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.RollupAggregation",
+ "text": "Rollup-specific aggregations.",
+ "typeName": "interface"
+}

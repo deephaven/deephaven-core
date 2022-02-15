@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.chunk.util.pools.ChunkPoolInstrumentation",
+ "methods": {
+  "getAndRecord": "Return the result of allocationProcedure, run by the currently installed allocationRecorder.\n\nNote: Java generics information - <RETURN_TYPE>\n\n:param allocationProcedure: (java.util.function.Supplier<RETURN_TYPE>) - The allocation procedure to Supplier.get()\n:return: (RETURN_TYPE) The result of allocationProcedure",
+  "setAllocationRecorder": "Set an allocation recorder for this process' chunk pools.\n\n:param allocationRecorder: (java.util.function.Function<java.util.function.Supplier<?>,?>) - The new allocation recorder, or null to install a default no-op recorder"
+ },
+ "path": "io.deephaven.chunk.util.pools.ChunkPoolInstrumentation",
+ "text": "Static callback holder for pooled chunk allocation.",
+ "typeName": "class"
+}

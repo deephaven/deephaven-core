@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl",
+ "methods": {
+  "asRowKeyChunk": "Get a LongChunk representation of the individual row keys in this RowSequence.\n\n:return: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>) A LongChunk containing the row keys in this RowSequence",
+  "asRowKeyRangesChunk": "Get a LongChunk representation of row key ranges in this RowSequence.\n\n:return: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges>) A LongChunk containing the row key ranges in this RowSequence",
+  "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
+  "lastRowKey": "Get the last row key in this RowSequence.\n\n:return: (long) The last row key, or RowSequence.NULL_ROW_KEY if there is none.",
+  "rangesCountUpperBound": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl",
+ "typeName": "class"
+}

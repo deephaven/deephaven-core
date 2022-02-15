@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.util.datastructures.SizeException",
+ "methods": {},
+ "path": "io.deephaven.util.datastructures.SizeException",
+ "text": "Unchecked exception thrown when operations are invoked (directly or indirectly) that cannot be completed correctly\n due to size constraints on the underlying data structures. Most commonly this occurs when a\n LongSizedDataStructure cannot perform some operations if the input size exceeds 2147483647.",
+ "typeName": "class"
+}

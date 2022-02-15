@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.qst.table.Join$Builder",
+ "methods": {
+  "addAdditions": "*Overload 1*  \n  :param element: io.deephaven.api.JoinAddition\n  :return: Join.Builder.SELF\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.JoinAddition...\n  :return: Join.Builder.SELF",
+  "addAllAdditions": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.JoinAddition>\n:return: Join.Builder.SELF",
+  "addAllMatches": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.JoinMatch>\n:return: Join.Builder.SELF",
+  "addMatches": "*Overload 1*  \n  :param element: io.deephaven.api.JoinMatch\n  :return: Join.Builder.SELF\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.JoinMatch...\n  :return: Join.Builder.SELF",
+  "build": ":return: Join.Builder.J",
+  "left": ":param left: io.deephaven.qst.table.TableSpec\n:return: Join.Builder.SELF",
+  "right": ":param right: io.deephaven.qst.table.TableSpec\n:return: Join.Builder.SELF"
+ },
+ "path": "io.deephaven.qst.table.Join.Builder",
+ "typeName": "interface"
+}

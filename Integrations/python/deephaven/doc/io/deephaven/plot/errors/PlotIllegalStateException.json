@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.errors.PlotIllegalStateException",
+ "methods": {},
+ "path": "io.deephaven.plot.errors.PlotIllegalStateException",
+ "text": "IllegalStateException that contains information about the plot.",
+ "typeName": "class"
+}

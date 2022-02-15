@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.chunk.ResettableWritableChunkChunk",
+ "methods": {
+  "asResettableWritableBooleanChunkChunk": ":return: io.deephaven.chunk.ResettableWritableBooleanChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableByteChunkChunk": ":return: io.deephaven.chunk.ResettableWritableByteChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableCharChunkChunk": ":return: io.deephaven.chunk.ResettableWritableCharChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableDoubleChunkChunk": ":return: io.deephaven.chunk.ResettableWritableDoubleChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableFloatChunkChunk": ":return: io.deephaven.chunk.ResettableWritableFloatChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableIntChunkChunk": ":return: io.deephaven.chunk.ResettableWritableIntChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableLongChunkChunk": ":return: io.deephaven.chunk.ResettableWritableLongChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.chunk.ResettableWritableObjectChunkChunk<T,ResettableWritableChunkChunk.ATTR>",
+  "asResettableWritableShortChunkChunk": ":return: io.deephaven.chunk.ResettableWritableShortChunkChunk<ResettableWritableChunkChunk.ATTR>",
+  "resetFromArray": "Reset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n:param array: (java.lang.Object) - The array\n:param offset: (int) - The offset into array\n:param capacity: (int) - The capacity this should have after reset",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified WritableChunkChunk.\n\n:param other: (io.deephaven.chunk.WritableChunkChunk<ResettableWritableChunkChunk.ATTR>) - The other WritableChunkChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset"
+ },
+ "path": "io.deephaven.chunk.ResettableWritableChunkChunk",
+ "text": "WritableChunkChunk that may have its backing storage reset to a slice of that belonging to another\n WritableChunkChunk or a native array.",
+ "typeName": "interface"
+}

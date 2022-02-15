@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecSortedFirst",
+ "methods": {
+  "builder": ":return: io.deephaven.api.agg.spec.AggSpecSortedFirst.Builder",
+  "columns": "The columns to sort on to determine the order within each group.\n\n:return: (java.util.List<io.deephaven.api.SortColumn>) The sort columns",
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecSortedFirst",
+ "text": "Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on\n the sort columns.",
+ "typeName": "class"
+}

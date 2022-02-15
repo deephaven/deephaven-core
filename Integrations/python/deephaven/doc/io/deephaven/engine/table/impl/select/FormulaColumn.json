@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.FormulaColumn",
+ "methods": {
+  "createFormulaColumn": "*Overload 1*  \n  :param columnName: java.lang.String\n  :param formulaString: java.lang.String\n  :param parser: io.deephaven.engine.table.impl.select.FormulaParserConfiguration\n  :return: io.deephaven.engine.table.impl.select.FormulaColumn\n  \n*Overload 2*  \n  :param columnName: java.lang.String\n  :param formulaString: java.lang.String\n  :return: io.deephaven.engine.table.impl.select.FormulaColumn"
+ },
+ "path": "io.deephaven.engine.table.impl.select.FormulaColumn",
+ "typeName": "interface"
+}

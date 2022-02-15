@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.util.tables.SwappableTableOneClickMap",
+ "methods": {
+  "getByColumns": ":return: java.util.List<java.lang.String>",
+  "getTransform": ":return: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>"
+ },
+ "path": "io.deephaven.plot.util.tables.SwappableTableOneClickMap",
+ "text": "Holds a handle on a one click table that may get swapped out for another table. A TableMap is used to compute the\n OneClick.",
+ "typeName": "class"
+}

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable",
+ "methods": {
+  "make": "**Incompatible overloads text - text from the first overload:**\n\nCreate an AppendOnlyArrayBackedMutableTable with the given initial data.\n\n*Overload 1*  \n  :param definition: (io.deephaven.engine.table.TableDefinition) - the definition of the new table.\n  :return: (io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable) an empty AppendOnlyArrayBackedMutableTable with the given definition\n  \n*Overload 2*  \n  :param definition: (io.deephaven.engine.table.TableDefinition) - the definition of the new table.\n  :param enumValues: (java.util.Map<java.lang.String,java.lang.Object[]>) - a map of column names to enumeration values\n  :return: (io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable) an empty AppendOnlyArrayBackedMutableTable with the given definition\n  \n*Overload 3*  \n  :param initialTable: (io.deephaven.engine.table.Table) - the initial values to copy into the AppendOnlyArrayBackedMutableTable\n  :return: (io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable) an empty AppendOnlyArrayBackedMutableTable with the given definition\n  \n*Overload 4*  \n  :param initialTable: (io.deephaven.engine.table.Table) - the initial values to copy into the AppendOnlyArrayBackedMutableTable\n  :param enumValues: (java.util.Map<java.lang.String,java.lang.Object[]>) - a map of column names to enumeration values\n  :return: (io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable) an empty AppendOnlyArrayBackedMutableTable with the given definition",
+  "mutableInputTable": ":return: io.deephaven.engine.util.config.MutableInputTable",
+  "readOnlyCopy": ":return: io.deephaven.engine.table.Table",
+  "setDescription": ":param newDescription: java.lang.String\n:return: io.deephaven.engine.table.impl.util.BaseArrayBackedMutableTable"
+ },
+ "path": "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable",
+ "text": "An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the UGP.\n\n The table is not keyed, all rows are added to the end of the table. Deletions and edits are not permitted.",
+ "typeName": "class"
+}

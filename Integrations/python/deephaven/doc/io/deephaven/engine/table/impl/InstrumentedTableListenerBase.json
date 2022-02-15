@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.InstrumentedTableListenerBase",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "canExecute": ":param step: long\n:return: boolean",
+  "getEntry": ":return: io.deephaven.engine.table.impl.perf.PerformanceEntry",
+  "getErrorNotification": "Creates a notification for the exception.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking\n:return: (io.deephaven.engine.updategraph.NotificationQueue.ErrorNotification) exception notification",
+  "onFailure": "Notification of exceptions.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking",
+  "satisfied": "Is this ancestor satisfied? Note that this method must be safe to call on any thread.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) Whether the dependency is satisfied on step (and will not fire subsequent notifications)",
+  "setVerboseLogging": ":param enableVerboseLogging: boolean\n:return: boolean",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.InstrumentedTableListenerBase",
+ "typeName": "class"
+}

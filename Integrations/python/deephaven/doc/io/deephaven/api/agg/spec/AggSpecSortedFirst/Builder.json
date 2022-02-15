@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecSortedFirst$Builder",
+ "methods": {
+  "addAllColumns": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.SortColumn>\n:return: io.deephaven.api.agg.spec.AggSpecSortedFirst.Builder",
+  "addColumns": "*Overload 1*  \n  :param element: io.deephaven.api.SortColumn\n  :return: io.deephaven.api.agg.spec.AggSpecSortedFirst.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.SortColumn...\n  :return: io.deephaven.api.agg.spec.AggSpecSortedFirst.Builder",
+  "build": ":return: io.deephaven.api.agg.spec.AggSpecSortedFirst"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecSortedFirst.Builder",
+ "typeName": "interface"
+}

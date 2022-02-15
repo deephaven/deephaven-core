@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.UngroupedColumnSource",
+ "methods": {
+  "getColumnSource": ":param column: io.deephaven.engine.table.ColumnSource\n:return: io.deephaven.engine.table.impl.sources.UngroupedColumnSource",
+  "getPrevBase": ":return: long",
+  "initializeBase": ":param base: long",
+  "setBase": ":param base: long",
+  "startTrackingPrevValues": "ColumnSource implementations that track previous values have the option to not actually start tracking previous\n values until this method is called. This is an option, not an obligation: some simple ColumnSource\n implementations (like TSingleValueSource for various T) always track previous values; other implementations (like\n PrevColumnSource) never do; some (like TArrayColumnSource) only start tracking once this method is called.\n\n An immutable column source can not have distinct prev values; therefore it is implemented as a no-op."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.UngroupedColumnSource",
+ "typeName": "class"
+}

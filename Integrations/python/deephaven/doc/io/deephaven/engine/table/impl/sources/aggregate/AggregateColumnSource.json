@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource",
+ "methods": {
+  "make": "Note: Java generics information - <DB_ARRAY_TYPE extends io.deephaven.vector.Vector,\nDATA_TYPE>\n\n:param aggregatedSource: io.deephaven.engine.table.ColumnSource<DATA_TYPE>\n:param groupRowSetSource: io.deephaven.engine.table.ColumnSource<? extendsio.deephaven.engine.rowset.RowSet>\n:return: io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource<DB_ARRAY_TYPE,DATA_TYPE>",
+  "ungrouped": ":return: io.deephaven.engine.table.impl.sources.UngroupedColumnSource<AggregateColumnSource.COMPONENT_TYPE>"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource",
+ "text": "ColumnSource and UngroupableColumnSource interface for aggregation result columns.",
+ "typeName": "interface"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.metadata.GroupingColumnInfo",
+ "methods": {
+  "columnName": ":return: (java.lang.String) The column name",
+  "groupingTablePath": ":return: (java.lang.String) The relative path name for the column's grouping sidecar table",
+  "of": ":param columnName: java.lang.String\n:param groupingTablePath: java.lang.String\n:return: io.deephaven.parquet.table.metadata.GroupingColumnInfo"
+ },
+ "path": "io.deephaven.parquet.table.metadata.GroupingColumnInfo",
+ "text": "Representation class for grouping column information stored in key-value metadata for Deephaven-written Parquet\n files.",
+ "typeName": "class"
+}

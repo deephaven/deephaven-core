@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.ShortArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.ShortArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.ShortType",
+  "empty": ":return: io.deephaven.qst.array.ShortArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: short...\n  :return: io.deephaven.qst.array.ShortArray\n  \n*Overload 2*  \n  :param values: java.lang.Short...\n  :return: io.deephaven.qst.array.ShortArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Short>\n  :return: io.deephaven.qst.array.ShortArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Short>\n  :return: io.deephaven.qst.array.ShortArray",
+  "ofUnsafe": ":param values: short...\n:return: io.deephaven.qst.array.ShortArray",
+  "size": ":return: int",
+  "values": "The raw shorts. Must not be modified.\n\n:return: (short[]) the shorts, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.ShortArray",
+ "text": "A ShortType array.",
+ "typeName": "class"
+}

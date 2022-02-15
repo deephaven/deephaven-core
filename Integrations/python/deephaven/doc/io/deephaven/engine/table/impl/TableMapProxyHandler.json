@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.TableMapProxyHandler",
+ "methods": {
+  "getDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "invoke": ":param proxy: java.lang.Object\n:param method: java.lang.reflect.Method\n:param args: java.lang.Object[]\n:return: java.lang.Object",
+  "makeProxy": ":param localTableMap: io.deephaven.engine.table.TableMap\n:param strictKeys: boolean\n:param allowCoalesce: boolean\n:param sanityCheckJoins: boolean\n:return: io.deephaven.engine.table.Table",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.TableMapProxyHandler",
+ "typeName": "class"
+}

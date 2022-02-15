@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.LabeledTables$Builder",
+ "methods": {
+  "addAllTables": ":param elements: java.lang.Iterable<io.deephaven.qst.table.LabeledTable>\n:return: io.deephaven.qst.table.LabeledTables.Builder",
+  "addTables": "*Overload 1*  \n  :param element: io.deephaven.qst.table.LabeledTable\n  :return: io.deephaven.qst.table.LabeledTables.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.qst.table.LabeledTable...\n  :return: io.deephaven.qst.table.LabeledTables.Builder",
+  "build": ":return: io.deephaven.qst.table.LabeledTables",
+  "putMap": ":param key: java.lang.String\n:param value: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.LabeledTables.Builder"
+ },
+ "path": "io.deephaven.qst.table.LabeledTables.Builder",
+ "typeName": "interface"
+}

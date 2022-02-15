@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ShortChunkMatchFilterFactory",
+ "methods": {
+  "makeFilter": ":param invertMatch: boolean\n:param values: short...\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ShortChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ShortChunkMatchFilterFactory",
+ "text": "Creates chunk filters for short values.\n\n The strategy is that for one, two, or three values we have specialized\n classes that will do the appropriate simple equality check.\n\n For more values, we use a trove set and check contains for each value in the chunk.",
+ "typeName": "class"
+}

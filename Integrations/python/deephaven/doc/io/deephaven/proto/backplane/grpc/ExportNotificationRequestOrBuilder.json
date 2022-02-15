@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ExportNotificationRequestOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.ExportNotificationRequestOrBuilder",
+ "typeName": "interface"
+}

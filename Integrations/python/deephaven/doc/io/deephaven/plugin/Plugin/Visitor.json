@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.plugin.Plugin$Visitor",
+ "methods": {
+  "visit": ":param objectType: io.deephaven.plugin.type.ObjectType\n:return: Plugin.Visitor.T"
+ },
+ "path": "io.deephaven.plugin.Plugin.Visitor",
+ "typeName": "interface"
+}

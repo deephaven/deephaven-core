@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.PreserveColumnLayer",
+ "methods": {
+  "allowCrossColumnParallelization": "Can all of our columns permit parallel updates?\n\n:return: boolean",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - the upstream update\n:param toClear: (io.deephaven.engine.rowset.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update\n:param jobScheduler: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler\n:param onCompletion: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.SelectLayerCompletionHandler) - Called when an inner column is complete. The outer layer should pass the onCompletion\n        on to other layers and if it and all of its dependencies have been satisfied schedule execution of that\n        column update."
+ },
+ "path": "io.deephaven.engine.table.impl.select.analyzers.PreserveColumnLayer",
+ "text": "A layer that copies a column from our input to our output.",
+ "typeName": "class"
+}

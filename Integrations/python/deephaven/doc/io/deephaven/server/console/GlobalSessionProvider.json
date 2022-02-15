@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.console.GlobalSessionProvider",
+ "methods": {
+  "getGlobalSession": ":return: io.deephaven.engine.util.ScriptSession",
+  "initializeGlobalScriptSession": ":param globalSession: io.deephaven.engine.util.ScriptSession"
+ },
+ "path": "io.deephaven.server.console.GlobalSessionProvider",
+ "typeName": "class"
+}

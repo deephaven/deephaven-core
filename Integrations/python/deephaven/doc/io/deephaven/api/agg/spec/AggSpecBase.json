@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecBase",
+ "methods": {
+  "aggregation": "**Incompatible overloads text - text from the first overload:**\n\nBuild a ColumnAggregation for this AggSpec.\n\n*Overload 1*  \n  :param pair: (io.deephaven.api.agg.Pair) - The input/output column name pair\n  :return: (io.deephaven.api.agg.ColumnAggregation) The aggregation\n  \n*Overload 2*  \n  :param pairs: (io.deephaven.api.agg.Pair...) - The input/output column name pairs\n  :return: (io.deephaven.api.agg.Aggregation) The aggregation\n  \n*Overload 3*  \n  :param pairs: (java.util.Collection<? extendsio.deephaven.api.agg.Pair>) - The input/output column name pairs\n  :return: (io.deephaven.api.agg.Aggregation) The aggregation"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecBase",
+ "typeName": "class"
+}

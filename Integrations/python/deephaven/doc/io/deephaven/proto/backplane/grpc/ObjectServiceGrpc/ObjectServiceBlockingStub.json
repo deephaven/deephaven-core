@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc$ObjectServiceBlockingStub",
+ "methods": {
+  "fetchObject": ":param request: io.deephaven.proto.backplane.grpc.FetchObjectRequest\n:return: io.deephaven.proto.backplane.grpc.FetchObjectResponse"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceBlockingStub",
+ "typeName": "class"
+}

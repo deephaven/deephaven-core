@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.CharArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.CharArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.CharType",
+  "empty": ":return: io.deephaven.qst.array.CharArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: char...\n  :return: io.deephaven.qst.array.CharArray\n  \n*Overload 2*  \n  :param values: java.lang.Character...\n  :return: io.deephaven.qst.array.CharArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Character>\n  :return: io.deephaven.qst.array.CharArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Character>\n  :return: io.deephaven.qst.array.CharArray",
+  "ofUnsafe": ":param values: char...\n:return: io.deephaven.qst.array.CharArray",
+  "size": ":return: int",
+  "values": "The raw chars. Must not be modified.\n\n:return: (char[]) the chars, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.CharArray",
+ "text": "A CharType array.",
+ "typeName": "class"
+}

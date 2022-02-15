@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.updategraph.ConcurrentMethod",
+ "methods": {},
+ "path": "io.deephaven.engine.updategraph.ConcurrentMethod",
+ "text": "Indicates that the annotated method should be executed concurrently with respect to the UGP. Concurrent execution\n will not acquire the UGP lock before invocation, and will be run concurrently with other annotated methods.",
+ "typeName": "class"
+}

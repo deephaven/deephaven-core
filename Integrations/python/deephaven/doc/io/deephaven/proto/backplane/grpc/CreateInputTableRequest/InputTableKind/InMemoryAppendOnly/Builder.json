@@ -1,0 +1,24 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKind$InMemoryAppendOnly$Builder",
+ "methods": {
+  "addRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "build": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly",
+  "buildPartial": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly",
+  "clear": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "clearField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "clearOneof": ":param oneof: com.google.protobuf.Descriptors.OneofDescriptor\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "clone": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getDescriptorForType": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "isInitialized": ":return: boolean",
+  "mergeFrom": "*Overload 1*  \n  :param other: com.google.protobuf.Message\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder\n  \n*Overload 2*  \n  :param other: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder\n  \n*Overload 3*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "mergeUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "setField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "setRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param index: int\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+  "setUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly.Builder",
+ "text": "Creates an in-memory append-only table - rows cannot be modified or deleted.\n \n\n Protobuf type io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly",
+ "typeName": "class"
+}

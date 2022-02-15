@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecStd",
+ "methods": {
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecStd",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecStd",
+ "text": "Specifies an aggregation that outputs the standard deviation of the input column values for each group. Only works\n for numeric input types.",
+ "typeName": "class"
+}

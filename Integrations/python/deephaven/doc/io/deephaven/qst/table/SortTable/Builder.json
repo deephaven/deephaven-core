@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.table.SortTable$Builder",
+ "methods": {
+  "addAllColumns": ":param column: java.lang.Iterable<? extendsio.deephaven.api.SortColumn>\n:return: io.deephaven.qst.table.SortTable.Builder",
+  "addColumns": "*Overload 1*  \n  :param column: io.deephaven.api.SortColumn\n  :return: io.deephaven.qst.table.SortTable.Builder\n  \n*Overload 2*  \n  :param column: io.deephaven.api.SortColumn...\n  :return: io.deephaven.qst.table.SortTable.Builder",
+  "build": ":return: io.deephaven.qst.table.SortTable",
+  "parent": ":param parent: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.SortTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.SortTable.Builder",
+ "typeName": "interface"
+}

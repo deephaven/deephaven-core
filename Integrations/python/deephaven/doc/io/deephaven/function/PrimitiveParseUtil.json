@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.function.PrimitiveParseUtil",
+ "methods": {
+  "parseBoolean": "Parses the string argument as a boolean.\n\n:param s: (java.lang.String) - string.\n:return: (java.lang.Boolean) parsed value.",
+  "parseByte": "Parses the string argument as a byte.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (byte) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (byte) parsed value.",
+  "parseDouble": "Parses the string argument as a double.\n\n:param s: (java.lang.String) - string.\n:return: (double) parsed value.",
+  "parseFloat": "Parses the string argument as a float.\n\n:param s: (java.lang.String) - string.\n:return: (float) parsed value.",
+  "parseInt": "Parses the string argument as an int.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (int) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (int) parsed value.",
+  "parseLong": "Parses the string argument as a long.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (long) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (long) parsed value.",
+  "parseShort": "Parses the string argument as a short.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (short) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (short) parsed value.",
+  "parseUnsignedInt": "Parses the string argument as an unsigned int.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (int) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (int) parsed value.",
+  "parseUnsignedLong": "Parses the string argument as an unsigned long.\n\n*Overload 1*  \n  :param s: (java.lang.String) - string.\n  :return: (long) parsed value.\n  \n*Overload 2*  \n  :param s: (java.lang.String) - string.\n  :param radix: (int) - The radix to use in parsing s\n  :return: (long) parsed value."
+ },
+ "path": "io.deephaven.function.PrimitiveParseUtil",
+ "text": "A set of commonly used functions for parsing strings to primitive values.",
+ "typeName": "class"
+}

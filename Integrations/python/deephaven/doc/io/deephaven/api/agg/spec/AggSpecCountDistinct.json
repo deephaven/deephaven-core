@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecCountDistinct",
+ "methods": {
+  "countNulls": "Whether null input values should be included when counting the distinct input values.\n\n:return: (boolean) Whether to count nulls",
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecCountDistinct\n  \n*Overload 2*  \n  :param countNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecCountDistinct",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecCountDistinct",
+ "text": "Specifies an aggregation that outputs the count of distinct values for each group.",
+ "typeName": "class"
+}

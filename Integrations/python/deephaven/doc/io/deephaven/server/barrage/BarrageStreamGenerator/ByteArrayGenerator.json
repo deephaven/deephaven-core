@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageStreamGenerator$ByteArrayGenerator",
+ "methods": {},
+ "path": "io.deephaven.server.barrage.BarrageStreamGenerator.ByteArrayGenerator",
+ "typeName": "class"
+}

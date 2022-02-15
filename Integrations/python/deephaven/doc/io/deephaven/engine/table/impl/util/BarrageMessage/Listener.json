@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.BarrageMessage$Listener",
+ "methods": {
+  "handleBarrageError": ":param t: java.lang.Throwable",
+  "handleBarrageMessage": ":param message: io.deephaven.engine.table.impl.util.BarrageMessage"
+ },
+ "path": "io.deephaven.engine.table.impl.util.BarrageMessage.Listener",
+ "typeName": "interface"
+}

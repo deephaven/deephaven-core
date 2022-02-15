@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.engine.table.impl.ListenerRecorder",
+ "methods": {
+  "getAdded": ":return: io.deephaven.engine.rowset.RowSet",
+  "getExpandedARM": "The caller is responsible for closing the RowSetShiftDataExpander.\n\n:return: (io.deephaven.engine.table.impl.util.RowSetShiftDataExpander) a backwards compatible version of added / removed / modified that account for shifting",
+  "getModified": ":return: io.deephaven.engine.rowset.RowSet",
+  "getModifiedColumnSet": ":return: io.deephaven.engine.table.ModifiedColumnSet",
+  "getModifiedPreShift": ":return: io.deephaven.engine.rowset.RowSet",
+  "getNotificationStep": ":return: long",
+  "getRemoved": ":return: io.deephaven.engine.rowset.RowSet",
+  "getShifted": ":return: io.deephaven.engine.rowset.RowSetShiftData",
+  "getUpdate": ":return: io.deephaven.engine.table.TableUpdate",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates.",
+  "recordedVariablesAreValid": ":return: boolean",
+  "setMergedListener": ":param mergedListener: io.deephaven.engine.table.impl.MergedListener"
+ },
+ "path": "io.deephaven.engine.table.impl.ListenerRecorder",
+ "text": "A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a\n MergedListener that a change has occurred. The combination of a ListenerRecorder and\n MergedListener should be used when a table has multiple sources, such that each table can process all of it's\n dependencies at once and fire a single notification to its children.",
+ "typeName": "class"
+}

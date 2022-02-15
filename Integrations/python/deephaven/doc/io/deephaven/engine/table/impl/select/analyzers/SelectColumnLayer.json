@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.SelectColumnLayer",
+ "methods": {
+  "allowCrossColumnParallelization": "Can all of our columns permit parallel updates?\n\n:return: boolean",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - the upstream update\n:param toClear: (io.deephaven.engine.rowset.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update\n:param jobScheduler: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.JobScheduler\n:param onCompletion: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.SelectLayerCompletionHandler) - Called when an inner column is complete. The outer layer should pass the onCompletion\n        on to other layers and if it and all of its dependencies have been satisfied schedule execution of that\n        column update.",
+  "flattenedResult": "Was the result internally flattened? Only the STATIC_SELECT case flattens the result. If the result preserves any\n columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the default\n implementation returns false.\n\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.select.analyzers.SelectColumnLayer",
+ "typeName": "class"
+}

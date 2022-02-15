@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectType",
+ "methods": {
+  "isType": "Returns true if, and only if, the object is compatible with this object type.\n\n:param object: (java.lang.Object) - the object\n:return: (boolean) true if the object is compatible",
+  "name": "The name of the object type.\n\n:return: (java.lang.String) the name",
+  "writeTo": "Serializes object into out. Must only be called with a compatible object, see\n isType(Object).\n\n \n Objects that object references may be serialized as ObjectType.Exporter.Reference.\n\n \n Note: the implementation should not hold onto references nor create references outside the calling thread.\n\n:param exporter: (io.deephaven.plugin.type.ObjectType.Exporter) - the exporter\n:param object: (java.lang.Object) - the (compatible) object\n:param out: (java.io.OutputStream) - the output stream"
+ },
+ "path": "io.deephaven.plugin.type.ObjectType",
+ "text": "An \"object type\" plugin. Useful for serializing custom objects between the server / client.",
+ "typeName": "interface"
+}

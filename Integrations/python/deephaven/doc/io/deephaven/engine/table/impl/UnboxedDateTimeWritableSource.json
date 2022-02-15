@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.UnboxedDateTimeWritableSource",
+ "methods": {
+  "ensureCapacity": "Ensure that this WritableColumnSource can accept row keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFill: (boolean) - Whether data should be \"null-filled\". If true, get operations at row keys that have not been\n        set will return the appropriate null value; otherwise such gets produce undefined results.",
+  "set": "*Overload 1*  \n  :param key: long\n  :param value: java.lang.Long\n  \n*Overload 2*  \n  :param key: long\n  :param value: long"
+ },
+ "path": "io.deephaven.engine.table.impl.UnboxedDateTimeWritableSource",
+ "typeName": "class"
+}

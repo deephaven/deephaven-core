@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSet$RangeIterator",
+ "methods": {
+  "advance": "Advance the current iterator position until currentRangeStart() and currentRangeEnd() are\n both greater than or equal to  v . This may or may not move the iterator to the next range: if  v  is inside\n the current range (but to the right of currentRangeStart(), this will simply advance\n currentRangeStart(). Returns true if the operation was successful. Otherwise, returns false. In this\n case the iteration is over and the iterator is exhausted (calls to hasNext() will return false, any\n other operation is undefined).\n \n\n Although calls to advance() may be interleaved with calls to hasNext()/next() if\n necessary, this is not the common case, as they are separate protocols having little to do with each other.\n In particular, when iterating with advance(), you do not use next() to bring the next range into\n view, even at the start of the iteration. Many common usages only involve calls to advance().\n \n\n Example:\n \n\n {\n     @code\n     RangeIterator it = rowSet.getRangeIterator();\n     if (!it.advance(100)) {\n         return; // iteration done  no ranges at 100 or greater\n     }\n     assert (it.currentRangeStart() >= 100 && it.currentRangeEnd() >= 100);\n     // do something with range\n     if (!it.advance(500)) {\n         return; // iteration done  no ranges at 500 or greater\n     }\n     assert (it.currentRangeStart() >= 500 && it.currentRangeEnd() >= 500);\n     // do something with range\n }\n \n\n:param v: (long) - a value to search forward from the current iterator position\n:return: (boolean) false if iteration is exhausted, otherwise true.",
+  "currentRangeEnd": ":return: long",
+  "currentRangeStart": ":return: long",
+  "hasNext": ":return: boolean",
+  "next": ":return: long",
+  "postpone": "Given an iterator state with a current range of [start, end], and a value v such that start <= v <=\n end, postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to\n process parts of ranges from different call sites from the site iterator. The results of this call are\n undefined if the value provided is not contained in the current range.\n\n:param v: (long) - A value contained in the current iterator range"
+ },
+ "path": "io.deephaven.engine.rowset.RowSet.RangeIterator",
+ "typeName": "interface"
+}

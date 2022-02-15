@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.page.IntChunkPage",
+ "methods": {
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination. orderKeys are assumed to\n be entirely contained on this Page.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superIntChunkPage.ATTR>\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n         page.",
+  "mask": "This mask is applied to RowSequence which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, RowSequence) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long.",
+  "pageWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param beginRow: long\n  :param data: int[]\n  :param offset: int\n  :param capacity: int\n  :param mask: long\n  :return: io.deephaven.engine.page.IntChunkPage<ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param beginRow: long\n  :param data: int[]\n  :param mask: long\n  :return: io.deephaven.engine.page.IntChunkPage<ATTR>"
+ },
+ "path": "io.deephaven.engine.page.IntChunkPage",
+ "typeName": "class"
+}

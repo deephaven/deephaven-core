@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.WritableLongAsDateTimeColumnSource",
+ "methods": {
+  "ensureCapacity": "Ensure that this WritableColumnSource can accept row keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFilled: (boolean) - Whether data should be \"null-filled\". If true, get operations at row keys that have not been\n        set will return the appropriate null value; otherwise such gets produce undefined results.",
+  "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data rowSequence\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be written",
+  "fillFromChunkUnordered": "Fills the ChunkSink with data from the source, with data corresponding to the keys from the given key chunk.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data RowSequence\n:param keys: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - A LongChunk representing the keys to be written",
+  "makeFillFromContext": "Provide a default, empty ChunkSink.FillFromContext for use with our default\n WritableColumnSource.fillFromChunk(io.deephaven.engine.table.ChunkSink.FillFromContext, io.deephaven.chunk.Chunk<? extends io.deephaven.chunk.attributes.Values>, io.deephaven.engine.rowset.RowSequence).\n\n:param chunkCapacity: int\n:return: io.deephaven.engine.table.ChunkSink.FillFromContext",
+  "set": ":param key: long\n:param value: io.deephaven.time.DateTime"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.WritableLongAsDateTimeColumnSource",
+ "text": "Reinterpret result ColumnSource implementations that translates byte to Boolean values.",
+ "typeName": "class"
+}

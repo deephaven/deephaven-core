@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.engine.table.impl.AbstractColumnSource",
+ "methods": {
+  "allowsReinterpret": "Test if a reinterpret call will succeed.\n\nNote: Java generics information - <ALTERNATE_DATA_TYPE>\n\n:param alternateDataType: (java.lang.Class<ALTERNATE_DATA_TYPE>) - The alternative type to consider\n:return: (boolean) If a reinterpret on this column source with the supplied alternateDataType will succeed.",
+  "defaultFillChunk": ":param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "fillChunk": "Populates the given destination chunk with data corresponding to the keys from the given RowSequence.\n\n:param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A context containing all mutable/state related data used in retrieving the Chunk.\n:param destination: (io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>) - The chunk to be populated according to rowSequence. No assumptions shall be made about\n        the size of the chunk shall be made. The chunk will be populated from position [0,rowSequence.size()).\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be fetched",
+  "fillPrevChunk": "Populates the given destination chunk with data corresponding to the keys from the given RowSequence.\n\n:param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A context containing all mutable/state related data used in retrieving the Chunk.\n:param destination: (io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>) - The chunk to be populated according to rowSequence. No assumptions shall be made\n        about the size of the chunk shall be made. The chunk will be populated from position\n        [0,rowSequence.size()).\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be fetched",
+  "getComponentType": ":return: java.lang.Class<?>",
+  "getGroupToRange": "**Incompatible overloads text - text from the first overload:**\n\nCompute grouping information for (at least) all keys present in rowSet.\n\n*Overload 1*  \n  :return: (java.util.Map<AbstractColumnSource.T,io.deephaven.engine.rowset.RowSet>) A map from distinct data values to a RowSet that contains those values\n  \n*Overload 2*  \n  :param rowSet: (io.deephaven.engine.rowset.RowSet) - The RowSet to consider\n  :return: (java.util.Map<AbstractColumnSource.T,io.deephaven.engine.rowset.RowSet>) A map from distinct data values to a RowSet that contains those values",
+  "getPrevSource": ":return: (io.deephaven.engine.table.ColumnSource<AbstractColumnSource.T>) a chunk source which accesses the previous values.",
+  "getType": ":return: java.lang.Class<AbstractColumnSource.T>",
+  "getValuesMapping": ":param subRange: io.deephaven.engine.rowset.RowSet\n:return: java.util.Map<AbstractColumnSource.T,io.deephaven.engine.rowset.RowSet>",
+  "match": ":param invertMatch: boolean\n:param usePrev: boolean\n:param caseInsensitive: boolean\n:param mapper: io.deephaven.engine.rowset.RowSet\n:param keys: java.lang.Object...\n:return: io.deephaven.engine.rowset.WritableRowSet",
+  "reinterpret": "Provide an alternative view into the data underlying this column source.\n\nNote: Java generics information - <ALTERNATE_DATA_TYPE>\n\n:param alternateDataType: (java.lang.Class<ALTERNATE_DATA_TYPE>) - The alternative type to expose\n:return: (io.deephaven.engine.table.ColumnSource<ALTERNATE_DATA_TYPE>) A column source of the alternate data type, backed by the same underlying data.",
+  "setGroupToRange": ":param groupToRange: java.util.Map<AbstractColumnSource.T,io.deephaven.engine.rowset.RowSet>"
+ },
+ "path": "io.deephaven.engine.table.impl.AbstractColumnSource",
+ "typeName": "class"
+}

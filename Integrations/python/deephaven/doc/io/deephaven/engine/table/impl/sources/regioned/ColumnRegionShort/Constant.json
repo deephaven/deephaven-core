@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superColumnRegionShort.Constant.ATTR>\n:param length: int",
+  "getShort": "Get a single short from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (short) The short value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort.Constant",
+ "typeName": "class"
+}

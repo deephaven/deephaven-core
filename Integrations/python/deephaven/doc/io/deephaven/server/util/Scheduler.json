@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.util.Scheduler",
+ "methods": {
+  "runAfterDelay": "Schedule this task to run at the specified time.\n\n:param delayMs: (long) - how long to delay before running this task (in milliseconds)\n:param command: (java.lang.Runnable) - the task to run",
+  "runAtTime": "Schedule this task to run at the specified time.\n\n:param absoluteTime: (io.deephaven.time.DateTime) - when to run this task\n:param command: (java.lang.Runnable) - the task to run",
+  "runImmediately": "Schedule this task to run immediately.\n\n:param command: (java.lang.Runnable) - the task to run",
+  "runSerially": "Schedule this task to run immediately, under the exclusive UGP lock.\n\n:param command: (java.lang.Runnable) - the task to run"
+ },
+ "path": "io.deephaven.server.util.Scheduler",
+ "text": "The Scheduler is used to schedule tasks that should execute at a future time.",
+ "typeName": "interface"
+}

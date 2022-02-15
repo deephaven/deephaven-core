@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.iterators.DoubleColumnIterator",
+ "methods": {
+  "nextDouble": ":return: double"
+ },
+ "path": "io.deephaven.engine.table.iterators.DoubleColumnIterator",
+ "text": "Iteration support for boxed or primitive doubles contained with a ColumnSource.",
+ "typeName": "class"
+}

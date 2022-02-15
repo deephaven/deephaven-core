@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.filters.SelectableDataSetOneClick",
+ "methods": {
+  "getByColumns": ":return: java.lang.String[]",
+  "getSwappableTable": "Gets the view of the Table with the selected subset.\n\n:param seriesName: java.lang.Comparable\n:param chart: io.deephaven.plot.ChartImpl\n:param tableTransform: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:param cols: java.lang.String...\n:return: (io.deephaven.plot.util.tables.SwappableTable) table view on selected subset",
+  "getTableDefinition": ":return: (io.deephaven.engine.table.TableDefinition) underlying table definition.",
+  "transform": "Produces a derivative SelectableDataSet with the specified transformation applied to all internal tables.\n\n:param memoKey: (java.lang.Object) - An Object that uniquely identifies the actions taken by the transformation so it can be cached.\n:param transformation: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:return: (io.deephaven.plot.filters.SelectableDataSet<java.lang.String,java.util.Set<java.lang.Object>>) a new SelectableDataSet with the transformation applied"
+ },
+ "path": "io.deephaven.plot.filters.SelectableDataSetOneClick",
+ "text": "A OneClick filtered table.\n\n If requireAllFiltersToDisplay is true, data is only displayed once the user has OneClick filtered all byColumns. If\n requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected",
+ "typeName": "class"
+}

@@ -1,0 +1,26 @@
+{
+ "className": "io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager",
+ "methods": {
+  "buildAdditions": ":param isLeftSide: boolean\n:param additions: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
+  "doRehash": ":param bc: io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.BuildContext\n:param addedSlots: io.deephaven.engine.table.impl.sources.LongArraySource",
+  "gatherModifications": ":param restampAdditions: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
+  "gatherShiftIndex": ":param restampAdditions: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
+  "getLeftIndex": ":param slot: long\n:return: io.deephaven.engine.rowset.WritableRowSet",
+  "getLeftSsa": "*Overload 1*  \n  :param slot: long\n  :return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n  \n*Overload 2*  \n  :param slot: long\n  :param ssaFactory: java.util.function.Function<io.deephaven.engine.rowset.RowSet,io.deephaven.engine.table.impl.ssa.SegmentedSortedArray>\n  :return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray",
+  "getLeftSsaOrIndex": ":param slot: long\n:param indexOutput: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.engine.rowset.WritableRowSet>\n:return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray",
+  "getOverflowSize": ":return: int",
+  "getRightIndex": ":param slot: long\n:return: io.deephaven.engine.rowset.WritableRowSet",
+  "getRightSsa": "*Overload 1*  \n  :param slot: long\n  :param ssaFactory: java.util.function.Function<io.deephaven.engine.rowset.RowSet,io.deephaven.engine.table.impl.ssa.SegmentedSortedArray>\n  :return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n  \n*Overload 2*  \n  :param slot: long\n  :return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray",
+  "getRightSsaOrIndex": ":param slot: long\n:param indexOutput: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.engine.rowset.WritableRowSet>\n:return: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray",
+  "getState": ":param slot: long\n:return: byte",
+  "getTableSize": ":return: int",
+  "makeProbeContext": ":param probeSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.ProbeContext",
+  "markForRemoval": ":param restampRemovals: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
+  "probeAdditions": ":param restampAdditions: io.deephaven.engine.rowset.RowSet\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:param slots: io.deephaven.engine.table.impl.sources.LongArraySource\n:param sequentialBuilders: io.deephaven.engine.table.impl.sources.ObjectArraySource<io.deephaven.engine.rowset.RowSetBuilderSequential>\n:return: int",
+  "rehashRequired": ":return: boolean",
+  "setLeftIndex": ":param slot: long\n:param rowSet: io.deephaven.engine.rowset.RowSet",
+  "setRightIndex": ":param slot: long\n:param rowSet: io.deephaven.engine.rowset.RowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager",
+ "typeName": "class"
+}

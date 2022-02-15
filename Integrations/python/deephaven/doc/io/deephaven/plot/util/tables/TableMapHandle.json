@@ -1,0 +1,22 @@
+{
+ "className": "io.deephaven.plot.util.tables.TableMapHandle",
+ "methods": {
+  "addColumn": ":param column: java.lang.String",
+  "applyFunction": ":param function: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>",
+  "getColumns": ":return: java.util.Set<java.lang.String>",
+  "getFetchViewColumns": "Get the set of columns to .view() when the table is fetched. Typically this is identical to getColumns()\n however, there are situations where the transformations applied to a TableMap result in columns that are not\n present in the base tableMap. (for example catHistPlot).\n\n:return: java.util.Set<java.lang.String>",
+  "getKeyColumns": ":return: java.util.Set<java.lang.String>",
+  "getKeyColumnsOrdered": ":return: java.lang.String[]",
+  "getPlotInfo": ":return: io.deephaven.plot.errors.PlotInfo",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "getTableMap": ":return: io.deephaven.engine.table.TableMap",
+  "id": ":return: int",
+  "isOneClickMap": ":return: boolean",
+  "setKeyColumnsOrdered": ":param orderedKeyColumns: java.lang.String[]",
+  "setOneClickMap": ":param isOneClick: boolean",
+  "setTableMap": ":param tableMap: io.deephaven.engine.table.TableMap"
+ },
+ "path": "io.deephaven.plot.util.tables.TableMapHandle",
+ "text": "Holds a TableMap.",
+ "typeName": "class"
+}

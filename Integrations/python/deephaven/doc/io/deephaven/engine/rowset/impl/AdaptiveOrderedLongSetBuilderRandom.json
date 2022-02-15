@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom",
+ "methods": {
+  "add": "*Overload 1*  \n  :param ix: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges\n  :param acquire: boolean\n  \n*Overload 2*  \n  :param ix: io.deephaven.engine.rowset.impl.rsp.RspBitmap\n  :param acquire: boolean",
+  "addKey": ":param rowKey: long",
+  "addKeys": ":param it: java.util.PrimitiveIterator.OfLong",
+  "addRange": ":param firstRowKey: long\n:param lastRowKey: long",
+  "addRanges": ":param it: io.deephaven.util.datastructures.LongRangeIterator",
+  "addRowSet": ":param rowSet: io.deephaven.engine.rowset.RowSet",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet"
+ },
+ "path": "io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom",
+ "typeName": "class"
+}

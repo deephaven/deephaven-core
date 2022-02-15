@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.DoubleArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.DoubleArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.DoubleType",
+  "empty": ":return: io.deephaven.qst.array.DoubleArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: double...\n  :return: io.deephaven.qst.array.DoubleArray\n  \n*Overload 2*  \n  :param values: java.lang.Double...\n  :return: io.deephaven.qst.array.DoubleArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Double>\n  :return: io.deephaven.qst.array.DoubleArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Double>\n  :return: io.deephaven.qst.array.DoubleArray",
+  "ofUnsafe": ":param values: double...\n:return: io.deephaven.qst.array.DoubleArray",
+  "size": ":return: int",
+  "values": "The raw doubles. Must not be modified.\n\n:return: (double[]) the doubles, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.DoubleArray",
+ "text": "A DoubleType array.",
+ "typeName": "class"
+}

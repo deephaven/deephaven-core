@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.TupleSourceFactory$TupleSourceCreator",
+ "methods": {
+  "makeTupleSource": "See TupleSourceFactory.makeTupleSource(ColumnSource[]).\n\nNote: Java generics information - <TUPLE_TYPE>\n\n:param columnSources: io.deephaven.engine.table.ColumnSource...\n:return: io.deephaven.engine.table.TupleSource<TUPLE_TYPE>"
+ },
+ "path": "io.deephaven.engine.table.impl.TupleSourceFactory.TupleSourceCreator",
+ "typeName": "interface"
+}

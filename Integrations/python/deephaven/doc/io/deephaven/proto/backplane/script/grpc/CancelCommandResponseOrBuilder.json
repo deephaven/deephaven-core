@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.script.grpc.CancelCommandResponseOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.script.grpc.CancelCommandResponseOrBuilder",
+ "typeName": "interface"
+}

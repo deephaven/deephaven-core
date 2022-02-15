@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.util.BigDecimalUtils",
+ "methods": {
+  "computePrecisionAndScale": "**Incompatible overloads text - text from the first overload:**\n\nCompute an overall precision and scale that would fit all existing values in a column source.\n\n*Overload 1*  \n  :param t: (io.deephaven.engine.table.Table) - a Deephaven table\n  :param colName: (java.lang.String) - a Column for t, which should be of BigDecimal type\n  :return: (io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale) a PrecisionAndScale object result.\n  \n*Overload 2*  \n  :param rowSet: (io.deephaven.engine.rowset.TrackingRowSet) - The rowset for the provided column\n  :param source: (io.deephaven.engine.table.ColumnSource<java.math.BigDecimal>) - a ColumnSource of BigDecimal type\n  :return: (io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale) a PrecisionAndScale object result.",
+  "getPrecisionAndScaleFromColumnProperties": "Get a PrecisionAndScale value from a  object.\n\n:param propertyNames: (io.deephaven.engine.util.BigDecimalUtils.PropertyNames) - The property names to read.\n:param columnProperties: (java.util.Properties) - The  object from where to read the properties\n:param allowNulls: (boolean) - If true, do not throw when a property is missing, instead set the value to\n        \n:return: (io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale) A  object with the values read.",
+  "setProperties": "Set the given names and values in the supplied Properties object.\n\n:param props: (java.util.Properties) - Properties where the given property names and values would be set.\n:param names: (io.deephaven.engine.util.BigDecimalUtils.PropertyNames) - Property names to set\n:param values: (io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale) - Property values to set"
+ },
+ "path": "io.deephaven.engine.util.BigDecimalUtils",
+ "text": "Utilities to support BigDecimal exhaust.\n\n Parquet and Avro decimal types make a whole column decimal type have a fixed precision and scale; BigDecimal columns\n in Deephaven are, each value, arbitrary precision (its own precision and scale).\n\n For static tables, it is possible to compute overall precision and scale values that fit every existing value. For\n refreshing tables, we need the user to tell us.",
+ "typeName": "class"
+}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSubscription",
+ "methods": {
+  "entireTable": "Request a full subscription of the data and populate a BarrageTable with the incrementally updating data\n that is received.\n\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable",
+  "partialTable": "Request a partial subscription of the data limited by viewport or column set and populate a BarrageTable\n with the data that is received.\n\n:param viewport: io.deephaven.engine.rowset.RowSet\n:param columns: java.util.BitSet\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable"
+ },
+ "path": "io.deephaven.client.impl.BarrageSubscription",
+ "text": "A BarrageSubscription represents a subscription over a table that may or may not be filtered to a viewport of\n the remote source table.",
+ "typeName": "interface"
+}

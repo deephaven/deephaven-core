@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.chunk.util.hashing.ByteToIntegerCast",
+ "methods": {
+  "apply": "Apply this function to the input chunk, returning an output chunk.\n\n The result is owned by this ToIntFunctor.\n\n:param input: (io.deephaven.chunk.Chunk<? extendsByteToIntegerCast.T>) - the chunk to transform\n:return: (io.deephaven.chunk.IntChunk<? extends ByteToIntegerCast.T>) the result IntChunk",
+  "castInto": "Note: Java generics information - <T2 extends io.deephaven.chunk.attributes.Any>\n\n:param extend: io.deephaven.chunk.ByteChunk<?\n:param result: io.deephaven.chunk.WritableIntChunk<T2>"
+ },
+ "path": "io.deephaven.chunk.util.hashing.ByteToIntegerCast",
+ "text": "Cast the values in the input chunk to an int.",
+ "typeName": "class"
+}

@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.table.impl.MemoizedOperationKey",
+ "methods": {
+  "aggBy": ":param aggregations: java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>\n:param groupByColumns: io.deephaven.engine.table.impl.select.SelectColumn[]\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "crossJoin": ":param rightTableCandidate: io.deephaven.engine.table.Table\n:param columnsToMatch: io.deephaven.engine.table.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.table.MatchPair[]\n:param numRightBitsToReserve: int\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey.CrossJoin",
+  "flatten": ":return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "partitionBy": ":param dropKeys: boolean\n:param groupByColumns: io.deephaven.engine.table.impl.select.SelectColumn[]\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "reverse": ":return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "rollup": ":param aggregations: java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>\n:param groupByColumns: io.deephaven.engine.table.impl.select.SelectColumn[]\n:param includeConstituents: boolean\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "symbolTable": ":param symbolTableSource: io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource\n:param useLookupCaching: boolean\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "treeTable": ":param idColumn: java.lang.String\n:param parentColumn: java.lang.String\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "wouldMatch": ":param pairs: io.deephaven.engine.table.WouldMatchPair...\n:return: io.deephaven.engine.table.impl.MemoizedOperationKey.WouldMatch"
+ },
+ "path": "io.deephaven.engine.table.impl.MemoizedOperationKey",
+ "text": "Indices for memoized operations on QueryTable.\n\n When a null key is returned from one of the static methods; the operation will not be memoized (e.g., if we might\n depend on the query scope; we can't memoize the operation).",
+ "typeName": "class"
+}

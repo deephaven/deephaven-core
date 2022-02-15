@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSubscriptionImpl",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "descriptorFor": "Note: Java generics information - <ReqT,\nRespT>\n\n:param methodType: io.grpc.MethodDescriptor.MethodType\n:param serviceName: java.lang.String\n:param methodName: java.lang.String\n:param requestMarshaller: io.grpc.MethodDescriptor.Marshaller<ReqT>\n:param responseMarshaller: io.grpc.MethodDescriptor.Marshaller<RespT>\n:param descriptor: io.grpc.MethodDescriptor<?,?>\n:return: io.grpc.MethodDescriptor<ReqT,RespT>",
+  "entireTable": "Request a full subscription of the data and populate a BarrageTable with the incrementally updating data\n that is received.\n\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable",
+  "getClientDoExchangeDescriptor": "Fetch the client side descriptor for a specific table schema.\n\n:param options: (io.deephaven.extensions.barrage.BarrageSubscriptionOptions) - the set of options that last across the entire life of the subscription\n:param columnChunkTypes: (io.deephaven.chunk.ChunkType[]) - the chunk types per column\n:param columnTypes: (java.lang.Class<?>[]) - the class type per column\n:param componentTypes: (java.lang.Class<?>[]) - the component class type per column\n:param streamReader: (io.deephaven.extensions.barrage.util.StreamReader) - the stream reader - intended to be thread safe and re-usable\n:return: (io.grpc.MethodDescriptor<org.apache.arrow.flight.impl.Flight.FlightData,io.deephaven.engine.table.impl.util.BarrageMessage>) the client side method descriptor",
+  "partialTable": "Request a partial subscription of the data limited by viewport or column set and populate a BarrageTable\n with the data that is received.\n\n:param viewport: io.deephaven.engine.rowset.RowSet\n:param columns: java.util.BitSet\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable"
+ },
+ "path": "io.deephaven.client.impl.BarrageSubscriptionImpl",
+ "typeName": "class"
+}

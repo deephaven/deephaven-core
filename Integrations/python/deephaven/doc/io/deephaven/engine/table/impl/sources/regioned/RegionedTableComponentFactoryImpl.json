@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl",
+ "methods": {
+  "createColumnSourceManager": ":param isRefreshing: boolean\n:param codecMappings: io.deephaven.engine.table.impl.ColumnToCodecMappings\n:param columnDefinitions: io.deephaven.engine.table.ColumnDefinition<?>...\n:return: io.deephaven.engine.table.impl.ColumnSourceManager",
+  "createRegionedColumnSource": "Create a new RegionedColumnSource appropriate to implement the supplied ColumnDefinition.\n\nNote: Java generics information - <DATA_TYPE>\n\n:param columnDefinition: (io.deephaven.engine.table.ColumnDefinition<DATA_TYPE>) - The column definition\n:param codecMappings: io.deephaven.engine.table.impl.ColumnToCodecMappings\n:return: (io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource<DATA_TYPE>) A new RegionedColumnSource."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl",
+ "text": "Factory that assembles modular components for regioned source tables.",
+ "typeName": "class"
+}

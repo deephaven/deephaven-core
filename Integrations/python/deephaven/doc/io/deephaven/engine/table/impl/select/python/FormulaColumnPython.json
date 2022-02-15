@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.python.FormulaColumnPython",
+ "methods": {
+  "copy": "Create a copy of this SelectColumn.\n\n:return: (io.deephaven.engine.table.impl.select.SelectColumn) an independent copy of this SelectColumn.",
+  "create": ":param columnName: java.lang.String\n:param dcf: io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction\n:return: io.deephaven.engine.table.impl.select.python.FormulaColumnPython",
+  "createInstance": ":param arrays: io.deephaven.vector.Vector<?>[]\n:param params: io.deephaven.engine.table.lang.QueryScopeParam<?>[]\n:return: io.deephaven.engine.table.impl.select.formula.FormulaKernel",
+  "initDef": "Initialize any internal column definitions from the provided initial.\n\n:param columnNameMap: (java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>) - the starting set of column definitions\n:return: (java.util.List<java.lang.String>) a list of columns on which the result of this is dependent",
+  "isStateless": "Returns true if this column is stateless (i.e. one row does not depend on the order of evaluation for another\n row).\n\n:return: boolean",
+  "preventsParallelization": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.select.python.FormulaColumnPython",
+ "text": "A formula column for python native code.",
+ "typeName": "class"
+}

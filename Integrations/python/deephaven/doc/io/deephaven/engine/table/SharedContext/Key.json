@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.SharedContext$Key",
+ "methods": {},
+ "path": "io.deephaven.engine.table.SharedContext.Key",
+ "text": "Key marker interface.",
+ "typeName": "interface"
+}

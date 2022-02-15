@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.errors.PlotInfo",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.plot.errors.PlotInfo",
+ "text": "Information about a plot. Has 3 pieces of information (all optional) Figure title, if it has one Chart title, if it\n has one Series name",
+ "typeName": "class"
+}

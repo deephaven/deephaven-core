@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.rowset.TrackingRowSet$Indexer",
+ "methods": {
+  "rowSetChanged": "Callback for the host TrackingRowSet to report a modification that may invalidate cached indexing\n information."
+ },
+ "path": "io.deephaven.engine.rowset.TrackingRowSet.Indexer",
+ "text": "Minimal interface for optional, opaque indexer objects hosted by TrackingRowSet instances.",
+ "typeName": "interface"
+}

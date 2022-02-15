@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.time.calendar.BusinessPeriod",
+ "methods": {
+  "contains": "Determines if the specified time is within the business period.\n\n:param time: (io.deephaven.time.DateTime) - time.\n:return: (boolean) true if the time is in this period; otherwise, false.",
+  "getEndTime": "Returns the end of the period.\n\n:return: (io.deephaven.time.DateTime) the end of the period",
+  "getLength": "Returns the length of the period in nanoseconds.\n\n:return: (long) length of the period in nanoseconds",
+  "getStartTime": "Returns the start of the period.\n\n:return: (io.deephaven.time.DateTime) the start of the period"
+ },
+ "path": "io.deephaven.time.calendar.BusinessPeriod",
+ "text": "A period of business time during a business day.",
+ "typeName": "class"
+}

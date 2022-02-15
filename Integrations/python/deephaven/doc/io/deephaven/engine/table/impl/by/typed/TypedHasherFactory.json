@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.typed.TypedHasherFactory",
+ "methods": {
+  "generateHasher": "Note: Java generics information - <T>\n\n:param hasherConfig: io.deephaven.engine.table.impl.by.typed.TypedHasherFactory.HasherConfig<T>\n:param chunkTypes: io.deephaven.chunk.ChunkType[]\n:param className: java.lang.String\n:param visibility: java.util.Optional<javax.lang.model.element.Modifier>\n:return: com.squareup.javapoet.JavaFile",
+  "hasherConfigForBase": "Note: Java generics information - <T>\n\n:param baseClass: java.lang.Class<T>\n:return: io.deephaven.engine.table.impl.by.typed.TypedHasherFactory.HasherConfig<T>",
+  "hasherName": ":param hasherConfig: io.deephaven.engine.table.impl.by.typed.TypedHasherFactory.HasherConfig<?>\n:param chunkTypes: io.deephaven.chunk.ChunkType[]\n:return: java.lang.String",
+  "make": "Produce a hasher for the given base class and column sources.\n\n*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param baseClass: (java.lang.Class<T>) - the base class (e.g. StaticChunkedOperatorAggregationStateManagerTypedBase that the\n          generated hasher extends from\n  :param tableKeySources: (io.deephaven.engine.table.ColumnSource<?>[]) - the key sources\n  :param tableSize: (int) - the initial table size\n  :param maximumLoadFactor: (double) - the maximum load factor of the for the table\n  :param targetLoadFactor: (double) - the load factor that we will rehash to\n  :return: (T) an instantiated hasher\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param hasherConfig: (io.deephaven.engine.table.impl.by.typed.TypedHasherFactory.HasherConfig<T>) - the configuration of the class to generate\n  :param tableKeySources: (io.deephaven.engine.table.ColumnSource<?>[]) - the key sources\n  :param tableSize: (int) - the initial table size\n  :param maximumLoadFactor: (double) - the maximum load factor of the for the table\n  :param targetLoadFactor: (double) - the load factor that we will rehash to\n  :return: (T) an instantiated hasher",
+  "packageName": ":param packageMiddle: java.lang.String\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.by.typed.TypedHasherFactory",
+ "text": "Produces typed hashers (e.g. byte * object * float * double * int) on-demand or using a set of pregenerated and\n precompiled hashers for singleton and pairs of types.",
+ "typeName": "class"
+}

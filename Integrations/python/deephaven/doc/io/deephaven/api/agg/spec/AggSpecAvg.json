@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecAvg",
+ "methods": {
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecAvg",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecAvg",
+ "text": "Specifies an aggregation that outputs the arithmetic mean for each group. Only works with numeric input types.",
+ "typeName": "class"
+}

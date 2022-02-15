@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker",
+ "methods": {
+  "getEntry": "Get a new entry to track the performance characteristics of a single recurring update event.\n\n:param description: (java.lang.String) - log entry description\n:return: (io.deephaven.engine.table.impl.perf.PerformanceEntry) UpdatePerformanceTracker.Entry",
+  "getInstance": ":return: io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker",
+  "getQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable"
+ },
+ "path": "io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker",
+ "text": "This tool is meant to track periodic update events that take place in an UpdateGraphProcessor. This generally\n includes:\n \n* Update source run() invocations\n* Table ShiftObliviousListener notifications (see ShiftObliviousInstrumentedListener)\n* Table TableUpdateListener notifications (see InstrumentedTableUpdateListener)\n\n (1)",
+ "typeName": "class"
+}

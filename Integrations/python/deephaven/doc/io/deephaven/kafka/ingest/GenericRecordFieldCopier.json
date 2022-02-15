@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.kafka.ingest.GenericRecordFieldCopier",
+ "methods": {},
+ "path": "io.deephaven.kafka.ingest.GenericRecordFieldCopier",
+ "typeName": "class"
+}

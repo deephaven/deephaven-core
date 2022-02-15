@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.updategraph.EmptyErrorNotification",
+ "methods": {},
+ "path": "io.deephaven.engine.updategraph.EmptyErrorNotification",
+ "text": "A NotificationQueue.ErrorNotification that does not actually notify anything.",
+ "typeName": "class"
+}

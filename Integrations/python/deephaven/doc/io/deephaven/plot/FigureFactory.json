@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.FigureFactory",
+ "methods": {
+  "figure": "Creates a new figure.\n\n*Overload 1*  \n  :return: (io.deephaven.plot.Figure) new figure\n  \n*Overload 2*  \n  :param numRows: (int) - number or rows in the figure grid.\n  :param numCols: (int) - number or columns in the figure grid.\n  :return: (io.deephaven.plot.Figure) new figure"
+ },
+ "path": "io.deephaven.plot.FigureFactory",
+ "text": "A factory for creating a new Figure.",
+ "typeName": "class"
+}

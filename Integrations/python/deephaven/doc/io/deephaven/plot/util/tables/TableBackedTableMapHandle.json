@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.util.tables.TableBackedTableMapHandle",
+ "methods": {
+  "getTable": ":return: io.deephaven.engine.table.Table",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "setTable": ":param table: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.plot.util.tables.TableBackedTableMapHandle",
+ "text": "TableMapHandle with an underlying table. The purpose of this class is to allow consolidation between\n constructed TableMaps in FigureWidget.",
+ "typeName": "class"
+}

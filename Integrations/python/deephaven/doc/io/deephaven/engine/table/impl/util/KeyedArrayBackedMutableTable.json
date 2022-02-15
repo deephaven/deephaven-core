@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable",
+ "methods": {
+  "make": "**Incompatible overloads text - text from the first overload:**\n\nCreate an empty KeyedArrayBackedMutableTable.\n\n*Overload 1*  \n  :param definition: (io.deephaven.engine.table.TableDefinition) - the definition of the table to create\n  :param keyColumnNames: (java.lang.String...) - the name of the key columns\n  :return: (io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable) an empty KeyedArrayBackedMutableTable with the given definition and key columns\n  \n*Overload 2*  \n  :param definition: (io.deephaven.engine.table.TableDefinition) - the definition of the table to create\n  :param enumValues: (java.util.Map<java.lang.String,java.lang.Object[]>) - a map of column names to enumeration values\n  :param keyColumnNames: (java.lang.String...) - the name of the key columns\n  :return: (io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable) an empty KeyedArrayBackedMutableTable with the given definition and key columns\n  \n*Overload 3*  \n  :param initialTable: (io.deephaven.engine.table.Table) - the initial values to copy into the KeyedArrayBackedMutableTable\n  :param keyColumnNames: (java.lang.String...) - the name of the key columns\n  :return: (io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable) an empty KeyedArrayBackedMutableTable with the given definition and key columns\n  \n*Overload 4*  \n  :param initialTable: (io.deephaven.engine.table.Table) - the initial values to copy into the KeyedArrayBackedMutableTable\n  :param enumValues: (java.util.Map<java.lang.String,java.lang.Object[]>) - a map of column names to enumeration values\n  :param keyColumnNames: (java.lang.String...) - the name of the key columns\n  :return: (io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable) an empty KeyedArrayBackedMutableTable with the given definition and key columns",
+  "mutableInputTable": ":return: io.deephaven.engine.util.config.MutableInputTable",
+  "readOnlyCopy": ":return: io.deephaven.engine.table.Table",
+  "setDescription": ":param newDescription: java.lang.String\n:return: io.deephaven.engine.table.impl.util.BaseArrayBackedMutableTable"
+ },
+ "path": "io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable",
+ "text": "An in-memory table that has keys for each row, which can be updated on the UGP.\n\n This is used to implement in-memory editable table columns from web plugins.",
+ "typeName": "class"
+}

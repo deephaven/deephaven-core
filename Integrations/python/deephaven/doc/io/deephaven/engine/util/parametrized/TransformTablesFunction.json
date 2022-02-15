@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.util.parametrized.TransformTablesFunction",
+ "methods": {
+  "apply": "*Overload 1*  \n  :param tableMap: io.deephaven.engine.table.TableMap\n  :return: io.deephaven.engine.table.TableMap\n  \n*Overload 2*  \n  :param key: java.lang.Object\n  :param table: io.deephaven.engine.table.Table\n  :return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.engine.util.parametrized.TransformTablesFunction",
+ "typeName": "class"
+}

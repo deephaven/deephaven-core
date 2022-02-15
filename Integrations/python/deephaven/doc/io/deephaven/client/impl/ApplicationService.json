@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.ApplicationService",
+ "methods": {
+  "subscribeToFields": ":param listener: io.deephaven.client.impl.ApplicationService.Listener\n:return: io.deephaven.client.impl.ApplicationService.Cancel"
+ },
+ "path": "io.deephaven.client.impl.ApplicationService",
+ "typeName": "interface"
+}

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.UngroupedIntVectorColumnSource",
+ "methods": {
+  "get": ":param index: long\n:return: java.lang.Integer",
+  "getComponentType": ":return: java.lang.Class<?>",
+  "getInt": ":param index: long\n:return: int",
+  "getPrev": ":param index: long\n:return: java.lang.Integer",
+  "getPrevInt": ":param index: long\n:return: int",
+  "isImmutable": "Determine if this column source is immutable, meaning that the values at a given row key never change.\n\n:return: (boolean) true if the values at a given row key of the column source never change, false otherwise",
+  "isStateless": "Most column sources will return the same value for a given row without respect to the order that the rows are\n read. Those columns sources are considered \"stateless\" and should return true.\n\n Some column sources, however may be dependent on evaluation order. For example, a formula that updates a Map must\n be evaluated from the first row to the last row. A column source that has the potential to depend on the order of\n evaluation must return false.\n\n:return: (boolean) true if this is a stateless column source",
+  "preventsParallelism": "Can this column source be evaluated on an arbitrary thread?\n\n Most column sources can be evaluated on an arbitrary thread, however those that do call into Python can not be\n evaluated on an arbitrary thread as the calling thread may already have the GIL, which would result in a deadlock\n when the column source takes the GIL to evaluate formulas.\n\n:return: (boolean) true if this column prevents parallelization"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.UngroupedIntVectorColumnSource",
+ "typeName": "class"
+}
