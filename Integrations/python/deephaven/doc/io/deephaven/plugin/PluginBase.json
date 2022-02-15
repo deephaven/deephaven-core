@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.plugin.PluginBase",
+ "methods": {
+  "registerInto": "Registers this plugin into the callback.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the callback."
+ },
+ "path": "io.deephaven.plugin.PluginBase",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.QueueReader$ByteArrayReader",
- "methods": {
-  "tryGetBytes": "Tries to get the next ByteSlice from the reader.\n\n:param bs: (io.deephaven.csv.containers.ByteSlice) - The result, modified in place.\n:return: (boolean) true If the next ByteSlice was successfully read; false if the end of input was reached."
- },
- "path": "io.deephaven.csv.densestorage.QueueReader.ByteArrayReader",
- "text": "A QueueReader specialized for byte arrays.",
- "typeName": "class"
-}

@@ -1056,7 +1056,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         }
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
                                   // region makeProbeContext args
                                   // endregion makeProbeContext args

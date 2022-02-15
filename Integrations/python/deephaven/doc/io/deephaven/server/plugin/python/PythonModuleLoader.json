@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.plugin.python.PythonModuleLoader",
- "methods": {
-  "allRegisterInto": "Registers all plugins found via python method \"deephaven.plugin:register_all_into\". See the\n deephaven-plugin python package for more information.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the plugin callback"
- },
- "path": "io.deephaven.server.plugin.python.PythonModuleLoader",
- "typeName": "class"
-}

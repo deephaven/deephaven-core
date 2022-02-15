@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.densestorage.QueueReader$IntReader",
- "methods": {
-  "tryGetInt": "Tries to get the next integer from the reader.\n\n:param result: (org.apache.commons.lang3.mutable.MutableInt) - If the operation succeeds, contains the next integer. Otherwise, the contents are unspecified.\n:return: (boolean) true if the next value was successfully read; false if the end of input was reached."
- },
- "path": "io.deephaven.csv.densestorage.QueueReader.IntReader",
- "text": "A QueueReader specialized for ints.",
- "typeName": "class"
-}

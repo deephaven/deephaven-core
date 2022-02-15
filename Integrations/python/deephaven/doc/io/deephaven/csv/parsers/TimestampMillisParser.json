@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.csv.parsers.TimestampMillisParser",
- "methods": {},
- "path": "io.deephaven.csv.parsers.TimestampMillisParser",
- "text": "The parser for \"milliseconds since Unix epoch\".",
- "typeName": "class"
-}

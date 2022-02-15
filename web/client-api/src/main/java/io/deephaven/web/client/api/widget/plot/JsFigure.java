@@ -632,11 +632,10 @@ public class JsFigure extends HasEventHandling {
 
         @Override
         public Promise fetch(JsFigure figure, FetchObjectResponse response) {
-            int count = response.getTypedExportIdList().length;
-            JsTable[] tables = new JsTable[count];
-            TableMap[] tableMaps = new TableMap[count];
+            JsTable[] tables = new JsTable[0];
+            TableMap[] tableMaps = new TableMap[0];
 
-            Promise<?>[] promises = new Promise[count];
+            Promise<?>[] promises = new Promise[response.getTypedExportIdList().length];
 
             response.getTypedExportIdList().forEach((p0, p1, p2) -> {
                 if (!p0.getType().equals("Table")) {
@@ -657,7 +656,7 @@ public class JsFigure extends HasEventHandling {
                     JsTable table = new JsTable(connection, cts);
                     // never attempt a reconnect, since we might have a different figure schema entirely
                     table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                    tables[p1] = table;
+                    tables[tables.length] = table;
                     return Promise.resolve(table);
                 });
                 return null;
