@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         gradle-check: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['-PtestRuntimeVersion=11', '-PtestRuntimeVersion=17']
+        test-jvm-version: ['11', '17']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
@@ -45,18 +45,18 @@ jobs:
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
           cat gradle.properties
 
-      - name: Run gradle {{ matrix.gradle-check }}
+      - name: Run gradle {{ matrix.gradle-check }} on java {{ matrix.test-jvm-version }}
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: check
-          arguments: --scan --continue --rerun-tasks {{ matrix.gradle-check }}
+          arguments: --scan --continue --rerun-tasks {{ matrix.gradle-check }} -PtestRuntimeVersion={{ matrix.test-jvm-version }}
           gradle-version: wrapper
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: nightly-check-ci-test-results
+          name: nightly-{{ matrix.gradle-check }}-java{{ matrix.test-jvm-version }}-ci-results
           path: |
             **/build/test-results/*/TEST-*.xml
             **/build/reports/tests/**
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: nightly-check-ci-jvm-err
+          name: nightly-{{ matrix.gradle-check }}-java{{ matrix.test-jvm-version }}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*
@@ -77,7 +77,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
-          check_name: {{ matrix.gradle-check }} report
+          check_name: check report {{ matrix.gradle-check }} java{{ matrix.test-jvm-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
@@ -85,7 +85,8 @@ jobs:
         uses: slackapi/slack-github-action@v1.18.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        slack-message:
-          Nightly build failure in {{ matrix.gradle-check }} {{ github.event.head_commit.url }}
+        with:
+          slack-message:
+            Nightly build failure in {{ matrix.gradle-check }} on Java {{ matrix.test-jvm-version }} @ {{ github.event.head_commit.url }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
