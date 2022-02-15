@@ -31,9 +31,8 @@ class DoExchange extends FlightExampleBase {
         // Passing case
         ///////////////////////////////////////////////
 
-        // create a BarrageMessage byte array equating to BarrageMessage.NONE
-
-        byte[] cmd = new byte[] {12, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 100, 112, 104, 110};
+        // equivalent to '0x6E687064' which is the numerical representation of the ASCII "dphn".
+        byte[] cmd = new byte[] {100, 112, 104, 110};
 
         FlightDescriptor fd = FlightDescriptor.command(cmd);
 
@@ -87,10 +86,12 @@ class DoExchange extends FlightExampleBase {
         // Failing case 2 - valid FlightDescriptor, empty metadata
         ///////////////////////////////////////////////
 
-        cmd = new byte[] {12, 0, 0, 0, 0, 0, 6, 0, 8, 0, 4, 0, 6, 0, 0, 0, 100, 112, 104, 110};
+        // equivalent to '0x6E687064' which is the numerical representation of the ASCII "dphn".
+        cmd = new byte[] {100, 112, 104, 110};
+
         fd = FlightDescriptor.command(cmd);
         try (FlightClient.ExchangeReaderWriter erw = flight.startExchange(fd);
-             final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+                final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
             cmd = new byte[0];
 

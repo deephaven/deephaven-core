@@ -50,6 +50,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -343,7 +344,7 @@ public class ArrowFlightUtil {
                     // `FlightData` messages from Barrage clients will provide app_metadata describing the request but
                     // official Flight implementations may force a NULL metadata field in the first message. In that
                     // case, identify a valid Barrage connection by verifying the `FlightDescriptor.CMD` field contains
-                    // a valid `BarrageMessageWrapper` object
+                    // the `Barrage` magic bytes
 
                     if (requestHandler != null) {
                         // rely on the handler to verify message type
@@ -377,21 +378,23 @@ public class ArrowFlightUtil {
 
                     isFirstMsg = false;
 
-                    // test whether the FlightDescriptor cmd field contains a valid Barrage object
-                    try {
-                        // verify the bytes contain a valid Barrage object
-                        BarrageMessageWrapper bmw = BarrageMessageWrapper
-                                .getRootAsBarrageMessageWrapper(
-                                        message.descriptor.getCmd().asReadOnlyByteBuffer());
+                    // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
+                    int size = message.descriptor.getCmd().size();
+                    if (size >= 4) {
+                        ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
 
-                        if (bmw.magic() != BarrageUtil.FLATBUFFER_MAGIC
-                                || bmw.msgType() != BarrageMessageType.None) {
+                        // set the order to little-endian (FlatBuffers default)
+                        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+                        // read and compare the value to the "magic" bytes
+                        long value = (long) bb.getInt(0) & 0xFFFFFFFFL;
+                        if (value != BarrageUtil.FLATBUFFER_MAGIC) {
                             throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    myPrefix + "expected BarrageMessageType.None");
+                                    myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
                         }
-                    } catch (IndexOutOfBoundsException exception) {
+                    } else {
                         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                myPrefix + "received a message with malformed metadata in FlightDescriptor");
+                                myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
                     }
                 }
             });
