@@ -12,7 +12,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.FloatChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.by.HashHandler;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableFloatArraySource;
 import io.deephaven.util.type.TypeUtils;
@@ -32,7 +31,7 @@ final class StaticAggOpenHasherFloat extends StaticChunkedOperatorAggregationSta
     }
 
     @Override
-    protected void build(HashHandler handler, RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -41,13 +40,17 @@ final class StaticAggOpenHasherFloat extends StaticChunkedOperatorAggregationSta
             int tableLocation = hashToTableLocation(hash);
             final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
             while (true) {
-                if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_OUTPUT_POSITION) {
+                int tableState = mainOutputPosition.getUnsafe(tableLocation);
+                if (tableState == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    handler.doMainInsert(tableLocation, chunkPosition);
+                    final int nextOutputPosition = outputPosition.getAndIncrement();
+                    outputPositions.set(chunkPosition, nextOutputPosition);
+                    mainOutputPosition.set(tableLocation, nextOutputPosition);
+                    outputPositionToHashSlot.set(nextOutputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    handler.doMainFound(tableLocation, chunkPosition);
+                    outputPositions.set(chunkPosition, tableState);
                     break;
                 } else {
                     Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
@@ -63,7 +66,7 @@ final class StaticAggOpenHasherFloat extends StaticChunkedOperatorAggregationSta
     }
 
     @Override
-    protected void rehashInternal(HashHandler handler) {
+    protected void rehashInternal() {
         final int oldSize = tableSize >> 1;
         final float[] destArray0 = new float[tableSize];
         final int[] destState = new int[tableSize];

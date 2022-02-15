@@ -17,7 +17,7 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedBase
-        extends OperatorAggregationStateManagerOpenAddressedBase implements HashHandler {
+        extends OperatorAggregationStateManagerOpenAddressedBase {
     // our state value used when nothing is there
     protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
 
@@ -28,8 +28,8 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
-    private MutableInt outputPosition;
-    private WritableIntChunk<RowKeys> outputPositions;
+    protected MutableInt outputPosition;
+    protected WritableIntChunk<RowKeys> outputPositions;
 
     protected StaticChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
             int tableSize,
@@ -52,51 +52,12 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
         }
         this.outputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable(this, (BuildContext) bc, rowSequence, sources);
-    }
-
-    @Override
-    public void doMainInsert(int tableLocation, int chunkPosition) {
-        final int nextOutputPosition = outputPosition.getAndIncrement();
-        outputPositions.set(chunkPosition, nextOutputPosition);
-        mainOutputPosition.set(tableLocation, nextOutputPosition);
-        outputPositionToHashSlot.set(nextOutputPosition, tableLocation);
-    }
-
-    @Override
-    public void doMoveMain(int oldTableLocation, int newTableLocation) {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public void doPromoteOverflow(int overflowLocation, int mainInsertLocation) {
-        throw new IllegalStateException();
+        buildTable((BuildContext) bc, rowSequence, sources);
     }
 
     @Override
     public void onNextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
-    }
-
-    @Override
-    public void doMainFound(int tableLocation, int chunkPosition) {
-        outputPositions.set(chunkPosition, mainOutputPosition.getUnsafe(tableLocation));
-    }
-
-    @Override
-    public void doOverflowFound(int overflowLocation, int chunkPosition) {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public void doOverflowInsert(int overflowLocation, int chunkPosition) {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public void doMissing(int chunkPosition) {
-        // we never probe
-        throw new IllegalStateException();
     }
 
     @Override

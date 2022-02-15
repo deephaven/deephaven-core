@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.by.HashHandler;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
-import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.QueryConstants;
@@ -550,7 +549,7 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        return MethodSpec.methodBuilder("rehashInternal").addParameter(HashHandler.class, "handler")
+        return MethodSpec.methodBuilder("rehashInternal")
                 .returns(void.class).addModifiers(Modifier.PROTECTED)
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();
@@ -637,16 +636,22 @@ public class TypedHasherFactory {
         builder.addStatement("int tableLocation = hashToTableLocation(hash)");
         builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
         builder.beginControlFlow("while (true)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        builder.addStatement("$T tableState = $L.getUnsafe(tableLocation)", hasherConfig.stateType, hasherConfig.mainStateName);
+        builder.beginControlFlow("if (tableState == $L)", hasherConfig.emptyStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
         }
-        builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
+
+        builder.addStatement("final int nextOutputPosition = outputPosition.getAndIncrement()");
+        builder.addStatement("outputPositions.set(chunkPosition, nextOutputPosition)");
+        builder.addStatement("$L.set(tableLocation, nextOutputPosition)", hasherConfig.mainStateName);
+        builder.addStatement("outputPositionToHashSlot.set(nextOutputPosition, tableLocation)");
+//        builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
-        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
+        builder.addStatement("outputPositions.set(chunkPosition, tableState)");
+//        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else");
         builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
@@ -657,7 +662,6 @@ public class TypedHasherFactory {
         builder.endControlFlow();
 
         return MethodSpec.methodBuilder("build")
-                .addParameter(HashHandler.class, "handler")
                 .addParameter(RowSequence.class, "rowSequence")
                 .addParameter(Chunk[].class, "sourceKeyChunks")
                 .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
