@@ -499,7 +499,6 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("final int entries = (int)numEntries");
         builder.addStatement("final int oldSize = tableSize >> 1");
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -510,15 +509,21 @@ public class TypedHasherFactory {
                 hasherConfig.stateType);
         builder.addStatement("$T.fill(destState, $L)", Arrays.class, hasherConfig.emptyStateName);
 
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("final $T [] originalKeyArray$L = mainKeySource$L.getArray()", elementType(chunkTypes[ii]), ii, ii);
+            builder.addStatement("mainKeySource$L.setArray(destArray$L)", ii, ii);
+        }
+        builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType, hasherConfig.mainStateName);
+        builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
+
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
-        builder.beginControlFlow("if ($L.getUnsafe(sourceBucket) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (originalStateArray[sourceBucket] == $L)", hasherConfig.emptyStateName);
         builder.addStatement("continue");
         builder.endControlFlow();
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T k$L = mainKeySource$L.getUnsafe(sourceBucket)", element, ii, ii);
+            builder.addStatement("final $T k$L = originalKeyArray$L[sourceBucket]", element, ii, ii);
         }
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
@@ -531,13 +536,7 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[tableLocation] = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
-        builder.beginControlFlow("if (tableLocation < oldSize)");
-        builder.addStatement("moveMainSource.set(startMovePointer, sourceBucket)");
-        builder.addStatement("moveMainDest.set(startMovePointer++, tableLocation)");
-        builder.nextControlFlow("else");
-        builder.addStatement("moveMainSource.set(endMovePointer, sourceBucket)");
-        builder.addStatement("moveMainDest.set(endMovePointer--, tableLocation)");
-        builder.endControlFlow();
+        builder.addStatement("handler.doMoveMain(sourceBucket, tableLocation)");
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
@@ -547,32 +546,6 @@ public class TypedHasherFactory {
         builder.endControlFlow();
         builder.endControlFlow();
 
-        builder.endControlFlow();
-
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("mainKeySource$L.setArray(destArray$L)", ii, ii);
-        }
-        builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
-
-        // the end will never overwrite anything, so we can do that first
-        builder.beginControlFlow("for (int ii = endMovePointer + 1; ii < entries; ++ii)");
-        builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
-        builder.endControlFlow();
-
-        builder.beginControlFlow("if (startMovePointer == 0)");
-        builder.addStatement("return");
-        builder.endControlFlow();
-
-        // then only sort the beginning where we had something move (probably because it was in a probe bucket)
-        builder.addStatement("moveMainSource.setSize(startMovePointer);");
-        builder.addStatement("moveMainDest.setSize(startMovePointer);");
-
-        builder.beginControlFlow("try (final $T sortContext = $T.createContext(startMovePointer)",
-                IntIntTimsortKernel.IntIntSortKernelContext.class, IntIntTimsortKernel.class);
-        builder.addStatement("sortContext.sort(moveMainSource, moveMainDest)");
-        builder.endControlFlow();
-        builder.beginControlFlow("for (int ii = moveMainSource.size() - 1; ii >= 0; --ii)");
-        builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
         builder.endControlFlow();
 
         return MethodSpec.methodBuilder("rehashInternal").addParameter(HashHandler.class, "handler")

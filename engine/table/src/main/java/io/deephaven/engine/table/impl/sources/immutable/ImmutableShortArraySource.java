@@ -226,13 +226,17 @@ public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSou
         // we don't track previous values, so we don't care to do any work
     }
 
+    // region getArray
     public short [] getArray() {
         return data;
     }
+    // endregion getArray
 
+    // region setArray
     public void setArray(short [] array) {
         data = array;
     }
+    // endregion setArray
 
     // region reinterpret
     // endregion reinterpret

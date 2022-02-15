@@ -221,13 +221,17 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
         // we don't track previous values, so we don't care to do any work
     }
 
+    // region getArray
     public char [] getArray() {
         return data;
     }
+    // endregion getArray
 
+    // region setArray
     public void setArray(char [] array) {
         data = array;
     }
+    // endregion setArray
 
     // region reinterpret
     // endregion reinterpret

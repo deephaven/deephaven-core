@@ -228,13 +228,17 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         // we don't track previous values, so we don't care to do any work
     }
 
+    // region getArray
     public byte [] getArray() {
         return data;
     }
+    // endregion getArray
 
+    // region setArray
     public void setArray(byte [] array) {
         data = array;
     }
+    // endregion setArray
 
     // region reinterpret
     @Override
