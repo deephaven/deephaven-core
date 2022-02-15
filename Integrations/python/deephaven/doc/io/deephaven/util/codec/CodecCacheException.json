@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.codec.CodecCacheException",
- "methods": {},
- "path": "io.deephaven.util.codec.CodecCacheException",
- "text": "Exception class for CodecCache item construction issues.",
- "typeName": "class"
-}

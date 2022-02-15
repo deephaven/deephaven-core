@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.client.impl.FlightSessionFactory",
- "methods": {
-  "newFlightSession": ":return: io.deephaven.client.impl.FlightSession",
-  "newFlightSessionFuture": ":return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.FlightSession>"
- },
- "path": "io.deephaven.client.impl.FlightSessionFactory",
- "typeName": "interface"
-}

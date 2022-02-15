@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.object.ObjectServiceModule",
- "methods": {
-  "bindObjectServiceGrpcImpl": ":param objectService: io.deephaven.server.object.ObjectServiceGrpcImpl\n:return: io.grpc.BindableService"
- },
- "path": "io.deephaven.server.object.ObjectServiceModule",
- "typeName": "interface"
-}

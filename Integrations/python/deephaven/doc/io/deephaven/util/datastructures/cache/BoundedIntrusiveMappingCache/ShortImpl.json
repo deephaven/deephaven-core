@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ShortImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.ShortImpl.KEY_TYPE\n:param mapper: io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToShortFunction<BoundedIntrusiveMappingCache.ShortImpl.KEY_TYPE>\n:return: short"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ShortImpl",
- "typeName": "class"
-}

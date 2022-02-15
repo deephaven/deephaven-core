@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.numerics.movingaverages.ByEmaSimple",
- "methods": {},
- "path": "io.deephaven.numerics.movingaverages.ByEmaSimple",
- "text": "An engine aware EMA which can compute \"groupBy\" emas without grouping and then ungrouping.",
- "typeName": "class"
-}

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.HashTableAnnotations$EmptyStateValue",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.HashTableAnnotations.EmptyStateValue",
- "text": "We tag the empty state variable with this annotation, so we know what its name is in the source and destination.",
- "typeName": "class"
-}

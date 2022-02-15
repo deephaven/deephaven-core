@@ -510,10 +510,12 @@ public class TypedHasherFactory {
         builder.addStatement("$T.fill(destState, $L)", Arrays.class, hasherConfig.emptyStateName);
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("final $T [] originalKeyArray$L = mainKeySource$L.getArray()", elementType(chunkTypes[ii]), ii, ii);
+            builder.addStatement("final $T [] originalKeyArray$L = mainKeySource$L.getArray()",
+                    elementType(chunkTypes[ii]), ii, ii);
             builder.addStatement("mainKeySource$L.setArray(destArray$L)", ii, ii);
         }
-        builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType, hasherConfig.mainStateName);
+        builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType,
+                hasherConfig.mainStateName);
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");

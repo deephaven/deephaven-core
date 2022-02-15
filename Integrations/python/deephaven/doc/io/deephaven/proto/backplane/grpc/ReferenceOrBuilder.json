@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.ReferenceOrBuilder",
- "methods": {
-  "getColumnName": "string column_name = 1;\n\n:return: (java.lang.String) The columnName.",
-  "getColumnNameBytes": "string column_name = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for columnName."
- },
- "path": "io.deephaven.proto.backplane.grpc.ReferenceOrBuilder",
- "typeName": "interface"
-}

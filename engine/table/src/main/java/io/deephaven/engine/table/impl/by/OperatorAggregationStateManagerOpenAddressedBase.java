@@ -16,7 +16,7 @@ import static io.deephaven.util.SafeCloseable.closeArray;
 public abstract class OperatorAggregationStateManagerOpenAddressedBase
         implements OperatorAggregationStateManager {
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
-    private static final long MAX_TABLE_SIZE = 1<<30; // maximum array size
+    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
     // the number of slots in our table
     protected int tableSize;
@@ -28,7 +28,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
-    protected final ColumnSource [] mainKeySources;
+    protected final ColumnSource[] mainKeySources;
 
     protected OperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor) {

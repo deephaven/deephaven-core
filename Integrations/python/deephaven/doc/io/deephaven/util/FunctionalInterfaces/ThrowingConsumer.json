@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces$ThrowingConsumer",
- "methods": {
-  "accept": ":param t: FunctionalInterfaces.ThrowingConsumer.T"
- },
- "path": "io.deephaven.util.FunctionalInterfaces.ThrowingConsumer",
- "text": "Represents an operation that accepts a single input argument and returns no result, throwing an exception.",
- "typeName": "interface"
-}

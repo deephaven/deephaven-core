@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.gui.shape.Shape",
- "methods": {},
- "path": "io.deephaven.gui.shape.Shape",
- "text": "Shape objects",
- "typeName": "interface"
-}

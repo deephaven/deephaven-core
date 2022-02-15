@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.util.BigDecimalUtils$PrecisionAndScale",
- "methods": {},
- "path": "io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale",
- "text": "Immutable way to store and pass precision and scale values.",
- "typeName": "class"
-}

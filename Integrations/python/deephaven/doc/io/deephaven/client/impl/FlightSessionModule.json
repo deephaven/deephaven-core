@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.client.impl.FlightSessionModule",
- "methods": {
-  "newFlightSession": ":param session: io.deephaven.client.impl.SessionImpl\n:param allocator: org.apache.arrow.memory.BufferAllocator\n:param managedChannel: io.grpc.ManagedChannel\n:return: io.deephaven.client.impl.FlightSession",
-  "newFlightSessionFuture": ":param sessionFuture: java.util.concurrent.CompletableFuture<? extendsio.deephaven.client.impl.SessionImpl>\n:param allocator: org.apache.arrow.memory.BufferAllocator\n:param managedChannel: io.grpc.ManagedChannel\n:return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.FlightSession>"
- },
- "path": "io.deephaven.client.impl.FlightSessionModule",
- "typeName": "class"
-}

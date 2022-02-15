@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.time.ClockTimeProvider",
- "methods": {
-  "currentTime": ":return: io.deephaven.time.DateTime"
- },
- "path": "io.deephaven.time.ClockTimeProvider",
- "text": "Adapter to allow a Clock to serve as a TimeProvider.",
- "typeName": "class"
-}

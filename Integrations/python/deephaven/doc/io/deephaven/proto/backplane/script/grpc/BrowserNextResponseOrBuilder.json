@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.script.grpc.BrowserNextResponseOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.script.grpc.BrowserNextResponseOrBuilder",
- "typeName": "interface"
-}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.client.impl.DeephavenFlightRoot",
- "methods": {
-  "factoryBuilder": ":return: io.deephaven.client.impl.FlightSubcomponent.Builder"
- },
- "path": "io.deephaven.client.impl.DeephavenFlightRoot",
- "typeName": "interface"
-}

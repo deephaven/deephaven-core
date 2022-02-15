@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.ListFieldsRequestOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.grpc.ListFieldsRequestOrBuilder",
- "typeName": "interface"
-}
