@@ -44,10 +44,10 @@ final class StaticAggOpenHasherDouble extends StaticChunkedOperatorAggregationSt
                 if (tableState == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final int nextOutputPosition = outputPosition.getAndIncrement();
-                    outputPositions.set(chunkPosition, nextOutputPosition);
-                    mainOutputPosition.set(tableLocation, nextOutputPosition);
-                    outputPositionToHashSlot.set(nextOutputPosition, tableLocation);
+                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPositions.set(chunkPosition, outputPosition);
+                    mainOutputPosition.set(tableLocation, outputPosition);
+                    outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     outputPositions.set(chunkPosition, tableState);
@@ -68,11 +68,11 @@ final class StaticAggOpenHasherDouble extends StaticChunkedOperatorAggregationSt
     @Override
     protected void rehashInternal() {
         final int oldSize = tableSize >> 1;
-        final double[] destArray0 = new double[tableSize];
+        final double[] destKeyArray0 = new double[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
         final double [] originalKeyArray0 = mainKeySource0.getArray();
-        mainKeySource0.setArray(destArray0);
+        mainKeySource0.setArray(destKeyArray0);
         final int [] originalStateArray = mainOutputPosition.getArray();
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
@@ -85,7 +85,7 @@ final class StaticAggOpenHasherDouble extends StaticChunkedOperatorAggregationSt
             final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
             while (true) {
                 if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destArray0[tableLocation] = k0;
+                    destKeyArray0[tableLocation] = k0;
                     destState[tableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != tableLocation) {
                         outputPositionToHashSlot.set(destState[tableLocation], tableLocation);

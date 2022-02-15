@@ -56,10 +56,10 @@ final class StaticAggOpenHasherFloatChar extends StaticChunkedOperatorAggregatio
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    final int nextOutputPosition = outputPosition.getAndIncrement();
-                    outputPositions.set(chunkPosition, nextOutputPosition);
-                    mainOutputPosition.set(tableLocation, nextOutputPosition);
-                    outputPositionToHashSlot.set(nextOutputPosition, tableLocation);
+                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPositions.set(chunkPosition, outputPosition);
+                    mainOutputPosition.set(tableLocation, outputPosition);
+                    outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                     outputPositions.set(chunkPosition, tableState);
@@ -81,14 +81,14 @@ final class StaticAggOpenHasherFloatChar extends StaticChunkedOperatorAggregatio
     @Override
     protected void rehashInternal() {
         final int oldSize = tableSize >> 1;
-        final float[] destArray0 = new float[tableSize];
-        final char[] destArray1 = new char[tableSize];
+        final float[] destKeyArray0 = new float[tableSize];
+        final char[] destKeyArray1 = new char[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
         final float [] originalKeyArray0 = mainKeySource0.getArray();
-        mainKeySource0.setArray(destArray0);
+        mainKeySource0.setArray(destKeyArray0);
         final char [] originalKeyArray1 = mainKeySource1.getArray();
-        mainKeySource1.setArray(destArray1);
+        mainKeySource1.setArray(destKeyArray1);
         final int [] originalStateArray = mainOutputPosition.getArray();
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
@@ -102,8 +102,8 @@ final class StaticAggOpenHasherFloatChar extends StaticChunkedOperatorAggregatio
             final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
             while (true) {
                 if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destArray0[tableLocation] = k0;
-                    destArray1[tableLocation] = k1;
+                    destKeyArray0[tableLocation] = k0;
+                    destKeyArray1[tableLocation] = k1;
                     destState[tableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != tableLocation) {
                         outputPositionToHashSlot.set(destState[tableLocation], tableLocation);

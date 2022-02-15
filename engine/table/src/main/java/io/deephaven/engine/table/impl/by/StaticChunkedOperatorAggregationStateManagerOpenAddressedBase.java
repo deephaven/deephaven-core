@@ -28,7 +28,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // state variables that exist as part of the update
-    protected MutableInt outputPosition;
+    protected MutableInt nextOutputPosition;
     protected WritableIntChunk<RowKeys> outputPositions;
 
     protected StaticChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
@@ -50,14 +50,14 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
         if (rowSequence.isEmpty()) {
             return;
         }
-        this.outputPosition = nextOutputPosition;
+        this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         buildTable((BuildContext) bc, rowSequence, sources);
     }
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
+        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size);
     }
 
     @Override

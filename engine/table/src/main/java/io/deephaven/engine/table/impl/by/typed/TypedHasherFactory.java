@@ -501,7 +501,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int oldSize = tableSize >> 1");
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("final $T[] destArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
+            builder.addStatement("final $T[] destKeyArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
                     elementType(chunkTypes[ii]));
         }
         builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType,
@@ -511,7 +511,7 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("final $T [] originalKeyArray$L = mainKeySource$L.getArray()",
                     elementType(chunkTypes[ii]), ii, ii);
-            builder.addStatement("mainKeySource$L.setArray(destArray$L)", ii, ii);
+            builder.addStatement("mainKeySource$L.setArray(destKeyArray$L)", ii, ii);
         }
         builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType,
                 hasherConfig.mainStateName);
@@ -533,7 +533,7 @@ public class TypedHasherFactory {
         builder.beginControlFlow("while (true)");
         builder.beginControlFlow("if (destState[tableLocation] == $L)", hasherConfig.emptyStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("destArray$L[tableLocation] = k$L", ii, ii);
+            builder.addStatement("destKeyArray$L[tableLocation] = k$L", ii, ii);
         }
         builder.addStatement("destState[tableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
@@ -644,10 +644,10 @@ public class TypedHasherFactory {
             builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
         }
 
-        builder.addStatement("final int nextOutputPosition = outputPosition.getAndIncrement()");
-        builder.addStatement("outputPositions.set(chunkPosition, nextOutputPosition)");
-        builder.addStatement("$L.set(tableLocation, nextOutputPosition)", hasherConfig.mainStateName);
-        builder.addStatement("outputPositionToHashSlot.set(nextOutputPosition, tableLocation)");
+        builder.addStatement("final int outputPosition = nextOutputPosition.getAndIncrement()");
+        builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
+        builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
+        builder.addStatement("outputPositionToHashSlot.set(outputPosition, tableLocation)");
         // builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");

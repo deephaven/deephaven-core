@@ -36,8 +36,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
-        Require.gtZero(maximumLoadFactor, "maximumLoadFactor");
-        Require.leq(maximumLoadFactor, "maximumLoadFactor", 0.95);
+        Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
 
         mainKeySources = new ColumnSource[tableKeySources.length];
 
