@@ -1,5 +1,0 @@
-{
-  "plugins": [
-    { "name": "@deephaven/matplotlib-js-plugin", "main": "@deephaven/matplotlib-js-plugin/dist/index.js" }
-  ]
-}
