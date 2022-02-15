@@ -102,7 +102,7 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
             include_only_columns, and exclude_columns; if a schema_version is provided and the resulting version after
             publishing does not match, an exception results. The default is False.
         schema_namespace (str): when 'publish_schema' is True, the namespace for the generated schema to be registered
-            in Schema Registry Server.
+            in the Schema Registry Server.
         column_properties (Dict[str, str]): when 'publish_schema' is True, specifies the properties of the columns
             implying particular Avro type mappings for them. In particular, column X of BigDecimal type should specify
             properties 'x.precision' and 'x.scale'.
@@ -132,10 +132,10 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
               nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
     """ Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 
-    If nested JSON fields are desired, the field separator that is used for the field names
-            parameter, or None for no nesting (default). For instance, if a particular column should be mapped
-            to JSON field X nested inside field Y, the corresponding field name value for the column key
-            in the mapping dict can be the string "X.Y", in which case the value for nested_delim should be "."
+    Because JSON is a nested structure, a Deephaven column can be specified to map to a top level JSON field or
+    a field nested inside another JSON object many levels deep, e.g. X.Y.Z.field. The parameter 'nested_delim' controls
+    how a JSON nested field name should be delimited in the mapping.
+
     Args:
         include_columns (List[str]): the list of Deephaven column names to include in the JSON output as fields,
             default is None, meaning all except the ones mentioned in the 'exclude_columns' argument . If not None,
@@ -145,7 +145,10 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
         mapping (Dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
             arguments and not included as a key in the map implies a field of the same name. default is None,
             meaning all columns will be mapped to JSON fields of the same name.
-        nested_delim (str): the filed separator for nested JSON fields
+        nested_delim (str): if nested JSON fields are desired, the field separator that is used for the field names
+            parameter, or None for no nesting (default). For instance, if a particular column should be mapped
+            to JSON field X nested inside field Y, the corresponding field name value for the column key
+            in the mapping dict can be the string "X.Y", in which case the value for nested_delim should be "."
         output_nulls (bool): when False (default), do not output a field for null column values
         timestamp_field (str): the name of an extra timestamp field to be included in the produced Kafka message body,
             it is used mostly for debugging slowdowns,  default is None.

@@ -2,7 +2,7 @@
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
-data structures from corresponding Python ones in order to be able to call Deephaven Java methods. """
+data structures from corresponding Python ones in order to be able to call Java methods. """
 from typing import Any, Iterable, Dict, Set
 
 import jpy
