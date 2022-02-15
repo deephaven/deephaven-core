@@ -534,7 +534,7 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destArray$L[tableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[tableLocation] = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
+        builder.addStatement("destState[tableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
         builder.addStatement("handler.doMoveMain(sourceBucket, tableLocation)");
         builder.endControlFlow();

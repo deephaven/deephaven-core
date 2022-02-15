@@ -62,7 +62,6 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
 
     @Override
     protected void rehashInternal(HashHandler handler) {
-        final int entries = (int)numEntries;
         final int oldSize = tableSize >> 1;
         final Object[] destArray0 = new Object[tableSize];
         final int[] destState = new int[tableSize];
@@ -82,7 +81,7 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
             while (true) {
                 if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
                     destArray0[tableLocation] = k0;
-                    destState[tableLocation] = mainOutputPosition.getUnsafe(sourceBucket);
+                    destState[tableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != tableLocation) {
                         handler.doMoveMain(sourceBucket, tableLocation);
                     }
