@@ -13,7 +13,8 @@ jobs:
   check:
     strategy:
       matrix:
-        gradle-check: [check, testSerial, testParallel, testOutOfBand]
+        gradle-check: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
+        test-jvm-version: ['-PtestRuntimeVersion=11', '-PtestRuntimeVersion=17']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
     steps:
