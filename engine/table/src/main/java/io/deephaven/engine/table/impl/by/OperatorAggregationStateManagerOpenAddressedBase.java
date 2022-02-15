@@ -42,7 +42,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         mainKeySources = new ColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            // the sources that we will use to store our hash table, we know that they are primitive so this cast works
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
