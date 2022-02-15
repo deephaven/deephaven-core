@@ -81,12 +81,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
-      - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.18.0
-        id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
-        with:
-          slack-message:
-            Nightly build failure in ${{ matrix.gradle-check }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+#      - name: Slack Nightly Failure
+#        uses: slackapi/slack-github-action@v1.18.0
+#        id: slack-nightly-failure
+#        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+#        with:
+#          slack-message:
+#            Nightly build failure in ${{ matrix.gradle-check }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
