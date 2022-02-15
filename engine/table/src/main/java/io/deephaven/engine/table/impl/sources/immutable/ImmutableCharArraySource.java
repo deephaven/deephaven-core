@@ -32,7 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DCharArraySource}.
  */
-public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious, FlatArraySource<Character> {
+public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
     private char[] data;
 
     // region constructor
@@ -221,14 +221,12 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
         // we don't track previous values, so we don't care to do any work
     }
 
-    @Override
-    public Object getArray() {
+    public char [] getArray() {
         return data;
     }
 
-    @Override
-    public void setArray(Object array) {
-        data = (char[])array;
+    public void setArray(char [] array) {
+        data = array;
     }
 
     // region reinterpret

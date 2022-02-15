@@ -39,7 +39,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DByteArraySource}.
  */
-public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious, FlatArraySource<Byte> {
+public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithEnsurePrevious {
     private byte[] data;
 
     // region constructor
@@ -228,14 +228,12 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         // we don't track previous values, so we don't care to do any work
     }
 
-    @Override
-    public Object getArray() {
+    public byte [] getArray() {
         return data;
     }
 
-    @Override
-    public void setArray(Object array) {
-        data = (byte[])array;
+    public void setArray(byte [] array) {
+        data = array;
     }
 
     // region reinterpret

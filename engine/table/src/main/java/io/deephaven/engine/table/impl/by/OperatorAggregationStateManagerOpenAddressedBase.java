@@ -10,7 +10,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.immutable.FlatArraySource;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 
@@ -29,7 +28,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
-    protected final FlatArraySource[] mainKeySources;
+    protected final ColumnSource [] mainKeySources;
 
     protected OperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor) {
@@ -40,11 +39,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         Require.gtZero(maximumLoadFactor, "maximumLoadFactor");
         Require.leq(maximumLoadFactor, "maximumLoadFactor", 0.95);
 
-        mainKeySources = new FlatArraySource[tableKeySources.length];
+        mainKeySources = new ColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             // the sources that we will use to store our hash table, we know that they are primitive so this cast works
-            mainKeySources[ii] = (FlatArraySource) InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
 

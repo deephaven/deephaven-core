@@ -5,7 +5,6 @@ import com.squareup.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.compilertools.CompilerTools;
@@ -493,20 +492,14 @@ public class TypedHasherFactory {
                 .addAnnotation(Override.class).build();
     }
 
+    // this rehash internal method is not incremental, which makes us nervous about using it for incremental updates
+    // we are also using the old arrays as temporary space, so any moving of objects must be done inline (but the
+    // single inheritor we have does not do that, so we are not adding that complexity at this instant)
     @NotNull
     private static MethodSpec createRehashInternalMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("final int entries = (int)numEntries");
-        builder.beginControlFlow(
-                "try (final $T<$T> moveMainSource = $T.makeWritableChunk(entries);\nfinal $T<$T> moveMainDest = $T.makeWritableChunk(entries))",
-                WritableIntChunk.class, ChunkPositions.class, WritableIntChunk.class, WritableIntChunk.class,
-                ChunkPositions.class, WritableIntChunk.class);
-        builder.addStatement("moveMainSource.setSize(entries)");
-        builder.addStatement("moveMainDest.setSize(entries)");
-        builder.addStatement("int startMovePointer = 0");
-        builder.addStatement("int endMovePointer = entries - 1");
-
         builder.addStatement("final int oldSize = tableSize >> 1");
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -580,7 +573,6 @@ public class TypedHasherFactory {
         builder.endControlFlow();
         builder.beginControlFlow("for (int ii = moveMainSource.size() - 1; ii >= 0; --ii)");
         builder.addStatement("handler.doMoveMain(moveMainSource.get(ii), moveMainDest.get(ii))");
-        builder.endControlFlow();
         builder.endControlFlow();
 
         return MethodSpec.methodBuilder("rehashInternal").addParameter(HashHandler.class, "handler")
@@ -803,7 +795,7 @@ public class TypedHasherFactory {
         }
     }
 
-    static Class<? extends FlatArraySource> flatSourceType(ChunkType chunkType) {
+    static Class<? extends ColumnSource> flatSourceType(ChunkType chunkType) {
         switch (chunkType) {
             default:
             case Boolean:
