@@ -636,7 +636,8 @@ public class TypedHasherFactory {
         builder.addStatement("int tableLocation = hashToTableLocation(hash)");
         builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
         builder.beginControlFlow("while (true)");
-        builder.addStatement("$T tableState = $L.getUnsafe(tableLocation)", hasherConfig.stateType, hasherConfig.mainStateName);
+        builder.addStatement("$T tableState = $L.getUnsafe(tableLocation)", hasherConfig.stateType,
+                hasherConfig.mainStateName);
         builder.beginControlFlow("if (tableState == $L)", hasherConfig.emptyStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -647,11 +648,11 @@ public class TypedHasherFactory {
         builder.addStatement("outputPositions.set(chunkPosition, nextOutputPosition)");
         builder.addStatement("$L.set(tableLocation, nextOutputPosition)", hasherConfig.mainStateName);
         builder.addStatement("outputPositionToHashSlot.set(nextOutputPosition, tableLocation)");
-//        builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
+        // builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("outputPositions.set(chunkPosition, tableState)");
-//        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
+        // builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
         builder.addStatement("break");
         builder.nextControlFlow("else");
         builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
