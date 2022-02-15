@@ -113,11 +113,16 @@ def c2ExcludesJvmArgs = { String c2ExcludesFile ->
   ]
 }
 
+def debugJvmArgs = [          '-XX:Tier3CompileThreshold=100', '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
+                              '-XX:+PrintFlagsFinal',           // this optional line makes it easier to explore the final values for compiler args
+                              '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
+                              ]
+
 tasks.withType(JavaExec).configureEach {
   def c2ExcludesFile = createCompilerDirectives.get().outputs.files
   inputs.files c2ExcludesFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + debugJvmArgs
 }
 
 tasks.withType(Test).configureEach {
@@ -125,7 +130,7 @@ tasks.withType(Test).configureEach {
   inputs.files c2ExcludesFile
 
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + debugJvmArgs
 }
 
 tasks.withType(GroovyCompile).configureEach {
@@ -144,6 +149,7 @@ tasks.withType(CreateStartScripts).configureEach {
   // Note that we don't call c2ExcludesJvmArgs() at this time, there is no way to template those strings.
   // Instead, we hard code the expected paths in the above templates to match the path lib/c2-excludes.txt
 //  defaultJvmOpts += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
+  defaultJvmOpts += debugJvmArgs
 }
 
 tasks.withType(Jar).configureEach {
