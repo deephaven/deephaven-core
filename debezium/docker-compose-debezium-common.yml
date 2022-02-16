@@ -8,6 +8,7 @@ services:
     image: docker.vectorized.io/vectorized/redpanda:${REDPANDA_VERSION}
     command:
       - redpanda start
+      - --reactor-backend=epoll
       - --overprovisioned
       - --smp ${REDPANDA_SMP}
       - --memory ${REDPANDA_MEMORY}
@@ -56,5 +57,6 @@ services:
       - PAGEVIEWS_PER_SECOND_START=750
       - PURCHASES_PER_SECOND_START=10
       - COMMAND_ENDPOINT=0.0.0.0:8090
+      - KAFKA_PRODUCER_ACKS
     ports:
       - 8090:8090

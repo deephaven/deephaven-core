@@ -8,9 +8,15 @@ from concurrent.futures import CancelledError
 user_seed_count     = 10000
 item_seed_count     = 1000
 max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
+max_burst_purchases    = 2
 max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
+max_burst_pageviews    = 200
 purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
+kafka_producer_acks      = int(os.environ['KAFKA_PRODUCER_ACKS'])
+kafka_batch_size         = 200 * 1000
+kafka_max_in_flight_requests_per_connection = 20
+kafka_linger_ms          = 40  # Note we flush manually, so this only applies in between our managed batches.
 params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
                          pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
@@ -123,41 +129,48 @@ def get_item_prices(cursor):
     log("Getting item ID and PRICEs DONE.")
     return [(row[0], row[1]) for row in cursor]
 
-async def loop(executor, max_parallel, action_fun, param_key, action_desc):
+async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_desc):
     now = time.time()
     last_log = now
     last_rate_check = now
     sent_since_last_log = 0
     rate_s = params[param_key]
     rate_sent = 0
+    rate_done = 0
     rate_start = now
     old_rate_s = rate_s
     period_s = 1.0/rate_s
     log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
     futures = {}
     def reap_futures():
+        done = 0
         for k in list(futures.keys()):
-            if futures[k].done():
-                del futures[k]        
+            future = futures[k]
+            if future.done():
+                done += future.result()
+                del futures[k]
+        return done
     loop_count = 0
     event_loop = asyncio.get_event_loop()
+    action_count = 1
     try:
         while True:
-            reap_futures()
+            rate_done += reap_futures()
             while len(futures) > max_parallel - 1:
                 await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
-                reap_futures()
-            future = event_loop.run_in_executor(executor, action_fun)
+                rate_done += reap_futures()
+            future = event_loop.run_in_executor(executor, action_fun, action_count)
             futures[loop_count] = future
             loop_count += 1
-            rate_sent += 1
-            sent_since_last_log += 1
+            rate_sent += action_count
+            sent_since_last_log += action_count
             now = time.time()
 
             last_log_diff = now - last_log
             if last_log_diff >= log_period_seconds:
                 qlen = len(futures)
-                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds, running={qlen}.")
+                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds; " +
+                    f"on last trigger running={qlen}, count={action_count}.")
                 last_log = now
                 sent_since_last_log = 0
 
@@ -168,11 +181,19 @@ async def loop(executor, max_parallel, action_fun, param_key, action_desc):
                 if abs(effective_rate_s - rate_s)/rate_s > 0.02:
                     log(f"Warning: rate {rate_s}/s is too high; achieving " +
                         f"an effective rate of {effective_rate_s:.1f}/s in the last {last_rate_check_diff:.1f} seconds.")
-                
+
             next_time = rate_start + (rate_sent + 1)*period_s
             sleep_s = next_time - time.time()
-            if sleep_s > 0.002:  # In practice can't sleep for less than 0.001 second.
+            if sleep_s > 0.001:  # In practice can't sleep for less
                 await asyncio.sleep(sleep_s)
+
+            rate_done += reap_futures()
+            expected_count_by_now = (time.time() - rate_start) / period_s
+            action_count = math.ceil(expected_count_by_now - rate_done)
+            if action_count < 1:
+                action_count = 1
+            elif action_count > max_burst:
+                action_count = max_burst
 
             rate_s = params[param_key]
             if old_rate_s != rate_s:
@@ -182,49 +203,56 @@ async def loop(executor, max_parallel, action_fun, param_key, action_desc):
                 now = time.time()
                 rate_start = now
                 rate_sent = 0
+                rate_done = 0
                 last_rate_check = now
     except CancelledError:
         pass
     log(f"Stopped simulating {action_desc} actions.")
 
-async def loop_purchases(executor, max_parallel, db_resources, producers, item_prices):
+async def loop_purchases(executor, db_resources, producers, item_prices):
     log("Preparing to loop + seed kafka pageviews and purchases.")
-    def make_purchase():
+    def make_purchases(count):
         # Get a user and item to purchase
-        purchase_item = random.choice(item_prices)
-        purchase_user = random.randint(0,user_seed_count-1)
-        purchase_quantity = random.randint(1,5)
-
         # Write purchaser pageview
         producer = producers.pop()
-        producer.send(kafka_topic, key=str(purchase_user).encode('ascii'), value=generate_pageview(purchase_user, purchase_item[0], 'products'))
-        producers.append(producer)
-
-        # Write purchase row
         (connection, cursor) = db_resources.pop()
-        cursor.execute(
-            purchase_insert,
-            (
-                purchase_user,
-                purchase_item[0],
-                purchase_quantity,
-                purchase_item[1] * purchase_quantity
-            )
-        )
-        connection.commit()
-        db_resources.append((connection, cursor))
-    await loop(executor, max_parallel, make_purchase, purchases_per_second_key, "purchase")
+        for i in range(count):
+            purchase_item = random.choice(item_prices)
+            purchase_user = random.randint(0,user_seed_count-1)
+            purchase_quantity = random.randint(1,5)
 
-async def loop_random_pageviews(executor, max_parallel, producers):
-    # Write random pageviews to products or profiles
-    def make_random_pageview():
-        rand_user = random.randint(0,user_seed_count)
-        rand_page_type = random.choice(['products', 'profiles'])
-        target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
-        producer = producers.pop()
-        producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
+            producer.send(kafka_topic, key=str(purchase_user).encode('ascii'), value=generate_pageview(purchase_user, purchase_item[0], 'products'))
+
+            # Write purchase row
+            cursor.execute(
+                purchase_insert,
+                (
+                    purchase_user,
+                    purchase_item[0],
+                    purchase_quantity,
+                    purchase_item[1] * purchase_quantity
+                )
+            )
+            connection.commit()
+            producer.flush()
+        db_resources.append((connection, cursor))
         producers.append(producer)
-    await loop(executor, max_parallel, make_random_pageview, pageviews_per_second_key, "pageview")
+        return count
+    await loop(executor, max_parallel_purchases, max_burst_purchases, make_purchases, purchases_per_second_key, "purchase")
+
+async def loop_random_pageviews(executor, producers):
+    # Write random pageviews to products or profiles
+    def make_random_pageviews(count):
+        producer = producers.pop()
+        for i in range(count):
+            rand_user = random.randint(0,user_seed_count)
+            rand_page_type = random.choice(['products', 'profiles'])
+            target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
+            producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
+        producer.flush()
+        producers.append(producer)
+        return count
+    await loop(executor, max_parallel_pageviews, max_burst_pageviews, make_random_pageviews, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
@@ -325,9 +353,14 @@ exit_code = 0
 
 try:
     for pi in range(max_parallel_purchases + max_parallel_pageviews):
-        producer = KafkaProducer(bootstrap_servers=[kafka_endpoint],
-                                 value_serializer=lambda x: 
-                                 json.dumps(x).encode('utf-8'))
+        producer = KafkaProducer(
+            bootstrap_servers = [kafka_endpoint],
+            acks = kafka_producer_acks,
+            batch_size = kafka_batch_size,
+            max_in_flight_requests_per_connection = kafka_max_in_flight_requests_per_connection,
+            linger_ms = kafka_linger_ms,
+            value_serializer = lambda x: json.dumps(x).encode('utf-8')
+        )
         producers.append(producer)
 
     for di in range(max_parallel_purchases):
@@ -354,8 +387,8 @@ try:
                 max_workers = max_parallel_purchases + max_parallel_pageviews
         ) as executor:
             await asyncio.gather(
-                loop_purchases(executor, max_parallel_purchases, db_resources, producers, item_prices),
-                loop_random_pageviews(executor, max_parallel_pageviews, producers),
+                loop_purchases(executor, db_resources, producers, item_prices),
+                loop_random_pageviews(executor, producers),
                 run_command_server()
             )
     log("Starting simulation loops.")
