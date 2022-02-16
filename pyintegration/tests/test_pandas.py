@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from deephaven2 import dtypes, new_table, DHError
+from deephaven2._jcompat import j_array_list
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven2.constants import NULL_LONG, NULL_BYTE, NULL_SHORT, NULL_INT
@@ -24,8 +25,8 @@ class CustomClass:
 
 class PandasTestCase(BaseTestCase):
     def setUp(self):
-        j_array_list = dtypes.ArrayList([1, -1])
-        j_array_list2 = dtypes.ArrayList([2, -2])
+        j_array_list1 = j_array_list([1, -1])
+        j_array_list2 = j_array_list([2, -2])
         input_cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
@@ -41,7 +42,7 @@ class PandasTestCase(BaseTestCase):
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),
-            jobj_col(name="JObj", data=[j_array_list, j_array_list2]),
+            jobj_col(name="JObj", data=[j_array_list1, j_array_list2]),
         ]
         self.test_table = new_table(cols=input_cols)
 

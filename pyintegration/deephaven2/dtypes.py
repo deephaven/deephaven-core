@@ -68,7 +68,7 @@ char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np
 int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
 int64 = long
-int_ = int32
+int_ = long
 float_ = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
 single = float_
 float32 = float_

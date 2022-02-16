@@ -39,7 +39,6 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
         self.assertEqual(dtypes.int_.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
-        self.assertEqual(dtypes.int_.j_type, jpy.get_type("int"))
         self.assertEqual(dtypes.float_.j_type, jpy.get_type("float"))
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
@@ -83,8 +82,8 @@ class DTypesTestCase(BaseTestCase):
 
     def test_array(self):
         j_array = dtypes.array(dtypes.int_, range(5))
-        np_array = np.frombuffer(j_array, np.int32)
-        expected = np.array([0, 1, 2, 3, 4], dtype=np.int32)
+        np_array = np.frombuffer(j_array, np.int64)
+        expected = np.array([0, 1, 2, 3, 4], dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
 
         j_array = dtypes.array(dtypes.int64, [0, 1, 2, 3, 4])

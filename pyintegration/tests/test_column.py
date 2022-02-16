@@ -6,9 +6,9 @@ import unittest
 from dataclasses import dataclass
 
 from deephaven2 import DHError, dtypes, new_table
+from deephaven2._jcompat import j_array_list
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
-from deephaven2.dtypes import ArrayList
 from tests.testbase import BaseTestCase
 
 
@@ -19,7 +19,7 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(ColumnType.NORMAL, ColumnType(normal_type))
 
     def test_column_error(self):
-        jobj = ArrayList([1, -1])
+        jobj = j_array_list([1, -1])
         with self.assertRaises(DHError) as cm:
             bool_input_col = bool_col(name="Boolean", data=[True, 'abc'])
 

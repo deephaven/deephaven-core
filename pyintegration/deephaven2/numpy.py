@@ -72,10 +72,10 @@ def columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.
 
 
 def make_input_column(col: str, np_array: np.ndarray) -> InputColumn:
-    dtype = DType.from_np_dtype(np_array.dtype)
+    dtype = dtypes.from_np_dtype(np_array.dtype)
     if dtype == dtypes.bool_:
         bytes_ = np_array.astype(dtype=np.int8)
-        j_bytes = dtypes.byte.array_from(bytes_)
+        j_bytes = dtypes.array(dtypes.byte, bytes_)
         np_array = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
 
     if dtype == dtypes.DateTime:
