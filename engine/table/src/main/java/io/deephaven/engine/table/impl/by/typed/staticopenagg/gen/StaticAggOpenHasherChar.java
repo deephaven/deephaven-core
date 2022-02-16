@@ -30,6 +30,10 @@ final class StaticAggOpenHasherChar extends StaticChunkedOperatorAggregationStat
         this.mainKeySource0.ensureCapacity(tableSize);
     }
 
+    private int nextTableLocation(int tableLocation) {
+        return (tableLocation + 1) & (tableSize - 1);
+    }
+
     @Override
     protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
@@ -54,7 +58,7 @@ final class StaticAggOpenHasherChar extends StaticChunkedOperatorAggregationStat
                     break;
                 } else {
                     Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
+                    tableLocation = nextTableLocation(tableLocation);
                 }
             }
         }
@@ -104,7 +108,7 @@ final class StaticAggOpenHasherChar extends StaticChunkedOperatorAggregationStat
         final char k0 = TypeUtils.unbox((Character)key);
         int hash = hash(k0);
         int tableLocation = hashToTableLocation(hash);
-        final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+        final int lastTableLocation = nextTableLocation(tableLocation);
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
@@ -114,7 +118,7 @@ final class StaticAggOpenHasherChar extends StaticChunkedOperatorAggregationStat
                 return positionValue;
             }
             Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-            tableLocation = (tableLocation + 1) & (tableSize - 1);
+            tableLocation = nextTableLocation(tableLocation);
         }
     }
 }

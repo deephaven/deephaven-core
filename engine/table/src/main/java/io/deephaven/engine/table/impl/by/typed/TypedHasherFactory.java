@@ -23,6 +23,7 @@ import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -60,6 +61,7 @@ public class TypedHasherFactory {
         final String emptyStateName;
         final boolean openAddressed;
         final boolean openAddressedPivot;
+        final Consumer<CodeBlock.Builder> moveMain;
         if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "StaticAggHasher";
             packageMiddle = "staticagg";
@@ -68,6 +70,7 @@ public class TypedHasherFactory {
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
+            moveMain = null;
         } else if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "StaticAggOpenHasher";
             packageMiddle = "staticopenagg";
@@ -76,6 +79,7 @@ public class TypedHasherFactory {
             mainStateName = "mainOutputPosition";
             overflowStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
+            moveMain = TypedHasherFactory::staticAggMoveMain;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
@@ -84,6 +88,7 @@ public class TypedHasherFactory {
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
+            moveMain = null;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "IncrementalAggOpenHasher";
             packageMiddle = "incopenagg";
@@ -92,14 +97,22 @@ public class TypedHasherFactory {
             mainStateName = "mainOutputPosition";
             overflowStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
+            moveMain = TypedHasherFactory::incAggMoveMain;
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
-        final HasherConfig<T> hasherConfig =
-                new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot, mainStateName,
-                        overflowStateName,
-                        emptyStateName, int.class);
-        return hasherConfig;
+
+        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot, mainStateName,
+                overflowStateName,
+                emptyStateName, int.class, moveMain);
+    }
+
+    private static void staticAggMoveMain(CodeBlock.Builder builder) {
+        builder.addStatement("outputPositionToHashSlot.set(destState[tableLocation], tableLocation)");
+    }
+
+    private static void incAggMoveMain(CodeBlock.Builder builder) {
+        builder.addStatement("outputPositionToHashSlot.set(mainOutputPosition.getUnsafe(destinationLocation), destinationLocation)");
     }
 
     public static class HasherConfig<T> {
@@ -112,11 +125,12 @@ public class TypedHasherFactory {
         final String overflowStateName;
         final String emptyStateName;
         final Class<?> stateType;
+        final Consumer<CodeBlock.Builder> moveMain;
 
         HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
                      boolean openAddressedPivot, String mainStateName,
                      String overflowStateName,
-                     String emptyStateName, Class<?> stateType) {
+                     String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain) {
             this.baseClass = baseClass;
             this.classPrefix = classPrefix;
             this.packageMiddle = packageMiddle;
@@ -126,6 +140,7 @@ public class TypedHasherFactory {
             this.overflowStateName = overflowStateName;
             this.emptyStateName = emptyStateName;
             this.stateType = stateType;
+            this.moveMain = moveMain;
         }
     }
 
@@ -222,6 +237,7 @@ public class TypedHasherFactory {
         hasherBuilder.addMethod(createConstructor(hasherConfig, chunkTypes, hasherBuilder));
 
         if (hasherConfig.openAddressed) {
+            hasherBuilder.addMethod(createNextTableLocationMethod(hasherConfig));
             hasherBuilder.addMethod(createBuildMethodForOpenAddressed(hasherConfig, chunkTypes));
         } else {
             hasherBuilder.addMethod(createBuildMethodForOverflow(hasherConfig, chunkTypes));
@@ -230,7 +246,12 @@ public class TypedHasherFactory {
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
         if (hasherConfig.openAddressed) {
-            hasherBuilder.addMethod(createRehashInternalMethod(hasherConfig, chunkTypes));
+            if (hasherConfig.openAddressedPivot) {
+                hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
+                hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
+            } else {
+                hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
+            }
         } else {
             hasherBuilder.addMethod(createRehashBucketMethod(hasherConfig, chunkTypes));
             hasherBuilder.addMethod(createMaybeMoveMainBucket(hasherConfig, chunkTypes));
@@ -255,11 +276,23 @@ public class TypedHasherFactory {
         return fileBuilder.build();
     }
 
+    private static MethodSpec createNextTableLocationMethod(HasherConfig<?> hasherConfig) {
+        final MethodSpec.Builder builder =
+                MethodSpec.methodBuilder("nextTableLocation").addParameter(int.class, "tableLocation")
+                .returns(int.class).addModifiers(Modifier.PRIVATE);
+        if (hasherConfig.openAddressedPivot) {
+                builder.addStatement("return tableLocation == tableHashPivot - 1 ? 0 : (tableLocation + 1)");
+        } else {
+            builder.addStatement("return (tableLocation + 1) & (tableSize - 1)");
+        }
+        return builder.build();
+    }
+
     @NotNull
     private static <T> MethodSpec createConstructor(HasherConfig<T> hasherConfig, ChunkType[] chunkTypes,
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
-        if (hasherConfig.openAddressed) {
+        if (hasherConfig.openAddressed && !hasherConfig.openAddressedPivot) {
             constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
         } else {
             constructorCodeBuilder
@@ -347,7 +380,8 @@ public class TypedHasherFactory {
     private static void findPositionForKeyOpenAddressed(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
             MethodSpec.Builder builder) {
         builder.addStatement("int tableLocation = hashToTableLocation(hash)");
-        builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
+
+        builder.addStatement("final int lastTableLocation = nextTableLocation(tableLocation)");
 
         builder.beginControlFlow("while (true)");
 
@@ -362,7 +396,7 @@ public class TypedHasherFactory {
 
         builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
                 "lastTableLocation");
-        builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
+        builder.addStatement("tableLocation = nextTableLocation(tableLocation)");
 
         builder.endControlFlow();
     }
@@ -506,7 +540,7 @@ public class TypedHasherFactory {
     // we are also using the old arrays as temporary space, so any moving of objects must be done inline (but the
     // single inheritor we have does not do that, so we are not adding that complexity at this instant)
     @NotNull
-    private static MethodSpec createRehashInternalMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+    private static MethodSpec createRehashInternalFullMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("final int oldSize = tableSize >> 1");
@@ -548,7 +582,7 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[tableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != tableLocation)");
-        builder.addStatement("outputPositionToHashSlot.set(destState[tableLocation], tableLocation)");
+        hasherConfig.moveMain.accept(builder);
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
@@ -564,6 +598,88 @@ public class TypedHasherFactory {
                 .returns(void.class).addModifiers(Modifier.PROTECTED)
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();
+    }
+
+    @NotNull
+    private static MethodSpec createRehashInternalPartialMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        // ensure the capacity for everything
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("mainKeySource$L.ensureCapacity(tableHashPivot + bucketsToAdd)", ii);
+        }
+        builder.addStatement("$L.ensureCapacity(tableHashPivot + bucketsToAdd)", hasherConfig.mainStateName);
+
+        builder.addStatement("final boolean lastValueExists = $L.getUnsafe(tableHashPivot - 1) != $L", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("final int firstLocationToMigrate = tableHashPivot - (tableSize >> 1)");
+        builder.addStatement("int lastLocationToMigrate = firstLocationToMigrate + bucketsToAdd");
+        builder.addStatement("final int frontLocationsToMigrate;");
+        builder.beginControlFlow("if (lastLocationToMigrate >= tableSize)");
+        builder.addStatement("frontLocationsToMigrate = lastLocationToMigrate - tableSize + 1");
+        builder.addStatement("lastLocationToMigrate = tableSize");
+        builder.nextControlFlow("else");
+        builder.addStatement("frontLocationsToMigrate = lastValueExists ? 1 : 0");
+        builder.endControlFlow();
+
+        builder.addStatement("tableHashPivot += bucketsToAdd");
+
+        builder.beginControlFlow("for (int locationToMigrate = firstLocationToMigrate; locationToMigrate < lastLocationToMigrate || (locationToMigrate < tableSize && $L.getUnsafe(locationToMigrate) != $L); ++locationToMigrate)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("migrateOneLocation(locationToMigrate)");
+        builder.endControlFlow();
+
+        builder.beginControlFlow("for (int locationToMigrate = 0; locationToMigrate < frontLocationsToMigrate || (locationToMigrate < firstLocationToMigrate && $L.getUnsafe(locationToMigrate) != $L); ++locationToMigrate)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("migrateOneLocation(locationToMigrate)");
+        builder.endControlFlow();
+
+        return MethodSpec.methodBuilder("rehashInternal")
+                .returns(void.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "bucketsToAdd")
+                .addCode(builder.build())
+                .addAnnotation(Override.class).build();
+    }
+
+    @NotNull
+    private static MethodSpec createMigrateLocationMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.beginControlFlow("if ($L.getUnsafe(locationToMigrate) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("return");
+        builder.endControlFlow();
+
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            final Class<?> element = elementType(chunkTypes[ii]);
+            builder.addStatement("final $T k$L = mainKeySource$L.getUnsafe(locationToMigrate)", element, ii, ii);
+        }
+        builder.addStatement("final int hash = hash("
+                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
+
+        builder.addStatement("int destinationLocation = hashToTableLocation(hash)");
+        builder.beginControlFlow("if (destinationLocation == locationToMigrate)");
+        builder.addStatement("return");
+        builder.endControlFlow();
+
+        builder.beginControlFlow("while ($L.getUnsafe(destinationLocation) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("destinationLocation = nextTableLocation(destinationLocation)");
+        // TODO: if we could wrap then we might have problems, because we'll then migrate front locations think about what to do in that case
+        builder.endControlFlow();
+
+        doRehashMoveMain(hasherConfig, chunkTypes, builder, "locationToMigrate", "destinationLocation");
+
+        return MethodSpec.methodBuilder("migrateOneLocation")
+                .returns(void.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "locationToMigrate")
+                .addCode(builder.build()).build();
+    }
+
+    private static void doRehashMoveMain(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes, CodeBlock.Builder builder, final String sourceLocation, final String destinationLocation) {
+        // we need to move the keys, states, and call the move main
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("mainKeySource$L.set($L, mainKeySource$L.getUnsafe($L))", ii, destinationLocation, ii, sourceLocation);
+            if (chunkTypes[ii] == ChunkType.Object) {
+                builder.addStatement("mainKeySource$L.set($L, null)", ii, sourceLocation);
+            }
+        }
+        builder.addStatement("$L.set($L, $L.getUnsafe($L))", hasherConfig.mainStateName, destinationLocation, hasherConfig.mainStateName, sourceLocation);
+        builder.addStatement("$L.set($L, $L)", hasherConfig.mainStateName, sourceLocation, hasherConfig.emptyStateName);
+        hasherConfig.moveMain.accept(builder);
     }
 
     @NotNull
@@ -645,7 +761,11 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("int tableLocation = hashToTableLocation(hash)");
-        builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
+        if (hasherConfig.openAddressedPivot) {
+            builder.addStatement("final int lastTableLocation = nextTableLocation(tableLocation)");
+        } else {
+            builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
+        }
         builder.beginControlFlow("while (true)");
         builder.addStatement("$T tableState = $L.getUnsafe(tableLocation)", hasherConfig.stateType,
                 hasherConfig.mainStateName);
@@ -668,7 +788,7 @@ public class TypedHasherFactory {
         builder.nextControlFlow("else");
         builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
                 "lastTableLocation");
-        builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
+        builder.addStatement("tableLocation = nextTableLocation(tableLocation)");
         builder.endControlFlow();
         builder.endControlFlow();
         builder.endControlFlow();
