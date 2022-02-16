@@ -5,6 +5,8 @@
 from typing import List, Dict, Any
 
 import jpy
+
+from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.dtypes import DType
 
 from deephaven2 import DHError, dtypes
@@ -116,9 +118,10 @@ def merge_sorted(tables: List[Table], order_by: str) -> Table:
         raise DHError(e, "merge sorted operation failed.") from e
 
 
-class DynamicTableWriter:
-    """ The DynamicTableWriter creates a new in-memory table and supports writing data to it. This class implements
-    the context manager protocol and thus can be used in the with statement.
+class DynamicTableWriter(JObjectWrapper):
+    """ The DynamicTableWriter creates a new in-memory table and supports writing data to it.
+
+    This class implements the context manager protocol and thus can be used in with statements.
     """
 
     def __init__(self, col_defs: Dict[str, DType]):
@@ -138,13 +141,17 @@ class DynamicTableWriter:
         except Exception as e:
             raise DHError(e, "failed to create a DynamicTableWriter.") from e
 
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_table_writer
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         """ Closes the writer.
 
         Raises:
@@ -155,7 +162,7 @@ class DynamicTableWriter:
         except Exception as e:
             raise DHError(e, "failed to close the writer.") from e
 
-    def write_row(self, *values: Any):
+    def write_row(self, *values: Any) -> None:
         """ Writes a row to the newly created table.
 
         Args:
@@ -171,15 +178,19 @@ class DynamicTableWriter:
             raise DHError(e, "failed to write a row.") from e
 
 
-class TableReplayer:
-    """ The TableReplayer is used to replay historical data with timestamps in a new in-memory table. """
+class TableReplayer(JObjectWrapper):
+    """ The TableReplayer is used to replay historical data.
+
+     Tables to be replayed are registered with the replayer.  The resulting dynamic replay tables all update in sync,
+     using the same simulated clock.  Each registered table must contain a timestamp column.
+     """
 
     def __init__(self, start_time: dtypes.DateTime, end_time: dtypes.DateTime):
         """ Initializes the replayer.
 
         Args:
-             start_time (DateTime): historical data start time
-             end_time (DateTime): historical data end time
+             start_time (DateTime): replay start time
+             end_time (DateTime): replay end time
 
         Raises:
             DHError
@@ -193,15 +204,19 @@ class TableReplayer:
         except Exception as e:
             raise DHError(e, "failed to create a replayer.") from e
 
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_replayer
+
     def add_table(self, table: Table, col: str) -> Table:
-        """ Adds and prepares a historical data table for replaying.
+        """ Registers a table for replaying and returns the associated replay table.
 
         Args:
-            table (Table): the historical table
+            table (Table): the table to be replayed
             col (str): column in the table containing timestamps
 
         Returns:
-            a new Table
+            a replay Table
 
         Raises:
             DHError
@@ -214,8 +229,8 @@ class TableReplayer:
         except Exception as e:
             raise DHError(e, "failed to add a historical table.") from e
 
-    def start(self):
-        """ Starts replaying historical data.
+    def start(self) -> None:
+        """ Starts replaying.
 
         Raises:
              DHError
@@ -225,7 +240,7 @@ class TableReplayer:
         except Exception as e:
             raise DHError(e, "failed to start the replayer.") from e
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """ Shuts down and invalidates the replayer. After this call, the replayer can no longer be used. """
         try:
             self._j_replayer.shutdown()

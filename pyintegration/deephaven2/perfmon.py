@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module allows access to Deephaven tables of instrumentation logs. """
+""" Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs. """
 import jpy
 
 from deephaven2 import DHError
@@ -11,7 +11,7 @@ _JTableLoggers = jpy.get_type("io.deephaven.engine.table.impl.util.TableLoggers"
 
 
 def process_info_log() -> Table:
-    """ Returns a static table with process information for the current engine process.
+    """ Returns a static table with process information for the current Deephaven engine process.
 
     Returns:
         a Table
@@ -41,7 +41,7 @@ def process_memory_log() -> Table:
 
 
 def process_metrics_log() -> Table:
-    """ Returns a table with metrics collected for the current engine process.
+    """ Returns a table with metrics collected for the current Deephaven engine process.
 
     Returns:
         a Table
@@ -56,7 +56,7 @@ def process_metrics_log() -> Table:
 
 
 def query_operation_performance_log() -> Table:
-    """ Returns a table with individual subquery performance data.
+    """ Returns a table with Deephaven performance data for individual subqueries.
 
     Returns:
         a Table
@@ -71,8 +71,8 @@ def query_operation_performance_log() -> Table:
 
 
 def query_performance_log() -> Table:
-    """ Returns a table with query performance data. Individual sub-operations performance data is available from
-    calling query_operation_performance_log().
+    """ Returns a table with Deephaven query performance data. Performance data for individual sub-operations is
+    available from calling `query_operation_performance_log`.
 
     Returns:
         a Table
@@ -87,7 +87,7 @@ def query_performance_log() -> Table:
 
 
 def update_performance_log() -> Table:
-    """ Returns a table with update performance data.
+    """ Returns a table with Deephaven update performance data.
 
     Returns
         a Table

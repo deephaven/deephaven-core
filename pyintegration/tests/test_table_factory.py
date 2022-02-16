@@ -143,7 +143,7 @@ class TableFactoryTestCase(BaseTestCase):
                 table_writer.write_row(10, '10', 10, 10, 10, '10')
             self.assertIn("RuntimeError", cm.exception.root_cause)
 
-    def test_historical_tale_replayer(self):
+    def test_historical_table_replayer(self):
         dt1 = to_datetime("2000-01-01T00:00:01 NY")
         dt2 = to_datetime("2000-01-01T00:00:03 NY")
         dt3 = to_datetime("2000-01-01T00:00:06 NY")
@@ -174,6 +174,13 @@ class TableFactoryTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             replayer.start()
         self.assertIn("RuntimeError", cm.exception.root_cause)
+
+        replayer = TableReplayer(start_time, end_time)
+        replayer.start()
+        replay_table = replayer.add_table(hist_table, "DateTime")
+        self.assertTrue(replay_table.is_refreshing)
+        sleep(1)
+        replayer.shutdown()
 
 
 if __name__ == '__main__':
