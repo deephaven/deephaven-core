@@ -40,9 +40,8 @@ def unwrap_to_java_type(object):
     """
     if isinstance(object, JType):
         return object
-    # TODO(deephaven-core#1892): Create standard ABC for wrapped Java objects
-    if isinstance(object, deephaven2.table.Table):
-        return object.j_table
+    if isinstance(object, deephaven2._wrapper_abc.JObjectWrapper):
+        return object.j_object
     if isinstance(object, FigureWrapper):
         return object.figure
     # add more here when/if necessary
