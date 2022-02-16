@@ -1022,112 +1022,166 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     promoteSnapshotToActive();
                 }
             }
-        }
+        } // release the lock
 
-        BarrageMessage preSnapshot = null;
-        RowSet preSnapRowSet = null;
-        BarrageMessage snapshot = null;
-        BarrageMessage postSnapshot = null;
+        final long MAX_ROWS = 99999999;
+        long snapshotStart = 0;
 
-        // then we spend the effort to take a snapshot
+        boolean allSnapshotsCompleted = false;
+
+        RowSet snapshotRowSet;
+
         if (needsSnapshot) {
-            try (final RowSet snapshotRowSet = snapshotRows.build()) {
-                snapshot =
-                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
-            }
+            snapshotRowSet = snapshotRows.build();
+        } else {
+            snapshotRowSet = null;
         }
 
-        synchronized (this) {
-            if (!needsSnapshot && pendingDeltas.isEmpty() && pendingError == null) {
-                return;
-            }
+        /// start of loop for multi-snapshot requests
+        while (!allSnapshotsCompleted) {
 
-            // finally we propagate updates
-            final long maxStep = snapshot != null ? snapshot.step : Long.MAX_VALUE;
+            BarrageMessage preSnapshot = null;
+            RowSet preSnapRowSet = null;
+            BarrageMessage snapshot = null;
+            BarrageMessage postSnapshot = null;
 
-            int deltaSplitIdx = pendingDeltas.size();
-            for (; deltaSplitIdx > 0; --deltaSplitIdx) {
-                if (pendingDeltas.get(deltaSplitIdx - 1).step <= maxStep) {
-                    break;
+
+            // then we spend the effort to take a snapshot
+            if (needsFullSnapshot) {
+                long size = parent.size();
+
+                long snapshotEnd = snapshotStart + MAX_ROWS;
+                if (snapshotEnd >= size) {
+                    snapshotEnd = size;
+
+                    allSnapshotsCompleted = true;
                 }
+
+                // get the snapshot subset from the parent table
+                try (final RowSet tmpRowSet = parent.getRowSet().subSetByPositionRange(snapshotStart, snapshotEnd)) {
+                    snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, tmpRowSet);
+                }
+
+                // advance the snapshot
+                snapshotStart += MAX_ROWS;
+            } else if (needsSnapshot) {
+                long size = snapshotRowSet.size();
+
+                long snapshotEnd = snapshotStart + MAX_ROWS;
+                if (snapshotEnd >= size) {
+                    snapshotEnd = size;
+
+                    allSnapshotsCompleted = true;
+                }
+
+                // get the snapshot subset
+                try (final RowSet tmpRowSet = snapshotRowSet.subSetByPositionRange(snapshotStart, snapshotEnd)) {
+                    snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, tmpRowSet);
+                }
+
+                // advance the snapshot
+                snapshotStart += MAX_ROWS;
             }
 
-            // flip snapshot state so that we build the preSnapshot using previous viewports/columns
-            if (snapshot != null && deltaSplitIdx > 0) {
-                flipSnapshotStateForSubscriptions(updatedSubscriptions);
-            }
+            // propagate the deltas and snapshots under the lock
+            synchronized (this) {
+                if (!needsSnapshot && pendingDeltas.isEmpty() && pendingError == null) {
+                    return;
+                }
 
-            if (!firstSubscription && deltaSplitIdx > 0) {
-                preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
-                preSnapRowSet = propagationRowSet.copy();
-            }
+                // finally we propagate updates
+                final long maxStep = snapshot != null ? snapshot.step : Long.MAX_VALUE;
 
-            if (firstSubscription) {
-                Assert.neqNull(snapshot, "snapshot");
-
-                // propagationRowSet is only updated when we have listeners; let's "run" it if needed
-                propagationRowSet.clear();
-                propagationRowSet.insert(snapshot.rowsAdded);
-            }
-
-            // flip back for the UGP thread's processing before releasing the lock
-            if (snapshot != null && deltaSplitIdx > 0) {
-                flipSnapshotStateForSubscriptions(updatedSubscriptions);
-            }
-
-            if (deltaSplitIdx < pendingDeltas.size()) {
-                postSnapshot = aggregateUpdatesInRange(deltaSplitIdx, pendingDeltas.size());
-            }
-
-            // cleanup for next iteration
-            clearObjectDeltaColumns(objectColumnsToClear);
-            if (updatedSubscriptions != null) {
-                objectColumnsToClear.clear();
-                objectColumnsToClear.or(objectColumns);
-                objectColumnsToClear.and(activeColumns);
-            }
-
-
-            nextFreeDeltaKey = 0;
-            for (final Delta delta : pendingDeltas) {
-                delta.close();
-            }
-            pendingDeltas.clear();
-        }
-
-        if (preSnapshot != null) {
-            propagateToSubscribers(preSnapshot, preSnapRowSet);
-            preSnapRowSet.close();
-        }
-
-        if (snapshot != null) {
-            try (final StreamGenerator<MessageView> snapshotGenerator =
-                    streamGeneratorFactory.newGenerator(snapshot)) {
-                for (final Subscription subscription : updatedSubscriptions) {
-                    if (subscription.pendingDelete) {
-                        continue;
+                // identify the pre and post snapshot deltas
+                int deltaSplitIdx = pendingDeltas.size();
+                for (; deltaSplitIdx > 0; --deltaSplitIdx) {
+                    if (pendingDeltas.get(deltaSplitIdx - 1).step <= maxStep) {
+                        break;
                     }
+                }
 
-                    propagateSnapshotForSubscription(subscription, snapshotGenerator);
+                // flip snapshot state so that we build the preSnapshot using previous viewports/columns
+                if (snapshot != null && deltaSplitIdx > 0) {
+                    flipSnapshotStateForSubscriptions(updatedSubscriptions);
+                }
+
+                if (!firstSubscription && deltaSplitIdx > 0) {
+                    preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
+                    preSnapRowSet = propagationRowSet.copy();
+                }
+
+                if (firstSubscription) {
+                    Assert.neqNull(snapshot, "snapshot");
+
+                    // propagationRowSet is only updated when we have listeners; let's "run" it if needed
+                    propagationRowSet.clear();
+                    propagationRowSet.insert(snapshot.rowsAdded);
+                }
+
+                // flip back for the UGP thread's processing before releasing the lock
+                if (snapshot != null && deltaSplitIdx > 0) {
+                    flipSnapshotStateForSubscriptions(updatedSubscriptions);
+                }
+
+                if (deltaSplitIdx < pendingDeltas.size()) {
+                    postSnapshot = aggregateUpdatesInRange(deltaSplitIdx, pendingDeltas.size());
+                }
+
+                // cleanup for next iteration
+                clearObjectDeltaColumns(objectColumnsToClear);
+                if (updatedSubscriptions != null) {
+                    objectColumnsToClear.clear();
+                    objectColumnsToClear.or(objectColumns);
+                    objectColumnsToClear.and(activeColumns);
+                }
+
+                nextFreeDeltaKey = 0;
+                for (final Delta delta : pendingDeltas) {
+                    delta.close();
+                }
+                pendingDeltas.clear();
+            } // release the lock
+
+            if (preSnapshot != null) {
+                propagateToSubscribers(preSnapshot, preSnapRowSet);
+                preSnapRowSet.close();
+            }
+
+            if (snapshot != null) {
+                try (final StreamGenerator<MessageView> snapshotGenerator =
+                             streamGeneratorFactory.newGenerator(snapshot)) {
+                    for (final Subscription subscription : updatedSubscriptions) {
+                        if (subscription.pendingDelete) {
+                            continue;
+                        }
+
+                        // since snapshot is (potentially) a subset of what this subscription has requested,
+
+                        propagateSnapshotForSubscription(subscription, snapshotGenerator, allSnapshotsCompleted);
+                    }
                 }
             }
-        }
 
-        if (postSnapshot != null) {
-            propagateToSubscribers(postSnapshot, propagationRowSet);
-        }
+            if (postSnapshot != null) {
+                propagateToSubscribers(postSnapshot, propagationRowSet);
+            }
 
-        // propagate any error notifying listeners there are no more updates incoming
-        if (pendingError != null) {
-            for (final Subscription subscription : activeSubscriptions) {
-                // TODO (core#801): effective error reporting to api clients
-                GrpcUtil.safelyExecute(() -> subscription.listener.onError(pendingError));
+            // propagate any error notifying listeners there are no more updates incoming
+            if (pendingError != null) {
+                for (final Subscription subscription : activeSubscriptions) {
+                    // TODO (core#801): effective error reporting to api clients
+                    GrpcUtil.safelyExecute(() -> subscription.listener.onError(pendingError));
+                }
+            }
+
+            lastUpdateTime = scheduler.currentTime().getMillis();
+            if (DEBUG) {
+                log.info().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
             }
         }
 
-        lastUpdateTime = scheduler.currentTime().getMillis();
-        if (DEBUG) {
-            log.info().append(logPrefix).append("Completed Propagation: " + lastUpdateTime);
+        try (final RowSet ignored = snapshotRowSet) {
+            snapshotRowSet = null;
         }
     }
 
@@ -1181,7 +1235,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     private void propagateSnapshotForSubscription(final Subscription subscription,
-            final StreamGenerator<MessageView> snapshotGenerator) {
+            final StreamGenerator<MessageView> snapshotGenerator, boolean finalSnapshot) {
         boolean needsSnapshot = subscription.pendingInitialSnapshot;
 
         // This is a little confusing, but by the time we propagate, the `snapshotViewport`/`snapshotColumns` objects
@@ -1190,14 +1244,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (subscription.snapshotViewport != null) {
             needsSnapshot = true;
-            try (final RowSet ignored = subscription.snapshotViewport) {
-                subscription.snapshotViewport = null;
-            }
         }
 
         if (subscription.snapshotColumns != null) {
             needsSnapshot = true;
-            subscription.snapshotColumns = null;
         }
 
         if (needsSnapshot) {
@@ -1227,6 +1277,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         subscription.pendingInitialSnapshot = false;
+
+        // do some cleanup on the final snapshot
+        if (finalSnapshot) {
+            if (subscription.snapshotViewport != null) {
+                try (final RowSet ignored = subscription.snapshotViewport) {
+                    subscription.snapshotViewport = null;
+                }
+            }
+
+            if (subscription.snapshotColumns != null) {
+                subscription.snapshotColumns = null;
+            }
+        }
     }
 
     private BarrageMessage aggregateUpdatesInRange(final int startDelta, final int endDelta) {
