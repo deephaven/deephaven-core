@@ -85,8 +85,8 @@ def tier4CompilationExcludes = [
   'io.deephaven.engine.table.impl.IncrementalChunkedNaturalJoinStateManager':['buildTable', 'decorationProbe'],
 ]
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
-  def c2ExcludesFile = project.layout.buildDirectory.file('c2-excludes.txt')
-  it.outputs.file(c2ExcludesFile)
+  def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
+  it.outputs.file(compilerDirectivesFile)
 
   doFirst {
     def excludesAsList = []
@@ -95,14 +95,14 @@ def createCompilerDirectives = tasks.register('createCompilerDirectives') {
         excludesAsList += "${type}::${method}"
       }
     })
-    def builder = new JsonBuilder()
-    builder([{
-              match excludesAsList
-              c2 {
-                Exclude true
-              }
-            }])
-    c2ExcludesFile.get().asFile.text = builder.toPrettyString()
+    def builder = new JsonBuilder([{
+       match excludesAsList
+       c2 {
+         Exclude true
+       }
+    }])
+
+    compilerDirectivesFile.get().asFile.text = builder.toPrettyString()
   }
 }
 
@@ -149,7 +149,7 @@ tasks.withType(CreateStartScripts).configureEach {
   windowsStartScriptGenerator.template = resources.text.fromUri(getClass().classLoader.getResource('windowsStartScript.txt'))
   unixStartScriptGenerator.template = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
   // Note that we don't call c2ExcludesJvmArgs() at this time, there is no way to template those strings.
-  // Instead, we hard code the expected paths in the above templates to match the path lib/c2-excludes.txt
+  // Instead, we hard code the expected paths in the above templates to match the path lib/dh-compiler-directives.txt
 //  defaultJvmOpts += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
 
   defaultJvmOpts += devJvmArgs

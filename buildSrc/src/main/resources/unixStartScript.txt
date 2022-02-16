@@ -47,7 +47,7 @@ APP_BASE_NAME=`basename "\$0"`
 DEFAULT_JVM_OPTS=${defaultJvmOpts}
 
 # Customization for deephaven-core to reference a compiler directives file
-DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:CompilerDirectivesFile=\"\${APP_HOME}/lib/c2-excludes.txt\""
+DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:CompilerDirectivesFile=\"\${APP_HOME}/lib/dh-compiler-directives.txt\""
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD="maximum"
