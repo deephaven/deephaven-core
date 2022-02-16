@@ -95,7 +95,7 @@ services:
 
   materialized:
     image: materialize/materialized:${MATERIALIZE_VERSION}
-    command: -w2 --disable-telemetry
+    command: -w${MATERIALIZE_WORKERS} --disable-telemetry
     ports:
       - 6875:6875
 
