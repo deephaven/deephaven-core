@@ -11,10 +11,7 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.by.HashHandler;
-import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
-import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
-import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
+import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.QueryConstants;
@@ -62,10 +59,12 @@ public class TypedHasherFactory {
         final String overflowStateName;
         final String emptyStateName;
         final boolean openAddressed;
+        final boolean openAddressedPivot;
         if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "StaticAggHasher";
             packageMiddle = "staticagg";
             openAddressed = false;
+            openAddressedPivot = false;
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -73,6 +72,7 @@ public class TypedHasherFactory {
             classPrefix = "StaticAggOpenHasher";
             packageMiddle = "staticopenagg";
             openAddressed = true;
+            openAddressedPivot = false;
             mainStateName = "mainOutputPosition";
             overflowStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -80,14 +80,23 @@ public class TypedHasherFactory {
             classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
             openAddressed = false;
+            openAddressedPivot = false;
             mainStateName = "mainOutputPosition";
             overflowStateName = "overflowOutputPosition";
+            emptyStateName = "EMPTY_OUTPUT_POSITION";
+        } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
+            classPrefix = "IncrementalAggOpenHasher";
+            packageMiddle = "incopenagg";
+            openAddressed = true;
+            openAddressedPivot = true;
+            mainStateName = "mainOutputPosition";
+            overflowStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
         final HasherConfig<T> hasherConfig =
-                new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, mainStateName,
+                new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot, mainStateName,
                         overflowStateName,
                         emptyStateName, int.class);
         return hasherConfig;
@@ -98,19 +107,21 @@ public class TypedHasherFactory {
         public final String classPrefix;
         public final String packageMiddle;
         final boolean openAddressed;
+        final boolean openAddressedPivot;
         final String mainStateName;
         final String overflowStateName;
         final String emptyStateName;
         final Class<?> stateType;
 
         HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
-                String mainStateName,
-                String overflowStateName,
-                String emptyStateName, Class<?> stateType) {
+                     boolean openAddressedPivot, String mainStateName,
+                     String overflowStateName,
+                     String emptyStateName, Class<?> stateType) {
             this.baseClass = baseClass;
             this.classPrefix = classPrefix;
             this.packageMiddle = packageMiddle;
             this.openAddressed = openAddressed;
+            this.openAddressedPivot = openAddressedPivot;
             this.mainStateName = mainStateName;
             this.overflowStateName = overflowStateName;
             this.emptyStateName = emptyStateName;
