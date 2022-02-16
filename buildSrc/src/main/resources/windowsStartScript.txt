@@ -37,7 +37,7 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 set DEFAULT_JVM_OPTS=${defaultJvmOpts}
 
 @rem Customization for deephaven-core to reference a compiler directives file
-set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% -XX:+UnlockDiagnosticVMOptions "-XX:CompilerDirectivesFile=%APP_HOME%/dh-compiler-directives.txt"
+set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% -XX:+UnlockDiagnosticVMOptions "-XX:CompilerDirectivesFile=%APP_HOME%\lib\dh-compiler-directives.txt"
 
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
