@@ -313,7 +313,7 @@ public class TypedHasherFactory {
         final List<FieldSpec> keySources = new ArrayList<>();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> type =
-                    hasherConfig.openAddressed ? flatSourceType(chunkTypes[ii]) : arraySourceType(chunkTypes[ii]);
+                    hasherConfig.openAddressed && !hasherConfig.openAddressedPivot ? flatSourceType(chunkTypes[ii]) : arraySourceType(chunkTypes[ii]);
             keySources.add(
                     FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(Modifier.PRIVATE, Modifier.FINAL)
                             .build());
@@ -844,6 +844,51 @@ public class TypedHasherFactory {
                 .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
                 .addAnnotation(Override.class).build();
     }
+
+//    @NotNull
+//    private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+//        final CodeBlock.Builder builder = CodeBlock.builder();
+//        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+//            final ClassName chunkName =
+//                    ClassName.get(CharChunk.class.getPackageName(), chunkTypes[ii].name() + "Chunk");
+//            final ClassName valuesName = ClassName.get(Values.class);
+//            final ParameterizedTypeName chunkTypeName = chunkTypes[ii] == ChunkType.Object
+//                    ? ParameterizedTypeName.get(chunkName, ClassName.get(Object.class), valuesName)
+//                    : ParameterizedTypeName.get(chunkName, valuesName);
+//            builder.addStatement("final $T keyChunk$L = sourceKeyChunks[$L].as$LChunk()", chunkTypeName, ii, ii,
+//                    chunkTypes[ii].name());
+//        }
+//        builder.addStatement("final int chunkSize = keyChunk0.size()");
+//        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition)");
+//        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+//            final Class<?> element = elementType(chunkTypes[ii]);
+//            builder.addStatement("final $T k$L = keyChunk$L.get(chunkPosition)", element, ii, ii);
+//        }
+//        builder.addStatement("final int hash = hash("
+//                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
+//        builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
+//        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
+//                hasherConfig.emptyStateName);
+//        builder.addStatement("handler.doMissing(chunkPosition)");
+//        builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
+//        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
+//        builder.nextControlFlow("else");
+//        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
+//        builder.beginControlFlow("if (!findOverflow(handler, "
+//                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", "))
+//                + ", chunkPosition, overflowLocation))");
+//        builder.addStatement("handler.doMissing(chunkPosition)");
+//        builder.endControlFlow();
+//        builder.endControlFlow();
+//        builder.endControlFlow();
+//
+//        return MethodSpec.methodBuilder("probe")
+//                .addParameter(HashHandler.class, "handler")
+//                .addParameter(RowSequence.class, "rowSequence")
+//                .addParameter(Chunk[].class, "sourceKeyChunks")
+//                .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
+//                .addAnnotation(Override.class).build();
+//    }
 
     @NotNull
     private static MethodSpec createHashMethod(ChunkType[] chunkTypes) {

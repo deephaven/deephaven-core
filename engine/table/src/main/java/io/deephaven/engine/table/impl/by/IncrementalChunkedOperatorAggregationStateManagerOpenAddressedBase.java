@@ -8,8 +8,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
@@ -17,7 +17,8 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
-        extends OperatorAggregationStateManagerOpenAddressedPivotBase {
+        extends OperatorAggregationStateManagerOpenAddressedPivotBase
+        implements IncrementalOperatorAggregationStateManager {
     // our state value used when nothing is there
     protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
 
@@ -26,6 +27,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     // used as a row redirection for the output key sources
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
+
+    // how many values are in each state, addressed by output row key
+    private final LongArraySource rowCountSource = new LongArraySource();
 
     // state variables that exist as part of the update
     protected MutableInt nextOutputPosition;
@@ -71,5 +75,47 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, mainKeySources[kci]);
         }
         return keyHashTableSources;
+    }
+
+    @Override
+    public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
+                             MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
+                             WritableIntChunk<RowKeys> reincarnatedPositions) {
+        outputPositions.setSize(rowSequence.intSize());
+        reincarnatedPositions.setSize(0);
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
+                       WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+        outputPositions.setSize(rowSequence.intSize());
+        emptiedPositions.setSize(0);
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
+                                  WritableIntChunk<RowKeys> outputPositions) {
+        outputPositions.setSize(rowSequence.intSize());
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void startTrackingPrevValues() {
+    }
+
+    @Override
+    public void setRowSize(int outputPosition, long size) {
+        rowCountSource.set(outputPosition, size);
     }
 }

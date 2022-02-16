@@ -128,7 +128,12 @@ public class ChunkedOperatorAggregationHelper {
         final OperatorAggregationStateManager stateManager;
         final IncrementalOperatorAggregationStateManager incrementalStateManager;
         if (withView.isRefreshing()) {
-            if (USE_TYPED_STATE_MANAGER) {
+            if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+                stateManager = incrementalStateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, reinterpretedKeySources,
+                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),

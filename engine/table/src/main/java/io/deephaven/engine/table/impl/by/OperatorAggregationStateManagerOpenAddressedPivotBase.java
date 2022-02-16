@@ -13,7 +13,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 
@@ -118,6 +117,10 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
 
     BuildContext makeBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
+    }
+
+    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+        return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
     protected abstract void onNextChunk(int nextChunkSize);
