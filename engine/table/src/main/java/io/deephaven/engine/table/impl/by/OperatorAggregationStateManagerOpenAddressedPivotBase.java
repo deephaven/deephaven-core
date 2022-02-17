@@ -67,7 +67,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
 
     protected abstract void build(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
-    // protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
+//    protected abstract void probe(HashHandler handler, RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
     public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
@@ -128,7 +128,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
     protected void buildTable(
             final BuildContext bc,
             final RowSequence buildRows,
-            final ColumnSource<?>[] buildSources) {
+            final ColumnSource<?>[] buildSources,
+            final BuildHandler buildHandler) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -141,11 +142,48 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
-                build(chunkOk, sourceKeyChunks);
+                buildHandler.doBuild(chunkOk, sourceKeyChunks);
 
                 bc.resetSharedContexts();
             }
         }
+    }
+
+    protected void probeTable(
+            final ProbeContext pc,
+            final RowSequence probeRows,
+            final boolean usePrev,
+            final ColumnSource<?>[] probeSources,
+            final ProbeHandler handler
+            ) {
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
+            // noinspection unchecked
+            final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
+
+            while (rsIt.hasMore()) {
+                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
+
+                if (usePrev) {
+                    getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                } else {
+                    getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
+                }
+
+                handler.doProbe(chunkOk, sourceKeyChunks);
+
+                pc.resetSharedContexts();
+            }
+        }
+    }
+
+    @FunctionalInterface
+    public interface ProbeHandler {
+        void doProbe(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
+    }
+
+    @FunctionalInterface
+    public interface BuildHandler {
+        void doBuild(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
     }
 
     public void doRehash(int nextChunkSize) {

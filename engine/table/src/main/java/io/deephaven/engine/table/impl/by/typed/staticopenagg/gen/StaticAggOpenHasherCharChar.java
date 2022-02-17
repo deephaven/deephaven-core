@@ -38,7 +38,6 @@ final class StaticAggOpenHasherCharChar extends StaticChunkedOperatorAggregation
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    @Override
     protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final CharChunk<Values> keyChunk1 = sourceKeyChunks[1].asCharChunk();
@@ -48,20 +47,20 @@ final class StaticAggOpenHasherCharChar extends StaticChunkedOperatorAggregation
             final char k1 = keyChunk1.get(chunkPosition);
             final int hash = hash(k0, k1);
             int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int lastTableLocation = nextTableLocation(tableLocation);
             while (true) {
-                int tableState = mainOutputPosition.getUnsafe(tableLocation);
-                if (tableState == EMPTY_OUTPUT_POSITION) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = nextOutputPosition.getAndIncrement();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
-                    outputPositions.set(chunkPosition, tableState);
+                    outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
                     Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");

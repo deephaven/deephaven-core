@@ -34,7 +34,6 @@ final class StaticAggOpenHasherShort extends StaticChunkedOperatorAggregationSta
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    @Override
     protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final ShortChunk<Values> keyChunk0 = sourceKeyChunks[0].asShortChunk();
         final int chunkSize = keyChunk0.size();
@@ -42,19 +41,19 @@ final class StaticAggOpenHasherShort extends StaticChunkedOperatorAggregationSta
             final short k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int lastTableLocation = nextTableLocation(tableLocation);
             while (true) {
-                int tableState = mainOutputPosition.getUnsafe(tableLocation);
-                if (tableState == EMPTY_OUTPUT_POSITION) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = nextOutputPosition.getAndIncrement();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    outputPositions.set(chunkPosition, tableState);
+                    outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
                     Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");

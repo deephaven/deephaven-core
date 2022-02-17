@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -29,7 +30,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // how many values are in each state, addressed by output row key
-    private final LongArraySource rowCountSource = new LongArraySource();
+    protected final LongArraySource rowCountSource = new LongArraySource();
 
     // state variables that exist as part of the update
     protected MutableInt nextOutputPosition;
@@ -57,7 +58,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources);
+        buildTable((BuildContext) bc, rowSequence, sources, this::build);
     }
 
     @Override
@@ -80,25 +81,31 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
                              MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
-                             WritableIntChunk<RowKeys> reincarnatedPositions) {
+                             final WritableIntChunk<RowKeys> reincarnatedPositions) {
         outputPositions.setSize(rowSequence.intSize());
         reincarnatedPositions.setSize(0);
         if (rowSequence.isEmpty()) {
             return;
         }
-        throw new IllegalStateException();
+        this.outputPositions = outputPositions;
+        buildTable((BuildContext) bc, rowSequence, sources, ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
     }
+
+    protected abstract void buildForUpdate(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> reincarnatedPositions);
 
     @Override
     public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
-                       WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions) {
+                       WritableIntChunk<RowKeys> outputPositions, final WritableIntChunk<RowKeys> emptiedPositions) {
         outputPositions.setSize(rowSequence.intSize());
         emptiedPositions.setSize(0);
         if (rowSequence.isEmpty()) {
             return;
         }
-        throw new IllegalStateException();
+        this.outputPositions = outputPositions;
+        probeTable((ProbeContext) pc, rowSequence, true, sources, (chunkOk, sourceKeyChunks) -> IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this.doRemoveProbe(chunkOk, sourceKeyChunks, emptiedPositions));
     }
+
+    protected abstract void doRemoveProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> emptiedPositions);
 
     @Override
     public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
@@ -107,8 +114,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (rowSequence.isEmpty()) {
             return;
         }
+        this.outputPositions = outputPositions;
+        probeTable((ProbeContext) pc, rowSequence, false, sources, IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this::doModifyProbe);
         throw new IllegalStateException();
     }
+
+    protected abstract void doModifyProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
 
     @Override
     public void startTrackingPrevValues() {
