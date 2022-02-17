@@ -206,6 +206,35 @@ final class IncrementalAggOpenHasherInt extends IncrementalChunkedOperatorAggreg
         for (int locationToMigrate = 0; locationToMigrate < frontLocationsToMigrate || (locationToMigrate < firstLocationToMigrate && mainOutputPosition.getUnsafe(locationToMigrate) != EMPTY_OUTPUT_POSITION); ++locationToMigrate) {
             migrateOneLocation(locationToMigrate);
         }
+
+        int usedStart = 0;
+        int usedMiddle = 0;
+        int usedEnd = 0;
+
+        int startSize = tableHashPivot - (tableSize >> 1);
+        int middleSize = tableSize - tableHashPivot;
+        int endSize = tableHashPivot - (tableSize >> 1);
+
+        for (int ii = 0; ii < startSize; ++ii) {
+            if (mainOutputPosition.getUnsafe(ii) != EMPTY_OUTPUT_POSITION) {
+                usedStart++;
+            }
+        }
+        for (int ii = startSize; ii < tableSize >> 1; ++ii) {
+            if (mainOutputPosition.getUnsafe(ii) != EMPTY_OUTPUT_POSITION) {
+                usedMiddle++;
+            }
+        }
+        for (int ii = tableSize >> 1; ii < tableHashPivot; ++ii) {
+            if (mainOutputPosition.getUnsafe(ii) != EMPTY_OUTPUT_POSITION) {
+                usedEnd++;
+            }
+        }
+
+        System.out.println("numEntries=" + numEntries + ", start=" + usedStart + ", middle=" + usedMiddle + ", end=" + usedEnd);
+        System.out.println("Load numEntries=" + ((double)numEntries/tableHashPivot) + ", start=" + ((double)usedStart / (startSize)) + ", middle=" + ((double)usedMiddle / middleSize) + ", end=" + ((double)usedEnd / endSize));
+
+        Assert.eq(usedStart + usedEnd + usedMiddle, "usedStart + usedEnd + usedMiddle", numEntries, "numEntries");
     }
 
     @Override

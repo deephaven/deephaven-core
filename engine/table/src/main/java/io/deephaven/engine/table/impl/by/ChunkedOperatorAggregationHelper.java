@@ -57,7 +57,7 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
     static boolean USE_TYPED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
-                    false);
+                    true);
     static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault(
                     "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
