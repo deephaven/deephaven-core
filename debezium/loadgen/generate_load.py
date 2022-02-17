@@ -131,18 +131,18 @@ def get_item_prices(cursor):
 
 async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_desc):
     now = time.time()
-    last_log = now
-    last_rate_check = now
-    sent_since_last_log = 0
-    rate_s = params[param_key]
-    rate_sent = 0
-    rate_done = 0
-    rate_start = now
-    old_rate_s = rate_s
+    last_log = now              # Timestamp for the last time we logged summary information about events sent.
+    sent_since_last_log = 0     # Number of events sent not included in the last summary log.
+    last_rate_check = now       # Timestamp for the last time we checked actual events sent versus rate.
+    rate_s = params[param_key]  # Target actions per second.
+    rate_sent = 0               # number of actions enqueued (noth already done and not yet done) at the current rate.
+    rate_done = 0               # Number of actions finished (already done) at the current rate.
+    rate_start = now            # Timestamp for when we started sending at rate_s.
+    old_rate_s = rate_s         # Used to detect if rate_s has changed.
     period_s = 1.0/rate_s
     log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
-    futures = {}
-    def reap_futures():
+    futures = {}                # Dictionary where we accumulate unfinished futures scheduled on the executor.
+    def reap_futures():         # Remove from futures the ones already finished, returning how many where finished.
         done = 0
         for k in list(futures.keys()):
             future = futures[k]
@@ -150,9 +150,9 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
                 done += future.result()
                 del futures[k]
         return done
-    loop_count = 0
+    loop_count = 0              # Absoute loop counter; used as unique key in the futures dictionary.
     event_loop = asyncio.get_event_loop()
-    action_count = 1
+    action_count = 1            # How many actions to batch on the next executor run; starts at 1, increases if batching is activated.
     try:
         while True:
             rate_done += reap_futures()
