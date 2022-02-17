@@ -203,9 +203,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
 
 
             final long targetBuckets = Math.min(MAX_TABLE_SIZE, (long)((numEntries + nextChunkSize) / targetLoadFactor));
-            System.out.println("Target: " + targetBuckets + ", entries=" + numEntries + ", next=" + nextChunkSize + ", loadFactor=" + targetLoadFactor);
+//            System.out.println("Target: " + targetBuckets + ", entries=" + numEntries + ", next=" + nextChunkSize + ", loadFactor=" + targetLoadFactor);
             final int bucketsToAdd = Math.max(1, (int)Math.min(targetBuckets, tableSize) - tableHashPivot);
-            System.out.println("To Add: " + bucketsToAdd + ", tableHashPivot=" + tableHashPivot + ", tableSize=" + tableSize + ", targetBuckets=" + targetBuckets);
+//            System.out.println("To Add: " + bucketsToAdd + ", tableHashPivot=" + tableHashPivot + ", tableSize=" + tableSize + ", targetBuckets=" + targetBuckets);
 
             passes++;
             buckets += bucketsToAdd;
