@@ -434,7 +434,7 @@ public class BarrageUtil {
             final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
         List<Field> children = Collections.emptyList();
 
-        final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
+        final FieldType fieldType = arrowFieldTypeFor(type, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
                 children = Collections.singletonList(arrowFieldFor(
@@ -447,12 +447,14 @@ public class BarrageUtil {
         return new Field(name, fieldType, children);
     }
 
-    private static FieldType arrowFieldTypeFor(final Class<?> type, final Class<?> componentType,
-            final Map<String, String> metadata) {
-        return new FieldType(true, arrowTypeFor(type, componentType), null, metadata);
+    private static FieldType arrowFieldTypeFor(final Class<?> type, final Map<String, String> metadata) {
+        return new FieldType(true, arrowTypeFor(type), null, metadata);
     }
 
-    private static ArrowType arrowTypeFor(final Class<?> type, final Class<?> componentType) {
+    private static ArrowType arrowTypeFor(Class<?> type) {
+        if (TypeUtils.isBoxedType(type)) {
+            type = TypeUtils.getUnboxedType(type);
+        }
         final ChunkType chunkType = ChunkType.fromElementType(type);
         switch (chunkType) {
             case Boolean:
