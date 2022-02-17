@@ -50,8 +50,8 @@ final class StaticAggOpenHasherFloatObject extends StaticChunkedOperatorAggregat
             final float k0 = keyChunk0.get(chunkPosition);
             final Object k1 = keyChunk1.get(chunkPosition);
             final int hash = hash(k0, k1);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = nextTableLocation(tableLocation);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
             while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
                 if (outputPosition == EMPTY_OUTPUT_POSITION) {
@@ -67,8 +67,8 @@ final class StaticAggOpenHasherFloatObject extends StaticChunkedOperatorAggregat
                     outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
                     tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
                 }
             }
         }

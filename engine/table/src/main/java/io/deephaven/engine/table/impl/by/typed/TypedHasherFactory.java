@@ -144,7 +144,7 @@ public class TypedHasherFactory {
             probes.add(new ProbeSpec("doRemoveProbe", "outputPosition", TypedHasherFactory::removeProbeFound, TypedHasherFactory::probeMissing, emptiedPositions));
             probes.add(new ProbeSpec("doModifyProbe", "outputPosition", TypedHasherFactory::probeFound, TypedHasherFactory::probeMissing));
 
-            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFoundIncremental, TypedHasherFactory::buildInsertIncremental));
+            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFoundIncrementalInitial, TypedHasherFactory::buildInsertIncremental));
 
             final ParameterSpec reincarnatedPositions = ParameterSpec.builder(emptiedChunkType, "reincarnatedPositions").build();;
             builds.add(new BuildSpec("buildForUpdate", "outputPosition", TypedHasherFactory::buildFoundIncrementalUpdate, TypedHasherFactory::buildInsertIncremental, reincarnatedPositions));
@@ -172,8 +172,12 @@ public class TypedHasherFactory {
     private static void buildFoundIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         buildFound(hasherConfig, builder);
         builder.addStatement("final long oldRowCount = rowCountSource.getUnsafe(outputPosition)");
-        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
         builder.addStatement("rowCountSource.set(outputPosition, oldRowCount + 1)");
+    }
+
+    private static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+        buildFoundIncremental(hasherConfig, builder);
+        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
     }
 
     private static void buildFoundIncrementalUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -867,8 +871,8 @@ public class TypedHasherFactory {
         }
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement("int tableLocation = hashToTableLocation(hash)");
-        builder.addStatement("final int lastTableLocation = nextTableLocation(tableLocation)");
+        builder.addStatement("final int firstTableLocation = hashToTableLocation(hash)");
+        builder.addStatement("int tableLocation = firstTableLocation");
         builder.beginControlFlow("while (true)");
         builder.addStatement("$T $L = $L.getUnsafe(tableLocation)", hasherConfig.stateType, buildSpec.stateValueName,
                 hasherConfig.mainStateName);
@@ -883,9 +887,9 @@ public class TypedHasherFactory {
         buildSpec.found.accept(hasherConfig, builder);
         builder.addStatement("break");
         builder.nextControlFlow("else");
-        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
-                "lastTableLocation");
         builder.addStatement("tableLocation = nextTableLocation(tableLocation)");
+        builder.addStatement("$T.neq(tableLocation, $S, firstTableLocation, $S)", Assert.class, "tableLocation",
+                "firstTableLocation");
         builder.endControlFlow();
         builder.endControlFlow();
         builder.endControlFlow();

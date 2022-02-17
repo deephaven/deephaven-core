@@ -59,11 +59,14 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         buildTable((BuildContext) bc, rowSequence, sources, this::build);
+        this.outputPositions = null;
+        this.nextOutputPosition = null;
     }
 
     @Override
     public void onNextChunk(int size) {
         outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size);
+        rowCountSource.ensureCapacity(nextOutputPosition.intValue() + size);
     }
 
     @Override
@@ -87,8 +90,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (rowSequence.isEmpty()) {
             return;
         }
+        this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         buildTable((BuildContext) bc, rowSequence, sources, ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
+        this.outputPositions = null;
+        this.nextOutputPosition = null;
     }
 
     protected abstract void buildForUpdate(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> reincarnatedPositions);
@@ -103,6 +109,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.outputPositions = outputPositions;
         probeTable((ProbeContext) pc, rowSequence, true, sources, (chunkOk, sourceKeyChunks) -> IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this.doRemoveProbe(chunkOk, sourceKeyChunks, emptiedPositions));
+        this.outputPositions = null;
     }
 
     protected abstract void doRemoveProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> emptiedPositions);
@@ -116,7 +123,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.outputPositions = outputPositions;
         probeTable((ProbeContext) pc, rowSequence, false, sources, IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this::doModifyProbe);
-        throw new IllegalStateException();
+        this.outputPositions = null;
     }
 
     protected abstract void doModifyProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks);

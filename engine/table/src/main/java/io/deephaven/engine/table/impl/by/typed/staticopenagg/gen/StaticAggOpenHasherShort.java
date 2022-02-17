@@ -40,8 +40,8 @@ final class StaticAggOpenHasherShort extends StaticChunkedOperatorAggregationSta
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
             final short k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = nextTableLocation(tableLocation);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
             while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
                 if (outputPosition == EMPTY_OUTPUT_POSITION) {
@@ -56,8 +56,8 @@ final class StaticAggOpenHasherShort extends StaticChunkedOperatorAggregationSta
                     outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
                     tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
                 }
             }
         }
