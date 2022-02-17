@@ -5,6 +5,8 @@ In our previous notebook, we showed how to do time series and relational joins o
 Let's start again by simulating some real-time data. This time we'll use a shorter time interval.
 
 ```python
+from deephaven.DateTimeUtils import currentTime, expressionToNanos, minus
+
 time_interval = expressionToNanos("T1S")
 offset = expressionToNanos("T60S")
 now = currentTime()
@@ -49,6 +51,12 @@ character_count_agg = as_list([
     agg.AggCount("CharacterCount")
 ])
 character_counts = daily_data.aggBy(character_count_agg, "Character")
+
+combo_count_avg_agg = as_list([
+    agg.AggCount("ComboCount"),
+    agg.AggAvg("AvgNumber = Number")
+])
+counts = daily_data.aggBy(combo_count_avg_agg, "Boolean", "Character")
 ```
 
 Just like the grouped data, these aggregations update in real-time. You don't need to recompute any of the averages or counts, Deephaven natively supports these real-time updates.

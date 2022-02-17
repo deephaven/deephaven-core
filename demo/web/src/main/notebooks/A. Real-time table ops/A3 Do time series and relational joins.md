@@ -5,6 +5,8 @@ In our [previous notebook](A2%20Filter%20and%20decorate%20.md), we showed how to
 Let's start again by simulating measurements of our values every minute, but this time using two tables with slightly different timestamps. This is great for a simulation because there's no guarantee that a real example will collect data with exact timestamp matches.
 
 ```python
+from deephaven.DateTimeUtils import currentTime, expressionToNanos, minus
+
 time_interval = expressionToNanos("T1M")
 offset_0 = expressionToNanos("10DT2S")
 offset_1 = expressionToNanos("10D")
