@@ -56,7 +56,7 @@ combo_count_avg_agg = as_list([
     agg.AggCount("ComboCount"),
     agg.AggAvg("AvgNumber = Number")
 ])
-counts = daily_data.aggBy(combo_count_avg_agg, "Boolean", "Character")
+combo_counts_avg = daily_data.aggBy(combo_count_avg_agg, "Boolean", "Character")
 ```
 
 Just like the grouped data, these aggregations update in real-time. You don't need to recompute any of the averages or counts, Deephaven natively supports these real-time updates.
