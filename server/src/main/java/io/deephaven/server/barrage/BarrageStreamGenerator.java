@@ -100,7 +100,8 @@ public class BarrageStreamGenerator implements
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
-            data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(), col.type, col.data);
+            data = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                    col.data.getChunkType(), col.type, col.componentType, col.data);
         }
     }
 
@@ -141,8 +142,8 @@ public class BarrageStreamGenerator implements
             addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 final BarrageMessage.AddColumnData acd = message.addColumnData[i];
-                addColumnData[i] =
-                        ChunkInputStreamGenerator.makeInputStreamGenerator(acd.data.getChunkType(), acd.type, acd.data);
+                addColumnData[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                        acd.data.getChunkType(), acd.type, acd.componentType, acd.data);
             }
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {

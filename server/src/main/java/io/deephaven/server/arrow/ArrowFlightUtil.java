@@ -172,7 +172,8 @@ public class ArrowFlightUtil {
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
                         acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
-                                columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
+                                columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+                                bufferInfoIter, mi.inputStream);
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
                     }

@@ -219,14 +219,16 @@ public class BarrageStreamReader implements StreamReader {
                     if (isAddBatch) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                    columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, ois);
+                                    columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+                                    bufferInfoIter, ois);
                         }
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
                             final int numModded = mcd.rowsModified.intSize();
                             mcd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                    columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, ois);
+                                    columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+                                    bufferInfoIter, ois);
                             if (mcd.data.size() != numModded) {
                                 throw new IllegalStateException(
                                         "Mod column data does not have the expected number of rows.");

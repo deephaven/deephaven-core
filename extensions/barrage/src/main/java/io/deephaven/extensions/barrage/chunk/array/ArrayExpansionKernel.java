@@ -18,7 +18,7 @@ public interface ArrayExpansionKernel {
     /**
      * @return a kernel that expands a `Chunk<T[]>` to pair of `LongChunk, Chunk<T>`
      */
-    static ArrayExpansionKernel makeExpansionKernel(final ChunkType chunkType) {
+    static ArrayExpansionKernel makeExpansionKernel(final ChunkType chunkType, final Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return CharArrayExpansionKernel.INSTANCE;
@@ -35,7 +35,7 @@ public interface ArrayExpansionKernel {
             case Double:
                 return DoubleArrayExpansionKernel.INSTANCE;
             default:
-                return ObjectArrayExpansionKernel.INSTANCE;
+                return new ObjectArrayExpansionKernel(componentType);
         }
     }
 

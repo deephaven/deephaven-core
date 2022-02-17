@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.time.DateTime;
@@ -25,6 +26,8 @@ import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
@@ -372,7 +375,8 @@ public class BarrageUtil {
     }
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
-        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)) {
+        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
+                || Vector.class.isAssignableFrom(typ)) {
             return true;
         }
         if (typ.isArray()) {
@@ -383,8 +387,6 @@ public class BarrageUtil {
 
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
             final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
-        List<Field> children = Collections.emptyList();
-
         // is hidden?
         final Class<?> type = column.getDataType();
         final Class<?> componentType = column.getComponentType();
@@ -392,8 +394,17 @@ public class BarrageUtil {
 
         if (isTypeNativelySupported(type)) {
             putMetadata(metadata, "type", type.getCanonicalName());
+
+            if (componentType != null) {
+                if (isTypeNativelySupported(componentType)) {
+                    putMetadata(metadata, "componentType", componentType.getCanonicalName());
+                } else {
+                    // otherwise, it will be converted to a string
+                    putMetadata(metadata, "componentType", String.class.getCanonicalName());
+                }
+            }
         } else {
-            // otherwise will be converted to a string
+            // otherwise, it will be converted to a string
             putMetadata(metadata, "type", String.class.getCanonicalName());
         }
 
@@ -410,6 +421,10 @@ public class BarrageUtil {
         }
         if (inputTable != null) {
             putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
+        }
+
+        if (Vector.class.isAssignableFrom(type)) {
+            return arrowFieldForVectorType(name, type, componentType, metadata);
         }
 
         return arrowFieldFor(name, type, componentType, metadata);
@@ -478,5 +493,18 @@ public class BarrageUtil {
                 return Types.MinorType.VARCHAR.getType(); // aka Utf8
         }
         throw new IllegalStateException("No ArrowType for type: " + type + " w/chunkType: " + chunkType);
+    }
+
+    private static Field arrowFieldForVectorType(
+            final String name, final Class<?> type, final Class<?> knownComponentType,
+            final Map<String, String> metadata) {
+
+        // Vectors are always lists.
+        final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
+        final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        final List<Field> children = Collections.singletonList(arrowFieldFor(
+                "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+
+        return new Field(name, fieldType, children);
     }
 }

@@ -10,11 +10,15 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
@@ -31,6 +35,19 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ShortChunk<Values>> {
     private static final String DEBUG_NAME = "ShortChunkInputStreamGenerator";
+
+    public static ShortChunkInputStreamGenerator convertBoxed(final ObjectChunk<Short, Values> inChunk) {
+        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        WritableShortChunk<Values> outChunk = WritableShortChunk.makeWritableChunk(inChunk.size());
+        for (int i = 0; i < inChunk.size(); ++i) {
+            final Short value = inChunk.get(i);
+            outChunk.set(i, value == null ? QueryConstants.NULL_SHORT : value);
+        }
+        if (inChunk instanceof PoolableChunk) {
+            ((PoolableChunk) inChunk).close();
+        }
+        return new ShortChunkInputStreamGenerator(outChunk, Short.BYTES);
+    }
 
     ShortChunkInputStreamGenerator(final ShortChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
@@ -118,22 +135,23 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                 bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
             }
 
-                // write the included values
-                subset.forAllRowKeys(row -> {
-                    try {
-                        final short val = chunk.get((int) row);
-                        dos.writeShort(val);
-                    } catch (final IOException e) {
-                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                    }
-                });
-
-                bytesWritten += elementSize * subset.size();
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            // write the included values
+            subset.forAllRowKeys(row -> {
+                try {
+                    final short val = chunk.get((int) row);
+                    dos.writeShort(val);
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
                 }
+            });
+
+            bytesWritten += elementSize * subset.size();
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            }
+
             return LongSizedDataStructure.intSize("ShortChunkInputStreamGenerator", bytesWritten);
         }
     }
@@ -142,6 +160,12 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     public interface ShortConversion {
         short apply(short in);
         ShortConversion IDENTITY = (short a) -> a;
+    }
+
+    @FunctionalInterface
+    public interface ShortToTypeConversion<T> {
+        T apply(short in);
+        ShortToTypeConversion<Short> BOXED = (short a) -> a == NULL_SHORT ? null : (Short) a;
     }
 
     static Chunk<Values> extractChunkFromInputStream(
@@ -222,6 +246,81 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                     final short value;
                     if ((nextValid & 0x1) == 0x0) {
                         value = NULL_SHORT;
+                        is.skipBytes(elementSize);
+                    } else {
+                        value = conversion.apply(is.readShort());
+                    }
+                    nextValid >>= 1;
+                    chunk.set(ii, value);
+                }
+            }
+
+            final long overhangPayload = payloadBuffer - payloadRead;
+            if (overhangPayload > 0) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, overhangPayload));
+            }
+        }
+
+        chunk.setSize(nodeInfo.numElements);
+        return chunk;
+    }
+
+    static <T> ObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
+            final int elementSize,
+            final StreamReaderOptions options,
+            final ShortToTypeConversion<T> conversion,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final TLongIterator bufferInfoIter,
+            final DataInput is) throws IOException {
+
+        final FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final long validityBuffer = bufferInfoIter.next();
+        final long payloadBuffer = bufferInfoIter.next();
+
+        final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+
+        if (nodeInfo.numElements == 0) {
+            return chunk;
+        }
+
+        final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+            if (options.useDeephavenNulls() && validityBuffer != 0) {
+                throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
+            }
+            int jj = 0;
+            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
+                isValid.set(jj, is.readLong());
+            }
+            final long valBufRead = jj * 8L;
+            if (valBufRead < validityBuffer) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
+            }
+            // we support short validity buffers
+            for (; jj < numValidityLongs; ++jj) {
+                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
+            }
+            // consumed entire validity buffer by here
+
+            final long payloadRead = (long) nodeInfo.numElements * elementSize;
+            if (payloadBuffer < payloadRead) {
+                throw new IllegalStateException("payload buffer is too short for expected number of elements");
+            }
+
+            if (options.useDeephavenNulls()) {
+                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    final short in = is.readShort();
+                    chunk.set(ii, in == NULL_SHORT ? null : conversion.apply(in));
+                }
+            } else {
+                long nextValid = 0;
+                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    if ((ii % 64) == 0) {
+                        nextValid = isValid.get(ii / 64);
+                    }
+                    final T value;
+                    if ((nextValid & 0x1) == 0x0) {
+                        value = null;
                         is.skipBytes(elementSize);
                     } else {
                         value = conversion.apply(is.readShort());
