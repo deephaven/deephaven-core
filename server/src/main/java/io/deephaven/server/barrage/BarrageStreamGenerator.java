@@ -314,7 +314,6 @@ public class BarrageStreamGenerator implements
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
-        public final boolean hasModBatch;
 
         public SnapshotView(final BarrageStreamGenerator generator,
                 final BarrageSnapshotOptions options,
@@ -329,7 +328,6 @@ public class BarrageStreamGenerator implements
 
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
-            this.hasModBatch = false;
             this.hasAddBatch = generator.rowsIncluded.original.isNonempty();
         }
 
