@@ -506,7 +506,8 @@ public class BarrageStreamGenerator implements
         if (view.isViewport()) {
             // only include added rows that are within the viewport
             myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport().intersect(rowsIncluded.original));
-        } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+//        } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+        } else if (!rowsIncluded.original.subsetOf(rowsAdded.original)) {
             // there are scoped rows included in the chunks that need to be removed
             myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
         } else {

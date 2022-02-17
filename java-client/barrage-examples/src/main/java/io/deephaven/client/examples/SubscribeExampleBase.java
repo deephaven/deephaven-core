@@ -45,7 +45,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             final BarrageTable table = subscription.entireTable();
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-            table.listenForUpdates(new InstrumentedTableUpdateListener("example-listener") {
+            final InstrumentedTableUpdateListener listener = new InstrumentedTableUpdateListener("example-listener") {
                 @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     System.out.println("exiting due to onFailureInternal:");
@@ -57,8 +57,14 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 public void onUpdate(final TableUpdate upstream) {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
+
+                    // print the first and last rows of the table
+                    System.out.println("    first: " + table.getRecord(0)[1]);
+                    System.out.println("     last: " + table.getRecord(table.size() - 1)[1]);
                 }
-            });
+            };
+
+            table.listenForUpdates(listener);
 
             countDownLatch.await();
         }

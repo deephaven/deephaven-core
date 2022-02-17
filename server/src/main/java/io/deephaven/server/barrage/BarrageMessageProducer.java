@@ -9,7 +9,6 @@ import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -454,6 +453,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
         RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
+        RowSet fullSnapshotViewport = null;
+        BitSet fullSnapshotColumns  = null;
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -560,6 +561,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
+            // TODO: handle `newViewport` == null (when transitioning from viewport to full subscription)
             sub.pendingViewport = newViewport.copy();
             if (sub.pendingColumns == null) {
                 sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
@@ -575,6 +577,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
+            // TODO: handle `newViewport` == null (when transitioning from viewport to full subscription)
             sub.pendingViewport = newViewport.copy();
             sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
             log.info().append(logPrefix).append(sub.logPrefix)
@@ -973,15 +976,22 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     }
 
                     if (subscription.pendingViewport != null) {
-                        subscription.snapshotViewport = subscription.pendingViewport;
+                        subscription.fullSnapshotViewport = subscription.pendingViewport;
+                        subscription.snapshotViewport = RowSetFactory.empty();
                         subscription.pendingViewport = null;
+
+                        // if the columns haven't changed, we can minimize the rows needed to satisfy this viewport
                         if (!needsFullSnapshot) {
-                            snapshotRows.addRowSet(subscription.snapshotViewport);
+                            try (final RowSet missingRows = subscription.viewport == null || subscription.pendingColumns != null
+                                    ? subscription.fullSnapshotViewport.copy()
+                                    : subscription.fullSnapshotViewport.minus(subscription.viewport)) {
+                                    snapshotRows.addRowSet(missingRows);
+                            }
                         }
                     }
 
                     if (subscription.pendingColumns != null) {
-                        subscription.snapshotColumns = subscription.pendingColumns;
+                        subscription.fullSnapshotColumns = subscription.snapshotColumns = subscription.pendingColumns;
                         subscription.pendingColumns = null;
                         snapshotColumns.or(subscription.snapshotColumns);
                         if (!subscription.isViewport()) {
@@ -1010,7 +1020,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     if (sub.isViewport()) {
                         haveViewport = true;
                         postSnapshotViewportBuilder
-                                .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
+                                .addRowSet(sub.fullSnapshotViewport != null ? sub.fullSnapshotViewport : sub.viewport);
                     }
                     postSnapshotColumns.or(sub.snapshotColumns != null ? sub.snapshotColumns : sub.subscribedColumns);
                 }
@@ -1024,10 +1034,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         } // release the lock
 
-        final long MAX_ROWS = 99999999;
+        final long MAX_ROWS = 10000;
         long snapshotStart = 0;
 
-        boolean allSnapshotsCompleted = false;
+        boolean finalSnapshot = false;
 
         RowSet snapshotRowSet;
 
@@ -1038,45 +1048,107 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         /// start of loop for multi-snapshot requests
-        while (!allSnapshotsCompleted) {
+        while (!finalSnapshot) {
 
             BarrageMessage preSnapshot = null;
             RowSet preSnapRowSet = null;
             BarrageMessage snapshot = null;
             BarrageMessage postSnapshot = null;
 
+            long snapshotEnd = snapshotStart + MAX_ROWS;
 
-            // then we spend the effort to take a snapshot
             if (needsFullSnapshot) {
-                long size = parent.size();
-
-                long snapshotEnd = snapshotStart + MAX_ROWS;
-                if (snapshotEnd >= size) {
-                    snapshotEnd = size;
-
-                    allSnapshotsCompleted = true;
+                // is this going to be the final snapshot?
+                if (snapshotEnd > parent.size()) {
+                    finalSnapshot = true;
                 }
 
-                // get the snapshot subset from the parent table
-                try (final RowSet tmpRowSet = parent.getRowSet().subSetByPositionRange(snapshotStart, snapshotEnd)) {
+                // take the snapshot now
+                try (final RowSet tmpRowSet = finalSnapshot
+                        ? RowSetFactory.fromRange(snapshotStart, Long.MAX_VALUE)
+                        : RowSetFactory.fromRange(snapshotStart, snapshotEnd)) {
+
+                    // when a snapshot is completed, each subscription `snapshotViewport` gets promoted to `viewport`.
+                    // Let's leverage this and set `subscription.snapshotViewport` to the growing viewport
+
+                    for (final Subscription subscription : updatedSubscriptions) {
+                        try (final RowSet available = subscription.fullSnapshotViewport == null
+                                ? tmpRowSet.copy()
+                                : tmpRowSet.intersect(subscription.fullSnapshotViewport)) {
+
+                            // expand the subscription snapshotViewport
+                            try (final RowSet ignored = subscription.snapshotViewport) {
+                                if (finalSnapshot) {
+                                    // use the full snapshot for the final assignment
+                                    subscription.snapshotViewport = subscription.fullSnapshotViewport == null
+                                        ? null
+                                        : subscription.fullSnapshotViewport.copy();
+                                } else {
+                                    // use a growing snapshot
+                                    subscription.snapshotViewport = subscription.viewport == null
+                                            ? available.copy()
+                                            : subscription.viewport.union(available);
+                                }
+                            }
+
+                            // reset the subscription snapshotColumns to the requested columns
+                            subscription.snapshotColumns = subscription.fullSnapshotColumns;
+                        }
+                    }
+
                     snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, tmpRowSet);
+
+                    log.info().append(System.identityHashCode(this))
+                            .append(": snapshot rowset=").append(snapshot.rowsIncluded).append("/").append(tmpRowSet)
+                            .endl();
                 }
 
                 // advance the snapshot
                 snapshotStart += MAX_ROWS;
+
             } else if (needsSnapshot) {
-                long size = snapshotRowSet.size();
-
-                long snapshotEnd = snapshotStart + MAX_ROWS;
-                if (snapshotEnd >= size) {
-                    snapshotEnd = size;
-
-                    allSnapshotsCompleted = true;
+                // is this going to be the final snapshot?
+                if (snapshotEnd > snapshotRowSet.size()) {
+                    snapshotEnd = snapshotRowSet.size();
+                    finalSnapshot = true;
                 }
 
-                // get the snapshot subset
+                // take the snapshot now
                 try (final RowSet tmpRowSet = snapshotRowSet.subSetByPositionRange(snapshotStart, snapshotEnd)) {
+
+                    // when a snapshot is completed, each subscription `snapshotViewport` gets promoted to `viewport`.
+                    // Let's leverage this and set `subscription.snapshotViewport` to the growing viewport
+
+                    for (final Subscription subscription : updatedSubscriptions) {
+                        try (final RowSet available = subscription.fullSnapshotViewport == null
+                                ? tmpRowSet.copy()
+                                : tmpRowSet.intersect(subscription.fullSnapshotViewport)) {
+
+                            // expand the subscription snapshotViewport
+                            try (final RowSet ignored = subscription.snapshotViewport) {
+                                if (finalSnapshot) {
+                                    // use the full snapshot for the final assignment
+                                    subscription.snapshotViewport = subscription.fullSnapshotViewport == null
+                                            ? null
+                                            : subscription.fullSnapshotViewport.copy();
+                                } else {
+                                    // use a growing snapshot
+                                    subscription.snapshotViewport = subscription.viewport == null
+                                            ? available.copy()
+                                            : subscription.viewport.union(available);
+                                }
+                            }
+
+                            // reset the subscription snapshotColumns to the requested columns
+                            subscription.snapshotColumns = subscription.fullSnapshotColumns;
+                        }
+                    }
+
                     snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, tmpRowSet);
+
+                    log.info().append(System.identityHashCode(this))
+                            .append(": snapshot rowset=").append(snapshot.rowsIncluded).append("/").append(tmpRowSet)
+                            .endl();
                 }
 
                 // advance the snapshot
@@ -1157,7 +1229,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                         // since snapshot is (potentially) a subset of what this subscription has requested,
 
-                        propagateSnapshotForSubscription(subscription, snapshotGenerator, allSnapshotsCompleted);
+                        propagateSnapshotForSubscription(subscription, snapshotGenerator, finalSnapshot);
                     }
                 }
             }
@@ -1180,8 +1252,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
-        try (final RowSet ignored = snapshotRowSet) {
+        try (final RowSet ignored = snapshotRowSet;
+             final RowSet alsoIgnored = postSnapshotViewport) {
             snapshotRowSet = null;
+            postSnapshotViewport = null;
         }
     }
 
@@ -1256,16 +1330,37 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append(System.identityHashCode(subscription)).endl();
             }
 
+            if (subscription.pendingInitialSnapshot) {
+                // Send schema metadata to this new client.
+                subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
+                        parent.getDefinition(),
+                        parent.getAttributes()));
+            }
+
+//            if (finalSnapshot) {
+//                final boolean isViewport = subscription.fullSnapshotViewport != null;
+//                try (final RowSet keySpaceViewport = isViewport
+//                        ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.fullSnapshotViewport)
+//                        : null) {
+//
+//                    // provide the requested viewport to indicate snapshot is complete
+//                    subscription.listener
+//                            .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
+//                                    subscription.fullSnapshotViewport, keySpaceViewport, subscription.subscribedColumns));
+//
+//                    log.info().append(System.identityHashCode(this))
+//                            .append(": snapshot final=").append(subscription.fullSnapshotViewport)
+//                            .endl();
+//                } catch (final Exception e) {
+//                    GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
+//                    removeSubscription(subscription.listener);
+//                }
+//            } else {
             final boolean isViewport = subscription.viewport != null;
-            try (final RowSet keySpaceViewport =
-                    isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport)
-                            : null) {
-                if (subscription.pendingInitialSnapshot) {
-                    // Send schema metadata to this new client.
-                    subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            parent.getDefinition(),
-                            parent.getAttributes()));
-                }
+
+            try (final RowSet keySpaceViewport = isViewport
+                     ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport)
+                     : null) {
 
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
@@ -1274,6 +1369,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
                 removeSubscription(subscription.listener);
             }
+//            }
         }
 
         subscription.pendingInitialSnapshot = false;
@@ -1286,9 +1382,16 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 }
             }
 
+            if (subscription.fullSnapshotViewport != null) {
+                try (final RowSet ignored = subscription.fullSnapshotViewport) {
+                    subscription.fullSnapshotViewport = null;
+                }
+            }
+
             if (subscription.snapshotColumns != null) {
                 subscription.snapshotColumns = null;
             }
+
         }
     }
 
@@ -1611,15 +1714,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void flipSnapshotStateForSubscriptions(final List<Subscription> subscriptions) {
         for (final Subscription subscription : subscriptions) {
-            if (subscription.snapshotViewport != null) {
-                final RowSet tmp = subscription.viewport;
-                subscription.viewport = subscription.snapshotViewport;
-                subscription.snapshotViewport = tmp;
-            }
+            //if (subscription.snapshotViewport != null) {
+            final RowSet tmpRowSet = subscription.viewport;
+            subscription.viewport = subscription.snapshotViewport;
+            subscription.snapshotViewport = tmpRowSet;
+            //}
             if (subscription.snapshotColumns != null) {
-                final BitSet tmp = subscription.subscribedColumns;
+                final BitSet tmpBitSet = subscription.subscribedColumns;
                 subscription.subscribedColumns = subscription.snapshotColumns;
-                subscription.snapshotColumns = tmp;
+                subscription.snapshotColumns = tmpBitSet;
             }
         }
     }
@@ -1630,8 +1733,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (this.activeViewport != null) {
             this.activeViewport.close();
         }
-        this.activeViewport = this.postSnapshotViewport;
-        this.postSnapshotViewport = null;
+        this.activeViewport = this.postSnapshotViewport == null
+                ? null
+                : this.postSnapshotViewport.copy();
 
         // Pre-condition: activeObjectColumns == objectColumns & activeColumns
         this.objectColumnsToClear.or(postSnapshotColumns);
@@ -1640,7 +1744,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         this.activeColumns.clear();
         this.activeColumns.or(this.postSnapshotColumns);
-        this.postSnapshotColumns.clear();
     }
 
     private synchronized long getLastIndexClockStep() {
