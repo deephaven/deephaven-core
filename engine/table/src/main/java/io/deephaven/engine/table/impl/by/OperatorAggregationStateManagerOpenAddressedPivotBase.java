@@ -189,6 +189,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
     public void doRehash(int nextChunkSize) {
         final long startTime = System.currentTimeMillis();
 
+        int passes = 0;
+        int buckets = 0;
+
         while (rehashRequired(nextChunkSize)) {
             if (tableHashPivot == tableSize) {
                 tableSize *= 2;
@@ -198,22 +201,28 @@ public abstract class OperatorAggregationStateManagerOpenAddressedPivotBase
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
             }
 
-            final long targetBuckets = Math.min(MAX_TABLE_SIZE, (long)(numEntries / targetLoadFactor));
+
+            final long targetBuckets = Math.min(MAX_TABLE_SIZE, (long)((numEntries + nextChunkSize) / targetLoadFactor));
+            System.out.println("Target: " + targetBuckets + ", entries=" + numEntries + ", next=" + nextChunkSize + ", loadFactor=" + targetLoadFactor);
             final int bucketsToAdd = Math.max(1, (int)Math.min(targetBuckets, tableSize) - tableHashPivot);
+            System.out.println("To Add: " + bucketsToAdd + ", tableHashPivot=" + tableHashPivot + ", tableSize=" + tableSize + ", targetBuckets=" + targetBuckets);
+
+            passes++;
+            buckets += bucketsToAdd;
 
             rehashInternal(bucketsToAdd);
         }
         final long endTime = System.currentTimeMillis();
         final long duration = endTime - startTime;
         if (duration > 20) {
-            System.out.println("Rehash Duration: " + duration);
+            System.out.println("Rehash Duration: " + duration + ", bucketsAdded = " + buckets + ", passes = " + passes);
         }
     }
 
     protected abstract void rehashInternal(int bucketsToAdd);
 
     public boolean rehashRequired(int nextChunkSize) {
-        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+        return (numEntries + nextChunkSize) > (tableHashPivot * maximumLoadFactor);
     }
 
     private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,

@@ -5,7 +5,6 @@ import com.squareup.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.compilertools.CompilerTools;
@@ -284,6 +283,14 @@ public class TypedHasherFactory {
                     .equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
@@ -765,7 +772,7 @@ public class TypedHasherFactory {
         builder.addStatement("return");
         builder.endControlFlow();
 
-        builder.beginControlFlow("while ($L.getUnsafe(destinationLocation) == $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("while ($L.getUnsafe(destinationLocation) != $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
         builder.addStatement("destinationLocation = nextTableLocation(destinationLocation)");
         // TODO: if we could wrap then we might have problems, because we'll then migrate front locations think about
         //  what to do in that case.  Or, alternatively this deserves a mini-dissertation on why we would never need to

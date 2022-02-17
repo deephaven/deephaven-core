@@ -174,7 +174,7 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
         if (destinationLocation == locationToMigrate) {
             return;
         }
-        while (mainOutputPosition.getUnsafe(destinationLocation) == EMPTY_OUTPUT_POSITION) {
+        while (mainOutputPosition.getUnsafe(destinationLocation) != EMPTY_OUTPUT_POSITION) {
             destinationLocation = nextTableLocation(destinationLocation);
         }
         mainKeySource0.set(destinationLocation, mainKeySource0.getUnsafe(locationToMigrate));
