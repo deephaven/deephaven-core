@@ -21,5 +21,5 @@ else:
     from .csv import write as write_csv
     from .stream.kafka import consumer as kafka_consumer
     from .stream.kafka import producer as kafka_producer
-    from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, TableReplayer, \
-        DynamicTableWriter
+    from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, DynamicTableWriter
+    from .replay import TableReplayer

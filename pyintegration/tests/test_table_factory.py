@@ -1,18 +1,17 @@
 #
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+#   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 import unittest
 from dataclasses import dataclass
-from time import sleep
 
 import jpy
 import numpy as np
-from deephaven2.time import to_datetime
 
 from deephaven2 import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven2.table_factory import DynamicTableWriter, TableReplayer
+from deephaven2.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
+from deephaven2.table_factory import DynamicTableWriter
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -119,6 +118,7 @@ class TableFactoryTestCase(BaseTestCase):
                 table_writer.write_row(4, "Writer")
                 result = table_writer.table
                 self.assertTrue(result.is_refreshing)
+                self.wait_ticking_table_update(result, row_count=4, timeout=5)
 
         with self.subTest("One too many values in the arguments"):
             with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
@@ -135,52 +135,23 @@ class TableFactoryTestCase(BaseTestCase):
                 "Byte": dtypes.byte
             }
             with DynamicTableWriter(col_defs) as table_writer:
-                table_writer.write_row(10, 10, 10, 10, 10, 10)
-                table_writer.write_row(10.1, 10.1, 10.1, 10.1, 10.1, 10.1)
+                table_writer.write_row(10, 10, 11, 11, 11, 11)
+                table_writer.write_row(10.1, 10.1, 11.1, 11.1, 11.1, 11.1)
+                table_writer.write_row(NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE)
+            self.wait_ticking_table_update(table_writer.table, row_count=3, timeout=4)
+
+            expected_dtypes = list(col_defs.values())
+            self.assertEqual(expected_dtypes, [col.data_type for col in table_writer.table.columns])
+            table_string = table_writer.table.to_string()
+            self.assertEqual(6, table_string.count("null"))
+            self.assertEqual(2, table_string.count("10.0"))
+            self.assertEqual(2, table_string.count("10.1"))
+            self.assertEqual(8, table_string.count("11"))
 
         with self.subTest("Incorrect value types"):
             with DynamicTableWriter(col_defs) as table_writer, self.assertRaises(DHError) as cm:
                 table_writer.write_row(10, '10', 10, 10, 10, '10')
             self.assertIn("RuntimeError", cm.exception.root_cause)
-
-    def test_historical_table_replayer(self):
-        dt1 = to_datetime("2000-01-01T00:00:01 NY")
-        dt2 = to_datetime("2000-01-01T00:00:03 NY")
-        dt3 = to_datetime("2000-01-01T00:00:06 NY")
-
-        hist_table = new_table([
-            datetime_col("DateTime", [dt1, dt2, dt3]),
-            int_col("Number", [1, 3, 6])]
-        )
-
-        start_time = to_datetime("2000-01-01T00:00:00 NY")
-        end_time = to_datetime("2000-01-01T00:00:07 NY")
-
-        replayer = TableReplayer(start_time, end_time)
-        replay_table = replayer.add_table(hist_table, "DateTime")
-        replay_table2 = replayer.add_table(hist_table, "DateTime")
-        self.assertEqual(replay_table, replay_table2)
-
-        replayer.start()
-        self.assertTrue(replay_table.is_refreshing)
-        self.assertTrue(replay_table2.is_refreshing)
-        sleep(1)
-        replayer.shutdown()
-
-        with self.assertRaises(DHError) as cm:
-            replay_table3 = replayer.add_table(hist_table, "DateTime")
-        self.assertIn("RuntimeError", cm.exception.root_cause)
-
-        with self.assertRaises(DHError) as cm:
-            replayer.start()
-        self.assertIn("RuntimeError", cm.exception.root_cause)
-
-        replayer = TableReplayer(start_time, end_time)
-        replayer.start()
-        replay_table = replayer.add_table(hist_table, "DateTime")
-        self.assertTrue(replay_table.is_refreshing)
-        sleep(1)
-        replayer.shutdown()
 
 
 if __name__ == '__main__':
