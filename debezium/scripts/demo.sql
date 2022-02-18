@@ -1,3 +1,7 @@
+--
+-- Materialize demo script.
+-- See https://github.com/MaterializeInc/ecommerce-demo/blob/main/README_RPM.md
+--
 
 CREATE SOURCE purchases
 FROM KAFKA BROKER 'redpanda:9092' TOPIC 'mysql.shop.purchases'
@@ -70,9 +74,9 @@ CREATE MATERIALIZED VIEW item_summary AS
 
 CREATE MATERIALIZED VIEW profile_views_per_minute_last_10 AS
     SELECT
-    target_id as user_id,
-    date_trunc('minute', to_timestamp(received_at)) as received_at_minute,
-    COUNT(*) as pageviews
+        target_id as user_id,
+        date_trunc('minute', to_timestamp(received_at)) as received_at_minute,
+        COUNT(*) as pageviews
     FROM pageview_stg
     WHERE
       pageview_type = 'profiles' AND
@@ -134,4 +138,18 @@ CREATE MATERIALIZED SOURCE hvu_test
 FROM KAFKA BROKER 'redpanda:9092' TOPIC 'high-value-users-sink'
 FORMAT AVRO USING CONFLUENT SCHEMA REGISTRY 'http://redpanda:8081';
 
-SELECT * FROM hvu_test LIMIT 2;
+-- SELECT * FROM hvu_test LIMIT 2;
+
+CREATE MATERIALIZED VIEW pageviews_summary AS
+    SELECT
+        COUNT(*) AS total, MAX(received_at) AS max_received_at
+    FROM pageview_stg;
+
+/*
+SELECT
+    total,
+    to_timestamp(max_received_at) max_received_ts,
+    mz_logical_timestamp()/1000.0 AS logical_ts_ms,
+    mz_logical_timestamp()/1000.0 - max_received_at AS dt_ms
+FROM pageviews_summary;
+*/

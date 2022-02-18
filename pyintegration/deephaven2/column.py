@@ -3,16 +3,17 @@
 #
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Sequence, Any
+from typing import Sequence
 
 import jpy
-from deephaven2.dtypes import DType
 
 import deephaven2.dtypes as dtypes
 from deephaven2 import DHError
+from deephaven2.dtypes import DType
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
+_JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
 
 
 class ColumnType(Enum):
@@ -41,6 +42,10 @@ class Column:
     def j_column_header(self):
         return _JColumnHeader.of(self.name, self.data_type.qst_type)
 
+    @property
+    def j_column_definition(self):
+        return _JColumnDefinition.fromGenericType(self.name, self.data_type.qst_type.clazz(), self.component_type)
+
 
 @dataclass
 class InputColumn(Column):
@@ -53,9 +58,9 @@ class InputColumn(Column):
                 self.j_column = _JColumn.empty(self.j_column_header)
             else:
                 if self.data_type.is_primitive:
-                    self.j_column = _JColumn.ofUnsafe(self.name, self.data_type.array_from(self.input_data))
+                    self.j_column = _JColumn.ofUnsafe(self.name, dtypes.array(self.data_type, self.input_data))
                 else:
-                    self.j_column = _JColumn.of(self.j_column_header, self.data_type.array_from(self.input_data))
+                    self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
         except Exception as e:
             raise DHError(e, "failed to create an InputColumn.") from e
 

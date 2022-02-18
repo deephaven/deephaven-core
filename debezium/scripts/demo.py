@@ -44,6 +44,7 @@ consume_properties = {
 pageviews = ck.consumeToTable(
     consume_properties,
     topic = 'pageviews',
+    offsets = ck.ALL_PARTITIONS_SEEK_TO_BEGINNING,
     key = ck.IGNORE,
     value = ck.json([ ('user_id', dh.long_),
                       ('url', dh.string),
@@ -186,3 +187,10 @@ hvu_test = ck.consumeToTable(
     value = ck.avro('high_value_users_sink_value'),
     table_type = 'append'
 )
+
+pageviews_summary = pageviews_stg \
+    .aggBy(
+        as_list([
+            agg.AggCount('total'),
+            agg.AggMax('max_received_at = received_at')])) \
+    .updateView('dt_ms = (DateTime.now() - max_received_at)/1_000_000.0')

@@ -198,7 +198,7 @@ public class ReplicateSourcesAndChunks {
                 "copyToTypedArray\\((.*), data", "copyToTypedArray\\($1, \\(T[]\\)data",
                 "ObjectDest.set(ii, data\\[key\\])", " ObjectDest.set(ii, (T)data[key])",
                 "Object getUnsafe", "T getUnsafe",
-                "return data", "return (T)data");
+                "return data([^;])", "return (T)data$1");
 
         lines = genericObjectColumnSourceReplacements(lines);
 
