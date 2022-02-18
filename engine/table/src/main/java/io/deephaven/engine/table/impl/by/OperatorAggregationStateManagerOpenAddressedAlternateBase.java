@@ -238,7 +238,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 clearAlternate();
             }
 
-            // TODO: now we need to do a full rehash
+            rehashInternal(oldTableSize);
 
             return false;
         }
@@ -270,6 +270,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     }
 
     protected abstract void rehashInternalPartial(int newRehashPointer);
+
+    protected abstract void rehashInternal(int oldSize);
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);

@@ -19,8 +19,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import java.util.Arrays;
-
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
         extends OperatorAggregationStateManagerOpenAddressedAlternateBase
         implements IncrementalOperatorAggregationStateManager {

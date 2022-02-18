@@ -131,44 +131,20 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         }
     }
 
-    // protected void probeTable(
-    // final HashHandler handler,
-    // final ProbeContext pc,
-    // final RowSequence probeRows,
-    // final boolean usePrev,
-    // final ColumnSource<?>[] probeSources) {
-    // try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
-    // // noinspection unchecked
-    // final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
-    //
-    // while (rsIt.hasMore()) {
-    // final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
-    // handler.onNextChunk(chunkOk.intSize());
-    //
-    // if (usePrev) {
-    // getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-    // } else {
-    // getKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
-    // }
-    //
-    // probe(handler, chunkOk, sourceKeyChunks);
-    //
-    // pc.resetSharedContexts();
-    // }
-    // }
-    // }
-
     public void doRehash(int nextChunkSize) {
+        final int oldSize = tableSize;
         while (rehashRequired(nextChunkSize)) {
             tableSize *= 2;
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
             }
-            rehashInternal();
+        }
+        if (tableSize > oldSize) {
+            rehashInternal(oldSize);
         }
     }
 
-    protected abstract void rehashInternal();
+    protected abstract void rehashInternal(int oldSize);
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);

@@ -44,8 +44,10 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     private static final SoftRecycler<short[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new short[BLOCK_SIZE], null);
 
+    // region blocks
     private short[][] blocks;
     private transient short[][] prevBlocks;
+    // endregion blocks
 
     public ShortArraySource() {
         super(short.class);

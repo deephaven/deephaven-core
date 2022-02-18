@@ -158,11 +158,11 @@ public class TypedHasherFactory {
     }
 
     private static void staticAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositionToHashSlot.set(destState[tableLocation], tableLocation)");
+        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, destinationTableLocation)");
     }
 
     private static void incAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationLocation)");
+        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation)");
     }
 
     private static void buildFound(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -171,8 +171,7 @@ public class TypedHasherFactory {
 
     private static void buildFoundIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         buildFound(hasherConfig, builder);
-        builder.addStatement("final long oldRowCount = rowCountSource.getUnsafe(outputPosition)");
-        builder.addStatement("rowCountSource.set(outputPosition, oldRowCount + 1)");
+        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1)");
     }
 
     private static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -211,12 +210,11 @@ public class TypedHasherFactory {
     private static void removeProbeFound(CodeBlock.Builder builder) {
         probeFound(builder);
 
-        builder.addStatement("final long oldRowCount = rowCountSource.getUnsafe(outputPosition)");
+        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, -1)");
         builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
         builder.beginControlFlow("if (oldRowCount == 1)");
         builder.addStatement("emptiedPositions.add(outputPosition)");
         builder.endControlFlow();
-        builder.addStatement("rowCountSource.set(outputPosition, oldRowCount - 1)");
     }
 
     private static void probeMissing(CodeBlock.Builder builder) {
@@ -697,8 +695,6 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalFullMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("final int oldSize = tableSize >> 1");
-
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("final $T[] destKeyArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
                     elementType(chunkTypes[ii]));
@@ -717,7 +713,8 @@ public class TypedHasherFactory {
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
-        builder.beginControlFlow("if (originalStateArray[sourceBucket] == $L)", hasherConfig.emptyStateName);
+        builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]", hasherConfig.stateType);
+        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
         builder.addStatement("continue");
         builder.endControlFlow();
 
@@ -727,29 +724,31 @@ public class TypedHasherFactory {
         }
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement("int tableLocation = hashToTableLocation(hash)");
-        builder.addStatement("final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1)");
+        builder.addStatement("final int firstDestinationTableLocation = hashToTableLocation(hash)");
+        builder.addStatement("int destinationTableLocation = firstDestinationTableLocation");
         builder.beginControlFlow("while (true)");
-        builder.beginControlFlow("if (destState[tableLocation] == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (destState[destinationTableLocation] == $L)", hasherConfig.emptyStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("destKeyArray$L[tableLocation] = k$L", ii, ii);
+            builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[tableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
-        builder.beginControlFlow("if (sourceBucket != tableLocation)");
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
+        builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         hasherConfig.moveMain.accept(builder);
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
-        builder.addStatement("$T.neq(tableLocation, $S, lastTableLocation, $S)", Assert.class, "tableLocation",
-                "lastTableLocation");
-        builder.addStatement("tableLocation = (tableLocation + 1) & (tableSize - 1)");
+        builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation", "destinationTableLocation",
+                "firstDestinationTableLocation", "firstDestinationTableLocation");
         builder.endControlFlow();
         builder.endControlFlow();
 
         builder.endControlFlow();
 
         return MethodSpec.methodBuilder("rehashInternal")
-                .returns(void.class).addModifiers(Modifier.PROTECTED)
+                .returns(void.class)
+                .addParameter(int.class, "oldSize", Modifier.FINAL)
+                .addModifiers(Modifier.PROTECTED)
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();
     }
@@ -821,13 +820,13 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
 
-        builder.addStatement("int destinationLocation = hashToTableLocation(hash)");
+        builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while ($L.getUnsafe(destinationLocation) != $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
-        builder.addStatement("destinationLocation = nextTableLocation(destinationLocation)");
+        builder.beginControlFlow("while ($L.getUnsafe(destinationTableLocation) != $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
-        doRehashMoveAlternateToMain(hasherConfig, chunkTypes, builder, "locationToMigrate", "destinationLocation");
+        doRehashMoveAlternateToMain(hasherConfig, chunkTypes, builder, "locationToMigrate", "destinationTableLocation");
 
         builder.addStatement("return true");
 

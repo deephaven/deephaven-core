@@ -44,8 +44,10 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new int[BLOCK_SIZE], null);
 
+    // region blocks
     private int[][] blocks;
     private transient int[][] prevBlocks;
+    // endregion blocks
 
     public IntegerArraySource() {
         super(int.class);

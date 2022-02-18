@@ -77,8 +77,7 @@ final class StaticAggOpenHasherIntInt extends StaticChunkedOperatorAggregationSt
     }
 
     @Override
-    protected void rehashInternal() {
-        final int oldSize = tableSize >> 1;
+    protected void rehashInternal(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
         final int[] destKeyArray1 = new int[tableSize];
         final int[] destState = new int[tableSize];
@@ -90,26 +89,27 @@ final class StaticAggOpenHasherIntInt extends StaticChunkedOperatorAggregationSt
         final int [] originalStateArray = mainOutputPosition.getArray();
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            if (originalStateArray[sourceBucket] == EMPTY_OUTPUT_POSITION) {
+            final int currentStateValue = originalStateArray[sourceBucket];
+            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];
             final int k1 = originalKeyArray1[sourceBucket];
             final int hash = hash(k0, k1);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destKeyArray0[tableLocation] = k0;
-                    destKeyArray1[tableLocation] = k1;
-                    destState[tableLocation] = originalStateArray[sourceBucket];
-                    if (sourceBucket != tableLocation) {
-                        outputPositionToHashSlot.set(destState[tableLocation], tableLocation);
+                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destKeyArray1[destinationTableLocation] = k1;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    if (sourceBucket != destinationTableLocation) {
+                        outputPositionToHashSlot.set(currentStateValue, destinationTableLocation);
                     }
                     break;
                 } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
+                    destinationTableLocation = nextTableLocation(destinationTableLocation);
+                    Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
                 }
             }
         }

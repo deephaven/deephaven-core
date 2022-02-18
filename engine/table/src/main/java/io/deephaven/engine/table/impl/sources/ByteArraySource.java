@@ -44,8 +44,10 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new byte[BLOCK_SIZE], null);
 
+    // region blocks
     private byte[][] blocks;
     private transient byte[][] prevBlocks;
+    // endregion blocks
 
     public ByteArraySource() {
         super(byte.class);
