@@ -107,7 +107,7 @@ final class StaticAggOpenHasherFloat extends StaticChunkedOperatorAggregationSta
         final float k0 = TypeUtils.unbox((Float)key);
         int hash = hash(k0);
         int tableLocation = hashToTableLocation(hash);
-        final int lastTableLocation = nextTableLocation(tableLocation);
+        final int firstTableLocation = tableLocation;
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
@@ -116,8 +116,8 @@ final class StaticAggOpenHasherFloat extends StaticChunkedOperatorAggregationSta
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 return positionValue;
             }
-            Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
             tableLocation = nextTableLocation(tableLocation);
+            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
         }
     }
 }

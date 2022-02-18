@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
@@ -18,13 +19,16 @@ import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
-        extends OperatorAggregationStateManagerOpenAddressedPivotBase
+        extends OperatorAggregationStateManagerOpenAddressedAlternateBase
         implements IncrementalOperatorAggregationStateManager {
     // our state value used when nothing is there
     protected static final int EMPTY_OUTPUT_POSITION = QueryConstants.NULL_INT;
 
     // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
-    protected final IntegerArraySource mainOutputPosition = new IntegerArraySource();
+    protected ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
+
+    // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
+    protected ImmutableIntArraySource alternateOutputPosition;
 
     // used as a row redirection for the output key sources
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
@@ -38,9 +42,15 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
                                                                                  int tableSize,
-                                                                                 double maximumLoadFactor,
-                                                                                 double targetLoadFactor) {
-        super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                                                                                 double maximumLoadFactor) {
+        super(tableKeySources, tableSize, maximumLoadFactor);
+        mainOutputPosition.ensureCapacity(tableSize);
+    }
+
+    @Override
+    protected void newAlternate() {
+        alternateOutputPosition = mainOutputPosition;
+        mainOutputPosition = new ImmutableIntArraySource();
         mainOutputPosition.ensureCapacity(tableSize);
     }
 

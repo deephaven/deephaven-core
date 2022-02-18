@@ -122,7 +122,7 @@ final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggrega
         final double k1 = TypeUtils.unbox((Double)ka[1]);
         int hash = hash(k0, k1);
         int tableLocation = hashToTableLocation(hash);
-        final int lastTableLocation = nextTableLocation(tableLocation);
+        final int firstTableLocation = tableLocation;
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
@@ -131,8 +131,8 @@ final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggrega
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                 return positionValue;
             }
-            Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
             tableLocation = nextTableLocation(tableLocation);
+            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
         }
     }
 }
