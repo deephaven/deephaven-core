@@ -565,11 +565,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     public boolean updateViewport(final StreamObserver<MessageView> listener,
             final RowSet newViewport) {
+        return updateViewport(listener, newViewport, false);
+    }
+
+    public boolean updateViewport(final StreamObserver<MessageView> listener, final RowSet newViewport,
+                                  final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
+            sub.reverseViewport = newReverseViewport;
             if (sub.pendingColumns == null) {
                 sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
             }
@@ -580,11 +586,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener,
             final RowSet newViewport, final BitSet columnsToSubscribe) {
+        return updateViewportAndColumns(listener, newViewport, columnsToSubscribe);
+    }
+
+    public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener, final RowSet newViewport,
+                                            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
+            sub.reverseViewport = newReverseViewport;
             sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();

@@ -153,6 +153,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
     private class RemoteClient {
         private RowSet viewport;
+        private boolean reverseViewport;
+
         private BitSet subscribedColumns;
 
         private final String name;
@@ -175,13 +177,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
                 final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer,
                 final String name) {
-            this(viewport, subscribedColumns, barrageMessageProducer, name, false);
+            // assume a forward viewport when not specified
+            this(viewport, subscribedColumns, barrageMessageProducer, name, false, false);
         }
 
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer,
-                final String name, final boolean deferSubscription) {
+                     final BarrageMessageProducer<BarrageStreamGenerator.View> barrageMessageProducer,
+                     final String name, final boolean reverseViewport, final boolean deferSubscription) {
             this.viewport = viewport;
+            this.reverseViewport = reverseViewport;
             this.subscribedColumns = subscribedColumns;
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
@@ -220,7 +224,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns,
-                    viewport == null ? null : viewport.copy(), false);
+                    viewport == null ? null : viewport.copy(), reverseViewport);
         }
 
         public void validate(final String msg, QueryTable expected) {
@@ -232,8 +236,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).toTracking());
-                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).toTracking());
+                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport, reverseViewport).toTracking());
+                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport, reverseViewport).toTracking());
             }
             if (subscribedColumns.cardinality() != expected.getColumns().length) {
                 final List<Selectable> columns = new ArrayList<>();
@@ -301,8 +305,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         public void setViewport(final RowSet newViewport) {
+            // assume a forward viewport when not specified
+            setViewport(newViewport, false);
+        }
+
+        public void setViewport(final RowSet newViewport, final boolean newReverseViewport) {
             viewport = newViewport;
-            barrageMessageProducer.updateViewport(dummyObserver, viewport);
+            reverseViewport = newReverseViewport;
+
+            barrageMessageProducer.updateViewport(dummyObserver, viewport, reverseViewport);
         }
 
         public void setSubscribedColumns(final BitSet newColumns) {
@@ -311,6 +322,12 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns) {
+            // assume a forward viewport when not specified
+            setViewportAndColumns(newViewport, newColumns, false);
+        }
+
+        public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns,
+                                          final boolean newReverseViewport) {
             viewport = newViewport;
             subscribedColumns = newColumns;
             barrageMessageProducer.updateViewportAndColumns(dummyObserver, viewport, subscribedColumns);
@@ -366,7 +383,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns, final String name) {
-            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name));
+            // assume a forward viewport when not specified
+            return newClient(viewport, subscribedColumns, false, name);
+        }
+
+        public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns,
+                                      final boolean reverseViewport, final String name) {
+            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name, reverseViewport,false));
             return clients.get(clients.size() - 1);
         }
 
@@ -500,6 +523,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
             nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
                     "floating");
+
+            //nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "reverse header");
 
             final RowSetBuilderSequential swissIndexBuilder = RowSetFactory.builderSequential();
             final long rangeSize = Math.max(1, size / 20);
@@ -896,7 +921,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             final boolean deferSubscription = true;
                             nugget.clients.add(new RemoteClient(
                                     RowSetFactory.fromRange(size / 5, 2 * size / 5),
-                                    columns, nugget.barrageMessageProducer, "sub-changer", deferSubscription));
+                                    columns, nugget.barrageMessageProducer, "sub-changer", false, deferSubscription));
 
                         }
                     }.runTest();
