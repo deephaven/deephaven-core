@@ -2,7 +2,7 @@
 
 This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
 
-With Deephaven, you have all the familiar tools from Pandas with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven can handle dynamic data. Plus, Deephaven allows multithreading, easy partitioning, and collecting data.
+With Deephaven, you have all the familiar tools from Pandas with added flexibility, efficiency, and better visualization. Deephaven can handle dynamic data. Plus, Deephaven allows multithreading, easy partitioning, and collecting data.
 
 Not only that - these tasks are possible in Deephaven with very large data, be it streaming or otherwise.
 
@@ -452,12 +452,10 @@ print(replace_values_data_frame)
 replace_values_table = table.update("B = isNull(B) ? 0.0 : B")
 ```
 
-
-Pandas is a great tool for any Python programmer to have at hand. However, people use Deephaven for use cases that involve streaming, updating, and real-time data, or volumes beyond in-memory scale.
-
-In the following notebooks, we demo examples where data just flows from one table to another in real time, and that's impossible in Pandas.
-
 The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
+
+Pandas is a great tool for any Python programmer to have at hand. However, people use Deephaven for use cases that involve streaming, updating, and real-time data, or volumes beyond in-memory scale. In the following notebooks, we demo examples where data just flows from one table to another in real time,  which is impossible in Pandas. 
+
 
 ```python
 print("Go to https://deephaven.io/core/docs/tutorials/quickstart/ to download pre-built Docker images.")
