@@ -42,12 +42,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected WritableIntChunk<RowKeys> outputPositions;
 
     // output alternating column sources
-    protected AlternatingColumnSource [] alternatingColumnSources;
+    protected AlternatingColumnSource[] alternatingColumnSources;
     protected int mainInsertMask = 0;
 
     protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
-                                                                                 int tableSize,
-                                                                                 double maximumLoadFactor) {
+            int tableSize,
+            double maximumLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         mainOutputPosition.ensureCapacity(tableSize);
     }
@@ -63,7 +63,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                     alternatingColumnSources[ai].setSources(alternateKeySources[ai], mainKeySources[ai]);
                 }
             }
-            mainInsertMask = (int)AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+            mainInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
         } else {
             if (alternatingColumnSources != null) {
                 for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
@@ -107,12 +107,16 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         Assert.eqNull(alternatingColumnSources, "alternatingColumnSources");
         alternatingColumnSources = new AlternatingColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {
-            final Class<?> dataType = mainKeySources[kci] != null ? mainKeySources[kci].getType() : alternateKeySources[kci].getType();
-            final Class<?> componentType = mainKeySources[kci] != null ? mainKeySources[kci].getComponentType() : alternateKeySources[kci].getComponentType();
+            final Class<?> dataType =
+                    mainKeySources[kci] != null ? mainKeySources[kci].getType() : alternateKeySources[kci].getType();
+            final Class<?> componentType = mainKeySources[kci] != null ? mainKeySources[kci].getComponentType()
+                    : alternateKeySources[kci].getComponentType();
             if (mainIsAlternate) {
-                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType, alternateKeySources[kci], mainKeySources[kci]);
+                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
+                        alternateKeySources[kci], mainKeySources[kci]);
             } else {
-                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType, mainKeySources[kci], alternateKeySources[kci]);
+                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
+                        mainKeySources[kci], alternateKeySources[kci]);
             }
             // noinspection unchecked
             keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, alternatingColumnSources[kci]);
@@ -123,8 +127,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
-                             MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
-                             final WritableIntChunk<RowKeys> reincarnatedPositions) {
+            MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
+            final WritableIntChunk<RowKeys> reincarnatedPositions) {
         outputPositions.setSize(rowSequence.intSize());
         reincarnatedPositions.setSize(0);
         if (rowSequence.isEmpty()) {
@@ -132,45 +136,50 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, false, ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
+        buildTable((BuildContext) bc, rowSequence, sources, false,
+                ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
         this.outputPositions = null;
         this.nextOutputPosition = null;
     }
 
-    protected abstract void buildForUpdate(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> reincarnatedPositions);
+    protected abstract void buildForUpdate(RowSequence chunkOk, Chunk[] sourceKeyChunks,
+            WritableIntChunk<RowKeys> reincarnatedPositions);
 
     @Override
     public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
-                       WritableIntChunk<RowKeys> outputPositions, final WritableIntChunk<RowKeys> emptiedPositions) {
+            WritableIntChunk<RowKeys> outputPositions, final WritableIntChunk<RowKeys> emptiedPositions) {
         outputPositions.setSize(rowSequence.intSize());
         emptiedPositions.setSize(0);
         if (rowSequence.isEmpty()) {
             return;
         }
         this.outputPositions = outputPositions;
-        probeTable((ProbeContext) pc, rowSequence, true, sources, (chunkOk, sourceKeyChunks) -> IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this.doRemoveProbe(chunkOk, sourceKeyChunks, emptiedPositions));
+        probeTable((ProbeContext) pc, rowSequence, true, sources,
+                (chunkOk, sourceKeyChunks) -> IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this
+                        .doRemoveProbe(chunkOk, sourceKeyChunks, emptiedPositions));
         this.outputPositions = null;
     }
 
-    protected abstract void doRemoveProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks, WritableIntChunk<RowKeys> emptiedPositions);
+    protected abstract void doRemoveProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks,
+            WritableIntChunk<RowKeys> emptiedPositions);
 
     @Override
     public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?>[] sources,
-                                  WritableIntChunk<RowKeys> outputPositions) {
+            WritableIntChunk<RowKeys> outputPositions) {
         outputPositions.setSize(rowSequence.intSize());
         if (rowSequence.isEmpty()) {
             return;
         }
         this.outputPositions = outputPositions;
-        probeTable((ProbeContext) pc, rowSequence, false, sources, IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this::doModifyProbe);
+        probeTable((ProbeContext) pc, rowSequence, false, sources,
+                IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.this::doModifyProbe);
         this.outputPositions = null;
     }
 
     protected abstract void doModifyProbe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 
     @Override
     public void setRowSize(int outputPosition, long size) {

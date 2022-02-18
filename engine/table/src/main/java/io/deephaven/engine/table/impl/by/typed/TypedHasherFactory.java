@@ -60,9 +60,10 @@ public class TypedHasherFactory {
         final String stateValueName;
         final Consumer<CodeBlock.Builder> found;
         final Consumer<CodeBlock.Builder> missing;
-        final ParameterSpec [] params;
+        final ParameterSpec[] params;
 
-        private ProbeSpec(String name, String stateValueName, Consumer<CodeBlock.Builder> found, Consumer<CodeBlock.Builder> missing, ParameterSpec ... params) {
+        private ProbeSpec(String name, String stateValueName, Consumer<CodeBlock.Builder> found,
+                Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.found = found;
@@ -76,9 +77,10 @@ public class TypedHasherFactory {
         final String stateValueName;
         final BiConsumer<HasherConfig<?>, CodeBlock.Builder> found;
         final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
-        final ParameterSpec [] params;
+        final ParameterSpec[] params;
 
-        private BuildSpec(String name, String stateValueName, BiConsumer<HasherConfig<?>, CodeBlock.Builder> found, BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec ... params) {
+        private BuildSpec(String name, String stateValueName, BiConsumer<HasherConfig<?>, CodeBlock.Builder> found,
+                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.found = found;
@@ -117,7 +119,8 @@ public class TypedHasherFactory {
             overflowOrAlternateStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
             moveMain = TypedHasherFactory::staticAggMoveMain;
-            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFound, TypedHasherFactory::buildInsert));
+            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFound,
+                    TypedHasherFactory::buildInsert));
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
@@ -138,21 +141,29 @@ public class TypedHasherFactory {
             moveMain = TypedHasherFactory::incAggMoveMain;
 
             final ClassName rowKeyType = ClassName.get(RowKeys.class);
-            final ParameterizedTypeName emptiedChunkType = ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
+            final ParameterizedTypeName emptiedChunkType =
+                    ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
             final ParameterSpec emptiedPositions = ParameterSpec.builder(emptiedChunkType, "emptiedPositions").build();;
 
-            probes.add(new ProbeSpec("doRemoveProbe", "outputPosition", TypedHasherFactory::removeProbeFound, TypedHasherFactory::probeMissing, emptiedPositions));
-            probes.add(new ProbeSpec("doModifyProbe", "outputPosition", TypedHasherFactory::probeFound, TypedHasherFactory::probeMissing));
+            probes.add(new ProbeSpec("doRemoveProbe", "outputPosition", TypedHasherFactory::removeProbeFound,
+                    TypedHasherFactory::probeMissing, emptiedPositions));
+            probes.add(new ProbeSpec("doModifyProbe", "outputPosition", TypedHasherFactory::probeFound,
+                    TypedHasherFactory::probeMissing));
 
-            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFoundIncrementalInitial, TypedHasherFactory::buildInsertIncremental));
+            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFoundIncrementalInitial,
+                    TypedHasherFactory::buildInsertIncremental));
 
-            final ParameterSpec reincarnatedPositions = ParameterSpec.builder(emptiedChunkType, "reincarnatedPositions").build();;
-            builds.add(new BuildSpec("buildForUpdate", "outputPosition", TypedHasherFactory::buildFoundIncrementalUpdate, TypedHasherFactory::buildInsertIncremental, reincarnatedPositions));
+            final ParameterSpec reincarnatedPositions =
+                    ParameterSpec.builder(emptiedChunkType, "reincarnatedPositions").build();;
+            builds.add(
+                    new BuildSpec("buildForUpdate", "outputPosition", TypedHasherFactory::buildFoundIncrementalUpdate,
+                            TypedHasherFactory::buildInsertIncremental, reincarnatedPositions));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
 
-        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot, mainStateName,
+        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot,
+                mainStateName,
                 overflowOrAlternateStateName,
                 emptyStateName, int.class, moveMain, probes, builds);
     }
@@ -162,7 +173,8 @@ public class TypedHasherFactory {
     }
 
     private static void incAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation)");
+        builder.addStatement(
+                "outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation)");
     }
 
     private static void buildFound(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -236,9 +248,10 @@ public class TypedHasherFactory {
         private final List<BuildSpec> builds;
 
         HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
-                     boolean openAddressedAlternate, String mainStateName,
-                     String overflowOrAlternateStateName,
-                     String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain, List<ProbeSpec> probes, List<BuildSpec> builds) {
+                boolean openAddressedAlternate, String mainStateName,
+                String overflowOrAlternateStateName,
+                String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain, List<ProbeSpec> probes,
+                List<BuildSpec> builds) {
             this.baseClass = baseClass;
             this.classPrefix = classPrefix;
             this.packageMiddle = packageMiddle;
@@ -359,8 +372,10 @@ public class TypedHasherFactory {
             if (hasherConfig.openAddressedAlternate) {
                 hasherBuilder.addMethod(createNextTableLocationMethod(true));
             }
-            hasherConfig.builds.forEach(bs -> hasherBuilder.addMethod(createBuildMethodForOpenAddressed(hasherConfig, bs, chunkTypes)));
-            hasherConfig.probes.forEach(ps -> hasherBuilder.addMethod(createProbeMethodForOpenAddressed(hasherConfig, ps, chunkTypes)));
+            hasherConfig.builds.forEach(
+                    bs -> hasherBuilder.addMethod(createBuildMethodForOpenAddressed(hasherConfig, bs, chunkTypes)));
+            hasherConfig.probes.forEach(
+                    ps -> hasherBuilder.addMethod(createProbeMethodForOpenAddressed(hasherConfig, ps, chunkTypes)));
         } else {
             hasherBuilder.addMethod(createBuildMethodForOverflow(hasherConfig, chunkTypes));
             hasherBuilder.addMethod(createProbeMethodForOverflow(hasherConfig, chunkTypes));
@@ -403,7 +418,7 @@ public class TypedHasherFactory {
     private static MethodSpec createNextTableLocationMethod(boolean alternate) {
         final MethodSpec.Builder builder =
                 MethodSpec.methodBuilder(nextTableLocationName(alternate)).addParameter(int.class, "tableLocation")
-                .returns(int.class).addModifiers(Modifier.PRIVATE);
+                        .returns(int.class).addModifiers(Modifier.PRIVATE);
         if (alternate) {
             builder.addStatement("return (tableLocation + 1) & (alternateTableSize - 1)");
         } else {
@@ -439,7 +454,8 @@ public class TypedHasherFactory {
     private static void addKeySourceFields(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
             TypeSpec.Builder hasherBuilder,
             CodeBlock.Builder constructorCodeBuilder) {
-        final Modifier [] modifiers = hasherConfig.openAddressedAlternate ? new Modifier[]{Modifier.PRIVATE} : new Modifier[]{Modifier.PRIVATE, Modifier.FINAL};
+        final Modifier[] modifiers = hasherConfig.openAddressedAlternate ? new Modifier[] {Modifier.PRIVATE}
+                : new Modifier[] {Modifier.PRIVATE, Modifier.FINAL};
 
         final List<FieldSpec> keySources = new ArrayList<>();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -531,7 +547,8 @@ public class TypedHasherFactory {
 
         final String positionValueName = alternate ? "alternatePositionValue" : "positionValue";
 
-        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName, hasherConfig.mainStateName, tableLocationName);
+        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName, hasherConfig.mainStateName,
+                tableLocationName);
         builder.beginControlFlow("if ($L == $L)", positionValueName, hasherConfig.emptyStateName);
 
         if (hasherConfig.openAddressedAlternate && !alternate) {
@@ -548,7 +565,8 @@ public class TypedHasherFactory {
 
         final String nextLocationName = alternate ? "alternateNextTableLocation" : "nextTableLocation";
         builder.addStatement("$L = $L($L)", tableLocationName, nextLocationName, tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName, firstLocationName, firstLocationName);
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
+                firstLocationName, firstLocationName);
 
         builder.endControlFlow();
     }
@@ -663,7 +681,8 @@ public class TypedHasherFactory {
         builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName,
                 hasherConfig.overflowOrAlternateStateName);
         builder.addStatement("handler.doPromoteOverflow(overflowLocation, mainInsertLocation)");
-        builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)", hasherConfig.overflowOrAlternateStateName);
+        builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)",
+                hasherConfig.overflowOrAlternateStateName);
 
         // key source loop
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -731,14 +750,16 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]", hasherConfig.mainStateName);
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
+                hasherConfig.mainStateName);
         builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         hasherConfig.moveMain.accept(builder);
         builder.endControlFlow();
         builder.addStatement("break");
         builder.nextControlFlow("else");
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation", "destinationTableLocation",
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation",
+                "destinationTableLocation",
                 "firstDestinationTableLocation", "firstDestinationTableLocation");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -786,7 +807,7 @@ public class TypedHasherFactory {
                 .addAnnotation(Override.class).build();
     }
 
-@NotNull
+    @NotNull
     private static MethodSpec createClearAlternateMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
@@ -808,8 +829,9 @@ public class TypedHasherFactory {
     private static MethodSpec createMigrateLocationMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("final $T currentStateValue = $L.getUnsafe(locationToMigrate)", hasherConfig.stateType, hasherConfig.overflowOrAlternateStateName);
-        builder.beginControlFlow("if (currentStateValue == $L)",hasherConfig.emptyStateName);
+        builder.addStatement("final $T currentStateValue = $L.getUnsafe(locationToMigrate)", hasherConfig.stateType,
+                hasherConfig.overflowOrAlternateStateName);
+        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
         builder.addStatement("return false");
         builder.endControlFlow();
 
@@ -822,7 +844,8 @@ public class TypedHasherFactory {
 
         builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while ($L.getUnsafe(destinationTableLocation) != $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("while ($L.getUnsafe(destinationTableLocation) != $L)", hasherConfig.mainStateName,
+                hasherConfig.emptyStateName);
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
@@ -848,7 +871,8 @@ public class TypedHasherFactory {
                 .addCode(builder.build()).build();
     }
 
-    private static void doRehashMoveAlternateToMain(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes, CodeBlock.Builder builder, final String sourceLocation, final String destinationLocation) {
+    private static void doRehashMoveAlternateToMain(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
+            CodeBlock.Builder builder, final String sourceLocation, final String destinationLocation) {
         // we need to move the keys, states, and call the move main
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set($L, k$L)", ii, destinationLocation, ii);
@@ -858,7 +882,8 @@ public class TypedHasherFactory {
         }
         builder.addStatement("$L.set($L, currentStateValue)", hasherConfig.mainStateName, destinationLocation);
         hasherConfig.moveMain.accept(builder);
-        builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation, hasherConfig.emptyStateName);
+        builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation,
+                hasherConfig.emptyStateName);
     }
 
     @NotNull
@@ -919,7 +944,8 @@ public class TypedHasherFactory {
     }
 
     @NotNull
-    private static MethodSpec createBuildMethodForOpenAddressed(HasherConfig<?> hasherConfig, BuildSpec buildSpec, ChunkType[] chunkTypes) {
+    private static MethodSpec createBuildMethodForOpenAddressed(HasherConfig<?> hasherConfig, BuildSpec buildSpec,
+            ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final ClassName chunkName =
@@ -951,11 +977,12 @@ public class TypedHasherFactory {
         }
         return methodBuilder
                 .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
-//                .addAnnotation(Override.class)
+                // .addAnnotation(Override.class)
                 .build();
     }
 
-    private static void doBuildSearch(HasherConfig<?> hasherConfig, BuildSpec buildSpec, ChunkType[] chunkTypes, CodeBlock.Builder builder, boolean alternate) {
+    private static void doBuildSearch(HasherConfig<?> hasherConfig, BuildSpec buildSpec, ChunkType[] chunkTypes,
+            CodeBlock.Builder builder, boolean alternate) {
         final String tableLocationName = alternate ? "alternateTableLocation" : "tableLocation";
         final String firstTableLocationName = alternate ? "firstAlternateTableLocation" : "firstTableLocation";
         final String tableLocationMethod = alternate ? "hashToTableLocationAlternate" : "hashToTableLocation";
@@ -964,7 +991,8 @@ public class TypedHasherFactory {
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
         if (alternate) {
             builder.beginControlFlow("while ($L < rehashPointer)", tableLocationName);
-            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName, hasherConfig.overflowOrAlternateStateName, tableLocationName);
+            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName,
+                    hasherConfig.overflowOrAlternateStateName, tableLocationName);
         } else {
             builder.beginControlFlow((hasherConfig.openAddressedAlternate ? "MAIN_SEARCH: " : "") + "while (true)");
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
@@ -985,7 +1013,8 @@ public class TypedHasherFactory {
             buildSpec.insert.accept(hasherConfig, builder);
         }
         builder.addStatement("break");
-        builder.nextControlFlow("else if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        builder.nextControlFlow("else if ("
+                + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         buildSpec.found.accept(hasherConfig, builder);
         if (alternate) {
             builder.addStatement("break MAIN_SEARCH");
@@ -994,12 +1023,14 @@ public class TypedHasherFactory {
         }
         builder.nextControlFlow("else");
         builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName, firstTableLocationName, firstTableLocationName);
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
+                firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();
         builder.endControlFlow();
     }
 
-    private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, ProbeSpec ps, ChunkType[] chunkTypes) {
+    private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, ProbeSpec ps,
+            ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final ClassName chunkName =
@@ -1033,12 +1064,13 @@ public class TypedHasherFactory {
         }
 
         methodBuilder.returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build());
-        //                .addAnnotation(Override.class)
+        // .addAnnotation(Override.class)
 
         return methodBuilder.build();
     }
 
-    private static void doProbeSearch(HasherConfig<?> hasherConfig, ProbeSpec ps, ChunkType[] chunkTypes, CodeBlock.Builder builder, boolean alternate) {
+    private static void doProbeSearch(HasherConfig<?> hasherConfig, ProbeSpec ps, ChunkType[] chunkTypes,
+            CodeBlock.Builder builder, boolean alternate) {
         final String tableLocationName = alternate ? "alternateTableLocation" : "tableLocation";
         final String firstTableLocationName = alternate ? "firstAlternateTableLocation" : "firstTableLocation";
         final String tableLocationMethod = alternate ? "hashToTableLocationAlternate" : "hashToTableLocation";
@@ -1057,16 +1089,19 @@ public class TypedHasherFactory {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
-        builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName, alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName, tableLocationName,
+        builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName,
+                alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName, tableLocationName,
                 hasherConfig.emptyStateName);
 
-        builder.beginControlFlow("if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        builder.beginControlFlow(
+                "if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         ps.found.accept(builder);
         builder.addStatement("$L = true", foundName);
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("$L = $L($L)", tableLocationName, nextTableLocationName(alternate), tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName, firstTableLocationName, firstTableLocationName);
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
+                firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();
         if (alternate) {
             builder.endControlFlow();

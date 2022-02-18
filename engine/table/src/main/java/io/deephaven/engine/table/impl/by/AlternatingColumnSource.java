@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements ColumnSource<DATA_TYPE> {
     public static final long ALTERNATE_SWITCH_MASK = 0x4000_0000;
-    public static final long ALTERNATE_INNER_MASK =  0x3fff_ffff;
+    public static final long ALTERNATE_INNER_MASK = 0x3fff_ffff;
 
     private static class SourceHolder<DATA_TYPE> {
         private ColumnSource<DATA_TYPE> mainSource;
@@ -38,21 +38,21 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     private final WeakReferenceManager<Consumer<SourceHolder>> sourceHolderListeners = new WeakReferenceManager<>();
 
     AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
-                            @Nullable final Class<?> componentType,
-                            final SourceHolder sourceHolder) {
+            @Nullable final Class<?> componentType,
+            final SourceHolder sourceHolder) {
         super(dataType, componentType);
         this.sourceHolder = sourceHolder;
     }
 
     AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
-                            @Nullable final Class<?> componentType,
-                            final ColumnSource<DATA_TYPE> mainSource,
-                            final ColumnSource<DATA_TYPE> alternateSource) {
+            @Nullable final Class<?> componentType,
+            final ColumnSource<DATA_TYPE> mainSource,
+            final ColumnSource<DATA_TYPE> alternateSource) {
         this(dataType, componentType, new SourceHolder(mainSource, alternateSource));
     }
 
     public AlternatingColumnSource(@NotNull final ColumnSource<DATA_TYPE> mainSource,
-                                   final ColumnSource<DATA_TYPE> alternateSource) {
+            final ColumnSource<DATA_TYPE> alternateSource) {
         this(mainSource.getType(), mainSource.getComponentType(), mainSource, alternateSource);
     }
 
@@ -70,9 +70,9 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         final ResettableWritableChunk<Any> alternateDestinationSlice;
 
         private AlternatingFillContext(@Nullable final ColumnSource<?> mainSource,
-                                       @Nullable final ColumnSource<?> alternateSource,
-                                       final int chunkCapacity,
-                                       final SharedContext sharedContext) {
+                @Nullable final ColumnSource<?> alternateSource,
+                final int chunkCapacity,
+                final SharedContext sharedContext) {
             // TODO: Implement a proper shareable context to use when combining fills from the main and overflow
             // sources. Current usage is "safe" because sources are only exposed through this wrapper, and all
             // sources at a given level will split their keys the same, but this is not ideal.
@@ -112,9 +112,9 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         private final WritableChunk<Values> mergeChunk;
 
         private AlternatingGetContext(@Nullable final ColumnSource<?> mainSource,
-                                      @Nullable final ColumnSource<?> alternateSource,
-                                      final int chunkCapacity,
-                                      final SharedContext sharedContext) {
+                @Nullable final ColumnSource<?> alternateSource,
+                final int chunkCapacity,
+                final SharedContext sharedContext) {
             super(mainSource, alternateSource, chunkCapacity, sharedContext);
             if (mainSource != null) {
                 mainGetContext = mainSource.makeGetContext(chunkCapacity, sharedContext);
@@ -150,12 +150,14 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
 
     @Override
     public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new AlternatingFillContext(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity, sharedContext);
+        return new AlternatingFillContext(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity,
+                sharedContext);
     }
 
     @Override
     public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new AlternatingGetContext(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity, sharedContext);
+        return new AlternatingGetContext(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity,
+                sharedContext);
     }
 
     @Override
@@ -265,7 +267,8 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         if (isAlternate(rowSequence.firstRowKey())) {
             // Main locations are always before overflow locations, so there are no responsive main locations
             typedContext.alternateShiftedRowSequence.reset(rowSequence, -ALTERNATE_SWITCH_MASK);
-            return sourceHolder.alternateSource.getChunk(typedContext.alternateGetContext, typedContext.alternateShiftedRowSequence);
+            return sourceHolder.alternateSource.getChunk(typedContext.alternateGetContext,
+                    typedContext.alternateShiftedRowSequence);
         }
         // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
         mergedFillChunk(typedContext, typedContext.mergeChunk, rowSequence);
@@ -419,27 +422,33 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         if (sourceHolder.mainSource == null) {
             return sourceHolder.alternateSource.allowsReinterpret(alternateDataType);
         }
-        return sourceHolder.mainSource.allowsReinterpret(alternateDataType) && sourceHolder.alternateSource.allowsReinterpret(alternateDataType);
+        return sourceHolder.mainSource.allowsReinterpret(alternateDataType)
+                && sourceHolder.alternateSource.allowsReinterpret(alternateDataType);
     }
 
-    private static final class Reinterpreted<DATA_TYPE> extends AlternatingColumnSource<DATA_TYPE> implements Consumer<SourceHolder> {
+    private static final class Reinterpreted<DATA_TYPE> extends AlternatingColumnSource<DATA_TYPE>
+            implements Consumer<SourceHolder> {
         private Reinterpreted(@NotNull final Class<DATA_TYPE> dataType,
-                              @NotNull final AlternatingColumnSource<?> original,
-                              @NotNull final SourceHolder<DATA_TYPE> sourceHolder) {
+                @NotNull final AlternatingColumnSource<?> original,
+                @NotNull final SourceHolder<DATA_TYPE> sourceHolder) {
             super(dataType, null, sourceHolder);
             original.sourceHolderListeners.add(this);
         }
 
         @Override
         public void accept(SourceHolder sourceHolder) {
-            final SourceHolder<DATA_TYPE> reinterpreted = AlternatingColumnSource.reinterpretSourceHolder(sourceHolder, getType());
+            final SourceHolder<DATA_TYPE> reinterpreted =
+                    AlternatingColumnSource.reinterpretSourceHolder(sourceHolder, getType());
             setSources(reinterpreted.mainSource, reinterpreted.alternateSource);
         }
     }
 
-    private static <ALTERNATE_DATA_TYPE, DATA_TYPE> SourceHolder<ALTERNATE_DATA_TYPE> reinterpretSourceHolder(SourceHolder<DATA_TYPE> sourceHolder, Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        final ColumnSource<ALTERNATE_DATA_TYPE> newMain = sourceHolder.mainSource == null ? null : sourceHolder.mainSource.reinterpret(alternateDataType);
-        final ColumnSource<ALTERNATE_DATA_TYPE> newAlternate = sourceHolder.alternateSource == null ? null : sourceHolder.alternateSource.reinterpret(alternateDataType);
+    private static <ALTERNATE_DATA_TYPE, DATA_TYPE> SourceHolder<ALTERNATE_DATA_TYPE> reinterpretSourceHolder(
+            SourceHolder<DATA_TYPE> sourceHolder, Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        final ColumnSource<ALTERNATE_DATA_TYPE> newMain =
+                sourceHolder.mainSource == null ? null : sourceHolder.mainSource.reinterpret(alternateDataType);
+        final ColumnSource<ALTERNATE_DATA_TYPE> newAlternate = sourceHolder.alternateSource == null ? null
+                : sourceHolder.alternateSource.reinterpret(alternateDataType);
         return new SourceHolder<>(newMain, newAlternate);
     }
 
@@ -454,6 +463,6 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     }
 
     public static int innerLocation(final long hashSlot) {
-        return (int)(hashSlot & ALTERNATE_INNER_MASK);
+        return (int) (hashSlot & ALTERNATE_INNER_MASK);
     }
 }

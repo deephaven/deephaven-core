@@ -42,8 +42,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     boolean mainIsAlternate = false;
 
-    protected OperatorAggregationStateManagerOpenAddressedAlternateBase(ColumnSource<?>[] tableKeySources, int tableSize,
-                                                                        double maximumLoadFactor) {
+    protected OperatorAggregationStateManagerOpenAddressedAlternateBase(ColumnSource<?>[] tableKeySources,
+            int tableSize,
+            double maximumLoadFactor) {
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
@@ -54,7 +55,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         alternateKeySources = new ColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize, tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
 
         this.maximumLoadFactor = maximumLoadFactor;
@@ -163,8 +165,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             final RowSequence probeRows,
             final boolean usePrev,
             final ColumnSource<?>[] probeSources,
-            final ProbeHandler handler
-            ) {
+            final ProbeHandler handler) {
         try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[probeSources.length];
@@ -187,18 +188,19 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     @FunctionalInterface
     public interface ProbeHandler {
-        void doProbe(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
+        void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
     }
 
     @FunctionalInterface
     public interface BuildHandler {
-        void doBuild(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
+        void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
     }
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
      * @param rehashCredits the number of rehash buckets this operation has rehashed (input/output)
-     * @param nextChunkSize the size of the chunk we are processing, we need to make at least twice as many rehash credits available
+     * @param nextChunkSize the size of the chunk we are processing, we need to make at least twice as many rehash
+     *        credits available
      * @return true if a front migration is required
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
@@ -247,7 +249,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize, alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
             mainKeySources[ii].ensureCapacity(tableSize);
         }
         alternateTableSize = oldTableSize;
