@@ -4,6 +4,7 @@
     "isClosable": true,
     "reorderEnabled": true,
     "title": "",
+    "isFocusOnShow": true,
     "content": [
       {
         "type": "row",
@@ -11,6 +12,7 @@
         "reorderEnabled": true,
         "title": "",
         "height": 47.16666666666667,
+        "isFocusOnShow": true,
         "content": [
           {
             "type": "stack",
@@ -20,6 +22,7 @@
             "title": "",
             "activeItemIndex": 0,
             "width": 78.29181494661923,
+            "isFocusOnShow": true,
             "content": [
               {
                 "type": "react-component",
@@ -40,18 +43,20 @@
                 },
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
-                "componentState": null
+                "componentState": null,
+                "isFocusOnShow": true
               },
               {
                 "component": "LogPanel",
                 "isClosable": false,
                 "title": "Log",
                 "type": "react-component",
-                "props": {},
+                "props": { "metadata": {} },
                 "id": "7oMOI3Q21J",
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
-                "componentState": null
+                "componentState": null,
+                "isFocusOnShow": true
               }
             ]
           },
@@ -64,6 +69,7 @@
             "activeItemIndex": 0,
             "width": 21.70818505338078,
             "height": 47.16666666666667,
+            "isFocusOnShow": true,
             "content": [
               {
                 "type": "react-component",
@@ -71,10 +77,11 @@
                 "title": "File Explorer",
                 "isClosable": false,
                 "id": "K6M6OlfTw2",
-                "props": {},
+                "props": { "metadata": {} },
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
-                "componentState": null
+                "componentState": null,
+                "isFocusOnShow": true
               },
               {
                 "type": "react-component",
@@ -85,7 +92,8 @@
                 "props": { "metadata": {}, "panelState": {} },
                 "componentName": "lm-react-component",
                 "reorderEnabled": true,
-                "componentState": null
+                "componentState": null,
+                "isFocusOnShow": true
               }
             ]
           }
@@ -97,6 +105,7 @@
         "reorderEnabled": true,
         "title": "",
         "height": 52.83333333333333,
+        "isFocusOnShow": true,
         "content": [
           {
             "type": "stack",
@@ -106,10 +115,11 @@
             "title": "",
             "activeItemIndex": 0,
             "width": 51.74377224199288,
+            "isFocusOnShow": true,
             "content": [
               {
                 "type": "react-component",
-                "component": "MarkdownNotebookPanel",
+                "component": "NotebookPanel",
                 "props": {
                   "metadata": { "id": "oZPNXW1jJ" },
                   "panelState": {
@@ -117,7 +127,8 @@
                     "fileMetadata": {
                       "id": "/00 The Deephaven IDE.md",
                       "itemName": "/00 The Deephaven IDE.md"
-                    }
+                    },
+                    "isPreview": false
                   }
                 },
                 "title": "00 The Deephaven IDE.md",
@@ -125,7 +136,8 @@
                 "componentName": "lm-react-component",
                 "isClosable": true,
                 "reorderEnabled": true,
-                "componentState": null
+                "componentState": null,
+                "isFocusOnShow": true
               }
             ]
           },
@@ -135,7 +147,8 @@
             "reorderEnabled": true,
             "title": "",
             "width": 48.25622775800712,
-            "activeItemIndex": 0
+            "activeItemIndex": 0,
+            "isFocusOnShow": true
           }
         ]
       }
