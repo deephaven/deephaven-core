@@ -895,8 +895,10 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
         return JPy_AsJString(jenv, pyArg, objectRef);
     } else if (PyBool_Check(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Boolean_JClass, type->classRef)))) {
         return JType_CreateJavaBooleanObject(jenv, type, pyArg, objectRef);
-    } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Integer_JClass, type->classRef)))) {
-            return JType_CreateJavaIntegerTypeObjectByInference(jenv, type, pyArg, objectRef);
+    } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject )) {
+        return JType_CreateJavaIntegerTypeObjectByInference(jenv, type, pyArg, objectRef);
+    } else if (JPy_IS_CLONG(pyArg) && ((*jenv)->IsAssignableFrom(jenv, JPy_Integer_JClass, type->classRef))) {
+        return JType_CreateJavaIntegerObject(jenv, type, pyArg, objectRef);
     } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Long_JClass, type->classRef)))) {
         return JType_CreateJavaLongObject(jenv, type, pyArg, objectRef);
     } else if (PyFloat_Check(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Double_JClass, type->classRef)))) {
