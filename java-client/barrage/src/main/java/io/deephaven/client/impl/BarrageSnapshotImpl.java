@@ -156,7 +156,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException {
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
         // notify user when connection has already been used and closed
         if (prevUsed) {
             throw new UnsupportedOperationException("Snapshot object already used");

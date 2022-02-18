@@ -700,10 +700,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null || activeReverseViewport != null) {
             // build the combined position-space viewport (from forward and reverse)
-            try (final WritableRowSet forwardDeltaViewport = activeViewport == null ? null :
-                    rowSet.subSetForPositions(activeViewport);
-                 final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null :
-                         rowSet.subSetForReversePositions(activeReverseViewport)) {
+            try (final WritableRowSet forwardDeltaViewport =
+                    activeViewport == null ? null : rowSet.subSetForPositions(activeViewport);
+                    final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null
+                            : rowSet.subSetForReversePositions(activeReverseViewport)) {
                 final RowSet deltaViewport;
                 if (forwardDeltaViewport != null) {
                     if (reverseDeltaViewport != null) {

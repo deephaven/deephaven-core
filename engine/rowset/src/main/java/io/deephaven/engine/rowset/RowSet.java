@@ -444,8 +444,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     WritableRowSet subSetForPositions(RowSequence posRowSequence);
 
-
-
     /**
      * Get a subset of this RowSet according to the supplied sequence of row positions relative to {@link #size()} in
      * {@code posRowSequence}.
@@ -453,7 +451,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param posRowSequence The {@link RowSequence} of positions ranges to get (as in {@link #get(long)})
      * @return A new RowSet, containing the row keys from this RowSet at the row positions in {@code posRowSequence}
      */
-
     WritableRowSet subSetForReversePositions(RowSequence posRowSequence);
 
     /**

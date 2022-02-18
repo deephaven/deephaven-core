@@ -151,7 +151,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!subscribed) {
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                    .setAppMetadata(
+                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                     .build());
             subscribed = true;
         }
