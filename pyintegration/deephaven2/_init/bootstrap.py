@@ -1,6 +1,8 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+""" This module supports bootstrapping a Deephaven Python Script session from Python."""
+
 import os
 
 import jpy
@@ -14,6 +16,8 @@ DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/opt/deephaven/server
 
 
 def build_py_session():
+    """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
+    Script session. """
     if not jpy.has_jvm():
         os.environ['JAVA_VERSION'] = '11'
 
