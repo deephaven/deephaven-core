@@ -13,8 +13,17 @@ The load generation script is in `loadgen/generate_load.py`.
 
 It is possible to configure the update rate for both purchase
 (mysql updates) and pageviews (kafka pageview events) via
-ENVIRONMENT arguments set for the loadgen image in the docker-compose.yml
-file.
+environment definitions set for the loadgen image in extended
+`../docker-compose-debezium/common.yml` file, loadgen image
+definition, environment section.  The variables are called
+PAGEVIEWS_PER_SECOND_START and PURCHASES_PER_SECOND_START.
+
+Once the compose is running, the load generation script listens on
+port 8090 (exported to the host) for a simple command interface;
+you can change the number of actions generated dynamically
+with the commands `set purchases_per_second n` and
+`set pageviews_per_second n`, where n is the desired rate
+target number.
 
 How to run
 ==========
