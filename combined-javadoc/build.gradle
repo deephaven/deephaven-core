@@ -9,6 +9,7 @@ configurations {
 
 String javaDocOverviewLocation = 'build/docs/overview.html'
 
+// TODO(deephaven-core#2000): Ensure build work from zipped source
 def gitHash
 gitHash = "${-> gitHash = 'git rev-list --max-count=1 HEAD'.execute([], rootDir).text.trim()}"
 def writeJavadocVersion = tasks.register 'writeJavadocVersion', {
