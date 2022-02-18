@@ -370,7 +370,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             // If the source column is a DBDate time we'll just always use longs to avoid silly reinterpretations during
             // serialization/deserialization
             sourceColumns[i] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[i]);
-            deltaColumns[i] = ArrayBackedColumnSource.getMemoryColumnSource(capacity, sourceColumns[i].getType());
+            deltaColumns[i] = ArrayBackedColumnSource.getMemoryColumnSource(
+                    capacity, sourceColumns[i].getType(), sourceColumns[i].getComponentType());
 
             if (deltaColumns[i] instanceof ObjectArraySource) {
                 objectColumns.set(i);
