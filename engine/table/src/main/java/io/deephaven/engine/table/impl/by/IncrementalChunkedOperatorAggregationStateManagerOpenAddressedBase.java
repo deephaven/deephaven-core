@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
@@ -17,6 +18,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
+
+import java.util.Arrays;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
         extends OperatorAggregationStateManagerOpenAddressedAlternateBase
@@ -40,6 +43,10 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected MutableInt nextOutputPosition;
     protected WritableIntChunk<RowKeys> outputPositions;
 
+    // output alternating column sources
+    protected AlternatingColumnSource [] alternatingColumnSources;
+    protected int mainInsertMask = 0;
+
     protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
                                                                                  int tableSize,
                                                                                  double maximumLoadFactor) {
@@ -52,6 +59,21 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         alternateOutputPosition = mainOutputPosition;
         mainOutputPosition = new ImmutableIntArraySource();
         mainOutputPosition.ensureCapacity(tableSize);
+        if (mainIsAlternate) {
+            if (alternatingColumnSources != null) {
+                for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
+                    alternatingColumnSources[ai].setSources(alternateKeySources[ai], mainKeySources[ai]);
+                }
+            }
+            mainInsertMask = (int)AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+        } else {
+            if (alternatingColumnSources != null) {
+                for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
+                    alternatingColumnSources[ai].setSources(mainKeySources[ai], alternateKeySources[ai]);
+                }
+            }
+            mainInsertMask = 0;
+        }
     }
 
     @Override
@@ -84,10 +106,20 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         final RowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
         final ColumnSource[] keyHashTableSources = new ColumnSource[mainKeySources.length];
+        Assert.eqNull(alternatingColumnSources, "alternatingColumnSources");
+        alternatingColumnSources = new AlternatingColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {
+            final Class<?> dataType = mainKeySources[kci] != null ? mainKeySources[kci].getType() : alternateKeySources[kci].getType();
+            final Class<?> componentType = mainKeySources[kci] != null ? mainKeySources[kci].getComponentType() : alternateKeySources[kci].getComponentType();
+            if (mainIsAlternate) {
+                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType, alternateKeySources[kci], mainKeySources[kci]);
+            } else {
+                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType, mainKeySources[kci], alternateKeySources[kci]);
+            }
             // noinspection unchecked
-            keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, mainKeySources[kci]);
+            keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, alternatingColumnSources[kci]);
         }
+
         return keyHashTableSources;
     }
 

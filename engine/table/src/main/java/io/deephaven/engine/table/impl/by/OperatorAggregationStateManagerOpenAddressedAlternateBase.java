@@ -39,6 +39,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     // the keys for our hash entries, for the old alternative smaller table
     protected final ColumnSource[] alternateKeySources;
 
+    boolean mainIsAlternate = false;
+
     protected OperatorAggregationStateManagerOpenAddressedAlternateBase(ColumnSource<?>[] tableKeySources, int tableSize,
                                                                         double maximumLoadFactor) {
         this.tableSize = tableSize;
@@ -214,6 +216,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
         alternateTableSize = oldTableSize;
         rehashPointer = alternateTableSize;
+
+        mainIsAlternate = !mainIsAlternate;
         newAlternate();
 
         return true;

@@ -162,7 +162,7 @@ public class TypedHasherFactory {
     }
 
     private static void incAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, destinationLocation)");
+        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationLocation)");
     }
 
     private static void buildFound(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -187,15 +187,20 @@ public class TypedHasherFactory {
         builder.endControlFlow();
     }
 
-    private static void buildInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+    private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
         builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
+    }
+
+    private static void buildInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+        buildInsertCommon(hasherConfig, builder);
         builder.addStatement("outputPositionToHashSlot.set(outputPosition, tableLocation)");
     }
 
     private static void buildInsertIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         buildInsert(hasherConfig, builder);
+        builder.addStatement("outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation)");
         builder.addStatement("rowCountSource.set(outputPosition, 1L)");
     }
 
@@ -1054,16 +1059,16 @@ public class TypedHasherFactory {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
-        builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName, hasherConfig.mainStateName, tableLocationName,
+        builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName, alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName, tableLocationName,
                 hasherConfig.emptyStateName);
 
-        builder.beginControlFlow("if (" + getEqualsStatement(chunkTypes) + ")");
+        builder.beginControlFlow("if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         ps.found.accept(builder);
         builder.addStatement("$L = true", foundName);
         builder.addStatement("break");
         builder.endControlFlow();
-        builder.addStatement("tableLocation = nextTableLocation(tableLocation)");
-        builder.addStatement("$T.neq(tableLocation, $S, firstTableLocation, $S)", Assert.class, "tableLocation", "firstTableLocation");
+        builder.addStatement("$L = $L($L)", tableLocationName, nextTableLocationName(alternate), tableLocationName);
+        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName, firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();
         if (alternate) {
             builder.endControlFlow();
