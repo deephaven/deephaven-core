@@ -3,9 +3,6 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# The input file name listing the plugins and versions separated by new lines
-INPUT_FILE=plugins.txt
-
 # Output directory where all the extracted plugins will be placed
 OUTPUT_DIR=js-plugins
 
@@ -25,15 +22,15 @@ echo "{\"plugins\":[" > "${MANIFEST_FILE}"
 # Keep track of the count so we add a comma when necessary
 PLUGIN_COUNT=0
 
-echo "Reading plugins.txt..."
+echo "Packing plugins $@..."
 
 # Iterate through each plugin defined in the plugin list, download the package and adding info to the manifest
 # Can/should include the version number in the plugin line item
-for PACKAGE in $(<"${INPUT_FILE}")
+for PACKAGE in "$@"
 do
   # Add a comma to the manifest.json if this is not the first plugin
   if [ $PLUGIN_COUNT -gt 0 ]; then
-    echo "," >> manifest.json
+    echo "," >> "${MANIFEST_FILE}"
   fi
 
   # Make a temporary directory for downloading/extracting the package into
