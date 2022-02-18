@@ -1,9 +1,0 @@
-plugins {
-    id 'io.deephaven.common-conventions'
-    id 'io.deephaven.java-common-conventions'
-    id 'io.deephaven.java-publishing-conventions'
-    id 'io.deephaven.bin-conventions'
-    id 'io.deephaven.default-description'
-}
-
-io.deephaven.project.ProjectType.register(project, 'bin-public', true)

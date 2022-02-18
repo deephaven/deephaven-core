@@ -36,7 +36,6 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         jdoc.options.tags = ['apiNote', 'implNote']
         // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
         jdoc.options.overview = new File(javaDocOverviewLocation)
-        // Link to javadoc 11 API, because it is closer to java 8, which we actually use to build and run
         jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
         jdoc.options.addStringOption('Xdoclint:none', '-quiet')
 

@@ -4,7 +4,7 @@ plugins {
 
 jar {
     manifest {
-        attributes 'Implementation-Title': 'Deephaven Database',
+        attributes 'Implementation-Title': 'Deephaven',
                 'Implementation-Version': project.version,
                 'Provider': 'gradle'
     }

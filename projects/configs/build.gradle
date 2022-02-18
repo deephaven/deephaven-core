@@ -1,3 +1,3 @@
 plugins {
-    id 'io.deephaven.project.bin-public'
+    id 'io.deephaven.project.java-public'
 }

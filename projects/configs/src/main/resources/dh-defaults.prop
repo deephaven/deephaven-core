@@ -30,9 +30,6 @@ TrackedFileHandleFactory.maxOpenFiles=1024
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
 
-Plot.theme.default=LIGHT
-Plot.theme.internalPath=<devroot>/configs/chartthemes
-
 NIO.wireLagClock.native=false
 
 WorkerPythonEnvironment.defaultScriptPath=<devroot>

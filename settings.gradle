@@ -6,8 +6,6 @@ gradle.ext.buildStartTime = new Date()
 
 rootProject.name='Deephaven Community Core'
 
-String[] bins = ['configs', 'test-configs' ]
-
 String[] mods = [
         'Util',
         'Numerics',
@@ -50,7 +48,6 @@ Map<String, String> pyMods = [
 ]
 
 // Include our modules
-include bins
 include webMods
 include mods
 
@@ -60,12 +57,17 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
+include(':configs')
+project(':configs').projectDir = file('projects/configs')
+
+include(':test-configs')
+project(':test-configs').projectDir = file('projects/test-configs')
+
 include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
 
-include 'fishconfig-local'
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
@@ -301,22 +303,6 @@ mods.each {
         }
     }
     source.projectDir = sourceDir
-}
-
-// "bin modules" are projects with a single directory filled with static resources we put into jars.
-// In order to use "separate modules per sourceset" option in IntelliJ, we must give these projects
-// a different directory than their resource directory to use as the project root.
-// We'll use "$rootDir/projects/bin" for the project root of the :bin project,
-// with $rootDir/bin as the resource root, so IntelliJ doesn't blow up (a resource dir cannot contain project root dir).
-bins.each {
-    String mod->
-    def source = project(":$mod")
-    File sourceDir = new File(root, 'projects')
-    source.projectDir = new File(sourceDir, mod)
-    File buildscript = new File(source.projectDir, "${mod}.gradle".toString())
-    if (buildscript.file) {
-        source.buildFileName = buildscript.name
-    }
 }
 
 Closure configureWebModule = {

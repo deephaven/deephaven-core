@@ -34,6 +34,7 @@ dependencies {
         because('needed by plugin java-coding-conventions')
     }
 
+    // TODO(deephaven-core#1997): Remove license-gradle-plugin
     compile('gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0') {
         because('needed by plugin java-header-conventions')
     }

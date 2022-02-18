@@ -1,5 +1,4 @@
 plugins {
-    // io.deephaven.tools.License depends on java plugin
     id 'java'
 }
 

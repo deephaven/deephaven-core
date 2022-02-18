@@ -41,9 +41,6 @@ TableDataRefreshService.tableSizeRefreshMillis=1000
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
 
-Plot.theme.default=LIGHT
-Plot.theme.internalPath=<devroot>/configs/chartthemes
-
 columnsFile=DeephavenColumns.xml
 
 NIO.wireLagClock.native=false

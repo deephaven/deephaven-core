@@ -58,7 +58,6 @@ project.tasks.withType(Test).all { Test t ->
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"
         systemProperty 'configuration.quiet', 'true'
-        systemProperty 'java.awt.headless', 'true'
 
         if (findProperty('debugCITests') == 'true') {
             Map<CharSequence, Long> times = [:]
