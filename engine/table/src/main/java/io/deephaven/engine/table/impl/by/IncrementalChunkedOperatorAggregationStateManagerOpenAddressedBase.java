@@ -90,7 +90,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, this::build);
+        buildTable((BuildContext) bc, rowSequence, sources, true, this::build);
         this.outputPositions = null;
         this.nextOutputPosition = null;
     }
@@ -134,7 +134,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
+        buildTable((BuildContext) bc, rowSequence, sources, false, ((chunkOk, sourceKeyChunks) -> buildForUpdate(chunkOk, sourceKeyChunks, reincarnatedPositions)));
         this.outputPositions = null;
         this.nextOutputPosition = null;
     }

@@ -124,10 +124,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
+            final boolean fullRehash,
             final BuildHandler buildHandler) {
         // do a little bit of rehash work on every build, whether or not we are adding anything we'd like to
         // eventually get rid of our alternate table
-        doRehash(bc.rehashCredits, CHUNK_SIZE);
+        doRehash(fullRehash, bc.rehashCredits, CHUNK_SIZE);
 
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
@@ -137,7 +138,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
-                if (doRehash(bc.rehashCredits, nextChunkSize)) {
+                if (doRehash(fullRehash, bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }
 
@@ -194,7 +195,13 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         void doBuild(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
     }
 
-    public boolean doRehash(MutableInt rehashCredits, int nextChunkSize) {
+    /**
+     * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
+     * @param rehashCredits the number of rehash buckets this operation has rehashed (input/output)
+     * @param nextChunkSize the size of the chunk we are processing, we need to make at least twice as many rehash credits available
+     * @return true if a front migration is required
+     */
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize * 2 - rehashCredits.intValue();
             if (requiredRehash < 0) {
@@ -221,6 +228,18 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
 
         if (oldTableSize == tableSize) {
+            return false;
+        }
+
+        if (fullRehash) {
+            // if we are doing a full rehash, we need to ditch the alternate
+            if (rehashPointer > 0) {
+                rehashInternal(0);
+                clearAlternate();
+            }
+
+            // TODO: now we need to do a full rehash
+
             return false;
         }
 
