@@ -700,13 +700,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null || activeReverseViewport != null) {
             // build the combined position-space viewport (from forward and reverse)
-            try (final WritableRowSet deltaViewport = RowSetFactory.builderRandom().build()) {
-                if (activeViewport != null) {
-                    deltaViewport.insert(rowSet.subSetForPositions(activeViewport));
+            try (final WritableRowSet forwardDeltaViewport = activeViewport == null ? null :
+                    rowSet.subSetForPositions(activeViewport);
+                 final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null :
+                         rowSet.subSetForReversePositions(activeReverseViewport)) {
+                final RowSet deltaViewport;
+                if (forwardDeltaViewport != null) {
+                    if (reverseDeltaViewport != null) {
+                        forwardDeltaViewport.insert(reverseDeltaViewport);
+                    }
+                    deltaViewport = forwardDeltaViewport;
+                } else {
+                    deltaViewport = reverseDeltaViewport;
                 }
-                if (activeReverseViewport != null) {
-                    deltaViewport.insert(rowSet.subSetForReversePositions(activeReverseViewport));
-                }
+
                 addsToRecord = deltaViewport.intersect(upstream.added());
                 modsToRecord = deltaViewport.intersect(upstream.modified());
             }

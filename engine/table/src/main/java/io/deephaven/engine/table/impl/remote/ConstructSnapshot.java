@@ -570,29 +570,26 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else {
-                final RowSetBuilderRandom keyBuilder = RowSetFactory.builderRandom();
-                if (usePrev) {
-                    // perform actions on the previous rowset
-                    try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
-                        if (positionsToSnapshot != null) {
-                            keyBuilder.addRowSet(prevRowSet.subSetForPositions(positionsToSnapshot));
+                final RowSet rowSetToUse = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
+                try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
+                    final WritableRowSet forwardKeys = positionsToSnapshot == null ? null :
+                            rowSetToUse.subSetForPositions(positionsToSnapshot);
+                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null :
+                            rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
+                    if (forwardKeys != null) {
+                        if (reverseKeys != null) {
+                            forwardKeys.insert(reverseKeys);
+                            reverseKeys.close();
                         }
-                        if (reversePositionsToSnapshot != null) {
-                            keyBuilder.addRowSet(prevRowSet.subSetForReversePositions(reversePositionsToSnapshot));
-                        }
-                    }
-                } else {
-                    // perform actions on the current rowset
-                    if (positionsToSnapshot != null) {
-                        keyBuilder.addRowSet(table.getRowSet().subSetForPositions(positionsToSnapshot));
-                    }
-                    if (reversePositionsToSnapshot != null) {
-                        keyBuilder.addRowSet(table.getRowSet().subSetForReversePositions(reversePositionsToSnapshot));
+                        keysToSnapshot = forwardKeys;
+                    } else {
+                        keysToSnapshot = reverseKeys;
                     }
                 }
-                keysToSnapshot = keyBuilder.build();
             }
-            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            try (final RowSet ignored = keysToSnapshot) {
+                return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            }
         };
 
         snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);

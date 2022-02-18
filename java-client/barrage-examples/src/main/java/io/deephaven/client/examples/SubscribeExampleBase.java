@@ -43,7 +43,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
-//            final BarrageTable table = subscription.entireTable();
+
             final BarrageTable table = subscription.partialTable(RowSetFactory.flat(10), null, true);
 
             final CountDownLatch countDownLatch = new CountDownLatch(1);

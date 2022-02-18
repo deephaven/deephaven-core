@@ -223,7 +223,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         if (update.isSnapshot) {
             serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
-            serverReverseViewport = update.snapshotReverseRowSet;
+            serverReverseViewport = update.snapshotRowSetIsReversed;
             serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
         }
 
