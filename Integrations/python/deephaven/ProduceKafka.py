@@ -17,6 +17,7 @@ _avro_schema_jtype_ = None
 _produce_jtype_ = None
 IGNORE = None
 
+
 def _defineSymbols():
     """
     Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,
@@ -27,14 +28,15 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_,  _avro_schema_jtype_, _produce_jtype_, IGNORE
+    global _java_type_, _avro_schema_jtype_, _produce_jtype_, IGNORE
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.engine.table.impl.StreamTableTools")
         _avro_schema_jtype_ = jpy.get_type("org.apache.avro.Schema")
-        _produce_jtype_= jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
+        _produce_jtype_ = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
         IGNORE = getattr(_produce_jtype_, 'IGNORE')
+
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
@@ -60,32 +62,47 @@ except Exception as e:
     pass
 
 
-
 @_passThrough
 def produceFromTable(
         table,
-        kafka_config:dict,
-        topic:str,
+        kafka_config: dict,
+        topic: str,
         key,
         value,
-        last_by_key_columns:bool = False
+        last_by_key_columns: bool = False
 ):
     """
-    Produce to Kafka from a Deephaven table.
+    Produce a Kafka stream from a Deephaven table.
+
+    Note that ``table`` must only change in ways that are meaningful when turned into a stream of events over Kafka.
+
+    Two primary use cases are considered:
+
+    **A stream of changes (puts and removes) to a key-value data set**
+      In order to handle this efficiently and allow for correct reconstruction of the state at a consumer, it is assumed
+      that the input data is the result of a Deephaven aggregation, e.g. agg_all_by, agg_by, or last_by. This means
+      that key columns (as specified by ``key``) must not be modified, and no rows should be shifted if there
+      are any key columns. Note that specifying ``last_by_key_columns`` as ``true`` can make it easy to satisfy this
+      constraint if the input data is not already aggregated.
+
+    **A stream of independent log records**
+      In this case, the input table should either be a stream table or should only ever add rows.
+
+    If other use cases are identified, a publication mode or extensible listener framework may be introduced at a later
+    date.
 
     :param table: a Deephaven table used as a source of rows to publish to Kafka.
     :param kafka_config: Dictionary with properties to configure the associated kafka producer.
     :param topic: The topic name
     :param key: A specification for how to map table column(s) to the Key field in produced
-           Kafka messages.  This should be the result of calling one of the methods
-           simple, avro or json in this module, or the constant IGNORE.
+           Kafka messages.  This should be the result of calling one of the methods simple, avro or json in this module,
+           or the constant IGNORE. The resulting key serializer must map each input tuple to a unique output key.
     :param value: A specification for how to map table column(s) to the Value field in produced
            Kafka messages.  This should be the result of calling one of the methods
            simple, avro or json in this module, or the constant IGNORE.
     :param last_by_key_columns:  Whether to publish only the last record for each unique key.
-           Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
-           it is expected that table updates will not produce any row shifts; that is, the publisher
-           expects keyed tables to be streams, add-only, or aggregated.
+           Ignored if key is IGNORE.  Otherwise, if last_by_key_columns is true this method will internally perform a
+           last_by aggregation on table grouped by the input columns of key and publish to Kafka from the result.
     :return: A callback that, when invoked, stops publishing and cleans up
              subscriptions and resources.
              Users should hold to this callback to ensure liveness for publishing
@@ -107,21 +124,24 @@ def produceFromTable(
 
     kafka_config = _dictToProperties(kafka_config)
     runnable = _java_type_.produceFromTable(table, kafka_config, topic, key, value, last_by_key_columns)
+
     def cleanup():
         runnable.run()
+
     return cleanup
+
 
 @_passThrough
 def avro(
         schema,
-        schema_version:str = None,
-        field_to_col_mapping = None,
-        timestamp_field:str = None,
-        include_only_columns = None,
-        exclude_columns = None,
-        publish_schema:bool = False,
-        schema_namespace:str = None,
-        column_properties = None):
+        schema_version: str = None,
+        field_to_col_mapping=None,
+        timestamp_field: str = None,
+        include_only_columns=None,
+        exclude_columns=None,
+        publish_schema: bool = False,
+        schema_namespace: str = None,
+        column_properties=None):
     """
     Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
@@ -199,13 +219,14 @@ def avro(
         include_only_columns, exclude_columns, publish_schema,
         schema_namespace, column_properties)
 
+
 @_passThrough
-def json(include_columns = None,
-         exclude_columns = None,
-         mapping = None,
-         nested_delim = None,
-         output_nulls = False,
-         timestamp_field = None):
+def json(include_columns=None,
+         exclude_columns=None,
+         mapping=None,
+         nested_delim=None,
+         output_nulls=False,
+         timestamp_field=None):
     """
     Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
@@ -244,10 +265,12 @@ def json(include_columns = None,
     exclude_columns = _seqToSet(exclude_columns)
     exclude_columns = _java_type_.predicateFromSet(exclude_columns)
     mapping = _dictToMap(mapping)
-    return _produce_jtype_.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls, timestamp_field)
+    return _produce_jtype_.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls,
+                                    timestamp_field)
+
 
 @_passThrough
-def simple(column_name:str):
+def simple(column_name: str):
     """
     Specify a single column when producing to a Kafka Key or Value field.
 

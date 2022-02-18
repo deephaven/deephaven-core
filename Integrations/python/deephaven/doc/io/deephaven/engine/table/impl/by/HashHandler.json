@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.HashHandler",
+ "methods": {
+  "doMainFound": "Called after a value is found in the main hash table\n\n:param tableLocation: (int) - location in the table\n:param chunkPosition: (int) - the position in the chunk",
+  "doMainInsert": "Called after a value is inserted into the main hash table\n\n:param tableLocation: (int) - location of insertion\n:param chunkPosition: (int) - the position in the chunk",
+  "doMissing": "Called during probe when a value is not found in main or overflow.\n\n:param chunkPosition: (int) - the position in the chunk",
+  "doMoveMain": "Called during rehash when a value is moved in the main table\n\n:param oldTableLocation: (int) - the old location in the main table\n:param newTableLocation: (int) - the new location in the main table",
+  "doOverflowFound": "Called after a value is found in the overflow hash table\n\n:param overflowLocation: (int) - location in the overflow table\n:param chunkPosition: (int) - the position in the chunk",
+  "doOverflowInsert": "Called after a value is inserted into the overflow hash table\n\n:param overflowLocation: (int) - location of insertion\n:param chunkPosition: (int) - the position in the chunk",
+  "doPromoteOverflow": "Called during rehash when a value is promoted from overflow to the main table\n\n:param overflowLocation: (int) - the old location in the overflow table\n:param mainInsertLocation: (int) - the new location in the main table",
+  "onNextChunk": "Called when the next chunk of data is being processed in build or probe.\n\n:param size: (int) - the size of the next chunk"
+ },
+ "path": "io.deephaven.engine.table.impl.by.HashHandler",
+ "text": "Callback from generated hash table code.",
+ "typeName": "interface"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.server.plugin.java.JavaServiceLoader",
- "methods": {
-  "loadAllAndRegisterInto": "Load all registrations found via ServiceLoader.load(Class), and register them into\n callback.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the plugin callback"
- },
- "path": "io.deephaven.server.plugin.java.JavaServiceLoader",
- "typeName": "class"
-}

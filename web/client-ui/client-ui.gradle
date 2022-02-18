@@ -10,10 +10,10 @@ def ui = Docker.registerDockerTask(project, 'ui') {
         from file('Dockerfile')
     }
     parentContainers = [ Docker.registryTask(project, 'node') ]
-    containerOutPath = '/usr/src/app/package/build'
+    containerOutPath = '/usr/src/app/'
     imageName = 'deephaven/dhide:local-build'
     copyOut {
-        into dhUi.get().dir('ide')
+        into dhUi.get()
     }
 }
 

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.csv.tokenization.Tokenizer$CustomTimeZoneParser",
- "methods": {
-  "tryParse": "Try to parse a user-defined time zone.\n\n:param bs: (io.deephaven.csv.containers.ByteSlice) - The input text. If the method returns true, the slice will be advanced past the parsed text.\n        Otherwise (if the method returns false), the slice will be unchanged.\n:param zoneId: (org.apache.commons.lang3.mutable.MutableObject<java.time.ZoneId>) - Contains the parsed time zone if this method returns true. Otherwise, the contents are\n        unspecified.\n:param offsetSeconds: (org.apache.commons.lang3.mutable.MutableLong) - Contains a time zone offset in seconds if this method returns true. Otherwise, the\n        contents are unspecified.\n:return: (boolean) true if the input was successfully parsed. Otherwise, false."
- },
- "path": "io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser",
- "text": "A pluggable interface for a user-supplied time zone parser.",
- "typeName": "interface"
-}

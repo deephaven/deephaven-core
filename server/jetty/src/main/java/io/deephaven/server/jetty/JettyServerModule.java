@@ -5,8 +5,8 @@ import dagger.Provides;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
-import io.grpc.servlet.ServletAdapter;
-import io.grpc.servlet.ServletServerBuilder;
+import io.grpc.servlet.jakarta.ServletAdapter;
+import io.grpc.servlet.jakarta.ServletServerBuilder;
 
 import javax.inject.Named;
 import java.util.Set;

@@ -1,0 +1,105 @@
+# docker compose file to run the debezium-kafka ecommerce demo
+# with DHC ticking tables and dashboard
+
+version: '3.4'
+
+services:
+  server:
+    extends:
+      file: ../../docker-compose-common.yml
+      service: server
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx${DEEPHAVEN_HEAP} -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+    volumes:
+      - ../scripts:/scripts
+
+  web:
+    extends:
+      file: ../../docker-compose-common.yml
+      service: web
+
+  # Should only be used for non-production deployments, see grpc-proxy/README.md for more info
+  grpc-proxy:
+    extends:
+      file: ../../docker-compose-common.yml
+      service: grpc-proxy
+    depends_on:
+      server:
+        condition: service_healthy
+
+  envoy:
+    # A reverse proxy configured for no SSL on localhost. It fronts the requests
+    # for the static content and the websocket proxy.
+    extends:
+      file: ../../docker-compose-common.yml
+      service: envoy
+    depends_on:
+      server:
+        condition: service_healthy
+      grpc-proxy:
+        condition: service_started
+      web:
+        condition: service_started
+
+  redpanda:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: redpanda
+    depends_on:
+      - redpanda-optimize
+    tmpfs:
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
+
+  redpanda-optimize:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: redpanda
+    command:
+      - rpk redpanda mode production && rpk redpanda tune all
+    tmpfs:
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
+      
+
+  mysql:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: mysql
+    tmpfs:
+      - /run/mysqld:uid=999,gid=999,mode=1777,size=4G
+      - /var/cache:exec,size=256M
+
+  debezium:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: debezium
+    depends_on:
+      redpanda:
+        condition: service_started
+
+  loadgen:
+    extends:
+      file: ../docker-compose-debezium-common.yml
+      service: loadgen
+    build:
+      context: ../loadgen
+      dockerfile: pypy-Dockerfile
+    environment:
+      # Look at extended definition for the rest.
+      - MAX_PARALLEL_PURCHASES=4
+      - MAX_PARALLEL_PAGEVIEWS=40
+    depends_on:
+      mysql:
+        condition: service_started
+      debezium:
+        condition: service_started
+
+  materialized:
+    image: materialize/materialized:${MATERIALIZE_VERSION}
+    command: -w${MATERIALIZE_WORKERS} --disable-telemetry
+    ports:
+      - 6875:6875
+
+  mzcli:
+    image: materialize/cli
+    volumes:
+      - ../scripts:/scripts

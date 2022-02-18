@@ -49,7 +49,12 @@ public class TestWindowCheck {
         final TstUtils.ColumnInfo[] columnInfo;
         final int size = 100;
         final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2018-02-23T16:00:00 NY");
+        final DateTime endTime;
+        if (SHORT_TESTS) {
+            endTime = DateTimeUtils.convertDateTime("2018-02-23T10:30:00 NY");
+        } else {
+            endTime = DateTimeUtils.convertDateTime("2018-02-23T16:00:00 NY");
+        }
         final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Timestamp", "C1"},
                 new TstUtils.UnsortedDateTimeGenerator(startTime, endTime, 0.01),
                 new TstUtils.IntGenerator(1, 100)));
@@ -75,7 +80,7 @@ public class TestWindowCheck {
         int step = 0;
 
         while (timeProvider.now < endTime.getNanos() + 600 * DateTimeUtils.SECOND) {
-            step++;
+            ++step;
             final boolean combined = combinedRandom.nextBoolean();
 
             if (combined) {

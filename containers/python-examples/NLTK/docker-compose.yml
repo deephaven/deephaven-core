@@ -35,7 +35,7 @@ services:
       - grpc-proxy
       - server
     ports:
-      - "${PORT:-10000}:10000"
+      - "${DEEPHAVEN_PORT:-10000}:10000"
 
   examples:
     image: ghcr.io/deephaven/examples:latest
