@@ -17,6 +17,7 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     private static final Object COUNT_OBJ = new Object();
     private static final Object FIRST_ROW_KEY_OBJ = new Object();
     private static final Object LAST_ROW_KEY_OBJ = new Object();
+    private static final Object PARTITION_OBJ = new Object();
 
     /**
      * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together. The
@@ -90,5 +91,10 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     @Override
     public void visit(LastRowKey lastRowKey) {
         visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
+    }
+
+    @Override
+    public void visit(Partition partition) {
+        visitOrder.computeIfAbsent(PARTITION_OBJ, k -> new ArrayList<>()).add(partition.column());
     }
 }

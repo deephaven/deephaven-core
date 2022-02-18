@@ -62,4 +62,9 @@ public class AggregationPairs implements Aggregation.Visitor {
     public void visit(LastRowKey lastRowKey) {
         out = Stream.of(lastRowKey.column());
     }
+
+    @Override
+    public void visit(Partition partition) {
+        out = Stream.of(partition.column());
+    }
 }

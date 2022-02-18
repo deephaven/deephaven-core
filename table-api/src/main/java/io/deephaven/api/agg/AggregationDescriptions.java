@@ -59,4 +59,9 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     public void visit(LastRowKey lastRowKey) {
         out.put(lastRowKey.column().name(), "last row key");
     }
+
+    @Override
+    public void visit(Partition partition) {
+        out.put(partition.column().name(), "partition sub-table");
+    }
 }

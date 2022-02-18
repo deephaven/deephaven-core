@@ -531,6 +531,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(Partition partition) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
         public void visit(ColumnAggregation columnAgg) {
             out = Stream.of(columnAgg.spec()
                     .walk(new AggregateAdapter(Collections.singletonList(columnAgg.pair()))).out());

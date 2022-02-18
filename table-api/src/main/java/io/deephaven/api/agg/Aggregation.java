@@ -192,7 +192,7 @@ public interface Aggregation extends Serializable {
      * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation
      */
-    static Aggregation AggCount(String resultColumn) {
+    static Count AggCount(String resultColumn) {
         return Count.of(resultColumn);
     }
 
@@ -259,7 +259,7 @@ public interface Aggregation extends Serializable {
      * @param resultColumn The {@link FirstRowKey#column() output column} name
      * @return The aggregation
      */
-    static Aggregation AggFirstRowKey(String resultColumn) {
+    static FirstRowKey AggFirstRowKey(String resultColumn) {
         return FirstRowKey.of(resultColumn);
     }
 
@@ -314,7 +314,7 @@ public interface Aggregation extends Serializable {
      * @param resultColumn The {@link LastRowKey#column() output column} name
      * @return The aggregation
      */
-    static Aggregation AggLastRowKey(String resultColumn) {
+    static LastRowKey AggLastRowKey(String resultColumn) {
         return LastRowKey.of(resultColumn);
     }
 
@@ -361,6 +361,16 @@ public interface Aggregation extends Serializable {
      */
     static Aggregation AggMin(String... pairs) {
         return of(AggSpec.min(), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Partition partition} aggregation with the supplied output column name.
+     *
+     * @param resultColumn The {@link Partition#column() output column} name
+     * @return The aggregation
+     */
+    static Partition AggPartition(String resultColumn) {
+        return Partition.of(resultColumn);
     }
 
     /**
@@ -685,5 +695,12 @@ public interface Aggregation extends Serializable {
          * @param lastRowKey The last row key aggregation
          */
         void visit(LastRowKey lastRowKey);
+
+        /**
+         * Visit a {@link Partition partition aggregation}.
+         *
+         * @param partition The partition aggregation
+         */
+        void visit(Partition partition);
     }
 }

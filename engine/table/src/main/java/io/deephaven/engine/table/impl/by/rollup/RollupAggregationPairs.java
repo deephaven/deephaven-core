@@ -34,9 +34,4 @@ public class RollupAggregationPairs extends AggregationPairs implements RollupAg
     public void visit(NullColumns nullColumns) {
         out = nullColumns.resultColumns().keySet().stream().map(ColumnName::of);
     }
-
-    @Override
-    public void visit(Partition partition) {
-        out = Stream.empty();
-    }
 }

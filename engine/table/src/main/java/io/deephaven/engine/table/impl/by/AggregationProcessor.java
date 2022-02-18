@@ -11,6 +11,7 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Pair;
+import io.deephaven.api.agg.Partition;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
@@ -49,7 +50,6 @@ import io.deephaven.engine.table.impl.ReverseLookup;
 import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
-import io.deephaven.engine.table.impl.by.rollup.Partition;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregationPairs;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.count.ByteChunkedCountDistinctOperator;
@@ -200,13 +200,11 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationContextFactory forRollupBase(
             @NotNull final Collection<? extends Aggregation> aggregations,
             final boolean includeConstituents) {
-        // @formatter:off
-        final Collection<? extends Aggregation> baseAggregations =
-                Stream.concat(
-                    aggregations.stream(),
-                    Stream.of(includeConstituents ? Partition.of(true) : NullColumns.of(ROLLUP_COLUMN, Object.class))
-                ).collect(Collectors.toList());
-        // @formatter:on
+        final Collection<Aggregation> baseAggregations = new ArrayList<>(aggregations.size() + 1);
+        baseAggregations.addAll(aggregations);
+        baseAggregations.add(includeConstituents
+                ? Partition.of(ROLLUP_COLUMN)
+                : NullColumns.of(ROLLUP_COLUMN, Object.class));
         return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
     }
 
@@ -225,7 +223,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
         reaggregations.add(NullColumns.from(nullColumns));
         reaggregations.addAll(aggregations);
-        reaggregations.add(Partition.of(false));
+        reaggregations.add(Partition.of(ROLLUP_COLUMN));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 
@@ -649,6 +647,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             addFirstOrLastOperators(false, lastRowKey.column().name());
         }
 
+        @Override
+        public void visit(Partition partition) {
+            return new PartitionByChunkedOperator()
+        }
+
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -898,10 +901,6 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Partition partition) {
-            if (!partition.includeConstituents()) {
-                throw new IllegalArgumentException(
-                        "Partition isn't used for rollup base levels unless constituents are included");
-            }
             streamUnsupported("Partition for rollup with constituents included");
 
             final QueryTable adjustedTable = maybeCopyRlAttribute(table, table.updateView(ROLLUP_COLUMN + " = null"));
@@ -1029,10 +1028,6 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Partition partition) {
-            if (partition.includeConstituents()) {
-                throw new IllegalArgumentException("Cannot include constituents for reaggregated rollup levels");
-            }
-
             final List<String> columnsToDrop = table.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                     .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).collect(Collectors.toList());
             final QueryTable adjustedTable = columnsToDrop.isEmpty()

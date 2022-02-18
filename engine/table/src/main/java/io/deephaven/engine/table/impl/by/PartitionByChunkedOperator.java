@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.agg.Partition;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -34,15 +35,33 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#partitionBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#partitionBy} and
+ * {@link Partition}.
  */
 public final class PartitionByChunkedOperator implements IterativeChunkedAggregationOperator {
 
+    // region nonexistent table sentinels
+    /**
+     * Sentinel value for the row set belonging to a table that was never created because either the result table was no
+     * longer live or the aggregation update listener was no longer live. Should be used for assignment and reference
+     * equality tests, only.
+     */
     private static final WritableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactory.empty();
+    /**
+     * Sentinel value for the shift builder belonging to a table that was never created because either the result table
+     * was no longer live or the aggregation update listener was no longer live. Should be used for assignment and
+     * reference equality tests, only.
+     */
     private static final RowSetShiftData.SmartCoalescingBuilder NONEXISTENT_TABLE_SHIFT_BUILDER =
-            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.copy());
+            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET);
+    /**
+     * Sentinel value for a table that was never created because either the result table was no longer live or the
+     * aggregation update listener was no longer live. Should be used for assignment and reference equality tests, only.
+     */
     private static final QueryTable NONEXISTENT_TABLE =
             new QueryTable(NONEXISTENT_TABLE_ROW_SET.toTracking(), Collections.emptyMap());
+
+    // endregion nonexistent table sentinels
 
     private static final int WRITE_THROUGH_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -51,12 +70,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     private final QueryTable parentTable;
+    private final String resultName;
     private final AttributeCopier attributeCopier;
     private final List<Object> keysToPrepopulate;
     private final String[] keyColumnNames;
 
-    private final LocalTableMap tableMap; // Consider making this optional, in which case we should expose the tables
-                                          // column.
     private final String callSite;
 
     private final ObjectArraySource<QueryTable> tables;
@@ -98,16 +116,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      */
     PartitionByChunkedOperator(@NotNull final QueryTable unadjustedParentTable,
             @NotNull final QueryTable parentTable,
+            @NotNull final String resultName,
             @NotNull final AttributeCopier attributeCopier,
             @NotNull final List<Object> keysToPrepopulate,
             @NotNull final String... keyColumnNames) {
         this.parentTable = parentTable;
+        this.resultName = resultName;
         this.attributeCopier = attributeCopier;
         this.keysToPrepopulate = keysToPrepopulate;
         this.keyColumnNames = keyColumnNames;
 
-        tableMap = new LocalTableMap(this::populate, parentTable.getDefinition());
-        tableMap.setRefreshing(parentTable.isRefreshing());
         callSite = QueryPerformanceRecorder.getCallerLine();
 
         tables = new ObjectArraySource<>(QueryTable.class);
@@ -145,7 +163,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     LocalTableMap getTableMap() {
-        return tableMap;
+        throw new UnsupportedOperationException("We don't do this anymore"); // TODO-RWC
     }
 
     @Override
@@ -384,7 +402,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.emptyMap();
+        return Collections.singletonMap(resultName, tables);
     }
 
     @Override
