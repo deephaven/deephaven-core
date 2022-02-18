@@ -369,6 +369,7 @@ public class TypedHasherFactory {
                 hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createNewAlternateMethod(hasherConfig, chunkTypes));
+                hasherBuilder.addMethod(createClearAlternateMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createMigrateFront());
             } else {
                 hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
@@ -782,6 +783,24 @@ public class TypedHasherFactory {
                 .addAnnotation(Override.class).build();
     }
 
+@NotNull
+    private static MethodSpec createClearAlternateMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.addStatement("super.clearAlternate()");
+
+        builder.addStatement("this.$L = null", hasherConfig.overflowOrAlternateStateName);
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("this.alternateKeySource$L = null", ii);
+        }
+
+        return MethodSpec.methodBuilder("clearAlternate")
+                .returns(void.class).addModifiers(Modifier.PROTECTED)
+                .addCode(builder.build())
+                .addAnnotation(Override.class)
+                .build();
+    }
+
     @NotNull
     private static MethodSpec createMigrateLocationMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
@@ -829,13 +848,14 @@ public class TypedHasherFactory {
     private static void doRehashMoveAlternateToMain(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes, CodeBlock.Builder builder, final String sourceLocation, final String destinationLocation) {
         // we need to move the keys, states, and call the move main
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("mainKeySource$L.set($L, k$L)", ii, ii, ii);
+            builder.addStatement("mainKeySource$L.set($L, k$L)", ii, destinationLocation, ii);
             if (chunkTypes[ii] == ChunkType.Object) {
                 builder.addStatement("alternateKeySource$L.set($L, null)", ii, sourceLocation);
             }
         }
         builder.addStatement("$L.set($L, currentStateValue)", hasherConfig.mainStateName, destinationLocation);
         hasherConfig.moveMain.accept(builder);
+        builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation, hasherConfig.emptyStateName);
     }
 
     @NotNull
@@ -941,9 +961,9 @@ public class TypedHasherFactory {
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
         if (alternate) {
             builder.beginControlFlow("while ($L < rehashPointer)", tableLocationName);
-            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName, alternate ? hasherConfig.overflowOrAlternateStateName :  hasherConfig.mainStateName, tableLocationName);
+            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName, hasherConfig.overflowOrAlternateStateName, tableLocationName);
         } else {
-            builder.beginControlFlow("while (true)");
+            builder.beginControlFlow((hasherConfig.openAddressedAlternate ? "MAIN_SEARCH: " : "") + "while (true)");
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
                     hasherConfig.mainStateName, tableLocationName);
         }
@@ -964,7 +984,11 @@ public class TypedHasherFactory {
         builder.addStatement("break");
         builder.nextControlFlow("else if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         buildSpec.found.accept(hasherConfig, builder);
-        builder.addStatement("break");
+        if (alternate) {
+            builder.addStatement("break MAIN_SEARCH");
+        } else {
+            builder.addStatement("break");
+        }
         builder.nextControlFlow("else");
         builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
         builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName, firstTableLocationName, firstTableLocationName);

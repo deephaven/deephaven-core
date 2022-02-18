@@ -129,7 +129,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
                 if (doRehash(nextChunkSize)) {
-                    //migrateFront();
+                    migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
@@ -184,6 +184,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         if (rehashPointer > 0) {
             // before building, we need to do at least as much rehash work as we would do build work
             rehashInternal(Math.max(rehashPointer - nextChunkSize * 2, 0));
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
         }
 
         int oldTableSize = tableSize;
@@ -210,13 +213,19 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             mainKeySources[ii].ensureCapacity(tableSize);
         }
         alternateTableSize = oldTableSize;
-        rehashPointer = tableSize;
+        rehashPointer = alternateTableSize;
         newAlternate();
 
         return true;
     }
 
     protected abstract void newAlternate();
+
+    protected void clearAlternate() {
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = null;
+        }
+    }
 
     protected abstract void rehashInternal(int newRehashPointer);
 

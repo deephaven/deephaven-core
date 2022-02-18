@@ -49,7 +49,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (true) {
+            MAIN_SEARCH: while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
                 if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
@@ -63,7 +63,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
                             final long oldRowCount = rowCountSource.getUnsafe(outputPosition);
                             rowCountSource.set(outputPosition, oldRowCount + 1);
                             Assert.gtZero(oldRowCount, "oldRowCount");
-                            break;
+                            break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = nextTableLocation(alternateTableLocation);
                             Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
@@ -100,7 +100,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (true) {
+            MAIN_SEARCH: while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
                 if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
@@ -116,7 +116,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
                             if (oldRowCount == 0) {
                                 reincarnatedPositions.add(outputPosition);
                             }
-                            break;
+                            break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = nextTableLocation(alternateTableLocation);
                             Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
@@ -257,9 +257,10 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
         while (mainOutputPosition.getUnsafe(destinationLocation) != EMPTY_OUTPUT_POSITION) {
             destinationLocation = nextTableLocation(destinationLocation);
         }
-        mainKeySource0.set(0, k0);
+        mainKeySource0.set(destinationLocation, k0);
         mainOutputPosition.set(destinationLocation, currentStateValue);
         outputPositionToHashSlot.set(currentStateValue, destinationLocation);
+        alternateOutputPosition.set(locationToMigrate, EMPTY_OUTPUT_POSITION);
         return true;
     }
 
@@ -275,6 +276,13 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
         super.newAlternate();
         this.mainKeySource0 = (ImmutableDoubleArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableDoubleArraySource)super.alternateKeySources[0];
+    }
+
+    @Override
+    protected void clearAlternate() {
+        super.clearAlternate();
+        this.alternateOutputPosition = null;
+        this.alternateKeySource0 = null;
     }
 
     @Override
