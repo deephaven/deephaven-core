@@ -175,12 +175,17 @@ plugins.withType(ApplicationPlugin) {
   }
 }
 tasks.withType(CreateStartScripts).configureEach {
-  def windowsStartScript = resources.text.fromUri(getClass().classLoader.getResource('windowsStartScript.txt'))
   def unixStartScript = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
-  inputs.files windowsStartScript
   inputs.files unixStartScript
-  windowsStartScriptGenerator.template = windowsStartScript
   unixStartScriptGenerator.template = unixStartScript
+  // For now we only modify the *nix script, as the windows .bat file doesn't seem to work properly anyway,
+  // and we don't yet have a requirement for it.
+  windowsStartScriptGenerator.template = resources.text.fromString("echo Sorry, Windows .bat is not currently supported, please use WSL2\nexit 1")
+
+//  def windowsStartScript = resources.text.fromUri(getClass().classLoader.getResource('windowsStartScript.txt'))
+//  inputs.files windowsStartScript
+//  windowsStartScriptGenerator.template = windowsStartScript
+
   // Note that we don't call c2ExcludesJvmArgs() at this time, there is no way to template those strings.
   // Instead, we hard code the expected paths in the above templates to match the path lib/dh-compiler-directives.txt
 //  defaultJvmOpts += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
