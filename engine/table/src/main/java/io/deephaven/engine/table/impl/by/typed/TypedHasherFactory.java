@@ -376,9 +376,8 @@ public class TypedHasherFactory {
                 hasherBuilder.addMethod(createNewAlternateMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createClearAlternateMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createMigrateFront());
-            } else {
-                hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
             }
+            hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
         } else {
             hasherBuilder.addMethod(createRehashBucketMethod(hasherConfig, chunkTypes));
             hasherBuilder.addMethod(createMaybeMoveMainBucket(hasherConfig, chunkTypes));
@@ -764,7 +763,7 @@ public class TypedHasherFactory {
         builder.addStatement("migrateOneLocation(--rehashPointer)");
         builder.endControlFlow();
 
-        return MethodSpec.methodBuilder("rehashInternal")
+        return MethodSpec.methodBuilder("rehashInternalPartial")
                 .returns(void.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "targetRehashPointer")
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();

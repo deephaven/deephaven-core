@@ -291,7 +291,7 @@ final class IncrementalAggOpenHasherLongShort extends IncrementalChunkedOperator
     }
 
     @Override
-    protected void rehashInternal(int targetRehashPointer) {
+    protected void rehashInternalPartial(int targetRehashPointer) {
         while (rehashPointer > targetRehashPointer) {
             migrateOneLocation(--rehashPointer);
         }

@@ -211,7 +211,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             // before building, we need to do at least as much rehash work as we would do build work
             final int newRehashPointer = Math.max(rehashPointer - requiredRehash, 0);
             final int bucketsRehashed = rehashPointer - newRehashPointer;
-            rehashInternal(newRehashPointer);
+            rehashInternalPartial(newRehashPointer);
             rehashCredits.add(bucketsRehashed);
             if (rehashPointer == 0) {
                 clearAlternate();
@@ -234,7 +234,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternal(0);
+                rehashInternalPartial(0);
                 clearAlternate();
             }
 
@@ -269,7 +269,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
     }
 
-    protected abstract void rehashInternal(int newRehashPointer);
+    protected abstract void rehashInternalPartial(int newRehashPointer);
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
