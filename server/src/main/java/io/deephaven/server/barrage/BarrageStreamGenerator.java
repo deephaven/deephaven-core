@@ -11,9 +11,10 @@ import com.google.protobuf.WireFormat;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -431,35 +432,40 @@ public class BarrageStreamGenerator implements
         final long numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Values> nodeOffsets =
-                WritableObjectChunk.makeWritableChunk(addColumnData.length);
-                final WritableLongChunk<Values> bufferInfos =
-                        WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
-            nodeOffsets.setSize(0);
-            bufferInfos.setSize(0);
+        try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
+                final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
+            nodeOffsets.ensureCapacity(addColumnData.length);
+            nodeOffsets.get().setSize(0);
+            bufferInfos.ensureCapacity(addColumnData.length * 3);
+            bufferInfos.get().setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> nodeOffsets
-                            .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                    (numElements, nullCount) -> {
+                        nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
+                        nodeOffsets.get().asWritableObjectChunk()
+                                .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                    };
 
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
                 totalBufferLength.add(length);
-                bufferInfos.add(length);
+                bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
+                bufferInfos.get().add(length);
             };
             numRows = columnVisitor.visit(view, addStream, fieldNodeListener, bufferListener);
 
-            RecordBatch.startNodesVector(header, nodeOffsets.size());
-            for (int i = nodeOffsets.size() - 1; i >= 0; --i) {
-                final ChunkInputStreamGenerator.FieldNodeInfo node = nodeOffsets.get(i);
+            RecordBatch.startNodesVector(header, nodeOffsets.get().size());
+            for (int i = nodeOffsets.get().size() - 1; i >= 0; --i) {
+                final ChunkInputStreamGenerator.FieldNodeInfo node =
+                        (ChunkInputStreamGenerator.FieldNodeInfo) nodeOffsets.get().asObjectChunk().get(i);
                 FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
             nodesOffset = header.endVector();
 
-            RecordBatch.startBuffersVector(header, bufferInfos.size());
-            for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(bufferInfos.get(i));
-                Buffer.createBuffer(header, totalBufferLength.longValue(), bufferInfos.get(i));
+            RecordBatch.startBuffersVector(header, bufferInfos.get().size());
+            for (int i = bufferInfos.get().size() - 1; i >= 0; --i) {
+                totalBufferLength.subtract(bufferInfos.get().get(i));
+                Buffer.createBuffer(header, totalBufferLength.longValue(), bufferInfos.get().get(i));
             }
             buffersOffset = header.endVector();
         }
