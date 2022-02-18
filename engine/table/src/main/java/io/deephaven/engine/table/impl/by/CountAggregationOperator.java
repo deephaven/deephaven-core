@@ -30,7 +30,8 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
             final long newCount = length.get(ii);
-            countColumnSource.getAndAddUnsafe(destination, newCount);
+            final long oldCount = countColumnSource.getUnsafe(destination);
+            countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, newCount));
         }
         stateModified.fillWithValue(0, startPositions.size(), true);
     }
@@ -44,7 +45,8 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
             final long newCount = length.get(ii);
-            countColumnSource.getAndAddUnsafe(destination, -newCount);
+            final long oldCount = countColumnSource.getUnsafe(destination);
+            countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, newCount));
         }
         stateModified.fillWithValue(0, startPositions.size(), true);
     }
@@ -52,14 +54,16 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        countColumnSource.getAndAddUnsafe(destination, chunkSize);
+        final long oldCount = countColumnSource.getUnsafe(destination);
+        countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, chunkSize));
         return true;
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        countColumnSource.getAndAddUnsafe(destination, -chunkSize);
+        final long oldCount = countColumnSource.getUnsafe(destination);
+        countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, chunkSize));
         return true;
     }
 

@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -94,11 +93,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
             if (shouldRecordPrevious(index, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
-            if (oldValue == NULL_LONG) {
-                blocks[blockIndex][indexWithinBlock] = addend;
-            } else {
-                blocks[blockIndex][indexWithinBlock] = oldValue + addend;
-            }
+            blocks[blockIndex][indexWithinBlock] = oldValue + addend;
         }
         return oldValue;
     }
