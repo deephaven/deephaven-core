@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 
@@ -65,6 +66,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
+
+        final MutableInt rehashCredits = new MutableInt(0);
     }
     public static class ProbeContext extends BuildOrProbeContext {
         private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
@@ -122,6 +125,10 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
             final BuildHandler buildHandler) {
+        // do a little bit of rehash work on every build, whether or not we are adding anything we'd like to
+        // eventually get rid of our alternate table
+        doRehash(bc.rehashCredits, CHUNK_SIZE);
+
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -130,13 +137,18 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
-                if (doRehash(nextChunkSize)) {
+                if (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.setValue(Math.max(0, bc.rehashCredits.intValue() - (entriesAdded * 2)));
 
                 bc.resetSharedContexts();
             }
@@ -182,10 +194,18 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         void doBuild(RowSequence chunkOk, Chunk<Values> [] sourceKeyChunks);
     }
 
-    public boolean doRehash(int nextChunkSize) {
+    public boolean doRehash(MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
+            final int requiredRehash = nextChunkSize * 2 - rehashCredits.intValue();
+            if (requiredRehash < 0) {
+                return false;
+            }
+
             // before building, we need to do at least as much rehash work as we would do build work
-            rehashInternal(Math.max(rehashPointer - nextChunkSize * 2, 0));
+            final int newRehashPointer = Math.max(rehashPointer - requiredRehash, 0);
+            final int bucketsRehashed = rehashPointer - newRehashPointer;
+            rehashInternal(newRehashPointer);
+            rehashCredits.add(bucketsRehashed);
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -204,10 +224,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             return false;
         }
 
-        if (rehashPointer > 0) {
-            // if anything is left, we must rehash
-            rehashInternal(0);
-        }
+        Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = mainKeySources[ii];
@@ -215,7 +232,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             mainKeySources[ii].ensureCapacity(tableSize);
         }
         alternateTableSize = oldTableSize;
-        rehashPointer = alternateTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
 
         mainIsAlternate = !mainIsAlternate;
         newAlternate();
