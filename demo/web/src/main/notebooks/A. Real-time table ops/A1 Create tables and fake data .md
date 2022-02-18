@@ -22,7 +22,7 @@ table = timeTable("00:00:01").update("Number = (int)random_int()")\
     .update("Boolean = (boolean)random_boolean()")
 ```
 
-Let's wrap `timeTable` with a method and parameterize the time intervals and start times. This will allow us to reuse it throughout the notebooks.
+Let's wrap `timeTable` with a method and parameterize the time intervals and start times. This will allow us to reuse the table throughout the notebooks.
 
 ```python
 def create_random_table(time_interval, start_time=None):
