@@ -13,6 +13,11 @@ in particular, the 'How to run' section should
 apply verbatim, substituing `debezium/demo`
 for this directory, `debezium/perf`.
 
+Please see the "Memmory and CPU requirements"
+section below; as this compose is performance
+analysis oriented, it has considerably
+larger requirements than our other
+feature-oriented demos.
 
 Once the compose is running
 ===========================
@@ -66,3 +71,33 @@ Tracking the last processed pageview timestamp
       mz_logical_timestamp()/1000.0 - max_received_at AS dt_ms
   FROM pageviews_summary;'  -U materialize -h localhost -p 6875
   ```
+
+Memory and CPU requirements
+===========================
+
+The parameters used for images in the docker compose file in this
+directory are geared towards high message throughput.  While Deephaven
+itself is running with the same default configuration used for
+general demos (as of this writing, 4 cpus and 4 Gb of memory), the
+configurations for redpanda, mysql, and debezium are tweaked to reduce
+their impact in end-to-end latency and throughput measurements;
+we make extensive use of RAM disks (tmpfs) and increase some
+parameters to ones closer to production (e.g., redpanda's number
+of cpus and memory per core).  To get a full picture of the
+configuration used, consult the files:
+
+* `../docker-compose-debezium-common.yml`
+* `../.env`
+* `docker-compose.yml`
+* `.env`
+
+Once started the compose will take around 6 Gb
+of memory from the host; as events arrive and
+specially if event rates are increased, it
+will increase to 10-16 Gb or more.
+
+For the mild initial rate (same as default demo in `../demo`),
+the compose will consume around 2 CPU threads
+(tested in a Xeon E5 2698 v4 CPU).
+For increased event rates (eg, 50,000 pageviews per second),
+CPU utilization will spike to 14 CPU threads or more.
