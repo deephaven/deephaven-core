@@ -53,6 +53,7 @@ public class BenchmarkPlaypen {
             case "count":
             case "count2":
             case "countplant":
+            case "countmany":
             case "noop":
             case "sumall":
                 mode = args[2];
@@ -80,6 +81,9 @@ public class BenchmarkPlaypen {
                 break;
             case "countplant":
                 columns = new String[] {"plant_id"};
+                break;
+            case "countmany":
+                columns = new String[] {"key1"};
                 break;
             case "noop":
             case "sumall":
@@ -122,6 +126,9 @@ public class BenchmarkPlaypen {
                 break;
             case "countplant":
                 result = input.countBy("N", "plant_id");
+                break;
+            case "countmany":
+                result = input.countBy("N", "key1");
                 break;
             case "noop":
                 result = TableTools.emptyTable(0);
