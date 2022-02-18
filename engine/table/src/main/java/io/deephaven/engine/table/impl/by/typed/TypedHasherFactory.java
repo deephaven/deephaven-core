@@ -288,14 +288,14 @@ public class TypedHasherFactory {
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
-//            } else if (hasherConfig.baseClass
-//                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
-//                // noinspection unchecked
-//                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
-//                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-//                if (pregeneratedHasher != null) {
-//                    return pregeneratedHasher;
-//                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
             }
         }
 
@@ -941,7 +941,7 @@ public class TypedHasherFactory {
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
         if (alternate) {
             builder.beginControlFlow("while ($L < rehashPointer)", tableLocationName);
-            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName, hasherConfig.mainStateName, tableLocationName);
+            builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName, alternate ? hasherConfig.overflowOrAlternateStateName :  hasherConfig.mainStateName, tableLocationName);
         } else {
             builder.beginControlFlow("while (true)");
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,

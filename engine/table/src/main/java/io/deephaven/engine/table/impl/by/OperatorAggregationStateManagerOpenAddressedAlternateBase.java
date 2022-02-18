@@ -20,8 +20,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     // the number of slots in our table
     protected int tableSize;
-    // the number of slots in our alternate table
-    protected int alternateTableSize;
+    // the number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
+    // location value is positive and can be compared against rehashPointer safely
+    protected int alternateTableSize = 1;
 
     // how much of the alternate sources is necessary to rehash?
     protected int rehashPointer = 0;

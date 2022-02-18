@@ -55,7 +55,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
-                        outputPosition = mainOutputPosition.getUnsafe(alternateTableLocation);
+                        outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation);
                         if (outputPosition == EMPTY_OUTPUT_POSITION) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
@@ -106,7 +106,7 @@ final class IncrementalAggOpenHasherDouble extends IncrementalChunkedOperatorAgg
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
-                        outputPosition = mainOutputPosition.getUnsafe(alternateTableLocation);
+                        outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation);
                         if (outputPosition == EMPTY_OUTPUT_POSITION) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {

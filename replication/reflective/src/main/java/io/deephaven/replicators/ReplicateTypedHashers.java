@@ -23,7 +23,7 @@ public class ReplicateTypedHashers {
         generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class, true);
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
-        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, false);
+        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
