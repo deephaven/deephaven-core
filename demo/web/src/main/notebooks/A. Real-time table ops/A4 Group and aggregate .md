@@ -2,7 +2,7 @@
 
 In our previous notebook, we showed how to do time series and relational joins on our data. In this notebook, we show how to perform groupings and aggregations with our time series data.
 
-Let's start again by simulating some real-time data. This time we'll use a shorter time interval.
+Let's start again by simulating some real-time data. Here, we'll use a shorter time interval.
 
 ```python
 from deephaven.DateTimeUtils import currentTime, expressionToNanos, minus
@@ -22,9 +22,9 @@ group_by_boolean = daily_data.groupBy("Boolean")
 group_by_odd_even = daily_data.update("IsEven = (Number % 2 == 0)").groupBy("IsEven").dropColumns("IsEven")
 ```
 
-Just like all other real-time operations in Deephaven, these groupings update in real-time as the source table updates.
+Just like all other real-time operations in Deephaven, these groupings update in real time as the source table updates.
 
-Aggregations allow you to perform operations on grouped data. Let's perform some aggregations to compute statistics on our data.
+Aggregations allow you to perform operations on grouped data. The query below computes statistics on our data.
 
 ```python
 from deephaven import Aggregation as agg, as_list
@@ -59,4 +59,4 @@ combo_count_avg_agg = as_list([
 combo_counts_avg = daily_data.aggBy(combo_count_avg_agg, "Boolean", "Character")
 ```
 
-Just like the grouped data, these aggregations update in real-time. You don't need to recompute any of the averages or counts, Deephaven natively supports these real-time updates.
+Just like the grouped data, these aggregations update in real time. You don't need to recompute any of the averages or counts, Deephaven natively supports these real-time updates.
