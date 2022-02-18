@@ -1,8 +1,8 @@
 # Dynamic data and Pandas
 
-This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use familiar DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
+This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
 
-With Deephaven, you have all the familiar tools from Pandas but with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven can handle Dynamic data. Plus, Deephaven allows multithreading, easy partitioning, and collecting data.
+With Deephaven, you have all the familiar tools from Pandas with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven can handle dynamic data. Plus, Deephaven allows multithreading, easy partitioning, and collecting data.
 
 Not only that - these tasks are possible in Deephaven with very large data, be it streaming or otherwise.
 
@@ -275,15 +275,15 @@ table = tableLeft.join(tableRight, "A")
 ```
 
 
-Inexact joins are also a common operation, such as [`aj` (as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/aj/) and [`raj` (reverse as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/raj/), for analyzing time series data. 
+Inexact joins are also a common operation, made possible by [`aj` (as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/aj/) and [`raj` (reverse as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/raj/), for analyzing time-series data. 
 
-To join these tables together based on the timestamps, we need to use an as-of join, or aj. As-of joins perform exact matches across all given columns except for the last one, which instead matches based on the closest values.
+To join these tables together based on the timestamps, we need to use an as-of join. As-of joins perform exact matches across all given columns except for the last one, which instead matches based on the closest values.
 
-For an aj, the values in the right table are matched to the closest values in the left table without going over the value in the left table.
+In an as-of-join, the values in the right table are matched to the closest values in the left table without going over the value in the left table.
 
 For example, if the right table contains a value 5 and the left table contains values 4 and 6, the right table's 5 will be matched on the left table's 6.
 
-Let's join these tables using an aj to get a single table with all of our information.
+Let's join these tables using the `aj` method to get a single table with all of our information.
 
 ```python
 import pandas as pd
@@ -453,9 +453,9 @@ replace_values_table = table.update("B = isNull(B) ? 0.0 : B")
 ```
 
 
-Pandas is a great tool to have any any Python Programmers belt. However, people use Deephaven for cases that involve streaming, updating, and real-time data or volumes beyond in-memory scale.
+Pandas is a great tool for any Python programmer to have at hand. However, people use Deephaven for use cases that involve streaming, updating, and real-time data, or volumes beyond in-memory scale.
 
-Doing something like the notebooks following -- where data just flows from one table to another in real time is impossible in pandas.
+In the following notebooks, we demo examples where data just flows from one table to another in real time, and that's impossible in Pandas.
 
 The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
 
