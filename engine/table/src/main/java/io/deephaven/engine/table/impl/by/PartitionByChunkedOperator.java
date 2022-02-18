@@ -174,14 +174,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(addedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(addedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
         }
+        stateModified.fillWithValue(0, numDestinations, false);
     }
 
     @Override
@@ -192,14 +192,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(removedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(removedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
         }
+        stateModified.fillWithValue(0, numDestinations, false);
     }
 
     @Override
@@ -222,9 +222,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         final AdaptiveOrderedLongSetBuilderRandom chunkDestinationBuilder = new AdaptiveOrderedLongSetBuilderRandom();
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
 
             if (appendShifts(preShiftRowKeys, postShiftRowKeys, startPosition, runLength, destination)) {
@@ -247,14 +248,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int runLength = length.get(ii);
+        final int numDestinations = startPositions.size();
+        for (int di = 0; di < numDestinations; ++di) {
+            final int startPosition = startPositions.get(di);
+            final int runLength = length.get(di);
             final long destination = destinations.get(startPosition);
-
-            stateModified.set(ii,
-                    accumulateToIndex(modifiedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination));
+            accumulateToRowSet(modifiedRowSets, inputRowKeysAsOrdered, startPosition, runLength, destination);
         }
+        stateModified.fillWithValue(0, numDestinations, false);
     }
 
     @Override
@@ -264,12 +265,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        return accumulateToIndex(addedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        accumulateToRowSet(addedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        return false;
     }
 
     @Override
     public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
-        return accumulateToIndex(addedRowSets, rowSet, destination);
+        accumulateToRowSet(addedRowSets, rowSet, destination);
+        return false;
     }
 
     @Override
@@ -279,7 +282,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
-        return accumulateToIndex(removedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        accumulateToRowSet(removedRowSets, inputRowKeysAsOrdered, 0, chunkSize, destination);
+        return false;
     }
 
     @Override
@@ -313,39 +317,38 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> rowKeysAsOrdered = (LongChunk<OrderedRowKeys>) rowKeys;
-        return accumulateToIndex(modifiedRowSets, rowKeysAsOrdered, 0, rowKeys.size(), destination);
+        accumulateToRowSet(modifiedRowSets, rowKeysAsOrdered, 0, rowKeys.size(), destination);
+        return false;
     }
 
-    private static boolean accumulateToIndex(@NotNull final ObjectArraySource<WritableRowSet> indexColumn,
-            @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd, final int start, final int length,
-            final long destination) {
-        final WritableRowSet rowSet = indexColumn.getUnsafe(destination);
+    private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
+                                           @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
+                                           final int start, final int length, final long destination) {
+        final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
-            return false;
+            return;
         }
         if (rowSet == null) {
-            indexColumn.set(destination,
+            rowSetColumn.set(destination,
                     new WritableRowSetImpl(OrderedLongSet.fromChunk(rowKeysToAdd, start, length, false)));
-        } else {
-            rowSet.insert(rowKeysToAdd, start, length);
+            return;
         }
-        return true;
+        rowSet.insert(rowKeysToAdd, start, length);
     }
 
-    private static boolean accumulateToIndex(@NotNull final ObjectArraySource<WritableRowSet> indexColumn,
-            @NotNull final RowSet rowSetToAdd, final long destination) {
-        final WritableRowSet rowSet = indexColumn.getUnsafe(destination);
+    private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
+                                           @NotNull final RowSet rowSetToAdd, final long destination) {
+        final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
-            return false;
+            return;
         }
         if (rowSet == null) {
             final WritableRowSet currentRowSet = RowSetFactory.empty();
             currentRowSet.insert(rowSetToAdd);
-            indexColumn.set(destination, currentRowSet);
-        } else {
-            rowSet.insert(rowSetToAdd);
+            rowSetColumn.set(destination, currentRowSet);
+            return;
         }
-        return true;
+        rowSet.insert(rowSetToAdd);
     }
 
     private boolean appendShifts(@NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
@@ -468,7 +471,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         }
 
                         final WritableRowSet initialRowSet =
-                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).toTracking();
+                                extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset).toTracking();
                         initialRowSet.compact();
                         final QueryTable newTable = makeSubTable(initialRowSet);
                         tablesBackingChunk.set(backingChunkOffset, newTable);
@@ -581,7 +584,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed = RowSetFactory.empty();
                     downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
@@ -675,7 +678,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         final MutableBoolean newTableAllocated = new MutableBoolean();
                         final QueryTable newOrPrepopulatedTable =
                                 (QueryTable) tableMap.computeIfAbsent(tableMapKey, (unused) -> {
-                                    final WritableRowSet newRowSet = extractAndClearIndex(
+                                    final WritableRowSet newRowSet = extractAndClearRowSet(
                                             addedRowSetsBackingChunk, backingChunkOffset).toTracking();
                                     newRowSet.compact();
                                     final QueryTable newTable = makeSubTable(newRowSet);
@@ -697,7 +700,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         final TableUpdateImpl downstream = new TableUpdateImpl();
 
                         downstream.added =
-                                nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
+                                nullToEmpty(extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset));
                         downstream.removed = RowSetFactory.empty();
                         downstream.modified = RowSetFactory.empty();
                         downstream.shifted = RowSetShiftData.EMPTY;
@@ -810,7 +813,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     downstream.added = RowSetFactory.empty();
                     downstream.removed =
-                            nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
+                            nullToEmpty(extractAndClearRowSet(removedRowSetsBackingChunk, backingChunkOffset));
                     downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -884,11 +887,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
                     final TableUpdateImpl downstream = new TableUpdateImpl();
 
-                    downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
+                    downstream.added = nullToEmpty(extractAndClearRowSet(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed =
-                            nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
+                            nullToEmpty(extractAndClearRowSet(removedRowSetsBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
-                            ? nullToEmpty(extractAndClearIndex(modifiedRowSetsBackingChunk, backingChunkOffset))
+                            ? nullToEmpty(extractAndClearRowSet(modifiedRowSetsBackingChunk, backingChunkOffset))
                             : RowSetFactory.empty();
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
@@ -913,7 +916,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
     }
 
-    private static WritableRowSet extractAndClearIndex(
+    private static WritableRowSet extractAndClearRowSet(
             @NotNull final WritableObjectChunk<WritableRowSet, Values> rowSetChunk,
             final int offset) {
         final WritableRowSet rowSet = rowSetChunk.get(offset);
