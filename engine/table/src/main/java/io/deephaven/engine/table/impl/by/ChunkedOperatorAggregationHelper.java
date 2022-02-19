@@ -62,6 +62,10 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault(
                     "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
                     true);
+    static boolean USE_BITMAP_MODIFIED_STATES_BUILDER =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "ChunkedOperatorAggregationHelper.useBitmapModifiedStatesBuilder",
+                    true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
@@ -419,7 +423,11 @@ public class ChunkedOperatorAggregationHelper {
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
             emptiedStatesBuilder = RowSetFactory.builderRandom();
-            modifiedStatesBuilder = RowSetFactory.builderRandom();
+            if (USE_BITMAP_MODIFIED_STATES_BUILDER) {
+                modifiedStatesBuilder = new BitmapRandomBuilder();
+            } else {
+                modifiedStatesBuilder = RowSetFactory.builderRandom();
+            }
             reincarnatedStatesBuilder = RowSetFactory.builderRandom();
             modifiedOperators = new boolean[ac.size()];
 
@@ -2218,5 +2226,85 @@ public class ChunkedOperatorAggregationHelper {
      */
     public static int chunkSize(long size) {
         return (int) Math.min(size, CHUNK_SIZE);
+    }
+
+    private static class BitmapRandomBuilder implements RowSetBuilderRandom {
+        int firstUsed = Integer.MAX_VALUE;
+        int lastUsed = 0;
+        long [] bitset;
+
+        private static int rowKeyToArrayIndex(long rowKey) {
+            return (int)(rowKey / 64);
+        }
+
+        private static int rowKeyToBitOffset(long rowKey) {
+            return 63 - (int)(rowKey & 63);
+        }
+
+        @Override
+        public WritableRowSet build() {
+            final RowSetBuilderSequential seqBuilder = RowSetFactory.builderSequential();
+            for (int ii = firstUsed; ii <= lastUsed; ++ii) {
+                long word = bitset[ii];
+                if (word == 0) {
+                    continue;
+                }
+                long base = ii * 64L;
+                for (int jj = 63; jj >= 0; --jj) {
+                    if ((word & (1L << jj)) != 0) {
+                        seqBuilder.appendKey(base + 63 - jj);
+                    }
+                }
+            }
+            return seqBuilder.build();
+        }
+
+        @Override
+        public void addKey(long rowKey) {
+            int index = rowKeyToArrayIndex(rowKey);
+            if (bitset == null) {
+                bitset = new long[(index + 1) * 2];
+            }
+            else if (index >= bitset.length) {
+                bitset = Arrays.copyOf(bitset, Math.max(bitset.length * 2, index + 1));
+            }
+            bitset[index] |= (1L << rowKeyToBitOffset(rowKey));
+            firstUsed = Math.min(index, firstUsed);
+            lastUsed = Math.max(index, lastUsed);
+        }
+
+        @Override
+        public void addRange(long firstRowKey, long lastRowKey) {
+//            int firstIndex = rowKeyToArrayIndex(firstRowKey);
+//            int lastIndex = rowKeyToArrayIndex(lastRowKey);
+//            if (lastIndex >= bitset.length) {
+//                bitset = Arrays.copyOf(bitset, Math.max(bitset.length * 2, lastIndex));
+//            }
+//            if (firstIndex == lastIndex) {
+//                int firstOffset = rowKeyToBitOffset(firstRowKey);
+//                int lastOffset = rowKeyToBitOffset(lastRowKey);
+//                while (firstOffset <= lastOffset) {
+//                    bitset[firstIndex] |= (1L << firstOffset++);
+//                }
+//            } else {
+//                int firstOffset = rowKeyToBitOffset(firstRowKey);
+//                while (firstOffset < 64) {
+//                    // this is dumb but simple, there should be bitmath we can do for no loop
+//                    bitset[firstIndex] |= (1L << firstOffset++);
+//                }
+//                while (firstIndex < lastIndex) {
+//                    bitset[firstIndex++] = 0xffff_ffff_ffff_ffffL;
+//                }
+//                int lastOffset = rowKeyToBitOffset(lastRowKey);
+//                int offset = 0;
+//                while (offset < lastOffset) {
+//                    // this is dumb but simple, there should be bitmath we can do for no loop
+//                    bitset[firstIndex] |= (1L << offset++);
+//                }
+//            }
+//            firstUsed = Math.min(lastIndex, firstUsed);
+//            lastUsed = Math.max(lastIndex, lastUsed);
+            throw new UnsupportedOperationException();
+        }
     }
 }

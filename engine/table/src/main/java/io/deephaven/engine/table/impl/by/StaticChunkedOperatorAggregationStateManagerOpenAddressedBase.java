@@ -35,7 +35,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
             int tableSize,
             double maximumLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
-        mainOutputPosition.ensureCapacity(tableSize, false);
+        mainOutputPosition.ensureCapacity(tableSize);
     }
 
     @Override
@@ -57,7 +57,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size);
+        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size, false);
     }
 
     @Override
