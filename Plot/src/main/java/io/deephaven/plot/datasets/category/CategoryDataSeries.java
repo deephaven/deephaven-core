@@ -59,10 +59,10 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the visibility of bar gradients for this dataset.
      *
-     * @param visible whether to display bar gradients or not
+     * @param gradientVisible whether to display bar gradients or not
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries gradientVisible(boolean visible);
+    CategoryDataSeries gradientVisible(boolean gradientVisible);
 
 
     ////////////////////////// color //////////////////////////
@@ -102,26 +102,26 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final Paint color);
+    CategoryDataSeries errorBarColor(final Paint errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color index of the color in the series color palette
+     * @param errorBarColor index of the color in the series color palette
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final int color);
+    CategoryDataSeries errorBarColor(final int errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final String color);
+    CategoryDataSeries errorBarColor(final String errorBarColor);
 
 
     ////////////////////////// line style //////////////////////////
@@ -130,10 +130,10 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the {@link LineStyle} for this dataset
      *
-     * @param style line style
+     * @param lineStyle line style
      * @return this dat
      */
-    CategoryDataSeries lineStyle(final LineStyle style);
+    CategoryDataSeries lineStyle(final LineStyle lineStyle);
 
 
     ////////////////////////// point colors //////////////////////////
@@ -142,44 +142,26 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color default point color
+     * @param pointColor default point color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(Paint color);
+    CategoryDataSeries pointColor(Paint pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color index of the color in the series color palette to use as the default color
+     * @param pointColor index of the color in the series color palette to use as the default color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(int color);
+    CategoryDataSeries pointColor(int pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color default point color
+     * @param pointColor default point color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(String color);
-
-    /**
-     * Sets the point color. Unspecified points use the default color.
-     *
-     * @param category data point
-     * @param color color
-     * @return this CategoryDataSeries
-     */
-    CategoryDataSeries pointColor(final Comparable category, final Paint color);
-
-    /**
-     * Sets the point color. Unspecified points use the default color.
-     *
-     * @param category data point
-     * @param color index of the color in the series color palette
-     * @return this CategoryDataSeries
-     */
-    CategoryDataSeries pointColor(final Comparable category, final int color);
+    CategoryDataSeries pointColor(String pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
@@ -188,37 +170,55 @@ public interface CategoryDataSeries extends DataSeries {
      * @param color color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(final Comparable category, final String color);
+    CategoryDataSeries pointColor(final Comparable category, final Paint pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors map from data points to their {@link Paint}s
+     * @param category data point
+     * @param pointColor index of the color in the series color palette
+     * @return this CategoryDataSeries
+     */
+    CategoryDataSeries pointColor(final Comparable category, final int pointColor);
+
+    /**
+     * Sets the point color. Unspecified points use the default color.
+     *
+     * @param category data point
+     * @param pointColor color
+     * @return this CategoryDataSeries
+     */
+    CategoryDataSeries pointColor(final Comparable category, final String pointColor);
+
+    /**
+     * Sets the point color. Unspecified points use the default color.
+     *
+     * @param pointColor map from data points to their {@link Paint}s
      * @param <CATEGORY> type of the categorical data
      * @param <COLOR> type of color for the points
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable, COLOR extends Paint> CategoryDataSeries pointColor(final Map<CATEGORY, COLOR> colors);
+    <CATEGORY extends Comparable, COLOR extends Paint> CategoryDataSeries pointColor(final Map<CATEGORY, COLOR> pointColor);
 
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors function from data points to their {@link Paint}s
+     * @param pointColor function from data points to their {@link Paint}s
      * @param <COLOR> type of color for the points
      * @return this CategoryDataSeries
      */
-    <COLOR extends Paint> CategoryDataSeries pointColor(final Function<Comparable, COLOR> colors);
+    <COLOR extends Paint> CategoryDataSeries pointColor(final Function<Comparable, COLOR> pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors closure from data points to their {@link Paint}s
+     * @param pointColor closure from data points to their {@link Paint}s
      * @param <COLOR> type of input for the closure
      * @return this CategoryDataSeries
      */
-    default <COLOR extends Paint> CategoryDataSeries pointColor(final Closure<COLOR> colors) {
-        return pointColor(new ClosureFunction<>(colors));
+    default <COLOR extends Paint> CategoryDataSeries pointColor(final Closure<COLOR> pointColor) {
+        return pointColor(new ClosureFunction<>(pointColor));
     }
 
 
@@ -257,31 +257,24 @@ public interface CategoryDataSeries extends DataSeries {
      * Sets the point color. Unspecified points use the default color.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying {@link Paint}s or ints/Integers representing color palette
+     * @param category column in {@code t}, specifying category values
+     * @param pointColor column in {@code t}, specifying {@link Paint}s or ints/Integers representing color palette
      *        values.
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointColor(Table t, String category, String pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying {@link Paint}s or ints/Integers representing color palette
+     * @param category column in {@code sds}, specifying category values
+     * @param pointColor column in {@code sds}, specifying {@link Paint}s or ints/Integers representing color palette
      *        values.
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointColor(SelectableDataSet sds, String category, String pointColor);
 
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors map from the y-value of data points to {@link Paint}
-     * @return this CategoryDataSeries
-     */
-    <T extends Paint> CategoryDataSeries pointColorByY(Map<Double, T> colors);
 
     ////////////////////////// point labels //////////////////////////
 
@@ -291,42 +284,42 @@ public interface CategoryDataSeries extends DataSeries {
      * unlabeled.
      *
      * @param category category value
-     * @param label label
+     * @param pointLabel label
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointLabel(final Comparable category, final Object label);
+    CategoryDataSeries pointLabel(final Comparable category, final Object pointLabel);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param labels map used to determine point labels
+     * @param pointLabels map used to determine point labels
      * @param <CATEGORY> type of the categorical data
      * @param <LABEL> data type of the point labels
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable, LABEL> CategoryDataSeries pointLabel(final Map<CATEGORY, LABEL> labels);
+    <CATEGORY extends Comparable, LABEL> CategoryDataSeries pointLabel(final Map<CATEGORY, LABEL> pointLabels);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param labels function used to determine point labels
+     * @param pointLabels function used to determine point labels
      * @param <LABEL> data type of the point labels
      * @return this CategoryDataSeries
      */
-    <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels);
+    <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> pointLabels);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param labels closure used to determine point labels for input categories
+     * @param pointLabels closure used to determine point labels for input categories
      * @param <LABEL> data type of the point labels
      * @return this CategoryDataSeries
      */
-    default <LABEL> CategoryDataSeries pointLabel(final Closure<LABEL> labels) {
-        return pointLabel(new ClosureFunction<>(labels));
+    default <LABEL> CategoryDataSeries pointLabel(final Closure<LABEL> pointLabels) {
+        return pointLabel(new ClosureFunction<>(pointLabels));
     }
 
     /**
@@ -334,30 +327,30 @@ public interface CategoryDataSeries extends DataSeries {
      * unlabeled.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying labels
+     * @param category column in {@code t}, specifying category values
+     * @param pointLabel column in {@code t}, specifying labels
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointLabel(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointLabel(Table t, String category, String pointLabel);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying labels
+     * @param category column in {@code sds}, specifying category values
+     * @param pointLabel column in {@code sds}, specifying labels
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointLabel(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointLabel(SelectableDataSet sds, String category, String pointLabel);
 
     /**
      * Sets the format of the percentage point label format in pie plots.
      *
-     * @param format format
+     * @param pieLabelFormat format
      * @return this data series.
      */
-    CategoryDataSeries piePercentLabelFormat(final String format);
+    CategoryDataSeries piePercentLabelFormat(final String pieLabelFormat);
 
     ////////////////////////// point shapes //////////////////////////
 
@@ -367,49 +360,49 @@ public interface CategoryDataSeries extends DataSeries {
      * default shapes.
      *
      * @param category category value
-     * @param shape shape
+     * @param pointShape shape
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(final Comparable category, final String shape);
+    CategoryDataSeries pointShape(final Comparable category, final String pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param category category value
-     * @param shape shape
+     * @param pointShape shape
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(final Comparable category, final Shape shape);
+    CategoryDataSeries pointShape(final Comparable category, final Shape pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes map used to determine point shapes
+     * @param pointShapes map used to determine point shapes
      * @param <CATEGORY> type of the categorical data
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable> CategoryDataSeries pointShape(final Map<CATEGORY, String> shapes);
+    <CATEGORY extends Comparable> CategoryDataSeries pointShape(final Map<CATEGORY, String> pointShapes);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes function used to determine point shapes
+     * @param pointShapes function used to determine point shapes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(final Function<Comparable, String> shapes);
+    CategoryDataSeries pointShape(final Function<Comparable, String> pointShapes);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes closure used to determine point shapes
+     * @param pointShapes closure used to determine point shapes
      * @return this CategoryDataSeries
      */
-    default CategoryDataSeries pointShape(final Closure<String> shapes) {
-        return pointShape(new ClosureFunction<>(shapes));
+    default CategoryDataSeries pointShape(final Closure<String> pointShapes) {
+        return pointShape(new ClosureFunction<>(pointShapes));
     }
 
     /**
@@ -417,22 +410,22 @@ public interface CategoryDataSeries extends DataSeries {
      * default shapes.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying shapes
+     * @param category column in {@code t}, specifying category values
+     * @param pointShape column in {@code t}, specifying shapes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointShape(Table t, String category, String pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying shapes
+     * @param category column in {@code sds}, specifying category values
+     * @param pointShape column in {@code sds}, specifying shapes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointShape(SelectableDataSet sds, String category, String pointShape);
 
 
 
@@ -444,119 +437,119 @@ public interface CategoryDataSeries extends DataSeries {
      * Unspecified points use the default size.
      *
      * @param category data point
-     * @param factor factor to multiply the default size (1) by
+     * @param pointSize factor to multiply the default size (1) by
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(final Comparable category, final int factor);
+    CategoryDataSeries pointSize(final Comparable category, final int pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param category data point
-     * @param factor factor to multiply the default size (1) by
+     * @param pointSize factor to multiply the default size (1) by
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(final Comparable category, final long factor);
+    CategoryDataSeries pointSize(final Comparable category, final long pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param category data point
-     * @param factor factor to multiply the default size (1) by
+     * @param pointSize factor to multiply the default size (1) by
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(final Comparable category, final double factor);
+    CategoryDataSeries pointSize(final Comparable category, final double pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param category data point
-     * @param factor factor to multiply the default size (1) by
+     * @param pointSize factor to multiply the default size (1) by
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(final Comparable category, final Number factor);
+    CategoryDataSeries pointSize(final Comparable category, final Number pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param categories data points
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @param <CATEGORY> type of the categorical data
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, int[] factors);
+    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, int[] pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param categories data points
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @param <CATEGORY> type of the categorical data
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, double[] factors);
+    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, double[] pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param categories data points
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @param <CATEGORY> type of the categorical data
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, long[] factors);
+    <CATEGORY extends Comparable> CategoryDataSeries pointSize(final CATEGORY[] categories, long[] pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param categories data points
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @param <CATEGORY> type of the categorical data
      * @param <NUMBER> data type of the point sizes
      * @return this CategoryDataSeries
      */
     <CATEGORY extends Comparable, NUMBER extends Number> CategoryDataSeries pointSize(final CATEGORY[] categories,
-            NUMBER[] factors);
+            NUMBER[] pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors map used to set sizes of specific data points
+     * @param pointSizes map used to set sizes of specific data points
      * @param <CATEGORY> type of the categorical data
      * @param <NUMBER> data type of the point sizes
      * @return this CategoryDataSeries
      */
     <CATEGORY extends Comparable, NUMBER extends Number> CategoryDataSeries pointSize(
-            final Map<CATEGORY, NUMBER> factors);
+            final Map<CATEGORY, NUMBER> pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors function used to set sizes of data points
+     * @param pointSizes function used to set sizes of data points
      * @param <NUMBER> data type of the point sizes
      * @return this CategoryDataSeries
      */
-    <NUMBER extends Number> CategoryDataSeries pointSize(final Function<Comparable, NUMBER> factors);
+    <NUMBER extends Number> CategoryDataSeries pointSize(final Function<Comparable, NUMBER> pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors closure used to set sizes of data points
+     * @param pointSizes closure used to set sizes of data points
      * @param <NUMBER> data type of the point sizes
      * @return this CategoryDataSeries
      */
-    default <NUMBER extends Number> CategoryDataSeries pointSize(final Closure<NUMBER> factors) {
-        return pointSize(new ClosureFunction<>(factors));
+    default <NUMBER extends Number> CategoryDataSeries pointSize(final Closure<NUMBER> pointSizes) {
+        return pointSize(new ClosureFunction<>(pointSizes));
     }
 
     /**
@@ -564,22 +557,22 @@ public interface CategoryDataSeries extends DataSeries {
      * Unspecified points use the default size.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying point sizes
+     * @param category column in {@code t}, specifying category values
+     * @param pointSize column in {@code t}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointSize(Table t, String category, String pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying point sizes
+     * @param category column in {@code sds}, specifying category values
+     * @param pointSize column in {@code sds}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointSize(SelectableDataSet sds, String category, String pointSize);
 
 
     ////////////////////// tool tips /////////////////////////////

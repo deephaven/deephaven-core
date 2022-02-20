@@ -365,14 +365,14 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
 
     @Override
-    public AxisImpl axisFormat(final AxisFormat format) {
-        this.format = format;
+    public AxisImpl axisFormat(final AxisFormat axisFormat) {
+        this.format = axisFormat;
         return this;
     }
 
     @Override
-    public AxisImpl axisFormatPattern(final String pattern) {
-        this.formatPattern = pattern;
+    public AxisImpl axisFormatPattern(final String axisFormatPattern) {
+        this.formatPattern = axisFormatPattern;
         return this;
     }
 
@@ -444,12 +444,18 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
+    public Axis log(final boolean useLog) {
+        this.log = useLog;
+        return this;
+    }
+
+    @Override
     public AxisImpl businessTime(final BusinessCalendar calendar) {
         return transform(new AxisTransformBusinessCalendar(calendar));
     }
 
     @Override
-    public AxisImpl businessTime(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl businessTime(final SelectableDataSet sds, final String calendar) {
         throw new PlotUnsupportedOperationException(
                 "Selectable business time transformation is not currently supported", this);
     }
@@ -459,6 +465,10 @@ public class AxisImpl implements Axis, PlotExceptionCause {
         return businessTime(Calendars.calendar());
     }
 
+    @Override
+    public AxisImpl businessTime(boolean useBusinessTime) {
+        return useBusinessTime ? businessTime() : transform(null);
+    }
 
     ////////////////////////// axis rescaling //////////////////////////
 
@@ -497,12 +507,12 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl min(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl min(final SelectableDataSet sds, final String min) {
         throw new PlotUnsupportedOperationException("Selectable min transformation is not currently supported", this);
     }
 
     @Override
-    public AxisImpl max(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl max(final SelectableDataSet sds, final String max) {
         throw new PlotUnsupportedOperationException("Selectable max transformation is not currently supported", this);
     }
 
@@ -536,8 +546,8 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl minorTicks(int count) {
-        this.minorTickCount = count;
+    public AxisImpl minorTicks(int nminor) {
+        this.minorTickCount = nminor;
         this.minorTicksVisible = true;
         return this;
     }

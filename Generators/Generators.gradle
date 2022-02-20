@@ -292,6 +292,20 @@ task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
 
+task generatePythonFigureWrapper2(type: JavaExec, dependsOn: 'classes') {
+    description 'Run GeneratePythonFigureWrapper'
+    dependsOn generatePlottingConvenience
+
+    main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
+    args devRoot, 'false'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = workDir
+    systemProperty 'workspace', workspace
+    systemProperty 'devroot', devRoot
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
+}
+
 tasks.register 'generateAllPython', {
     Task t -> t.dependsOn ':Generators:generatePythonIntegrationStaticMethods',
             ':Generators:generatePythonFigureWrapper'
@@ -312,6 +326,10 @@ tasks.register 'generateAll', {
                            ':Generators:generateAllPython'
     t.group = '~Deephaven'
     t.description = 'Runs all code generators'
+}
+
+tasks.register 'generatePythonPlot2', {
+    Task t -> t.dependsOn ':Generators:generatePythonFigureWrapper2'
 }
 
 project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,

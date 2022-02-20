@@ -139,8 +139,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries gradientVisible(boolean visible) {
-        setGradientVisible(visible);
+    public AbstractXYDataSeries gradientVisible(boolean gradientVisible) {
+        setGradientVisible(gradientVisible);
         return this;
     }
 
@@ -171,20 +171,20 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final Paint color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final Paint errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final int color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final int errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final String color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final String errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
@@ -193,8 +193,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries lineStyle(final LineStyle style) {
-        setLineStyle(style);
+    public AbstractXYDataSeries lineStyle(final LineStyle lineStyle) {
+        setLineStyle(lineStyle);
         return this;
     }
 
@@ -225,63 +225,63 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public XYDataSeriesInternal pointSize(final int factor) {
-        return pointSize(factor == NULL_INT ? null : factor);
+    public XYDataSeriesInternal pointSize(final int pointSize) {
+        return pointSize(pointSize == NULL_INT ? null : pointSize);
     }
 
     @Override
-    public XYDataSeriesInternal pointSize(final long factor) {
-        return pointSize(factor == NULL_LONG ? null : factor);
+    public XYDataSeriesInternal pointSize(final long pointSize) {
+        return pointSize(pointSize == NULL_LONG ? null : pointSize);
     }
 
     @Override
-    public XYDataSeriesInternal pointSize(final double factor) {
-        shapeSizes.setDefault(factor == NULL_DOUBLE || factor == Double.NaN ? null : factor);
+    public XYDataSeriesInternal pointSize(final double pointSize) {
+        shapeSizes.setDefault(pointSize == NULL_DOUBLE || pointSize == Double.NaN ? null : pointSize);
         return this;
     }
 
     @Override
-    public XYDataSeriesInternal pointSize(final Number factor) {
-        shapeSizes.setDefault(factor == null ? null : factor.doubleValue());
+    public XYDataSeriesInternal pointSize(final Number pointSize) {
+        shapeSizes.setDefault(pointSize == null ? null : pointSize.doubleValue());
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final IndexableData<Double> factors) {
-        ArgumentValidations.assertNotNull(factors, "factors", getPlotInfo());
-        shapeSizes.setSpecific(factors, true);
+    public AbstractXYDataSeries pointSize(final IndexableData<Double> pointSizes) {
+        ArgumentValidations.assertNotNull(pointSizes, "factors", getPlotInfo());
+        shapeSizes.setSpecific(pointSizes, true);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final int... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public AbstractXYDataSeries pointSize(final int... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final long... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public AbstractXYDataSeries pointSize(final long... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final double... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public AbstractXYDataSeries pointSize(final double... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     @Override
-    public <T extends Number> AbstractXYDataSeries pointSize(final T[] factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public <T extends Number> AbstractXYDataSeries pointSize(final T[] pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final Table t, final String columnName) {
+    public AbstractXYDataSeries pointSize(final Table t, final String pointSizes) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
+        ArgumentValidations.assertNotNull(pointSizes, "columnName", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+        final TableHandle tableHandle = new TableHandle(t, pointSizes);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newNumericHandler(tableHandle, pointSizes, getPlotInfo());
 
         if (columnHandler.typeClassification().isNumeric()) {
             shapeSizes.setSpecific(new IndexableDataTable<Double>(columnHandler, getPlotInfo()) {
@@ -291,7 +291,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
                 }
             }, true);
         } else {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a size: column=" + columnName,
+            throw new PlotUnsupportedOperationException("Column can not be converted into a size: column=" + pointSizes,
                     this);
         }
 
@@ -299,15 +299,15 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final SelectableDataSet sds, final String columnName) {
+    public AbstractXYDataSeries pointSize(final SelectableDataSet sds, final String pointSize) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
-        ArgumentValidations.assertIsNumericOrTime(sds, columnName, getPlotInfo());
+        ArgumentValidations.assertNotNull(pointSize, "columnName", getPlotInfo());
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), pointSize);
+        ArgumentValidations.assertIsNumericOrTime(sds, pointSize, getPlotInfo());
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), pointSize);
         addSwappableTable(t);
-        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, columnName, getPlotInfo()), true);
+        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, pointSize, getPlotInfo()), true);
 
         return this;
     }
@@ -317,31 +317,31 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries pointColor(final Paint color) {
-        shapeColors.setDefault(color);
+    public AbstractXYDataSeries pointColor(final Paint pointColor) {
+        shapeColors.setDefault(pointColor);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final int color) {
-        return pointColor(intToColor(chart(), color));
+    public AbstractXYDataSeries pointColor(final int pointColor) {
+        return pointColor(intToColor(chart(), pointColor));
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final String color) {
-        return pointColor(Color.color(color));
+    public AbstractXYDataSeries pointColor(final String pointColor) {
+        return pointColor(Color.color(pointColor));
     }
 
     @Override
-    public <T extends Paint> AbstractXYDataSeries pointColor(final IndexableData<T> colors) {
-        shapeColors.setSpecific(colors, true);
+    public <T extends Paint> AbstractXYDataSeries pointColor(final IndexableData<T> pointColor) {
+        shapeColors.setSpecific(pointColor, true);
         return this;
     }
 
 
     @Override
-    public AbstractXYDataSeries pointColor(final Paint... colors) {
-        return pointColor(new IndexableDataArray<>(colors, getPlotInfo()));
+    public AbstractXYDataSeries pointColor(final Paint... pointColor) {
+        return pointColor(new IndexableDataArray<>(pointColor, getPlotInfo()));
     }
 
     @Override
@@ -350,28 +350,28 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final int... colors) {
-        return pointColorInteger(new IndexableDataInteger(colors, getPlotInfo()));
+    public AbstractXYDataSeries pointColor(final int... pointColors) {
+        return pointColorInteger(new IndexableDataInteger(pointColors, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final Integer... colors) {
-        return pointColorInteger(new IndexableDataArray<>(colors, getPlotInfo()));
+    public AbstractXYDataSeries pointColor(final Integer... pointColors) {
+        return pointColorInteger(new IndexableDataArray<>(pointColors, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final String... colors) {
-        return pointColor(Arrays.stream(colors).map(Color::color).toArray(Color[]::new));
+    public AbstractXYDataSeries pointColor(final String... pointColors) {
+        return pointColor(Arrays.stream(pointColors).map(Color::color).toArray(Color[]::new));
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final Table t, final String columnName) {
+    public AbstractXYDataSeries pointColor(final Table t, final String pointColors) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+        final TableHandle tableHandle = new TableHandle(t, pointColors);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newNumericHandler(tableHandle, pointColors, getPlotInfo());
 
         if (columnHandler.typeClassification() == ColumnHandlerFactory.TypeClassification.INTEGER &&
                 (columnHandler.type() == int.class || columnHandler.type() == Integer.class)) {
@@ -380,91 +380,75 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
             return pointColor(new IndexableDataTable<>(columnHandler, getPlotInfo()));
         } else {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + columnName + "\ttype=" + columnHandler.type(),
+                    "Column can not be converted into a color: column=" + pointColors + "\ttype=" + columnHandler.type(),
                     this);
         }
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final SelectableDataSet sds, final String columnName) {
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
-        final Class type = sds.getTableDefinition().getColumn(columnName).getDataType();
+    public AbstractXYDataSeries pointColor(final SelectableDataSet sds, final String pointColors) {
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), pointColors);
+        final Class type = sds.getTableDefinition().getColumn(pointColors).getDataType();
         final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class)
                 || type.equals(Short.class);
         final boolean isPaint = Paint.class.isAssignableFrom(type);
 
         if (!isInt && !isPaint) {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + columnName + "\ttype=" + type, this);
+                    "Column can not be converted into a color: column=" + pointColors + "\ttype=" + type, this);
         }
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), pointColors);
         addSwappableTable(t);
 
         if (isInt) {
-            return pointColor(new IndexableDataSwappableTablePaint(t, columnName, chart()));
+            return pointColor(new IndexableDataSwappableTablePaint(t, pointColors, chart()));
         } else if (isPaint) {
-            return pointColor(new IndexableDataSwappableTable<Paint>(t, columnName, getPlotInfo()));
+            return pointColor(new IndexableDataSwappableTable<Paint>(t, pointColors, getPlotInfo()));
         } else {
             throw new PlotIllegalStateException("Should never reach here", this);
         }
     }
 
-    @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
-        ArgumentValidations.assertNotNull(colors, "colors", getPlotInfo());
-        final Paint[] paints = new Paint[size()];
-
-        for (int i = 0; i < size(); i++) {
-            paints[i] = colors.apply(getY(i));
-        }
-
-        return pointColor(paints);
-    }
-
-    @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(final Closure<T> colors) {
-        return pointColorByY(new ClosureFunction<>(colors));
-    }
 
     ////////////////////////// point labels //////////////////////////
 
 
     @Override
-    public AbstractXYDataSeries pointLabel(final Object label) {
-        shapeLabels.setDefault(label == null ? null : label.toString());
+    public AbstractXYDataSeries pointLabel(final Object pointLabel) {
+        shapeLabels.setDefault(pointLabel == null ? null : pointLabel.toString());
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(final IndexableData<?> labels) {
-        shapeLabels.setSpecific(new IndexableDataString<>(labels), true);
+    public AbstractXYDataSeries pointLabel(final IndexableData<?> pointLabels) {
+        shapeLabels.setSpecific(new IndexableDataString<>(pointLabels), true);
 
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(final Object... labels) {
-        return pointLabel(new IndexableDataArray<>(labels, getPlotInfo()));
+    public AbstractXYDataSeries pointLabel(final Object... pointLabels) {
+        return pointLabel(new IndexableDataArray<>(pointLabels, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(@NotNull Table t, @NotNull String columnName) {
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+    public AbstractXYDataSeries pointLabel(@NotNull Table t, @NotNull String pointLabel) {
+        final TableHandle tableHandle = new TableHandle(t, pointLabel);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newObjectHandler(tableHandle, pointLabel, getPlotInfo());
 
         return pointLabel(new IndexableDataTableString(columnHandler, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds, @NotNull String columnName) {
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
+    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds, @NotNull String pointLabel) {
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), pointLabel);
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), pointLabel);
         addSwappableTable(t);
-        return pointLabel(new IndexableDataSwappableTableString(t, columnName, getPlotInfo()));
+        return pointLabel(new IndexableDataSwappableTableString(t, pointLabel, getPlotInfo()));
     }
 
 
@@ -472,30 +456,30 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public DataSeries pointShape(final String shape) {
-        return pointShape(NamedShape.getShape(shape));
+    public DataSeries pointShape(final String pointShape) {
+        return pointShape(NamedShape.getShape(pointShape));
     }
 
     @Override
-    public DataSeries pointShape(final Shape shape) {
-        pointShapes.setDefault(shape);
+    public DataSeries pointShape(final Shape pointShape) {
+        pointShapes.setDefault(pointShape);
         return this;
     }
 
     @Override
-    public XYDataSeries pointShape(final IndexableData<String> shapes) {
-        ArgumentValidations.assertNotNull(shapes, "shapes", getPlotInfo());
-        pointShapes.setSpecific(new IndexableDataPointShapeString(shapes), true);
+    public XYDataSeries pointShape(final IndexableData<String> pointShapes) {
+        ArgumentValidations.assertNotNull(pointShapes, "shapes", getPlotInfo());
+        this.pointShapes.setSpecific(new IndexableDataPointShapeString(pointShapes), true);
 
         return this;
     }
 
     @Override
-    public XYDataSeries pointShape(final String... shapes) {
-        ArgumentValidations.assertNotNull(shapes, "shapes", getPlotInfo());
+    public XYDataSeries pointShape(final String... pointShapes) {
+        ArgumentValidations.assertNotNull(pointShapes, "shapes", getPlotInfo());
         // sanity check shapes
         int index = 0;
-        for (final String shape : shapes) {
+        for (final String shape : pointShapes) {
             try {
                 NamedShape.getShape(shape);
             } catch (final IllegalArgumentException iae) {
@@ -505,79 +489,79 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
             ++index;
         }
 
-        return pointShape(new IndexableDataArray<>(shapes, getPlotInfo()));
+        return pointShape(new IndexableDataArray<>(pointShapes, getPlotInfo()));
     }
 
     @Override
-    public XYDataSeries pointShape(final Shape... shapes) {
-        ArgumentValidations.assertNotNull(shapes, "shapes", getPlotInfo());
-        pointShapes.setSpecific(new IndexableDataPointShapeObject(new IndexableDataArray<>(shapes, getPlotInfo())),
+    public XYDataSeries pointShape(final Shape... pointShapes) {
+        ArgumentValidations.assertNotNull(pointShapes, "shapes", getPlotInfo());
+        this.pointShapes.setSpecific(new IndexableDataPointShapeObject(new IndexableDataArray<>(pointShapes, getPlotInfo())),
                 true);
         return this;
     }
 
     @Override
-    public XYDataSeries pointShape(final Table t, final String columnName) {
+    public XYDataSeries pointShape(final Table t, final String pointShape) {
         ArgumentValidations.assertNotNull(t, "t", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
+        ArgumentValidations.assertNotNull(pointShape, "columnName", getPlotInfo());
 
-        final Class columnType = ArgumentValidations.getColumnType(t, columnName, getPlotInfo());
+        final Class columnType = ArgumentValidations.getColumnType(t, pointShape, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, columnName);
+            final TableHandle tableHandle = new TableHandle(t, pointShape);
             addTableHandle(tableHandle);
             final ColumnHandlerFactory.ColumnHandler columnHandler =
-                    ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                    ColumnHandlerFactory.newObjectHandler(tableHandle, pointShape, getPlotInfo());
             return pointShape(new IndexableDataTableString<>(columnHandler, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, columnName);
+            final TableHandle tableHandle = new TableHandle(t, pointShape);
             addTableHandle(tableHandle);
             final ColumnHandlerFactory.ColumnHandler columnHandler =
-                    ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                    ColumnHandlerFactory.newObjectHandler(tableHandle, pointShape, getPlotInfo());
             pointShapes.setSpecific(new IndexableDataTablePointShapeObject(columnHandler, getPlotInfo()), true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName,
+            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + pointShape,
                     this);
         }
     }
 
     @Override
-    public XYDataSeries pointShape(final SelectableDataSet sds, final String columnName) {
+    public XYDataSeries pointShape(final SelectableDataSet sds, final String pointShape) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
-        final Class columnType = ArgumentValidations.getColumnType(sds, columnName, getPlotInfo());
+        ArgumentValidations.assertNotNull(pointShape, "columnName", getPlotInfo());
+        final Class columnType = ArgumentValidations.getColumnType(sds, pointShape, getPlotInfo());
 
         if (String.class.isAssignableFrom(columnType)) {
-            final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+            final SwappableTable t = sds.getSwappableTable(name(), chart(), pointShape);
             addSwappableTable(t);
-            return pointShape(new IndexableDataSwappableTableString<>(t, columnName, getPlotInfo()));
+            return pointShape(new IndexableDataSwappableTableString<>(t, pointShape, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
-            final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+            final SwappableTable t = sds.getSwappableTable(name(), chart(), pointShape);
             addSwappableTable(t);
-            pointShapes.setSpecific(new IndexableDataSwappableTablePointShapeObject(t, columnName, getPlotInfo()),
+            pointShapes.setSpecific(new IndexableDataSwappableTablePointShapeObject(t, pointShape, getPlotInfo()),
                     true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName,
+            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + pointShape,
                     this);
         }
     }
 
     @Override
-    public AbstractXYDataSeries pointLabelFormat(final String format) {
-        setPointLabelFormat(format);
+    public AbstractXYDataSeries pointLabelFormat(final String pointLabelFormat) {
+        setPointLabelFormat(pointLabelFormat);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries xToolTipPattern(final String format) {
-        setXToolTipPattern(format);
+    public AbstractXYDataSeries xToolTipPattern(final String xToolTipPattern) {
+        setXToolTipPattern(xToolTipPattern);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries yToolTipPattern(final String format) {
-        setYToolTipPattern(format);
+    public AbstractXYDataSeries yToolTipPattern(final String yToolTipPattern) {
+        setYToolTipPattern(yToolTipPattern);
         return this;
     }
 
@@ -761,9 +745,9 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries toolTipPattern(final String format) {
-        xToolTipPattern(format);
-        yToolTipPattern(format);
+    public AbstractXYDataSeries toolTipPattern(final String toolTipPattern) {
+        xToolTipPattern(toolTipPattern);
+        yToolTipPattern(toolTipPattern);
         return this;
     }
 

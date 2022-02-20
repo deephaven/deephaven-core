@@ -20,10 +20,10 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes all series with {@code names} from this Figure.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Figure
      */
-    BaseFigure figureRemoveSeries(final String... names);
+    BaseFigure figureRemoveSeries(final String... removeSeriesNames);
 
 
     ////////////////////////// figure configuration //////////////////////////
@@ -122,27 +122,27 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes a chart from the Figure's grid.
      *
-     * @param index index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+     * @param removeChartIndex index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
      *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
      *        [2, 3].
      * @return this Figure with the chart removed.
      */
-    BaseFigure removeChart(final int index);
+    BaseFigure removeChart(final int removeChartIndex);
 
     /**
      * Removes a chart from the Figure's grid.
      *
-     * @param rowNum row index in this Figure's grid. The row index starts at 0.
-     * @param colNum column index in this Figure's grid. The column index starts at 0.
+     * @param removeChartRowNum row index in this Figure's grid. The row index starts at 0.
+     * @param removeChartColNum column index in this Figure's grid. The column index starts at 0.
      * @throws RuntimeException if the coordinates are outside the Figure's grid
      * @return this Figure with the chart removed.
      */
-    BaseFigure removeChart(final int rowNum, final int colNum);
+    BaseFigure removeChart(final int removeChartRowNum, final int removeChartColNum);
 
     /**
      * Returns a chart from this Figure's grid.
      *
-     * @param index index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+     * @param index index from the Figure's grid. The index starts at 0 in the upper left hand corner of the
      *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
      *        [2, 3].
      * @throws RuntimeException if the index is outside the Figure's grid
@@ -167,52 +167,52 @@ public interface BaseFigure extends Serializable {
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation) {
-        return save(saveLocation, false, -1);
+    default BaseFigure save(String path) {
+        return save(path, false, -1);
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param wait whether to hold the calling thread until the file is written
      * @param timeoutSeconds timeout in seconds to wait.
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, boolean wait, long timeoutSeconds) {
+    default BaseFigure save(String path, boolean wait, long timeoutSeconds) {
         throw new UnsupportedOperationException(getClass() + " does not implement save");
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param width image width
      * @param height image height
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, int width, int height) {
-        return save(saveLocation, width, height, false, -1);
+    default BaseFigure save(String path, int width, int height) {
+        return save(path, width, height, false, -1);
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param width image width
      * @param height image height
      * @param wait whether to hold the calling thread until the file is written
      * @param timeoutSeconds timeout in seconds to wait.
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, int width, int height, boolean wait, long timeoutSeconds) {
+    default BaseFigure save(String path, int width, int height, boolean wait, long timeoutSeconds) {
         throw new UnsupportedOperationException(getClass() + " does not implement save");
     }
 }

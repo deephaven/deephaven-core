@@ -27,58 +27,58 @@ public interface XYDataSeries extends DataSeries {
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(IndexableData<Double> factors);
+    XYDataSeries pointSize(IndexableData<Double> pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(int... factors);
+    XYDataSeries pointSize(int... pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(long... factors);
+    XYDataSeries pointSize(long... pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(double... factors);
+    XYDataSeries pointSize(double... pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factors factors to multiply the default size (1) by
+     * @param pointSizes factors to multiply the default size (1) by
      * @param <T> data type of the {@code factors}
      * @return this XYDataSeries
      */
-    <T extends Number> XYDataSeries pointSize(T[] factors);
+    <T extends Number> XYDataSeries pointSize(T[] pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param t table containing factors to multiply the default size (1) by
-     * @param columnName column in {@code t} containing size scaling factors. The size data for point i comes from row
+     * @param pointSizes column in {@code t} containing size scaling factors. The size data for point i comes from row
      *        i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(Table t, String columnName);
+    XYDataSeries pointSize(Table t, String pointSizes);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
@@ -86,11 +86,11 @@ public interface XYDataSeries extends DataSeries {
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing factors to multiply the default size
      *        (1) by
-     * @param columnName column in {@code sds} containing size scaling factors. The size data for point i comes from row
+     * @param pointSize column in {@code sds} containing size scaling factors. The size data for point i comes from row
      *        i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointSize(SelectableDataSet sds, String columnName);
+    XYDataSeries pointSize(SelectableDataSet sds, String pointSize);
 
 
     ////////////////////////// point colors //////////////////////////
@@ -99,19 +99,19 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors colors. The color for data point i comes from index i.
+     * @param pointColor colors. The color for data point i comes from index i.
      * @param <T> data type of the {@code colors}
      * @return this XYDataSeries
      */
-    <T extends Paint> XYDataSeries pointColor(final IndexableData<T> colors);
+    <T extends Paint> XYDataSeries pointColor(final IndexableData<T> pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors colors. The color for data point i comes from index i.
+     * @param pointColor colors. The color for data point i comes from index i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(Paint... colors);
+    XYDataSeries pointColor(Paint... pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
@@ -124,46 +124,46 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
      *        the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(int... colors);
+    XYDataSeries pointColor(int... pointColors);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
      *        the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(Integer... colors);
+    XYDataSeries pointColor(Integer... pointColors);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors color names. The color for data point i comes from index i.
+     * @param pointColors color names. The color for data point i comes from index i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(String... colors);
+    XYDataSeries pointColor(String... pointColors);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
      * @param t table containing colors
-     * @param columnName column in {@code t} containing colors. The color data for point i comes from row i.
+     * @param pointColors column in {@code t} containing colors. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(Table t, String columnName);
+    XYDataSeries pointColor(Table t, String pointColors);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing colors
-     * @param columnName column in {@code sds} containing colors. The color data for point i comes from row i.
+     * @param pointColors column in {@code sds} containing colors. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(SelectableDataSet sds, String columnName);
+    XYDataSeries pointColor(SelectableDataSet sds, String pointColors);
 
 
     ////////////////////////// point labels //////////////////////////
@@ -173,39 +173,39 @@ public interface XYDataSeries extends DataSeries {
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param labels labels
+     * @param pointLabels labels
      * @return this XYDataSeries
      */
-    XYDataSeries pointLabel(IndexableData<?> labels);
+    XYDataSeries pointLabel(IndexableData<?> pointLabels);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param labels labels
+     * @param pointLabels labels
      * @return this XYDataSeries
      */
-    XYDataSeries pointLabel(Object... labels);
+    XYDataSeries pointLabel(Object... pointLabels);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param t table containing labels
-     * @param columnName column in {@code t} containing labels. The label data for point i comes from row i.
+     * @param pointLabel column in {@code t} containing labels. The label data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointLabel(Table t, String columnName);
+    XYDataSeries pointLabel(Table t, String pointLabel);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing labels
-     * @param columnName column in {@code sds} containing labels. The color data for point i comes from row i.
+     * @param pointLabel column in {@code sds} containing labels. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointLabel(SelectableDataSet sds, String columnName);
+    XYDataSeries pointLabel(SelectableDataSet sds, String pointLabel);
 
 
 
@@ -216,48 +216,48 @@ public interface XYDataSeries extends DataSeries {
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes shapes
+     * @param pointShapes shapes
      * @return this XYDataSeries
      */
-    XYDataSeries pointShape(IndexableData<String> shapes);
+    XYDataSeries pointShape(IndexableData<String> pointShapes);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes shapes
+     * @param pointShapes shapes
      * @return this XYDataSeries
      */
-    XYDataSeries pointShape(String... shapes);
+    XYDataSeries pointShape(String... pointShapes);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shapes shapes
+     * @param pointShapes shapes
      * @return this XYDataSeries
      */
-    XYDataSeries pointShape(Shape... shapes);
+    XYDataSeries pointShape(Shape... pointShapes);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param t table containing shapes
-     * @param columnName column in {@code t} containing shapes. The shape data for point i comes from row i.
+     * @param pointShape column in {@code t} containing shapes. The shape data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointShape(Table t, String columnName);
+    XYDataSeries pointShape(Table t, String pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing shapes
-     * @param columnName column in {@code sds} containing shapes. The color data for point i comes from row i.
+     * @param pointShape column in {@code sds} containing shapes. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointShape(SelectableDataSet sds, String columnName);
+    XYDataSeries pointShape(SelectableDataSet sds, String pointShape);
 
 
 

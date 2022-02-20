@@ -536,7 +536,7 @@ public class GenerateMultiSeries {
             if (function.getParameterTypes()[0].getTypeName().startsWith("groovy.lang.Closure")) {
                 return indent(2) + "return " + function.getMethodName()
                         + "(new io.deephaven.plot.util.functions.ClosureFunction<>("
-                        + function.getParameterNames()[0] + "), keys);\n" + indent(1) + "}\n\n";
+                        + function.getParameterNames()[0] + "), multiSeriesKey);\n" + indent(1) + "}\n\n";
             }
 
             final String tableMethodName = getTableMethodName(function.getMethodName());
@@ -571,10 +571,10 @@ public class GenerateMultiSeries {
 
                 Method tableMethod = methods[methods.length - 1];
                 switch (tableMethod.getParameterCount()) {
-                    case 3: // table, values, keys -> xy dataset
+                    case 3: // table, values, multiSeriesKey -> xy dataset
                         code.append("newColumn");
                         break;
-                    case 4: // table, key, values, keys -> category dataset
+                    case 4: // table, key, values, multiSeriesKey -> category dataset
                         code.append("getX(), newColumn");
                         break;
                     default:
@@ -583,7 +583,7 @@ public class GenerateMultiSeries {
                                 + tableMethodName + " in class " + function.getClassNameShort());
                 }
 
-                return code.append(", keys), this").toString();
+                return code.append(", multiSeriesKey), this").toString();
             }
 
             final Class c = Class.forName(function.getClassName());
@@ -617,7 +617,7 @@ public class GenerateMultiSeries {
                             + " in class " + function.getClassNameShort());
             }
 
-            code.append("newColumn, keys), this");
+            code.append("newColumn, multiSeriesKey), this");
 
             return code.toString();
         }
@@ -708,7 +708,7 @@ public class GenerateMultiSeries {
         private String createTransformBody(final GroovyStaticImportGenerator.JavaFunction function) {
             final List<String> args = new ArrayList<>();
             Collections.addAll(args, function.getParameterNames());
-            args.add("keys");
+            args.add("multiSeriesKey");
             return indent(2) + "//noinspection unchecked\n" + indent(2) + "return (AbstractMultiSeries<SERIES>) series."
                     + function.getMethodName() + "(" + String.join(", ", args) + ");\n" + indent(1) + "}\n\n";
         }
@@ -717,7 +717,7 @@ public class GenerateMultiSeries {
             return indent(2)
                     + "throw new PlotUnsupportedOperationException(\"DataSeries \" + this.getClass() + \" does not support method "
                     + function.getMethodName() + " for arguments " + Arrays.toString(function.getParameterTypes())
-                    + ". If you think this method should work, try placing your keys into an Object array\", this);\n"
+                    + ". If you think this method should work, try placing your multiSeriesKey into an Object array\", this);\n"
                     + indent(1) + "}\n\n";
         }
 
@@ -738,7 +738,7 @@ public class GenerateMultiSeries {
                 arguments.add("final " + types[i].getTypeName() + " " + args[i]);
             }
 
-            return methodHeader + String.join(", ", arguments) + ", final Object... keys)"
+            return methodHeader + String.join(", ", arguments) + ", final Object... multiSeriesKey)"
                     + (!isInterface ? " {\n" : ";\n");
         }
 
@@ -807,7 +807,7 @@ public class GenerateMultiSeries {
             final String args = createSmartKeyArgs(function, tableToTableHandleVarMap);
             final boolean oneArgument = function.getParameterNames().length == 1;
 
-            code.append(indent(2)).append("if(keys == null || keys.length == 0) {\n").append(indent(3))
+            code.append(indent(2)).append("if(multiSeriesKey == null || multiSeriesKey.length == 0) {\n").append(indent(3))
                     .append(mapName)
                     .append(".setDefault(")
                     .append(oneArgument ? args : "new Object[]{" + args + "}")
@@ -815,7 +815,7 @@ public class GenerateMultiSeries {
                     .append(indent(2)).append("} else {");
             code.append("\n").append(indent(3))
                     .append(mapName)
-                    .append(".put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), ");
+                    .append(".put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), ");
             if (oneArgument) {
                 code.append("\n").append(indent(4)).append(args).append(");\n").append(indent(2)).append("}\n");
             } else {

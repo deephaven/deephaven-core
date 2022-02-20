@@ -39,22 +39,6 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
     }
 
     @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
-        final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(swappableTable.getTableMapHandle(),
-                constructTableMapFromFunction(colors, Paint.class, y, colName));
-        swappableTable.getTableMapHandle().addColumn(colName);
-        chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
-            ((XYDataSeriesSwappableTableArray) figImpl.getFigure().getCharts().getChart(chart().row(), chart().column())
-                    .axes(axes().id()).series(id()))
-                            .colorsSetSpecific(
-                                    new IndexableDataSwappableTable<>(swappableTable, colName, getPlotInfo()));
-            return figImpl;
-        }, this));
-        return this;
-    }
-
-    @Override
     public XYDataSeriesArray copy(AxesImpl axes) {
         return new XYDataSeriesSwappableTableArray(this, axes);
     }
