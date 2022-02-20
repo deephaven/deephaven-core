@@ -6,14 +6,14 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }
 
 idea {
     project {
-        jdkName = '1.8'
-        languageLevel = '1.8'
+        jdkName = '11'
+        languageLevel = '11'
     }
 }
 
