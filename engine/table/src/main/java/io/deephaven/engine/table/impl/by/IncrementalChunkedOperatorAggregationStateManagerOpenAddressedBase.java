@@ -28,10 +28,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
     protected ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
 
-    // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
+    // the state value for the bucket, parallel to alternateKeySources (the state is an output row key for the aggregation)
     protected ImmutableIntArraySource alternateOutputPosition;
 
-    // used as a row redirection for the output key sources
+    // used as a row redirection for the output key sources, updated using the mainInsertMask to identify the main vs.
+    // alternate values
     protected final IntegerArraySource outputPositionToHashSlot = new IntegerArraySource();
 
     // how many values are in each state, addressed by output row key
@@ -43,6 +44,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     // output alternating column sources
     protected AlternatingColumnSource[] alternatingColumnSources;
+
+    // the mask for insertion into the main table (this tells our alternating column sources which of the two sources
+    // to access for a given key)
     protected int mainInsertMask = 0;
 
     protected IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase(ColumnSource<?>[] tableKeySources,
@@ -57,7 +61,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         alternateOutputPosition = mainOutputPosition;
         mainOutputPosition = new ImmutableIntArraySource();
         mainOutputPosition.ensureCapacity(tableSize);
-        if (mainIsAlternate) {
+        if (mainInsertMask == 0) {
             if (alternatingColumnSources != null) {
                 for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
                     alternatingColumnSources[ai].setSources(alternateKeySources[ai], mainKeySources[ai]);
@@ -111,12 +115,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                     mainKeySources[kci] != null ? mainKeySources[kci].getType() : alternateKeySources[kci].getType();
             final Class<?> componentType = mainKeySources[kci] != null ? mainKeySources[kci].getComponentType()
                     : alternateKeySources[kci].getComponentType();
-            if (mainIsAlternate) {
-                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
-                        alternateKeySources[kci], mainKeySources[kci]);
-            } else {
+            if (mainInsertMask == 0) {
                 alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
                         mainKeySources[kci], alternateKeySources[kci]);
+            } else {
+                alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
+                        alternateKeySources[kci], mainKeySources[kci]);
             }
             // noinspection unchecked
             keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, alternatingColumnSources[kci]);
