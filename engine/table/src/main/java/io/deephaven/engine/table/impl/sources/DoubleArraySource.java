@@ -44,10 +44,8 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     private static final SoftRecycler<double[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new double[BLOCK_SIZE], null);
 
-    // region blocks
     private double[][] blocks;
     private transient double[][] prevBlocks;
-    // endregion blocks
 
     public DoubleArraySource() {
         super(double.class);

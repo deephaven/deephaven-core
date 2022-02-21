@@ -39,10 +39,8 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new char[BLOCK_SIZE], null);
 
-    // region blocks
     private char[][] blocks;
     private transient char[][] prevBlocks;
-    // endregion blocks
 
     public CharacterArraySource() {
         super(char.class);

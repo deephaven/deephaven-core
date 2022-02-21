@@ -44,10 +44,8 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
     private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new float[BLOCK_SIZE], null);
 
-    // region blocks
     private float[][] blocks;
     private transient float[][] prevBlocks;
-    // endregion blocks
 
     public FloatArraySource() {
         super(float.class);
