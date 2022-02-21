@@ -33,8 +33,7 @@ public class SharedContext implements ResettableContext {
      */
     private Map<Key, ResettableContext> entries;
 
-    protected SharedContext() {
-    }
+    protected SharedContext() {}
 
     /**
      * Key marker interface.

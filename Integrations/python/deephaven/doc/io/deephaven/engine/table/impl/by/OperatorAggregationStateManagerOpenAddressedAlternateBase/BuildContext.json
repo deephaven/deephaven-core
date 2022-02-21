@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase$BuildContext",
+ "methods": {
+  "close": "Release any resources associated with this context. The context should not be used afterwards."
+ },
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase.BuildContext",
+ "typeName": "class"
+}
