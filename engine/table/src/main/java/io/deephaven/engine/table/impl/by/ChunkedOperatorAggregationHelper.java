@@ -57,7 +57,7 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
     static boolean USE_TYPED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.useTypedStateManager",
-                    true);
+                    false);
     static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
             Configuration.getInstance().getBooleanWithDefault(
                     "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
@@ -2282,10 +2282,10 @@ public class ChunkedOperatorAggregationHelper {
             }
             int index = rowKeyToArrayIndex(rowKey);
             if (bitset == null) {
-                final int maxSize = (maxKey + 64) / 64;
+                final int maxSize = (maxKey + 63) / 64;
                 bitset = new long[Math.min(maxSize, (index + 1) * 2)];
             } else if (index >= bitset.length) {
-                final int maxSize = (maxKey + 64) / 64;
+                final int maxSize = (maxKey + 63) / 64;
                 bitset = Arrays.copyOf(bitset, Math.min(maxSize, Math.max(bitset.length * 2, index + 1)));
             }
             bitset[index] |= 1L << rowKey;

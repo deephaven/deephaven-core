@@ -18,10 +18,10 @@ import java.util.function.Consumer;
 
 /**
  * {@link ColumnSource} implementation that delegates to the main and alternate sources for our incremental open
- * addressed hash table key columns that swap back and forth between a "main" and "alternate" source.  Note that
- * the main and alternate swap back and forth, from the perspective of this column source the main source is
- * addressed by zero; and the alternate source is addressed starting at {@link #ALTERNATE_SWITCH_MASK}.  Neither
- * source may have addresses greater than {@link #ALTERNATE_INNER_MASK}.
+ * addressed hash table key columns that swap back and forth between a "main" and "alternate" source. Note that the main
+ * and alternate swap back and forth, from the perspective of this column source the main source is addressed by zero;
+ * and the alternate source is addressed starting at {@link #ALTERNATE_SWITCH_MASK}. Neither source may have addresses
+ * greater than {@link #ALTERNATE_INNER_MASK}.
  */
 public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements ColumnSource<DATA_TYPE> {
@@ -77,9 +77,6 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
                 @Nullable final ColumnSource<?> alternateSource,
                 final int chunkCapacity,
                 final SharedContext sharedContext) {
-            // TODO: Implement a proper shareable context to use when combining fills from the main and overflow
-            // sources. Current usage is "safe" because sources are only exposed through this wrapper, and all
-            // sources at a given level will split their keys the same, but this is not ideal.
             if (mainSource != null) {
                 mainFillContext = mainSource.makeFillContext(chunkCapacity, sharedContext);
             } else {
@@ -169,43 +166,43 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final AlternatingFillContext typedContext = (AlternatingFillContext) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
-            // Overflow locations are always after main locations, so there are no responsive overflow locations
+            // Alternate locations are always after main locations, so there are no responsive alternate locations
             sourceHolder.mainSource.fillChunk(typedContext.mainFillContext, destination, rowSequence);
             return;
         }
         if (isAlternate(rowSequence.firstRowKey())) {
-            // Main locations are always before overflow locations, so there are no responsive main locations
+            // Main locations are always before alternate locations, so there are no responsive main locations
             typedContext.alternateShiftedRowSequence.reset(rowSequence, -ALTERNATE_SWITCH_MASK);
             sourceHolder.alternateSource.fillChunk(typedContext.alternateFillContext, destination,
                     typedContext.alternateShiftedRowSequence);
             typedContext.alternateShiftedRowSequence.clear();
             return;
         }
-        // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
+        // We're going to have to mix main and alternate locations in a single destination chunk, so delegate to fill
         mergedFillChunk(typedContext, destination, rowSequence);
     }
 
     private void mergedFillChunk(@NotNull final AlternatingFillContext typedContext,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final int totalSize = rowSequence.intSize();
-        final int firstOverflowChunkPosition;
+        final int firstAlternateChunkPosition;
         try (final RowSequence mainRowSequenceSlice =
                 rowSequence.getRowSequenceByKeyRange(0, ALTERNATE_SWITCH_MASK - 1)) {
-            firstOverflowChunkPosition = mainRowSequenceSlice.intSize();
+            firstAlternateChunkPosition = mainRowSequenceSlice.intSize();
             sourceHolder.mainSource.fillChunk(typedContext.mainFillContext, destination, mainRowSequenceSlice);
         }
-        final int sizeFromOverflow = totalSize - firstOverflowChunkPosition;
+        final int sizeFromAlternate = totalSize - firstAlternateChunkPosition;
 
-        // Set destination size ahead of time, so that resetting our overflow destination slice doesn't run into bounds
+        // Set destination size ahead of time, so that resetting our alternate destination slice doesn't run into bounds
         // issues.
         destination.setSize(totalSize);
 
-        try (final RowSequence overflowRowSequenceSlice =
-                rowSequence.getRowSequenceByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
-            typedContext.alternateShiftedRowSequence.reset(overflowRowSequenceSlice, -ALTERNATE_SWITCH_MASK);
+        try (final RowSequence alternateRowSequenceSlice =
+                rowSequence.getRowSequenceByPosition(firstAlternateChunkPosition, sizeFromAlternate)) {
+            typedContext.alternateShiftedRowSequence.reset(alternateRowSequenceSlice, -ALTERNATE_SWITCH_MASK);
             sourceHolder.alternateSource.fillChunk(typedContext.alternateFillContext,
-                    typedContext.alternateDestinationSlice.resetFromChunk(destination, firstOverflowChunkPosition,
-                            sizeFromOverflow),
+                    typedContext.alternateDestinationSlice.resetFromChunk(destination, firstAlternateChunkPosition,
+                            sizeFromAlternate),
                     typedContext.alternateShiftedRowSequence);
         }
         typedContext.alternateDestinationSlice.clear();
@@ -217,43 +214,43 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final AlternatingFillContext typedContext = (AlternatingFillContext) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
-            // Overflow locations are always after main locations, so there are no responsive overflow locations
+            // Alternate locations are always after main locations, so there are no responsive alternate locations
             sourceHolder.mainSource.fillPrevChunk(typedContext.mainFillContext, destination, rowSequence);
             return;
         }
         if (isAlternate(rowSequence.firstRowKey())) {
-            // Main locations are always before overflow locations, so there are no responsive main locations
+            // Main locations are always before alternate locations, so there are no responsive main locations
             typedContext.alternateShiftedRowSequence.reset(rowSequence, -ALTERNATE_SWITCH_MASK);
             sourceHolder.alternateSource.fillPrevChunk(typedContext.alternateFillContext, destination,
                     typedContext.alternateShiftedRowSequence);
             typedContext.alternateShiftedRowSequence.clear();
             return;
         }
-        // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
+        // We're going to have to mix main and alternate locations in a single destination chunk, so delegate to fill
         mergedFillPrevChunk(typedContext, destination, rowSequence);
     }
 
     private void mergedFillPrevChunk(@NotNull final AlternatingFillContext typedContext,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final int totalSize = rowSequence.intSize();
-        final int firstOverflowChunkPosition;
+        final int firstAlternateChunkPosition;
         try (final RowSequence mainRowSequenceSlice =
                 rowSequence.getRowSequenceByKeyRange(0, ALTERNATE_SWITCH_MASK - 1)) {
-            firstOverflowChunkPosition = mainRowSequenceSlice.intSize();
+            firstAlternateChunkPosition = mainRowSequenceSlice.intSize();
             sourceHolder.mainSource.fillPrevChunk(typedContext.mainFillContext, destination, mainRowSequenceSlice);
         }
-        final int sizeFromOverflow = totalSize - firstOverflowChunkPosition;
+        final int sizeFromAlternate = totalSize - firstAlternateChunkPosition;
 
-        // Set destination size ahead of time, so that resetting our overflow destination slice doesn't run into bounds
+        // Set destination size ahead of time, so that resetting our alternate destination slice doesn't run into bounds
         // issues.
         destination.setSize(totalSize);
 
-        try (final RowSequence overflowRowSequenceSlice =
-                rowSequence.getRowSequenceByPosition(firstOverflowChunkPosition, sizeFromOverflow)) {
-            typedContext.alternateShiftedRowSequence.reset(overflowRowSequenceSlice, -ALTERNATE_SWITCH_MASK);
+        try (final RowSequence alternateRowSequenceSlice =
+                rowSequence.getRowSequenceByPosition(firstAlternateChunkPosition, sizeFromAlternate)) {
+            typedContext.alternateShiftedRowSequence.reset(alternateRowSequenceSlice, -ALTERNATE_SWITCH_MASK);
             sourceHolder.alternateSource.fillPrevChunk(typedContext.alternateFillContext,
-                    typedContext.alternateDestinationSlice.resetFromChunk(destination, firstOverflowChunkPosition,
-                            sizeFromOverflow),
+                    typedContext.alternateDestinationSlice.resetFromChunk(destination, firstAlternateChunkPosition,
+                            sizeFromAlternate),
                     typedContext.alternateShiftedRowSequence);
             typedContext.alternateDestinationSlice.clear();
             typedContext.alternateShiftedRowSequence.clear();
@@ -265,16 +262,16 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
             @NotNull final RowSequence rowSequence) {
         final AlternatingGetContext typedContext = (AlternatingGetContext) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
-            // Overflow locations are always after main locations, so there are no responsive overflow locations
+            // Alternate locations are always after main locations, so there are no responsive alternate locations
             return sourceHolder.mainSource.getChunk(typedContext.mainGetContext, rowSequence);
         }
         if (isAlternate(rowSequence.firstRowKey())) {
-            // Main locations are always before overflow locations, so there are no responsive main locations
+            // Main locations are always before alternate locations, so there are no responsive main locations
             typedContext.alternateShiftedRowSequence.reset(rowSequence, -ALTERNATE_SWITCH_MASK);
             return sourceHolder.alternateSource.getChunk(typedContext.alternateGetContext,
                     typedContext.alternateShiftedRowSequence);
         }
-        // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
+        // We're going to have to mix main and alternate locations in a single destination chunk, so delegate to fill
         mergedFillChunk(typedContext, typedContext.mergeChunk, rowSequence);
         return typedContext.mergeChunk;
     }
@@ -284,16 +281,16 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
             @NotNull final RowSequence rowSequence) {
         final AlternatingGetContext typedContext = (AlternatingGetContext) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
-            // Overflow locations are always after main locations, so there are no responsive overflow locations
+            // Alternate locations are always after main locations, so there are no responsive alternate locations
             return sourceHolder.mainSource.getPrevChunk(typedContext.mainGetContext, rowSequence);
         }
         if (isAlternate(rowSequence.firstRowKey())) {
-            // Main locations are always before overflow locations, so there are no responsive main locations
+            // Main locations are always before alternate locations, so there are no responsive main locations
             typedContext.alternateShiftedRowSequence.reset(rowSequence, -ALTERNATE_SWITCH_MASK);
             return sourceHolder.alternateSource.getPrevChunk(typedContext.alternateGetContext,
                     typedContext.alternateShiftedRowSequence);
         }
-        // We're going to have to mix main and overflow locations in a single destination chunk, so delegate to fill
+        // We're going to have to mix main and alternate locations in a single destination chunk, so delegate to fill
         mergedFillPrevChunk(typedContext, typedContext.mergeChunk, rowSequence);
         return typedContext.mergeChunk;
     }
