@@ -424,7 +424,7 @@ public class ChunkedOperatorAggregationHelper {
 
             emptiedStatesBuilder = RowSetFactory.builderRandom();
             if (USE_BITMAP_MODIFIED_STATES_BUILDER) {
-                modifiedStatesBuilder = new BitmapRandomBuilder();
+                modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.intValue());
             } else {
                 modifiedStatesBuilder = RowSetFactory.builderRandom();
             }
@@ -2228,17 +2228,33 @@ public class ChunkedOperatorAggregationHelper {
         return (int) Math.min(size, CHUNK_SIZE);
     }
 
+    /**
+     * The output RowSet of an aggregation is fairly special.  It is always from zero to the number of output rows,
+     * and while modifying states we randomly add rows to it, potentially touching the same state many times.  The
+     * normal index random builder does not gurantee those values are de-duplicated and requires O(lg n) operations
+     * for each insertion and building the Index.
+     *
+     * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number
+     * of result values) to build the Index.  The memory usage is 1 bit per output position, vs. the standard builder
+     * is 128 bits per used value (though with the possibility of collapsing adjacent ranges when they are modified
+     * back-to-back).  For random access patterns, this version will be more efficient; for friendly patterns the default
+     * random builder is likely more efficient.
+     *
+     * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum
+     * key for the builder to the maximum output position without loss of fidelity.
+     */
     private static class BitmapRandomBuilder implements RowSetBuilderRandom {
+        final int maxKey;
         int firstUsed = Integer.MAX_VALUE;
         int lastUsed = 0;
         long [] bitset;
 
-        private static int rowKeyToArrayIndex(long rowKey) {
-            return (int)(rowKey / 64);
+        private BitmapRandomBuilder(int maxKey) {
+            this.maxKey = maxKey;
         }
 
-        private static int rowKeyToBitOffset(long rowKey) {
-            return 63 - (int)(rowKey & 63);
+        private static int rowKeyToArrayIndex(long rowKey) {
+            return (int)(rowKey / 64);
         }
 
         @Override
@@ -2246,14 +2262,14 @@ public class ChunkedOperatorAggregationHelper {
             final RowSetBuilderSequential seqBuilder = RowSetFactory.builderSequential();
             for (int ii = firstUsed; ii <= lastUsed; ++ii) {
                 long word = bitset[ii];
-                if (word == 0) {
-                    continue;
-                }
-                long base = ii * 64L;
-                for (int jj = 63; jj >= 0; --jj) {
-                    if ((word & (1L << jj)) != 0) {
-                        seqBuilder.appendKey(base + 63 - jj);
+                long index = ii * 64L;
+
+                while (word != 0) {
+                    if ((word & 1) != 0) {
+                        seqBuilder.appendKey(index);
                     }
+                    index++;
+                    word >>>= 1;
                 }
             }
             return seqBuilder.build();
@@ -2261,50 +2277,27 @@ public class ChunkedOperatorAggregationHelper {
 
         @Override
         public void addKey(long rowKey) {
+            if (rowKey >= maxKey) {
+                return;
+            }
             int index = rowKeyToArrayIndex(rowKey);
             if (bitset == null) {
-                bitset = new long[(index + 1) * 2];
+                final int maxSize = (maxKey + 64) / 64;
+                bitset = new long[Math.min(maxSize, (index + 1) * 2)];
             }
             else if (index >= bitset.length) {
-                bitset = Arrays.copyOf(bitset, Math.max(bitset.length * 2, index + 1));
+                final int maxSize = (maxKey + 64) / 64;
+                bitset = Arrays.copyOf(bitset, Math.min(maxSize, Math.max(bitset.length * 2, index + 1)));
             }
-            bitset[index] |= (1L << rowKeyToBitOffset(rowKey));
+            bitset[index] |= 1L << rowKey;
             firstUsed = Math.min(index, firstUsed);
             lastUsed = Math.max(index, lastUsed);
         }
 
         @Override
         public void addRange(long firstRowKey, long lastRowKey) {
-//            int firstIndex = rowKeyToArrayIndex(firstRowKey);
-//            int lastIndex = rowKeyToArrayIndex(lastRowKey);
-//            if (lastIndex >= bitset.length) {
-//                bitset = Arrays.copyOf(bitset, Math.max(bitset.length * 2, lastIndex));
-//            }
-//            if (firstIndex == lastIndex) {
-//                int firstOffset = rowKeyToBitOffset(firstRowKey);
-//                int lastOffset = rowKeyToBitOffset(lastRowKey);
-//                while (firstOffset <= lastOffset) {
-//                    bitset[firstIndex] |= (1L << firstOffset++);
-//                }
-//            } else {
-//                int firstOffset = rowKeyToBitOffset(firstRowKey);
-//                while (firstOffset < 64) {
-//                    // this is dumb but simple, there should be bitmath we can do for no loop
-//                    bitset[firstIndex] |= (1L << firstOffset++);
-//                }
-//                while (firstIndex < lastIndex) {
-//                    bitset[firstIndex++] = 0xffff_ffff_ffff_ffffL;
-//                }
-//                int lastOffset = rowKeyToBitOffset(lastRowKey);
-//                int offset = 0;
-//                while (offset < lastOffset) {
-//                    // this is dumb but simple, there should be bitmath we can do for no loop
-//                    bitset[firstIndex] |= (1L << offset++);
-//                }
-//            }
-//            firstUsed = Math.min(lastIndex, firstUsed);
-//            lastUsed = Math.max(lastIndex, lastUsed);
             throw new UnsupportedOperationException();
         }
     }
 }
+
