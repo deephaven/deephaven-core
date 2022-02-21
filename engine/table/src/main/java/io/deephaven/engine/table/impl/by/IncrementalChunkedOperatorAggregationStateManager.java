@@ -62,8 +62,8 @@ class IncrementalChunkedOperatorAggregationStateManager
     // endregion constants
 
     // mixin rehash
-    static final double DEFAULT_MAX_LOAD_FACTOR = 0.5;
-    static final double DEFAULT_TARGET_LOAD_FACTOR = 0.45;
+    static final double DEFAULT_MAX_LOAD_FACTOR = 0.75;
+    static final double DEFAULT_TARGET_LOAD_FACTOR = 0.70;
     // endmixin rehash
 
     // region preamble variables

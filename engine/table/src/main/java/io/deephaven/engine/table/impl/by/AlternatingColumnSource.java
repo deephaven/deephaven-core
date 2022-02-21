@@ -17,7 +17,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
- * {@link ColumnSource} implementation that delegates to the main and overflow sources for a hash table column.
+ * {@link ColumnSource} implementation that delegates to the main and alternate sources for our incremental open
+ * addressed hash table key columns that swap back and forth between a "main" and "alternate" source.  Note that
+ * the main and alternate swap back and forth, from the perspective of this column source the main source is
+ * addressed by zero; and the alternate source is addressed starting at {@link #ALTERNATE_SWITCH_MASK}.  Neither
+ * source may have addresses greater than {@link #ALTERNATE_INNER_MASK}.
  */
 public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements ColumnSource<DATA_TYPE> {
