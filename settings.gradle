@@ -26,7 +26,7 @@ String[] mods = [
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
 String[] webMods = [
-        'web',
+        'web-js',
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
