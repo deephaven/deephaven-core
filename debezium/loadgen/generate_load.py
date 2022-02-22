@@ -8,13 +8,13 @@ from concurrent.futures import CancelledError
 user_seed_count     = 10000
 item_seed_count     = 1000
 max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
-max_burst_purchases    = 2
+max_burst_purchases    = 20000
 max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
-max_burst_pageviews    = 200
+max_burst_pageviews    = 500000
 purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
 kafka_producer_acks      = int(os.environ['KAFKA_PRODUCER_ACKS'])
-kafka_batch_size         = 200 * 1000
+kafka_batch_size         = int(os.environ['KAFKA_BATCH_SIZE'])
 kafka_max_in_flight_requests_per_connection = 20
 kafka_linger_ms          = 40  # Note we flush manually, so this only applies in between our managed batches.
 params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
@@ -134,6 +134,7 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
     sent_since_last_log = 0     # Number of events sent not included in the last summary log.
     last_rate_check = now       # Timestamp for the last time we checked actual events sent versus rate.
+    burst_cap_last_log = False  # Whether we limited the max burst since the last summary log.
     rate_s = params[param_key]  # Target actions per second.
     rate_sent = 0               # number of actions enqueued (noth already done and not yet done) at the current rate.
     rate_done = 0               # Number of actions finished (already done) at the current rate.
@@ -143,22 +144,27 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
     log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
     futures = {}                # Dictionary where we accumulate unfinished futures scheduled on the executor.
     def reap_futures():         # Remove from futures the ones already finished, returning how many where finished.
-        done = 0
+        len_futures = 0
+        actions_done = 0
         for k in list(futures.keys()):
             future = futures[k]
             if future.done():
-                done += future.result()
+                actions_done += future.result()
                 del futures[k]
-        return done
+            else:
+                len_futures += 1
+        return len_futures, actions_done
     loop_count = 0              # Absoute loop counter; used as unique key in the futures dictionary.
     event_loop = asyncio.get_event_loop()
     action_count = 1            # How many actions to batch on the next executor run; starts at 1, increases if batching is activated.
     try:
         while True:
-            rate_done += reap_futures()
-            while len(futures) > max_parallel - 1:
+            len_futures, actions_done = reap_futures()
+            rate_done += actions_done
+            while len_futures > max_parallel - 1:
                 await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
-                rate_done += reap_futures()
+                len_futures, actions_done = reap_futures()
+                rate_done += actions_done
             future = event_loop.run_in_executor(executor, action_fun, action_count)
             futures[loop_count] = future
             loop_count += 1
@@ -170,9 +176,10 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
             if last_log_diff >= log_period_seconds:
                 qlen = len(futures)
                 log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds; " +
-                    f"on last trigger running={qlen}, count={action_count}.")
+                    f"on last trigger running={qlen}, count={action_count}, burst cap={burst_cap_last_log}.")
                 last_log = now
                 sent_since_last_log = 0
+                burst_cap_last_log = False
 
             last_rate_check_diff = now - last_rate_check
             if last_rate_check_diff >= rate_check_seconds:
@@ -187,13 +194,18 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
             if sleep_s > 0.001:  # In practice can't sleep for less
                 await asyncio.sleep(sleep_s)
 
-            rate_done += reap_futures()
+            len_futures, actions_done = reap_futures()
+            rate_done += actions_done
             expected_count_by_now = (time.time() - rate_start) / period_s
-            action_count = math.ceil(expected_count_by_now - rate_done)
+            delta_futures = max_parallel - len_futures
+            if delta_futures <= 0:
+                delta_futures = 1
+            action_count = math.ceil((expected_count_by_now - rate_done) / delta_futures)
             if action_count < 1:
                 action_count = 1
             elif action_count > max_burst:
                 action_count = max_burst
+                burst_cap_last_log = True
 
             rate_s = params[param_key]
             if old_rate_s != rate_s:
