@@ -32,5 +32,6 @@ interface AlternatingColumnSourceUnorderedMergeKernel {
         throw new IllegalStateException();
     }
 
-    void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys, Chunk<? super Values> src, int alternatePosition);
+    void mergeContext(WritableChunk<? super Values> dest, LongChunk<? extends RowKeys> outerKeys,
+            Chunk<? super Values> src, int alternatePosition);
 }

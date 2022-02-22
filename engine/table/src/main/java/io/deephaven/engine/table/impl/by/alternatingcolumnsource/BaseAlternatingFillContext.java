@@ -21,9 +21,9 @@ abstract class BaseAlternatingFillContext implements ChunkSource.FillContext {
     final ResettableWritableChunk<Any> alternateDestinationSlice;
 
     BaseAlternatingFillContext(@Nullable final ColumnSource<?> mainSource,
-                               @Nullable final ColumnSource<?> alternateSource,
-                               final int chunkCapacity,
-                               final SharedContext sharedContext) {
+            @Nullable final ColumnSource<?> alternateSource,
+            final int chunkCapacity,
+            final SharedContext sharedContext) {
         if (mainSource != null) {
             mainFillContext = mainSource.makeFillContext(chunkCapacity, sharedContext);
         } else {

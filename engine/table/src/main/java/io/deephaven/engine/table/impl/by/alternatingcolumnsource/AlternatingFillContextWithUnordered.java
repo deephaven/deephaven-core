@@ -17,11 +17,12 @@ class AlternatingFillContextWithUnordered extends BaseAlternatingFillContext {
     final AlternatingColumnSourceUnorderedMergeKernel mergeKernel;
 
     AlternatingFillContextWithUnordered(@Nullable final ColumnSource<?> mainSource,
-                                        @Nullable final ColumnSource<?> alternateSource,
-                                        final int chunkCapacity,
-                                        final SharedContext sharedContext) {
+            @Nullable final ColumnSource<?> alternateSource,
+            final int chunkCapacity,
+            final SharedContext sharedContext) {
         super(mainSource, alternateSource, chunkCapacity, sharedContext);
-        if ((mainSource == null || FillUnordered.providesFillUnordered(mainSource)) && (alternateSource == null || FillUnordered.providesFillUnordered(alternateSource))) {
+        if ((mainSource == null || FillUnordered.providesFillUnordered(mainSource))
+                && (alternateSource == null || FillUnordered.providesFillUnordered(alternateSource))) {
             innerKeys = alternateSource != null ? WritableLongChunk.makeWritableChunk(chunkCapacity) : null;
             if (mainSource != null && alternateSource != null) {
                 innerSlice = mainSource.getChunkType().makeResettableWritableChunk();

@@ -14,9 +14,9 @@ final class AlternatingGetContext extends AlternatingFillContextWithUnordered im
     final WritableChunk<Values> mergeChunk;
 
     AlternatingGetContext(@Nullable final ColumnSource<?> mainSource,
-                          @Nullable final ColumnSource<?> alternateSource,
-                          final int chunkCapacity,
-                          final SharedContext sharedContext) {
+            @Nullable final ColumnSource<?> alternateSource,
+            final int chunkCapacity,
+            final SharedContext sharedContext) {
         super(mainSource, alternateSource, chunkCapacity, sharedContext);
         if (mainSource != null) {
             mainGetContext = mainSource.makeGetContext(chunkCapacity, sharedContext);
