@@ -28,7 +28,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     // the state value for the bucket, parallel to mainKeySources (the state is an output row key for the aggregation)
     protected ImmutableIntArraySource mainOutputPosition = new ImmutableIntArraySource();
 
-    // the state value for the bucket, parallel to alternateKeySources (the state is an output row key for the aggregation)
+    // the state value for the bucket, parallel to alternateKeySources (the state is an output row key for the
+    // aggregation)
     protected ImmutableIntArraySource alternateOutputPosition;
 
     // used as a row redirection for the output key sources, updated using the mainInsertMask to identify the main vs.

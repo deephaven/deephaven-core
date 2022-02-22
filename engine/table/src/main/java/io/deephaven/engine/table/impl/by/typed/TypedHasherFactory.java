@@ -97,7 +97,7 @@ public class TypedHasherFactory {
         final String overflowOrAlternateStateName;
         final String emptyStateName;
         final boolean openAddressed;
-        final boolean openAddressedPivot;
+        final boolean openAddressedAlternate;
         final Consumer<CodeBlock.Builder> moveMain;
         final List<BuildSpec> builds = new ArrayList<>();
         final List<ProbeSpec> probes = new ArrayList<>();
@@ -105,7 +105,7 @@ public class TypedHasherFactory {
             classPrefix = "StaticAggHasher";
             packageMiddle = "staticagg";
             openAddressed = false;
-            openAddressedPivot = false;
+            openAddressedAlternate = false;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -114,7 +114,7 @@ public class TypedHasherFactory {
             classPrefix = "StaticAggOpenHasher";
             packageMiddle = "staticopenagg";
             openAddressed = true;
-            openAddressedPivot = false;
+            openAddressedAlternate = false;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -125,7 +125,7 @@ public class TypedHasherFactory {
             classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
             openAddressed = false;
-            openAddressedPivot = false;
+            openAddressedAlternate = false;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -134,7 +134,7 @@ public class TypedHasherFactory {
             classPrefix = "IncrementalAggOpenHasher";
             packageMiddle = "incopenagg";
             openAddressed = true;
-            openAddressedPivot = true;
+            openAddressedAlternate = true;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = "alternateOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
@@ -162,7 +162,7 @@ public class TypedHasherFactory {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
 
-        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedPivot,
+        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate,
                 mainStateName,
                 overflowOrAlternateStateName,
                 emptyStateName, int.class, moveMain, probes, builds);
