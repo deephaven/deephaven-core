@@ -1,16 +1,14 @@
-package io.deephaven.engine.table.impl.by;
+package io.deephaven.engine.table.impl.by.alternatingcolumnsource;
 
 import io.deephaven.base.WeakReferenceManager;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.sources.FillUnordered;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,10 +22,9 @@ import java.util.function.Consumer;
  * greater than {@link #ALTERNATE_INNER_MASK}.
  */
 public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
-        implements ColumnSource<DATA_TYPE> {
+        implements ColumnSource<DATA_TYPE>, FillUnordered {
     public static final long ALTERNATE_SWITCH_MASK = 0x4000_0000;
     public static final long ALTERNATE_INNER_MASK = 0x3fff_ffff;
-
     private static class SourceHolder<DATA_TYPE> {
         private ColumnSource<DATA_TYPE> mainSource;
         private ColumnSource<DATA_TYPE> alternateSource;
@@ -48,7 +45,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         this.sourceHolder = sourceHolder;
     }
 
-    AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
+    public AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType,
             final ColumnSource<DATA_TYPE> mainSource,
             final ColumnSource<DATA_TYPE> alternateSource) {
@@ -60,98 +57,15 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         this(mainSource.getType(), mainSource.getComponentType(), mainSource, alternateSource);
     }
 
-    void setSources(ColumnSource<DATA_TYPE> mainSource, ColumnSource<DATA_TYPE> alternateSource) {
+    public void setSources(ColumnSource<DATA_TYPE> mainSource, ColumnSource<DATA_TYPE> alternateSource) {
         sourceHolder.mainSource = mainSource;
         sourceHolder.alternateSource = alternateSource;
         sourceHolderListeners.forEachValidReference(x -> x.accept(sourceHolder));
     }
 
-    private static class AlternatingFillContext implements FillContext {
-
-        final FillContext mainFillContext;
-        final FillContext alternateFillContext;
-        final ShiftedRowSequence alternateShiftedRowSequence;
-        final ResettableWritableChunk<Any> alternateDestinationSlice;
-
-        private AlternatingFillContext(@Nullable final ColumnSource<?> mainSource,
-                @Nullable final ColumnSource<?> alternateSource,
-                final int chunkCapacity,
-                final SharedContext sharedContext) {
-            if (mainSource != null) {
-                mainFillContext = mainSource.makeFillContext(chunkCapacity, sharedContext);
-            } else {
-                mainFillContext = null;
-            }
-            if (alternateSource != null) {
-                alternateFillContext = alternateSource.makeFillContext(chunkCapacity, sharedContext);
-                alternateShiftedRowSequence = new ShiftedRowSequence();
-                alternateDestinationSlice = alternateSource.getChunkType().makeResettableWritableChunk();
-            } else {
-                alternateFillContext = null;
-                alternateShiftedRowSequence = null;
-                alternateDestinationSlice = null;
-            }
-        }
-
-        @Override
-        public void close() {
-            if (mainFillContext != null) {
-                mainFillContext.close();
-            }
-            if (alternateFillContext != null) {
-                alternateFillContext.close();
-                alternateShiftedRowSequence.close();
-                alternateDestinationSlice.close();
-            }
-        }
-    }
-
-    private static final class AlternatingGetContext extends AlternatingFillContext implements GetContext {
-
-        private final GetContext mainGetContext;
-        private final GetContext alternateGetContext;
-        private final WritableChunk<Values> mergeChunk;
-
-        private AlternatingGetContext(@Nullable final ColumnSource<?> mainSource,
-                @Nullable final ColumnSource<?> alternateSource,
-                final int chunkCapacity,
-                final SharedContext sharedContext) {
-            super(mainSource, alternateSource, chunkCapacity, sharedContext);
-            if (mainSource != null) {
-                mainGetContext = mainSource.makeGetContext(chunkCapacity, sharedContext);
-            } else {
-                mainGetContext = null;
-            }
-            if (alternateSource != null) {
-                alternateGetContext = alternateSource.makeGetContext(chunkCapacity, sharedContext);
-            } else {
-                alternateGetContext = null;
-            }
-            if (mainGetContext != null && alternateGetContext != null) {
-                mergeChunk = mainSource.getChunkType().makeWritableChunk(chunkCapacity);
-            } else {
-                mergeChunk = null;
-            }
-        }
-
-        @Override
-        public void close() {
-            super.close();
-            if (mainGetContext != null) {
-                mainGetContext.close();
-            }
-            if (alternateGetContext != null) {
-                alternateGetContext.close();
-            }
-            if (mergeChunk != null) {
-                mergeChunk.close();
-            }
-        }
-    }
-
     @Override
     public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new AlternatingFillContext(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity,
+        return new AlternatingFillContextWithUnordered(sourceHolder.mainSource, sourceHolder.alternateSource, chunkCapacity,
                 sharedContext);
     }
 
@@ -164,7 +78,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     @Override
     public final void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final AlternatingFillContext typedContext = (AlternatingFillContext) context;
+        final AlternatingFillContextWithUnordered typedContext = (AlternatingFillContextWithUnordered) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
             // Alternate locations are always after main locations, so there are no responsive alternate locations
             sourceHolder.mainSource.fillChunk(typedContext.mainFillContext, destination, rowSequence);
@@ -182,7 +96,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         mergedFillChunk(typedContext, destination, rowSequence);
     }
 
-    private void mergedFillChunk(@NotNull final AlternatingFillContext typedContext,
+    private void mergedFillChunk(@NotNull final AlternatingFillContextWithUnordered typedContext,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final int totalSize = rowSequence.intSize();
         final int firstAlternateChunkPosition;
@@ -212,7 +126,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final AlternatingFillContext typedContext = (AlternatingFillContext) context;
+        final AlternatingFillContextWithUnordered typedContext = (AlternatingFillContextWithUnordered) context;
         if (!isAlternate(rowSequence.lastRowKey())) {
             // Alternate locations are always after main locations, so there are no responsive alternate locations
             sourceHolder.mainSource.fillPrevChunk(typedContext.mainFillContext, destination, rowSequence);
@@ -230,7 +144,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
         mergedFillPrevChunk(typedContext, destination, rowSequence);
     }
 
-    private void mergedFillPrevChunk(@NotNull final AlternatingFillContext typedContext,
+    private void mergedFillPrevChunk(@NotNull final AlternatingFillContextWithUnordered typedContext,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final int totalSize = rowSequence.intSize();
         final int firstAlternateChunkPosition;
@@ -465,5 +379,99 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
 
     public static int innerLocation(final long hashSlot) {
         return (int) (hashSlot & ALTERNATE_INNER_MASK);
+    }
+
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final AlternatingFillContextWithUnordered typedContext = (AlternatingFillContextWithUnordered) context;
+        if (sourceHolder.alternateSource == null) {
+            ((FillUnordered)sourceHolder.mainSource).fillChunkUnordered(typedContext.mainFillContext, dest, keys);
+        } else if (sourceHolder.mainSource == null) {
+            doFillAlternateUnorderedDirect(dest, keys, typedContext, false);
+        } else {
+            final int mainSize = populateInnerKeysMain(keys, typedContext);
+            if (mainSize == keys.size()) {
+                ((FillUnordered) sourceHolder.mainSource).fillChunkUnordered(typedContext.mainFillContext, dest, keys);
+            } else if (mainSize == 0 ) {
+                doFillAlternateUnorderedDirect(dest, keys, typedContext, false);
+            } else {
+                typedContext.innerValues.setSize(keys.size());
+                ((FillUnordered) sourceHolder.mainSource).fillChunkUnordered(typedContext.mainFillContext, typedContext.innerValues, typedContext.innerKeys);
+                populateInnerKeysAlternate (keys, typedContext);
+
+                ((FillUnordered) sourceHolder.alternateSource).fillChunkUnordered(typedContext.alternateFillContext, typedContext.innerSlice, typedContext.innerKeys);
+
+                typedContext.mergeKernel.mergeContext(dest, keys, typedContext.innerValues, mainSize);
+            }
+        }
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final AlternatingFillContextWithUnordered typedContext = (AlternatingFillContextWithUnordered) context;
+        if (sourceHolder.alternateSource == null) {
+            ((FillUnordered)sourceHolder.mainSource).fillPrevChunkUnordered(typedContext.mainFillContext, dest, keys);
+        } else if (sourceHolder.mainSource == null) {
+            doFillAlternateUnorderedDirect(dest, keys, typedContext, true);
+        } else {
+            final int mainSize = populateInnerKeysMain(keys, typedContext);
+            if (mainSize == keys.size()) {
+                ((FillUnordered) sourceHolder.mainSource).fillPrevChunkUnordered(typedContext.mainFillContext, dest, keys);
+            } else if (mainSize == 0 ) {
+                doFillAlternateUnorderedDirect(dest, keys, typedContext, true);
+            } else {
+                typedContext.innerValues.setSize(keys.size());
+                ((FillUnordered) sourceHolder.mainSource).fillPrevChunkUnordered(typedContext.mainFillContext, typedContext.innerValues, typedContext.innerKeys);
+                // fill the alternate into the back half of the chunk
+                populateInnerKeysAlternate(keys, typedContext);
+                ((FillUnordered) sourceHolder.alternateSource).fillPrevChunkUnordered(typedContext.alternateFillContext, typedContext.innerSlice, typedContext.innerKeys);
+
+                typedContext.mergeKernel.mergeContext(dest, keys, typedContext.innerValues, mainSize);
+            }
+        }
+    }
+
+    private void populateInnerKeysAlternate(@NotNull LongChunk<? extends RowKeys> keys, AlternatingFillContextWithUnordered typedContext) {
+        // fill the alternate into the back half of the chunk
+        typedContext.innerValues.setSize(keys.size());
+        typedContext.innerSlice.resetFromChunk((WritableChunk)typedContext.innerValues, typedContext.innerKeys.size(), keys.size() - typedContext.innerKeys.size());
+        typedContext.innerKeys.setSize(0);
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            final long outerKey = keys.get(ii);
+            if ((outerKey & ALTERNATE_SWITCH_MASK) != 0) {
+                typedContext.innerKeys.add(keys.get(ii) & ALTERNATE_INNER_MASK);
+            }
+        }
+    }
+
+    private int populateInnerKeysMain(@NotNull LongChunk<? extends RowKeys> keys, AlternatingFillContextWithUnordered typedContext) {
+        typedContext.innerKeys.setSize(0);
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            final long outerKey = keys.get(ii);
+            if ((outerKey & ALTERNATE_SWITCH_MASK) == 0) {
+                typedContext.innerKeys.add(keys.get(ii));
+            }
+        }
+        return typedContext.innerKeys.size();
+    }
+
+    private void doFillAlternateUnorderedDirect(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys, AlternatingFillContextWithUnordered typedContext, boolean usePrev) {
+        typedContext.innerKeys.setSize(keys.size());
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            typedContext.innerKeys.set(ii, keys.get(ii) & ALTERNATE_INNER_MASK);
+        }
+        if (usePrev) {
+            ((FillUnordered) sourceHolder.alternateSource).fillPrevChunkUnordered(typedContext.alternateFillContext, dest, typedContext.innerKeys);
+        } else {
+            ((FillUnordered) sourceHolder.alternateSource).fillChunkUnordered(typedContext.alternateFillContext, dest, typedContext.innerKeys);
+        }
+    }
+
+
+    @Override
+    public boolean providesFillUnordered() {
+        return (sourceHolder.mainSource == null || FillUnordered.providesFillUnordered(sourceHolder.mainSource)) &&
+                (sourceHolder.alternateSource == null || FillUnordered.providesFillUnordered(sourceHolder.alternateSource));
     }
 }
