@@ -25,6 +25,7 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -739,7 +740,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current RowSet is empty, we have nothing to
         // store. If prev RowSet is empty, all rows are new and are already in addsToRecord.
-        if (activeViewport != null && (upstream.added().isNonempty() || upstream.removed().isNonempty())
+        if ((activeViewport != null || activeReverseViewport != null) && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
@@ -752,12 +753,40 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                     final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted());
 
+//                    System.out.println("scoped: step=" + this.lastIndexClockStep);
+//                    System.out.println("    upstream=" + upstream);
+
                     sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
+                        final long localStart, localEnd;
+
+//                        System.out.println("    rowSet.size()=" + rowSet.size() + ", prevRowSet.size()=" + prevRowSet.size());
+
+                        // handle reverse viewports
+                        if (sub.reverseViewport) {
+                            // reset positions to be relative to the final position of this table
+                            final long lastRowPosition = rowSet.size() - 1;
+
+                            localStart = Math.max(lastRowPosition - posEnd, 0);
+                            localEnd = lastRowPosition - posStart;
+
+                            if (localEnd < 0) {
+                                // This range does not overlap with the available positions at all
+                                return;
+                            }
+                        } else {
+                            localStart = posStart;
+                            localEnd = posEnd;
+                        }
+
+//                        System.out.println("    localStart=" + localStart + ", localEnd=" + localEnd);
+
                         // Note: we already know that both rowSet and prevRowSet are non-empty.
                         final long currKeyStart =
-                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(posStart, rowSet.size() - 1)), false);
+                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
                         final long currKeyEnd =
-                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(posEnd, rowSet.size() - 1)), true);
+                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
+
+//                        System.out.println("    currKeyStart=" + currKeyStart + ", currKeyEnd=" + currKeyEnd);
 
                         // if our current viewport includes no previous values this range may be empty
                         if (currKeyEnd < currKeyStart) {
@@ -765,16 +794,23 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         }
 
                         final long prevKeyStart =
-                                posStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(posStart);
-                        final long prevKeyEnd = prevRowSet.get(Math.min(posEnd, prevRowSet.size() - 1));
+                                localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(localStart);
+                        final long prevKeyEnd = prevRowSet.get(Math.min(localEnd, prevRowSet.size() - 1));
 
-                        // Note: we already know that scoped rows must touch viewport boundaries
-                        if (currKeyStart < prevKeyStart) {
-                            scopedViewBuilder.addRange(currKeyStart, Math.min(prevKeyStart - 1, currKeyEnd));
-                        }
-                        if (currKeyEnd > prevKeyEnd) {
-                            scopedViewBuilder.addRange(Math.max(prevKeyEnd + 1, currKeyStart), currKeyEnd);
-                        }
+//                        System.out.println("    prevKeyStart=" + prevKeyStart + ", prevKeyEnd=" + prevKeyEnd);
+
+                        final long minStart = Math.min(currKeyStart, prevKeyStart);
+                        final long maxEnd = Math.max(currKeyEnd, prevKeyEnd);
+
+                        scopedViewBuilder.addRange(minStart, maxEnd);
+
+//                        // Note: we already know that scoped rows must touch viewport boundaries
+//                        if (currKeyStart < prevKeyStart) {
+//                            scopedViewBuilder.addRange(currKeyStart, Math.min(prevKeyStart - 1, currKeyEnd));
+//                        }
+//                        if (currKeyEnd > prevKeyEnd) {
+//                            scopedViewBuilder.addRange(Math.max(prevKeyEnd + 1, currKeyStart), currKeyEnd);
+//                        }
                     });
                 }
             }
@@ -783,6 +819,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 upstream.shifted().apply(scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
                 addsToRecord.insert(scoped);
+
+//                System.out.println("    scoped=" + scoped);
             }
         }
 
@@ -1324,9 +1362,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             modColumnSet = firstDelta.modifiedColumns;
 
             downstream.rowsAdded = firstDelta.update.added().copy();
+
             downstream.rowsRemoved = firstDelta.update.removed().copy();
             downstream.shifted = firstDelta.update.shifted();
             downstream.rowsIncluded = firstDelta.recordedAdds.copy();
+
             downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
             downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
 
@@ -1630,8 +1670,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.activeReverseViewport.close();
         }
 
-        this.activeViewport = this.postSnapshotViewport;
-        this.activeReverseViewport = this.postSnapshotReverseViewport;
+        this.activeViewport = this.postSnapshotViewport == null || this.postSnapshotViewport.isEmpty() ? null :
+                this.postSnapshotViewport;
+
+        this.activeReverseViewport = this.postSnapshotReverseViewport == null || this.postSnapshotReverseViewport.isEmpty() ? null :
+                this.postSnapshotReverseViewport;
 
         this.postSnapshotViewport = null;
         this.postSnapshotReverseViewport = null;

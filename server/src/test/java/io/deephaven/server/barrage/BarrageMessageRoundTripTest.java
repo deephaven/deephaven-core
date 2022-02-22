@@ -41,6 +41,7 @@ import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
+import io.deephaven.tablelogger.Row;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -387,9 +388,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             return newClient(viewport, subscribedColumns, false, name);
         }
 
-        public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns,
-                                      final boolean reverseViewport, final String name) {
-            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name, reverseViewport,false));
+        public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns, final boolean reverseViewport, final String name) {
+            clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name, reverseViewport, false));
             return clients.get(clients.size() - 1);
         }
 
@@ -518,20 +518,25 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             final BitSet subscribedColumns = new BitSet();
             subscribedColumns.set(0, nugget.originalTable.getColumns().length);
+
             nugget.newClient(null, subscribedColumns, "full");
 
             nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
             nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
                     "floating");
 
-            //nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "reverse header");
+            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
+            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true, "reverse floating");
 
             final RowSetBuilderSequential swissIndexBuilder = RowSetFactory.builderSequential();
             final long rangeSize = Math.max(1, size / 20);
             for (long nr = 1; nr < 20; nr += 2) {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss viewport");
+
+            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+
+//            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
         }
     }
 
