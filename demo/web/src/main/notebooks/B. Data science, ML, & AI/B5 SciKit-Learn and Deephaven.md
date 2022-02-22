@@ -29,7 +29,7 @@ import numpy as np
 We will now import our data into Deephaven as a Pandas dataframe and as a table.  The Iris dataset is available at the URL in the `read_csv` line of the code blow, along with a variety of other places (even SciKit-Learn has it built in).
 
 ```python
-iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
+iris_raw = read_csv("/data/examples/Iris/csv/iris.csv")
 raw_iris = tableToDataFrame(iris_raw)
 ```
 \

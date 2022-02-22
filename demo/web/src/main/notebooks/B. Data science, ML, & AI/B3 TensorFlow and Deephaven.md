@@ -31,7 +31,7 @@ import numpy as np
 We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
 
 ```python
-iris_raw = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
+iris_raw = read_csv("/data/examples/Iris/csv/iris.csv")
 raw_iris = tableToDataFrame(iris_raw)
 ```
 \

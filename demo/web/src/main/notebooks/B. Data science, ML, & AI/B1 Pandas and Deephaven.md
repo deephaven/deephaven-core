@@ -1,16 +1,15 @@
 # Dynamic data and Pandas
 
-This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use familiar DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
-\
-With Deephaven, you have all the familiar tools from Pandas but with added flexibility, efficiency, and better visualization. One of the reasons to use Deephaven from Pandas is Deephaven allows multithreading, easy partitioning, and collecting data.
+This notebook demonstrates some of the options for working with [Pandas](http://pandas.pydata.org/) in Deephaven. You'll see how to use DataFrame tools the Deephaven way, such as switching from DataFrames to tables.
 
-Not only that - these tasks are possible in Deephaven with very large data.
-\
+With Deephaven, you have all the familiar tools from Pandas with added flexibility, efficiency, and better visualization. Deephaven can handle dynamic data. Plus, Deephaven allows multithreading, easy partitioning, and collecting data.
+
+Not only that - these tasks are possible in Deephaven with very large data, be it streaming or otherwise.
 
 ## Table to DataFrame
 
 A [`DataFrame`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html?highlight=dataframe#pandas.DataFrame) is a two-dimensional tabular data structure that is native to Pandas. With Deephaven, we can convert between Deephaven tables and Pandas DataFrames.
-\
+
 First, let's create a Deephaven table.
 
 
@@ -25,7 +24,7 @@ source = newTable(
 )
 ```
 
-\
+
 To convert the Deephaven table to a DataFrame, import the [`tableToDataFrame`](https://deephaven.io/core/pydoc/code/deephaven.html#deephaven.tableToDataFrame) method and then perform the conversion. To see the DataFrame, we print it.
 
 ```python
@@ -56,17 +55,17 @@ meta_table = new_table.getMeta()
 ```
 
 Pandas uses `float32` and `float64` data types, which are equivalent to `float` and `double` in Deephaven. These are the same type and require the same memory. A `String` in Deephaven is an `object` in Pandas.
-\
+
 \
 Pandas has fewer data types than Deephaven. To learn more about creating tables with specific types, see our guide [How to create a table with newTable](https://deephaven.io/core/docs/how-to-guides/new-table/).
-\
+
 \
 
 ## Table operations
 
 Deephaven tables and Pandas DataFrames both contain tabular data. In both cases, users want to perform the same kinds of operations, such as creating tables, filtering tables, and aggregating tables. Below we present how to do the same operations with both Pandas and Deephaven.
-\
-\
+
+
 In these examples, keep in mind that Pandas DataFrames are mutable while Deephaven tables are immutable but can have data that changes dynamically. This results in differences in how some operations are approached.
 \
 Creating a Pandas DataFrame or Deephaven table is very similar.
@@ -99,8 +98,10 @@ In this case, we wish to add a column `C` that is equal to column `A` plus 5.
 added_data_frame = data_frame.assign(C = data_frame['A'] + 5)
 print(added_data_frame)
 
-
+from deephaven.TableTools import col, newTable
 added_table = table.update("C = A + 5")
+
+
 ```
 
 We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop.html) in Pandas or [`dropColumns`](https://deephaven.io/core/docs/reference/table-operations/select/drop-columns/) in Deephaven.
@@ -108,7 +109,6 @@ We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/referen
 ```python
 dropped_data_frame = data_frame.drop(columns = ['A'])
 print(dropped_data_frame)
-
 
 dropped_table = table.dropColumns("A")
 ```
@@ -122,6 +122,7 @@ print(data_frame)
 
 
 renamed_table = table.renameColumns("X = A")
+
 ```
 
 Deephaven offers several types of filters. See our article, [How to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
@@ -228,22 +229,6 @@ print(sorted_data_frame)
 sorted_table = table.sortDescending("B")
 ```
 
-To sort on different directions with one query, use `SortColumn`s in the [`sort`](https://deephaven.io/core/docs/reference/table-operations/sort/sort) argument:
-
-```python
-sorted_data_frame = data_frame.sort_values(by=['B','C'], ascending=[True,False])
-print(sorted_data_frame)
-
-from deephaven import SortColumn, as_list
-from deephaven.TableManipulation import ColumnName
-
-sort_columns = as_list([
-    SortColumn.asc(ColumnName.of("B")),
-    SortColumn.desc(ColumnName.of("C"))
-])
-
-sorted_table = table.sort(sort_columns)
-```
 
 
 In Pandas, [`concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html?highlight=concat#pandas.concat) allows tables to be vertically combined, stacked on top of each other. The same operation can be performed using [`merge`](https://deephaven.io/core/docs/reference/table-operations/merge/merge/) on Deephaven tables. The combined columns should have the same data type.
@@ -270,7 +255,7 @@ Deephaven's many join methods combine data by appending the columns of one data 
 
 
 
-Pandas and Deephaven provide many of the same join methods, but there is not a one-to-one mapping of methods. In addition to the common join methods, Deephaven also provides inexact joins , such as [`aj` (as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/aj/) and [`raj` (reverse as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/raj/), for analyzing time series, which are not present in Pandas.
+Pandas and Deephaven provide many of the same join methods, but there is not a one-to-one mapping of methods. Here we do a basic join with Pandas and Deephaven.
 
 ```python
 import pandas as pd
@@ -288,6 +273,66 @@ tableLeft = newTable(col("A", 1, 2, 3), col("B", 'X', 'Y', 'Z'))
 tableRight = newTable(col("A", 3, 4, 5), col("C", 'L', 'M', 'N'))
 table = tableLeft.join(tableRight, "A")
 ```
+
+
+Inexact joins are also a common operation, made possible by [`aj` (as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/aj/) and [`raj` (reverse as-of join)](https://deephaven.io/core/docs/reference/table-operations/join/raj/), for analyzing time-series data. 
+
+To join these tables together based on the timestamps, we need to use an as-of join. As-of joins perform exact matches across all given columns except for the last one, which instead matches based on the closest values.
+
+In an as-of-join, the values in the right table are matched to the closest values in the left table without going over the value in the left table.
+
+For example, if the right table contains a value 5 and the left table contains values 4 and 6, the right table's 5 will be matched on the left table's 6.
+
+Let's join these tables using the `aj` method to get a single table with all of our information.
+
+```python
+import pandas as pd
+import random, time
+
+ch = "ABCDE"
+
+data_frame_left = pd.DataFrame(
+    {'A': pd.date_range(start='2022-01-01 00:00:00+09:00', periods=365),
+     'B': [random.choice(ch) for i in range(0, 365)],
+     'C': [random.randint(0, 100) for j in range(0, 1) for i in range(0, 365)]
+    })
+
+data_frame_right = pd.DataFrame(
+    {'A': pd.date_range(start='2022-01-01 00:00:02+09:00', periods=365),
+     'B': [random.choice(ch) for i in range(0, 365)],
+     'C': [random.randint(0, 100) for j in range(0, 1) for i in range(0, 365)]
+    })
+
+data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on = 'A')
+
+print(data_frame_aj)
+
+
+from deephaven.TableTools import emptyTable
+from deephaven.DateTimeUtils import convertDateTime, plus, Period
+
+def period(i):
+    return Period(f"{i}D")
+
+start_times = [
+    convertDateTime("2020-01-01T00:00:00 NY"),
+    convertDateTime("2020-01-01T00:00:02 NY")
+]
+
+deephaven_table_left = emptyTable(365).update(
+      "A = plus(start_times[0], period(i))",
+      "B = random.choice(ch)",
+      "C = (int)random.randint(1, 100)")
+
+deephaven_table_right = emptyTable(365).update(
+      "A = plus(start_times[1], period(i))",
+      "B = random.choice(ch)",
+      "C = (int)random.randint(1, 100)")
+
+
+joined_data_aj = deephaven_table_left.aj(deephaven_table_right, "A", "B_y = B, C_y = C")
+```
+
 
 
 You'll often want to partition your data into groups and then compute values for the groups. Deephaven supports many kinds of data aggregations. There are more methods than can be covered here, so see our guides
@@ -320,28 +365,45 @@ In this example, we first group the data, then apply a [sum](https://deephaven.i
 
 ```python
 import pandas as pd
+import numpy as np 
 
 data_frame = pd.DataFrame(
-    {'A': [1, 2, 1, 2, 1, 2],
-     'B': [2, 2, 5, 1, 3, 4]}
+    {'A': ['X', 'Y', 'X', 'Z', 'Z', 'X'],
+     'B': [2, 2, 5, 1, 3, 4],
+     'C': [12, 22, 13, 12, 8, 2]}
 )
 
-grouped_data_frame = data_frame.groupby(['A']).sum()
+def agg_list(data):
+    d = {}
+    d['Sum'] = np.sum(data['C'])
+    d['Min'] = np.minimum(data['C'])
+    d['Std'] = np.std(data['C'])
+    d['WAvg'] = np.average(data['C'], weights=data['B'])
+    return pd.Series(d)
+
+grouped_data_frame = data_frame.groupby('A').apply(agg_list)
 print(grouped_data_frame)
 
 
-from deephaven.TableTools import col, newTable
+from deephaven.TableTools import intCol, stringCol, newTable
 
 table = newTable(
-   col('A', 1, 2, 1, 2, 1, 2),
-   col('B', 2, 2, 5, 1, 3, 4)
+   stringCol('A', 'X', 'Y', 'X', 'Z', 'Z', 'X'),
+   intCol('B', 2, 2, 5, 1, 3, 4),
+   intCol('C', 12, 22, 13, 12, 8, 2)
 )
-
-grouped_table1 = table.groupBy("A").view("Sum = sum(B)")
 
 from deephaven import Aggregation as agg, as_list
 
-grouped_table2 = table.aggBy(as_list([agg.AggSum("B")]), "A")
+agg_list = as_list([
+    agg.AggSum("Sum = C"),
+    agg.AggMin("Min = C"),
+    agg.AggStd("Std = C"),
+    agg.AggWAvg("B", "WAvg = C")
+])
+
+grouped_table = table.aggBy(agg_list, "A")
+
 ```
 
 
@@ -391,6 +453,9 @@ replace_values_table = table.update("B = isNull(B) ? 0.0 : B")
 ```
 
 The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
+
+Pandas is a great tool for any Python programmer to have at hand. However, people use Deephaven for use cases that involve streaming, updating, and real-time data, or volumes beyond in-memory scale. In the following notebooks, we demo examples where data just flows from one table to another in real time,  which is impossible in Pandas. 
+
 
 ```python
 print("Go to https://deephaven.io/core/docs/tutorials/quickstart/ to download pre-built Docker images.")

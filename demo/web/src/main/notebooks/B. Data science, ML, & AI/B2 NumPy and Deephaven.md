@@ -7,15 +7,80 @@ NumPy is a numerical computing library for Python that is widely used by data sc
 Deephaven is a real-time, time-series, column-oriented data engine with relational database features.  Its Python API enables users to interact with table data using any Python module of their choice.  Given NumPy's popularity and capabilities, it makes perfect sense to pair it with Deephaven and the learn module.  The learn module provides efficient data transfer to and from Deephaven tables and NumPy arrays.  So how can you use these two in tandem to bring solutions to fruition faster and more efficiently than ever before?  In this demo notebook, we will show you how you can use these two to do some interesting analysis on both static an real-time data.
 \
 \
+## NumPy ndarrays
+
+NumPy is used to create N-dimensional arrays through its `ndarray` object.  To create one, use the `array` method.
+
+```python
+import numpy as np
+
+a = np.array([[1, 2, 3], [4, 5, 6]])
+b = np.array([[-1, -2], [-3, -4], [-5, -6]])
+
+print(a)
+print(b)
+```
+\
+\
+There are many more methods that can be used to create arrays.
+
+```python
+c = np.ones((3, 1))
+d = np.zeros((2, 4))
+e = np.linspace(0, 1, 5)
+f = np.arange(10)
+print(c)
+print(d)
+print(e)
+print(f)
+```
+\
+\
+Accessing rows and columns in NumPy `ndarray` objects works similar to that of standard Python lists.
+
+```python
+first_row_of_a = a[0, :]
+second_column_of_a = a[:, 1]
+print(first_row_of_a)
+print(second_column_of_a)
+```
+
+NumPy supports a wide variety of data types in its `ndarray` objects.  The complete list can be found [here](https://numpy.org/doc/stable/user/basics.types.html).  To create an array of a specific data type, declare it in the method call via the `dtype` argument.
+
+```python
+g = np.array([1, 2, 3], dtype = np.short)
+h = np.array([1, 2, 3], dtype = np.double)
+print(g.dtype)
+print(h.dtype)
+```
+\
+\
+These data types will be important in Deephaven queries, since they each have a mapping to a Java primitive supported by `deephaven.learn`.  This will be covered later in this notebook.  For more information, see [Inputs and the gather function](https://deephaven.io/core/docs/how-to-guides/use-deephaven-learn/#inputs-and-the-gather-function).
+
+## Basic NumPy array operations
+
+Arrays are the building block of applications that use NumPy.  Thus, there are a wide variety of array operations that NumPy supports.  Here are just a few.
+
+```python
+a_transpose = a.T
+b_transpose = np.transpose(b)
+a_dot_b = a @ b
+a_cross_b_transpose = np.cross(a, b_transpose)
+b_flattened = np.ravel(b)
+print(f"Transpose of a:\n{a_transpose}")
+print(f"Tranpsose of b:\n{b_transpose}")
+print(f"Dot product:\n{a_dot_b}")
+print(f"Cross product:\n{a_cross_b_transpose}")
+print(f"b flattened:\n{b_flattened}")
+```
+\
+\
 ## Create a table with data
-\
-\
-Let's get started by creating a table with some data.  That data will be an independent variable (X) and sum of sine waves of different amplitudes and frequencies (Y).  We can construct this noisy signal with NumPy.
+
+Let's integrate NumPy with Deephaven by creating a table with some data.  That data will be an independent variable (X) and sum of sine waves of different amplitudes and frequencies (Y).  We can construct this noisy signal with NumPy's built in function for a sine wave.
 
 ```python
 from deephaven.TableTools import emptyTable
-
-import numpy as np
 
 def generate_noisy_signal(x):
     return 3.5 * np.sin(x) + 1.5 * np.sin(2.5 * x) + 0.75 * np.sin(3.5 * x) + np.random.normal()
@@ -248,4 +313,4 @@ data_plot_live_polyfitted = Plot.plot("Raw Signal", data_table_live, "X", "Y").p
 And there we have it!  Piece of cake.  What kind of real-time data processing applications can you cook up?  Whatever you decide to do, Deephaven will make it easier.
 \
 \
-Got questions for us?  Check out our [gitter](https://gitter.im/deephaven/deephaven) or [GitHub discussions](https://github.com/deephaven/deephaven-core/discussions) pages.  We're happy to help!
+Got questions for us?  Check out our [Slack](https://join.slack.com/t/deephavencommunity/shared_invite/zt-11x3hiufp-DmOMWDAvXv_pNDUlVkagLQ) or [GitHub discussions](https://github.com/deephaven/deephaven-core/discussions) pages.  We're happy to help!
