@@ -112,20 +112,18 @@ def update_performance_log() -> Table:
         raise DHError(e, "failed to obtain the update performance log table.") from e
 
 
-# def metrics_reset_counters() -> None:
-#     """
-#     Resets Deephaven performance counter metrics.
-#     """
-#     _JMetricsManager.resetCounters()
-#
-#
-# def metrics_get_counters() -> str:
-#     """
-#     Gets Deephaven performance counter metrics.
-#
-#     :return: Deephaven performance counter metrics.
-#     """
-#     return _JMetricsManager.getCounters()
+def metrics_reset_counters() -> None:
+    """ Resets Deephaven performance counter metrics. """
+    _JMetricsManager.resetCounters()
+
+
+def metrics_get_counters() -> str:
+    """ Gets Deephaven performance counter metrics.
+
+    Returns:
+        a string of the Deephaven performance counter metrics.
+    """
+    return _JMetricsManager.getCounters()
 
 
 def process_info(proc_id: str, proc_type: str, key: str) -> str:

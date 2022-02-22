@@ -30,6 +30,7 @@ def build_py_session():
             'java_home': os.environ.get('JDK_HOME', None),
             'jvm_properties': {'PyObject.cleanup_on_thread': 'false'},
             'jvm_options': {'-Djava.awt.headless=true',
+                            '-DMetricsManager.enabled=true',
                             # '-Xms1g',
                             # '-Xmn512m',
                             '-XX:+UseG1GC',
