@@ -570,7 +570,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateViewport(final StreamObserver<MessageView> listener, final RowSet newViewport,
-                                  final boolean newReverseViewport) {
+            final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -591,7 +591,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener, final RowSet newViewport,
-                                            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
+            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -740,7 +740,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current RowSet is empty, we have nothing to
         // store. If prev RowSet is empty, all rows are new and are already in addsToRecord.
-        if ((activeViewport != null || activeReverseViewport != null) && (upstream.added().isNonempty() || upstream.removed().isNonempty())
+        if ((activeViewport != null || activeReverseViewport != null)
+                && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
@@ -751,7 +752,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         continue;
                     }
 
-                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted(), sub.reverseViewport);
+                    final ShiftInversionHelper inverter =
+                            new ShiftInversionHelper(upstream.shifted(), sub.reverseViewport);
 
                     sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
                         final long localStart, localEnd;
@@ -780,11 +782,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             currKeyEnd =
                                     inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
                             currKeyStart =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)),
+                                            false);
                         } else {
                             // using the forward ShiftHelper, must pass `key` in ascending order
                             currKeyStart =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)),
+                                            false);
                             currKeyEnd =
                                     inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
                         }
@@ -804,11 +808,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             long prevEnd = lastPrevRowPosition - posStart;
 
                             prevKeyStart =
-                                    prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(prevStart);
+                                    prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
+                                            : prevRowSet.get(prevStart);
                             prevKeyEnd = prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
                         } else {
                             prevKeyStart =
-                                    localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(localStart);
+                                    localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
+                                            : prevRowSet.get(localStart);
                             prevKeyEnd = prevRowSet.get(Math.min(localEnd, prevRowSet.size() - 1));
                         }
 
@@ -1670,11 +1676,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.activeReverseViewport.close();
         }
 
-        this.activeViewport = this.postSnapshotViewport == null || this.postSnapshotViewport.isEmpty() ? null :
-                this.postSnapshotViewport;
+        this.activeViewport = this.postSnapshotViewport == null || this.postSnapshotViewport.isEmpty() ? null
+                : this.postSnapshotViewport;
 
-        this.activeReverseViewport = this.postSnapshotReverseViewport == null || this.postSnapshotReverseViewport.isEmpty() ? null :
-                this.postSnapshotReverseViewport;
+        this.activeReverseViewport =
+                this.postSnapshotReverseViewport == null || this.postSnapshotReverseViewport.isEmpty() ? null
+                        : this.postSnapshotReverseViewport;
 
         this.postSnapshotViewport = null;
         this.postSnapshotReverseViewport = null;
