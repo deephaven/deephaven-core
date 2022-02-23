@@ -159,11 +159,14 @@ def process_memory():
 
 
 def query_operation_performance(eval_number: int) -> Table:
-    """ Takes in a query id and returns a view for that query's individual operation's performance data.
+    """ Takes in a query evaluation number and returns a view for that query's individual operation's performance data.
 
-     The query operation performance log contains data on how long each individual operation of a query (where(),
-     update(), naturalJoin(), etc., as well as internal functions) takes to execute, and the change in resource
-     consumption while each was executing.
+    You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the performance
+    data tables obtained from calling query_performance_log() or query_operation_performance_log()
+
+    The query operation performance log contains data on how long each individual operation of a query (where(),
+    update(), naturalJoin(), etc., as well as internal functions) takes to execute, and the change in resource
+    consumption while each was executing.
 
     Args:
         eval_number (int): the evaluation number
@@ -181,7 +184,10 @@ def query_operation_performance(eval_number: int) -> Table:
 
 
 def query_performance(eval_number: int) -> Table:
-    """ Takes in a query id and returns a view for that query's performance data.
+    """ Takes in a query evaluation number and returns a view for that query's performance data.
+
+    You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the performance
+    data tables obtained from calling query_performance_log() or query_operation_performance_log()
 
      The query performance log contains data on how long each query takes to run. Examples of what constitutes one
      individual query, for performance logging purposes, include:
@@ -206,7 +212,10 @@ def query_performance(eval_number: int) -> Table:
 
 
 def query_update_performance(eval_number: int) -> Table:
-    """  Takes in a query id and returns a view for that query's update performance data.
+    """  Takes in a query evaluation number and returns a view for that query's update performance data.
+
+    You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the performance
+    data tables obtained from calling query_performance_log() or query_operation_performance_log()
 
     Args:
         eval_number (int): the evaluation number
@@ -224,13 +233,15 @@ def query_update_performance(eval_number: int) -> Table:
 
 
 def query_update_performance_map(eval_number: int) -> Dict[str, Table]:
-    """ Creates a map of query update performance tables.
+    """ Creates multiple tables with performance data for a given query identified by an evaluation number. The tables
+     are returned in a map with the following String keys: 'QueryUpdatePerformance', 'UpdateWorst', 'WorstInterval',
+     'UpdateMostRecent', 'UpdateAggregate', 'UpdateSummaryStats'.
 
     Args:
         eval_number (int): the evaluation number
 
     Returns:
-        a dict of TODO ask Crisitian
+        a dict
 
     Raises:
         DHError
