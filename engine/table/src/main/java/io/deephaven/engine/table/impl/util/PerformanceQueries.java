@@ -171,8 +171,20 @@ public class PerformanceQueries {
 
     /**
      * <p>
-     * Creates a map of query update performance tables for a given query identified by an evaluation number.
+     * Creates multiple tables with performance data for a given query identified by an evaluation number. The tables
+     * are returned in a map with the following String keys:
      * </p>
+     *
+     * <ul>
+     * <li>{@code QueryUpdatePerformance} (QUP) The table created by the method of the same name in this class</li>
+     * <li>{@code UpdateWorst} Same table as above but sorted as to show slower updates (column {@code Ratio})
+     * first</li>
+     * <li>{@code WorstInterval} Show only operations in the slowest update interval in QUP</li>
+     * <li>{@code UpdateMostRecent} Show only operations in the last update interval in QUP</li>
+     * <li>{@code UpdateAggregate} Summary if update performance data per update interval</li>
+     * <li>{@code UpdateSummaryStats} Percentiles and maximum for {@code Ratio} and {@code QueryMemUsed} columns per
+     * update interval</li>
+     * </ul>
      *
      * <p>
      * You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
