@@ -20,6 +20,7 @@ def create_some_counters():
 class PerfmonTestCase(BaseTestCase):
 
     def test_metrics_get_counters(self):
+        metrics_reset_counters()
         t = create_some_counters()
         counters_str = metrics_get_counters()
         t = create_some_counters()
