@@ -45,7 +45,7 @@ public class ReplicateOperators {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
         replicateObjectAddOnlyAndStreamSortedFirstLast();
-        charToAll(
+        charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
         replicateObjectUnorderedMergeKernel();
     }
