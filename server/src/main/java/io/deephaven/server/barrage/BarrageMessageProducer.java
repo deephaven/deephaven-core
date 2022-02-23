@@ -776,25 +776,22 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             return;
                         }
 
-                        final long prevKeyStart, prevKeyEnd;
-
+                        final long prevStart;
+                        final long prevEnd;
                         if (sub.reverseViewport) {
                             // compute positions to be relative to the final position of prevRowSet
                             final long lastPrevRowPosition = prevRowSet.size() - 1;
 
-                            long prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
-                            long prevEnd = lastPrevRowPosition - posStart;
-
-                            prevKeyStart =
-                                    prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
-                                            : prevRowSet.get(prevStart);
-                            prevKeyEnd = prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
+                            prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
+                            prevEnd = Math.max(lastPrevRowPosition - posStart, 0);
                         } else {
-                            prevKeyStart =
-                                    localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
-                                            : prevRowSet.get(posStart);
-                            prevKeyEnd = prevRowSet.get(Math.min(posEnd, prevRowSet.size() - 1));
+                            prevStart = localStart;
+                            prevEnd = localEnd;
                         }
+                        final long prevKeyStart =
+                                prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1  : prevRowSet.get(prevStart);
+                        final long prevKeyEnd = prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
+
 
                         // Note: we already know that scoped rows must touch viewport boundaries
                         if (currKeyStart < prevKeyStart) {
