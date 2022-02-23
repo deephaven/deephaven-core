@@ -514,13 +514,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             for (long nr = 1; nr < 20; nr += 2) {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
+            final RowSet rs = swissIndexBuilder.build();
 
             nuggets.add(new RemoteNugget(makeTable));
-            nuggets.get(nuggets.size() - 1).newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+            nuggets.get(nuggets.size() - 1).newClient(rs, subscribedColumns, "swiss");
 
 
             final RemoteNugget nugget = new RemoteNugget(makeTable);
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
+            nugget.newClient(rs.copy(), subscribedColumns, true, "reverse swiss");
             nuggets.add(nugget);
         }
     }
@@ -554,9 +555,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
 
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+            final RowSet rs = swissIndexBuilder.build();
+            nugget.newClient(rs, subscribedColumns, "swiss");
 
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
+            nugget.newClient(rs.copy(), subscribedColumns, true, "reverse swiss");
         }
     }
 
@@ -853,6 +855,53 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
                                         // maintain viewport direction in this test
                                         client.setViewport(viewport, client.reverseViewport);
+                                    }
+                                }
+                            }.runTest();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void testViewportDirectionChange() {
+        for (final int size : new int[] {10, 100}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    for (int subProducerCoalesce =
+                            0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
+                        for (int subConsumerCoalesce =
+                                0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
+                            final int finalSubProducerCoalesce = 0;
+                            final int finalSubConsumerCoalesce = 1;
+                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                                    new MutableInt(25)) {
+                                @Override
+                                void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
+                                    final RemoteNugget nugget = new RemoteNugget(makeTable);
+                                    nuggets.add(nugget);
+
+                                    final BitSet columns = new BitSet();
+                                    columns.set(0, 4);
+                                    nugget.clients.add(
+                                            new RemoteClient(RowSetFactory.fromRange(0, size / 5),
+                                                    columns, nugget.barrageMessageProducer, "sub-changer"));
+                                }
+
+                                void maybeChangeSub(final int step, final int rt, final int pt) {
+                                    if (step % 2 != 0 || rt != finalSubConsumerCoalesce
+                                            || pt != finalSubProducerCoalesce) {
+                                        return;
+                                    }
+
+                                    for (final RemoteNugget nugget : nuggets) {
+                                        final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
+                                        final WritableRowSet viewport = client.viewport.copy();
+                                        viewport.shiftInPlace(Math.max(size / 25, 1));
+
+                                        // alternate viewport direction with every call to this function
+                                        client.setViewport(viewport, !client.reverseViewport);
                                     }
                                 }
                             }.runTest();

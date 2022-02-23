@@ -425,17 +425,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         RowSet viewport; // active viewport
         BitSet subscribedColumns; // active subscription columns
+        boolean reverseViewport = false; // is the active viewport reversed (indexed from end of table)
 
         boolean isActive = false; // is this subscription in our active list?
         boolean pendingDelete = false; // is this subscription deleted as far as the client is concerned?
         boolean hasPendingUpdate = false; // is this subscription in our pending list?
         boolean pendingInitialSnapshot = true; // do we need to send the initial snapshot?
         RowSet pendingViewport; // if an update is pending this is our new viewport
-        boolean pendingReverseViewport = false; // is the pending viewport reversed (indexed from end of set)
+        boolean pendingReverseViewport; // is the pending viewport reversed (indexed from end of table)
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
+
         RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
-        boolean reverseViewport = false; // treat the provided viewport as reversed (indexed from end of set)
+        boolean snapshotReverseViewport = false; // captured setting during snapshot portion of propagation job
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -1035,7 +1037,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         subscription.pendingViewport = null;
                         if (!needsFullSnapshot) {
                             // track forward and reverse viewport rows separately
-                            if (subscription.reverseViewport) {
+                            if (subscription.pendingReverseViewport) {
                                 reverseSnapshotRows.addRowSet(subscription.snapshotViewport);
                             } else {
                                 snapshotRows.addRowSet(subscription.snapshotViewport);
@@ -1052,7 +1054,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         }
                     }
 
-                    subscription.reverseViewport = subscription.pendingReverseViewport;
+                    subscription.snapshotReverseViewport = subscription.pendingReverseViewport;
                 } // end updatedSubscriptions loop
 
                 boolean haveViewport = false;
@@ -1077,7 +1079,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     if (sub.isViewport()) {
                         haveViewport = true;
                         // handle forward and reverse snapshots separately
-                        if (sub.reverseViewport) {
+                        if (sub.snapshotReverseViewport) {
                             postSnapshotReverseViewportBuilder
                                     .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
                         } else {
@@ -1634,6 +1636,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (subscription.snapshotViewport != null) {
                 final RowSet tmp = subscription.viewport;
                 subscription.viewport = subscription.snapshotViewport;
+                subscription.reverseViewport = subscription.snapshotReverseViewport;
                 subscription.snapshotViewport = tmp;
             }
             if (subscription.snapshotColumns != null) {
