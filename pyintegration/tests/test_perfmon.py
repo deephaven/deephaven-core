@@ -22,13 +22,17 @@ class PerfmonTestCase(BaseTestCase):
     def test_metrics_get_counters(self):
         metrics_reset_counters()
         t = create_some_counters()
+        # counters should accumulate some values after performing some operations
         counters_str = metrics_get_counters()
         t = create_some_counters()
+        # counters now should have different values after performing the same operation one more time
         counters_str2 = metrics_get_counters()
+        self.assertNotEqual(counters_str, counters_str2)
+
+        # after reset and performing the same operation again, the counters' values should be the same as the 1st one
         metrics_reset_counters()
         t = create_some_counters()
         counters_str3 = metrics_get_counters()
-        self.assertNotEqual(counters_str, counters_str2)
         self.assertEqual(counters_str, counters_str3)
 
     def test_process_logs(self):

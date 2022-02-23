@@ -3,8 +3,7 @@
 #
 import unittest
 
-from deephaven2 import empty_table, DHError
-from deephaven2 import read_csv, SortDirection
+from deephaven2 import empty_table, DHError, read_csv, SortDirection
 from deephaven2.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula
 from deephaven2.table import Table

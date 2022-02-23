@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" Tools to obtain internal, Deephaven logs as tables and for users to analyze the performance of the Deephaven
+""" Tools to obtain internal, Deephaven logs as tables, and tools to analyze the performance of the Deephaven
 system and Deephaven queries.
 """
 from typing import Dict
@@ -10,10 +10,6 @@ import jpy
 
 from deephaven2 import DHError
 from deephaven2._jcompat import j_map_to_dict
-from deephaven2.table import Table
-
-import jpy
-
 from deephaven2.table import Table
 
 _JPerformanceQueries = jpy.get_type("io.deephaven.engine.table.impl.util.PerformanceQueries")
@@ -67,7 +63,8 @@ def process_metrics_log() -> Table:
 
 
 def query_operation_performance_log() -> Table:
-    """ Returns a table with Deephaven performance data for individual subqueries.
+    """ Returns a table with Deephaven performance data for individual subqueries. Performance data for the entire query
+    is available from calling 'query_performance_log'.
 
     Returns:
         a Table
@@ -146,8 +143,8 @@ def process_info(proc_id: str, proc_type: str, key: str) -> str:
         raise DHError(e, "failed to obtain the process info.") from e
 
 
-def process_memory():
-    """ Presents a user friendly view with basic memory and GC data samples for the current engine process.
+def process_memory() -> Table:
+    """ Returns a table of basic memory and GC data samples for the current engine process.
 
     Returns:
         a table

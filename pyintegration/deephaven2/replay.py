@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module provides replay support on historical data. """
+""" This module provides support for replaying historical data. """
 import jpy
 
 from deephaven2 import dtypes, DHError
@@ -55,8 +55,6 @@ class TableReplayer(JObjectWrapper):
         """
         try:
             replay_table = Table(j_table=self._j_replayer.replay(table.j_table, col))
-            self._hist_tables.append((table, col))
-            self._replay_tables.append(replay_table)
             return replay_table
         except Exception as e:
             raise DHError(e, "failed to add a historical table.") from e
@@ -75,6 +73,6 @@ class TableReplayer(JObjectWrapper):
     def shutdown(self) -> None:
         """ Shuts down and invalidates the replayer. After this call, the replayer can no longer be used. """
         try:
-            self._j_replayer.shutdown()
+            self._hist_tables = []
         except Exception as e:
             raise DHError(e, "failed to shutdown the replayer.") from e

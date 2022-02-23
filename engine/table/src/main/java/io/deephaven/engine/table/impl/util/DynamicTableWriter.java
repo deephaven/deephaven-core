@@ -543,7 +543,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setByte(value == null ? QueryConstants.NULL_BYTE : (byte) value);
+            setByte(value == null ? QueryConstants.NULL_BYTE : (Byte) value);
         }
 
         @Override
@@ -594,7 +594,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setInt(value == null ? QueryConstants.NULL_INT : (int) value);
+            setInt(value == null ? QueryConstants.NULL_INT : (Integer) value);
         }
 
         @Override
@@ -622,7 +622,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setDouble(value == null ? QueryConstants.NULL_DOUBLE : (double) value);
+            setDouble(value == null ? QueryConstants.NULL_DOUBLE : (Double) value);
         }
 
         @Override
@@ -650,7 +650,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setFloat(value == null ? QueryConstants.NULL_FLOAT : (float) value);
+            setFloat(value == null ? QueryConstants.NULL_FLOAT : (Float) value);
         }
 
         @Override
@@ -678,7 +678,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setLong(value == null ? QueryConstants.NULL_LONG : (long) value);
+            setLong(value == null ? QueryConstants.NULL_LONG : (Long) value);
         }
 
         @Override
@@ -706,7 +706,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         public void set(Object value) {
-            setShort(value == null ? QueryConstants.NULL_SHORT : (short) value);
+            setShort(value == null ? QueryConstants.NULL_SHORT : (Short) value);
         }
 
         @Override
