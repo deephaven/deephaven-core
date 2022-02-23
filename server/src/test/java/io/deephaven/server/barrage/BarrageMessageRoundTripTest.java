@@ -519,14 +519,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final BitSet subscribedColumns = new BitSet();
             subscribedColumns.set(0, nugget.originalTable.getColumns().length);
 
-            nugget.newClient(null, subscribedColumns, "full");
-
-            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
-            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
-                    "floating");
-
-            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
-            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true, "reverse floating");
+//            nugget.newClient(null, subscribedColumns, "full");
+//
+//            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
+//            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
+//                    "floating");
+//
+//            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
+//            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true, "reverse floating");
 
             final RowSetBuilderSequential swissIndexBuilder = RowSetFactory.builderSequential();
             final long rangeSize = Math.max(1, size / 20);
@@ -534,9 +534,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
 
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+//            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
 
-//            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
+            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
         }
     }
 

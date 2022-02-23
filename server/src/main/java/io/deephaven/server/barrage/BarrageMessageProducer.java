@@ -751,19 +751,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         continue;
                     }
 
-                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted());
-
-//                    System.out.println("scoped: step=" + this.lastIndexClockStep);
-//                    System.out.println("    upstream=" + upstream);
+                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted(), sub.reverseViewport);
 
                     sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
                         final long localStart, localEnd;
 
-//                        System.out.println("    rowSet.size()=" + rowSet.size() + ", prevRowSet.size()=" + prevRowSet.size());
-
                         // handle reverse viewports
                         if (sub.reverseViewport) {
-                            // reset positions to be relative to the final position of this table
+                            // compute positions to be relative to the final position of rowSet
                             final long lastRowPosition = rowSet.size() - 1;
 
                             localStart = Math.max(lastRowPosition - posEnd, 0);
@@ -778,39 +773,52 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             localEnd = posEnd;
                         }
 
-//                        System.out.println("    localStart=" + localStart + ", localEnd=" + localEnd);
-
                         // Note: we already know that both rowSet and prevRowSet are non-empty.
-                        final long currKeyStart =
-                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
-                        final long currKeyEnd =
-                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
-
-//                        System.out.println("    currKeyStart=" + currKeyStart + ", currKeyEnd=" + currKeyEnd);
+                        final long currKeyStart, currKeyEnd;
+                        if (sub.reverseViewport) {
+                            // using the reverse ShiftHelper, must pass `key` in descending order
+                            currKeyEnd =
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
+                            currKeyStart =
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
+                        } else {
+                            // using the forward ShiftHelper, must pass `key` in ascending order
+                            currKeyStart =
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)), false);
+                            currKeyEnd =
+                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
+                        }
 
                         // if our current viewport includes no previous values this range may be empty
                         if (currKeyEnd < currKeyStart) {
                             return;
                         }
 
-                        final long prevKeyStart =
-                                localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(localStart);
-                        final long prevKeyEnd = prevRowSet.get(Math.min(localEnd, prevRowSet.size() - 1));
+                        final long prevKeyStart, prevKeyEnd;
 
-//                        System.out.println("    prevKeyStart=" + prevKeyStart + ", prevKeyEnd=" + prevKeyEnd);
+                        if (sub.reverseViewport) {
+                            // compute positions to be relative to the final position of prevRowSet
+                            final long lastPrevRowPosition = prevRowSet.size() - 1;
 
-                        final long minStart = Math.min(currKeyStart, prevKeyStart);
-                        final long maxEnd = Math.max(currKeyEnd, prevKeyEnd);
+                            long prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
+                            long prevEnd = lastPrevRowPosition - posStart;
 
-                        scopedViewBuilder.addRange(minStart, maxEnd);
+                            prevKeyStart =
+                                    prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(prevStart);
+                            prevKeyEnd = prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
+                        } else {
+                            prevKeyStart =
+                                    localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(localStart);
+                            prevKeyEnd = prevRowSet.get(Math.min(localEnd, prevRowSet.size() - 1));
+                        }
 
-//                        // Note: we already know that scoped rows must touch viewport boundaries
-//                        if (currKeyStart < prevKeyStart) {
-//                            scopedViewBuilder.addRange(currKeyStart, Math.min(prevKeyStart - 1, currKeyEnd));
-//                        }
-//                        if (currKeyEnd > prevKeyEnd) {
-//                            scopedViewBuilder.addRange(Math.max(prevKeyEnd + 1, currKeyStart), currKeyEnd);
-//                        }
+                        // Note: we already know that scoped rows must touch viewport boundaries
+                        if (currKeyStart < prevKeyStart) {
+                            scopedViewBuilder.addRange(currKeyStart, Math.min(prevKeyStart - 1, currKeyEnd));
+                        }
+                        if (currKeyEnd > prevKeyEnd) {
+                            scopedViewBuilder.addRange(Math.max(prevKeyEnd + 1, currKeyStart), currKeyEnd);
+                        }
                     });
                 }
             }
@@ -819,8 +827,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 upstream.shifted().apply(scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
                 addsToRecord.insert(scoped);
-
-//                System.out.println("    scoped=" + scoped);
             }
         }
 
@@ -868,14 +874,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 final BiConsumer<RowSet, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
                     try (final RowSequence.Iterator rsIt = keysToAdd.getRowSequenceIterator()) {
                         while (rsIt.hasMore()) {
-                            final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE); // NB: This
-                                                                                                             // will
-                                                                                                             // never
-                                                                                                             // return
-                                                                                                             // more
-                                                                                                             // keys
-                                                                                                             // than
-                                                                                                             // deltaChunkSize
+                            // NB: This will never return more keys than deltaChunkSize
+                            final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE);
                             try (final RowSequence dstKeys =
                                     RowSequenceFactory.forRange(nextFreeDeltaKey,
                                             nextFreeDeltaKey + srcKeys.size() - 1)) {
