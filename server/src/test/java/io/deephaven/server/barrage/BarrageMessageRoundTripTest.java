@@ -850,7 +850,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
                                         final WritableRowSet viewport = client.viewport.copy();
                                         viewport.shiftInPlace(Math.max(size / 25, 1));
-                                        client.setViewport(viewport);
+
+                                        client.setViewport(viewport, client.reverseViewport);
                                     }
                                 }
                             }.runTest();
