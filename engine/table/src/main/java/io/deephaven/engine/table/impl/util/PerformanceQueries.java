@@ -18,7 +18,13 @@ public class PerformanceQueries {
 
     /**
      * <p>
-     * Takes in a query id and returns a view for that query's performance data.
+     * Takes in a query evaluation number and returns a view for that query's performance data.
+     * </p>
+     *
+     * <p>
+     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
+     * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
      * </p>
      *
      * <p>
@@ -64,11 +70,17 @@ public class PerformanceQueries {
 
     /**
      * <p>
-     * Takes in a query id and returns a view for that query's individual operations's performance data.
+     * Takes in a query evaluation number and returns a view for that query's individual operations's performance data.
      * </p>
      *
      * <p>
-     * The query operation performance log contains data on how long each individual operation of a query (where(),
+     * You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
+     * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
+     * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
+     * </p>
+     *
+     * <p>
+     * The query operation performance result contains data on how long each individual operation of a query (where(),
      * update(), naturalJoin(), etc., as well as internal functions) takes to execute, and the change in resource
      * consumption while each was executing.
      * </p>
@@ -112,7 +124,15 @@ public class PerformanceQueries {
     }
 
     /**
-     * Takes in a query id and returns a view for that query's update performance data.
+     * <p>
+     * Takes in a query evaluation number and returns a view for that query's update performance data.
+     * </p>
+     *
+     * <p>
+     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
+     * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
+     * </p>
      *
      * @param evaluationNumber evaluation number
      * @return query update performance table.
@@ -150,7 +170,15 @@ public class PerformanceQueries {
     }
 
     /**
-     * Creates a map of query update performance tables.
+     * <p>
+     * Creates a map of query update performance tables for a given query identified by an evaluation number.
+     * </p>
+     *
+     * <p>
+     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
+     * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
+     * </p>
      *
      * @param evaluationNumber evaluation number
      * @return map of query update performance tables.
