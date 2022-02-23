@@ -22,7 +22,7 @@ public class PerformanceQueries {
      * </p>
      *
      * <p>
-     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
      * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
      * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
      * </p>
@@ -129,7 +129,7 @@ public class PerformanceQueries {
      * </p>
      *
      * <p>
-     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
      * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
      * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
      * </p>
@@ -175,7 +175,7 @@ public class PerformanceQueries {
      * </p>
      *
      * <p>
-     * You can obtain query evaluation numbers, which uniquely identify a query and its sub queries, via the
+     * You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
      * {@code QueryPerformance} and {@code QueryOperationPerformance} tables, calling
      * {@code TableLoggers.queryPerformanceLog()} or {@code TableLoggers.queryOperationPerformanceLog()}.
      * </p>
