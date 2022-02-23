@@ -851,6 +851,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         final WritableRowSet viewport = client.viewport.copy();
                                         viewport.shiftInPlace(Math.max(size / 25, 1));
 
+                                        // maintain viewport direction in this test
                                         client.setViewport(viewport, client.reverseViewport);
                                     }
                                 }
@@ -977,8 +978,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         columns.set(0, 4);
                                         nugget.clients.add(
                                                 new RemoteClient(
-                                                        RowSetFactory.fromRange(size / 5,
-                                                                3 * size / 5),
+                                                        RowSetFactory.fromRange(size / 5, 3 * size / 5),
                                                         columns, nugget.barrageMessageProducer, "sub-changer"));
                                     }
                                 }
@@ -992,7 +992,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
                                         final WritableRowSet viewport = client.viewport.copy();
                                         viewport.shiftInPlace(size / 5);
-                                        client.setViewport(viewport);
+
+                                        // maintain viewport direction in this test
+                                        client.setViewport(viewport, client.reverseViewport);
                                     }
                                 }
                             }.runTest();
