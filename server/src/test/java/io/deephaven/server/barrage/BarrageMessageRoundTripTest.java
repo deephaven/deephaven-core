@@ -332,6 +332,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns,
                 final boolean newReverseViewport) {
             viewport = newViewport;
+            reverseViewport = newReverseViewport;
             subscribedColumns = newColumns;
             barrageMessageProducer.updateViewportAndColumns(dummyObserver, viewport, subscribedColumns);
         }
@@ -499,13 +500,27 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     RowSetFactory.fromRange(size / 2, size * 3 / 4),
                     subscribedColumns, "floating");
 
+            nuggets.add(new RemoteNugget(makeTable));
+            nuggets.get(nuggets.size() - 1).newClient(
+                    RowSetFactory.fromRange(0, size / 10),
+                    subscribedColumns, true, "footer");
+            nuggets.add(new RemoteNugget(makeTable));
+            nuggets.get(nuggets.size() - 1).newClient(
+                    RowSetFactory.fromRange(size / 2, size * 3L / 4),
+                    subscribedColumns, true, "reverse floating");
+
             final RowSetBuilderSequential swissIndexBuilder = RowSetFactory.builderSequential();
             final long rangeSize = Math.max(1, size / 20);
             for (long nr = 1; nr < 20; nr += 2) {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
+
+            nuggets.add(new RemoteNugget(makeTable));
+            nuggets.get(nuggets.size() - 1).newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+
+
             final RemoteNugget nugget = new RemoteNugget(makeTable);
-            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss viewport");
+            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
             nuggets.add(nugget);
         }
     }
@@ -523,15 +538,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final BitSet subscribedColumns = new BitSet();
             subscribedColumns.set(0, nugget.originalTable.getColumns().length);
 
-            // nugget.newClient(null, subscribedColumns, "full");
-            //
-            // nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
-            // nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
-            // "floating");
-            //
-            // nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
-            // nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true, "reverse
-            // floating");
+            nugget.newClient(null, subscribedColumns, "full");
+
+            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, "header");
+            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns,
+                    "floating");
+
+            nugget.newClient(RowSetFactory.fromRange(0, size / 10), subscribedColumns, true, "footer");
+            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), subscribedColumns, true,
+                    "reverse floating");
 
             final RowSetBuilderSequential swissIndexBuilder = RowSetFactory.builderSequential();
             final long rangeSize = Math.max(1, size / 20);
@@ -539,7 +554,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
 
-            // nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
+            nugget.newClient(swissIndexBuilder.build(), subscribedColumns, "swiss");
 
             nugget.newClient(swissIndexBuilder.build(), subscribedColumns, true, "reverse swiss");
         }
@@ -1013,7 +1028,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
                             final int firstKey = random.nextInt(size);
                             client.setViewport(RowSetFactory.fromRange(firstKey,
-                                    firstKey + random.nextInt(size - firstKey)));
+                                    firstKey + random.nextInt(size - firstKey)), client.reverseViewport);
                         }
                     }
                 }.runTest();

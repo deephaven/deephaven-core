@@ -18,28 +18,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.engine.table.impl.MemoizedOperationKey;
-import io.deephaven.engine.table.impl.NotificationStepReceiver;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -66,13 +47,7 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -456,10 +431,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean hasPendingUpdate = false; // is this subscription in our pending list?
         boolean pendingInitialSnapshot = true; // do we need to send the initial snapshot?
         RowSet pendingViewport; // if an update is pending this is our new viewport
+        boolean pendingReverseViewport = false; // is the pending viewport reversed (indexed from end of set)
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
         RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
-        boolean reverseViewport = false; // treat the provided viewport as reversed (from end of set not beginning)
+        boolean reverseViewport = false; // treat the provided viewport as reversed (indexed from end of set)
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -473,7 +449,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.subscribedColumns = new BitSet();
             this.pendingColumns = subscribedColumns;
             this.pendingViewport = initialViewport;
-            this.reverseViewport = reverseViewport;
+            this.pendingReverseViewport = this.reverseViewport = reverseViewport;
         }
 
         public boolean isViewport() {
@@ -576,7 +552,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
-            sub.reverseViewport = newReverseViewport;
+            sub.pendingReverseViewport = newReverseViewport;
             if (sub.pendingColumns == null) {
                 sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
             }
@@ -597,7 +573,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
-            sub.reverseViewport = newReverseViewport;
+            sub.pendingReverseViewport = newReverseViewport;
             sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();
@@ -814,8 +790,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         } else {
                             prevKeyStart =
                                     localStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
-                                            : prevRowSet.get(localStart);
-                            prevKeyEnd = prevRowSet.get(Math.min(localEnd, prevRowSet.size() - 1));
+                                            : prevRowSet.get(posStart);
+                            prevKeyEnd = prevRowSet.get(Math.min(posEnd, prevRowSet.size() - 1));
                         }
 
                         // Note: we already know that scoped rows must touch viewport boundaries
@@ -1075,6 +1051,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             needsFullSnapshot = true;
                         }
                     }
+
+                    subscription.reverseViewport = subscription.pendingReverseViewport;
                 } // end updatedSubscriptions loop
 
                 boolean haveViewport = false;
