@@ -81,7 +81,7 @@ final class StaticAggOpenHasherIntObject extends StaticChunkedOperatorAggregatio
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
         final Object[] destKeyArray1 = new Object[tableSize];
         final int[] destState = new int[tableSize];

@@ -69,7 +69,7 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_OUTPUT_POSITION);

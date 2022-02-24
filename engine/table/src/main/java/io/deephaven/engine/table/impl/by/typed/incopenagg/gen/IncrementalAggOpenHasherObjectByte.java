@@ -317,7 +317,7 @@ final class IncrementalAggOpenHasherObjectByte extends IncrementalChunkedOperato
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final Object[] destKeyArray0 = new Object[tableSize];
         final byte[] destKeyArray1 = new byte[tableSize];
         final int[] destState = new int[tableSize];

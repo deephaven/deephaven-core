@@ -312,7 +312,7 @@ final class IncrementalAggOpenHasherLongLong extends IncrementalChunkedOperatorA
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final long[] destKeyArray0 = new long[tableSize];
         final long[] destKeyArray1 = new long[tableSize];
         final int[] destState = new int[tableSize];

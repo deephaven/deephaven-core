@@ -776,7 +776,7 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        return MethodSpec.methodBuilder("rehashInternal")
+        return MethodSpec.methodBuilder("rehashInternalFull")
                 .returns(void.class)
                 .addParameter(int.class, "oldSize", Modifier.FINAL)
                 .addModifiers(Modifier.PROTECTED)

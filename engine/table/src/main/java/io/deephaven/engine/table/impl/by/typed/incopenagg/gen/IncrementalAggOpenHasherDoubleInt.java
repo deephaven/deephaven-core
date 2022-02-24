@@ -317,7 +317,7 @@ final class IncrementalAggOpenHasherDoubleInt extends IncrementalChunkedOperator
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final double[] destKeyArray0 = new double[tableSize];
         final int[] destKeyArray1 = new int[tableSize];
         final int[] destState = new int[tableSize];

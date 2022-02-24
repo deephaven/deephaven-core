@@ -290,7 +290,7 @@ final class IncrementalAggOpenHasherShort extends IncrementalChunkedOperatorAggr
     }
 
     @Override
-    protected void rehashInternal(final int oldSize) {
+    protected void rehashInternalFull(final int oldSize) {
         final short[] destKeyArray0 = new short[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
