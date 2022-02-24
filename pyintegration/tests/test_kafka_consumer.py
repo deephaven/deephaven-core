@@ -142,7 +142,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Side", cols[4].name)
             self.assertEqual(dtypes.string, cols[4].data_type)
             self.assertEqual("Qty", cols[5].name)
-            self.assertEqual(dtypes.int_, cols[5].data_type)
+            self.assertEqual(dtypes.int32, cols[5].data_type)
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
 
@@ -190,7 +190,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Side", cols[4].name)
             self.assertEqual(dtypes.string, cols[4].data_type)
             self.assertEqual("Quantity", cols[5].name)
-            self.assertEqual(dtypes.int_, cols[5].data_type)
+            self.assertEqual(dtypes.int32, cols[5].data_type)
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
 
