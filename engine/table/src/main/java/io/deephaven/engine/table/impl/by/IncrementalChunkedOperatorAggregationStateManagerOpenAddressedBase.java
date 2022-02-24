@@ -81,6 +81,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
+    protected void clearAlternate() {
+        super.clearAlternate();
+        this.alternateOutputPosition = null;
+    }
+
+    @Override
     public SafeCloseable makeAggregationStateBuildContext(ColumnSource<?>[] buildSources, long maxSize) {
         return makeBuildContext(buildSources, maxSize);
     }

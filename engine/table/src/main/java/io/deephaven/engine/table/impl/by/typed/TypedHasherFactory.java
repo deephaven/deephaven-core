@@ -547,7 +547,7 @@ public class TypedHasherFactory {
 
         final String positionValueName = alternate ? "alternatePositionValue" : "positionValue";
 
-        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName, hasherConfig.mainStateName,
+        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName, alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName,
                 tableLocationName);
         builder.beginControlFlow("if ($L == $L)", positionValueName, hasherConfig.emptyStateName);
 
@@ -559,7 +559,7 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        builder.beginControlFlow("if (" + getEqualsStatement(chunkTypes) + ")");
+        builder.beginControlFlow("if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         builder.addStatement("return $L", positionValueName);
         builder.endControlFlow();
 
@@ -752,16 +752,17 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
                 hasherConfig.mainStateName);
+        // TODO: THIS IS WRONG, WE MIGHT NEED TO MOVE MAIN ANYWAY
         builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         hasherConfig.moveMain.accept(builder);
         builder.endControlFlow();
+        // END THIS
         builder.addStatement("break");
-        builder.nextControlFlow("else");
+        builder.endControlFlow();
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation",
                 "destinationTableLocation",
                 "firstDestinationTableLocation", "firstDestinationTableLocation");
-        builder.endControlFlow();
         builder.endControlFlow();
 
         builder.endControlFlow();
@@ -813,7 +814,6 @@ public class TypedHasherFactory {
 
         builder.addStatement("super.clearAlternate()");
 
-        builder.addStatement("this.$L = null", hasherConfig.overflowOrAlternateStateName);
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("this.alternateKeySource$L = null", ii);
         }
@@ -1022,7 +1022,11 @@ public class TypedHasherFactory {
             builder.addStatement("break");
         }
         builder.nextControlFlow("else");
-        builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
+        if (alternate) {
+            builder.addStatement("$L = alternateNextTableLocation($L)", tableLocationName, tableLocationName);
+        } else {
+            builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
+        }
         builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
                 firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();

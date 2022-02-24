@@ -112,10 +112,9 @@ final class StaticAggOpenHasherCharInt extends StaticChunkedOperatorAggregationS
                         outputPositionToHashSlot.set(currentStateValue, destinationTableLocation);
                     }
                     break;
-                } else {
-                    destinationTableLocation = nextTableLocation(destinationTableLocation);
-                    Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
                 }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
             }
         }
     }
