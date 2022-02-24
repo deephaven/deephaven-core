@@ -29,7 +29,8 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     private ColumnSource<DATA_TYPE> mainSource;
     private ColumnSource<DATA_TYPE> alternateSource;
 
-    private final WeakReferenceManager<BiConsumer<ColumnSource<DATA_TYPE>, ColumnSource<DATA_TYPE>>> sourceHolderListeners = new WeakReferenceManager<>();
+    private final WeakReferenceManager<BiConsumer<ColumnSource<DATA_TYPE>, ColumnSource<DATA_TYPE>>> sourceHolderListeners =
+            new WeakReferenceManager<>();
 
     public AlternatingColumnSource(@NotNull final Class<DATA_TYPE> dataType,
             @Nullable final Class<?> componentType,
@@ -354,7 +355,8 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return new Reinterpreted<>(alternateDataType, this, reinterpretInner(mainSource, alternateDataType), reinterpretInner(alternateSource, alternateDataType));
+        return new Reinterpreted<>(alternateDataType, this, reinterpretInner(mainSource, alternateDataType),
+                reinterpretInner(alternateSource, alternateDataType));
     }
 
     public static boolean isAlternate(final long index) {
@@ -436,7 +438,7 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     }
 
     private void populateInnerKeysAlternate(@NotNull LongChunk<? extends RowKeys> keys,
-                                            AlternatingFillContextWithUnordered typedContext) {
+            AlternatingFillContextWithUnordered typedContext) {
         // fill the alternate into the back half of the chunk
         typedContext.innerValues.setSize(keys.size());
         typedContext.innerSlice.resetFromChunk((WritableChunk) typedContext.innerValues, typedContext.innerKeys.size(),

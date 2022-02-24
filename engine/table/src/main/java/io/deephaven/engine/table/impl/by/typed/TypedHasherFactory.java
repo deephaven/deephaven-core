@@ -167,7 +167,8 @@ public class TypedHasherFactory {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
 
-        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate, alwaysMoveMain,
+        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate,
+                alwaysMoveMain,
                 mainStateName,
                 overflowOrAlternateStateName,
                 emptyStateName, int.class, moveMain, probes, builds);
@@ -554,7 +555,8 @@ public class TypedHasherFactory {
 
         final String positionValueName = alternate ? "alternatePositionValue" : "positionValue";
 
-        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName, alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName,
+        builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName,
+                alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName,
                 tableLocationName);
         builder.beginControlFlow("if ($L == $L)", positionValueName, hasherConfig.emptyStateName);
 
@@ -566,7 +568,8 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        builder.beginControlFlow("if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        builder.beginControlFlow(
+                "if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
         builder.addStatement("return $L", positionValueName);
         builder.endControlFlow();
 

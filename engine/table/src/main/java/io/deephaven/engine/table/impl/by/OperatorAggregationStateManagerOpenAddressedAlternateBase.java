@@ -231,7 +231,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int)numEntries);
+                rehashInternalPartial((int) numEntries);
                 clearAlternate();
             }
 
