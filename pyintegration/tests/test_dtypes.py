@@ -28,8 +28,8 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.short, dtypes.int16)
         self.assertEqual(dtypes.int_, dtypes.int64)
         self.assertEqual(dtypes.long, dtypes.int64)
-        self.assertEqual(dtypes.float_, dtypes.single)
-        self.assertEqual(dtypes.float_, dtypes.float32)
+        self.assertEqual(dtypes.float_, dtypes.double)
+        self.assertEqual(dtypes.float_, dtypes.float64)
         self.assertEqual(dtypes.double, dtypes.float64)
 
     def test_j_type(self):
@@ -39,7 +39,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
         self.assertEqual(dtypes.int_.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
-        self.assertEqual(dtypes.float_.j_type, jpy.get_type("float"))
+        self.assertEqual(dtypes.float_.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
@@ -56,7 +56,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.char.np_type, np.dtype('uint16'))
         self.assertEqual(dtypes.int_.np_type, np.int64)
         self.assertEqual(dtypes.long.np_type, np.int64)
-        self.assertEqual(dtypes.float_.np_type, np.float32)
+        self.assertEqual(dtypes.float_.np_type, np.float64)
         self.assertEqual(dtypes.double.np_type, np.float64)
         self.assertEqual(dtypes.string.np_type, np.object_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)

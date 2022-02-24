@@ -16,16 +16,26 @@ from deephaven2.table import Table
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 
 
-def freeze_table(table: Table):
+def freeze_table(table: Table) -> Table:
+    """ Returns a static snapshot of the source ticking table.
+
+    Args:
+        table (Table): the source table
+
+    Returns:
+        a new table
+    """
     return empty_table(0).snapshot(table, True)
 
 
-def _to_column_name(pd_name: str):
-    tmp_name = re.sub("\W+", " ", str(pd_name)).strip()
+def _to_column_name(name: str) -> str:
+    """ Transforms the given name string into a valid table column name. """
+    tmp_name = re.sub("\W+", " ", str(name)).strip()
     return re.sub("\s+", "_", tmp_name)
 
 
-def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
+def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
+    """ Produces a numpy array from the given Java array and the Table column definition. """
     try:
         if col_def.data_type in {dtypes.char, dtypes.string}:
             return np.array(j_array)
@@ -53,7 +63,9 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
         raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
 
 
-def columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.ndarray:
+def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.ndarray:
+    """ Produces a 2d numpy array from the given Java arrays of the same component type and the Table column
+    definition """
     try:
         if col_def.data_type.is_primitive:
             np_array = np.empty(shape=(len(j_arrays[0]), len(j_arrays)), dtype=col_def.data_type.np_type)
@@ -63,7 +75,7 @@ def columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.
         else:
             np_arrays = []
             for j_array in j_arrays:
-                np_arrays.append(column_to_numpy_array(col_def=col_def, j_array=j_array))
+                np_arrays.append(_column_to_numpy_array(col_def=col_def, j_array=j_array))
             return np.stack(np_arrays, axis=1)
     except DHError:
         raise
@@ -71,7 +83,8 @@ def columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.
         raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
 
 
-def make_input_column(col: str, np_array: np.ndarray) -> InputColumn:
+def _make_input_column(col: str, np_array: np.ndarray) -> InputColumn:
+    """ Creates a InputColumn with the given column name and the numpy array. """
     dtype = dtypes.from_np_dtype(np_array.dtype)
     if dtype == dtypes.bool_:
         bytes_ = np_array.astype(dtype=np.int8)
@@ -116,19 +129,19 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
         col_defs = [col_def_dict[col] for col in cols]
-        if len(set(map(lambda x: x.data_type, col_defs))) != 1:
+        if len(set([col_def.data_type for col_def in col_defs])) != 1:
             raise DHError(message="columns must be of the same data type.")
 
         if len(col_defs) == 1:
             col_def = col_defs[0]
             data_col = table.j_table.getColumn(col_def.name)
-            return column_to_numpy_array(col_def, data_col.getDirect())
+            return _column_to_numpy_array(col_def, data_col.getDirect())
         else:
             j_arrays = []
             for col_def in col_defs:
                 data_col = table.j_table.getColumn(col_def.name)
                 j_arrays.append(data_col.getDirect())
-            return columns_to_2d_numpy_array(col_defs[0], j_arrays)
+            return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
     except DHError:
         raise
     except Exception as e:
@@ -159,10 +172,10 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
 
         input_cols = []
         if len(cols) == 1:
-            input_cols.append(make_input_column(cols[0], np_array))
+            input_cols.append(_make_input_column(cols[0], np_array))
         else:
             for i, col in enumerate(cols):
-                input_cols.append(make_input_column(col, np_array[:, [i]]))
+                input_cols.append(_make_input_column(col, np_array[:, [i]]))
 
         return new_table(cols=input_cols)
     except DHError:

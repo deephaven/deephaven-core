@@ -21,7 +21,7 @@ class CustomClass:
     f2: str
 
 
-class MyTestCase(unittest.TestCase):
+class NumpyTestCase(unittest.TestCase):
     def setUp(self):
         j_array_list1 = j_array_list([1, -1])
         j_array_list2 = j_array_list([2, -2])
@@ -54,7 +54,7 @@ class MyTestCase(unittest.TestCase):
                 self.assertEqual((2,), np_array.shape)
 
         try:
-            np_array = to_numpy(self.test_table, [col.name for col in self.test_table.columns])
+            to_numpy(self.test_table, [col.name for col in self.test_table.columns])
         except DHError as e:
             self.assertIn("same data type", e.root_cause)
 
@@ -93,6 +93,8 @@ class MyTestCase(unittest.TestCase):
             np_array = to_numpy(tmp_table, ['Long2', 'Long4'])
             self.assertEqual((2, 2), np_array.shape)
             self.assertEqual(np_array.dtype, float)
+            tmp_table2 = to_table(np_array, ['Long2', 'Long4'])
+            self.assertEqual(tmp_table2, tmp_table.select(['Long2', 'Long4']))
 
     def test_to_table(self):
         for col in self.test_table.columns:

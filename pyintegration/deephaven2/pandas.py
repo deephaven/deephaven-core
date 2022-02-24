@@ -11,7 +11,7 @@ import pandas
 
 from deephaven2 import DHError, new_table, dtypes
 from deephaven2.column import Column
-from deephaven2.numpy import column_to_numpy_array, freeze_table, make_input_column
+from deephaven2.numpy import _column_to_numpy_array, freeze_table, _make_input_column
 from deephaven2.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -32,13 +32,13 @@ def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
     """
     try:
         data_col = table.j_table.getColumn(col_def.name)
-        np_array = column_to_numpy_array(col_def, data_col.getDirect())
+        np_array = _column_to_numpy_array(col_def, data_col.getDirect())
 
         return pandas.Series(data=np_array, copy=False)
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, message="failed to pandas Series for {col}") from e
+        raise DHError(e, message="failed to create apandas Series for {col}") from e
 
 
 def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
@@ -112,7 +112,7 @@ def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
 
         input_cols = []
         for col in cols:
-            input_cols.append(make_input_column(col, df.get(col).values))
+            input_cols.append(_make_input_column(col, df.get(col).values))
 
         return new_table(cols=input_cols)
     except DHError:

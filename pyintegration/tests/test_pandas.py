@@ -66,6 +66,9 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(df['Long'].dtype, np.float64)
         self.assertEqual(df['Boolean'].values.dtype, np.bool_)
 
+        df1 = pd.DataFrame([[1, float('Nan')], [True, False]])
+        df1.equals(df)
+
     def test_vector_column(self):
         strings = ["Str1", "Str1", "Str2", "Str2", "Str2"]
         doubles = [1.0, 2.0, 4.0, 8.0, 16.0]
