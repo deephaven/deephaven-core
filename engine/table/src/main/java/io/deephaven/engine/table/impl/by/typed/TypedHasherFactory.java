@@ -210,7 +210,7 @@ public class TypedHasherFactory {
     }
 
     private static void buildInsertIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildInsert(hasherConfig, builder);
+        buildInsertCommon(hasherConfig, builder);
         builder.addStatement("outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation)");
         builder.addStatement("rowCountSource.set(outputPosition, 1L)");
     }

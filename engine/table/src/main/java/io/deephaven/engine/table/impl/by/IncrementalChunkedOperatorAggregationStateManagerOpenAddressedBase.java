@@ -113,10 +113,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         Assert.eqNull(alternatingColumnSources, "alternatingColumnSources");
         alternatingColumnSources = new AlternatingColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {
-            final Class<?> dataType =
-                    mainKeySources[kci] != null ? mainKeySources[kci].getType() : alternateKeySources[kci].getType();
-            final Class<?> componentType = mainKeySources[kci] != null ? mainKeySources[kci].getComponentType()
-                    : alternateKeySources[kci].getComponentType();
+            final Class<?> dataType = mainKeySources[kci].getType();
+            final Class<?> componentType = mainKeySources[kci].getComponentType();
             if (mainInsertMask == 0) {
                 alternatingColumnSources[kci] = new AlternatingColumnSource<>(dataType, componentType,
                         mainKeySources[kci], alternateKeySources[kci]);

@@ -25,7 +25,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     // location value is positive and can be compared against rehashPointer safely
     protected int alternateTableSize = 1;
 
-    // how much of the alternate sources is necessary to rehash?
+    // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
     protected long numEntries = 0;
@@ -44,8 +44,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             int tableSize,
             double maximumLoadFactor) {
         this.tableSize = tableSize;
-        Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
-        Require.gtZero(tableSize, "tableSize");
+        Require.inRange(tableSize, 0, MAX_TABLE_SIZE, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
 
@@ -206,7 +205,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize * 2 - rehashCredits.intValue();
-            if (requiredRehash < 0) {
+            if (requiredRehash <= 0) {
                 return false;
             }
 
@@ -273,20 +272,21 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     protected abstract void rehashInternalPartial(int newRehashPointer);
 
+    // full rehashInternal
     protected abstract void rehashInternal(int oldSize);
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
-    private void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
+    private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
             Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getChunk(contexts[ii], rowSequence);
         }
     }
 
-    private void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
+    private static void getPrevKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
             Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
         for (int ii = 0; ii < chunks.length; ++ii) {
             chunks[ii] = sources[ii].getPrevChunk(contexts[ii], rowSequence);

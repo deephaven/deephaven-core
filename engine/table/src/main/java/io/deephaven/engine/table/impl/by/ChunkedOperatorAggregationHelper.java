@@ -2231,11 +2231,11 @@ public class ChunkedOperatorAggregationHelper {
     /**
      * The output RowSet of an aggregation is fairly special. It is always from zero to the number of output rows, and
      * while modifying states we randomly add rows to it, potentially touching the same state many times. The normal
-     * index random builder does not gurantee those values are de-duplicated and requires O(lg n) operations for each
-     * insertion and building the Index.
+     * index random builder does not guarantee those values are de-duplicated and requires O(lg n) operations for each
+     * insertion and building the RowSet.
      *
      * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number
-     * of result values) to build the Index. The memory usage is 1 bit per output position, vs. the standard builder is
+     * of result values) to build the RowSet. The memory usage is 1 bit per output position, vs. the standard builder is
      * 128 bits per used value (though with the possibility of collapsing adjacent ranges when they are modified
      * back-to-back). For random access patterns, this version will be more efficient; for friendly patterns the default
      * random builder is likely more efficient.
@@ -2246,7 +2246,7 @@ public class ChunkedOperatorAggregationHelper {
     private static class BitmapRandomBuilder implements RowSetBuilderRandom {
         final int maxKey;
         int firstUsed = Integer.MAX_VALUE;
-        int lastUsed = 0;
+        int lastUsed = -1;
         long[] bitset;
 
         private BitmapRandomBuilder(int maxKey) {
@@ -2262,13 +2262,13 @@ public class ChunkedOperatorAggregationHelper {
             final RowSetBuilderSequential seqBuilder = RowSetFactory.builderSequential();
             for (int ii = firstUsed; ii <= lastUsed; ++ii) {
                 long word = bitset[ii];
-                long index = ii * 64L;
+                long rowKey = ii * 64L;
 
                 while (word != 0) {
                     if ((word & 1) != 0) {
-                        seqBuilder.appendKey(index);
+                        seqBuilder.appendKey(rowKey);
                     }
-                    index++;
+                    rowKey++;
                     word >>>= 1;
                 }
             }
