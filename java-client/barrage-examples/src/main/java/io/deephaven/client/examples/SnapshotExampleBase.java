@@ -108,9 +108,9 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
         // example #6 - reverse viewport, all columns
         try (final TableHandle handle = manager.executeLogic(logic());
-             final RowSet viewport = RowSetFactory.flat(5); // range inclusive
+                final RowSet viewport = RowSetFactory.flat(5); // range inclusive
 
-             final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
+                final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.partialTable(viewport, null, true);
@@ -121,9 +121,9 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
         // example #7 - reverse viewport, some columns
         try (final TableHandle handle = manager.executeLogic(logic());
-             final RowSet viewport = RowSetFactory.flat(5); // range inclusive
+                final RowSet viewport = RowSetFactory.flat(5); // range inclusive
 
-             final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
+                final BarrageSnapshot snapshot = client.snapshot(handle, options)) {
 
             final BitSet columns = new BitSet();
             columns.set(0, 2); // range not inclusive (sets bits 0-1)
