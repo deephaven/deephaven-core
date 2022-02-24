@@ -4,5 +4,3 @@ plugins {
     id 'io.deephaven.java-test-conventions'
     id 'io.deephaven.java-coding-conventions'
 }
-
-io.deephaven.project.ProjectType.register(project, 'java-local', false)

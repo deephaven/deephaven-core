@@ -1,5 +1,5 @@
 plugins {
-    id 'io.deephaven.project.basic'
+    id 'io.deephaven.project.register'
 }
 
 configurations {

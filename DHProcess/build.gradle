@@ -1,7 +1,7 @@
 import io.deephaven.tools.Tools
 
 plugins {
-  id 'io.deephaven.project.java-public'
+  id 'io.deephaven.project.register'
 }
 
 dependencies {

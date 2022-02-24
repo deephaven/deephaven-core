@@ -1,7 +1,7 @@
 // Utility project for testing server implementations with vanilla flight client
 plugins {
     id 'java-library'
-    id 'io.deephaven.project.java-local'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {

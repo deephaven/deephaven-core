@@ -6,5 +6,3 @@ plugins {
     id 'io.deephaven.java-publishing-conventions'
     id 'io.deephaven.default-description'
 }
-
-io.deephaven.project.ProjectType.register(project, 'java-public', true)

@@ -1,6 +1,6 @@
 plugins {
     id 'base'
-    id 'io.deephaven.project.root'
+    id 'io.deephaven.project.register'
 }
 
 import org.gradle.internal.jvm.Jvm

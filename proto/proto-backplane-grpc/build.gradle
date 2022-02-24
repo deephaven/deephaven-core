@@ -1,7 +1,7 @@
 plugins {
   id 'com.bmuschko.docker-remote-api'
   id 'java-library'
-  id 'io.deephaven.project.java-public'
+  id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn Docker.registryProject('protoc-base')

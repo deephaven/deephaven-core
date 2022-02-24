@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    id 'io.deephaven.project.java-external'
+    id 'io.deephaven.project.register'
 }
 
 sourceSets {

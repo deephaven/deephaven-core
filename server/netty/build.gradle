@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'application'
-    id 'io.deephaven.project.java-public'
+    id 'io.deephaven.project.register'
 }
 
 configurations {

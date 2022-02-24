@@ -1,6 +1,6 @@
 plugins {
     id 'java-library'
-    id 'io.deephaven.project.java-public'
+    id 'io.deephaven.project.register'
 }
 
 description = 'The Deephaven proto-backplane-grpc-flight'

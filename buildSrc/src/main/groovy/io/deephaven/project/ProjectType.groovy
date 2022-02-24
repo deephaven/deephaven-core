@@ -8,28 +8,43 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.TaskProvider
 
 @CompileStatic
-class ProjectType {
+enum ProjectType {
+
+    BASIC(false, 'io.deephaven.project.basic'),
+    DOCKER_REGISTRY(false, 'io.deephaven.project.docker-registry'),
+    JAVA_EXTERNAL(true, 'io.deephaven.project.java-external'),
+    JAVA_LOCAL(false, 'io.deephaven.project.java-local'),
+    JAVA_PUBLIC(true, 'io.deephaven.project.java-public'),
+    ROOT(false, 'io.deephaven.project.root');
 
     public static final String VERIFY_ALL_PROJECTS_REGISTERED_TASK_NAME = 'verifyAllProjectsRegistered'
 
     public static final String VERIFY_RUNTIME_CLASSPATH_IS_PUBLIC_TASK_NAME = 'verifyRuntimeClasspathIsPublic'
 
-    static void registerRoot(Project project) {
-        register(project, 'root', false)
-        project.tasks
-                .getByName('quick')
-                .dependsOn verifyAllRegisteredTask(project)
+    static void register(Project project) {
+        ProjectType type = getType(project)
+        if (type == ROOT && project.rootProject != project) {
+            throw new IllegalStateException("Project '${project.name}' is likely inheriting the 'ROOT' type - please set the property 'io.deephaven.project.ProjectType' as appropriate.")
+        }
+
+        project.pluginManager.apply(type.pluginId)
+        registerInternal(project, type)
+        if (type == ROOT) {
+            project.tasks
+                    .getByName('quick')
+                    .dependsOn verifyAllRegisteredTask(project)
+        }
     }
 
-    static void register(Project project, String type, boolean isPublic) {
+    private static void registerInternal(Project project, ProjectType projectType) {
+        def key = "${ProjectType.class.name}.isRegistered"
         def ext = project.extensions.extraProperties
-        if (ext.has(ProjectType.class.name)) {
-            throw new IllegalStateException("Unable to set project type '${project.name}' as '${type}'" +
-                    " - is already registered with the type '${ext.get(ProjectType.class.name)}'")
+        if (ext.has(key)) {
+            throw new IllegalStateException("Unable to set project type '${project.name}' as '${projectType}'" +
+                    " - is already registered with the type '${ext.get(key)}'")
         }
-        ext.set(ProjectType.class.name, type)
-        ext.set("${ProjectType.class.name}.isPublic", isPublic)
-        if (isPublic) {
+        ext.set(key, projectType)
+        if (projectType.isPublic) {
             project.tasks
                     .getByName('quick')
                     .dependsOn verifyRuntimeClasspathIsPublicTask(project)
@@ -70,19 +85,29 @@ class ProjectType {
 
     private static void verifyRegistered(Project project) {
         def ext = project.extensions.extraProperties
-        if (!ext.has(ProjectType.class.name)) {
-            throw new IllegalStateException("Public project '${project.name}' must declare a type. Please apply the appropriate 'io.deephaven.project.<type>' plugin.")
+        if (!ext.has("${ProjectType.class.name}.isRegistered")) {
+            throw new IllegalStateException("Project '${project.name}' has not registered. Please apply the plugin 'io.deephaven.project.register'.")
         }
     }
 
-    static String getType(Project project) {
-        def ext = project.extensions.extraProperties
-        return ext.get(ProjectType.class.name)
+    static ProjectType getType(Project project) {
+        def typeString = project.findProperty('io.deephaven.project.ProjectType') as String
+        if (typeString == null) {
+            throw new IllegalStateException("Project '${project.name}' must declare a type. Please set the property 'io.deephaven.project.ProjectType'.")
+        }
+        return valueOf(typeString)
     }
 
     static boolean isPublic(Project project) {
-        def ext = project.extensions.extraProperties
-        return ext.get("${ProjectType.class.name}.isPublic")
+        return getType(project).isPublic
+    }
+
+    boolean isPublic
+    String pluginId
+
+    ProjectType(boolean isPublic, String pluginId) {
+        this.isPublic = isPublic
+        this.pluginId = pluginId
     }
 }
 
