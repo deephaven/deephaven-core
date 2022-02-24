@@ -572,10 +572,10 @@ public class ConstructSnapshot {
             } else {
                 final RowSet rowSetToUse = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
                 try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
-                    final WritableRowSet forwardKeys = positionsToSnapshot == null ? null :
-                            rowSetToUse.subSetForPositions(positionsToSnapshot);
-                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null :
-                            rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
+                    final WritableRowSet forwardKeys =
+                            positionsToSnapshot == null ? null : rowSetToUse.subSetForPositions(positionsToSnapshot);
+                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
+                            : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
                     if (forwardKeys != null) {
                         if (reverseKeys != null) {
                             forwardKeys.insert(reverseKeys);
@@ -588,7 +588,8 @@ public class ConstructSnapshot {
                 }
             }
             try (final RowSet ignored = keysToSnapshot) {
-                return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+                return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize,
+                        keysToSnapshot);
             }
         };
 
@@ -1281,19 +1282,19 @@ public class ConstructSnapshot {
      * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
      * uses.
      *
-     * @param usePrev            Use previous values?
-     * @param snapshot           The snapshot to populate
-     * @param logIdentityObject  an object for use with log() messages
+     * @param usePrev Use previous values?
+     * @param snapshot The snapshot to populate
+     * @param logIdentityObject an object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot     A RowSet of keys within the table to include, null for all
+     * @param keysToSnapshot A RowSet of keys within the table to include, null for all
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
     public static boolean serializeAllTable(final boolean usePrev,
-                                            final BarrageMessage snapshot,
-                                            final BaseTable table,
-                                            final Object logIdentityObject,
-                                            final BitSet columnsToSerialize,
-                                            final RowSet keysToSnapshot) {
+            final BarrageMessage snapshot,
+            final BaseTable table,
+            final Object logIdentityObject,
+            final BitSet columnsToSerialize,
+            final RowSet keysToSnapshot) {
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
@@ -1314,7 +1315,7 @@ public class ConstructSnapshot {
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         try (final SharedContext sharedContext =
-                     (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
+                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
                     final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))

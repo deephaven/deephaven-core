@@ -32,7 +32,8 @@ public class ShiftInversionHelper {
                 reverseOrder ? 0 : destShiftIdx,
                 reverseOrder ? destShiftIdx : shifted.size(),
                 innerShiftIdx -> {
-                    long destEnd = shifted.getEndRange((int) innerShiftIdx) + shifted.getShiftDelta((int) innerShiftIdx);
+                    long destEnd =
+                            shifted.getEndRange((int) innerShiftIdx) + shifted.getShiftDelta((int) innerShiftIdx);
                     // due to destKey's expected range, we know this subtraction will not overflow
                     return destEnd - destKey;
                 });
