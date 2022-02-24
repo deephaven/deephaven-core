@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.Partition",
+ "methods": {
+  "includeConstituents": ":return: boolean",
+  "of": ":param includeConstituents: boolean\n:return: io.deephaven.engine.table.impl.by.rollup.Partition",
+  "walk": "Note: Java generics information - <V extends io.deephaven.engine.table.impl.by.rollup.RollupAggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.Partition",
+ "text": "RollupAggregation that represents a partitioning of the input table.",
+ "typeName": "class"
+}

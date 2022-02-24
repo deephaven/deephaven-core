@@ -8,8 +8,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
@@ -256,7 +256,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         if(exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, resultColumn);
-            columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
             return columns;
         }
 
@@ -276,6 +276,11 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
             prevFlusher = new UpdateCommitter<>(this, CharChunkedCountDistinctOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
+    }
+
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
     }
 
     //endregion

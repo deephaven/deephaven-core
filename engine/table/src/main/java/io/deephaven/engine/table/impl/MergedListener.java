@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -45,7 +47,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private long lastCompletedStep;
 
-    private final UpdatePerformanceTracker.Entry entry;
+    private final PerformanceEntry entry;
 
     protected MergedListener(Collection<? extends ListenerRecorder> recorders,
             Collection<NotificationQueue.Dependency> dependencies, String listenerDescription, QueryTable result) {
@@ -136,7 +138,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                             AsyncClientErrorNotifier.reportError(updateException);
                         }
                     } catch (IOException ioe) {
-                        throw new RuntimeException("Exception in " + entry.toString(), ioe);
+                        throw new UncheckedTableException("Exception in " + entry.toString(), ioe);
                     }
                 } finally {
                     releaseFromRecorders();

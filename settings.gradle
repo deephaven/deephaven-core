@@ -8,19 +8,30 @@ rootProject.name='Deephaven Community Core'
 
 String[] bins = ['configs', 'test-configs' ]
 
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
-        'CompilerTools', 'Generators',
-        'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'python-engine-test', 'Parquet',
-        'grpc-api', 'table-api', 'qst']
+String[] mods = [
+        'Util',
+        'Numerics',
+        'TableLogger',
+        'Plot',
+        'CompilerTools',
+        'Generators',
+        'Integrations',
+        'ModelFarm',
+        'ClientSupport',
+        'BenchmarkSupport',
+        'python-engine-test',
+        'server',
+        'table-api',
+        'qst'
+]
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
 String[] webMods = [
+        'web',
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
-        'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
@@ -35,8 +46,6 @@ Map<String, String> pyMods = [
         'deephaven-jpy-config': 'py/jpy-config',
         'deephaven-jpy-ext': 'py/jpy-ext',
         'jpy-integration': 'py/jpy-integration',
-        'py36': 'py/py36',
-        'py37': 'py/py37',
         'sphinx': 'sphinx',
         'pyclient': 'pyclient',
 ]
@@ -52,12 +61,14 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
+include 'grpc-java:grpc-servlet-jakarta'
+include 'grpc-java:grpc-servlet-websocket-jakarta'
+
 include 'fishconfig-local'
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
 include 'proto:raw-js-openapi'
-include 'protoc'
 
 // logger
 include 'log-factory'
@@ -98,14 +109,14 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-server-docker')
-project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
+include(':server-test')
+project(':server-test').projectDir = file('server/test')
 
-include(':grpc-api-server-native')
-project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
+include(':server-netty')
+project(':server-netty').projectDir = file('server/netty')
 
-include(':grpc-api-client-console')
-project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
+include(':server-jetty')
+project(':server-jetty').projectDir = file('server/jetty')
 
 include(':Base')
 
@@ -196,6 +207,14 @@ project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
+include(':plugin')
+
+include(':plugin-dagger')
+project(':plugin-dagger').projectDir = file('plugin/dagger')
+
+include(':plugin-figure')
+project(':plugin-figure').projectDir = file('plugin/figure')
+
 include(':envoy')
 
 include(':grpc-proxy')
@@ -230,6 +249,9 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
+include(':java-client-example-utilities')
+project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
+
 include(':qst:graphviz')
 
 include(':application-mode')
@@ -243,11 +265,20 @@ project(':deephaven-wheel').projectDir = file('py/deephaven-wheel')
 include(':deephaven2-wheel')
 project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
 
-include(':docker-java-and-python')
-project(':docker-java-and-python').projectDir = file('docker/java-and-python')
-
 include(':docker-runtime-base')
 project(':docker-runtime-base').projectDir = file('docker/runtime-base')
+
+include(':docker-server')
+project(':docker-server').projectDir = file('docker/server')
+
+include(':docker-web')
+project(':docker-web').projectDir = file('docker/web')
+
+include(':docker-web-plugin-packager')
+project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
+
+include(':docker-server-slim')
+project(':docker-server-slim').projectDir = file('docker/server-slim')
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {

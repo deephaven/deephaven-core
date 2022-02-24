@@ -1,10 +1,12 @@
 package io.deephaven.internal.log;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import java.io.PrintStream;
 
+@AutoService(LoggerFactory.class)
 public final class LoggerFactoryStream extends LoggerFactorySingleCache {
 
     private static PrintStream getStream() {

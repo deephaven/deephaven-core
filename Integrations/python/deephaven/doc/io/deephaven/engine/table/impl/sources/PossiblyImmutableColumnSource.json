@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.PossiblyImmutableColumnSource",
+ "methods": {
+  "setImmutable": "Set this column source as having an immutable result."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.PossiblyImmutableColumnSource",
+ "text": "An interface for ColumnSources that can be marked immutable by the creator rather than as a fundamental property of\n their implementation.",
+ "typeName": "interface"
+}

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.server.console.ConsoleServiceGrpcImpl",
+ "methods": {
+  "autoCompleteStream": "Starts a stream for autocomplete on the current session. More than one console,\n more than one document can be edited at a time using this, and they can separately\n be closed as well. A given document should only be edited within one stream at a\n time.\n \n\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse>\n:return: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest>",
+  "bindTableToVariable": ":param request: io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse>",
+  "cancelCommand": ":param request: io.deephaven.proto.backplane.script.grpc.CancelCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.CancelCommandResponse>",
+  "executeCommand": ":param request: io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse>",
+  "getConsoleTypes": ":param request: io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse>",
+  "isPythonSession": ":return: boolean",
+  "startConsole": ":param request: io.deephaven.proto.backplane.script.grpc.StartConsoleRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.StartConsoleResponse>",
+  "subscribeToLogs": ":param request: io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.script.grpc.LogSubscriptionData>"
+ },
+ "path": "io.deephaven.server.console.ConsoleServiceGrpcImpl",
+ "typeName": "class"
+}

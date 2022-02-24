@@ -12,6 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import junit.framework.TestCase;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,19 +88,24 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         // I just want to see commas in the output
         UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(100);
         final Table source = TableTools.emptyTable(1_000_000);
-        TableTools.show(source);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
 
+        int steps = 0;
+
         while (filtered.size() < source.size()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            if (steps++ > 100) {
+                TestCase.fail("Did not release rows promptly.");
+            }
         }
 
-        TableTools.show(updated);
+        assertEquals(source.size(), updated.size());
     }
 
     private int testAutoTuneCycle(int cycleTime) {
@@ -109,6 +115,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered
@@ -118,7 +125,9 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         while (filtered.size() < source.size()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
-            cycles++;
+            if (cycles++ > (2 * (source.size() * 100) / cycleTime)) {
+                TestCase.fail("Did not release rows promptly.");
+            }
         }
         return cycles;
     }

@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -22,6 +23,7 @@ import java.util.function.Supplier;
  * Interface for interactive console script sessions.
  */
 public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
+
     /**
      * Retrieve a variable from the script session's bindings.
      * <p/>
@@ -56,14 +58,18 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     class Changes {
         public RuntimeException error = null;
-        public Map<String, ExportedObjectType> created = new HashMap<>();
-        public Map<String, ExportedObjectType> updated = new HashMap<>();
-        public Map<String, ExportedObjectType> removed = new HashMap<>();
+
+        // TODO(deephaven-core#1781): Close gaps between proto "CustomType" fields
+
+        public Map<String, String> created = new LinkedHashMap<>();
+        public Map<String, String> updated = new LinkedHashMap<>();
+        public Map<String, String> removed = new LinkedHashMap<>();
 
         public boolean isEmpty() {
-            return created.isEmpty() && updated.isEmpty() && removed.isEmpty();
+            return error == null && created.isEmpty() && updated.isEmpty() && removed.isEmpty();
         }
     }
+
     interface Listener {
         void onScopeChanges(ScriptSession scriptSession, Changes changes);
     }

@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
@@ -186,9 +187,11 @@ public class ParquetTableWriter {
                         .map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
-                    final String groupingPath = groupingPathFactory.apply(groupingColumns[gci]);
+                    final String parquetColumnName =
+                            writeInstructions.getParquetColumnNameFromColumnNameOrDefault(groupingColumns[gci]);
+                    final String groupingPath = groupingPathFactory.apply(parquetColumnName);
                     cleanupPaths.add(groupingPath);
-                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci],
+                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(parquetColumnName,
                             destDirPath.relativize(Paths.get(groupingPath)).toString()));
                     write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath,
                             Collections.emptyMap());
@@ -447,7 +450,8 @@ public class ParquetTableWriter {
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
         }
 
-        ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
+        ColumnWriter columnWriter = rowGroupWriter.addColumn(
+                writeInstructions.getParquetColumnNameFromColumnNameOrDefault(name));
 
         boolean usedDictionary = false;
         if (supportsDictionary(columnSource.getType())) {
@@ -669,7 +673,7 @@ public class ParquetTableWriter {
         } else if (BigDecimal.class.equals(columnType)) {
             // noinspection unchecked
             final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-            final TypeInfos.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+            final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
                     computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale, -1);

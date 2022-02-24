@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.appmode.ApplicationFactory",
+ "methods": {
+  "create": ":param applicationDir: java.nio.file.Path\n:param config: io.deephaven.appmode.ApplicationConfig\n:param scriptSession: io.deephaven.engine.util.ScriptSession\n:param appStateListener: io.deephaven.appmode.ApplicationState.Listener\n:return: io.deephaven.appmode.ApplicationState",
+  "out": ":return: io.deephaven.appmode.ApplicationState",
+  "visit": "*Overload 1*  \n  :param app: io.deephaven.appmode.ScriptApplication\n  \n*Overload 2*  \n  :param advanced: io.deephaven.appmode.DynamicApplication<?>\n  \n*Overload 3*  \n  :param qst: io.deephaven.appmode.QSTApplication\n  \n*Overload 4*  \n  :param clazz: io.deephaven.appmode.StaticClassApplication<?>"
+ },
+ "path": "io.deephaven.server.appmode.ApplicationFactory",
+ "typeName": "class"
+}

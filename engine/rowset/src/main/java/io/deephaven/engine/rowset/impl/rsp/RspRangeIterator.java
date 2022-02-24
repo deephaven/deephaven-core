@@ -139,7 +139,10 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             return spanKey | (long) ri.start();
         }
         final Object s = p.span();
-        if (isSingletonSpan(s) || RspArray.getFullBlockSpanLen(spanInfo, s) > 0) {
+        if (isSingletonSpan(s)) {
+            return spanInfoToSingletonSpanValue(spanInfo);
+        }
+        if (getFullBlockSpanLen(spanInfo, s) > 0) {
             return spanKey;
         }
         try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
@@ -164,7 +167,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * At call, start() <= v <= end()
+     * At call, start() &lt;= v &lt;= end()
      * 
      * @param v Next call to start will return this value.
      */
@@ -279,7 +282,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     /**
      * Advance the current iterator (start) position to the rightmost (last) value v that maintains
      * comp.directionToTargetFrom(v) >= 0. I.e, either hasNext() returns false after this call, or the next value in the
-     * iterator nv would be such that comp.directionToTargetFrom(nv) < 0.
+     * iterator nv would be such that comp.directionToTargetFrom(nv) &lt; 0.
      *
      * Note this method should be called only after calling hasNext() and next() at least once, eg, from a valid current
      * position in a non-empty and also non-exhausted iterator.

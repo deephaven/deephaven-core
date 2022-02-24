@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
  * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values as
  * {@code long} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong {
 
@@ -49,5 +48,15 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
         // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
     }
 }

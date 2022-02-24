@@ -5,7 +5,6 @@
   "getBindTableToVariableMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest,io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse>",
   "getCancelCommandMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.CancelCommandRequest,io.deephaven.proto.backplane.script.grpc.CancelCommandResponse>",
   "getExecuteCommandMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest,io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse>",
-  "getFetchFigureMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.FetchFigureRequest,io.deephaven.proto.backplane.script.grpc.FetchFigureResponse>",
   "getGetConsoleTypesMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest,io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse>",
   "getNextAutoCompleteStreamMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest,io.deephaven.proto.backplane.script.grpc.BrowserNextResponse>",
   "getOpenAutoCompleteStreamMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest,io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse>",

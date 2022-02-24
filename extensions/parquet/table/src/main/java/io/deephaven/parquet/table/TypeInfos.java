@@ -1,15 +1,11 @@
 package io.deephaven.parquet.table;
 
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -21,6 +17,9 @@ import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
+import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
 
 import java.io.Externalizable;
 import java.math.BigDecimal;
@@ -99,44 +98,6 @@ class TypeInfos {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
-    }
-
-    static class PrecisionAndScale {
-        public final int precision;
-        public final int scale;
-
-        public PrecisionAndScale(final int precision, final int scale) {
-            this.precision = precision;
-            this.scale = scale;
-        }
-    }
-
-    private static PrecisionAndScale computePrecisionAndScale(final TrackingRowSet rowSet,
-            final ColumnSource<BigDecimal> source) {
-        final int sz = 4096;
-        // we first compute max(precision - scale) and max(scale), which corresponds to
-        // max(digits left of the decimal point), max(digits right of the decimal point).
-        // Then we convert to (precision, scale) before returning.
-        int maxPrecisionMinusScale = 0;
-        int maxScale = 0;
-        try (final ChunkSource.GetContext context = source.makeGetContext(sz);
-                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            final RowSequence rowSeq = it.getNextRowSequenceWithLength(sz);
-            final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
-            for (int i = 0; i < chunk.size(); ++i) {
-                final BigDecimal x = chunk.get(i);
-                final int precision = x.precision();
-                final int scale = x.scale();
-                final int precisionMinusScale = precision - scale;
-                if (precisionMinusScale > maxPrecisionMinusScale) {
-                    maxPrecisionMinusScale = precisionMinusScale;
-                }
-                if (scale > maxScale) {
-                    maxScale = scale;
-                }
-            }
-        }
-        return new PrecisionAndScale(maxPrecisionMinusScale + maxScale, maxScale);
     }
 
     static PrecisionAndScale getPrecisionAndScale(
@@ -414,6 +375,8 @@ class TypeInfos {
                 @NotNull final ParquetInstructions instructions) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
+            final String parquetColumnName =
+                    instructions.getParquetColumnNameFromColumnNameOrDefault(columnDefinition.getName());
 
             final PrimitiveBuilder<PrimitiveType> builder;
             final boolean isRepeating;
@@ -432,12 +395,12 @@ class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
-                return builder.named(columnDefinition.getName());
+                return builder.named(parquetColumnName);
             }
             return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(columnDefinition.getName()))
-                    .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
+                            builder.named("item")).named(parquetColumnName))
+                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
 
         PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.HashedRunFinder",
+ "methods": {
+  "findRunsHashed": ":param context: io.deephaven.engine.table.impl.by.HashedRunFinder.HashedRunContext\n:param runStarts: io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n:param runLengths: io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkLengths>\n:param chunkPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n:param outputPositions: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.HashedRunFinder",
+ "text": "Finds runs of the same slot, and fills in the chunkPositions, runStarts, and runLengths arrays. The slots are not in\n order; like slots are simply grouped together such that each slot is only represented in the chunk one time.",
+ "typeName": "class"
+}

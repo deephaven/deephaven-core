@@ -512,6 +512,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    private final static String dupMsg = "Natural Join found duplicate right key for ";
+
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
         // initial case
         final Table left = testTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
@@ -522,7 +524,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException rte) {
-            assertEquals("Duplicate right key for A", rte.getMessage());
+            assertEquals(dupMsg + "A", rte.getMessage());
         }
 
         // bad right key added
@@ -543,7 +545,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         assertNotNull(listener.originalException());
-        assertEquals("Duplicate right key for A", listener.originalException().getMessage());
+        assertEquals(dupMsg + "A", listener.originalException().getMessage());
     }
 
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
@@ -556,7 +558,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException rte) {
-            assertEquals("Duplicate right key for A", rte.getMessage());
+            assertEquals(dupMsg + "A", rte.getMessage());
         }
 
         // bad right key added
@@ -577,7 +579,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         assertNotNull(listener.originalException());
-        assertEquals("Duplicate right key for A", listener.originalException().getMessage());
+        assertEquals(dupMsg + "A", listener.originalException().getMessage());
     }
 
 

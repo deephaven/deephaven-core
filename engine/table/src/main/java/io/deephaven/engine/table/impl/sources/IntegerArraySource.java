@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterArraySource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -78,21 +80,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
-    public Integer get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final int getInt(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_INT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final int getUnsafe(long index) {
@@ -131,11 +123,6 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
         } else {
             return blocks[blockIndex][indexWithinBlock];
         }
-    }
-
-    @Override
-    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getInt(sourceKey));
     }
 
     @Override
@@ -241,6 +228,18 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
         final int [] backingArray = blocks[blockNo];
         chunk.asResettableWritableIntChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
         return ((long)blockNo) << LOG_BLOCK_SIZE;
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final int [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableIntChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
     }
 
     @Override

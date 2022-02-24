@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.plugin.python.PythonPluginsRegistration",
+ "methods": {
+  "registerInto": "The registration entrypoint.\n\n \n May be called multiple times.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the callback."
+ },
+ "path": "io.deephaven.server.plugin.python.PythonPluginsRegistration",
+ "text": "Registers all Plugin found via python method \"deephaven.plugin:register_all_into\". See\n the deephaven-plugin python package for more information, if ConsoleServiceGrpcImpl.isPythonSession() is\n true.",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.arrow.BrowserFlightServiceGrpcBinding",
+ "methods": {
+  "bindService": ":return: io.grpc.ServerServiceDefinition"
+ },
+ "path": "io.deephaven.server.arrow.BrowserFlightServiceGrpcBinding",
+ "typeName": "class"
+}

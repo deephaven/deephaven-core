@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
  */
 public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCreator {
 
+    @AutoService(TupleSourceFactory.TupleSourceCreatorProvider.class)
     public static final class TupleSourceCreatorProvider implements TupleSourceFactory.TupleSourceCreatorProvider {
 
         @Override
@@ -33,14 +35,16 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
     private TupleSourceCreatorImpl() {}
 
     @Override
-    public TupleSource makeTupleSource(@NotNull final ColumnSource... columnSources) {
+    public <TUPLE_TYPE> TupleSource<TUPLE_TYPE> makeTupleSource(@NotNull final ColumnSource... columnSources) {
         final int length = columnSources.length;
         if (length == 0) {
-            return EmptyTupleSource.INSTANCE;
+            // noinspection unchecked
+            return (TupleSource<TUPLE_TYPE>) EmptyTupleSource.INSTANCE;
         }
         if (length == 1) {
             // NB: Don't reinterpret here, or you may have a bad time with join states when the LHS and RHS columns are
             // differently reinterpretable.
+            // noinspection unchecked
             return columnSources[0];
         }
         if (length < 4) {
@@ -72,6 +76,7 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
                         e);
             }
             try {
+                // noinspection unchecked
                 return factoryConstructor.newInstance((Object[]) Stream.of(typesNamesAndInternalSources)
                         .map(Pair::getSecond).toArray(ColumnSource[]::new));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -80,7 +85,9 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
         }
         // NB: Don't reinterpret here, or you may have a bad time with join states when the LHS and RHS columns are
         // differently reinterpretable.
-        return new MultiColumnTupleSource(Arrays.stream(columnSources).toArray(ColumnSource[]::new));
+        // noinspection unchecked
+        return (TupleSource<TUPLE_TYPE>) new MultiColumnTupleSource(
+                Arrays.stream(columnSources).toArray(ColumnSource[]::new));
     }
 
     private static final Map<Class<?>, Class<?>> TYPE_TO_REINTERPRETED =

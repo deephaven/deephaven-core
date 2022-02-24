@@ -288,7 +288,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     @SuppressWarnings("unused")
     public int getUpdateThreads() {
-        return updateThreads;
+        if (notificationProcessor == null) {
+            return updateThreads;
+        } else if (notificationProcessor instanceof ConcurrentNotificationProcessor) {
+            return ((ConcurrentNotificationProcessor) notificationProcessor).threadCount();
+        } else {
+            return 1;
+        }
     }
 
     // region Accessors for the shared and exclusive locks
@@ -508,7 +514,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     /**
      * Enable the loop watchdog with the specified timeout. A value of 0 disables the watchdog.
      *
-     * @implNote Any timeout < 0 will be clamped to 0.
+     * @implNote Any timeout less than 0 will be clamped to 0.
      *
      * @param watchDogMillis The time in milliseconds to set the watchdog, or 0 to disable.
      */
@@ -617,13 +623,22 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Remove a collection of tables from the list of refreshing tables.
+     * Remove a collection of sources from the list of refreshing sources.
      *
-     * @implNote This will <i>not</i> set the tables as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
-     * @param tablesToRemove The tables to remove from the list of refreshing tables
+     * @implNote This will <i>not</i> set the sources as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
+     * @param sourcesToRemove The sources to remove from the list of refreshing sources
      */
-    public void removeTables(final Collection<Runnable> tablesToRemove) {
-        sources.removeAll(tablesToRemove);
+    public void removeSources(final Collection<Runnable> sourcesToRemove) {
+        sources.removeAll(sourcesToRemove);
+    }
+
+    /**
+     * Return the number of valid sources.
+     *
+     * @return the number of valid sources
+     */
+    public int sourceCount() {
+        return sources.size();
     }
 
     /**
@@ -1335,6 +1350,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public void beforeNotificationsDrained() {
             pendingNormalNotificationsCheckNeeded.drainPermits();
         }
+
+        int threadCount() {
+            return updateThreads.length;
+        }
     }
 
     private class QueueNotificationProcessor implements NotificationProcessor {
@@ -1471,7 +1490,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 if (suppressedCycles > 0) {
                     logSuppressedCycles();
                 }
-                log.info().append("Live Table Monitor cycleTime=").appendDouble(cycleTime / 1_000_000.0)
+                log.info().append("Update Graph Processor cycleTime=").appendDouble(cycleTime / 1_000_000.0)
                         .append("ms, lockWaitTime=").appendDouble(currentCycleLockWaitTotalNanos / 1_000_000.0)
                         .append("ms, yieldTime=").appendDouble(currentCycleYieldTotalNanos / 1_000_000.0)
                         .append("ms, sleepTime=").appendDouble(currentCycleSleepTotalNanos / 1_000_000.0)
@@ -1493,7 +1512,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     private void logSuppressedCycles() {
-        log.info().append("Minimal Live Table Monitor cycle times: ")
+        log.info().append("Minimal Update Graph Processor cycle times: ")
                 .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
                 .appendDouble((double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0)

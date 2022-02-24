@@ -17,6 +17,10 @@ public final class TicketId implements HasTicketId {
         this.ticket = Objects.requireNonNull(ticket);
     }
 
+    TicketId(Ticket ticket) {
+        this(ticket.getTicket().toByteArray());
+    }
+
     @Override
     public TicketId ticketId() {
         return this;
@@ -30,7 +34,7 @@ public final class TicketId implements HasTicketId {
         return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
     }
 
-    TicketTable table() {
+    public TicketTable table() {
         return TicketTable.of(ticket);
     }
 }

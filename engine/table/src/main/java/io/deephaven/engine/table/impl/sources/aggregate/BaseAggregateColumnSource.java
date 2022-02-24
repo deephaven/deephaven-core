@@ -244,4 +244,14 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
         }
         return aggregatedSource.getPrevLong(getPrevRowKey(groupIndexKey, offsetInGroup));
     }
+
+    @Override
+    public boolean preventsParallelism() {
+        return aggregatedSource.preventsParallelism() || groupRowSetSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return aggregatedSource.isStateless() && groupRowSetSource.isStateless();
+    }
 }

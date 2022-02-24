@@ -131,7 +131,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
                     final File calendarFile = inputStreamToFile(inputStream);
                     final BusinessCalendar businessCalendar = DefaultBusinessCalendar.getInstance(calendarFile);
                     addCalendar(businessCalendar);
-                    calendarFile.deleteOnExit();
+                    calendarFile.delete();
                 } else {
                     logger.warn("Could not open " + filePath + " from classpath");
                     throw new RuntimeException("Could not open " + filePath + " from classpath");

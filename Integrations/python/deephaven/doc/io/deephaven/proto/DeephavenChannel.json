@@ -1,0 +1,27 @@
+{
+ "className": "io.deephaven.proto.DeephavenChannel",
+ "methods": {
+  "application": ":return: io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub",
+  "applicationBlocking": ":return: io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub",
+  "applicationFuture": ":return: io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub",
+  "channel": ":return: io.grpc.Channel",
+  "console": ":return: io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub",
+  "consoleBlocking": ":return: io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub",
+  "consoleFuture": ":return: io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceFutureStub",
+  "inputTable": ":return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub",
+  "inputTableBlocking": ":return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub",
+  "inputTableFuture": ":return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub",
+  "object": ":return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub",
+  "objectBlocking": ":return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceBlockingStub",
+  "objectFuture": ":return: io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceFutureStub",
+  "session": ":return: io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub",
+  "sessionBlocking": ":return: io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub",
+  "sessionFuture": ":return: io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceFutureStub",
+  "table": ":return: io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub",
+  "tableBlocking": ":return: io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceBlockingStub",
+  "tableFuture": ":return: io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceFutureStub"
+ },
+ "path": "io.deephaven.proto.DeephavenChannel",
+ "text": "A Deephaven service helper for a channel.",
+ "typeName": "class"
+}

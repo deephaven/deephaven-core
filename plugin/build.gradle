@@ -1,0 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'The Deephaven plugin interface'
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

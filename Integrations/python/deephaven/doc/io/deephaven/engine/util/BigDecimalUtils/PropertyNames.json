@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.util.BigDecimalUtils$PropertyNames",
+ "methods": {},
+ "path": "io.deephaven.engine.util.BigDecimalUtils.PropertyNames",
+ "text": "Immutable way to store and pass properties to get precision and scale for a given named column.",
+ "typeName": "class"
+}

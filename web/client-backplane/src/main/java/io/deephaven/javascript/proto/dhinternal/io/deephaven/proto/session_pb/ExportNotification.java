@@ -1,8 +1,8 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.exportnotification.StateMap;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;

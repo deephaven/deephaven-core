@@ -2,19 +2,25 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
-import io.deephaven.client.impl.script.VariableDefinition;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
+import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
+import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
+import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
+import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
@@ -22,6 +28,7 @@ import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -45,6 +52,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
@@ -177,7 +185,9 @@ public final class SessionImpl extends SessionBase {
     private final ScheduledExecutorService executor;
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
+    private final ObjectServiceStub objectService;
     private final InputTableServiceStub inputTableService;
+    private final ApplicationServiceStub applicationServiceStub;
     private final Handler handler;
     private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
@@ -199,7 +209,9 @@ public final class SessionImpl extends SessionBase {
         this.executor = config.executor();
         this.sessionService = config.channel().session().withCallCredentials(credentials);
         this.consoleService = config.channel().console().withCallCredentials(credentials);
+        this.objectService = config.channel().object().withCallCredentials(credentials);
         this.inputTableService = config.channel().inputTable().withCallCredentials(credentials);
+        this.applicationServiceStub = config.channel().application().withCallCredentials(credentials);
         this.exportTicketCreator = new ExportTicketCreator();
         this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
                 exportTicketCreator);
@@ -222,7 +234,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<? extends ConsoleSession> console(String type) {
-        final ExportId consoleId = new ExportId(exportTicketCreator.createExportId());
+        final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
         final ConsoleHandler handler = new ConsoleHandler(request);
@@ -238,6 +250,19 @@ public final class SessionImpl extends SessionBase {
         PublishObserver observer = new PublishObserver();
         consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
                 .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build(), observer);
+        return observer.future;
+    }
+
+    @Override
+    public CompletableFuture<FetchedObject> fetchObject(String type, HasTicketId ticketId) {
+        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+                .setSourceId(TypedTicket.newBuilder()
+                        .setType(type)
+                        .setTicket(ticketId.ticketId().ticket())
+                        .build())
+                .build();
+        final FetchObserver observer = new FetchObserver();
+        objectService.fetchObject(request, observer);
         return observer.future;
     }
 
@@ -289,7 +314,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public ExportId newExportId() {
-        return new ExportId(exportTicketCreator.createExportId());
+        return new ExportId("Table", exportTicketCreator.createExportId());
     }
 
     @Override
@@ -320,6 +345,14 @@ public final class SessionImpl extends SessionBase {
         final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
         inputTableService.deleteTableFromInputTable(request, observer);
         return observer.future;
+    }
+
+    @Override
+    public Cancel subscribeToFields(Listener listener) {
+        final ListFieldsRequest request = ListFieldsRequest.newBuilder().build();
+        final ListFieldsObserver observer = new ListFieldsObserver(listener);
+        applicationServiceStub.listFields(request, observer);
+        return observer;
     }
 
     public long batchCount() {
@@ -367,6 +400,54 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onNext(BindTableToVariableResponse value) {
             future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
+            }
+        }
+    }
+
+    private static final class FetchObserver
+            implements ClientResponseObserver<FetchObjectRequest, FetchObjectResponse> {
+        private final CompletableFuture<FetchedObject> future = new CompletableFuture<>();
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<FetchObjectRequest> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(FetchObjectResponse value) {
+            final String type = value.getType();
+            final ByteString data = value.getData();
+            final List<ExportId> exportIds = value.getTypedExportIdList().stream()
+                    .map(FetchObserver::toExportId)
+                    .collect(Collectors.toList());
+            future.complete(new FetchedObject(type, data, exportIds));
+        }
+
+        private static ExportId toExportId(TypedTicket e) {
+            final String type;
+            if (e.getType().isEmpty()) {
+                type = null;
+            } else {
+                type = e.getType();
+            }
+            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
+            return new ExportId(type, exportId);
         }
 
         @Override
@@ -446,23 +527,10 @@ public final class SessionImpl extends SessionBase {
 
         private final CompletableFuture<Changes> future = new CompletableFuture<>();
 
-        private static VariableDefinition of(io.deephaven.proto.backplane.script.grpc.VariableDefinition d) {
-            return VariableDefinition.of(d.getType(), d.getTitle());
-        }
-
         private static Changes of(ExecuteCommandResponse value) {
-            Changes.Builder builder = Changes.builder();
+            Changes.Builder builder = Changes.builder().changes(new FieldChanges(value.getChanges()));
             if (!value.getErrorMessage().isEmpty()) {
                 builder.errorMessage(value.getErrorMessage());
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getCreatedList()) {
-                builder.addCreated(of(d));
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getUpdatedList()) {
-                builder.addUpdated(of(d));
-            }
-            for (io.deephaven.proto.backplane.script.grpc.VariableDefinition d : value.getRemovedList()) {
-                builder.addRemoved(of(d));
             }
             return builder.build();
         }
@@ -705,6 +773,42 @@ public final class SessionImpl extends SessionBase {
                 future.completeExceptionally(
                         new IllegalStateException("Observer completed without response"));
             }
+        }
+    }
+
+    private static class ListFieldsObserver
+            implements Cancel, ClientResponseObserver<ListFieldsRequest, FieldsChangeUpdate> {
+
+        private final Listener listener;
+        private ClientCallStreamObserver<?> stream;
+
+        public ListFieldsObserver(Listener listener) {
+            this.listener = Objects.requireNonNull(listener);
+        }
+
+        @Override
+        public void cancel() {
+            stream.cancel("User cancelled", null);
+        }
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<ListFieldsRequest> requestStream) {
+            stream = requestStream;
+        }
+
+        @Override
+        public void onNext(FieldsChangeUpdate value) {
+            listener.onNext(new FieldChanges(value));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            listener.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            listener.onCompleted();
         }
     }
 }

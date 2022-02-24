@@ -4,6 +4,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
+import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -93,7 +94,7 @@ public class FuzzerTest {
     }
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
-        final GroovyDeephavenSession session = new GroovyDeephavenSession(RunScripts.serviceLoader());
+        final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
         QueryScope.setScope(session.newQueryScope());
         return session;
     }
@@ -131,7 +132,9 @@ public class FuzzerTest {
 
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
 
-        for (int step = 0; step < 100; ++step) {
+        final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
+
+        for (int step = 0; step < steps; ++step) {
             final int fstep = step;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 System.out.println("Step = " + fstep);
@@ -199,7 +202,8 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
         final long seed1 = DateTime.now().getNanos();
-        for (long iteration = 0; iteration < 5; ++iteration) {
+        final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
+        for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {

@@ -8,6 +8,7 @@ import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import jsinterop.base.JsArrayLike;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -62,6 +63,8 @@ public class ViewportData implements TableData {
         } else {
             offset = -1;
         }
+
+        // Clean data for requested columns, and provide format column data as well, if any
         for (int i = 0; i < columns.length; i++) {
             Column c = columns.getAt(i);
             int index = c.getIndex();
@@ -77,6 +80,14 @@ public class ViewportData implements TableData {
                 data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()];
             }
         }
+
+        // Handle row format column, if any
+        this.rowFormatColumn = rowFormatColumn;
+        if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
+            data[rowFormatColumn] = dataColumns[rowFormatColumn];
+        }
+
+        // Grow all columns to match the size of the viewport, if necesssary
         if (length < maxLength) {
             for (int i = 0; i < data.length; i++) {
                 if (data[i] != null) {
@@ -85,10 +96,6 @@ public class ViewportData implements TableData {
                     existingColumnData.fill(NULL_SENTINEL, length, this.maxLength);
                 }
             }
-        }
-        this.rowFormatColumn = rowFormatColumn;
-        if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
-            data[rowFormatColumn] = dataColumns[rowFormatColumn];
         }
 
         rows = new JsArray<>();
@@ -253,7 +260,7 @@ public class ViewportData implements TableData {
                 DataCleaner dataCleaner = getDataCleanerForColumnType(column.getType());
                 if (dataCleaner != null) {
                     JsArray<Any> values = Js.uncheckedCast(dataColumn);
-                    JsArray<Any> cleanData = Js.uncheckedCast(values.slice());
+                    JsArray<Any> cleanData = Js.uncheckedCast(JsArray.from((JsArrayLike<Any>) values));
 
                     for (int i = 0; i < values.length; i++) {
                         dataCleaner.clean(cleanData, i);

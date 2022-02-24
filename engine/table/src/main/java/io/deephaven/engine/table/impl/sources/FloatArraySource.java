@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterArraySource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -78,21 +80,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
     }
 
     @Override
-    public Float get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final float getFloat(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_FLOAT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final float getUnsafe(long index) {
@@ -131,11 +123,6 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         } else {
             return blocks[blockIndex][indexWithinBlock];
         }
-    }
-
-    @Override
-    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getFloat(sourceKey));
     }
 
     @Override
@@ -241,6 +228,18 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         final float [] backingArray = blocks[blockNo];
         chunk.asResettableWritableFloatChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
         return ((long)blockNo) << LOG_BLOCK_SIZE;
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final float [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableFloatChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
     }
 
     @Override

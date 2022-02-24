@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSparseArraySource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -14,11 +16,9 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
@@ -27,7 +27,6 @@ import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.util.Arrays;
 
 // region boxing imports
@@ -66,6 +65,11 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
     protected transient UpdateCommitter<ShortSparseArraySource> prevFlusher = null;
 
     /**
+     * If ensure previous has been called, we need not check previous values when filling.
+     */
+    private transient long ensurePreviousClockCycle = -1;
+
+    /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
      * what blocks to recycle.  Instead we maintain a list of blocks that we have allocated (as the key shifted by
      * BLOCK0_SHIFT).  We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be
@@ -82,44 +86,6 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         blocks = new ShortOneOrN.Block0();
     }
     // endregion constructor
-
-    // region serialization
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
-        blocks.enumerate(NULL_SHORT, sb::appendKey);
-        final RowSet rowSet = sb.build();
-
-        final int size = rowSet.intSize();
-        final short[] data = (short[])new short[size];
-        // noinspection unchecked
-        final ColumnSource<Short> reinterpreted = (ColumnSource<Short>) reinterpretForSerialization();
-        try (final FillContext context = reinterpreted.makeFillContext(size);
-             final ResettableWritableShortChunk<Values> destChunk = ResettableWritableShortChunk.makeResettableChunk()) {
-            destChunk.resetFromTypedArray(data, 0, size);
-            // noinspection unchecked
-            reinterpreted.fillChunk(context, destChunk, rowSet);
-        }
-        out.writeObject(rowSet);
-        out.writeObject(data);
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        blocks = new ShortOneOrN.Block0();
-
-        final RowSet rowSet = (RowSet)in.readObject();
-        final short[] data = (short[])in.readObject();
-        final ShortChunk<Values> srcChunk = ShortChunk.chunkWrap(data);
-        // noinspection unchecked
-        final WritableColumnSource<Short> reinterpreted = (WritableColumnSource<Short>) reinterpretForSerialization();
-        try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
-            reinterpreted.fillFromChunk(context, srcChunk, rowSet);
-        }
-    }
-    // endregion serialization
-
-    private void readObjectNoData() throws ObjectStreamException {
-        throw new StreamCorruptedException();
-    }
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
@@ -172,13 +138,6 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         return box(getPrevShort(index));
     }
     // endregion boxed methods
-
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Short> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getShort(sourceKey));
-    }
-    // endregion copy method
 
     // region primitive get
     @Override
@@ -429,6 +388,54 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         return null;
     }
 
+    @Override
+    public void ensurePrevious(RowSet changedRows) {
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        if (ensurePreviousClockCycle == currentStep) {
+            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        }
+        ensurePreviousClockCycle = currentStep;
+
+        if (changedRows.isEmpty()) {
+            return;
+        }
+
+        if (prevFlusher == null) {
+            return;
+        }
+        prevFlusher.maybeActivate();
+
+        try (final RowSet.Iterator it = changedRows.iterator()) {
+            long key = it.nextLong();
+            while (true) {
+                final long firstKey = key;
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final short[] block = ensureBlock(block0, block1, block2);
+
+                final short[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
+                final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
+                assert inUse != null;
+
+                do {
+                    final int indexWithinBlock = (int) (key & INDEX_MASK);
+                    final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                    final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                    prevBlock[indexWithinBlock] = block[indexWithinBlock];
+                    inUse[indexWithinInUse] |= maskWithinInUse;
+                } while (it.hasNext() && (key = it.nextLong()) <= maxKeyInCurrentBlock);
+                if (key <= maxKeyInCurrentBlock) {
+                    // we did not advance the iterator so should break
+                    break;
+                }
+            }
+        }
+    }
+
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
@@ -602,9 +609,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -632,7 +639,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
                 final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     final short[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
                     final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
 
@@ -671,9 +678,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -695,13 +702,13 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
             }
 
             // This conditional with its constant condition should be very friendly to the branch predictor.
-            final short[] prevBlock = hasPrev ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
-            final long[] inUse = hasPrev ? prevInUse.get(block0).get(block1).get(block2) : null;
+            final short[] prevBlock = trackPrevious ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
+            final long[] inUse = trackPrevious ? prevInUse.get(block0).get(block1).get(block2) : null;
 
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     assert inUse != null;
                     assert prevBlock != null;
 
@@ -728,9 +735,9 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
         }
         final ShortChunk<? extends Values> chunk = src.asShortChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -749,14 +756,14 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
             }
 
             // This conditional with its constant condition should be very friendly to the branch predictor.
-            final short[] prevBlock = hasPrev ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
-            final long[] inUse = hasPrev ? prevInUse.get(block0).get(block1).get(block2) : null;
+            final short[] prevBlock = trackPrevious ? ensurePrevBlock(firstKey, block0, block1, block2) : null;
+            final long[] inUse = trackPrevious ? prevInUse.get(block0).get(block1).get(block2) : null;
 
             long key = keys.get(ii);
             do {
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     assert inUse != null;
 
                     final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;

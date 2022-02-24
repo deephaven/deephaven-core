@@ -58,7 +58,7 @@ public class EvenlyDividedTableMap {
      *
      * @param table the table to divide
      * @param divisions how many divisions should be created, you may want to align this value with
-     *        {@link TableMapTransformThreadPool#TRANSFORM_THREADS}.
+     *        {@link OperationInitializationThreadPool#NUM_THREADS}.
      * @param minimumSize the minimum size of each division
      * @return a TableMap with constituents representing the slices of the original table
      */

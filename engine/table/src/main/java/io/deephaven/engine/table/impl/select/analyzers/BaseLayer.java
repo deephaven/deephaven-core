@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -14,8 +15,27 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     private final boolean publishTheseSources;
 
     BaseLayer(Map<String, ColumnSource<?>> sources, boolean publishTheseSources) {
+        super(BASE_LAYER_INDEX);
         this.sources = sources;
         this.publishTheseSources = publishTheseSources;
+    }
+
+    @Override
+    int getLayerIndexFor(String column) {
+        if (sources.containsKey(column)) {
+            return BASE_LAYER_INDEX;
+        }
+        throw new IllegalArgumentException("Unknown column: " + column);
+    }
+
+    @Override
+    void setBaseBits(BitSet bitset) {
+        bitset.set(BASE_LAYER_INDEX);
+    }
+
+    @Override
+    public void setAllNewColumns(BitSet bitset) {
+        bitset.set(BASE_LAYER_INDEX);
     }
 
     @Override
@@ -44,8 +64,10 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
+            SelectLayerCompletionHandler onCompletion) {
         // nothing to do at the base layer
+        onCompletion.onLayerCompleted(BASE_LAYER_INDEX);
     }
 
     @Override
@@ -67,5 +89,15 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     @Override
     public void startTrackingPrev() {
         // nothing to do
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return logOutput.append("{BaseLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
+    }
+
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        return true;
     }
 }

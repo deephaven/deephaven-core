@@ -6,6 +6,8 @@ description = 'The Deephaven client session dagger library'
 
 dependencies {
     api project(':java-client-session')
+    api 'io.grpc:grpc-api'
+    implementation project(':proto:proto-backplane-grpc')
 
     Classpaths.inheritDagger(project)
 
@@ -23,7 +25,9 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'grpc-api')
+    testImplementation TestTools.projectDependency(project, 'server')
+    testImplementation project(':java-client-flight')
+    testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation project(':log-to-slf4j')
 }
 

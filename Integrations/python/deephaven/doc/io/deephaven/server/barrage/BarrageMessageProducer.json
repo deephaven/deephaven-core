@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageMessageProducer",
+ "methods": {
+  "addParentReference": "Called on a dependent node to ensure that a strong reference is maintained to any parent object that is required\n for the proper maintenance and functioning of the dependent.\n\n In the most common case, the parent object is a child listener to a parent node. The parent node only keeps a\n weak reference to its child listener, but the listener maintains a strong reference to the parent node. In this\n scenario, the only strong reference to the listener (and thus indirectly to the parent node itself) is the\n reference kept by the dependent node.\n\n:param parent: (java.lang.Object) - A parent of this node",
+  "addSubscription": "Add a subscription to this BarrageMessageProducer.\n\n:param listener: (io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>) - The listener for this subscription\n:param options: (io.deephaven.extensions.barrage.BarrageSubscriptionOptions) - The subscription options\n:param columnsToSubscribe: (java.util.BitSet) - The initial columns to subscribe to\n:param initialViewport: (io.deephaven.engine.rowset.RowSet) - Initial viewport, to be owned by the subscription",
+  "getRowSet": ":return: io.deephaven.engine.rowset.RowSet",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "isRefreshing": "Is the node updating?\n\n:return: (boolean) true if the node is updating; false otherwise.",
+  "removeSubscription": ":param listener: io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>",
+  "setLastNotificationStep": "Deliver a last notification step to this receiver.\n\n:param lastNotificationStep: (long) - The last notification step to be delivered",
+  "setRefreshing": "Change the node's run mode.\n\n:param refreshing: (boolean) - true to cause the node to update; false otherwise.\n:return: (boolean) new refreshing state",
+  "updateSubscription": ":param listener: io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>\n:param newSubscribedColumns: java.util.BitSet\n:return: boolean",
+  "updateViewport": ":param listener: io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>\n:param newViewport: io.deephaven.engine.rowset.RowSet\n:return: boolean",
+  "updateViewportAndColumns": ":param listener: io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>\n:param newViewport: io.deephaven.engine.rowset.RowSet\n:param columnsToSubscribe: java.util.BitSet\n:return: boolean"
+ },
+ "path": "io.deephaven.server.barrage.BarrageMessageProducer",
+ "text": "The server-side implementation of a Barrage replication source.\n\n When a client subscribes initially, a snapshot of the table is sent. The snapshot is obtained using either get() or\n getPrev() based on the state of the LogicalClock. On each subsequent update, the client is given the deltas between\n the last update propagation and the next.\n\n When a client changes its subscription it will be sent a snapshot of only the data that the server believes it needs\n assuming that the client has been respecting the existing subscription. Practically, this means that the server may\n omit some data if the client's viewport change overlaps the currently recognized viewport.\n\n It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another\n inside the same JVM.\n\n The client-side counterpart of this is the StreamReader.",
+ "typeName": "class"
+}

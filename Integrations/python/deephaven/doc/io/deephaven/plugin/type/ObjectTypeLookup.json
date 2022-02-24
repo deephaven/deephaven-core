@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectTypeLookup",
+ "methods": {
+  "findObjectType": "Find the ObjectType compatible with object. That is, ObjectType.isType(Object) will be\n true for object.\n\n:param object: (java.lang.Object) - the object\n:return: (java.util.Optional<io.deephaven.plugin.type.ObjectType>) the object type, if found"
+ },
+ "path": "io.deephaven.plugin.type.ObjectTypeLookup",
+ "text": "The object type lookup.",
+ "typeName": "interface"
+}

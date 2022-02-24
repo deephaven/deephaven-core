@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link DateTime} to {@code long} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
 
     private final ColumnSource<DateTime> alternateColumnSource;
@@ -93,5 +92,15 @@ public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> imple
             longDestination.set(ii, DateTimeUtils.nanos(dateTime));
         }
         longDestination.setSize(dateTimeChunk.size());
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
     }
 }

@@ -85,7 +85,7 @@ public class BarrageUtils {
     }
 
     public static Uint8Array makeUint8ArrayFromBitset(BitSet bitset) {
-        int length = (bitset.cardinality() + 7) / 8;
+        int length = (bitset.previousSetBit(Integer.MAX_VALUE - 1) + 8) / 8;
         Uint8Array array = new Uint8Array(length);
         byte[] bytes = bitset.toByteArray();
         for (int i = 0; i < bytes.length; i++) {

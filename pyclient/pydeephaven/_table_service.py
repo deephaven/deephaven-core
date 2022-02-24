@@ -25,10 +25,11 @@ class TableService:
             for exported in response:
                 if not exported.success:
                     raise DHError(exported.error_info)
-                exported_tables.append(Table(self.session, ticket=exported.result_id.ticket,
-                                             schema_header=exported.schema_header,
-                                             size=exported.size,
-                                             is_static=exported.is_static))
+                if exported.result_id.WhichOneof("ref") == "ticket":
+                    exported_tables.append(Table(self.session, ticket=exported.result_id.ticket,
+                                                 schema_header=exported.schema_header,
+                                                 size=exported.size,
+                                                 is_static=exported.is_static))
             return exported_tables[-1]
         except Exception as e:
             raise DHError("failed to finish the table batch operation.") from e

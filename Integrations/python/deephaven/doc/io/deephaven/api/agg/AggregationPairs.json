@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.AggregationPairs",
+ "methods": {
+  "of": "*Overload 1*  \n  :param aggregation: io.deephaven.api.agg.Aggregation\n  :return: java.util.stream.Stream<io.deephaven.api.agg.Pair>\n  \n*Overload 2*  \n  :param aggregations: java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>\n  :return: java.util.stream.Stream<io.deephaven.api.agg.Pair>",
+  "outputsOf": "*Overload 1*  \n  :param aggregation: io.deephaven.api.agg.Aggregation\n  :return: java.util.stream.Stream<io.deephaven.api.ColumnName>\n  \n*Overload 2*  \n  :param aggregations: java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>\n  :return: java.util.stream.Stream<io.deephaven.api.ColumnName>",
+  "visit": "**Incompatible overloads text - text from the first overload:**\n\nVisit a column aggregation.\n\n*Overload 1*  \n  :param aggregations: (io.deephaven.api.agg.Aggregations) - The compound aggregation to visit\n  \n*Overload 2*  \n  :param columnAgg: (io.deephaven.api.agg.ColumnAggregation) - The column aggregation to visit\n  \n*Overload 3*  \n  :param columnAggs: (io.deephaven.api.agg.ColumnAggregations) - The compound column aggregation to visit\n  \n*Overload 4*  \n  :param count: (io.deephaven.api.agg.Count) - The count aggregation\n  \n*Overload 5*  \n  :param firstRowKey: (io.deephaven.api.agg.FirstRowKey) - The first row key aggregation\n  \n*Overload 6*  \n  :param lastRowKey: (io.deephaven.api.agg.LastRowKey) - The last row key aggregation"
+ },
+ "path": "io.deephaven.api.agg.AggregationPairs",
+ "text": "A visitor to get the ordered input/output column name pairs for aggregations.",
+ "typeName": "class"
+}

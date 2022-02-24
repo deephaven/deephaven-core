@@ -7,6 +7,8 @@ description = 'The Deephaven table operations API'
 dependencies {
   Classpaths.inheritImmutables(project)
 
+  compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
   Classpaths.inheritJUnitPlatform(project)
   Classpaths.inheritAssertJ(project)
   testImplementation 'org.junit.jupiter:junit-jupiter'

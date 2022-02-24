@@ -9,6 +9,8 @@ dependencies {
             project(':engine-api')
 
     implementation project(':engine-base')
+
+    Classpaths.inheritAutoService(project)
 }
 
 spotless {

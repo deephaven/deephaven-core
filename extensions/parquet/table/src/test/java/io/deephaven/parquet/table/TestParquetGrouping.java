@@ -33,19 +33,22 @@ public class TestParquetGrouping extends TestCase {
             }
 
             final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
-            Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
-            File dest = new File(directory, "testOverflow.parquet");
-            ParquetTools.writeTable(table, dest, tableDefinition);
+            final Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .addColumnNameMapping("V", "v")
+                    .build();
+            final File dest = new File(directory, "testOverflow.parquet");
+            ParquetTools.writeTable(table, dest, tableDefinition, instructions);
 
-            Table tableR = ParquetTools.readTable(dest);
+            final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
-            assertNotNull(tableR.getColumnSource("v").getGroupToRange());
+            assertNotNull(tableR.getColumnSource("V").getGroupToRange());
             assertEquals(80_000 * 4, tableR.getRowSet().size());
-            assertEquals(80_000, tableR.getColumnSource("v").getGroupToRange().size());
-            assertEquals(80_000, tableR.getColumnSource("v").getValuesMapping(tableR.getRowSet()).size());
-            assertEquals(80_000, tableR.getColumnSource("v")
+            assertEquals(80_000, tableR.getColumnSource("V").getGroupToRange().size());
+            assertEquals(80_000, tableR.getColumnSource("V").getValuesMapping(tableR.getRowSet()).size());
+            assertEquals(80_000, tableR.getColumnSource("V")
                     .getValuesMapping(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).size());
-            final Map mapper = tableR.getColumnSource("v").getGroupToRange();
+            final Map mapper = tableR.getColumnSource("V").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
                 assertEquals(mapper.get(i), RowSetFactory.fromRange(i * 4, i * 4 + 3));
             }

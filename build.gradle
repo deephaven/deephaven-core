@@ -89,15 +89,26 @@ idea {
     }
 }
 
-ext.versionSource = versionSource
-ext.globalVersion = "0.7.0"
+project.version = '0.9.0'
+ext.globalVersion = project.version
 
-// To set fishlibVersion, go to project-local gradle.properties file
-// (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
-// If you have fishlib open in IDE, also set includeFish=true to get the
-// intellij projects wired up across repositories.
-
-Set<Project> modsAreBasic = subprojects.findAll {it.name in ['deephaven-wheel', 'deephaven2-wheel', 'envoy', 'grpc-proxy', 'web-client-ui', 'protoc', 'pyclient', 'sphinx', 'docker-java-and-python', 'docker-runtime-base'] }
+Set<Project> modsAreBasic = subprojects.findAll {it.name in [
+    'deephaven-wheel',
+    'deephaven2-wheel',
+    'envoy',
+    'grpc-java',
+    'grpc-proxy',
+    'web',
+    'web-client-ui',
+    'pyclient',
+    'sphinx',
+    'docker-java-and-python',
+    'docker-runtime-base',
+    'docker-server',
+    'docker-server-slim',
+    'docker-web',
+    'raw-js-openapi',
+] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
 
@@ -263,6 +274,9 @@ configure modsRegular,
             forkEvery = 32
         }
 
+        if (findProperty('shortTests') == 'true') {
+            systemProperty 'TstUtils.shortTests', 'true'
+        }
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"
@@ -387,11 +401,13 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':extensions-csv',
                 ':extensions-kafka',
                 ':extensions-parquet-table',
+                ':plugin',
+                ':plugin-figure',
                 ':Util',
                 ':ModelFarm',
                 ':Numerics',
                 ':Plot',
-                ':grpc-api',
+                ':server',
                 ':qst',
                 ':table-api',
                 ':uri',
@@ -424,6 +440,15 @@ tasks.register 'writeJavadocVersion', {
         }
 }
 
+project.tasks.register('outputVersion') {task ->
+    def versionFile = project.layout.buildDirectory.file('version')
+    task.inputs.property('version', project.version)
+    task.outputs.file(versionFile)
+    task.doLast {
+        versionFile.get().asFile.text = project.version
+    }
+}
+
 project(':test-configs') {
     dependencies {
         // For unit-tests that explicitly (or transitively) depend on Configuration.getInstance(),
@@ -448,23 +473,23 @@ tasks.register('nightly') {
 
 tasks.register('quick') {
     it.group 'Deephaven lifecycle'
-    it.description 'A lifecycle task that defines the simple check tasks to be run in CI, see .github/workflows/check-ci.yml'
+    it.description 'A lifecycle task that defines quick tasks to be run in CI, see .github/workflows/quick-ci.yml'
     it.dependsOn allprojects.collect {
         allprojects.collect { it.tasks.matching { it.name == 'gwtCompile' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
-    it.description 'A lifecycle task that prepares prequisites for local docker-compose builds'
-    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage'),
-            project(':web-client-ide').tasks.findByName('buildDocker'),
+    it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
+    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker-server-slim'),
+            project(':docker-server').tasks.findByName('buildDocker-server'),
+            project(':docker-web').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
-            project(':grpc-proxy').tasks.findByName('buildDocker')
+            project(':grpc-proxy').tasks.findByName('buildDocker-grpc-proxy')
 }
 
 tasks.register('smoke') {
@@ -475,9 +500,10 @@ tasks.register('smoke') {
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
-    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile')
-    it.dependsOn project(':web-client-ide').tasks.findByName('prepareDocker')
+    it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+    it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
+    it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
+    it.dependsOn project(':web').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 
@@ -491,7 +517,6 @@ ext {
     depCommonsEmail = 'org.apache.commons:commons-email:1.4'
     depCommonsIo = 'commons-io:commons-io:2.5'
     depJdom2 = 'org.jdom:jdom2:2.0.6'
-    depLog4j = 'log4j:log4j:1.2.16'
     depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
 }
 

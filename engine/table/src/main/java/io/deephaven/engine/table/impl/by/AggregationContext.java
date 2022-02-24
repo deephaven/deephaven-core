@@ -4,12 +4,12 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -47,9 +47,9 @@ class AggregationContext {
     private final boolean requiresIndices;
 
     /**
-     * True if slots that are removed and then reincarnated should be modified.
+     * Does any operator require runs to be found? See {@link IterativeChunkedAggregationOperator#requiresRunFinds()}.
      */
-    private final boolean addedBackModified;
+    private final boolean requiresRunFinds;
 
     /**
      * Do any operators require inputs.
@@ -77,23 +77,18 @@ class AggregationContext {
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
             ChunkSource.WithPrev<Values>[] inputColumns) {
-        this(operators, inputNames, inputColumns, true);
+        this(operators, inputNames, inputColumns, null);
     }
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-            ChunkSource.WithPrev<Values>[] inputColumns, boolean addedBackModified) {
-        this(operators, inputNames, inputColumns, null, true);
-    }
-
-    AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-            ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers,
-            boolean addedBackModified) {
+            ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers) {
         this.operators = operators;
         this.inputNames = inputNames;
         this.inputColumns = inputColumns;
         this.transformers = transformers;
-        this.addedBackModified = addedBackModified;
         requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRowKeys);
+        requiresRunFinds =
+                Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRunFinds);
         requiresInputs = Arrays.stream(this.inputColumns).anyMatch(Objects::nonNull);
         unchunkedIndices = Arrays.stream(this.operators).allMatch(IterativeChunkedAggregationOperator::unchunkedRowSet);
         // noinspection unchecked
@@ -138,6 +133,10 @@ class AggregationContext {
 
     boolean requiresIndices() {
         return requiresIndices;
+    }
+
+    boolean requiresRunFinds(boolean skip) {
+        return requiresRunFinds || !skip;
     }
 
     boolean unchunkedIndices() {
@@ -264,8 +263,8 @@ class AggregationContext {
      * keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by
      * this iteration. Note that the arguments to this method should not be mutated in any way.
      *
-     * @param downstream The downstream {@link TableUpdateImpl} (which does <em>not</em> have its
-     *        {@link ModifiedColumnSet} finalized yet)
+     * @param downstream The downstream {@link TableUpdate} (which does <em>not</em> have its {@link ModifiedColumnSet}
+     *        finalized yet)
      * @param newDestinations New destinations added on this update
      */
     void propagateChangesToOperators(@NotNull final TableUpdate downstream,
@@ -279,7 +278,7 @@ class AggregationContext {
      * Propagate listener failure to all operators.
      *
      * @param originalException The error {@link Throwable}
-     * @param sourceEntry The {@link UpdatePerformanceTracker.Entry} for the failed listener
+     * @param sourceEntry The {@link PerformanceEntry} for the failed listener
      */
     void propagateFailureToOperators(@NotNull final Throwable originalException,
             @NotNull final TableListener.Entry sourceEntry) {
@@ -453,13 +452,6 @@ class AggregationContext {
             }
         }
         return permuteKernels;
-    }
-
-    /**
-     * Returns true if slots that are removed and then reincarnated on the same cycle should be marked as modified.
-     */
-    boolean addedBackModified() {
-        return addedBackModified;
     }
 
     void setReverseLookupFunction(ToIntFunction<Object> reverseLookupFunction) {

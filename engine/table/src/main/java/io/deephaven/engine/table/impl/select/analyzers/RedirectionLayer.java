@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -25,10 +27,23 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private long maxInnerIndex;
 
     RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
+        super(REDIRECTION_LAYER_INDEX);
+        Assert.eq(inner.getLayerIndex(), "inner.getLayerIndex()", BASE_LAYER_INDEX);
         this.inner = inner;
         this.resultRowSet = resultRowSet;
         this.rowRedirection = rowRedirection;
         this.maxInnerIndex = -1;
+    }
+
+    @Override
+    int getLayerIndexFor(String column) {
+        return inner.getLayerIndexFor(column);
+    }
+
+    @Override
+    void setBaseBits(BitSet bitset) {
+        inner.setBaseBits(bitset);
+        bitset.set(REDIRECTION_LAYER_INDEX);
     }
 
     @Override
@@ -42,9 +57,23 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
-        inner.applyUpdate(upstream, toClear, helper);
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
+            SelectLayerCompletionHandler onCompletion) {
+        final BitSet baseLayerBitSet = new BitSet();
+        inner.setBaseBits(baseLayerBitSet);
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+                new SelectLayerCompletionHandler(baseLayerBitSet, onCompletion) {
+                    @Override
+                    public void onAllRequiredColumnsCompleted() {
+                        // we only have a base layer underneath us, so we do not care about the bitSet; it is always
+                        // empty
+                        doApplyUpdate(upstream, toClear, helper, onCompletion);
+                    }
+                });
+    }
 
+    private void doApplyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
+            SelectLayerCompletionHandler onCompletion) {
         // we need to remove the removed values from our row redirection, and add them to our free RowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
@@ -114,6 +143,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             });
             freeValues.removeRange(0, lastAllocated.longValue());
         }
+
+        onCompletion.onLayerCompleted(REDIRECTION_LAYER_INDEX);
     }
 
     @Override
@@ -123,7 +154,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     public SelectAndViewAnalyzer getInner() {
-        return inner.getInner();
+        return inner;
     }
 
     @Override
@@ -135,5 +166,15 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     public void startTrackingPrev() {
         rowRedirection.startTrackingPrevValues();
         inner.startTrackingPrev();
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return logOutput.append("{RedirectionLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
+    }
+
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        return inner.allowCrossColumnParallelization();
     }
 }

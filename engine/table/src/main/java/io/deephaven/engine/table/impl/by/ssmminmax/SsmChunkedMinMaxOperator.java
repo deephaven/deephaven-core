@@ -331,6 +331,11 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
+    @Override
     public BucketedContext makeBucketedContext(int size) {
         return new BucketSsmMinMaxContext(chunkType, size);
     }

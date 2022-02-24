@@ -1,8 +1,8 @@
 version: "3.4"
 
 services:
-  grpc-api:
-    image: ghcr.io/deephaven/grpc-api:${VERSION:-latest}
+  server:
+    image: ghcr.io/deephaven/server:${VERSION:-latest}
     expose:
       - '8080'
     volumes:
@@ -22,9 +22,9 @@ services:
   grpc-proxy:
     image: ghcr.io/deephaven/grpc-proxy:${VERSION:-latest}
     environment:
-      - BACKEND_ADDR=grpc-api:8080
+      - BACKEND_ADDR=server:8080
     depends_on:
-      - grpc-api
+      - server
     expose:
       - '8080'
 
@@ -33,9 +33,9 @@ services:
     depends_on:
       - web
       - grpc-proxy
-      - grpc-api
+      - server
     ports:
-      - "${PORT:-10000}:10000"
+      - "${DEEPHAVEN_PORT:-10000}:10000"
 
 volumes:
     web-tmp:

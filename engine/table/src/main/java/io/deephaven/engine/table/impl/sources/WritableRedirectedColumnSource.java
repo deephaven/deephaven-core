@@ -77,20 +77,6 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     }
 
     @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        long innerDest = rowRedirection.get(destKey);
-        if (innerDest == -1) {
-            innerDest = ++maxInnerIndex;
-            ensureCapacity(maxInnerIndex + 1);
-            rowRedirection.writableCast().put(destKey, innerDest);
-        } else if (innerDest > maxInnerIndex) {
-            ensureCapacity(innerDest + 1);
-            maxInnerIndex = innerDest;
-        }
-        ((WritableColumnSource<T>) innerSource).copy(sourceColumn, sourceKey, innerDest);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ((WritableColumnSource<T>) innerSource).ensureCapacity(capacity, nullFill);
     }

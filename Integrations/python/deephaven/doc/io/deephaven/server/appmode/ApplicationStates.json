@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.appmode.ApplicationStates",
+ "methods": {
+  "getApplicationState": ":param applicationId: java.lang.String\n:return: java.util.Optional<io.deephaven.appmode.ApplicationState>"
+ },
+ "path": "io.deephaven.server.appmode.ApplicationStates",
+ "typeName": "interface"
+}

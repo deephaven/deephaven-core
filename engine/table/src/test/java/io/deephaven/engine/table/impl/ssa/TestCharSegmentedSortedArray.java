@@ -61,8 +61,17 @@ public class TestCharSegmentedSortedArray extends RefreshingTableTestCase {
 
     public void testShifts() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
-        for (int seed = 0; seed < 20; ++seed) {
-            for (int tableSize = 10; tableSize <= 10000; tableSize *= 10) {
+        final int nSeeds;
+        final int[] tableSizes;
+        if (SHORT_TESTS) {
+            nSeeds = 5;
+            tableSizes = new int[]{ 100, 1_000 };
+        } else {
+            nSeeds = 20;
+            tableSizes = new int[]{ 10, 100, 1_000, 10_000 };
+        }
+        for (int seed = 0; seed < nSeeds; ++seed) {
+            for (final int tableSize : tableSizes) {
                 for (int nodeSize = 16; nodeSize <= 2048; nodeSize *= 2) {
                     testShifts(desc.reset(seed, tableSize, nodeSize));
                 }

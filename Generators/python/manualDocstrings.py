@@ -179,7 +179,7 @@ if __name__ == '__main__':
         classDocGeneration(currentDocs, assertNoChange, details, outDir)
 
     # validate, if necessary
-    finalize(currentDocs, assertNoChange, '\nTo resolve failure, run the task "./gradlew :Generators:generateManPyDoc -PwithPy=true" '
+    finalize(currentDocs, assertNoChange, '\nTo resolve failure, run the task "./gradlew :Generators:generateManPyDoc" '
                                           'to regenerate, and then commit the generated changes.\n'
                                           'To diagnose trouble, run the generation task followed by \"git diff\" to see the changes.\n'
                                           'To diagnose possible indeterminism in the generation process, regenerate the code and check '

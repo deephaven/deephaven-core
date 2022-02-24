@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api 'info.picocli:picocli:4.6.1'
+    api project(':java-client-session')
+    api 'io.grpc:grpc-api'
+}

@@ -1,10 +1,10 @@
 {
  "className": "io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest$ZoomRangeOrBuilder",
  "methods": {
-  "getMaxDateNanos": "int64 max_date_nanos = 2 [jstype = JS_STRING];\n\n:return: (long) The maxDateNanos.",
-  "getMinDateNanos": "int64 min_date_nanos = 1 [jstype = JS_STRING];\n\n:return: (long) The minDateNanos.",
-  "hasMaxDateNanos": "int64 max_date_nanos = 2 [jstype = JS_STRING];\n\n:return: (boolean) Whether the maxDateNanos field is set.",
-  "hasMinDateNanos": "int64 min_date_nanos = 1 [jstype = JS_STRING];\n\n:return: (boolean) Whether the minDateNanos field is set."
+  "getMaxDateNanos": "optional int64 max_date_nanos = 2 [jstype = JS_STRING];\n\n:return: (long) The maxDateNanos.",
+  "getMinDateNanos": "optional int64 min_date_nanos = 1 [jstype = JS_STRING];\n\n:return: (long) The minDateNanos.",
+  "hasMaxDateNanos": "optional int64 max_date_nanos = 2 [jstype = JS_STRING];\n\n:return: (boolean) Whether the maxDateNanos field is set.",
+  "hasMinDateNanos": "optional int64 min_date_nanos = 1 [jstype = JS_STRING];\n\n:return: (boolean) Whether the minDateNanos field is set."
  },
  "path": "io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRangeOrBuilder",
  "typeName": "interface"

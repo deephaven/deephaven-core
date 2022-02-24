@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc$ObjectServiceImplBase",
+ "methods": {
+  "bindService": ":return: io.grpc.ServerServiceDefinition",
+  "fetchObject": ":param request: io.deephaven.proto.backplane.grpc.FetchObjectRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.FetchObjectResponse>"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceImplBase",
+ "typeName": "class"
+}

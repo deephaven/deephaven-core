@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
@@ -35,7 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Iterator;
 
-public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<BarrageSubscriptionOptions> {
+public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
@@ -44,7 +43,8 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
     private BarrageMessage msg = null;
 
     @Override
-    public BarrageMessage safelyParseFrom(final BarrageSubscriptionOptions options,
+    public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
+            final BitSet expectedColumns,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
@@ -52,6 +52,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         Message header = null;
         try {
             boolean bodyParsed = false;
+
             final CodedInputStream decoder = CodedInputStream.newInstance(stream);
 
             for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
@@ -98,7 +99,10 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             if (effectiveViewport != null) {
                                 msg.snapshotRowSet = extractIndex(effectiveViewport);
                             }
-                            msg.snapshotColumns = extractBitSet(metadata.effectiveColumnSetAsByteBuffer());
+                            final ByteBuffer effectiveSnapshotColumns = metadata.effectiveColumnSetAsByteBuffer();
+                            if (effectiveSnapshotColumns != null) {
+                                msg.snapshotColumns = extractBitSet(effectiveSnapshotColumns);
+                            }
                         }
 
                         msg.firstSeq = metadata.firstSeq();
@@ -115,7 +119,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                             msg.addColumnData[ci].type = columnTypes[ci];
                             msg.addColumnData[ci].componentType = componentTypes[ci];
                         }
-                        msg.modColumnData = new BarrageMessage.ModColumnData[columnTypes.length];
+
+                        // if this message is a snapshot response (vs. subscription) then mod columns may be empty
+                        msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();
                             msg.modColumnData[ci].type = columnTypes[ci];
@@ -147,8 +153,30 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
+                // snapshots may not provide metadata, generate it now
                 if (msg == null) {
-                    throw new IllegalStateException("Could not detect barrage metadata for update");
+                    msg = new BarrageMessage();
+
+                    // generate a default set of column selectors
+                    msg.snapshotColumns = expectedColumns;
+
+                    // create and fill the add column metadata from the schema
+                    msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
+                    for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
+                        msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
+                        msg.addColumnData[ci].type = columnTypes[ci];
+                        msg.addColumnData[ci].componentType = componentTypes[ci];
+                    }
+
+                    // no mod column data
+                    msg.modColumnData = new BarrageMessage.ModColumnData[0];
+
+                    // generate empty row sets
+                    msg.rowsRemoved = RowSetFactory.empty();
+                    msg.shifted = RowSetShiftData.EMPTY;
+
+                    msg.isSnapshot = true;
+                    numAddBatchesRemaining = 1;
                 }
 
                 bodyParsed = true;

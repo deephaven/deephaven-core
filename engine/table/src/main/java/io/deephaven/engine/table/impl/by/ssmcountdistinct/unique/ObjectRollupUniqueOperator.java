@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollupUniqueOperator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -11,8 +13,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.ObjectSsmBackedSource;
@@ -48,8 +50,8 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final Object noValueKey;
-    private final Object nonUniqueKey;
+    private final Object onlyNullsSentinel;
+    private final Object nonUniqueSentinel;
 
     private UpdateCommitter<ObjectRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -60,12 +62,12 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    Object noValueKey,
-                                    Object nonUniqueKey) {
+                                    Object onlyNullsSentinel,
+                                    Object nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new ObjectSsmBackedSource(type);
         // endregion SsmCreation
@@ -516,7 +518,7 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         columns.put(name, externalResult);
-        columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+        columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
         return columns;
     }
 
@@ -545,11 +547,11 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     //region Private Helpers
     private void updateResult(ObjectSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 

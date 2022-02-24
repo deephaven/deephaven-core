@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
@@ -20,7 +21,6 @@ import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
@@ -73,7 +73,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options,
+    public DrainableColumn getInputStream(final StreamReaderOptions options,
                                           final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
@@ -85,7 +85,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         private final DrainableColumn innerStream;
 
         private VarListInputStream(
-                final BarrageSubscriptionOptions options, final RowSet subsetIn) throws IOException {
+                final StreamReaderOptions options, final RowSet subsetIn) throws IOException {
             super(chunk, options, subsetIn);
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
@@ -229,7 +229,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,

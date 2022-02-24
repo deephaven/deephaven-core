@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plugin.Plugin",
+ "methods": {
+  "registerInto": "Registers this plugin into the callback.\n\n:param callback: (io.deephaven.plugin.Registration.Callback) - the callback.",
+  "walk": "Note: Java generics information - <T,\nV extends io.deephaven.plugin.Plugin.Visitor<T>>\n\n:param visitor: V\n:return: T"
+ },
+ "path": "io.deephaven.plugin.Plugin",
+ "text": "A plugin is a structured extension point for user-definable behavior.",
+ "typeName": "interface"
+}

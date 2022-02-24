@@ -471,6 +471,16 @@ class NaturalJoinHelper {
             }
             destination.setSize(longChunk.size());
         }
+
+        @Override
+        public boolean preventsParallelism() {
+            return symbolSource.preventsParallelism();
+        }
+
+        @Override
+        public boolean isStateless() {
+            return symbolSource.isStateless();
+        }
     }
 
     private static class LeftTickingListener extends BaseTable.ListenerImpl {
@@ -693,7 +703,8 @@ class NaturalJoinHelper {
             final long rightIndex = jsm.getRightIndex(updatedSlot);
 
             if (rightIndex == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException("Duplicate right key for " + jsm.keyString(updatedSlot));
+                throw new IllegalStateException(
+                        "Natural Join found duplicate right key for " + jsm.keyString(updatedSlot));
             }
 
             final boolean unchangedRedirection = rightIndex == originalRightValue;

@@ -4,7 +4,7 @@
 import os
 import pathlib
 from setuptools.extern import packaging
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -29,7 +29,7 @@ setup(name='deephaven2',
       version=__normalized_version__,
       description='Deephaven Engine Python Package',
       long_description=README,
-      packages=find_packages(exclude=("tests",)),
+      packages=find_namespace_packages(exclude=("tests",)),
       url='https://deephaven.io/',
       author='Deephaven Data Labs',
       author_email='python@deephaven.io',

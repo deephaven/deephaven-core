@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.util.ScopeTicketHelper",
+ "methods": {
+  "nameToBytes": "Convenience method to create the flight ticket bytes for the query scope variable name.\n\n:param variableName: (java.lang.String) - the variable name\n:return: (byte[]) the ticket bytes",
+  "nameToPath": "Convenience method to create the flight descriptor path for the query scope variable name.\n\n:param variableName: (java.lang.String) - the variable name\n:return: (java.util.List<java.lang.String>) the path"
+ },
+ "path": "io.deephaven.proto.util.ScopeTicketHelper",
+ "typeName": "class"
+}

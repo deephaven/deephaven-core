@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.figure.FigureWidgetTypePlugin",
+ "methods": {
+  "writeToImpl": ":param exporter: io.deephaven.plugin.type.ObjectType.Exporter\n:param figureWidget: io.deephaven.plot.FigureWidget\n:param out: java.io.OutputStream"
+ },
+ "path": "io.deephaven.figure.FigureWidgetTypePlugin",
+ "text": "An object type named \"Figure\" of java class type FigureWidget.",
+ "typeName": "class"
+}

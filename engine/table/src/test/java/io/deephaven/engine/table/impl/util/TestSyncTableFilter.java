@@ -455,7 +455,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
     }
 
     public void testTableMapRandomized() {
-        for (int seed = 0; seed < 1; ++seed) {
+        for (int seed = 0; seed < 5; ++seed) {
             testTableMapRandomized(seed);
         }
     }
@@ -547,9 +547,11 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
 
         for (int step = 0; step < 100; ++step) {
-            if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Seed = " + seed + ", step=" + step);
-            }
+            // TODO (https://github.com/deephaven/deephaven-core/issues/1911): Uncomment these lines once we uncover
+            // sufficient information to reproduce the failure observed once.
+            // if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Seed = " + seed + ", step=" + step);
+            // }
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 if (random.nextInt(10) == 0) {
                     GenerateTableUpdates.generateAppends(size, random, filterSet1, columnInfoSet1);
@@ -563,17 +565,17 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
                 GenerateTableUpdates.generateAppends(size / 2, random, source2Unfiltered, columnInfo2);
             });
 
-            if (printTableUpdates) {
-                System.out.println("Source 1 (tm)");
-                showWithRowSet(s1merged);
-                System.out.println("Source 2 (tm)");
-                showWithRowSet(s2merged);
+            // if (printTableUpdates) {
+            System.out.println("Source 1 (tm)");
+            showWithRowSet(s1merged);
+            System.out.println("Source 2 (tm)");
+            showWithRowSet(s2merged);
 
-                System.out.println("Source 1 Keyed (tm)");
-                showWithRowSet(s1KeyedMerged);
-                System.out.println("Source 2 (tm)");
-                showWithRowSet(s2KeyedMerged);
-            }
+            System.out.println("Source 1 Keyed (tm)");
+            showWithRowSet(s1KeyedMerged);
+            System.out.println("Source 2 (tm)");
+            showWithRowSet(s2KeyedMerged);
+            // }
 
             assertTableEquals(s1f, s1mergedSorted);
             assertTableEquals(s2f, s2mergedSorted);

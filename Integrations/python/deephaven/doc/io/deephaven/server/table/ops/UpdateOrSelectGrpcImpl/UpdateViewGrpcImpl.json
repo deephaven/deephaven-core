@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl$UpdateViewGrpcImpl",
+ "methods": {},
+ "path": "io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl.UpdateViewGrpcImpl",
+ "typeName": "class"
+}

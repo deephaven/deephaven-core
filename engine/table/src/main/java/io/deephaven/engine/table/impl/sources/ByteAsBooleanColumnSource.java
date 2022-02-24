@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,8 +18,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
-public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
+public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean, FillUnordered {
 
     private final ColumnSource<Byte> alternateColumnSource;
 
@@ -55,14 +55,27 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
 
     private class ToBooleanFillContext implements FillContext {
         final GetContext alternateGetContext;
+        final FillContext alternateFillContext;
+        final WritableByteChunk<Values> byteChunk;
 
         private ToBooleanFillContext(final int chunkCapacity, final SharedContext sharedContext) {
             alternateGetContext = alternateColumnSource.makeGetContext(chunkCapacity, sharedContext);
+            if (providesFillUnordered()) {
+                alternateFillContext = alternateColumnSource.makeFillContext(chunkCapacity, sharedContext);
+                byteChunk = WritableByteChunk.makeWritableChunk(chunkCapacity);
+            } else {
+                alternateFillContext = null;
+                byteChunk = null;
+            }
         }
 
         @Override
         public void close() {
             alternateGetContext.close();
+            if (alternateFillContext != null) {
+                alternateFillContext.close();
+                byteChunk.close();
+            }
         }
     }
 
@@ -91,5 +104,42 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
             booleanObjectDestination.set(ii, BooleanUtils.byteAsBoolean(byteChunk.get(ii)));
         }
         booleanObjectDestination.setSize(byteChunk.size());
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return FillUnordered.providesFillUnordered(alternateColumnSource);
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
+        if (toBooleanFillContext.byteChunk == null) {
+            throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
+        }
+        toBooleanFillContext.byteChunk.setSize(keys.size());
+        ((FillUnordered) alternateColumnSource).fillChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
+        convertToBoolean(dest, toBooleanFillContext.byteChunk);
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final ToBooleanFillContext toBooleanFillContext = (ToBooleanFillContext) context;
+        if (toBooleanFillContext.byteChunk == null) {
+            throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
+        }
+        toBooleanFillContext.byteChunk.setSize(keys.size());
+        ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toBooleanFillContext.alternateFillContext, toBooleanFillContext.byteChunk, keys);
+        convertToBoolean(dest, toBooleanFillContext.byteChunk);
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
     }
 }

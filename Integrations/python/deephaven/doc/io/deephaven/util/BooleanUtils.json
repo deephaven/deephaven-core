@@ -2,6 +2,7 @@
  "className": "io.deephaven.util.BooleanUtils",
  "methods": {
   "booleanAsByte": "Convert booleanValue to a byte.\n\n:param booleanValue: (java.lang.Boolean) - the boxed boolean value to convert to a byte\n:return: (byte) booleanValue represented as a byte",
+  "booleanAsByteArray": "Convert an array of booleanValues to an array of bytes.\n\n*Overload 1*  \n  :param booleanArray: (boolean[]) - the primitive boolean array to convert to a byte\n  :return: (byte[]) booleanArray represented as a byte array\n  \n*Overload 2*  \n  :param booleanArray: (java.lang.Boolean[]) - the boxed boolean array to convert to a byte\n  :return: (byte[]) booleanArray represented as a byte array",
   "byteAsBoolean": "Convert byteValue to a Boolean.\n\n:param byteValue: (byte) - the byte to convert to a boxed boolean\n:return: (java.lang.Boolean) the boxed boolean represented by byteValue"
  },
  "path": "io.deephaven.util.BooleanUtils",

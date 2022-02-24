@@ -44,16 +44,22 @@ static_resources:
                         - match: # JS API lives in this path
                             prefix: "/jsapi"
                           route: { cluster: web }
+                        - match: # JS Plugins live at this path
+                            prefix: "/js-plugins"
+                          route: { cluster: web }
                         - match: # Notebook file storage at this path
                             prefix: "/notebooks"
                           route: { cluster: web }
                         - match: # Application mode layout storage at this path
                             prefix: "/layouts"
                           route: { cluster: web }
+                        - match: # Embed a widget for iframe support at this path
+                            prefix: "/iframe"
+                          route: { cluster: web }
                         - match: # Any GRPC call is assumed to be forwarded to the real service
                             prefix: "/"
                           route:
-                            cluster: grpc-api
+                            cluster: server
                             max_stream_duration:
                               grpc_timeout_header_max: 0s
                             timeout: 0s
@@ -72,21 +78,21 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc-proxy # assuming the name of the grpc-api server container
+                      address: grpc-proxy # assuming the name of the grpc-proxy server container
                       port_value: 8080
-    - name: grpc-api
+    - name: server
       connect_timeout: 10s
       type: LOGICAL_DNS
       lb_policy: ROUND_ROBIN
       http2_protocol_options: {}
       load_assignment:
-        cluster_name: grpc-api
+        cluster_name: server
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc-api # here we assume the name of the websocket proxy
+                      address: server # here we assume the name of the server
                       port_value: 8080
     - name: web
       connect_timeout: 10s

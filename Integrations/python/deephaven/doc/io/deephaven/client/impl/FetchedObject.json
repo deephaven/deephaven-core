@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.client.impl.FetchedObject",
+ "methods": {
+  "exportIds": ":return: java.util.List<io.deephaven.client.impl.ExportId>",
+  "size": ":return: int",
+  "toByteArray": ":return: byte[]",
+  "toString": ":return: java.lang.String",
+  "type": ":return: java.lang.String",
+  "writeTo": ":param out: java.io.OutputStream"
+ },
+ "path": "io.deephaven.client.impl.FetchedObject",
+ "typeName": "class"
+}
