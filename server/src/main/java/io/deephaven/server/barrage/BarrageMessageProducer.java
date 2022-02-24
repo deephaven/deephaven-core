@@ -779,19 +779,25 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         final long prevStart;
                         final long prevEnd;
                         if (sub.reverseViewport) {
-                            // compute positions to be relative to the final position of prevRowSet
                             final long lastPrevRowPosition = prevRowSet.size() - 1;
 
                             prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
-                            prevEnd = lastPrevRowPosition - posStart;
+                            prevEnd = lastPrevRowPosition - posStart; // this can be left of the prev rowset (i.e. <0)
                         } else {
                             prevStart = localStart;
-                            prevEnd = localEnd;
+                            prevEnd = localEnd; // this can be right of the prev rowset (i.e. >= size())
                         }
-                        final long prevKeyStart =
-                                prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1  : prevRowSet.get(prevStart);
-                        final long prevKeyEnd = prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
 
+                        // get the key that represents the start of the viewport in the prev rowset key space or
+                        // prevRowSet.lastRowKey() + 1 if the start is past the end of prev rowset
+                        final long prevKeyStart =
+                                prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
+                                        : prevRowSet.get(prevStart);
+
+                        // get the key that represents the end of the viewport in the prev rowset key space or
+                        // -1 if the end is before the beginning of prev rowset
+                        final long prevKeyEnd =
+                                prevEnd < 0 ? -1 : prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
 
                         // Note: we already know that scoped rows must touch viewport boundaries
                         if (currKeyStart < prevKeyStart) {
