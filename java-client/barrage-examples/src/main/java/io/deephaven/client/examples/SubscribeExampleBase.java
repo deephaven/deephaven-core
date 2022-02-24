@@ -26,6 +26,12 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
         @CommandLine.Option(names = {"-s", "--serial"}, required = true, description = "Serial mode")
         boolean serial;
+
+        @CommandLine.Option(names = {"--tail"}, required = false, description = "Tail viewport size")
+        int tailSize = 0;
+
+        @CommandLine.Option(names = {"--head"}, required = false, description = "Header viewport size")
+        int headerSize = 0;
     }
 
     @CommandLine.ArgGroup(exclusive = true)
@@ -44,7 +50,17 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         try (final TableHandle handle = manager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
 
-            final BarrageTable table = subscription.partialTable(RowSetFactory.flat(10), null, true);
+            final BarrageTable table;
+            if (mode != null && mode.headerSize > 0) {
+                // create a table subscription with forward viewport of the specified size
+                table = subscription.partialTable(RowSetFactory.flat(mode.headerSize), null, true);
+            } else if (mode != null && mode.tailSize > 0) {
+                // create a table subscription with reverse viewport of the specified size
+                table = subscription.partialTable(RowSetFactory.flat(mode.tailSize), null, true);
+            } else {
+                // create a table subscription of the entire table
+                table = subscription.entireTable();
+            }
 
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 

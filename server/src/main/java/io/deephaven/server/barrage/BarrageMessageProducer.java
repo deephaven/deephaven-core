@@ -783,7 +783,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             final long lastPrevRowPosition = prevRowSet.size() - 1;
 
                             prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
-                            prevEnd = Math.max(lastPrevRowPosition - posStart, 0);
+                            prevEnd = lastPrevRowPosition - posStart;
                         } else {
                             prevStart = localStart;
                             prevEnd = localEnd;

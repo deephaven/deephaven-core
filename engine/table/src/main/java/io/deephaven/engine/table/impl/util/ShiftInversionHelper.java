@@ -10,8 +10,8 @@ import java.util.function.LongUnaryOperator;
  */
 public class ShiftInversionHelper {
 
-    final private RowSetShiftData shifted;
-    final private boolean reverseOrder;
+    private final RowSetShiftData shifted;
+    private final boolean reverseOrder;
 
     private int destShiftIdx;
 

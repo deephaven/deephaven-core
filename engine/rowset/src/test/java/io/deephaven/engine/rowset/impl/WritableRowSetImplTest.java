@@ -3312,7 +3312,8 @@ public class WritableRowSetImplTest extends TestCase {
             // create ranges of these sizes, skipping 1 value each time
             long idx = 0;
             while (idx < vs.length + EXTRA_RANGE) {
-                long s = idx; long e = idx + rangeSize - 1;
+                long s = idx;
+                long e = idx + rangeSize - 1;
 
                 // compute the expected size
                 if (s < vs.length) {
@@ -3333,7 +3334,7 @@ public class WritableRowSetImplTest extends TestCase {
 
                     rs.forEachRowKeyRange((final long start, final long end) -> {
                         for (long i = start; i <= end; i++) {
-                            int index = (int)i;
+                            int index = (int) i;
                             if (index >= 0 && index < vs.length) {
                                 assertEquals(m + ", fwd: i=" + index, vs[index], ret.get(retIndex.value));
                                 retIndex.value++;
@@ -3355,9 +3356,10 @@ public class WritableRowSetImplTest extends TestCase {
                     rs.forEachRowKeyRange((final long start, final long end) -> {
                         // translate into reversed positions
                         for (long i = start; i <= end; i++) {
-                            int index = lastPos - (int)i;
+                            int index = lastPos - (int) i;
                             if (index >= 0 && index < vs.length) {
-                                assertEquals(m + ", fwd: i=" + index, vs[index], ret.get(ret.size() - retIndex.value - 1));
+                                assertEquals(m + ", fwd: i=" + index, vs[index],
+                                        ret.get(ret.size() - retIndex.value - 1));
                                 retIndex.value++;
                             }
                         }
