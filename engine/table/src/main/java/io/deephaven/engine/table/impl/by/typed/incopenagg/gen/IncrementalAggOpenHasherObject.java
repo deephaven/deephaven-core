@@ -259,10 +259,14 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
     }
 
     @Override
-    protected void rehashInternalPartial(int targetRehashPointer) {
-        while (rehashPointer > targetRehashPointer) {
-            migrateOneLocation(--rehashPointer);
+    protected int rehashInternalPartial(int entriesToRehash) {
+        int rehashedEntries = 0;
+        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
+            if (migrateOneLocation(--rehashPointer)) {
+                rehashedEntries++;
+            }
         }
+        return rehashedEntries;
     }
 
     @Override
@@ -280,7 +284,7 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
 
     @Override
     protected void migrateFront() {
-        int location = 0;;
+        int location = 0;
         while (migrateOneLocation(location++));
     }
 
@@ -306,9 +310,7 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                 if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
-                    if (sourceBucket != destinationTableLocation) {
-                        outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation);
-                    }
+                    outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation);
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);

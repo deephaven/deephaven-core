@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.Nullable;
 
-final class AlternatingGetContext extends AlternatingFillContextWithUnordered implements ChunkSource.GetContext {
+final class AlternatingGetContext extends BaseAlternatingFillContext implements ChunkSource.GetContext {
 
     final ChunkSource.GetContext mainGetContext;
     final ChunkSource.GetContext alternateGetContext;

@@ -150,7 +150,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.setValue(Math.max(0, bc.rehashCredits.intValue() - (entriesAdded * 2)));
+                bc.rehashCredits.setValue(Math.max(0, bc.rehashCredits.intValue() - entriesAdded));
 
                 bc.resetSharedContexts();
             }
@@ -197,23 +197,19 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
-     * @param rehashCredits the number of rehash buckets this operation has rehashed (input/output)
-     * @param nextChunkSize the size of the chunk we are processing, we need to make at least twice as many rehash
-     *        credits available
+     * @param rehashCredits the number of entries this operation has rehashed (input/output)
+     * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize * 2 - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
                 return false;
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            final int newRehashPointer = Math.max(rehashPointer - requiredRehash, 0);
-            final int bucketsRehashed = rehashPointer - newRehashPointer;
-            rehashInternalPartial(newRehashPointer);
-            rehashCredits.add(bucketsRehashed);
+            rehashCredits.add(rehashInternalPartial(requiredRehash));
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -235,7 +231,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial(0);
+                rehashInternalPartial((int)numEntries);
                 clearAlternate();
             }
 
@@ -270,7 +266,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
     }
 
-    protected abstract void rehashInternalPartial(int newRehashPointer);
+    /**
+     * @param numEntriesToRehash number of entries to rehash into main table
+     * @return actual number of entries rehashed
+     */
+    protected abstract int rehashInternalPartial(int numEntriesToRehash);
 
     // full rehashInternal
     protected abstract void rehashInternal(int oldSize);

@@ -101,6 +101,7 @@ public class TypedHasherFactory {
         final Consumer<CodeBlock.Builder> moveMain;
         final List<BuildSpec> builds = new ArrayList<>();
         final List<ProbeSpec> probes = new ArrayList<>();
+        final boolean alwaysMoveMain;
         if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "StaticAggHasher";
             packageMiddle = "staticagg";
@@ -110,6 +111,7 @@ public class TypedHasherFactory {
             overflowOrAlternateStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
             moveMain = null;
+            alwaysMoveMain = false;
         } else if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "StaticAggOpenHasher";
             packageMiddle = "staticopenagg";
@@ -121,6 +123,7 @@ public class TypedHasherFactory {
             moveMain = TypedHasherFactory::staticAggMoveMain;
             builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFound,
                     TypedHasherFactory::buildInsert));
+            alwaysMoveMain = false;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "IncrementalAggHasher";
             packageMiddle = "incagg";
@@ -130,6 +133,7 @@ public class TypedHasherFactory {
             overflowOrAlternateStateName = "overflowOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
             moveMain = null;
+            alwaysMoveMain = false;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "IncrementalAggOpenHasher";
             packageMiddle = "incopenagg";
@@ -139,6 +143,7 @@ public class TypedHasherFactory {
             overflowOrAlternateStateName = "alternateOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
             moveMain = TypedHasherFactory::incAggMoveMain;
+            alwaysMoveMain = true;
 
             final ClassName rowKeyType = ClassName.get(RowKeys.class);
             final ParameterizedTypeName emptiedChunkType =
@@ -162,7 +167,7 @@ public class TypedHasherFactory {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
 
-        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate,
+        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate, alwaysMoveMain,
                 mainStateName,
                 overflowOrAlternateStateName,
                 emptyStateName, int.class, moveMain, probes, builds);
@@ -239,6 +244,7 @@ public class TypedHasherFactory {
         public final String packageMiddle;
         final boolean openAddressed;
         final boolean openAddressedAlternate;
+        final boolean alwaysMoveMain;
         final String mainStateName;
         final String overflowOrAlternateStateName;
         final String emptyStateName;
@@ -248,7 +254,7 @@ public class TypedHasherFactory {
         private final List<BuildSpec> builds;
 
         HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
-                boolean openAddressedAlternate, String mainStateName,
+                boolean openAddressedAlternate, boolean alwaysMoveMain, String mainStateName,
                 String overflowOrAlternateStateName,
                 String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain, List<ProbeSpec> probes,
                 List<BuildSpec> builds) {
@@ -257,6 +263,7 @@ public class TypedHasherFactory {
             this.packageMiddle = packageMiddle;
             this.openAddressed = openAddressed;
             this.openAddressedAlternate = openAddressedAlternate;
+            this.alwaysMoveMain = alwaysMoveMain;
             this.mainStateName = mainStateName;
             this.overflowOrAlternateStateName = overflowOrAlternateStateName;
             this.emptyStateName = emptyStateName;
@@ -752,11 +759,13 @@ public class TypedHasherFactory {
         }
         builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
                 hasherConfig.mainStateName);
-        // TODO: THIS IS WRONG, WE MIGHT NEED TO MOVE MAIN ANYWAY
-        builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
+        if (!hasherConfig.alwaysMoveMain) {
+            builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
+        }
         hasherConfig.moveMain.accept(builder);
-        builder.endControlFlow();
-        // END THIS
+        if (!hasherConfig.alwaysMoveMain) {
+            builder.endControlFlow();
+        }
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
@@ -780,12 +789,16 @@ public class TypedHasherFactory {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         // ensure the capacity for everything
-        builder.beginControlFlow("while (rehashPointer > targetRehashPointer)");
-        builder.addStatement("migrateOneLocation(--rehashPointer)");
+        builder.addStatement("int rehashedEntries = 0");
+        builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer))");
+        builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
+        builder.endControlFlow();
+        builder.addStatement("return rehashedEntries");
 
         return MethodSpec.methodBuilder("rehashInternalPartial")
-                .returns(void.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "targetRehashPointer")
+                .returns(int.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "entriesToRehash")
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();
     }
@@ -862,7 +875,7 @@ public class TypedHasherFactory {
     private static MethodSpec createMigrateFront() {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("int location = 0;");
+        builder.addStatement("int location = 0");
         builder.addStatement("while (migrateOneLocation(location++))");
 
         return MethodSpec.methodBuilder("migrateFront")
