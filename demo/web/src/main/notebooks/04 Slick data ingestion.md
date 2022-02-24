@@ -1,10 +1,10 @@
 # **Slick data ingestion**
 
-This notebook will demonstrate the value of the Deephaven-uri package canonicalizes a [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) format for
+This notebook will demonstrate the value of the deephaven-uri package, which canonicalizes a [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) format for
 [Deephaven target](src/main/java/io/deephaven/uri/DeephavenTarget.java) and
 [resource](src/main/java/io/deephaven/uri/StructuredUri.java) identification.
 \
-The goal is to provide a string format that can be easy referenced and shared across client and server contexts.
+The goal is to provide a string format that can be easily referenced and shared across client and server contexts.
 \
 When using URI, the resource format allows for a concise representation of resource identification, both local and remote. 
 
@@ -51,7 +51,7 @@ latest_offset = get_trades(offsets=ck.ALL_PARTITIONS_SEEK_TO_END, table_type='st
 
 
 [Deephaven URIs](src/main/java/io/deephaven/uri/DeephavenUri.java) are those that have the scheme `dh` and no host,
-or `dh`/`dh+plain` and a host; and represent Deephaven-specific concepts. Unless configured otherwise, Deephaven servers
+or `dh`/`dh+plain` and a host, and represent Deephaven-specific concepts. Unless configured otherwise, Deephaven servers
 should be able to resolve Deephaven URIs into appropriate resources.
 
 \
@@ -66,9 +66,9 @@ new_offest = resolve('dh:///scope/latest_offset')
 \
 \
 \
-Since this table `new_offest` is based on `latest_offset` as new data enters `latest_offset` the table `new_offest` will have access to those updates.
+Since this table `new_offest` is based on `latest_offset`, as new data enters `latest_offset`, the table `new_offset` will have access to those updates.
 
-If `latest_offset` changes its definition after the URI such as with a filter, or manual update then the downstream URI will not update.
+If `latest_offset` changes its definition after the URI, such as with a filter or manual update, then the downstream URI will not update.
 
 ```python
 latest_offset = latest_offset.where("KafkaOffset%2==0")
