@@ -55,8 +55,9 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(df.size, 2 * len(self.test_table.columns))
         df_series = [df[col] for col in list(df.columns)]
         for i, col in enumerate(self.test_table.columns):
-            self.assertEqual(col.data_type.np_type, df_series[i].dtype)
-            self.assertEqual(col.name, df_series[i].name)
+            with self.subTest(col):
+                self.assertEqual(col.data_type.np_type, df_series[i].dtype)
+                self.assertEqual(col.name, df_series[i].name)
 
     def test_to_pandas_remaps(self):
         prepared_table = self.test_table.update(

@@ -44,6 +44,24 @@ class NumpyTestCase(unittest.TestCase):
         ]
         self.test_table = new_table(cols=input_cols)
 
+        self.np_array_dict = {
+            'Boolean': np.array([True, False]),
+            'Byte': np.array([1, -1], dtype=np.int8),
+            'Char': np.array('-1', dtype=np.int16),
+            'Short': np.array([1, -1], dtype=np.int16),
+            'Int': np.array([1, -1], dtype=np.int32),
+            'Long': np.array([1, NULL_LONG], dtype=np.int64),
+            "NPLong": np.array([1, -1], dtype=np.int8),
+            "Float": np.array([1.01, -1.01], dtype=np.float32),
+            "Double": np.array([1.01, -1.01]),
+            "String": np.array(["foo", "bar"], dtype=np.string_),
+            "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]")),
+            "PyObj": np.array([CustomClass(1, "1"), CustomClass(-1, "-1")]),
+            "PyObj1": np.array([[1, 2, 3], CustomClass(-1, "-1")], dtype=np.object_),
+            "PyObj2": np.array([False, 'False'], dtype=np.object_),
+            "JObj": np.array([j_array_list1, j_array_list2]),
+        }
+
     def tearDown(self) -> None:
         self.test_table = None
 
@@ -51,7 +69,8 @@ class NumpyTestCase(unittest.TestCase):
         for col in self.test_table.columns:
             with self.subTest(f"test single column to numpy- {col.name}"):
                 np_array = to_numpy(self.test_table, [col.name])
-                self.assertEqual((2,), np_array.shape)
+                self.assertEqual((2, 1), np_array.shape)
+                np.array_equal(np_array, self.np_array_dict[col.name])
 
         try:
             to_numpy(self.test_table, [col.name for col in self.test_table.columns])
@@ -73,7 +92,7 @@ class NumpyTestCase(unittest.TestCase):
         for col in self.test_table.columns:
             with self.subTest(f"test single column to numpy - {col.name}"):
                 np_array = to_numpy(self.test_table, [col.name])
-                self.assertEqual((2,), np_array.shape)
+                self.assertEqual((2, 1), np_array.shape)
 
         try:
             to_numpy(self.test_table, [col.name for col in self.test_table.columns])

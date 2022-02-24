@@ -132,16 +132,11 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
         if len(set([col_def.data_type for col_def in col_defs])) != 1:
             raise DHError(message="columns must be of the same data type.")
 
-        if len(col_defs) == 1:
-            col_def = col_defs[0]
+        j_arrays = []
+        for col_def in col_defs:
             data_col = table.j_table.getColumn(col_def.name)
-            return _column_to_numpy_array(col_def, data_col.getDirect())
-        else:
-            j_arrays = []
-            for col_def in col_defs:
-                data_col = table.j_table.getColumn(col_def.name)
-                j_arrays.append(data_col.getDirect())
-            return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
+            j_arrays.append(data_col.getDirect())
+        return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
     except DHError:
         raise
     except Exception as e:
