@@ -281,6 +281,7 @@ t = left.join(right, "DeptID", "DeptName,DeptTelephone=Telephone")
 
 * [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
 * [A relaxed chat room about all things Deephaven](https://gitter.im/deephaven/deephaven)
+* [Deephaven Community Slack](https://join.slack.com/t/deephavencommunity/shared_invite/zt-11x3hiufp-DmOMWDAvXv_pNDUlVkagLQ)
 * [Discussions](https://github.com/deephaven/deephaven-core/discussions)
 * [deephaven.io](https://deephaven.io)
 * [Deephaven Community Core docs](https://deephaven.io/core/docs/)
