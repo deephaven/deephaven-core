@@ -380,7 +380,7 @@ public class ArrowFlightUtil {
 
                     // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
                     int size = message.descriptor.getCmd().size();
-                    if (size >= 4) {
+                    if (size == 4) {
                         ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
 
                         // set the order to little-endian (FlatBuffers default)

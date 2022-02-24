@@ -76,9 +76,9 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
-     * Creates a new server side DoExchange session .
+     * Creates a new server side DoExchange session.
      *
-     * @param descriptor the FlightDescriptor objcet to include on the first FlightData message (other fields will
+     * @param descriptor the FlightDescriptor object to include on the first FlightData message (other fields will
      *        remain null)
      * @param options the GRPC otions to apply to this call
      * @return the bi-directional ReaderWriter object
