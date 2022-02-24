@@ -140,11 +140,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
             }
         }
         if (tableSize > oldSize) {
-            rehashInternal(oldSize);
+            rehashInternalFull(oldSize);
         }
     }
 
-    protected abstract void rehashInternal(int oldSize);
+    protected abstract void rehashInternalFull(int oldSize);
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
