@@ -38,8 +38,8 @@ class ReplayTestCase(BaseTestCase):
         replayer.start()
         self.assertTrue(replay_table.is_refreshing)
         self.assertTrue(replay_table2.is_refreshing)
-        self.wait_ticking_table_update(replay_table, row_count=3, timeout=8)
-        self.wait_ticking_table_update(replay_table2, row_count=3, timeout=8)
+        self.wait_ticking_table_update(replay_table, row_count=3, timeout=60)
+        self.wait_ticking_table_update(replay_table2, row_count=3, timeout=60)
         self.assertEqual(replay_table, replay_table2)
         replayer.shutdown()
 
@@ -52,7 +52,7 @@ class ReplayTestCase(BaseTestCase):
             replayer.start()
             replay_table = replayer.add_table(hist_table, "DateTime")
             self.assertTrue(replay_table.is_refreshing)
-            self.wait_ticking_table_update(replay_table, row_count=3, timeout=8)
+            self.wait_ticking_table_update(replay_table, row_count=3, timeout=60)
             replayer.shutdown()
 
 
