@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedBase",
+ "methods": {
+  "doRehash": ":param nextChunkSize: int",
+  "findPositionForKey": ":param key: java.lang.Object\n:return: int",
+  "rehashRequired": ":param nextChunkSize: int\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedBase",
+ "typeName": "class"
+}

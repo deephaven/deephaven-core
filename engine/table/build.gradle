@@ -85,6 +85,7 @@ spotless {
                 '**/*StateManager.java',
                 '**/incagg/gen/*.java',
                 '**/staticagg/gen/*.java',
+                '**/staticopenagg/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'
