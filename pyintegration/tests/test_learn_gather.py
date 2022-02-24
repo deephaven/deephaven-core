@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 from deephaven2 import empty_table
 from deephaven2.learn import gather
+from deephaven2.pandas import to_pandas
 from tests.testbase import BaseTestCase
 
 
@@ -140,29 +141,28 @@ class LearnGatherTestCase(BaseTestCase):
         gatherer_colmajor = lambda rowset, colset: gather.table_to_numpy_2d(rowset, colset,
                                                                             gather.MemoryLayout.COLUMN_MAJOR, np_dtype)
 
-        # array_from_table = tableToDataFrame(source).values
+        array_from_table = to_pandas(source).values
 
         gathered_rowmajor = gatherer_rowmajor(rows, cols)
         gathered_colmajor = gatherer_colmajor(rows, cols)
 
-        # TODO when PR #1919 gets merged
-        # with self.subTest(msg="Array shape"):
-        #     self.assertTrue(gathered_rowmajor.shape == array_from_table.shape)
-        #     print("Row major gathered shape: {}".format(gathered_rowmajor.shape))
-        #     self.assertTrue(gathered_colmajor.shape == array_from_table.shape)
-        #     print("Column major gathered shape: {}".format(gathered_colmajor.shape))
-        # with self.subTest(msg="Values in array"):
-        #     self.assertTrue(np.allclose(gathered_rowmajor, array_from_table))
-        #     print("All row-major array values are equal")
-        #     self.assertTrue(np.allclose(gathered_colmajor, array_from_table))
-        #     print("All column-major array values are equal")
-        # with self.subTest(msg="Array data type"):
-        #     self.assertTrue(gathered_rowmajor.dtype == np_dtype)
-        #     self.assertTrue(gathered_rowmajor.dtype == array_from_table.dtype)
-        #     self.assertTrue(gathered_colmajor.dtype == np_dtype)
-        #     self.assertTrue(gathered_colmajor.dtype == array_from_table.dtype)
-        #     self.assertTrue(gathered_rowmajor.dtype == gathered_colmajor.dtype)
-        #     print("Array dtype: {}".format(np_dtype))
+        with self.subTest(msg="Array shape"):
+            self.assertTrue(gathered_rowmajor.shape == array_from_table.shape)
+            print("Row major gathered shape: {}".format(gathered_rowmajor.shape))
+            self.assertTrue(gathered_colmajor.shape == array_from_table.shape)
+            print("Column major gathered shape: {}".format(gathered_colmajor.shape))
+        with self.subTest(msg="Values in array"):
+            self.assertTrue(np.allclose(gathered_rowmajor, array_from_table))
+            print("All row-major array values are equal")
+            self.assertTrue(np.allclose(gathered_colmajor, array_from_table))
+            print("All column-major array values are equal")
+        with self.subTest(msg="Array data type"):
+            self.assertTrue(gathered_rowmajor.dtype == np_dtype)
+            self.assertTrue(gathered_rowmajor.dtype == array_from_table.dtype)
+            self.assertTrue(gathered_colmajor.dtype == np_dtype)
+            self.assertTrue(gathered_colmajor.dtype == array_from_table.dtype)
+            self.assertTrue(gathered_rowmajor.dtype == gathered_colmajor.dtype)
+            print("Array dtype: {}".format(np_dtype))
         with self.subTest(msg="Contiguity"):
             self.assertTrue(gathered_rowmajor.flags["C_CONTIGUOUS"] or gathered_rowmajor.flags["F_CONTIGUOUS"])
             self.assertTrue(gathered_colmajor.flags["C_CONTIGUOUS"] or gathered_colmajor.flags["F_CONTIGUOUS"])

@@ -2,6 +2,7 @@
 # Copyright (c) 2016 - 2022 Deephaven Data Labs and Patent Pending
 # 
 """ Utilities for gathering Deephaven table data into Python objects """
+
 import enum
 from typing import Any, Type
 
@@ -44,7 +45,7 @@ def _convert_to_numpy_dtype(np_type: Type) -> Type:
     return np_type
 
 
-def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_MAJOR, np_type=np.intc):
+def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_MAJOR, np_type: Type = np.intc) -> np.ndarray:
     """ Converts Deephaven table data to a 2d NumPy array of the appropriate size
 
     Args:
@@ -87,4 +88,4 @@ def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_M
             tensor.shape = (row_set.intSize(), len(col_set))
             return tensor
     except Exception as e:
-        raise DHError(e, "failed to convert a table to 2d numpy array.") from e
+        raise DHError(e, f"failed to convert rows: {row_set} and cols: {col_set} to a 2D NumPy array") from e

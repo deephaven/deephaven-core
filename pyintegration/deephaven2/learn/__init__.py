@@ -4,6 +4,7 @@
 """ Deephaven's learn module provides utilities for efficient data transfer between Deephaven tables and Python objects,
 as well as a framework for using popular machine-learning / deep-learning libraries with Deephaven tables.
 """
+
 from typing import List, Union, Callable, Type
 
 import jpy
@@ -30,7 +31,7 @@ class Input:
         self.input = _JLearnInput(col_names, gather_func)
 
     def __str__(self):
-        """ Returns the Input object as a string. """
+        """ Returns the Input object as a string containing a printable representation of the Input object."""
         return self.input.toString()
 
 
@@ -44,12 +45,12 @@ class Output:
             col_name (str) : name of the new column that will store results.
             scatter_func (Callable): function that determines how data is taken from an object and placed into a
                 Deephaven table column.
-            col_type (Type) : desired data type of the new output column, default is None
+            col_type (Type) : desired data type of the new output column, default is None (no explicit type cast).
         """
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
 
     def __str__(self):
-        """ Returns the Output object as a string. """
+        """ Returns the Output object as a string containing a printable representation of the Output object. """
         return self.output.toString()
 
 
@@ -109,7 +110,7 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
 
 
 def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] = [], outputs: List[Output] = [],
-          batch_size: int = None):
+          batch_size: int = None) -> Table:
     """ Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
     calculation into an output table. This is a common computing paradigm for artificial intelligence, machine learning,
     and deep learning.
@@ -139,8 +140,8 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         # and remove from globals at the end of function
         (jpy.get_type("io.deephaven.engine.table.lang.QueryScope")
          .addParam("__computer", _JLearnComputer(table, model_func,
-                                   [input_.input for input_ in inputs],
-                                   batch_size)))
+                                                 [input_.input for input_ in inputs],
+                                                 batch_size)))
 
         future_offset = _create_non_conflicting_col_name(table, "__FutureOffset")
         clean = _create_non_conflicting_col_name(table, "__CleanComputer")
@@ -161,15 +162,15 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         result = _create_non_conflicting_col_name(table, "__Result")
 
         return (table
-            .update(formulas=[
-            f"{future_offset} = __computer.compute(k)",
-            f"{result} = {future_offset}.getFuture().get()",
-            f"{clean} = __computer.clear()",
-        ])
-            .drop_columns(cols=[
-            f"{future_offset}",
-            f"{clean}",
-            f"{result}",
-        ]))
+                .update(formulas=[
+                    f"{future_offset} = __computer.compute(k)",
+                    f"{result} = {future_offset}.getFuture().get()",
+                    f"{clean} = __computer.clear()",
+                ])
+                .drop_columns(cols=[
+                    f"{future_offset}",
+                    f"{clean}",
+                    f"{result}",
+                ]))
     except Exception as e:
         raise DHError(e, "failed to complete the learn function.") from e
