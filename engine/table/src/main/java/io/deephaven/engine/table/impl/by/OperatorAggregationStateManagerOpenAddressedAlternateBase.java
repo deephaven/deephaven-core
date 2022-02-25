@@ -133,7 +133,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 onNextChunk(nextChunkSize);
-                if (doRehash(fullRehash, bc.rehashCredits, nextChunkSize)) {
+                while (doRehash(fullRehash, bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }
 
@@ -144,7 +144,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.setValue(Math.max(0, bc.rehashCredits.intValue() - entriesAdded));
+                bc.rehashCredits.setValue(bc.rehashCredits.intValue() - entriesAdded);
 
                 bc.resetSharedContexts();
             }
@@ -220,6 +220,11 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
 
         if (oldTableSize == tableSize) {
             return false;
+        }
+
+        // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
+        if (rehashCredits.intValue() > 0) {
+            rehashCredits.setValue(0);
         }
 
         if (fullRehash) {
