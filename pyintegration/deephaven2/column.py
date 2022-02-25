@@ -1,6 +1,8 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+""" This module implements the Column class and functions that work with Columns. """
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Sequence

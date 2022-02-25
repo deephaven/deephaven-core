@@ -75,8 +75,6 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         dt = to_datetime(f"{datetime_str} {timezone_str}")
         mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
         mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
-        print(nanos(mid_night_time_ny))
-        print(nanos(mid_night_time_pt))
         self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt)//10**9, -22*60*60 )
 
     def test_day_of_month(self):

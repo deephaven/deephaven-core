@@ -277,6 +277,9 @@ project(':docker-server').projectDir = file('docker/server')
 include(':docker-web')
 project(':docker-web').projectDir = file('docker/web')
 
+include(':docker-web-plugin-packager')
+project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
+
 include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')
 

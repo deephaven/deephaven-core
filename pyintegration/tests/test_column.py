@@ -5,14 +5,11 @@ import time
 import unittest
 from dataclasses import dataclass
 
-import jpy
-
 from deephaven2 import DHError, dtypes, new_table
+from deephaven2._jcompat import j_array_list
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
 from tests.testbase import BaseTestCase
-
-JArrayList = jpy.get_type("java.util.ArrayList")
 
 
 class ColumnTestCase(BaseTestCase):
@@ -22,9 +19,7 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(ColumnType.NORMAL, ColumnType(normal_type))
 
     def test_column_error(self):
-        jobj = JArrayList()
-        jobj.add(1)
-        jobj.add(-1)
+        jobj = j_array_list([1, -1])
         with self.assertRaises(DHError) as cm:
             bool_input_col = bool_col(name="Boolean", data=[True, 'abc'])
 
@@ -69,8 +64,7 @@ class ColumnTestCase(BaseTestCase):
         ]
         )
 
-        test_table = test_table \
-            .group_by(["StringColumn"])
+        test_table = test_table.group_by(["StringColumn"])
 
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
