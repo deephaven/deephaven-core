@@ -9,10 +9,11 @@ from typing import List
 import jpy
 
 from deephaven2 import DHError, dtypes
+from deephaven2._jcompat import j_array_list
+from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
-from deephaven2.dtypes import DType
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -21,7 +22,7 @@ _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 
 
-class Table:
+class Table(JObjectWrapper):
     """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
     Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
@@ -75,10 +76,14 @@ class Table:
         for i in range(j_col_list.size()):
             j_col = j_col_list.get(i)
             self._schema.append(Column(name=j_col.getName(),
-                                       data_type=DType.from_jtype(j_col.getDataType()),
-                                       component_type=DType.from_jtype(j_col.getComponentType()),
+                                       data_type=dtypes.from_jtype(j_col.getDataType()),
+                                       component_type=dtypes.from_jtype(j_col.getComponentType()),
                                        column_type=ColumnType(j_col.getColumnType())))
         return self._schema
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table
 
     def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
         """ Returns the first few rows of a table as a pipe-delimited string.
@@ -546,7 +551,7 @@ class Table:
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                j_sc_list = dtypes.j_array_list(sort_columns)
+                j_sc_list = j_array_list(sort_columns)
                 return Table(j_table=self.j_table.sort(j_sc_list))
             else:
                 return Table(j_table=self.j_table.sort(*order_by))
@@ -996,7 +1001,7 @@ class Table:
             DHError
         """
         try:
-            j_agg_list = dtypes.j_array_list([agg.j_agg for agg in aggs])
+            j_agg_list = j_array_list([agg.j_agg for agg in aggs])
             return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e

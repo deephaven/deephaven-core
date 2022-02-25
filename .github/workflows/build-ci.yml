@@ -513,6 +513,86 @@ jobs:
         run: |
           ./docker/registry/nginx-base/build/crane/retag.sh
 
+  web-plugin-packager:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get Semver
+        id: semver
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          semver=$(echo ${{ github.ref }} | tail -c +21)
+          echo "::set-output name=semver::$semver"
+
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/web-plugin-packager
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.9') }},value=latest
+            type=ref,event=branch
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+          cat gradle.properties
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+          driver: docker
+
+      - name: Login to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Dockerfile and context
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: build-web
+          arguments: --scan outputVersion docker-web-plugin-packager:prepareDocker
+          gradle-version: wrapper
+
+      - name: Get Deephaven Version
+        id: deephaven_version
+        run: |
+          echo "::set-output name=deephaven_version::$(cat build/version)"
+
+      - name: Docker build
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/web-plugin-packager/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
 ### Notes about `driver: docker`
 ###
 ### By default, the driver used is `docker-container`. This does not allow the Dockerfile to

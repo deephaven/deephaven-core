@@ -44,6 +44,9 @@ static_resources:
                         - match: # JS API lives in this path
                             prefix: "/jsapi"
                           route: { cluster: web }
+                        - match: # JS Plugins live at this path
+                            prefix: "/js-plugins"
+                          route: { cluster: web }
                         - match: # Notebook file storage at this path
                             prefix: "/notebooks"
                           route: { cluster: web }
