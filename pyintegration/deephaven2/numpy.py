@@ -37,10 +37,9 @@ def _to_column_name(name: str) -> str:
 def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition. """
     try:
-        if col_def.data_type in {dtypes.char, dtypes.string}:
-            return np.array(j_array)
-
-        if col_def.data_type == dtypes.DateTime:
+        if col_def.data_type.is_primitive:
+            np_array = np.frombuffer(j_array, col_def.data_type.np_type)
+        elif col_def.data_type == dtypes.DateTime:
             longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(j_array)
             np_long_array = np.frombuffer(longs, np.int64)
             np_array = np_long_array.view(col_def.data_type.np_type)

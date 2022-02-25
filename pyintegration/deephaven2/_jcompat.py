@@ -3,9 +3,11 @@
 #
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
-from typing import Any, Iterable, Dict, Set
+
+from typing import Any, Iterable, Dict, Set, TypeVar, Callable
 
 import jpy
+from deephaven2.dtypes import DType
 
 
 def is_java_type(obj: Any) -> bool:
@@ -71,3 +73,23 @@ def j_map_to_dict(m):
         r[k] = v
 
     return r
+
+
+T = TypeVar('T')
+R = TypeVar('R')
+
+
+def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
+    """  Constructs a Java Function<PyObject, Object> implementation from the given python callable `func`. The proper
+    Java object interpretation for the return of `func` must be provided.
+
+    Args:
+        func (Callable): Python callable or class instance with `apply` method (single argument)
+        dtype (DType): the DType of the return for `func`. This is really anticipated to be one
+                        of `java.lang.String`, `double`, 'float`, `long`, `int`, `short`, `byte`, or `boolean`,
+                        and any other value will result in `java.lang.Object` and likely be unusable.
+
+    Returns:
+        io.deephaven.integrations.python.PythonFunction instance, primarily intended for use in PivotWidgetBuilder usage
+    """
+    return jpy.get_type('io.deephaven.integrations.python.PythonFunction')(func, dtype.qst_type.clazz())
