@@ -1,0 +1,3 @@
+plugins {
+    id 'io.deephaven.common-conventions'
+}

@@ -1,5 +1,6 @@
 plugins {
   id 'java-library'
+  id 'io.deephaven.project.register'
 }
 
 description = 'The Deephaven client session library'
@@ -7,7 +8,10 @@ description = 'The Deephaven client session library'
 dependencies {
   api project(':qst')
   api project(':uri')
+
+  Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-api'
+
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
 
@@ -32,5 +36,3 @@ dependencies {
 test {
   useJUnitPlatform()
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'

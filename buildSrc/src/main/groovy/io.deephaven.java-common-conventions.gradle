@@ -1,0 +1,30 @@
+plugins {
+    id 'base'
+    id 'java'
+    id 'io.deephaven.java-repository-conventions'
+    id 'io.deephaven.java-classpath-conventions'
+    id 'io.deephaven.java-license-conventions'
+    id 'io.deephaven.java-header-conventions'
+    id 'io.deephaven.java-toolchain-conventions'
+    id 'io.deephaven.java-jar-conventions'
+}
+
+project.tasks.getByName('quick').dependsOn project.tasks.withType(JavaCompile)
+
+configurations.all({ c ->
+    // Make dynamic versions illegal.
+    c.dependencies.all({
+        Dependency dep ->
+            if (dep.version && dep.version.endsWith('+')) {
+                throw new GradleException("Dynamic versions not allowed ($dep found in $path)")
+            }
+    })
+    c.resolutionStrategy {
+        cacheChangingModulesFor 0, 'seconds'
+    }
+})
+
+tasks.named(LifecycleBasePlugin.CLEAN_TASK_NAME) {
+    Delete d ->
+        d.delete('out')
+}
