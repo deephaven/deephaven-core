@@ -62,6 +62,10 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault(
                     "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
                     true);
+    static boolean USE_BITMAP_MODIFIED_STATES_BUILDER =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "ChunkedOperatorAggregationHelper.useBitmapModifiedStatesBuilder",
+                    true);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
@@ -128,7 +132,13 @@ public class ChunkedOperatorAggregationHelper {
         final OperatorAggregationStateManager stateManager;
         final IncrementalOperatorAggregationStateManager incrementalStateManager;
         if (withView.isRefreshing()) {
-            if (USE_TYPED_STATE_MANAGER) {
+            if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+                stateManager = incrementalStateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                        reinterpretedKeySources,
+                        control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else if (USE_TYPED_STATE_MANAGER) {
                 stateManager = incrementalStateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         control.initialHashTableSize(withView), control.getMaximumLoadFactor(),
@@ -225,6 +235,8 @@ public class ChunkedOperatorAggregationHelper {
 
                         @Override
                         public void onUpdate(@NotNull final TableUpdate upstream) {
+                            incrementalStateManager.beginUpdateCycle();
+
                             final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
@@ -413,7 +425,11 @@ public class ChunkedOperatorAggregationHelper {
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
             emptiedStatesBuilder = RowSetFactory.builderRandom();
-            modifiedStatesBuilder = RowSetFactory.builderRandom();
+            if (USE_BITMAP_MODIFIED_STATES_BUILDER) {
+                modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.intValue());
+            } else {
+                modifiedStatesBuilder = RowSetFactory.builderRandom();
+            }
             reincarnatedStatesBuilder = RowSetFactory.builderRandom();
             modifiedOperators = new boolean[ac.size()];
 
@@ -2213,4 +2229,76 @@ public class ChunkedOperatorAggregationHelper {
     public static int chunkSize(long size) {
         return (int) Math.min(size, CHUNK_SIZE);
     }
+
+    /**
+     * The output RowSet of an aggregation is fairly special. It is always from zero to the number of output rows, and
+     * while modifying states we randomly add rows to it, potentially touching the same state many times. The normal
+     * index random builder does not guarantee those values are de-duplicated and requires O(lg n) operations for each
+     * insertion and building the RowSet.
+     *
+     * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number
+     * of result values) to build the RowSet. The memory usage is 1 bit per output position, vs. the standard builder is
+     * 128 bits per used value (though with the possibility of collapsing adjacent ranges when they are modified
+     * back-to-back). For random access patterns, this version will be more efficient; for friendly patterns the default
+     * random builder is likely more efficient.
+     *
+     * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key
+     * for the builder to the maximum output position without loss of fidelity.
+     */
+    private static class BitmapRandomBuilder implements RowSetBuilderRandom {
+        final int maxKey;
+        int firstUsed = Integer.MAX_VALUE;
+        int lastUsed = -1;
+        long[] bitset;
+
+        private BitmapRandomBuilder(int maxKey) {
+            this.maxKey = maxKey;
+        }
+
+        private static int rowKeyToArrayIndex(long rowKey) {
+            return (int) (rowKey / 64);
+        }
+
+        @Override
+        public WritableRowSet build() {
+            final RowSetBuilderSequential seqBuilder = RowSetFactory.builderSequential();
+            for (int ii = firstUsed; ii <= lastUsed; ++ii) {
+                long word = bitset[ii];
+                long rowKey = ii * 64L;
+
+                while (word != 0) {
+                    if ((word & 1) != 0) {
+                        seqBuilder.appendKey(rowKey);
+                    }
+                    rowKey++;
+                    word >>>= 1;
+                }
+            }
+            return seqBuilder.build();
+        }
+
+        @Override
+        public void addKey(long rowKey) {
+            if (rowKey >= maxKey) {
+                return;
+            }
+            int index = rowKeyToArrayIndex(rowKey);
+            if (bitset == null) {
+                final int maxSize = (maxKey + 63) / 64;
+                bitset = new long[Math.min(maxSize, (index + 1) * 2)];
+            } else if (index >= bitset.length) {
+                final int maxSize = (maxKey + 63) / 64;
+                bitset = Arrays.copyOf(bitset, Math.min(maxSize, Math.max(bitset.length * 2, index + 1)));
+            }
+            bitset[index] |= 1L << rowKey;
+            firstUsed = Math.min(index, firstUsed);
+            lastUsed = Math.max(index, lastUsed);
+        }
+
+        @Override
+        public void addRange(long firstRowKey, long lastRowKey) {
+            throw new UnsupportedOperationException();
+        }
+    }
 }
+

@@ -84,6 +84,7 @@ spotless {
                 '**/*Object*.java',
                 '**/*StateManager.java',
                 '**/incagg/gen/*.java',
+                '**/incopenagg/gen/*.java',
                 '**/staticagg/gen/*.java',
                 '**/staticopenagg/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
