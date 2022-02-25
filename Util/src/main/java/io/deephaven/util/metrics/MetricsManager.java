@@ -157,6 +157,9 @@ public class MetricsManager {
                 for (final ArrayType threadCounters : perThreadCounters) {
                     clear(threadCounters, size);
                 }
+                for (final ArrayType pendingCounters : pendingPerThreadCounters) {
+                    clear(pendingCounters, size);
+                }
             }
         }
     }

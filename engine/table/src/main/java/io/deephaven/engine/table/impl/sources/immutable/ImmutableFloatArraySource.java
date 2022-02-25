@@ -226,6 +226,18 @@ public class ImmutableFloatArraySource extends AbstractDeferredGroupingColumnSou
         // we don't track previous values, so we don't care to do any work
     }
 
+    // region getArray
+    public float [] getArray() {
+        return data;
+    }
+    // endregion getArray
+
+    // region setArray
+    public void setArray(float [] array) {
+        data = array;
+    }
+    // endregion setArray
+
     // region reinterpret
     // endregion reinterpret
 }
