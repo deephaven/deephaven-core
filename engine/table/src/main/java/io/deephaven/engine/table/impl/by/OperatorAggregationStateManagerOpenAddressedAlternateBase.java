@@ -144,7 +144,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.setValue(bc.rehashCredits.intValue() - entriesAdded);
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }
