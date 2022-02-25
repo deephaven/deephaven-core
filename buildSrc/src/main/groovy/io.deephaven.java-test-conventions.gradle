@@ -43,14 +43,6 @@ project.tasks.withType(Test).all { Test t ->
             maxParallelForks = 4
         }
 
-        if (!forkEvery) {
-            // NB: This comment may be outdated:
-            // throw away jvms after 32 tests have run on them.
-            // this is sadly needed as some of the engine tests seem to have a leak;
-            // tests which can pass locally in IDE on 2g can't survive in CI w/ 3g
-            forkEvery = 32
-        }
-
         if (findProperty('shortTests') == 'true') {
             systemProperty 'TstUtils.shortTests', 'true'
         }
