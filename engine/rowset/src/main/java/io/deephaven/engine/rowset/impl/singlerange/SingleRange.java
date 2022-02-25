@@ -768,7 +768,7 @@ public abstract class SingleRange implements OrderedLongSet {
             }
             b.appendRange(startPos, endPos);
         }
-        return b.getTreeIndexImpl();
+        return b.getOrderedLongSet();
     }
 
     public final RspBitmap toRsp() {

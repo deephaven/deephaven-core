@@ -233,7 +233,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             }
         }
         try (final RowSet chunkDestinationsShifted =
-                new WritableRowSetImpl(chunkDestinationBuilder.getTreeIndexImpl())) {
+                new WritableRowSetImpl(chunkDestinationBuilder.getOrderedLongSet())) {
             stepShiftedDestinations.insert(chunkDestinationsShifted);
         }
     }
@@ -322,8 +322,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
-                                           @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
-                                           final int start, final int length, final long destination) {
+            @NotNull final LongChunk<OrderedRowKeys> rowKeysToAdd,
+            final int start, final int length, final long destination) {
         final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
             return;
@@ -337,7 +337,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     private static void accumulateToRowSet(@NotNull final ObjectArraySource<WritableRowSet> rowSetColumn,
-                                           @NotNull final RowSet rowSetToAdd, final long destination) {
+            @NotNull final RowSet rowSetToAdd, final long destination) {
         final WritableRowSet rowSet = rowSetColumn.getUnsafe(destination);
         if (rowSet == NONEXISTENT_TABLE_ROW_SET) {
             return;

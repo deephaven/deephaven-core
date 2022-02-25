@@ -6,7 +6,7 @@
   "addRange": ":param start: long\n:param endInclusive: long",
   "appendKey": ":param key: long",
   "appendRange": ":param start: long\n:param endInclusive: long",
-  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.rsp.RspBitmap"
+  "getOrderedLongSet": ":return: io.deephaven.engine.rowset.impl.rsp.RspBitmap"
  },
  "path": "io.deephaven.engine.rowset.impl.rsp.RspBitmap.BuilderRandom",
  "typeName": "class"
