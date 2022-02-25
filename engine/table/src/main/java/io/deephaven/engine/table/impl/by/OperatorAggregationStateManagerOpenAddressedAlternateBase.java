@@ -44,7 +44,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             int tableSize,
             double maximumLoadFactor) {
         this.tableSize = tableSize;
-        Require.inRange(tableSize, 0, MAX_TABLE_SIZE, "tableSize");
+        Require.inRange(tableSize, "tableSize", MAX_TABLE_SIZE + 1, "MAX_TABLE_SIZE + 1");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
 
