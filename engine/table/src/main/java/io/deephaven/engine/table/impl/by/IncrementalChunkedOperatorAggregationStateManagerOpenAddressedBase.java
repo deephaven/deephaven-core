@@ -136,6 +136,15 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
+    public void beginUpdateCycle() {
+        // at the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
+        // the alternate table
+        if (rehashPointer > 0) {
+            rehashInternalPartial(CHUNK_SIZE);
+        }
+    }
+
+    @Override
     public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources,
             MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions,
             final WritableIntChunk<RowKeys> reincarnatedPositions) {

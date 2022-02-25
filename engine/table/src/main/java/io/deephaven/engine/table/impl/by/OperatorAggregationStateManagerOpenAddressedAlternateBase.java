@@ -125,12 +125,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             final ColumnSource<?>[] buildSources,
             final boolean fullRehash,
             final BuildHandler buildHandler) {
-        // do a little bit of rehash work on every build, whether or not we are adding anything we'd like to
-        // eventually get rid of our alternate table
-        if (doRehash(fullRehash, bc.rehashCredits, CHUNK_SIZE)) {
-            migrateFront();
-        }
-
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];

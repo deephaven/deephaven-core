@@ -235,6 +235,8 @@ public class ChunkedOperatorAggregationHelper {
 
                         @Override
                         public void onUpdate(@NotNull final TableUpdate upstream) {
+                            incrementalStateManager.beginUpdateCycle();
+
                             final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
