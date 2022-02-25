@@ -1,6 +1,7 @@
 import io.deephaven.tools.License
 
 plugins {
+    id 'io.deephaven.project.register'
     id 'com.bmuschko.docker-remote-api'
 }
 
