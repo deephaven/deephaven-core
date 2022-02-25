@@ -58,10 +58,10 @@ pyMods.each {
 }
 
 include(':configs')
-project(':configs').projectDir = file('projects/configs')
+project(':configs').projectDir = file('props/configs')
 
 include(':test-configs')
-project(':test-configs').projectDir = file('projects/test-configs')
+project(':test-configs').projectDir = file('props/test-configs')
 
 include 'combined-javadoc'
 
