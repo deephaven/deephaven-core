@@ -1,8 +1,12 @@
 package io.deephaven.server.test;
 
+import com.google.flatbuffers.DoubleVector;
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.flatbuffers.LongVector;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
@@ -30,19 +34,11 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerInterceptor;
-import org.apache.arrow.flight.AsyncPutListener;
-import org.apache.arrow.flight.CallHeaders;
-import org.apache.arrow.flight.CallStatus;
-import org.apache.arrow.flight.Criteria;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightClientMiddleware;
-import org.apache.arrow.flight.FlightDescriptor;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.flight.Location;
-import org.apache.arrow.flight.Ticket;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -64,10 +60,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
@@ -384,6 +377,133 @@ public abstract class FlightMessageRoundTripTest {
             });
 
             Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        }
+    }
+
+    @Test
+    public void testDoExchangeSnapshot() {
+        final String staticTableName = "flightInfoTest";
+        final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+            // stuff table into the scope
+            scriptSession.setVariable(staticTableName, table);
+
+            // build up a snapshot request
+            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+
+            FlightDescriptor fd = FlightDescriptor.command(magic);
+
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+                final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+                int optOffset =
+                        BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
+                                false, 1000);
+
+                final int ticOffset =
+                        BarrageSnapshotRequest.createTicketVector(metadata,
+                                ScopeTicketHelper.nameToBytes(staticTableName));
+                BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+                BarrageSnapshotRequest.addColumns(metadata, 0);
+                BarrageSnapshotRequest.addViewport(metadata, 0);
+                BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+                BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+                metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+                final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+                final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+                wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                        wrapper,
+                        0x6E687064, // the numerical representation of the ASCII "dphn".
+                        BarrageMessageType.BarrageSnapshotRequest,
+                        innerOffset));
+
+                // extract the bytes and package them in an ArrowBuf for transmission
+                byte[] msg = wrapper.sizedByteArray();
+                ArrowBuf data = allocator.buffer(msg.length);
+                data.writeBytes(msg);
+
+                erw.getWriter().putMetadata(data);
+                erw.getWriter().completed();
+
+                // read everything from the server
+                while (erw.getReader().next()) {
+                    // NOP
+                }
+
+                // at this point should have the data, verify it matches the created table
+                assertEquals(erw.getReader().getRoot().getRowCount(), table.size());
+
+                // check the values against the source table
+                org.apache.arrow.vector.IntVector iv =
+                        (org.apache.arrow.vector.IntVector) erw.getReader().getRoot().getVector(0);
+                for (int i = 0; i < table.size(); i++) {
+                    assertEquals("int match:", table.getColumn(0).get(i), iv.get(i));
+                }
+                org.apache.arrow.vector.Float8Vector dv =
+                        (org.apache.arrow.vector.Float8Vector) erw.getReader().getRoot().getVector(1);
+                for (int i = 0; i < table.size(); i++) {
+                    assertEquals("double match: ", table.getColumn(1).get(i), dv.get(i));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Test
+    public void testDoExchangeProtocol() {
+        final String staticTableName = "flightInfoTest";
+        final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+            // stuff table into the scope
+            scriptSession.setVariable(staticTableName, table);
+
+            // build up a snapshot request incorrectly
+            byte[] empty = new byte[0];
+
+            FlightDescriptor fd = FlightDescriptor.command(empty);
+
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd)) {
+
+                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                    erw.getReader().next();
+                });
+
+                String expectedMessage = "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd";
+                String actualMessage = exception.getMessage();
+
+                assertTrue(actualMessage.contains(expectedMessage));
+            }
+
+            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+            fd = FlightDescriptor.command(magic);
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+                byte[] msg = new byte[0];
+                ArrowBuf data = allocator.buffer(msg.length);
+                data.writeBytes(msg);
+
+                erw.getWriter().putMetadata(data);
+                erw.getWriter().completed();
+
+                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                    erw.getReader().next();
+                });
+
+                String expectedMessage = "failed to receive Barrage request metadata";
+                String actualMessage = exception.getMessage();
+
+                assertTrue(actualMessage.contains(expectedMessage));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
