@@ -376,7 +376,7 @@ data_frame = pd.DataFrame(
 def agg_list(data):
     d = {}
     d['Sum'] = np.sum(data['C'])
-    d['Min'] = np.minimum(data['C'])
+    d['Min'] = np.amin(data['C'])
     d['Std'] = np.std(data['C'])
     d['WAvg'] = np.average(data['C'], weights=data['B'])
     return pd.Series(d)
