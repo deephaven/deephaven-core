@@ -97,6 +97,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
             onReleaseAll();
             releasedSize = fullSet.size();
             UpdateGraphProcessor.DEFAULT.removeSource(this);
+	    listener = null;
         }
 
         return fullSet.subSetByPositionRange(0, releasedSize).intersect(selection);

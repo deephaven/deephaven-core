@@ -12,13 +12,14 @@ services:
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
       - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
       # For remote debugging switch the line above for the one below (and also change the ports below)
-      # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      #- JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xmx16g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+# -XX:Tier4CompileThreshold=1000 -XX:+PrintCompilation
 
 
     expose:
       - '8080'
-#    ports:
-#      - '5005:5005'        # For remote debugging (change if using different port)
+    ports:
+      - '5005:5005'        # For remote debugging (change if using different port)
 
     # Note: using old-style volume mounts, so that the directories get created if they don't exist
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
@@ -28,7 +29,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4.0'
+          cpus: '8.0'
+          memory: 16500M
+        reservations:
+          memory: 16000M
 
     # Allows the querying of this process jinfo/jmap
     # docker-compose exec server jmap -heap 1
