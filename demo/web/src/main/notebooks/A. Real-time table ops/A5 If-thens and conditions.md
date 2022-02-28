@@ -26,9 +26,9 @@ This query creates a new column `IsEven` in the `daily_data` table.
 
 ### Custom methods for ternary conditions
 
-You may want to use a custom method for your condition for your ternary. To do this, you simply use the method instead of the hardcoded conditional. There is a catch; you do need to cast the method to `(Boolean)` for Deephaven to recognize it properly.
+You may want to use a custom method for your condition for your ternary. To do this, you simply use the method instead of the hardcoded conditional. There is a catch - you need to cast the method to `(Boolean)` for Deephaven to recognize it properly.
 
-Let's use our `is_weekday` method that we used when filtering and decorating our data in a ternary statement to create a new column that tells us if the day of the week is a weekday or not.
+Let's use the `is_weekday` method in a ternary statement to create a new column that tells us if a given day falls during the week or weekend.
 
 ```python
 def is_weekday(day_of_week):
