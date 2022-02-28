@@ -57,3 +57,17 @@ def j_properties(d: Dict = None) -> jpy.JType:
             value = ''
         r.setProperty(key, value)
     return r
+
+
+def j_map_to_dict(m):
+    """  Converts a java map to a python dictionary. """
+    if not m:
+        return None
+
+    r = {}
+    for e in m.entrySet().toArray():
+        k = e.getKey()
+        v = e.getValue()
+        r[k] = v
+
+    return r

@@ -3,12 +3,7 @@ import deephaven.ConsumeKafka as ck
 import deephaven.ProduceKafka as pk
 import deephaven.Types as dh
 from deephaven import Aggregation as agg, as_list
-from deephaven import PythonFunction as pyfun
 import deephaven.TableManipulation.WindowCheck as wck
-import jpy
-
-def tmapfun(x):
-    return pyfun(x, 'io.deephaven.engine.table.Table')
 
 server_name = 'mysql'
 db_name='shop'

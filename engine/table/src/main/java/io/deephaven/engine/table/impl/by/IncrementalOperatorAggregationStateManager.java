@@ -13,6 +13,13 @@ import org.apache.commons.lang3.mutable.MutableInt;
 public interface IncrementalOperatorAggregationStateManager extends OperatorAggregationStateManager {
     SafeCloseable makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 
+    /**
+     * Allow our managers to do a little bit of work at the very start of the update cycle.  We have this method so that
+     * even if nothing is to be done, we rehash a little bit on each cycle to avoid always rehashing when there is other
+     * work to be done.
+     */
+    void beginUpdateCycle();
+
     void startTrackingPrevValues();
 
     void setRowSize(int outputPosition, long size);

@@ -1,3 +1,7 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 configurations {
     compile.extendsFrom fishConfig, commonsLang3
     testCompile.extendsFrom fishIoTest

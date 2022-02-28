@@ -28,31 +28,34 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
         this.mainKeySource0.ensureCapacity(tableSize);
     }
 
-    @Override
+    private int nextTableLocation(int tableLocation) {
+        return (tableLocation + 1) & (tableSize - 1);
+    }
+
     protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
             while (true) {
-                int tableState = mainOutputPosition.getUnsafe(tableLocation);
-                if (tableState == EMPTY_OUTPUT_POSITION) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = nextOutputPosition.getAndIncrement();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    outputPositions.set(chunkPosition, tableState);
+                    outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
+                    tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
                 }
             }
         }
@@ -64,8 +67,7 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
     }
 
     @Override
-    protected void rehashInternal() {
-        final int oldSize = tableSize >> 1;
+    protected void rehashInternalFull(final int oldSize) {
         final Object[] destKeyArray0 = new Object[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_OUTPUT_POSITION);
@@ -74,25 +76,25 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
         final int [] originalStateArray = mainOutputPosition.getArray();
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            if (originalStateArray[sourceBucket] == EMPTY_OUTPUT_POSITION) {
+            final int currentStateValue = originalStateArray[sourceBucket];
+            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
                 continue;
             }
             final Object k0 = originalKeyArray0[sourceBucket];
             final int hash = hash(k0);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destKeyArray0[tableLocation] = k0;
-                    destState[tableLocation] = originalStateArray[sourceBucket];
-                    if (sourceBucket != tableLocation) {
-                        outputPositionToHashSlot.set(destState[tableLocation], tableLocation);
+                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    if (sourceBucket != destinationTableLocation) {
+                        outputPositionToHashSlot.set(currentStateValue, destinationTableLocation);
                     }
                     break;
-                } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
                 }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
             }
         }
     }
@@ -102,7 +104,7 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
         final Object k0 = key;
         int hash = hash(k0);
         int tableLocation = hashToTableLocation(hash);
-        final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+        final int firstTableLocation = tableLocation;
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
@@ -111,8 +113,8 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 return positionValue;
             }
-            Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-            tableLocation = (tableLocation + 1) & (tableSize - 1);
+            tableLocation = nextTableLocation(tableLocation);
+            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
         }
     }
 }

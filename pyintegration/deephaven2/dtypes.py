@@ -68,12 +68,12 @@ char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np
 int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
 int64 = long
-int_ = int32
-float_ = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
-single = float_
-float32 = float_
-double = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
-float64 = double
+int_ = long
+float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
+single = float32
+float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
+double = float64
+float_ = float64
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
 BigDecimal = DType(j_name="java.math.BigDecimal")
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")

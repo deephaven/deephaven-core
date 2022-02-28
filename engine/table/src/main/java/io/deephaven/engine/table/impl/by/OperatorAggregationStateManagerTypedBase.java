@@ -14,7 +14,6 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.util.QueryConstants;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 

@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+    id 'io.deephaven.java-jacoco-conventions'
+}
+
+def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
+    jar.from project.sourceSets.test.output
+    jar.classifier = 'test'
+}
+
+configurations {
+    testOutput.extendsFrom testRuntimeClasspath
+}
+
+artifacts {
+    testOutput testJar
+    archives testJar
+}
+
+project.tasks.withType(Test).all { Test t ->
+    t.with {
+        t.defaultCharacterEncoding = 'UTF-8'
+
+        onlyIf { TestTools.shouldRunTests(project) }
+
+        useJUnit()
+
+        new File("$rootDir/tmp/workspace".toString()).mkdirs()
+        new File("$rootDir/tmp/logs".toString()).mkdirs()
+
+        // pass -PforceTest=true to run test again after they've passed once,
+        // and input source has not changed (i.e. invalidate caching)
+        if (findProperty('forceTest') == 'true') {
+            outputs.upToDateWhen { false }
+        }
+
+        enableAssertions = true
+        if (!maxHeapSize) {
+            maxHeapSize = '3g'
+        }
+
+        if (!maxParallelForks) {
+            maxParallelForks = 4
+        }
+
+        if (findProperty('shortTests') == 'true') {
+            systemProperty 'TstUtils.shortTests', 'true'
+        }
+        systemProperty 'Configuration.rootFile', 'dh-tests.prop'
+        systemProperty 'devroot', "$rootDir"
+        systemProperty 'workspace', "$rootDir/tmp/workspace"
+        systemProperty 'configuration.quiet', 'true'
+
+        if (findProperty('debugCITests') == 'true') {
+            Map<CharSequence, Long> times = [:]
+            // TODO IDO-605: consider discovering the pid of the test executor, so we can also monitor / print RAM usage,
+            //   in order to detect which tests are leaking RAM
+            t.beforeTest {
+                TestDescriptor d ->
+                    String key = "$t.path:$d.className.$d.name".toString()
+                    times[key] = System.currentTimeMillis()
+                    println "Starting $key"
+            }
+            t.afterTest {
+                TestDescriptor d ->
+                    String key = "$t.path:$d.className.$d.name".toString()
+                    long diff = System.currentTimeMillis() - times[key]
+                    println "$diff ms spent on $key"
+            }
+        }
+
+        exclude 'io/deephaven/**/NoTest*'
+    }
+}

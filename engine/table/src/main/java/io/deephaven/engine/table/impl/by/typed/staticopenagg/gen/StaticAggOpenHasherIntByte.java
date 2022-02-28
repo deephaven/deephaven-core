@@ -39,7 +39,10 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
         this.mainKeySource1.ensureCapacity(tableSize);
     }
 
-    @Override
+    private int nextTableLocation(int tableLocation) {
+        return (tableLocation + 1) & (tableSize - 1);
+    }
+
     protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
         final ByteChunk<Values> keyChunk1 = sourceKeyChunks[1].asByteChunk();
@@ -48,25 +51,25 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
             final int k0 = keyChunk0.get(chunkPosition);
             final byte k1 = keyChunk1.get(chunkPosition);
             final int hash = hash(k0, k1);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
             while (true) {
-                int tableState = mainOutputPosition.getUnsafe(tableLocation);
-                if (tableState == EMPTY_OUTPUT_POSITION) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (outputPosition == EMPTY_OUTPUT_POSITION) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    final int outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = nextOutputPosition.getAndIncrement();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
-                    outputPositions.set(chunkPosition, tableState);
+                    outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
+                    tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
                 }
             }
         }
@@ -79,8 +82,7 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
     }
 
     @Override
-    protected void rehashInternal() {
-        final int oldSize = tableSize >> 1;
+    protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
         final byte[] destKeyArray1 = new byte[tableSize];
         final int[] destState = new int[tableSize];
@@ -92,27 +94,27 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
         final int [] originalStateArray = mainOutputPosition.getArray();
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            if (originalStateArray[sourceBucket] == EMPTY_OUTPUT_POSITION) {
+            final int currentStateValue = originalStateArray[sourceBucket];
+            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];
             final byte k1 = originalKeyArray1[sourceBucket];
             final int hash = hash(k0, k1);
-            int tableLocation = hashToTableLocation(hash);
-            final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[tableLocation] == EMPTY_OUTPUT_POSITION) {
-                    destKeyArray0[tableLocation] = k0;
-                    destKeyArray1[tableLocation] = k1;
-                    destState[tableLocation] = originalStateArray[sourceBucket];
-                    if (sourceBucket != tableLocation) {
-                        outputPositionToHashSlot.set(destState[tableLocation], tableLocation);
+                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destKeyArray1[destinationTableLocation] = k1;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    if (sourceBucket != destinationTableLocation) {
+                        outputPositionToHashSlot.set(currentStateValue, destinationTableLocation);
                     }
                     break;
-                } else {
-                    Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-                    tableLocation = (tableLocation + 1) & (tableSize - 1);
                 }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
             }
         }
     }
@@ -124,7 +126,7 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
         final byte k1 = TypeUtils.unbox((Byte)ka[1]);
         int hash = hash(k0, k1);
         int tableLocation = hashToTableLocation(hash);
-        final int lastTableLocation = (tableLocation + tableSize - 1) & (tableSize - 1);
+        final int firstTableLocation = tableLocation;
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
@@ -133,8 +135,8 @@ final class StaticAggOpenHasherIntByte extends StaticChunkedOperatorAggregationS
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                 return positionValue;
             }
-            Assert.neq(tableLocation, "tableLocation", lastTableLocation, "lastTableLocation");
-            tableLocation = (tableLocation + 1) & (tableSize - 1);
+            tableLocation = nextTableLocation(tableLocation);
+            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
         }
     }
 }

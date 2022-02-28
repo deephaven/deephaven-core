@@ -49,7 +49,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: allJavadoc
-          arguments: --scan allJavadoc
+          arguments: --scan combined-javadoc:allJavadoc
           gradle-version: wrapper
 
       - name: Upload Javadocs
@@ -57,14 +57,14 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: javadocs
-          path: 'build/docs/javadoc/'
+          path: 'combined-javadoc/build/docs/javadoc/'
 
       - name: Deploy Javadoc
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: burnett01/rsync-deployments@4.1
         with:
           switches: -avzr --delete
-          path: build/docs/javadoc/
+          path: combined-javadoc/build/docs/javadoc/
           remote_path: deephaven-core/javadoc/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}

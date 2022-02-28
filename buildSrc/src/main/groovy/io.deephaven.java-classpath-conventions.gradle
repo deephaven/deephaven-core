@@ -1,0 +1,96 @@
+plugins {
+    id 'base'
+    id 'java'
+}
+
+// TODO(deephaven-core#1162): Adopt java-platform to manage versions
+ext {
+    depAnnotations = 'com.intellij:annotations:5.1'
+    depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
+    depCommonsCodec = 'commons-codec:commons-codec:1.9'
+    depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
+    depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
+    depCommonsNet = 'commons-net:commons-net:3.2'
+    depCommonsEmail = 'org.apache.commons:commons-email:1.4'
+    depCommonsIo = 'commons-io:commons-io:2.5'
+    depJdom2 = 'org.jdom:jdom2:2.0.6'
+    depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
+}
+
+configurations {
+
+    commonsIo
+    commonsCsv.extendsFrom commonsIo
+    jdom
+    httpClient
+    math3
+    jama.extendsFrom math3, commonsCli
+    dxCompile
+    dxRuntime.extendsFrom dxCompile
+    mockrunner
+    junit
+
+    fishBase
+    fishIo.extendsFrom fishBase
+    fishDataStructure.extendsFrom fishIo
+    fishConfig.extendsFrom fishDataStructure
+    fishDataGenerator.extendsFrom jdom
+    fishNet.extendsFrom fishIo
+    fishNumerics.extendsFrom fishBase
+    fishUtil.extendsFrom fishConfig
+    fishStats.extendsFrom fishUtil
+    fishBaseTest.extendsFrom junit
+    fishIoTest.extendsFrom fishBaseTest
+
+    dhNumerics.extendsFrom fishNumerics, jama
+    dhUtil.extendsFrom commonsCli, commonsIo, commonsCsv, commonsLang3, commonsText, fishUtil, fishStats, jdom
+    dhPlot.extendsFrom dhUtil
+    dhBenchmarkSupport.extendsFrom fishData, commonsCsv
+    dhIntegrations.extendsFrom math3
+}
+
+dependencies {
+
+    // First, one-off configurations for stuff we need "here and there"
+    jdom 'org.jdom:jdom2:2.0.6'
+    httpClient 'org.apache.httpcomponents:httpclient:4.5.6'
+    commonsLang3 'org.apache.commons:commons-lang3:3.9'
+    commonsText 'org.apache.commons:commons-text:1.9'
+    commonsIo 'commons-io:commons-io:2.6'
+    commonsCli 'commons-cli:commons-cli:1.4'
+    math3 'org.apache.commons:commons-math3:3.6.1'
+    jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
+    mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
+    commonsCsv 'org.apache.commons:commons-csv:1.4'
+    junit fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
+
+    // Now, all the various fish libs we depend on, with inherited dependencies matching
+    // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
+    // having to maintain this...
+    fishBase project(':Base'),
+            'net.sf.trove4j:trove4j:3.0.3',
+            'com.intellij:annotations:5.1',
+            'commons-codec:commons-codec:1.11',
+            'org.apache.commons:commons-compress:1.18'
+
+    fishIo project(':IO')
+
+    fishDataStructure project(':DataStructures')
+
+    fishConfig project(':Configuration')
+
+    fishUtil project(':FishUtil')
+
+    fishStats project(':Net'),
+            project(':Stats'),
+            'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
+
+    fishBaseTest project(path: ':Base', configuration: 'tests')
+
+    fishIoTest project(path: ':IO', configuration: 'tests')
+
+    // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
+    dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0',
+            // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+            'com.fasterxml.jackson.core:jackson-core:2.9.8'
+}

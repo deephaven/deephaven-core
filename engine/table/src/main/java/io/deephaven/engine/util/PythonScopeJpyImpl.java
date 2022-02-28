@@ -188,16 +188,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
         } else if (pyObject.isCallable()) {
             return wrapCallable(pyObject);
         } else if (pyObject.isConvertible()) {
-            Object objValue = pyObject.getObjectValue();
-            // workaround a JPY issue with determining the correct Java type a Python 'int' should be
-            // mapped to (int or long) without causing an implicit overflow
-            if (objValue instanceof Integer) {
-                long longValue;
-                if ((longValue = pyObject.getLongValue()) != (int) objValue) {
-                    return longValue;
-                }
-            }
-            return objValue;
+            return pyObject.getObjectValue();
         } else {
             return pyObject;
         }
