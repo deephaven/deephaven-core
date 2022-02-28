@@ -538,18 +538,18 @@ class Table(JObjectWrapper):
 
     def sort(self, order_by: List[str], order: List[SortDirection] = []) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
-                order_by column(s) (2) where rows are sorted in the order defined by the order argument.
+        order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
-        .       Args:
-                    order_by (List[str]): the names of the columns to be sorted on
-                    order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
-                        is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
+        Args:
+            order_by (List[str]): the names of the columns to be sorted on
+            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
+                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
 
-                Returns:
-                    a new table
+        Returns:
+            a new table
 
-                Raises:
-                    DHError
+        Raises:
+            DHError
         """
 
         def sort_column(col, dir_):

@@ -15,7 +15,7 @@ _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 
 
 class Aggregation:
-    """A Aggregation object represents an aggregation operation.
+    """An Aggregation object represents an aggregation operation.
 
     Note: It should not be instantiated directly by user code but rather through the static methods on the class.
     """
@@ -97,7 +97,7 @@ def avg(cols: List[str] = None) -> Aggregation:
 
 
 def count_(col: str) -> Aggregation:
-    """Create a Count aggregation. It can not be used in Table agg_all_by.
+    """Create a Count aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
         col (str): the column to hold the counts of each distinct group
