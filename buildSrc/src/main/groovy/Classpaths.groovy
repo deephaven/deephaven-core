@@ -218,6 +218,6 @@ class Classpaths {
 
     static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + 'grpc-bom' + ":" + GRPC_VERSION))
+        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":grpc-bom:" + GRPC_VERSION))
     }
 }

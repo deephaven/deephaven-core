@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Deephaven',
+                'Implementation-Version': project.version,
+                'Provider': 'gradle'
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    Jar jar ->
+        // Ensure that the JARs are binary stable regardless of when they were built
+        jar.preserveFileTimestamps = false
+        jar.reproducibleFileOrder = true
+}
