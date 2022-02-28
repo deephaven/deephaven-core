@@ -1,0 +1,191 @@
+import groovy.json.JsonBuilder
+
+plugins {
+  id 'java'
+}
+
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+
+def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+
+if (languageLevel > compilerVersion) {
+  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+}
+if (languageLevel < 8) {
+  throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
+}
+if (testLanguageLevel < 8) {
+  throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 8")
+}
+if (runtimeVersion < languageLevel) {
+  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+}
+if (testRuntimeVersion < testLanguageLevel) {
+  throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to testLanguageLevel")
+}
+
+java {
+  toolchain {
+    // Note: even though we are being explicit with our compilers / launchers via task type, we want to set up the
+    // plugin with our compiler version.
+    languageVersion = JavaLanguageVersion.of(compilerVersion)
+  }
+}
+
+def compiler = javaToolchains.compilerFor {
+  languageVersion = JavaLanguageVersion.of(compilerVersion)
+} as Provider<JavaCompiler>
+
+def runtimeLauncher = javaToolchains.launcherFor {
+  languageVersion = JavaLanguageVersion.of(runtimeVersion)
+} as Provider<JavaLauncher>
+
+def testRuntimeLauncher = javaToolchains.launcherFor {
+  languageVersion = JavaLanguageVersion.of(testRuntimeVersion)
+} as Provider<JavaLauncher>
+
+def groovyCompilerLauncher = javaToolchains.launcherFor {
+  languageVersion = JavaLanguageVersion.of(compilerVersion)
+} as Provider<JavaLauncher>
+
+tasks.withType(JavaCompile).configureEach {
+  javaCompiler.set compiler
+
+  options.fork = true
+  options.forkOptions.memoryMaximumSize = '2G'
+  options.encoding = 'UTF-8'
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+
+  def isTestCompile = name == 'compileTestJava'
+  if (isTestCompile) {
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+    }
+  } else {
+    if (compilerVersion != languageLevel) {
+      options.release.set languageLevel
+    }
+  }
+}
+
+def tier4CompilationExcludes = [
+  // All ChunkedSumOperators
+  'io.deephaven.engine.table.impl.by.BigDecimalChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.BigIntegerChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.BooleanChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.ByteChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.CharChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.DoubleChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.FloatChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.IntChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.LongChunkedSumOperator':['addChunk'],
+  'io.deephaven.engine.table.impl.by.ShortChunkedSumOperator':['addChunk'],
+
+  // All PercentileTypeMedianHelpers
+  'io.deephaven.engine.table.impl.by.ssmpercentile.BooleanPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.BytePercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.CharPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.DoublePercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.FloatPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.IntPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.LongPercentileTypeMedianHelper':['setResult'],
+  'io.deephaven.engine.table.impl.by.ssmpercentile.ShortPercentileTypeMedianHelper':['setResult'],
+
+  'io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator':['addChunk'],
+
+  // All types emitted by ReplicateHashTable
+  'io.deephaven.engine.table.impl.IncrementalChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.RightIncrementalChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.StaticChunkedAsOfJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.StaticChunkedNaturalJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.SymbolTableCombiner':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.LeftOnlyIncrementalChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.RightIncrementalChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.StaticChunkedCrossJoinStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+  'io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManager':['addToIndex', 'buildTable', 'decorationProbe'],
+]
+def createCompilerDirectives = tasks.register('createCompilerDirectives') {
+  def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
+  it.outputs.file(compilerDirectivesFile)
+
+  doFirst {
+    def excludesAsList = []
+    tier4CompilationExcludes.forEach({type, methods ->
+      methods.forEach {method ->
+        excludesAsList += "${type}::${method}"
+      }
+    })
+    def builder = new JsonBuilder([{
+       match excludesAsList
+       c2 {
+         Exclude true
+       }
+    }])
+
+    compilerDirectivesFile.get().asFile.text = builder.toPrettyString()
+  }
+}
+
+def c2ExcludesJvmArgs = { String c2ExcludesFile ->
+  return [
+          '-XX:+UnlockDiagnosticVMOptions',
+          "-XX:CompilerDirectivesFile=${c2ExcludesFile}",
+  ]
+}
+
+// Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
+def devJvmArgs = [
+//  '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
+//  '-XX:+PrintFlagsFinal',           // this optional line makes it easier to explore the final values for compiler args
+//  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
+]
+
+tasks.withType(JavaExec).configureEach {
+  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+  inputs.files c2ExcludesFile
+  javaLauncher.set runtimeLauncher
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+}
+
+tasks.withType(Test).configureEach {
+  def c2ExcludesFile = createCompilerDirectives.get().outputs.files
+  inputs.files c2ExcludesFile
+
+  javaLauncher.set testRuntimeLauncher
+  jvmArgs += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path) + devJvmArgs
+}
+
+tasks.withType(GroovyCompile).configureEach {
+  javaLauncher.set groovyCompilerLauncher
+}
+
+plugins.withType(ApplicationPlugin) {
+  applicationDistribution.into('lib') {
+    from(createCompilerDirectives.get().outputs.files)
+  }
+}
+tasks.withType(CreateStartScripts).configureEach {
+  def unixStartScript = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
+  inputs.files unixStartScript
+  unixStartScriptGenerator.template = unixStartScript
+  // For now we only modify the *nix script, as the windows .bat file doesn't seem to work properly anyway,
+  // and we don't yet have a requirement for it.
+  windowsStartScriptGenerator.template = resources.text.fromString("echo Sorry, Windows .bat is not currently supported, please use WSL2\nexit 1")
+
+//  def windowsStartScript = resources.text.fromUri(getClass().classLoader.getResource('windowsStartScript.txt'))
+//  inputs.files windowsStartScript
+//  windowsStartScriptGenerator.template = windowsStartScript
+
+  // Note that we don't call c2ExcludesJvmArgs() at this time, there is no way to template those strings.
+  // Instead, we hard code the expected paths in the above templates to match the path lib/dh-compiler-directives.txt
+//  defaultJvmOpts += c2ExcludesJvmArgs(c2ExcludesFile.singleFile.path)
+
+  defaultJvmOpts += devJvmArgs
+}

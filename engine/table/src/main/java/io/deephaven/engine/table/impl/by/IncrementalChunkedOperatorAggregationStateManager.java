@@ -242,6 +242,10 @@ class IncrementalChunkedOperatorAggregationStateManager
 
     // region build wrappers
     @Override
+    public void beginUpdateCycle() {
+    }
+
+    @Override
     public void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
         if (rowSequence.isEmpty()) {
             return;

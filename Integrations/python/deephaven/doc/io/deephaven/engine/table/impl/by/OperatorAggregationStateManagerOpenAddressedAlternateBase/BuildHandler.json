@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase$BuildHandler",
+ "methods": {
+  "doBuild": ":param chunkOk: io.deephaven.engine.rowset.RowSequence\n:param sourceKeyChunks: io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>[]"
+ },
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase.BuildHandler",
+ "typeName": "interface"
+}

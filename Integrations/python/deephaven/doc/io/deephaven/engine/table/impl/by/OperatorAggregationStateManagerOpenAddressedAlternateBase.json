@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase",
+ "methods": {
+  "doRehash": ":param fullRehash: (boolean) - should we rehash the entire table (if false, we rehash incrementally)\n:param rehashCredits: (org.apache.commons.lang3.mutable.MutableInt) - the number of entries this operation has rehashed (input/output)\n:param nextChunkSize: (int) - the size of the chunk we are processing\n:return: (boolean) true if a front migration is required",
+  "findPositionForKey": ":param key: java.lang.Object\n:return: int",
+  "makeProbeContext": ":param buildSources: io.deephaven.engine.table.ColumnSource<?>[]\n:param maxSize: long\n:return: io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase.ProbeContext",
+  "rehashRequired": ":param nextChunkSize: int\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.OperatorAggregationStateManagerOpenAddressedAlternateBase",
+ "typeName": "class"
+}

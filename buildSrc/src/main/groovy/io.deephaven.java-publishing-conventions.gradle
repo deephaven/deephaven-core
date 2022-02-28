@@ -9,6 +9,14 @@ java {
   withSourcesJar()
 }
 
+tasks.withType(Javadoc) {
+  options.addStringOption('Xdoclint:none', '-quiet')
+  options.addStringOption('Xmaxwarns', '1')
+
+  // https://github.com/gradle/gradle/issues/19869
+  options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
+}
+
 def developerId = 'deephaven'
 def developerName = 'Deephaven Developers'
 def developerEmail = 'developers@deephaven.io'
@@ -31,10 +39,7 @@ publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
-      artifactId = archivesBaseName
       pom {
-        name = archivesBaseName
-        description = project.description
         url = projectUrl
         organization {
           name = orgName
@@ -104,3 +109,27 @@ def assertIsRelease = tasks.register('assertIsRelease') {
 
 // This is an extra safety checks to make sure we don't publish incorrectly
 publishMavenJavaPublicationToOssrhRepository.dependsOn(assertIsRelease)
+
+afterEvaluate {
+  // https://central.sonatype.org/publish/requirements/
+  if (project.description == null) {
+    throw new IllegalStateException("Project '${project.name}' is missing a description, which is required for publishing to maven central")
+  }
+
+  // The common-conventions plugin should take care of this, but we'll double-check here
+  if (!project.archivesBaseName.contains('deephaven')) {
+    throw new IllegalStateException("Project '${project.name}' archiveBaseName '${project.archivesBaseName}' does not contain 'deephaven'")
+  }
+
+  publishing {
+    publications {
+      mavenJava(MavenPublication) {
+        artifactId = archivesBaseName
+        pom {
+          name = archivesBaseName
+          description = project.description
+        }
+      }
+    }
+  }
+}
