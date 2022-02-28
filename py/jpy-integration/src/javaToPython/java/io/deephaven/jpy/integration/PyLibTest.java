@@ -48,6 +48,54 @@ public class PyLibTest extends PythonTest {
     }
 
     @Test
+    public void myNumbersPrimitive() {
+        PyObject.executeCode(readResource("my_numbers.py"), PyInputMode.SCRIPT);
+        PyObject myClass = PyObject.executeCode("MyNumbers()", PyInputMode.EXPRESSION);
+        MyNumbersPrimitive proxy = myClass.createProxy(MyNumbersPrimitive.class);
+
+        Assert.assertEquals(Byte.MAX_VALUE, proxy.get_byte());
+        Assert.assertEquals(Short.MAX_VALUE, proxy.get_short());
+        Assert.assertEquals(Integer.MAX_VALUE, proxy.get_int());
+        Assert.assertEquals(Long.MAX_VALUE, proxy.get_long());
+    }
+
+    @Test
+    public void myNumbersBoxed() {
+        PyObject.executeCode(readResource("my_numbers.py"), PyInputMode.SCRIPT);
+        PyObject myClass = PyObject.executeCode("MyNumbers()", PyInputMode.EXPRESSION);
+        MyNumbersBoxed proxy = myClass.createProxy(MyNumbersBoxed.class);
+
+        Assert.assertEquals(Byte.valueOf(Byte.MAX_VALUE), proxy.get_byte());
+        Assert.assertEquals(Short.valueOf(Short.MAX_VALUE), proxy.get_short());
+        Assert.assertEquals(Integer.valueOf(Integer.MAX_VALUE), proxy.get_int());
+        Assert.assertEquals(Long.valueOf(Long.MAX_VALUE), proxy.get_long());
+    }
+
+    @Test
+    public void myNumbersObject() {
+        PyObject.executeCode(readResource("my_numbers.py"), PyInputMode.SCRIPT);
+        PyObject myClass = PyObject.executeCode("MyNumbers()", PyInputMode.EXPRESSION);
+        MyNumbersObject proxy = myClass.createProxy(MyNumbersObject.class);
+
+        Assert.assertEquals(Byte.valueOf(Byte.MAX_VALUE), proxy.get_byte());
+        Assert.assertEquals(Short.valueOf(Short.MAX_VALUE), proxy.get_short());
+        Assert.assertEquals(Integer.valueOf(Integer.MAX_VALUE), proxy.get_int());
+        Assert.assertEquals(Long.valueOf(Long.MAX_VALUE), proxy.get_long());
+    }
+
+    @Test
+    public void myNumbersNumber() {
+        PyObject.executeCode(readResource("my_numbers.py"), PyInputMode.SCRIPT);
+        PyObject myClass = PyObject.executeCode("MyNumbers()", PyInputMode.EXPRESSION);
+        MyNumbersNumber proxy = myClass.createProxy(MyNumbersNumber.class);
+
+        Assert.assertEquals(Byte.valueOf(Byte.MAX_VALUE), proxy.get_byte());
+        Assert.assertEquals(Short.valueOf(Short.MAX_VALUE), proxy.get_short());
+        Assert.assertEquals(Integer.valueOf(Integer.MAX_VALUE), proxy.get_int());
+        Assert.assertEquals(Long.valueOf(Long.MAX_VALUE), proxy.get_long());
+    }
+
+    @Test
     public void pingPong5() {
         Assert.assertEquals("PyLibTest(java,5)(python,4)(java,3)(python,2)(java,1)",
                 PingPongStack.pingPongPython("PyLibTest", 5));
