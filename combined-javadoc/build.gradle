@@ -40,19 +40,19 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
         jdoc.options.addStringOption('Xdoclint:none', '-quiet')
 
-        def isPublic = { Project p -> return io.deephaven.project.ProjectType.isPublic(p) }
+        def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
 
         jdoc.source = rootProject.subprojects
-                .findAll {  it -> isPublic(it) }
+                .findAll {  it -> isForJavadocs(it) }
                 .collect { it.sourceSets.main.allJava }
 
         jdoc.classpath = files(rootProject.subprojects
-                .findAll {  it -> isPublic(it) }
+                .findAll {  it -> isForJavadocs(it) }
                 .collect { it.sourceSets.main.compileClasspath })
 
         // https://github.com/gradle/gradle/issues/19869
         def sourcepath = files()
-        rootProject.subprojects.findAll{ it -> isPublic(it) } .each {
+        rootProject.subprojects.findAll{ it -> isForJavadocs(it) } .each {
             sourcepath = sourcepath + (FileCollection) it.sourceSets.main.allJava.getSourceDirectories()
         }
         options.addStringOption('sourcepath', sourcepath.getAsPath())
