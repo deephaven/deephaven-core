@@ -41,19 +41,7 @@ COPY --from=install / /
 VOLUME /data
 VOLUME /cache
 HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
-
-# set up SSH in the container to enable remote debugging in PyCharm
-RUN apt update && apt install  openssh-server sudo -y
-RUN useradd -rm -d /home/test -s /bin/bash -g root -G sudo -u 1000 test
-RUN echo 'test:test' | chpasswd
-RUN echo "Defaults        lecture = never" > /etc/sudoers.d/privacy
-RUN service ssh start
-EXPOSE 22
-COPY grpc-api-dbg-entry.sh /grpc-api-dbg-entry.sh
-RUN chmod +x /grpc-api-dbg-entry.sh
-#CMD ./grpc-api-dbg-entry.sh
-ENTRYPOINT ["/grpc-api-dbg-entry.sh"]
-
+ENTRYPOINT [ "/opt/deephaven/server/bin/start", "image-bootstrap.properties" ]
 ARG DEEPHAVEN_VERSION
 ARG SERVER
 LABEL \

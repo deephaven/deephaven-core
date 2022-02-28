@@ -35,7 +35,6 @@ class TableListenerTestCase(BaseTestCase):
                     or self.table_change_added
                 )
 
-        # table_listener_handle_1 = listen(self.table, listener_func)
         listener = ListenerClass()
         table_listener_handle = listen(self.table, listener)
         time.sleep(2)

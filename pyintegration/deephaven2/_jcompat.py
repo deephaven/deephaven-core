@@ -80,12 +80,12 @@ R = TypeVar("R")
 
 
 def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
-    """Constructs a Java Function<PyObject, Object> implementation from a Python callable or an object with an
+    """Constructs a Java 'Function<PyObject, Object>' implementation from a Python callable or an object with an
      'apply' method that accepts a single argument.
 
     Args:
-        func (Callable): a Python callable or an object with an `apply` method that accepts a single argument
-        dtype (DType): the return type of `func`
+        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
+        dtype (DType): the return type of 'func'
 
     Returns:
         io.deephaven.integrations.python.PythonFunction instance
