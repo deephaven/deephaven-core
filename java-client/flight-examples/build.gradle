@@ -1,6 +1,5 @@
 plugins {
     id 'application'
-    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
@@ -8,7 +7,7 @@ dependencies {
     implementation project(':java-client-flight-dagger')
     implementation project(':java-client-example-utilities')
 
-    api "io.deephaven.barrage:barrage-format:0.4.0"
+    implementation "io.deephaven.barrage:barrage-format:0.4.0"
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
