@@ -10,6 +10,7 @@ dependencies {
             .subprojects
             .findAll {  p -> io.deephaven.project.ProjectType.isPublic(p) }
             .each { p ->
+                // TODO(deephaven-core#2050): Annotate some public dependencies with "runtime" constraint
                 constraint.api p
             }
     }
