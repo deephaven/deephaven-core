@@ -11,14 +11,14 @@ from deephaven2.table_factory import _JReplayer
 
 
 class TableReplayer(JObjectWrapper):
-    """ The TableReplayer is used to replay historical data.
+    """The TableReplayer is used to replay historical data.
 
-     Tables to be replayed are registered with the replayer.  The resulting dynamic replay tables all update in sync,
-     using the same simulated clock.  Each registered table must contain a timestamp column.
-     """
+    Tables to be replayed are registered with the replayer.  The resulting dynamic replay tables all update in sync,
+    using the same simulated clock.  Each registered table must contain a timestamp column.
+    """
 
     def __init__(self, start_time: dtypes.DateTime, end_time: dtypes.DateTime):
-        """ Initializes the replayer.
+        """Initializes the replayer.
 
         Args:
              start_time (DateTime): replay start time
@@ -29,8 +29,6 @@ class TableReplayer(JObjectWrapper):
         """
         self.start_time = start_time
         self.end_time = end_time
-        self._hist_tables = []
-        self._replay_tables = []
         try:
             self._j_replayer = _JReplayer(start_time, end_time)
         except Exception as e:
@@ -41,7 +39,7 @@ class TableReplayer(JObjectWrapper):
         return self._j_replayer
 
     def add_table(self, table: Table, col: str) -> Table:
-        """ Registers a table for replaying and returns the associated replay table.
+        """Registers a table for replaying and returns the associated replay table.
 
         Args:
             table (Table): the table to be replayed
@@ -60,7 +58,7 @@ class TableReplayer(JObjectWrapper):
             raise DHError(e, "failed to add a historical table.") from e
 
     def start(self) -> None:
-        """ Starts replaying.
+        """Starts replaying.
 
         Raises:
              DHError
@@ -71,8 +69,8 @@ class TableReplayer(JObjectWrapper):
             raise DHError(e, "failed to start the replayer.") from e
 
     def shutdown(self) -> None:
-        """ Shuts down and invalidates the replayer. After this call, the replayer can no longer be used. """
+        """Shuts down and invalidates the replayer. After this call, the replayer can no longer be used."""
         try:
-            self._hist_tables = []
+            self._j_replayer.shutdown()
         except Exception as e:
             raise DHError(e, "failed to shutdown the replayer.") from e

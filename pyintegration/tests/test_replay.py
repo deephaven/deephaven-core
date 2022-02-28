@@ -1,7 +1,6 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-from time import sleep
 
 import unittest
 
@@ -17,14 +16,12 @@ class ReplayTestCase(BaseTestCase):
         dt2 = to_datetime("2000-01-01T00:00:02 NY")
         dt3 = to_datetime("2000-01-01T00:00:04 NY")
 
-        hist_table = new_table([
-            datetime_col("DateTime", [dt1, dt2, dt3]),
-            int_col("Number", [1, 3, 6])]
+        hist_table = new_table(
+            [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
         )
 
-        hist_table2 = new_table([
-            datetime_col("DateTime", [dt1, dt2, dt3]),
-            int_col("Number", [1, 3, 6])]
+        hist_table2 = new_table(
+            [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
         )
 
         start_time = to_datetime("2000-01-01T00:00:00 NY")
@@ -45,10 +42,15 @@ class ReplayTestCase(BaseTestCase):
 
         with self.subTest("replayer can't be reused after shutdown."):
             with self.assertRaises(DHError) as cm:
-                replay_table3 = replayer.add_table(hist_table, "DateTime")
+                replayer.add_table(hist_table, "DateTime")
             self.assertIn("RuntimeError", cm.exception.root_cause)
 
+        with self.subTest("replayer can't be restarted after shutdown."):
+            with self.assertRaises(DHError):
+                replayer.start()
+
         with self.subTest("Add table after replayer is restarted."):
+            replayer = TableReplayer(start_time, end_time)
             replayer.start()
             replay_table = replayer.add_table(hist_table, "DateTime")
             self.assertTrue(replay_table.is_refreshing)
@@ -56,5 +58,5 @@ class ReplayTestCase(BaseTestCase):
             replayer.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
