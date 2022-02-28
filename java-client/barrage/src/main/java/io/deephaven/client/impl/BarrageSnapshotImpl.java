@@ -152,6 +152,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     @Override
     public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return partialTable(viewport, columns, false);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
         // notify user when connection has already been used and closed
         if (prevUsed) {
             throw new UnsupportedOperationException("Snapshot object already used");
@@ -178,7 +184,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
+                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                 .build());
 
         observer.onCompleted();
@@ -255,6 +261,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
+            boolean reverseViewport,
             @Nullable BarrageSnapshotOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -278,6 +285,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         BarrageSnapshotRequest.addViewport(metadata, vpOffset);
         BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
         BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+        BarrageSnapshotRequest.addReverseViewport(metadata, reverseViewport);
         metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();

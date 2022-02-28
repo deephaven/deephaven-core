@@ -428,12 +428,30 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     WritableRowSet subSetByKeyRange(long startKey, long endKey);
 
     /**
-     * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
+     * Get a subset of this RowSet according to the supplied sequence of row positions in {@code posRowSequence}.
      *
-     * @param posRowSet The RowSet of position-based ranges to extract.
+     * @param posRowSequence The {@link RowSequence} of positions ranges to get (as in {@link #get(long)})
+     * @param reversed Whether to treat {@code posRowSet} as offsets relative to {@link #size()} rather than {@code 0}
+     * @return A new RowSet, containing the row keys from this RowSet at the row positions in {@code posRowSequence}
+     */
+    WritableRowSet subSetForPositions(RowSequence posRowSequence, boolean reversed);
+
+    /**
+     * Get a subset of this RowSet according to the supplied sequence of row positions in {@code posRowSequence}.
+     *
+     * @param posRowSequence The {@link RowSequence} of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
-    WritableRowSet subSetForPositions(RowSet posRowSet);
+    WritableRowSet subSetForPositions(RowSequence posRowSequence);
+
+    /**
+     * Get a subset of this RowSet according to the supplied sequence of row positions relative to {@link #size()} in
+     * {@code posRowSequence}.
+     *
+     * @param posRowSequence The {@link RowSequence} of positions ranges to get (as in {@link #get(long)})
+     * @return A new RowSet, containing the row keys from this RowSet at the row positions in {@code posRowSequence}
+     */
+    WritableRowSet subSetForReversePositions(RowSequence posRowSequence);
 
     /**
      * Returns the row key at the given row position.

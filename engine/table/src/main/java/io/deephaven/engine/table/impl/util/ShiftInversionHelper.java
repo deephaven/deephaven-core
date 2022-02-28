@@ -10,31 +10,48 @@ import java.util.function.LongUnaryOperator;
  */
 public class ShiftInversionHelper {
 
-    final RowSetShiftData shifted;
+    private final RowSetShiftData shifted;
+    private final boolean reverseOrder;
 
-    private int destShiftIdx = 0;
+    private int destShiftIdx;
 
     public ShiftInversionHelper(final RowSetShiftData shifted) {
+        // if not specified, assume forward viewport ordering
+        this(shifted, false);
+    }
+
+    public ShiftInversionHelper(final RowSetShiftData shifted, final boolean reverseOrder) {
         this.shifted = shifted;
+        this.reverseOrder = reverseOrder;
+        this.destShiftIdx = reverseOrder ? shifted.size() : 0;
     }
 
     private void advanceDestShiftIdx(final long destKey) {
         Assert.geq(destKey, "destKey", 0);
-        destShiftIdx = (int) binarySearch(destShiftIdx, shifted.size(), innerShiftIdx -> {
-            long destEnd = shifted.getEndRange((int) innerShiftIdx) + shifted.getShiftDelta((int) innerShiftIdx);
-            // due to destKey's expected range, we know this subtraction will not overflow
-            return destEnd - destKey;
-        });
+        destShiftIdx = (int) binarySearch(
+                reverseOrder ? 0 : destShiftIdx,
+                reverseOrder ? destShiftIdx : shifted.size(),
+                innerShiftIdx -> {
+                    long destEnd =
+                            shifted.getEndRange((int) innerShiftIdx) + shifted.getShiftDelta((int) innerShiftIdx);
+                    // due to destKey's expected range, we know this subtraction will not overflow
+                    return destEnd - destKey;
+                });
     }
 
     /**
      * Converts post-keyspace key to pre-keyspace key. It expects to be invoked in ascending key order.
      */
     public long mapToPrevKeyspace(final long key, final boolean isEnd) {
+        if (shifted.empty()) {
+            return key;
+        }
+
         advanceDestShiftIdx(key);
 
         final long retval;
         final int idx = destShiftIdx;
+
         if (idx < shifted.size() && shifted.getBeginRange(idx) + shifted.getShiftDelta(idx) <= key) {
             // inside of a destination shift; this is easy to map to prev
             retval = key - shifted.getShiftDelta(idx);
