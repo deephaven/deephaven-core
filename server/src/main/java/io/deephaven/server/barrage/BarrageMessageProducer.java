@@ -1610,7 +1610,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 }
 
                 modifications.type = sourceColumn.getType();
-                modifications.componentType = sourceColumns.getClass();
+                modifications.componentType = sourceColumn.getComponentType();
             }
         }
 

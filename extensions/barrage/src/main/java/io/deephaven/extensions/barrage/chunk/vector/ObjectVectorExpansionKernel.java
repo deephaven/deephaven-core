@@ -21,6 +21,7 @@ import io.deephaven.vector.Vector;
 import java.lang.reflect.Array;
 
 public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
+    private final static ObjectVector<?> ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
     private final Class<T> componentType;
 
     public ObjectVectorExpansionKernel(final Class<T> componentType) {
@@ -69,14 +70,10 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
                 WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
 
         int lenRead = 0;
-        ObjectVector<?> ZERO_LEN_VECTOR = null;
 
         for (int i = 0; i < result.size(); ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                if (ZERO_LEN_VECTOR == null) {
-                    ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
-                }
                 result.set(i, ZERO_LEN_VECTOR);
             } else {
                 // noinspection unchecked

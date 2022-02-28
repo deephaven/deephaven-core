@@ -34,7 +34,6 @@ import java.util.Iterator;
 public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ObjectChunk<Vector<?>, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
 
-    private final Class<Vector<?>> type;
     private final Class<?> componentType;
 
     private WritableIntChunk<ChunkPositions> offsets;
@@ -43,7 +42,6 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     VectorChunkInputStreamGenerator(final Class<Vector<?>> type, final Class<?> componentType,
                                     final ObjectChunk<Vector<?>, Values> chunk) {
         super(chunk, 0);
-        this.type = type;
         this.componentType = VectorExpansionKernel.getComponentType(type, componentType);
     }
 
@@ -52,13 +50,14 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             return;
         }
 
+        final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
         final ChunkType chunkType = ChunkType.fromElementType(componentType);
         final VectorExpansionKernel kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
         innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, componentType, null, innerChunk);
+                chunkType, componentType, innerComponentType, innerChunk);
     }
 
     @Override
@@ -307,4 +306,3 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         return chunk;
     }
 }
-

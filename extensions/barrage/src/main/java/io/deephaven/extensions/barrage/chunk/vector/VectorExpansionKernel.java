@@ -27,7 +27,7 @@ public interface VectorExpansionKernel {
 
     static Class<?> getComponentType(final Class<?> type, final Class<?> componentType) {
         if (BooleanVector.class.isAssignableFrom(type)) {
-            return Boolean.class;
+            return boolean.class;
         }
         if (CharVector.class.isAssignableFrom(type)) {
             return char.class;
@@ -44,17 +44,17 @@ public interface VectorExpansionKernel {
         if (LongVector.class.isAssignableFrom(type)) {
             return long.class;
         }
-        if (ObjectVector.class.isAssignableFrom(type)) {
-            return componentType != null ? componentType : Object.class;
-        }
         if (ShortVector.class.isAssignableFrom(type)) {
             return short.class;
+        }
+        if (ObjectVector.class.isAssignableFrom(type)) {
+            return componentType != null ? componentType : Object.class;
         }
         throw new IllegalStateException("Unexpected vector type: " + type.getCanonicalName());
     }
 
     /**
-     * @return a kernel that expands a `Chunk<VectorT>` to pair of `LongChunk, Chunk<T>`
+     * @return a kernel that expands a {@code Chunk<VectorT>} to pair of {@code LongChunk, Chunk<T>}
      */
     static <T> VectorExpansionKernel makeExpansionKernel(final ChunkType chunkType, final Class<T> componentType) {
         switch (chunkType) {
@@ -80,24 +80,24 @@ public interface VectorExpansionKernel {
     }
 
     /**
-     * This expands the source from a `TVector` per element to a flat `T` per element. The kernel records the number of
-     * consecutive elements that belong to a row in `perElementLengthDest`. The returned chunk is owned by the caller.
+     * This expands the source from a {@code TVector} per element to a flat {@code T} per element. The kernel records the number of
+     * consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is owned by the caller.
      *
      * @param source the source chunk of TVector to expand
-     * @param perElementLengthDest the destination IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to
-     *        `source.get(i).length`
+     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
+     *        {@code source.get(i).length}
      * @return an unrolled/flattened chunk of T
      */
     <A extends Any> WritableChunk<A> expand(ObjectChunk<Vector<?>, A> source,
             WritableIntChunk<ChunkPositions> perElementLengthDest);
 
     /**
-     * This contracts the source from a pair of `LongChunk` and `Chunk<T>` and produces a `Chunk<T[]>`. The returned
+     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a {@code Chunk<T[]>}. The returned
      * chunk is owned by the caller.
      *
      * @param source the source chunk of T to contract
-     * @param perElementLengthDest the source IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to
-     *        `source.get(i).length`
+     * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
+     *        {@code source.get(i).length}
      * @return a result chunk of T[]
      */
     <A extends Any> WritableObjectChunk<Vector<?>, A> contract(Chunk<A> source,

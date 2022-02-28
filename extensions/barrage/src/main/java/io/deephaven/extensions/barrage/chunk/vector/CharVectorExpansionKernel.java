@@ -81,4 +81,3 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel {
         return result;
     }
 }
-
