@@ -11,12 +11,12 @@ from deephaven2.dtypes import DType
 
 
 def is_java_type(obj: Any) -> bool:
-    """ Returns True if the object is originated in Java. """
+    """Returns True if the object is originated in Java."""
     return isinstance(obj, jpy.JType)
 
 
 def j_array_list(values: Iterable = None) -> jpy.JType:
-    """ Creates a Java ArrayList instance from an iterable. """
+    """Creates a Java ArrayList instance from an iterable."""
     if values is None:
         return None
     r = jpy.get_type("java.util.ArrayList")(len(list(values)))
@@ -26,20 +26,20 @@ def j_array_list(values: Iterable = None) -> jpy.JType:
 
 
 def j_hashmap(d: Dict = None) -> jpy.JType:
-    """ Creates a Java HashMap from a dict. """
+    """Creates a Java HashMap from a dict."""
     if d is None:
         return None
 
     r = jpy.get_type("java.util.HashMap")()
     for key, value in d.items():
         if value is None:
-            value = ''
+            value = ""
         r.put(key, value)
     return r
 
 
 def j_hashset(s: Set = None) -> jpy.JType:
-    """ Creates a Java HashSet from a set. """
+    """Creates a Java HashSet from a set."""
     if s is None:
         return None
 
@@ -50,19 +50,19 @@ def j_hashset(s: Set = None) -> jpy.JType:
 
 
 def j_properties(d: Dict = None) -> jpy.JType:
-    """ Creates a Java Properties from a dict. """
+    """Creates a Java Properties from a dict."""
     if d is None:
         return None
     r = jpy.get_type("java.util.Properties")()
     for key, value in d.items():
         if value is None:
-            value = ''
+            value = ""
         r.setProperty(key, value)
     return r
 
 
 def j_map_to_dict(m):
-    """  Converts a java map to a python dictionary. """
+    """Converts a java map to a python dictionary."""
     if not m:
         return None
 
@@ -75,21 +75,21 @@ def j_map_to_dict(m):
     return r
 
 
-T = TypeVar('T')
-R = TypeVar('R')
+T = TypeVar("T")
+R = TypeVar("R")
 
 
 def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
-    """  Constructs a Java Function<PyObject, Object> implementation from the given python callable `func`. The proper
-    Java object interpretation for the return of `func` must be provided.
+    """Constructs a Java Function<PyObject, Object> implementation from a Python callable or an object with an
+     'apply' method that accepts a single argument.
 
     Args:
-        func (Callable): Python callable or class instance with `apply` method (single argument)
-        dtype (DType): the DType of the return for `func`. This is really anticipated to be one
-                        of `java.lang.String`, `double`, 'float`, `long`, `int`, `short`, `byte`, or `boolean`,
-                        and any other value will result in `java.lang.Object` and likely be unusable.
+        func (Callable): a Python callable or an object with an `apply` method that accepts a single argument
+        dtype (DType): the return type of `func`
 
     Returns:
-        io.deephaven.integrations.python.PythonFunction instance, primarily intended for use in PivotWidgetBuilder usage
+        io.deephaven.integrations.python.PythonFunction instance
     """
-    return jpy.get_type('io.deephaven.integrations.python.PythonFunction')(func, dtype.qst_type.clazz())
+    return jpy.get_type("io.deephaven.integrations.python.PythonFunction")(
+        func, dtype.qst_type.clazz()
+    )

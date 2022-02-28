@@ -1,10 +1,12 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module provides an interface for listening to table changes. """
+""" This module provides utilities for listening to table changes. """
+from __future__ import annotations
 
-import sys
-from typing import Callable
+from abc import ABC, abstractmethod
+from inspect import signature
+from typing import Callable, Union, Type
 
 import jpy
 
@@ -12,51 +14,11 @@ from deephaven2 import DHError
 from deephaven2.table import Table
 
 
-def python_listener_adapter(table: Table, implementation: Callable, description: str = None, retain: bool = True,
-                            replay_initial_image: bool = False) -> None:
-    """ Constructs the ShiftObliviousInstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
-    listenForUpdates method.
-
-    Args:
-        table (Table): table to which to listen
-        implementation (Callable): the implementation for the ShiftObliviousInstrumentedListenerAdapter.onUpdate method,
-            and must either be a class with onUpdate method or a callable
-        description (str): a description for the UpdatePerformanceTracker to append to its entry description
-        retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
-            collected, default is True
-        replay_initial_image (bool): False to only process new rows, ignoring any previously existing rows in the Table;
-            True to process updates for all initial rows in the table PLUS all new row changes, default is False
-    """
-
-    _JListenerAdapter = jpy.get_type('io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter')
-    listener = _JListenerAdapter(description, table, retain, implementation)
-    table.j_table.listenForUpdates(listener, replay_initial_image)
-
-
-def python_shift_aware_listener_adapter(table: Table, implementation: Callable, description: str = None,
-                                        retain: bool = True) -> None:
-    """  Constructs the InstrumentedTableUpdateListenerAdapter, implemented in Python, and plugs it into the table's
-    listenForUpdates method.
-
-    Args:
-        table (Table): table to which to listen
-        implementation: the implementation for the InstrumentedTableUpdateListenerAdapter.onUpdate method, and must
-            either be a class with onUpdate method or a callable
-        description (str): a description for the UpdatePerformanceTracker to append to its entry description
-        retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
-            collected, default is True
-    """
-
-    _JListenerAdapter = jpy.get_type('io.deephaven.integrations.python.PythonListenerAdapter')
-    listener = _JListenerAdapter(description, table, retain, implementation)
-    table.j_table.listenForUpdates(listener)
-
-
 class TableListenerHandle:
-    """ A handle for a table listener. """
+    """A handle for a table listener."""
 
     def __init__(self, t: Table, listener):
-        """ Creates a new table listener handle.
+        """Creates a new table listener handle.
 
         Args:
             t (Table): table being listened to
@@ -66,22 +28,24 @@ class TableListenerHandle:
         self.listener = listener
         self.isRegistered = False
 
-    def register(self):
-        """  Register the listener with the table and listen for updates.
+    def register(self) -> None:
+        """Register the listener with the table and listen for updates.
 
         Raises:
             RuntimeError
         """
 
         if self.isRegistered:
-            raise RuntimeError("Attempting to register an already registered listener..")
+            raise RuntimeError(
+                "Attempting to register an already registered listener.."
+            )
 
         self.t.j_table.listenForUpdates(self.listener)
 
         self.isRegistered = True
 
-    def deregister(self):
-        """ Deregister the listener from the table and stop listening for updates.
+    def deregister(self) -> None:
+        """Deregister the listener from the table and stop listening for updates.
 
         Raises:
             RuntimeError
@@ -94,8 +58,8 @@ class TableListenerHandle:
         self.isRegistered = False
 
 
-def _do_locked(f: Callable, lock_type="shared"):
-    """ Executes a function while holding the UpdateGraphProcessor (UGP) lock.  Holding the UGP lock
+def _do_locked(f: Callable, lock_type="shared") -> None:
+    """Executes a function while holding the UpdateGraphProcessor (UGP) lock.  Holding the UGP lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
     time as possible.
@@ -108,8 +72,12 @@ def _do_locked(f: Callable, lock_type="shared"):
     Raises:
         ValueError
     """
-    throwing_runnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
-    update_graph_processor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraphProcessor")
+    throwing_runnable = jpy.get_type(
+        "io.deephaven.integrations.python.PythonThrowingRunnable"
+    )
+    update_graph_processor = jpy.get_type(
+        "io.deephaven.engine.updategraph.UpdateGraphProcessor"
+    )
 
     if lock_type == "exclusive":
         update_graph_processor.DEFAULT.exclusiveLock().doLocked(throwing_runnable(f))
@@ -120,7 +88,7 @@ def _do_locked(f: Callable, lock_type="shared"):
 
 
 def _nargs_listener(listener) -> int:
-    """ Returns the number of arguments the listener takes.
+    """Returns the number of arguments the listener takes.
 
     Args:
         listener: listener
@@ -134,38 +102,50 @@ def _nargs_listener(listener) -> int:
 
     if callable(listener):
         f = listener
-    elif hasattr(listener, 'onUpdate'):
+    elif hasattr(listener, "onUpdate"):
         f = listener.onUpdate
     else:
-        raise ValueError("ShiftObliviousListener is neither callable nor has an 'onUpdate' method")
+        raise ValueError(
+            "ShiftObliviousListener is neither callable nor has an 'onUpdate' method"
+        )
 
-    if sys.version[0] == "2":
-        import inspect
-        return len(inspect.getargspec(f).args)
-    elif sys.version[0] == "3":
-        from inspect import signature
-        return len(signature(f).parameters)
-    else:
-        raise NotImplementedError("Unsupported python version: version={}".format(sys.version))
+    return len(signature(f).parameters)
 
 
-def listen(t: Table, listener: Callable, description: str = None, retain: bool = True, listener_type: str = "auto",
-           start_listening: bool = True, replay_initial: bool = False,
-           lock_type="shared") -> TableListenerHandle:
-    """ Listen to table changes.
+class TableListener(ABC):
+    """An abstract table listener class that should be subclassed by any user Table listener class."""
 
-    Table change events are processed by listener, which can be either (1) a callable (e.g. function) or
-    (2) an object which provides an "onUpdate" method.
+    @abstractmethod
+    def onUpdate(self, *args, **kwargs) -> None:
+        ...
+
+
+def listen(
+    t: Table,
+    listener: Union[Callable, Type[TableListener]],
+    description: str = None,
+    retain: bool = True,
+    listener_type: str = "auto",
+    start_listening: bool = True,
+    replay_initial: bool = False,
+    lock_type: str = "shared",
+) -> TableListenerHandle:
+    """Listen to table changes.
+
+    Table change events are processed by 'listener', which can be either
+        (1) a callable (e.g. function) or
+        (2) an object that provides an "onUpdate" method.
     In either case, the method must have one of the following signatures.
 
-    * (added, removed, modified): shift_oblivious or legacy
+    * (added, removed, modified): shift_oblivious
     * (isReplay, added, removed, modified): shift_oblivious + replay
     * (update): shift-aware
     * (isReplay, update): shift-aware + replay
 
-    For legacy listeners, added, removed, and modified are the indices of the rows which changed.
-    For shift-aware listeners, update is an object which describes the table update.
-    Listeners which support replaying the initial table snapshot have an additional parameter, inReplay, which is
+    For shift-oblivious listeners, 'added', 'removed', and 'modified' are the indices of the rows which changed.
+    For shift-aware listeners, 'update' is an object that describes the table update.
+
+    Listeners that support replaying the initial table snapshot have an additional parameter, 'isReplay', which is
     true when replaying the initial snapshot and false during normal updates.
 
     See the Deephaven listener documentation for details on processing update events.  This documentation covers the
@@ -174,21 +154,22 @@ def listen(t: Table, listener: Callable, description: str = None, retain: bool =
 
     Args:
         t (Table): table to listen to
-        listener (Callable): listener to process changes
+        listener (Callable): listener for table changes
         description (str): description for the UpdatePerformanceTracker to append to the listener's entry description
         retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
             collected, default is True
-        listener_type (str): listener type, valid values are "auto", "legacy", and "shift_aware"
+        listener_type (str): listener type, valid values are "auto", "shift_oblivious", and "shift_aware"
             "auto" (default) uses inspection to automatically determine the type of input listener
-            "legacy" is for a legacy listener, which takes three (added, removed, modified) or four (isReplay, added,
-                removed, modified) arguments
+            "shift_oblivious" is for a shift_oblivious listener, which takes three (added, removed, modified) or four
+                (isReplay, added, removed, modified) arguments
             "shift_aware" is for a shift-aware listener, which takes one (update) or two (isReplay, update) arguments
         start_listening (bool): True to create the listener and register the listener with the table. The listener will
             see updates. False to create the listener, but do not register the listener with the table. The listener
-            will not see updates. default is True
+            will not see updates. Default is True
         replay_initial (bool): True to replay the initial table contents to the listener. False to only listen to new
-            table changes. To replay the initial image, the listener must support replay. default is False
-        lock_type (str): UGP lock type, used when replay_initial=True, valid values are 'exclusive' and 'shared'.
+            table changes. To replay the initial image, the listener must support replay. Default is False
+        lock_type (str): UGP lock type, used when replay_initial=True, valid values are "exclusive" and "shared".
+            Default is "shared".
 
     Returns:
         a TableListenerHandle instance
@@ -202,7 +183,8 @@ def listen(t: Table, listener: Callable, description: str = None, retain: bool =
             raise ValueError(
                 "Unable to create listener.  Inconsistent arguments.  If the initial snapshot is replayed ("
                 "replay_initial=True), then the listener must be registered to start listening ("
-                "start_listening=True).")
+                "start_listening=True)."
+            )
 
         nargs = _nargs_listener(listener)
 
@@ -214,41 +196,69 @@ def listen(t: Table, listener: Callable, description: str = None, retain: bool =
             else:
                 raise ValueError(
                     f"Unable to autodetect listener type. ShiftObliviousListener does not take an expected number of "
-                    f"arguments. args={nargs}.")
+                    f"arguments. args={nargs}."
+                )
 
-        if listener_type == "shift_oblivious" or listener_type == "legacy":
+        if listener_type == "shift_oblivious":
             if nargs == 3:
                 if replay_initial:
                     raise ValueError(
-                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(listener_type, nargs))
+                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(
+                            listener_type, nargs
+                        )
+                    )
 
-                listener_adapter = jpy.get_type("io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter")
-                listener_adapter = listener_adapter(description, t.j_table, retain, listener)
+                listener_adapter = jpy.get_type(
+                    "io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter"
+                )
+                listener_adapter = listener_adapter(
+                    description, t.j_table, retain, listener
+                )
             elif nargs == 4:
-                listener_adapter = jpy.get_type("io.deephaven.integrations.python"
-                                                ".PythonReplayShiftObliviousListenerAdapter")
-                listener_adapter = listener_adapter(description, t.j_table, retain, listener)
+                listener_adapter = jpy.get_type(
+                    "io.deephaven.integrations.python"
+                    ".PythonReplayShiftObliviousListenerAdapter"
+                )
+                listener_adapter = listener_adapter(
+                    description, t.j_table, retain, listener
+                )
             else:
                 raise ValueError(
                     "Legacy listener must take 3 (added, removed, modified) or 4 (isReplay, added, removed, modified) "
-                    "arguments.")
+                    "arguments."
+                )
 
         elif listener_type == "shift_aware":
             if nargs == 1:
                 if replay_initial:
                     raise ValueError(
-                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(listener_type, nargs))
+                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(
+                            listener_type, nargs
+                        )
+                    )
 
-                listener_adapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
-                listener_adapter = listener_adapter(description, t.j_table, retain, listener)
+                listener_adapter = jpy.get_type(
+                    "io.deephaven.integrations.python.PythonListenerAdapter"
+                )
+                listener_adapter = listener_adapter(
+                    description, t.j_table, retain, listener
+                )
             elif nargs == 2:
-                listener_adapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
-                listener_adapter = listener_adapter(description, t.j_table, retain, listener)
+                listener_adapter = jpy.get_type(
+                    "io.deephaven.integrations.python.PythonReplayListenerAdapter"
+                )
+                listener_adapter = listener_adapter(
+                    description, t.j_table, retain, listener
+                )
             else:
-                raise ValueError("Shift-aware listener must take 1 (update) or 2 (isReplay, update) arguments.")
+                raise ValueError(
+                    "Shift-aware listener must take 1 (update) or 2 (isReplay, update) arguments."
+                )
 
         else:
-            raise ValueError("Unsupported listener type: ltype={}".format(listener_type))
+            raise ValueError(
+                "Unsupported listener type: ltype={}".format(listener_type)
+            )
 
         handle = TableListenerHandle(t, listener_adapter)
 
@@ -267,4 +277,3 @@ def listen(t: Table, listener: Callable, description: str = None, retain: bool =
         return handle
     except Exception as e:
         raise DHError(e, "failed to listen to the table.") from e
-
