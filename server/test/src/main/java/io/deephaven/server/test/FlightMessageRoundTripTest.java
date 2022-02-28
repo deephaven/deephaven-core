@@ -429,10 +429,12 @@ public abstract class FlightMessageRoundTripTest {
                 erw.getWriter().putMetadata(data);
                 erw.getWriter().completed();
 
-                // read everything from the server
+                // read everything from the server (expecting schema message and one data message)
+                int numMessages = 0;
                 while (erw.getReader().next()) {
-                    // NOP
+                    ++numMessages;
                 }
+                assertEquals(1, numMessages); // only one data message
 
                 // at this point should have the data, verify it matches the created table
                 assertEquals(erw.getReader().getRoot().getRowCount(), table.size());

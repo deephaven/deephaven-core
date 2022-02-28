@@ -3,6 +3,7 @@ package io.deephaven.client.examples;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.proto.util.ScopeTicketHelper;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightDescriptor;
 import org.apache.arrow.memory.ArrowBuf;
@@ -43,7 +44,9 @@ class DoExchange extends FlightExampleBase {
                     BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
                             false, 1000);
 
-            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, "s/timetable".getBytes());
+            final int ticOffset =
+                    BarrageSnapshotRequest.createTicketVector(metadata,
+                            ScopeTicketHelper.nameToBytes(ticket.scopeField.variable));
             BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
             BarrageSnapshotRequest.addColumns(metadata, 0);
             BarrageSnapshotRequest.addViewport(metadata, 0);
