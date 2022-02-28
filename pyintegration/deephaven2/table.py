@@ -1005,15 +1005,15 @@ class Table(JObjectWrapper):
     def count_by(self, col: str, by: List[str] = []) -> Table:
         """The count_by method creates a new table containing the number of rows for each group.
 
-         Args:
-             col (str): the name of the column to store the counts
-             by (List[str], optional): the group-by column names, default is empty
+        Args:
+            col (str): the name of the column to store the counts
+            by (List[str], optional): the group-by column names, default is empty
 
         Returns:
-             a new table
+            a new table
 
-         Raises:
-             DHError
+        Raises:
+            DHError
         """
         try:
             if by:
