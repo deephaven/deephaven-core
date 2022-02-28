@@ -149,7 +149,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-server
-          arguments: --scan outputVersion createCraneTagScript docker-server-slim:prepareDocker docker-server:prepareDocker
+          arguments: --scan outputVersion createCraneTagScript docker-server-slim:prepareDocker docker-server:prepareDockerAll
           gradle-version: wrapper
 
       - name: Get Deephaven Version
