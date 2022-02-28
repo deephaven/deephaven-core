@@ -153,7 +153,7 @@ public final class BarrageTableResolver implements UriResolver {
      * @param table the table spec
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
      * @return the subscribed table
      */
     public Table subscribe(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
@@ -170,7 +170,7 @@ public final class BarrageTableResolver implements UriResolver {
      * @param options the options
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
      * @return the subscribed table
      */
     public Table subscribe(DeephavenTarget target, TableSpec table, BarrageSubscriptionOptions options, RowSet viewport,
@@ -240,7 +240,7 @@ public final class BarrageTableResolver implements UriResolver {
      * @param table the table spec
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
      * @return the table to snapshot
      */
     public Table snapshot(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)
@@ -257,7 +257,7 @@ public final class BarrageTableResolver implements UriResolver {
      * @param options the options
      * @param viewport the position-space viewport to use for the snapshot
      * @param columns the columns to include in the snapshot
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link #size()} rather than {@code 0}
      * @return the table to snapshot
      */
     public Table snapshot(DeephavenTarget target, TableSpec table, BarrageSnapshotOptions options, RowSet viewport,

@@ -20,18 +20,18 @@ import java.util.concurrent.CountDownLatch;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
+    @CommandLine.Option(names = {"--tail"}, required = false, description = "Tail viewport size")
+    int tailSize = 0;
+
+    @CommandLine.Option(names = {"--head"}, required = false, description = "Header viewport size")
+    int headerSize = 0;
+
     static class Mode {
         @CommandLine.Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")
         boolean batch;
 
         @CommandLine.Option(names = {"-s", "--serial"}, required = true, description = "Serial mode")
         boolean serial;
-
-        @CommandLine.Option(names = {"--tail"}, required = false, description = "Tail viewport size")
-        int tailSize = 0;
-
-        @CommandLine.Option(names = {"--head"}, required = false, description = "Header viewport size")
-        int headerSize = 0;
     }
 
     @CommandLine.ArgGroup(exclusive = true)
@@ -51,12 +51,12 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
 
             final BarrageTable table;
-            if (mode != null && mode.headerSize > 0) {
+            if (headerSize > 0) {
                 // create a table subscription with forward viewport of the specified size
-                table = subscription.partialTable(RowSetFactory.flat(mode.headerSize), null, true);
-            } else if (mode != null && mode.tailSize > 0) {
+                table = subscription.partialTable(RowSetFactory.flat(headerSize), null, true);
+            } else if (tailSize > 0) {
                 // create a table subscription with reverse viewport of the specified size
-                table = subscription.partialTable(RowSetFactory.flat(mode.tailSize), null, true);
+                table = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
             } else {
                 // create a table subscription of the entire table
                 table = subscription.entireTable();
