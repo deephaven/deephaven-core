@@ -188,7 +188,8 @@ public class ChartData {
         int batchSize = 1 << 15;
 
         for (int i = 0; i < lengthToInsert; i += batchSize) {
-            existingData.splice(offset + i, 0, jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)).asArray(new Any[0]));
+            existingData.splice(offset + i, 0,
+                    jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)).asArray(new Any[0]));
         }
 
         return Js.uncheckedCast(existingData);

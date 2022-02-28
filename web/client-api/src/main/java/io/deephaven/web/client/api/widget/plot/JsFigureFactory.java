@@ -40,8 +40,10 @@ public class JsFigureFactory {
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
-        JsArray<Promise<JsTable>> tableCopyPromises = tables.map((table, index, all) -> table.copy(false));
-        return Promise.all(tableCopyPromises.asList().toArray((IThenable<JsTable>[]) new IThenable[0]))
+        // noinspection unchecked
+        Promise<JsTable>[] tableCopyPromises =
+                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+        return Promise.all(tableCopyPromises)
                 .then(tableCopies -> new JsFigure(
                         c -> c.apply(null, response),
                         (figure, descriptor1) -> {

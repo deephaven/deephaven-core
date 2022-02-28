@@ -1169,7 +1169,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 JsLog.debug("Skipping snapshot because table is closed", this);
                 return;
             }
-            JsArray<Column> viewportColumns = getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
+            JsArray<Column> viewportColumns =
+                    getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
             ViewportData data = new ViewportData(debounce.includedRows, debounce.dataColumns, viewportColumns,
                     currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
                             : currentState.getRowFormatColumn().getIndex(),
