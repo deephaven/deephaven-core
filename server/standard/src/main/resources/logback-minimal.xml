@@ -1,12 +1,9 @@
 <configuration debug="false">
   <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
-  <!-- LogBuffer is a ring-buffer of recent log messages. It allows clients (such as the web console)
-    to subscribe and display information. -->
   <appender name="LOGBUFFER" class="io.deephaven.logback.LogBufferAppender">
     <encoder>
       <!-- LogBufferRecord has timestamp and level, so no need to encode -->
-      <!-- todo: should we colorize output for LogBuffer? -->
       <pattern>%-20.20thread | %-25.25logger{25} | %m</pattern>
     </encoder>
   </appender>

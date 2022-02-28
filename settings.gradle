@@ -123,6 +123,9 @@ project(':server-netty').projectDir = file('server/netty')
 include(':server-jetty')
 project(':server-jetty').projectDir = file('server/jetty')
 
+include(':server-standard')
+project(':server-standard').projectDir = file('server/standard')
+
 include(':Base')
 
 include(':SevenZip')

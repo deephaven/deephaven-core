@@ -1,0 +1,13 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    implementation project(':server')
+    Classpaths.inheritGrpcPlatform(project)
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+}

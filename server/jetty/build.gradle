@@ -9,11 +9,11 @@ configurations {
 
 dependencies {
     implementation project(':server')
+    runtimeOnly project(':server-standard')
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
-    Classpaths.inheritGrpcPlatform(project)
     implementation('org.eclipse.jetty:jetty-servlet:11.0.7')
     implementation 'org.eclipse.jetty:jetty-webapp:11.0.7'
     implementation 'org.eclipse.jetty.http2:http2-server:11.0.7'
@@ -22,11 +22,6 @@ dependencies {
     implementation project(':grpc-java:grpc-servlet-jakarta')
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.7'
-
-    runtimeOnly project(':log-to-slf4j')
-    runtimeOnly project(':logback-print-stream-globals')
-    runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
 
     testImplementation project(':server-test')
 

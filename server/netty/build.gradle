@@ -10,17 +10,12 @@ configurations {
 
 dependencies {
     implementation project(':server')
+    runtimeOnly project(':server-standard')
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
-    Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
-
-    runtimeOnly project(':log-to-slf4j')
-    runtimeOnly project(':logback-print-stream-globals')
-    runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
 
     testImplementation project(':server-test')
 }
