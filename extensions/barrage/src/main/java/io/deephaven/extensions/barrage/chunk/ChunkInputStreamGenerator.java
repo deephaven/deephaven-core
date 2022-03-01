@@ -16,11 +16,11 @@ import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
@@ -206,49 +206,50 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     );
                 }
                 if (type == DateTime.class) {
-                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, DateTime::new, fieldNodeIter, bufferInfoIter, is
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Long.BYTES, options, io -> DateTimeUtils.nanosToTime(io.readLong()),
+                            fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Byte.class) {
-                    return ByteChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Byte.BYTES, options, ByteChunkInputStreamGenerator.ByteToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Byte.BYTES, options, io -> TypeUtils.box(io.readByte()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Character.class) {
-                    return CharChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Character.BYTES, options, CharChunkInputStreamGenerator.CharToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Character.BYTES, options, io -> TypeUtils.box(io.readChar()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Double.class) {
-                    return DoubleChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Double.BYTES, options, DoubleChunkInputStreamGenerator.DoubleToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Double.BYTES, options, io -> TypeUtils.box(io.readDouble()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Float.class) {
-                    return FloatChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Float.BYTES, options, FloatChunkInputStreamGenerator.FloatToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Float.BYTES, options, io -> TypeUtils.box(io.readFloat()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Integer.class) {
-                    return IntChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Integer.BYTES, options, IntChunkInputStreamGenerator.IntToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Integer.BYTES, options, io -> TypeUtils.box(io.readInt()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Long.class) {
-                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, LongChunkInputStreamGenerator.LongToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Long.BYTES, options, io -> TypeUtils.box(io.readLong()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }
                 if (type == Short.class) {
-                    return ShortChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Short.BYTES, options, ShortChunkInputStreamGenerator.ShortToTypeConversion.BOXED,
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Short.BYTES, options, io -> TypeUtils.box(io.readShort()),
                             fieldNodeIter, bufferInfoIter, is
                     );
                 }

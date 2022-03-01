@@ -43,7 +43,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel {
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final LongVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize();
+            final int len = row == null ? 0 : row.intSize("LongVectorExpansionKernel");
             perElementLengthDest.set(i, lenWritten);
             final WritableLongChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
             for (int j = 0; j < len; ++j) {
@@ -86,4 +86,3 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel {
         return result;
     }
 }
-

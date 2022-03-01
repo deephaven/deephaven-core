@@ -11,19 +11,18 @@ package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -41,7 +40,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         WritableDoubleChunk<Values> outChunk = WritableDoubleChunk.makeWritableChunk(inChunk.size());
         for (int i = 0; i < inChunk.size(); ++i) {
             final Double value = inChunk.get(i);
-            outChunk.set(i, value == null ? QueryConstants.NULL_DOUBLE : value);
+            outChunk.set(i, TypeUtils.unbox(value));
         }
         if (inChunk instanceof PoolableChunk) {
             ((PoolableChunk) inChunk).close();
@@ -162,12 +161,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         DoubleConversion IDENTITY = (double a) -> a;
     }
 
-    @FunctionalInterface
-    public interface DoubleToTypeConversion<T> {
-        T apply(double in);
-        DoubleToTypeConversion<Double> BOXED = (double a) -> a == NULL_DOUBLE ? null : (Double) a;
-    }
-
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final StreamReaderOptions options,
@@ -221,38 +214,9 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == DoubleChunkInputStreamGenerator.DoubleConversion.IDENTITY) {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        chunk.set(ii, is.readDouble());
-                    }
-                } else {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        final double in = is.readDouble();
-                        final double out;
-                        if (in == NULL_DOUBLE) {
-                            out = in;
-                        } else {
-                            out = conversion.apply(in);
-                        }
-                        chunk.set(ii, out);
-                    }
-                }
+                useDeephavenNulls(conversion, is, nodeInfo, chunk);
             } else {
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    final double value;
-                    if ((nextValid & 0x1) == 0x0) {
-                        value = NULL_DOUBLE;
-                        is.skipBytes(elementSize);
-                    } else {
-                        value = conversion.apply(is.readDouble());
-                    }
-                    nextValid >>= 1;
-                    chunk.set(ii, value);
-                }
+                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -265,78 +229,53 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         return chunk;
     }
 
-    static <T> ObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
+    private static void useDeephavenNulls(
+            final DoubleConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableDoubleChunk<Values> chunk) throws IOException {
+        if (conversion == DoubleConversion.IDENTITY) {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                chunk.set(ii, is.readDouble());
+            }
+        } else {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                final double in = is.readDouble();
+                final double out = in == NULL_DOUBLE ? in : conversion.apply(in);
+                chunk.set(ii, out);
+            }
+        }
+    }
+
+    private static void useValidityBuffer(
             final int elementSize,
-            final StreamReaderOptions options,
-            final DoubleToTypeConversion<T> conversion,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
-
-        final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.next();
-        final long payloadBuffer = bufferInfoIter.next();
-
-        final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
-
-        if (nodeInfo.numElements == 0) {
-            return chunk;
-        }
-
-        final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls() && validityBuffer != 0) {
-                throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
+            final DoubleConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableDoubleChunk<Values> chunk,
+            final WritableLongChunk<Values> isValid) throws IOException {
+        long nextValid = 0;
+        for (int ii = 0; ii < nodeInfo.numElements; ) {
+            if ((ii % 64) == 0) {
+                nextValid = isValid.get(ii / 64);
             }
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBuffer) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
-            // consumed entire validity buffer by here
+            int maxToSkip = Math.min(nodeInfo.numElements - ii, 64 - (ii % 64));
+            int numToSkip = Math.min(maxToSkip, Long.numberOfTrailingZeros(nextValid));
 
-            final long payloadRead = (long) nodeInfo.numElements * elementSize;
-            if (payloadBuffer < payloadRead) {
-                throw new IllegalStateException("payload buffer is too short for expected number of elements");
-            }
-
-            if (options.useDeephavenNulls()) {
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    final double in = is.readDouble();
-                    chunk.set(ii, in == NULL_DOUBLE ? null : conversion.apply(in));
+            if (numToSkip > 0) {
+                is.skipBytes(numToSkip * elementSize);
+                nextValid >>= numToSkip;
+                for (int jj = 0; jj < numToSkip; ++jj) {
+                    chunk.set(ii + jj, NULL_DOUBLE);
                 }
-            } else {
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    final T value;
-                    if ((nextValid & 0x1) == 0x0) {
-                        value = null;
-                        is.skipBytes(elementSize);
-                    } else {
-                        value = conversion.apply(is.readDouble());
-                    }
-                    nextValid >>= 1;
-                    chunk.set(ii, value);
-                }
+                ii += numToSkip;
             }
-
-            final long overhangPayload = payloadBuffer - payloadRead;
-            if (overhangPayload > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, overhangPayload));
+            if (maxToSkip > numToSkip) {
+                final double value = conversion.apply(is.readDouble());
+                nextValid >>= 1;
+                chunk.set(ii, value);
+                ++ii;
             }
         }
-
-        chunk.setSize(nodeInfo.numElements);
-        return chunk;
     }
 }

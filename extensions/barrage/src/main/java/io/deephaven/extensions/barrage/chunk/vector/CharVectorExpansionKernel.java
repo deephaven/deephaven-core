@@ -38,7 +38,7 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel {
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final CharVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize();
+            final int len = row == null ? 0 : row.intSize("CharVectorExpansionKernel");
             perElementLengthDest.set(i, lenWritten);
             final WritableCharChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
             for (int j = 0; j < len; ++j) {

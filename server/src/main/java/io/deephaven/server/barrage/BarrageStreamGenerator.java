@@ -12,6 +12,8 @@ import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
@@ -454,18 +456,20 @@ public class BarrageStreamGenerator implements
             };
             numRows = columnVisitor.visit(view, addStream, fieldNodeListener, bufferListener);
 
-            RecordBatch.startNodesVector(header, nodeOffsets.get().size());
-            for (int i = nodeOffsets.get().size() - 1; i >= 0; --i) {
+            final WritableChunk<Values> noChunk = nodeOffsets.get();
+            RecordBatch.startNodesVector(header, noChunk.size());
+            for (int i = noChunk.size() - 1; i >= 0; --i) {
                 final ChunkInputStreamGenerator.FieldNodeInfo node =
-                        (ChunkInputStreamGenerator.FieldNodeInfo) nodeOffsets.get().asObjectChunk().get(i);
+                        (ChunkInputStreamGenerator.FieldNodeInfo) noChunk.asObjectChunk().get(i);
                 FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
             nodesOffset = header.endVector();
 
-            RecordBatch.startBuffersVector(header, bufferInfos.get().size());
-            for (int i = bufferInfos.get().size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(bufferInfos.get().get(i));
-                Buffer.createBuffer(header, totalBufferLength.longValue(), bufferInfos.get().get(i));
+            final WritableLongChunk<Values> biChunk = bufferInfos.get();
+            RecordBatch.startBuffersVector(header, biChunk.size());
+            for (int i = biChunk.size() - 1; i >= 0; --i) {
+                totalBufferLength.subtract(biChunk.get(i));
+                Buffer.createBuffer(header, totalBufferLength.longValue(), biChunk.get(i));
             }
             buffersOffset = header.endVector();
         }

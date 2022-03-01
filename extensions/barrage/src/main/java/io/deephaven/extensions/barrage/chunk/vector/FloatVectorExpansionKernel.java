@@ -43,7 +43,7 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel {
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final FloatVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize();
+            final int len = row == null ? 0 : row.intSize("FloatVectorExpansionKernel");
             perElementLengthDest.set(i, lenWritten);
             final WritableFloatChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
             for (int j = 0; j < len; ++j) {
@@ -86,4 +86,3 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel {
         return result;
     }
 }
-

@@ -43,7 +43,7 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel {
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final DoubleVector row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize();
+            final int len = row == null ? 0 : row.intSize("DoubleVectorExpansionKernel");
             perElementLengthDest.set(i, lenWritten);
             final WritableDoubleChunk<A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len);
             for (int j = 0; j < len; ++j) {
@@ -86,4 +86,3 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel {
         return result;
     }
 }
-

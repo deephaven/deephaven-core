@@ -80,20 +80,21 @@ public interface VectorExpansionKernel {
     }
 
     /**
-     * This expands the source from a {@code TVector} per element to a flat {@code T} per element. The kernel records the number of
-     * consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is owned by the caller.
+     * This expands the source from a {@code TVector} per element to a flat {@code T} per element. The kernel records
+     * the number of consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is
+     * owned by the caller.
      *
      * @param source the source chunk of TVector to expand
-     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
-     *        {@code source.get(i).length}
+     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is
+     *        equivalent to {@code source.get(i).length}
      * @return an unrolled/flattened chunk of T
      */
     <A extends Any> WritableChunk<A> expand(ObjectChunk<Vector<?>, A> source,
             WritableIntChunk<ChunkPositions> perElementLengthDest);
 
     /**
-     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a {@code Chunk<T[]>}. The returned
-     * chunk is owned by the caller.
+     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a
+     * {@code Chunk<T[]>}. The returned chunk is owned by the caller.
      *
      * @param source the source chunk of T to contract
      * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
