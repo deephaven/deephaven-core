@@ -26,7 +26,6 @@ purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
 kafka_producer_acks      = int(os.environ['KAFKA_PRODUCER_ACKS'])
 kafka_batch_size         = int(os.environ['KAFKA_BATCH_SIZE'])
-kafka_max_in_flight_requests_per_connection = 20
 kafka_linger_ms          = 40  # Note we flush manually, so this only applies in between our managed batches.
 params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
                          pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
@@ -463,7 +462,7 @@ try:
             bootstrap_servers = [kafka_endpoint],
             acks = kafka_producer_acks,
             batch_size = kafka_batch_size,
-            max_in_flight_requests_per_connection = kafka_max_in_flight_requests_per_connection,
+            max_in_flight_requests_per_connection = max_parallel_purchases + max_parallel_pageviews,
             linger_ms = kafka_linger_ms,
             value_serializer = lambda x: json.dumps(x).encode('utf-8')
         )
