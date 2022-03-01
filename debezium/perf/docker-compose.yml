@@ -55,10 +55,9 @@ services:
       file: ../docker-compose-debezium-common.yml
       service: redpanda
     command:
-      - rpk redpanda mode production && rpk redpanda tune all
+      - redpanda mode production
     tmpfs:
       - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
-      
 
   mysql:
     extends:
