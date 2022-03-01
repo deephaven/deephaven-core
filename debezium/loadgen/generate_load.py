@@ -32,9 +32,10 @@ params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PE
                          pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
 log_period_seconds  = 10
-rate_check_seconds  = 30
+rate_check_seconds  = 20
 item_inventory_min  = 1000
 item_inventory_max  = 5000
+min_sleep_seconds   = 0.001
 item_price_min      = 5
 item_price_max      = 500
 mysql_host          = 'mysql'
@@ -155,65 +156,56 @@ class PeriodRateTracker:
 class RateTracker:
     max_periods: int
     period_window_s: float
-    all_periods_window_s: float
     period_trackers: Deque['RateTracker']
     free_trackers: list
     total_sent: int
 
-    def __init__(self, max_periods: int, period_window_s: float):
+    def __init__(self, max_periods: int, period_window_s: float, now: float):
         self.max_periods = max_periods
         self.period_window_s = period_window_s
-        self.all_periods_window_s = max_periods * period_window_s
         self.period_trackers = deque(maxlen = max_periods)
-        self.free_trackers = [ PeriodRateTracker() for _ in range(0, max_periods) ]
+        self.period_trackers.append(PeriodRateTracker(now, 0))
+        self.free_trackers = [ PeriodRateTracker() for _ in range(0, max_periods - 1) ]
         self.total_sent = 0
     
     def track(self, now: float, sent: int):
-        if self.total_sent == 0:
-            self.total_sent = sent
-            period_tracker = self.free_trackers.pop()
-            period_tracker.reset(now, sent)
-            self.period_trackers.append(period_tracker)
-            return
-        
         self.total_sent += sent
         period_tracker = self.period_trackers[-1]
         if now - period_tracker.start_ts < self.period_window_s:
             period_tracker.sent += sent
             return
 
-        # if there was some silent period, we may need to pop some.
-        while now - self.period_trackers[0].start_ts >= self.all_periods_window_s:
-            period_tracker = self.period_trackers.popleft()
-            self.total_sent -= period_tracker.sent
-            if len(self.period_trackers) == 0:
-                period_tracker.reset(now, sent)
-                self.period_trackers.append(period_tracker)
-                return
-            else:
-                self.free_trackers.append(period_tracker)
-
         if len(self.period_trackers) < self.max_periods:
-            period_tracker = self.free_trackers.pop()
-            period_tracker.reset(now, sent)
-            self.period_trackers.append(period_tracker)
-            return
+           period_tracker = self.free_trackers.pop()
+           period_tracker.reset(now, sent)
+           self.period_trackers.append(period_tracker)
+           return
 
         period_tracker = self.period_trackers.popleft()
         self.total_sent -= period_tracker.sent
         period_tracker.reset(now, sent)
         self.period_trackers.append(period_tracker)
 
-    def reset(self):
+    def reset(self, now: float):
         self.total_sent = 0
-        self.period_trackers.clear()
+        while len(self.period_trackers) > 1:
+            self.free_trackers.append(self.period_trackers.popleft())
+        t = self.period_trackers[0]
+        t.start_ts = now
+        t.sent = 0
 
     def read(self, now: float):
-        if self.total_sent == 0:
-            return now, 0
         return self.period_trackers[0].start_ts, self.total_sent
 
-async def loop(executor, max_parallel, action_fun, param_key, action_desc: str):
+    def steady_state(self):
+        return len(self.period_trackers) == self.max_periods
+
+def rate_tracker_for_rate(rate_s: float, now: float):
+    rt_period_window_s = max(1.0/rate_s, 0.010)
+    rt_max_periods = min(100, math.ceil(10.0/rt_period_window_s))
+    return RateTracker(rt_max_periods, rt_period_window_s, now)
+
+async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: str):
     now = time.time()
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
     sent_since_last_log = 0     # Number of events sent not included in the last summary log.
@@ -225,75 +217,85 @@ async def loop(executor, max_parallel, action_fun, param_key, action_desc: str):
     max_burst = calc_max_burst(rate_s, max_parallel)
     old_rate_s = rate_s         # Used to detect if rate_s has changed.
     period_s = 1.0/rate_s
-    
-    rate_tracker = RateTracker(100, min(1.0 / rate_s, 0.25))
-    log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
-    futures = {}                # Dictionary where we accumulate unfinished futures scheduled on the executor.
+    rate_tracker = rate_tracker_for_rate(rate_s, now)
+    log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel; " +
+        f"tracking rate using {rate_tracker.max_periods} periods of {rate_tracker.period_window_s} seconds.")
+    sending_threads = 0
+    delta_per_thread = 0
+    futures = []                # Dictionary where we accumulate unfinished futures scheduled on the executor.
     def reap_futures():         # Remove from futures the ones already finished, returning how many where finished.
-        len_futures = 0
+        not_done = []
         actions_done = 0
-        for k in list(futures.keys()):
-            future = futures[k]
+        for future in futures:
             if future.done():
                 dt, count = future.result()
                 actions_done += count
-                del futures[k]
             else:
-                len_futures += 1
-        return len_futures, actions_done
-    loop_count = 0              # Absoute loop counter; used as unique key in the futures dictionary.
+                not_done.append(future)
+        return not_done, actions_done
     event_loop = asyncio.get_event_loop()
     try:
         while True:
-            len_futures, actions_done = reap_futures()
-            while len_futures > max_parallel - 1:
-                await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
-                len_futures, actions_done = reap_futures()
+            futures, actions_done = reap_futures()
+            while len(futures) > max_parallel - 1:
+                await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                futures, actions_done = reap_futures()
             now = time.time()
             tracker_start, tracker_sent = rate_tracker.read(now)
-            expected_count_by_now = (now - tracker_start) / period_s
-            action_count = math.ceil((expected_count_by_now - tracker_sent) / (max_parallel - len_futures))
-            if action_count < 1:
-                action_count = 1
-            elif action_count > max_burst:
-                action_count = max_burst
-                burst_cap_last_log = True
+            expected_count_by_now = round((now - tracker_start) / period_s)
+            available_threads = max_parallel - len(futures)
+            delta_count = expected_count_by_now - tracker_sent
+            if delta_count > 0:
+                delta_per_thread = math.ceil(delta_count / available_threads)
+                if delta_per_thread < 1:
+                    delta_per_thread = 1
+                elif delta_per_thread > max_burst:
+                    delta_per_thread = max_burst
+                    delta_count = max_burst * available_threads
+                    burst_cap_last_log = True
 
-            future = event_loop.run_in_executor(executor, action_fun, action_count)
-            now = time.time()
-            rate_tracker.track(now, action_count)
-            
-            futures[loop_count] = future
-            loop_count += 1
-            sent_since_last_log += action_count
+                sent_since_last_log += delta_count
+                sending_threads = 0
+                while delta_count > 0:
+                    action_count = min(delta_count, delta_per_thread)
+                    future = event_loop.run_in_executor(executor, action_fun, action_count)
+                    now = time.time()
+                    rate_tracker.track(now, action_count)
+                    futures.append(future)
+                    sending_threads += 1
+                    delta_count -= action_count
 
             last_log_diff = now - last_log
             if last_log_diff >= log_period_seconds:
                 qlen = len(futures)
                 log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds, " +
                     f"effective rate {sent_since_last_log / last_log_diff:.2f} per second; " +
-                    f"on last trigger running={qlen}, count={action_count}, burst cap={burst_cap_last_log}.")
+                    f"on last trigger running={qlen}, sending_threads={sending_threads}, delta_per_thread={delta_per_thread}, burst cap={burst_cap_last_log}.")
                 last_log = now
                 sent_since_last_log = 0
                 burst_cap_last_log = False
 
-            next_time = tracker_start + (tracker_sent + action_count)*period_s
+            next_time = tracker_start + (tracker_sent + delta_count + 1)*period_s
 
             last_rate_check_diff = now - last_rate_check
             if last_rate_check_diff >= rate_check_seconds:
-                now = time.time()
-                tracker_start, tracker_sent = rate_tracker.read(now)
-                if (tracker_sent >= 50):
-                    last_rate_check = now
+                if not rate_tracker.steady_state():
+                    last_rate_check += 1.0
+                    log(f"Warning: rate tracker not in steady state when scheduled to check rate: len(rate_tracker.period_trackers)={len(rate_tracker.period_trackers)}.")
+                else:
+                    now = time.time()
+                    tracker_start, tracker_sent = rate_tracker.read(now)
                     dt = now - tracker_start
+                    last_rate_check = now
                     effective_rate_s = tracker_sent / dt
                     if abs(effective_rate_s - rate_s)/rate_s > 0.02:
                         log(f"Warning: too far from target rate {rate_s}/s; achieving " +
                             f"sent {tracker_sent} in the last {dt:.1f} seconds for an effective rate of {effective_rate_s:.2f}/s.")
 
             sleep_s = next_time - time.time()
-            if sleep_s > 0.001:  # In practice can't sleep for less
-                await asyncio.sleep(sleep_s)
+            if sleep_s < min_sleep_seconds:
+                sleep_s = min_sleep_seconds
+            await asyncio.sleep(sleep_s)
 
             rate_s = params[param_key]
             if old_rate_s != rate_s:
@@ -301,7 +303,7 @@ async def loop(executor, max_parallel, action_fun, param_key, action_desc: str):
                 period_s = 1.0/rate_s
                 old_rate_s = rate_s
                 now = time.time()
-                rate_tracker.reset()
+                rate_tracker = rate_tracker_for_rate(rate_s, now)
                 last_rate_check = now
                 max_burst = calc_max_burst(rate_s, max_parallel)
     except CancelledError:
@@ -413,6 +415,7 @@ async def handle_command_client(reader, writer):
         pass
     log(f"Disconnecting from {peer}.")
     writer.close()
+    await writer.wait_closed()
 
 async def run_command_server():
     host, port = command_endpoint.split(':', 2)

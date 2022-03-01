@@ -86,7 +86,7 @@ services:
     environment:
       # Look at extended definition for the rest.
       - MAX_PARALLEL_PURCHASES=4
-      - MAX_PARALLEL_PAGEVIEWS=40
+      - MAX_PARALLEL_PAGEVIEWS=80
     depends_on:
       mysql:
         condition: service_started
