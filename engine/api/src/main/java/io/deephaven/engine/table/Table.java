@@ -291,19 +291,21 @@ public interface Table extends
 
     <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName);
 
-    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
-
     CharacterColumnIterator characterColumnIterator(@NotNull String columnName);
 
-    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
+    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
 
-    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
+    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
 
     IntegerColumnIterator integerColumnIterator(@NotNull String columnName);
 
     LongColumnIterator longColumnIterator(@NotNull String columnName);
 
-    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
+    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
+
+    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
+
+    <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Convenience data fetching; highly inefficient

@@ -4,28 +4,92 @@
 
 package io.deephaven.engine.table.iterators;
 
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /**
- * Iteration support for boxed or primitive integers contained with a ColumnSource.
+ * {@link ColumnIterator} implementation for {@link ChunkSource chunk sources} of primitive ints.
  */
-public class IntegerColumnIterator extends ColumnIterator<Integer> implements PrimitiveIterator.OfInt {
+public final class IntegerColumnIterator
+        extends ColumnIterator<Integer, IntChunk<? extends Any>>
+        implements PrimitiveIterator.OfInt {
 
-    public IntegerColumnIterator(@NotNull final RowSet rowSet, @NotNull final ColumnSource<Integer> columnSource) {
-        super(rowSet, columnSource);
+    /**
+     * Create a new IntegerColumnIterator.
+     *
+     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
+     *        chunk type} of {@link ChunkType#Int}
+     * @param rowSequence The {@link RowSequence} to iterate over
+     * @param chunkSize The buffer size to use when fetching data
+     */
+    public IntegerColumnIterator(@NotNull final ChunkSource<? extends Any> chunkSource,
+            @NotNull final RowSequence rowSequence,
+            // region chunkSize
+            final int chunkSize
+            // endregion chunkSize
+    ) {
+        super(validateChunkType(chunkSource, ChunkType.Int), rowSequence, chunkSize);
     }
 
+    /**
+     * Create a new IntegerColumnIterator.
+     *
+     * @param table {@link Table} to create the iterator from
+     * @param columnName Column name for iteration; must have {@link ChunkSource#getChunkType() chunk type} of
+     *        {@link ChunkType#Int}
+     */
     public IntegerColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getRowSet(), table.getColumnSource(columnName));
+        this(table.getColumnSource(columnName), table.getRowSet(), DEFAULT_CHUNK_SIZE);
+    }
+
+    @Override
+    IntChunk<? extends Any> castChunk(@NotNull final Chunk<? extends Any> chunk) {
+        return chunk.asIntChunk();
     }
 
     @Override
     public int nextInt() {
-        return columnSource.getInt(indexIterator.nextLong());
+        maybeAdvance();
+        return currentData.get(currentOffset++);
+    }
+
+    @Override
+    public Integer next() {
+        return TypeUtils.box(nextInt());
+    }
+
+    @Override
+    public void forEachRemaining(@NotNull final IntConsumer action) {
+        consumeRemainingByChunks(() -> {
+            // region currentSize
+            final int currentSize = currentData.size();
+            // endregion currentSize
+            while (currentOffset < currentSize) {
+                action.accept(currentData.get(currentOffset++));
+            }
+        });
+    }
+
+    @Override
+    public void forEachRemaining(@NotNull final Consumer<? super Integer> action) {
+        consumeRemainingByChunks(() -> {
+            // region currentSize
+            final int currentSize = currentData.size();
+            // endregion currentSize
+            while (currentOffset < currentSize) {
+                action.accept(TypeUtils.box(currentData.get(currentOffset++)));
+            }
+        });
     }
 }

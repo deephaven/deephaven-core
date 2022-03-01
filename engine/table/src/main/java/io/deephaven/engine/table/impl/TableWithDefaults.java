@@ -150,33 +150,7 @@ public interface TableWithDefaults extends Table {
 
     @Override
     default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        // noinspection rawtypes
-        Iterator result;
-        final Class<TYPE> type = getDefinition().<TYPE>getColumn(columnName).getDataType();
-        if (type == byte.class || type == Byte.class) {
-            result = byteColumnIterator(columnName);
-        } else if (type == char.class || type == Character.class) {
-            result = characterColumnIterator(columnName);
-        } else if (type == double.class || type == Double.class) {
-            result = doubleColumnIterator(columnName);
-        } else if (type == float.class || type == Float.class) {
-            result = floatColumnIterator(columnName);
-        } else if (type == int.class || type == Integer.class) {
-            result = integerColumnIterator(columnName);
-        } else if (type == long.class || type == Long.class) {
-            result = longColumnIterator(columnName);
-        } else if (type == short.class || type == Short.class) {
-            result = shortColumnIterator(columnName);
-        } else {
-            result = new ColumnIterator<>(this, columnName);
-        }
-        // noinspection unchecked
-        return result;
-    }
-
-    @Override
-    default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(this, columnName);
+        return ColumnIterator.make(getColumnSource(columnName), getRowSet());
     }
 
     @Override
@@ -185,13 +159,13 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default DoubleColumnIterator doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(this, columnName);
+    default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
+        return new ByteColumnIterator(this, columnName);
     }
 
     @Override
-    default FloatColumnIterator floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(this, columnName);
+    default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
+        return new ShortColumnIterator(this, columnName);
     }
 
     @Override
@@ -205,10 +179,21 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(this, columnName);
+    default FloatColumnIterator floatColumnIterator(@NotNull final String columnName) {
+        return new FloatColumnIterator(this, columnName);
     }
-    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default DoubleColumnIterator doubleColumnIterator(@NotNull final String columnName) {
+        return new DoubleColumnIterator(this, columnName);
+    }
+
+    @Override
+    default <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
+        return new ObjectColumnIterator<>(this, columnName);
+    }
+
+// -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
 
