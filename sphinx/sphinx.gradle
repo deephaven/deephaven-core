@@ -31,13 +31,14 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
 
     environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath'
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
-    environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
+    environmentVariable 'DEEPHAVEN_DEVROOT', '/tmp/devroot'
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
     environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
     environmentVariable 'JAVA_VERSION', '1.8'
     environmentVariable 'DEEPHAVEN_VERSION', project.version
 
     runCommand '''set -eux; \\
+                  mkdir /tmp/devroot; \\
                   python -m pip install sphinx==4.0.3 sphinx-autodoc-typehints==1.12.0 pyarrow==6.0.1 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 /wheel/*.whl breathe==4.31.0 furo==2021.9.8
                   '''
 }
