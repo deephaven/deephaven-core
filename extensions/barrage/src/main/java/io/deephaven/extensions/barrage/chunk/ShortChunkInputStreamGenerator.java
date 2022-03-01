@@ -254,28 +254,38 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             final FieldNodeInfo nodeInfo,
             final WritableShortChunk<Values> chunk,
             final WritableLongChunk<Values> isValid) throws IOException {
-        long nextValid = 0;
-        for (int ii = 0; ii < nodeInfo.numElements; ) {
-            if ((ii % 64) == 0) {
-                nextValid = isValid.get(ii / 64);
-            }
-            int maxToSkip = Math.min(nodeInfo.numElements - ii, 64 - (ii % 64));
-            int numToSkip = Math.min(maxToSkip, Long.numberOfTrailingZeros(nextValid));
+        final int numElements = nodeInfo.numElements;
+        final int numValidityWords = (numElements + 63) / 64;
 
-            if (numToSkip > 0) {
-                is.skipBytes(numToSkip * elementSize);
-                nextValid >>= numToSkip;
-                for (int jj = 0; jj < numToSkip; ++jj) {
-                    chunk.set(ii + jj, NULL_SHORT);
+        int ei = 0;
+        int pendingSkips = 0;
+
+        for (int vi = 0; vi < numValidityWords; ++vi) {
+            int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+            long validityWord = isValid.get(vi);
+            do {
+                if ((validityWord & 1) == 1) {
+                    if (pendingSkips > 0) {
+                        is.skipBytes(pendingSkips * elementSize);
+                        chunk.fillWithNullValue(ei, pendingSkips);
+                        ei += pendingSkips;
+                        pendingSkips = 0;
+                    }
+                    chunk.set(ei++, conversion.apply(is.readShort()));
+                    validityWord >>= 1;
+                    bitsLeftInThisWord--;
+                } else {
+                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    pendingSkips += skips;
+                    validityWord >>= skips;
+                    bitsLeftInThisWord -= skips;
                 }
-                ii += numToSkip;
-            }
-            if (maxToSkip > numToSkip) {
-                final short value = conversion.apply(is.readShort());
-                nextValid >>= 1;
-                chunk.set(ii, value);
-                ++ii;
-            }
+            } while (bitsLeftInThisWord > 0);
+        }
+
+        if (pendingSkips > 0) {
+            is.skipBytes(pendingSkips * elementSize);
+            chunk.fillWithNullValue(ei, pendingSkips);
         }
     }
 }

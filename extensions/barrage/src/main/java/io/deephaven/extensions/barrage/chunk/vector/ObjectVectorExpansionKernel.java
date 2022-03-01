@@ -43,7 +43,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
         perElementLengthDest.setSize(source.size() + 1);
         for (int i = 0; i < typedSource.size(); ++i) {
             final ObjectVector<?> row = typedSource.get(i);
-            final int len = row == null ? 0 : row.intSize();
+            final int len = row == null ? 0 : row.intSize("ObjectVectorExpansionKernel");
             perElementLengthDest.set(i, lenWritten);
             final WritableObjectChunk<Object, A> result = resultWrapper.ensureCapacityPreserve(lenWritten + len)
                     .asWritableObjectChunk();
@@ -70,7 +70,6 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
                 WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
 
         int lenRead = 0;
-
         for (int i = 0; i < result.size(); ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
