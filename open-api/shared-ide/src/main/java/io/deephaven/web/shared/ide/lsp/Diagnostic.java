@@ -59,22 +59,22 @@ public class Diagnostic implements Serializable {
             return;
         }
         if (source.has("range")) {
-            range = new DocumentRange(source.getAny("range").asPropertyMap());
+            range = new DocumentRange(source.getAsAny("range").asPropertyMap());
         }
         if (source.has("severity")) {
-            severity = source.getAny("severity").asInt();
+            severity = source.getAsAny("severity").asInt();
         }
         if (source.has("code")) {
-            code = source.getAny("code").asInt();
+            code = source.getAsAny("code").asInt();
         }
         if (source.has("source")) {
-            this.source = source.getAny("source").asString();
+            this.source = source.getAsAny("source").asString();
         }
         if (source.has("message")) {
-            this.source = source.getAny("message").asString();
+            this.source = source.getAsAny("message").asString();
         }
         if (source.has("relatedInformation")) {
-            Any[] related = source.getAny("relatedInformation").asArray();
+            Any[] related = source.getAsAny("relatedInformation").asArray();
             relatedInformation = new DiagnosticRelatedInformation[related.length];
             for (int i = 0; i < related.length; i++) {
                 relatedInformation[i] = new DiagnosticRelatedInformation(related[i].asPropertyMap());

@@ -18,19 +18,19 @@ public class TextDocumentItem implements Serializable {
         this();
 
         if (source.has("uri")) {
-            uri = source.getAny("uri").asString();
+            uri = source.getAsAny("uri").asString();
         }
 
         if (source.has("languageId")) {
-            languageId = source.getAny("languageId").asString();
+            languageId = source.getAsAny("languageId").asString();
         }
 
         if (source.has("version")) {
-            version = source.getAny("version").asInt();
+            version = source.getAsAny("version").asInt();
         }
 
         if (source.has("text")) {
-            text = source.getAny("text").asString();
+            text = source.getAsAny("text").asString();
         }
     }
 

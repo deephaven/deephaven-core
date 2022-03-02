@@ -23,7 +23,7 @@ public class CompletionParams extends TextDocumentPositionParams implements Seri
         super.updateFromJsPropertyMap(source);
 
         if (source.has("context")) {
-            context = new CompletionContext(source.getAny("context").asPropertyMap());
+            context = new CompletionContext(source.getAsAny("context").asPropertyMap());
         }
     }
 

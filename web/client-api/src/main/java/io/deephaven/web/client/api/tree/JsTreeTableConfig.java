@@ -20,13 +20,13 @@ public class JsTreeTableConfig {
     public JsTreeTableConfig(JsPropertyMap<Object> source) {
         this();
         if (source.has("idColumn")) {
-            idColumn = source.getAny("idColumn").asString();
+            idColumn = source.getAsAny("idColumn").asString();
         }
         if (source.has("parentColumn")) {
-            parentColumn = source.getAny("parentColumn").asString();
+            parentColumn = source.getAsAny("parentColumn").asString();
         }
         if (source.has("promoteOrphansToRoot")) {
-            promoteOrphansToRoot = Js.isTruthy(source.getAny("promoteOrphansToRoot"));
+            promoteOrphansToRoot = Js.isTruthy(source.getAsAny("promoteOrphansToRoot"));
         }
     }
 }

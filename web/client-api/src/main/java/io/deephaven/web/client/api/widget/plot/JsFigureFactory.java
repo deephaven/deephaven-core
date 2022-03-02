@@ -2,13 +2,13 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
@@ -40,7 +40,10 @@ public class JsFigureFactory {
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
-        return JsPromise.all(tables.map((table, index, all) -> table.copy(false)))
+        // noinspection unchecked
+        Promise<JsTable>[] tableCopyPromises =
+                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+        return Promise.all(tableCopyPromises)
                 .then(tableCopies -> new JsFigure(
                         c -> c.apply(null, response),
                         (figure, descriptor1) -> {
