@@ -94,6 +94,19 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final boolean hasShifts = upstream.shifted().nonempty();
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1
                                 && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
+                            // TODO-RWC: Parallelize ops that take or make Tables with divisionSize=1.
+                            //           Ban view/updateView that produces Table (LivenessReferent)
+                            //           Update/select that produce Table (LivenessReferent) needs manage or unmanage on
+                            //               add, modify, and remove
+                            //               (manage adds + modifies, unmanage removes + modifies-pre-shift)
+                            //           Proxy? new PartitionedProxy(Table input, String subTableColumnName)
+                            //               Support "getPartitionedTable()"
+                            //           Merge? new MergeTable(Table input, String subTableColumnName)
+                            //           Offer Table keyInitializationTable for aggBy and aggAllBy
+                            //           Offer boolean keepEmptyStates for aggBy and aggAllBy
+                            //           Make TableDefinition and ColumnDefinition immutables with memoization
+                            //           Maybe temporary shim where we listen to result and populate a TableMap for
+                            //               rollups.
                             final long divisionSize = Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                     (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();
