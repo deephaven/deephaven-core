@@ -1,8 +1,6 @@
 package io.deephaven.server.test;
 
-import com.google.flatbuffers.DoubleVector;
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.flatbuffers.LongVector;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -31,14 +29,18 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -126,6 +128,7 @@ public abstract class FlightMessageRoundTripTest {
     private ManagedChannel channel;
     private FlightClient client;
 
+    SessionService sessionService;
     private UUID sessionToken;
     private SessionState currentSession;
     private AbstractScriptSession scriptSession;
@@ -139,6 +142,7 @@ public abstract class FlightMessageRoundTripTest {
         int actualPort = server.getPort();
 
         scriptSession = component.scriptSession();
+        sessionService = component.sessionService();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
@@ -167,16 +171,24 @@ public abstract class FlightMessageRoundTripTest {
         assertNotNull(response.getSessionToken());
         sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
 
-        currentSession = component.sessionService().getSessionForToken(sessionToken);
+        currentSession = sessionService.getSessionForToken(sessionToken);
     }
 
     protected abstract TestComponent component();
 
     @After
     public void teardown() {
+        sessionService.closeAllSessions();
         scriptSession.release();
 
         channel.shutdown();
+        try {
+            client.close();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
         server.stopWithTimeout(1, TimeUnit.MINUTES);
 
         try {
@@ -212,34 +224,35 @@ public abstract class FlightMessageRoundTripTest {
     };
 
     @Test
-    public void testSimpleEmptyTableDoGet() {
+    public void testSimpleEmptyTableDoGet() throws Exception {
         Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
         currentSession.newExport(simpleTableTicket, "test")
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
-        FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
-        assertTrue(stream.next());
-        VectorSchemaRoot root = stream.getRoot();
-        // row count should match what we expect
-        assertEquals(10, root.getRowCount());
+        try (FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
+            assertTrue(stream.next());
+            VectorSchemaRoot root = stream.getRoot();
+            // row count should match what we expect
+            assertEquals(10, root.getRowCount());
 
-        // only one column was sent
-        assertEquals(1, root.getFieldVectors().size());
-        Field i = root.getSchema().findField("I");
+            // only one column was sent
+            assertEquals(1, root.getFieldVectors().size());
+            Field i = root.getSchema().findField("I");
 
-        // all DH columns are nullable, even primitives
-        assertTrue(i.getFieldType().isNullable());
-        // verify it is a java int type, which is an arrow 32bit int
-        assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
-        assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
-        assertEquals("int", i.getMetadata().get("deephaven:type"));
+            // all DH columns are nullable, even primitives
+            assertTrue(i.getFieldType().isNullable());
+            // verify it is a java int type, which is an arrow 32bit int
+            assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
+            assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
+            assertEquals("int", i.getMetadata().get("deephaven:type"));
 
-        // verify that the server didn't send more data after the first payload
-        assertFalse(stream.next());
+            // verify that the server didn't send more data after the first payload
+            assertFalse(stream.next());
+        }
     }
 
     @Test
-    public void testRoundTripData() throws InterruptedException, ExecutionException {
+    public void testRoundTripData() throws Exception {
         // tables without columns, as flight-based way of doing emptyTable
         assertRoundTripDataEqual(TableTools.emptyTable(0));
         assertRoundTripDataEqual(TableTools.emptyTable(10));
@@ -267,12 +280,12 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testTimestampColumn() throws InterruptedException, ExecutionException {
+    public void testTimestampColumn() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
     }
 
     @Test
-    public void testStringCol() throws InterruptedException, ExecutionException {
+    public void testStringCol() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
@@ -300,7 +313,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testLongCol() throws InterruptedException, ExecutionException {
+    public void testLongCol() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = ii"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {ii}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
@@ -381,7 +394,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testDoExchangeSnapshot() {
+    public void testDoExchangeSnapshot() throws Exception {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
@@ -450,14 +463,12 @@ public abstract class FlightMessageRoundTripTest {
                 for (int i = 0; i < table.size(); i++) {
                     assertEquals("double match: ", table.getColumn(1).get(i), dv.get(i));
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
     }
 
     @Test
-    public void testDoExchangeProtocol() {
+    public void testDoExchangeProtocol() throws Exception {
         final String staticTableName = "flightInfoTest";
         final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
 
@@ -504,8 +515,6 @@ public abstract class FlightMessageRoundTripTest {
                 assertTrue(actualMessage.contains(expectedMessage));
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -554,23 +563,26 @@ public abstract class FlightMessageRoundTripTest {
 
     private static int nextTicket = 1;
 
-    private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
+    private void assertRoundTripDataEqual(Table deephavenTable) throws Exception {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
         currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
 
         // fetch with DoGet
-        FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()));
-        VectorSchemaRoot root = stream.getRoot();
+        int flightDescriptorTicketValue;
+        FlightClient.ClientStreamListener putStream;
+        try (FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()))) {
+            VectorSchemaRoot root = stream.getRoot();
 
-        // start the DoPut and send the schema
-        int flightDescriptorTicketValue = nextTicket++;
-        FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-        FlightClient.ClientStreamListener putStream = client.startPut(descriptor, root, new AsyncPutListener());
+            // start the DoPut and send the schema
+            flightDescriptorTicketValue = nextTicket++;
+            FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+            putStream = client.startPut(descriptor, root, new AsyncPutListener());
 
-        // send the body of the table
-        while (stream.next()) {
-            putStream.putNext();
+            // send the body of the table
+            while (stream.next()) {
+                putStream.putNext();
+            }
         }
 
         // tell the server we are finished sending data
