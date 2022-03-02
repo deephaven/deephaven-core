@@ -7,7 +7,8 @@ import jpy
 from deephaven2 import dtypes, DHError
 from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.table import Table
-from deephaven2.table_factory import _JReplayer
+
+_JReplayer = jpy.get_type("io.deephaven.engine.table.impl.replay.Replayer")
 
 
 class TableReplayer(JObjectWrapper):
@@ -37,6 +38,10 @@ class TableReplayer(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self._j_replayer
+
+    @classmethod
+    def j_object_type(cls) -> jpy.JType:
+        return jpy.get_type("io.deephaven.engine.table.impl.replay.Replayer")
 
     def add_table(self, table: Table, col: str) -> Table:
         """Registers a table for replaying and returns the associated replay table.

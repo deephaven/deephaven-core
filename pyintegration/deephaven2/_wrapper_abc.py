@@ -15,3 +15,8 @@ class JObjectWrapper(ABC):
     @abstractmethod
     def j_object(self) -> jpy.JType:
         ...
+
+    @classmethod
+    @abstractmethod
+    def j_object_type(cls) -> jpy.JType:
+        ...

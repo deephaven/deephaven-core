@@ -91,6 +91,10 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    @classmethod
+    def j_object_type(cls) -> jpy.JType:
+        return jpy.get_type("io.deephaven.engine.table.Table")
+
     def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
 
