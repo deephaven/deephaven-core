@@ -846,7 +846,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             request.setColumnsToAddList(columnsToAdd);
             if (asOfMatchRule != null) {
                 request.setAsOfMatchRule(
-                        Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAny(asOfMatchRule).asDouble());
+                        Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAsAny(asOfMatchRule).asDouble());
             }
             workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
         }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")
@@ -1170,7 +1170,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 return;
             }
             JsArray<Column> viewportColumns =
-                    Js.uncheckedCast(getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex())));
+                    getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
             ViewportData data = new ViewportData(debounce.includedRows, debounce.dataColumns, viewportColumns,
                     currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
                             : currentState.getRowFormatColumn().getIndex(),

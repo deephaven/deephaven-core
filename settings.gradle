@@ -57,6 +57,8 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
+include 'bom'
+
 include(':configs')
 project(':configs').projectDir = file('props/configs')
 

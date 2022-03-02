@@ -1,3 +1,5 @@
+import io.deephaven.project.util.PublishingConstants
+
 plugins {
   id 'java'
   id 'signing'
@@ -17,119 +19,25 @@ tasks.withType(Javadoc) {
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-def developerId = 'deephaven'
-def developerName = 'Deephaven Developers'
-def developerEmail = 'developers@deephaven.io'
-
-def projectUrl = 'https://github.com/deephaven/deephaven-core'
-def orgName = 'Deephaven Data Labs'
-def orgUrl = 'https://deephaven.io/'
-
 def licenseName = ext.license.name
 def licenseUrl = ext.license.url
-
-def issuesSystem = 'GitHub Issues'
-def issuesUrl = 'https://github.com/deephaven/deephaven-core/issues'
-
-def scmUrl = 'https://github.com/deephaven/deephaven-core'
-def scmConnection = 'scm:git:git://github.com/deephaven/deephaven-core.git'
-def scmDevConnection = 'scm:git:ssh://github.com/deephaven/deephaven-core.git'
 
 publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
       pom {
-        url = projectUrl
-        organization {
-          name = orgName
-          url = orgUrl
-        }
         licenses {
           license {
             name = licenseName
             url = licenseUrl
           }
         }
-        scm {
-          url = scmUrl
-          connection = scmConnection
-          developerConnection = scmDevConnection
-        }
-        issueManagement {
-          system = issuesSystem
-          url = issuesUrl
-        }
-        developers {
-          developer {
-            id = developerId
-            name = developerName
-            email = developerEmail
-            organization = orgName
-            organizationUrl = orgUrl
-          }
-        }
-      }
-    }
-  }
-  repositories {
-    maven {
-      name = 'ossrh'
-      // ossrhUsername, ossrhPassword
-      credentials(PasswordCredentials)
-      def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-      def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-    }
-  }
-}
-
-signing {
-  sign publishing.publications.mavenJava
-  String signingKey = findProperty("signingKey")
-  String signingPassword = findProperty("signingPassword")
-  if (signingKey != null && signingPassword != null) {
-    // In CI, it's harder to pass a file; so if specified, we use the in-memory version.
-    useInMemoryPgpKeys(signingKey, signingPassword)
-  }
-}
-
-def assertIsRelease = tasks.register('assertIsRelease') {
-  it.doLast {
-    if (System.getenv('CI') != 'true') {
-      throw new IllegalStateException('Release error: env CI must be true')
-    }
-    def actualGithubRef = System.getenv('GITHUB_REF')
-    def expectedGithubRef = "refs/heads/release/v${project.version}"
-    if (actualGithubRef != expectedGithubRef) {
-      throw new IllegalStateException("Release error: env GITHUB_REF '${actualGithubRef}' does not match expected '${expectedGithubRef}'. Bad tag? Bump version?")
-    }
-  }
-}
-
-// This is an extra safety checks to make sure we don't publish incorrectly
-publishMavenJavaPublicationToOssrhRepository.dependsOn(assertIsRelease)
-
-afterEvaluate {
-  // https://central.sonatype.org/publish/requirements/
-  if (project.description == null) {
-    throw new IllegalStateException("Project '${project.name}' is missing a description, which is required for publishing to maven central")
-  }
-
-  // The common-conventions plugin should take care of this, but we'll double-check here
-  if (!project.archivesBaseName.contains('deephaven')) {
-    throw new IllegalStateException("Project '${project.name}' archiveBaseName '${project.archivesBaseName}' does not contain 'deephaven'")
-  }
-
-  publishing {
-    publications {
-      mavenJava(MavenPublication) {
-        artifactId = archivesBaseName
-        pom {
-          name = archivesBaseName
-          description = project.description
-        }
       }
     }
   }
 }
+
+PublishingConstants.setupRepositories(project)
+PublishingConstants.setupMavenPublication(project, publishing.publications.mavenJava)
+PublishingConstants.setupSigning(project, publishing.publications.mavenJava)

@@ -8,16 +8,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Fi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsBiConsumer;
@@ -28,7 +24,12 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -691,7 +692,7 @@ public class JsFigure extends HasEventHandling {
             // });
             // }
 
-            return JsPromise.all(promises)
+            return Promise.all(promises)
                     .then(ignore -> {
                         connection.registerFigure(figure);
 

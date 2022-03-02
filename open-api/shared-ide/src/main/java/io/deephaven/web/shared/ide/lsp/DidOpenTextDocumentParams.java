@@ -17,7 +17,7 @@ public class DidOpenTextDocumentParams implements Serializable {
         this();
 
         if (source.has("textDocument")) {
-            textDocument = new TextDocumentItem(source.getAny("textDocument").asPropertyMap());
+            textDocument = new TextDocumentItem(source.getAsAny("textDocument").asPropertyMap());
         }
     }
 
