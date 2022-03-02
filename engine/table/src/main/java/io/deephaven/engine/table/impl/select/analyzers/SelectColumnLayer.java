@@ -88,21 +88,24 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {
-                        // we don't want to bother with threads if we are going to process a small update
+                        // We don't want to bother with threads if we are going to process a small update
                         final long totalSize = upstream.added().size() + upstream.modified().size();
-                        // if we have shifts, that makes everything nasty; so we do not want to deal with it
+
+                        // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
-                        if (canParallelizeThisColumn && jobScheduler.threadCount() > 1
-                                && totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS && !hasShifts) {
-                            // We assume that formulas producing Tables are likely to
-                            // 1. be expensive to evaluate and
-                            // 2. have wildly varying job size,
-                            // and so we limit divisionSize to 1 to maximize the effect of our parallelism.
-                            final boolean resultIsTable = Table.class.isAssignableFrom(writableSource.getType());
+
+                        // We assume that formulas producing Tables are likely to
+                        //     1. be expensive to evaluate and
+                        //     2. have wildly varying job size,
+                        // and so we ignore minimum size to parallelize and limit divisionSize to 1 to maximize the
+                        // effect of our parallelism.
+                        final boolean resultIsTable = Table.class.isAssignableFrom(writableSource.getType());
+
+                        if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
+                                (resultIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
                             final long divisionSize = resultIsTable ? 1 :
                                     Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
-
                             final List<TableUpdate> updates = new ArrayList<>();
                             // divide up the additions and modifications
                             try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();

@@ -18,7 +18,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
 
     ViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource cs, String[] deps,
             ModifiedColumnSet mcsBuilder) {
-        super(inner, name, sc, cs, null, deps, mcsBuilder);
+        super(inner, name, sc, checkResultType(cs), null, deps, mcsBuilder);
     }
 
     @Override
