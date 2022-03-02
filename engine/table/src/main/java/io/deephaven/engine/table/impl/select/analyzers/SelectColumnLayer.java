@@ -180,22 +180,27 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             final SelectLayerCompletionHandler onCompletion) {
         doEnsureCapacity();
-        doApplyUpdate(upstream, toClear, helper, 0);
+        doApplyUpdate(upstream, helper, 0);
+        if (!isRedirected) {
+            clearObjectsAtThisLevel(toClear);
+        }
         onCompletion.onLayerCompleted(getLayerIndex());
     }
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             final SelectLayerCompletionHandler onCompletion, AtomicInteger divisions, long startOffset) {
-        doApplyUpdate(upstream, toClear, helper, startOffset);
+        doApplyUpdate(upstream, helper, startOffset);
         upstream.release();
 
         if (divisions.decrementAndGet() == 0) {
+            if (!isRedirected) {
+                clearObjectsAtThisLevel(toClear);
+            }
             onCompletion.onLayerCompleted(getLayerIndex());
         }
     }
 
-    private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            long startOffset) {
+    private void doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper, final long startOffset) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -345,10 +350,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     }
                 }
             }
-        }
-
-        if (!isRedirected) {
-            clearObjectsAtThisLevel(toClear);
         }
     }
 
