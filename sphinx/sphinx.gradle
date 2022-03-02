@@ -28,12 +28,10 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     copyFile "./wheel", "/wheel"
     copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
 
-    environmentVariable 'DEEPHAVEN_CLASSPATH', '/opt/deephaven/server-0.10.0/lib/*:/opt/deephaven/server-0.10.0/lib'
+    environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server-${project.version}/lib/*:/opt/deephaven/server-${project.version}/lib/"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'
     environmentVariable 'DEEPHAVEN_DEVROOT', '/tmp/devroot'
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-    environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-    environmentVariable 'JAVA_VERSION', '1.8'
     environmentVariable 'DEEPHAVEN_VERSION', project.version
 
     runCommand '''set -eux; \\
