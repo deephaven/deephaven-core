@@ -1,6 +1,6 @@
 # If-then and conditions
 
-In our previous notebook, we showed how to group and aggregate time series data. In this notebook, we show how to use if-then statements and conditionals in Deephaven.
+In this notebook, we show how to use if-then statements and conditionals in Deephaven.
 
 Let's start again by simulating some real-time data.
 
