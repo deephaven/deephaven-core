@@ -42,6 +42,8 @@ services:
         condition: service_started
 
   redpanda:
+    # We build a tweaked version of redpanda's docker image to
+    # change the configuration towards production defaults.
     build:
       context: redpanda
       args:
@@ -86,11 +88,6 @@ services:
     build:
       context: ../loadgen
       dockerfile: pypy-Dockerfile
-    environment:
-      # Look at extended definition for the rest.
-      - MAX_PARALLEL_PURCHASES=4
-      - MAX_PARALLEL_PAGEVIEWS=${MAX_PARALLEL_PAGEVIEWS}
-      - KAFKA_PARTITIONS=${MAX_PARALLEL_PAGEVIEWS}
     depends_on:
       mysql:
         condition: service_started
