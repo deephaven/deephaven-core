@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -10,6 +11,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final public class ViewColumnLayer extends SelectOrViewColumnLayer {
 
@@ -23,7 +25,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            SelectLayerCompletionHandler completionHandler) {
+            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler completionHandler) {
         // To be parallel with SelectColumnLayer, we would recurse here, but since this is ViewColumnLayer
         // (and all my inner layers are ViewColumnLayer), there's nothing to do.
         Assert.eqNull(completionHandler, "completionHandler");

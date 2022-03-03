@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -11,6 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -19,7 +21,7 @@ import java.util.*;
  *
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
-final public class RedirectionLayer extends SelectAndViewAnalyzer {
+public final class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
     private final TrackingRowSet resultRowSet;
     private final WritableRowRedirection rowRedirection;
@@ -60,10 +62,10 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            SelectLayerCompletionHandler onCompletion) {
+            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
         final BitSet baseLayerBitSet = new BitSet();
         inner.setBaseBits(baseLayerBitSet);
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
                 new SelectLayerCompletionHandler(baseLayerBitSet, onCompletion) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {

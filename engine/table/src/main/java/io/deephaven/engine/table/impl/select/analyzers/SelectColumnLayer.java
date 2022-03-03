@@ -2,8 +2,12 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -13,6 +17,8 @@ import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritable
 import io.deephaven.time.DateTime;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +43,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final BitSet dependencyBitSet;
     private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
+    private final boolean resultTypeIsLivenessReferent;
+    private final boolean resultTypeIsTable;
 
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
@@ -51,19 +59,31 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.parentRowSet = parentRowSet;
         this.writableSource = ws;
         this.isRedirected = isRedirected;
-        this.dependencyBitSet = new BitSet();
+
+        dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
+
         this.flattenedResult = flattenedResult;
         this.alreadyFlattenedSources = alreadyFlattenedSources;
 
-        // we can't use threads at all if we have column that uses a Python query scope, because we are likely operating
+        // We can't use threads at all if we have column that uses a Python query scope, because we are likely operating
         // under the GIL which will cause a deadlock
-        this.canUseThreads = !sc.getDataView().preventsParallelism();
+        canUseThreads = !sc.getDataView().preventsParallelism();
 
-        // we can only parallelize this column if we are not redirected, our destination provides ensure previous, and
+        // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
-        this.canParallelizeThisColumn = canUseThreads && !isRedirected
+        canParallelizeThisColumn = canUseThreads && !isRedirected
                 && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+
+        // We want to ensure that results are managed appropriately if they are LivenessReferents
+        resultTypeIsLivenessReferent = LivenessReferent.class.isAssignableFrom(ws.getType());
+
+        // We assume that formulas producing Tables are likely to
+        //     1. be expensive to evaluate and
+        //     2. have wildly varying job size,
+        // and so we ignore minimum size to parallelize and limit divisionSize to 1 to maximize the
+        // effect of our parallelism.
+        resultTypeIsTable = Table.class.isAssignableFrom(ws.getType());
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -78,13 +98,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-            final UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion) {
+            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
+            final SelectLayerCompletionHandler onCompletion) {
         if (isRedirected && upstream.removed().isNonempty()) {
             clearObjectsAtThisLevel(upstream.removed());
         }
 
         // recurse so that dependent intermediate columns are already updated
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
                 new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {
@@ -94,16 +115,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
 
-                        // We assume that formulas producing Tables are likely to
-                        //     1. be expensive to evaluate and
-                        //     2. have wildly varying job size,
-                        // and so we ignore minimum size to parallelize and limit divisionSize to 1 to maximize the
-                        // effect of our parallelism.
-                        final boolean resultIsTable = Table.class.isAssignableFrom(writableSource.getType());
-
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                (resultIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
-                            final long divisionSize = resultIsTable ? 1 :
+                                (resultTypeIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                            final long divisionSize = resultTypeIsTable ? 1 :
                                     Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();
@@ -139,11 +153,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             }
 
                             jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                    onCompletion, this::onError, updates), SelectColumnLayer.this,
-                                    this::onError);
+                                            liveResultOwner, onCompletion, this::onError, updates),
+                                    SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
-                                    () -> doSerialApplyUpdate(upstream, toClear, helper, onCompletion),
+                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -151,9 +165,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
-            final RowSet toClear,
-            final UpdateHelper helper, SelectLayerCompletionHandler onCompletion, Consumer<Exception> onError,
-            List<TableUpdate> splitUpdates) {
+            final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
+            final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
+            final List<TableUpdate> splitUpdates) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
@@ -166,7 +180,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
             jobScheduler.submit(
-                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, onCompletion, divisions, fdest),
+                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion, divisions,
+                            fdest),
                     SelectColumnLayer.this, onError);
             if (flattenedResult) {
                 destinationOffset += splitUpdate.added().size();
@@ -178,9 +193,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            final SelectLayerCompletionHandler onCompletion) {
+            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion) {
         doEnsureCapacity();
-        doApplyUpdate(upstream, helper, 0);
+        doApplyUpdate(upstream, helper, liveResultOwner, 0);
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
@@ -188,8 +203,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            final SelectLayerCompletionHandler onCompletion, AtomicInteger divisions, long startOffset) {
-        doApplyUpdate(upstream, helper, startOffset);
+            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
+            final AtomicInteger divisions, final long startOffset) {
+        doApplyUpdate(upstream, helper, liveResultOwner, startOffset);
         upstream.release();
 
         if (divisions.decrementAndGet() == 0) {
@@ -200,7 +216,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    private void doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper, final long startOffset) {
+    private void doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner, final long startOffset) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -210,7 +227,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // We include modifies in our shifted sets if we are not going to process them separately.
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
-
 
         // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
         // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
@@ -275,6 +291,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 Assert.gtZero(destCapacity, "destCapacity");
                                 final RowSequence sourceKeys = keyIter.getNextRowSequenceWithLength(destCapacity);
                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk, sourceKeys);
+                                maybeManageResults(backingChunk, liveResultOwner);
                                 destinationOffset += destCapacity;
                             }
                         }
@@ -302,6 +319,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                             .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
                                     if (destCapacity >= (lastDest - firstDest + 1)) {
                                         chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
+                                        maybeManageResults(backingChunk, liveResultOwner);
                                     } else {
                                         long chunkDestCapacity = destCapacity;
                                         try (final RowSequence.Iterator chunkIterator = keys.getRowSequenceIterator()) {
@@ -310,6 +328,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                                         chunkIterator.getNextRowSequenceWithLength(chunkDestCapacity);
                                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk,
                                                         chunkSourceKeys);
+                                                maybeManageResults(backingChunk, liveResultOwner);
                                                 firstDest += chunkDestCapacity;
                                                 if (firstDest <= lastDest) {
                                                     chunkDestCapacity = Math.min(
@@ -322,7 +341,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     }
                                 } else {
                                     writableSource.fillFromChunk(destContext,
-                                            chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                                            maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys),
+                                                    liveResultOwner),
+                                            destKeys);
                                 }
                             }
                         }
@@ -332,7 +353,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
                         while (keyIter.hasMore()) {
                             final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys),
+                            writableSource.fillFromChunk(destContext,
+                                    maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
                                     keys);
                         }
                     }
@@ -346,11 +368,42 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
                         final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                        writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                        writableSource.fillFromChunk(destContext,
+                                maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
+                                keys);
                     }
                 }
             }
         }
+    }
+
+    private <CT extends Chunk<?>> CT maybeManageResults(
+            @NotNull final CT resultChunk,
+            @Nullable final LivenessNode liveResultOwner) {
+        if (resultTypeIsLivenessReferent && liveResultOwner != null) {
+            final ObjectChunk<? extends LivenessReferent, ?> typedChunk =
+                    resultChunk.asObjectChunk().asTypedObjectChunk();
+            final int chunkSize = typedChunk.size();
+            for (int ii = 0; ii < chunkSize; ++ii) {
+                liveResultOwner.manage(typedChunk.get(ii));
+            }
+        }
+        return resultChunk;
+    }
+
+    private <CT extends Chunk<?>> CT maybeUnmanageResults(
+            @NotNull final CT resultChunk,
+            @Nullable final LivenessNode liveResultOwner) {
+        // TODO-RWC: Use this for removes and pre-shift previous modifies
+        if (resultTypeIsLivenessReferent && liveResultOwner != null) {
+            final ObjectChunk<? extends LivenessReferent, ?> typedChunk =
+                    resultChunk.asObjectChunk().asTypedObjectChunk();
+            final int chunkSize = typedChunk.size();
+            for (int ii = 0; ii < chunkSize; ++ii) {
+                liveResultOwner.unmanage(typedChunk.get(ii));
+            }
+        }
+        return resultChunk;
     }
 
     private void doEnsureCapacity() {

@@ -21,6 +21,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -1273,60 +1274,64 @@ public class QueryTable extends BaseTable {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
                     }
 
-                    try (final RowSet emptyRowSet = RowSetFactory.empty();
-                            final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                    new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                    final QueryTable resultTable;
+                    final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
+                    try (final SafeCloseable ignored = liveResultCapture != null ? liveResultCapture::release : null) {
+                        try (final RowSet emptyRowSet = RowSetFactory.empty();
+                             final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                                     new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
-                        try {
-                            analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
-                                    analyzer.futureCompletionHandler(waitForResult));
-                        } catch (Exception e) {
-                            waitForResult.completeExceptionally(e);
-                        }
-
-                        try {
-                            waitForResult.get();
-                        } catch (InterruptedException e) {
-                            throw new CancellationException("interrupted while computing select or update");
-                        } catch (ExecutionException e) {
-                            if (e.getCause() instanceof RuntimeException) {
-                                throw (RuntimeException) e.getCause();
-                            } else {
-                                throw new UncheckedDeephavenException("Failure computing select or update",
-                                        e.getCause());
+                            try {
+                                analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
+                                        liveResultCapture, analyzer.futureCompletionHandler(waitForResult));
+                            } catch (Exception e) {
+                                waitForResult.completeExceptionally(e);
                             }
-                        } finally {
-                            final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
-                            if (baseEntry != null) {
-                                final QueryPerformanceNugget outerNugget =
-                                        QueryPerformanceRecorder.getInstance().getOuterNugget();
-                                if (outerNugget != null) {
-                                    outerNugget.addBaseEntry(baseEntry);
+
+                            try {
+                                waitForResult.get();
+                            } catch (InterruptedException e) {
+                                throw new CancellationException("interrupted while computing select or update");
+                            } catch (ExecutionException e) {
+                                if (e.getCause() instanceof RuntimeException) {
+                                    throw (RuntimeException) e.getCause();
+                                } else {
+                                    throw new UncheckedDeephavenException("Failure computing select or update",
+                                            e.getCause());
+                                }
+                            } finally {
+                                final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+                                if (baseEntry != null) {
+                                    final QueryPerformanceNugget outerNugget =
+                                            QueryPerformanceRecorder.getInstance().getOuterNugget();
+                                    if (outerNugget != null) {
+                                        outerNugget.addBaseEntry(baseEntry);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    final TrackingRowSet resultRowSet =
-                            analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
-                    final QueryTable resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
-                    if (isRefreshing()) {
-                        analyzer.startTrackingPrev();
-                        final Map<String, String[]> effects = analyzer.calcEffects();
-                        final SelectOrUpdateListener soul =
-                                new SelectOrUpdateListener(updateDescription, this, resultTable,
-                                        effects, analyzer);
-                        listenForUpdates(soul);
-                    } else {
-                        if (resultTable.getRowSet().isFlat()) {
-                            resultTable.setFlat();
-                        }
-                        if (resultTable.getRowSet() == rowSet) {
-                            propagateGrouping(selectColumns, resultTable);
-                        }
-                        for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            if (columnSource instanceof PossiblyImmutableColumnSource) {
-                                ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
+                        resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
+                        if (liveResultCapture != null) {
+                            analyzer.startTrackingPrev();
+                            final Map<String, String[]> effects = analyzer.calcEffects();
+                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
+                                    resultTable, effects, analyzer);
+                            liveResultCapture.transferTo(soul);
+                            listenForUpdates(soul);
+                        } else {
+                            if (resultTable.getRowSet().isFlat()) {
+                                resultTable.setFlat();
+                            }
+                            if (resultTable.getRowSet() == rowSet) {
+                                propagateGrouping(selectColumns, resultTable);
+                            }
+                            for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
+                                if (columnSource instanceof PossiblyImmutableColumnSource) {
+                                    ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+                                }
                             }
                         }
                     }
