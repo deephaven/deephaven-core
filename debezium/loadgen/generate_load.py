@@ -1,29 +1,42 @@
-import asyncio, barnum, concurrent.futures, json, math, random, requests, signal, os, socket, sys, time
+import asyncio
+import barnum
+import concurrent.futures
+import json
+import math
+import random
+import requests
+import signal
+import os
+import socket
+import sys
+import time
+from collections import deque
+from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from kafka import KafkaProducer
+from kafka.admin import KafkaAdminClient, NewTopic
 from mysql.connector import connect, Error
-from concurrent.futures import CancelledError
+from typing import Deque
 
 # CONFIG
 user_seed_count     = 10000
 item_seed_count     = 1000
 max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
-max_burst_purchases    = 2
 max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
-max_burst_pageviews    = 200
 purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
+kafka_partitions         = int(os.environ['KAFKA_PARTITIONS'])
 kafka_producer_acks      = int(os.environ['KAFKA_PRODUCER_ACKS'])
-kafka_batch_size         = 200 * 1000
-kafka_max_in_flight_requests_per_connection = 20
+kafka_batch_size         = int(os.environ['KAFKA_BATCH_SIZE'])
 kafka_linger_ms          = 40  # Note we flush manually, so this only applies in between our managed batches.
 params              = {  purchases_per_second_key : int(os.environ['PURCHASES_PER_SECOND_START']),
                          pageviews_per_second_key : int(os.environ['PAGEVIEWS_PER_SECOND_START']) }
 command_endpoint    = os.environ['COMMAND_ENDPOINT']
 log_period_seconds  = 10
-rate_check_seconds  = 30
+rate_check_seconds  = 20
 item_inventory_min  = 1000
 item_inventory_max  = 5000
+min_sleep_seconds   = 0.010
 item_price_min      = 5
 item_price_max      = 500
 mysql_host          = 'mysql'
@@ -129,71 +142,161 @@ def get_item_prices(cursor):
     log("Getting item ID and PRICEs DONE.")
     return [(row[0], row[1]) for row in cursor]
 
-async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_desc):
+def calc_max_burst(rate_s, max_parallel):
+    return math.ceil(1.0 * rate_s / max_parallel)
+
+class PeriodRateTracker:
+    start_ts: float
+    sent: int
+    def __init__(self, start_ts: float = 0.0, initial_sent: int = 0):
+        self.reset(start_ts, initial_sent)
+    def reset(self, start_ts: float, initial_sent: int):
+        self.start_ts = start_ts
+        self.sent = initial_sent
+
+class RateTracker:
+    max_periods: int
+    period_window_s: float
+    period_trackers: Deque['RateTracker']
+    free_trackers: list
+    total_sent: int
+
+    def __init__(self, max_periods: int, period_window_s: float, now: float):
+        self.max_periods = max_periods
+        self.period_window_s = period_window_s
+        self.period_trackers = deque(maxlen = max_periods)
+        self.period_trackers.append(PeriodRateTracker(now, 0))
+        self.free_trackers = [ PeriodRateTracker() for _ in range(max_periods) ]
+        self.total_sent = 0
+    
+    def track(self, now: float, sent: int):
+        self.total_sent += sent
+        period_tracker = self.period_trackers[-1]
+        if now - period_tracker.start_ts < self.period_window_s:
+            period_tracker.sent += sent
+            return
+
+        if len(self.period_trackers) < self.max_periods:
+           period_tracker = self.free_trackers.pop()
+           period_tracker.reset(now, sent)
+           self.period_trackers.append(period_tracker)
+           return
+
+        period_tracker = self.period_trackers.popleft()
+        self.total_sent -= period_tracker.sent
+        period_tracker.reset(now, sent)
+        self.period_trackers.append(period_tracker)
+
+    def reset(self, now: float):
+        self.total_sent = 0
+        while len(self.period_trackers) > 1:
+            self.free_trackers.append(self.period_trackers.popleft())
+        t = self.period_trackers[0]
+        t.start_ts = now
+        t.sent = 0
+
+    def read(self, now: float):
+        return self.period_trackers[0].start_ts, self.total_sent
+
+    def steady_state(self):
+        return len(self.period_trackers) == self.max_periods
+
+def rate_tracker_for_rate(rate_s: float, now: float):
+    rt_period_window_s = max(1.0/rate_s, 0.1)
+    rt_max_periods = min(10, math.ceil(10.0/rt_period_window_s))
+    return RateTracker(rt_max_periods, rt_period_window_s, now)
+
+async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: str):
     now = time.time()
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
     sent_since_last_log = 0     # Number of events sent not included in the last summary log.
     last_rate_check = now       # Timestamp for the last time we checked actual events sent versus rate.
+    burst_cap_last_log = 0      # If we limited the max burst since the last summary log, the count that hit the cap; zero otherwise.
     rate_s = params[param_key]  # Target actions per second.
-    rate_sent = 0               # number of actions enqueued (noth already done and not yet done) at the current rate.
-    rate_done = 0               # Number of actions finished (already done) at the current rate.
-    rate_start = now            # Timestamp for when we started sending at rate_s.
+    rate_measure_window = 2     # Time in second to accumulate samples to estimate rate.
+    # limit rate if we are falling too far behind.
+    max_burst = calc_max_burst(rate_s, max_parallel)
     old_rate_s = rate_s         # Used to detect if rate_s has changed.
     period_s = 1.0/rate_s
-    log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel.")
-    futures = {}                # Dictionary where we accumulate unfinished futures scheduled on the executor.
+    rate_tracker = rate_tracker_for_rate(rate_s, now)
+    log(f"Simulating {action_desc} actions with an initial rate of {rate_s}/s, max {max_parallel} in parallel; " +
+        f"tracking rate using {rate_tracker.max_periods} periods of {rate_tracker.period_window_s} seconds.")
+    sending_threads = 0
+    delta_per_thread = 0
+    futures = []                # Dictionary where we accumulate unfinished futures scheduled on the executor.
     def reap_futures():         # Remove from futures the ones already finished, returning how many where finished.
-        done = 0
-        for k in list(futures.keys()):
-            future = futures[k]
+        not_done = []
+        actions_done = 0
+        for future in futures:
             if future.done():
-                done += future.result()
-                del futures[k]
-        return done
-    loop_count = 0              # Absoute loop counter; used as unique key in the futures dictionary.
+                dt, count = future.result()
+                actions_done += count
+            else:
+                not_done.append(future)
+        return not_done, actions_done
     event_loop = asyncio.get_event_loop()
-    action_count = 1            # How many actions to batch on the next executor run; starts at 1, increases if batching is activated.
     try:
         while True:
-            rate_done += reap_futures()
+            futures, actions_done = reap_futures()
             while len(futures) > max_parallel - 1:
-                await asyncio.wait(list(futures.values()), return_when=asyncio.FIRST_COMPLETED)
-                rate_done += reap_futures()
-            future = event_loop.run_in_executor(executor, action_fun, action_count)
-            futures[loop_count] = future
-            loop_count += 1
-            rate_sent += action_count
-            sent_since_last_log += action_count
+                await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                futures, actions_done = reap_futures()
             now = time.time()
+            tracker_start, tracker_sent = rate_tracker.read(now)
+            expected_count_by_now = round((now - tracker_start) / period_s)
+            available_threads = max_parallel - len(futures)
+            delta_count = expected_count_by_now - tracker_sent
+            if delta_count > 0:
+                delta_per_thread = math.ceil(delta_count / available_threads)
+                if delta_per_thread < 1:
+                    delta_per_thread = 1
+                elif delta_per_thread > max_burst:
+                    burst_cap_last_log = delta_per_thread
+                    delta_per_thread = max_burst
+                    delta_count = max_burst * available_threads
+
+                sent_since_last_log += delta_count
+                sending_threads = 0
+                while delta_count > 0:
+                    action_count = min(delta_count, delta_per_thread)
+                    future = event_loop.run_in_executor(executor, action_fun, action_count)
+                    now = time.time()
+                    rate_tracker.track(now, action_count)
+                    futures.append(future)
+                    sending_threads += 1
+                    delta_count -= action_count
 
             last_log_diff = now - last_log
             if last_log_diff >= log_period_seconds:
                 qlen = len(futures)
-                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds; " +
-                    f"on last trigger running={qlen}, count={action_count}.")
+                log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds, " +
+                    f"effective rate {sent_since_last_log / last_log_diff:.2f}/s; " +
+                    f"on last trigger threads total sending={qlen}, new={sending_threads}, delta_per_thread={delta_per_thread}, burst cap={burst_cap_last_log}.")
                 last_log = now
                 sent_since_last_log = 0
+                burst_cap_last_log = 0
+
+            next_time = tracker_start + (tracker_sent + delta_count + 1)*period_s
 
             last_rate_check_diff = now - last_rate_check
             if last_rate_check_diff >= rate_check_seconds:
-                last_rate_check = now = time.time()
-                effective_rate_s = rate_sent / (now - rate_start)
-                if abs(effective_rate_s - rate_s)/rate_s > 0.02:
-                    log(f"Warning: rate {rate_s}/s is too high; achieving " +
-                        f"an effective rate of {effective_rate_s:.1f}/s in the last {last_rate_check_diff:.1f} seconds.")
+                if not rate_tracker.steady_state():
+                    last_rate_check += 1.0
+                    log(f"Warning: rate tracker not in steady state when scheduled to check rate: len(rate_tracker.period_trackers)={len(rate_tracker.period_trackers)}.")
+                else:
+                    now = time.time()
+                    tracker_start, tracker_sent = rate_tracker.read(now)
+                    dt = now - tracker_start
+                    last_rate_check = now
+                    effective_rate_s = tracker_sent / dt
+                    if abs(effective_rate_s - rate_s)/rate_s > 0.02:
+                        log(f"Warning: too far from target rate {rate_s}/s; " +
+                            f"sent {tracker_sent} in the last {dt:.1f} seconds for an effective rate of {effective_rate_s:.2f}/s.")
 
-            next_time = rate_start + (rate_sent + 1)*period_s
             sleep_s = next_time - time.time()
-            if sleep_s > 0.001:  # In practice can't sleep for less
-                await asyncio.sleep(sleep_s)
-
-            rate_done += reap_futures()
-            expected_count_by_now = (time.time() - rate_start) / period_s
-            action_count = math.ceil(expected_count_by_now - rate_done)
-            if action_count < 1:
-                action_count = 1
-            elif action_count > max_burst:
-                action_count = max_burst
+            if sleep_s < min_sleep_seconds:
+                sleep_s = min_sleep_seconds
+            await asyncio.sleep(sleep_s)
 
             rate_s = params[param_key]
             if old_rate_s != rate_s:
@@ -201,10 +304,9 @@ async def loop(executor, max_parallel, max_burst, action_fun, param_key, action_
                 period_s = 1.0/rate_s
                 old_rate_s = rate_s
                 now = time.time()
-                rate_start = now
-                rate_sent = 0
-                rate_done = 0
+                rate_tracker = rate_tracker_for_rate(rate_s, now)
                 last_rate_check = now
+                max_burst = calc_max_burst(rate_s, max_parallel)
     except CancelledError:
         pass
     log(f"Stopped simulating {action_desc} actions.")
@@ -214,14 +316,21 @@ async def loop_purchases(executor, db_resources, producers, item_prices):
     def make_purchases(count):
         # Get a user and item to purchase
         # Write purchaser pageview
+        start_time = time.time()
         producer = producers.pop()
         (connection, cursor) = db_resources.pop()
+        partition = random.randint(0, kafka_partitions - 1)
         for i in range(count):
             purchase_item = random.choice(item_prices)
-            purchase_user = random.randint(0,user_seed_count-1)
+            purchase_user = random.randint(0, user_seed_count - 1)
             purchase_quantity = random.randint(1,5)
 
-            producer.send(kafka_topic, key=str(purchase_user).encode('ascii'), value=generate_pageview(purchase_user, purchase_item[0], 'products'))
+            producer.send(
+                kafka_topic,
+                partition=partition,
+                key=str(purchase_user).encode('ascii'),
+                value=generate_pageview(purchase_user, purchase_item[0], 'products')
+            )
 
             # Write purchase row
             cursor.execute(
@@ -237,22 +346,31 @@ async def loop_purchases(executor, db_resources, producers, item_prices):
             producer.flush()
         db_resources.append((connection, cursor))
         producers.append(producer)
-        return count
-    await loop(executor, max_parallel_purchases, max_burst_purchases, make_purchases, purchases_per_second_key, "purchase")
+        dt = time.time() - start_time
+        return dt, count
+    await loop(executor, max_parallel_purchases, make_purchases, purchases_per_second_key, "purchase")
 
 async def loop_random_pageviews(executor, producers):
     # Write random pageviews to products or profiles
     def make_random_pageviews(count):
+        start_time = time.time()
         producer = producers.pop()
+        partition = random.randint(0, kafka_partitions - 1)
         for i in range(count):
-            rand_user = random.randint(0,user_seed_count)
+            rand_user = random.randint(0, user_seed_count - 1)
             rand_page_type = random.choice(['products', 'profiles'])
             target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
-            producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
+            producer.send(
+                kafka_topic,
+                partition=partition,
+                key=str(rand_user).encode('ascii'),
+                value=generate_pageview(rand_user, random.randint(0, target_id_max_range - 1), rand_page_type)
+            )
         producer.flush()
         producers.append(producer)
-        return count
-    await loop(executor, max_parallel_pageviews, max_burst_pageviews, make_random_pageviews, pageviews_per_second_key, "pageview")
+        dt = time.time() - start_time
+        return dt, count
+    await loop(executor, max_parallel_pageviews, make_random_pageviews, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
@@ -310,6 +428,7 @@ async def handle_command_client(reader, writer):
         pass
     log(f"Disconnecting from {peer}.")
     writer.close()
+    await writer.wait_closed()
 
 async def run_command_server():
     host, port = command_endpoint.split(':', 2)
@@ -352,12 +471,20 @@ db_resources = []
 exit_code = 0
 
 try:
+    KafkaAdminClient(bootstrap_servers=kafka_endpoint).create_topics([
+        NewTopic(
+            name="pageviews",
+            num_partitions=kafka_partitions,
+            replication_factor=1
+        )
+    ])
+
     for pi in range(max_parallel_purchases + max_parallel_pageviews):
         producer = KafkaProducer(
             bootstrap_servers = [kafka_endpoint],
             acks = kafka_producer_acks,
             batch_size = kafka_batch_size,
-            max_in_flight_requests_per_connection = kafka_max_in_flight_requests_per_connection,
+            max_in_flight_requests_per_connection = max_parallel_purchases + max_parallel_pageviews,
             linger_ms = kafka_linger_ms,
             value_serializer = lambda x: json.dumps(x).encode('utf-8')
         )
