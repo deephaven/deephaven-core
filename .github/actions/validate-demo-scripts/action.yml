@@ -1,0 +1,30 @@
+name: Validate demo scripts
+description: Runs the Python code in all of the markdown files in the given directory in Deephaven
+inputs:
+  demo-scripts-path:
+    description: The path to the demo notebooks
+    required: true
+  host:
+    description: The host name or IP address of the Deephaven instance
+    required: true
+  max-retries:
+    description: The maximum attempts to retry connecting to Deephaven
+    required: false
+    default: 5
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Setup environment
+      run: |
+        pip install --upgrade pip
+        pip install -r ${{ github.action_path }}/requirements.txt
+      shell: sh
+    - name: Launch Deephaven
+      run: docker-compose up -f ${{ github.action_path }}/docker-compose.yml
+    - name: Run python script
+      run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
+      shell: sh

@@ -1,0 +1,22 @@
+#Runs the python scripts in the demo environment
+
+name: Demo run scripts
+
+on:
+  pull_request:
+    branches:
+      - demo
+    paths:
+      - "demo/web/src/main/notebooks/**" #TODO validate this
+
+jobs:
+  validate_demo_scripts:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Validate demo scripts
+        uses: ./.github/actions/validate-demo-scripts
+        with:
+          demo-scripts-path: "demo/web/src/main/notebooks/"
+          host: "localhost"
