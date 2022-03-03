@@ -15,13 +15,14 @@ PYTHON_END_TAG = "```"
 
 def extract_python_scripts(file_path):
     """
-    Extracts the python scripts between the Python tags in the file at the given path
+    Extracts the python scripts between the Python tags in the file at the given path, and
+    returns them combined as a single string
 
     Parameters:
         file_path (str): The path to the file
 
     Returns:
-        list<str>: The list of Python scripts in the file
+        str: The combined string of Python scripts in the file
     """
     python_scripts = []
     with open(file_path) as f:
@@ -37,7 +38,7 @@ def extract_python_scripts(file_path):
             elif in_python_script:
                 current_script += line
 
-    return python_scripts
+    return "\n".join(python_scripts)
 
 def main(demo_scripts_path: str, host: str, max_retries: int):
     """
@@ -76,20 +77,26 @@ def main(demo_scripts_path: str, host: str, max_retries: int):
     if session is None:
         sys.exit(f"Failed to connect to Deephaven after {max_retries} attempts")
 
+    is_error = False
     for file_path in os.popen(f"find {demo_scripts_path} -name '*.md'").read().split("\n"):
         if len(file_path) > 0:
             print(f"Reading file {file_path}")
-            for script_string in extract_python_scripts(file_path):
-                try:
-                    session.run_script(script_string)
-                except DHError as e:
-                    print(e)
-                    print(script_string)
-                    sys.exit(f"Deephaven error when trying to run code in {file_path}")
-                except Exception as e:
-                    print(e)
-                    print(script_string)
-                    sys.exit(f"Unexpected error when trying to run code in {file_path}")
+            script_string = extract_python_scripts(file_path)
+            try:
+                session.run_script(script_string)
+                time.sleep(5)
+            except DHError as e:
+                print(e)
+                print(script_string)
+                print(f"Deephaven error when trying to run code in {file_path}")
+                is_error = True
+            except Exception as e:
+                print(e)
+                print(script_string)
+                print(f"Unexpected error when trying to run code in {file_path}")
+                is_error = True
+    if is_error:
+        sys.exit("At least 1 demo notebook failed to run. Check the logs for information on what failed")
 
 usage = """
 usage: python script.py demo_scripts_path host max_retries
