@@ -16,9 +16,9 @@ daily_data = create_random_table(time_interval, start_time=minus(now, offset))
 
 ## Datetime arithmethic
 
-Deephaven supports datetime arithmetic through methods such as [plus](https://deephaven.io/core/docs/reference/time/datetime/plus/) and [minus](https://deephaven.io/core/docs/reference/time/datetime/minus/).
+Deephaven supports DateTime arithmetic through methods such as [plus](https://deephaven.io/core/docs/reference/time/datetime/plus/) and [minus](https://deephaven.io/core/docs/reference/time/datetime/minus/).
 
-This example shows how to subtract 2 hours from a timestamp
+This example shows how to subtract 2 hours from a timestamp:
 
 ```python
 from deephaven.DateTimeUtils import convertPeriod
@@ -32,7 +32,7 @@ daily_data = daily_data.update("TimestampTwoHoursBefore = minus(Timestamp, two_h
 
 Downsampling can be done in Deephaven by deciding how to group your data, and then using an appropriate aggregation on the grouped data.
 
-With time series data, binning methods like [lowerBin](https://deephaven.io/core/docs/reference/time/datetime/lowerBin/) can be used to group by time stamps.
+With time series data, binning methods like [lowerBin](https://deephaven.io/core/docs/reference/time/datetime/lowerBin/) can be used to group by timestamps.
 
 This example shows how to group timestamps by the minute, and then store the sum of the `Number` column for each minute.
 
@@ -55,7 +55,7 @@ daily_data_binned = daily_data.update("TimestampMinute = lowerBin(Timestamp, nan
 
 [as-of joins](https://deephaven.io/core/docs/reference/table-operations/join/aj/) allow you to join data without exact matches. This works very well with time-series data.
 
-This example shows how to join two time series tables that have different densities in time stamps.
+This example shows how to join two time-series tables that have different densities in timestamps.
 
 ```python
 time_interval = expressionToNanos("T10S")
