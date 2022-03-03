@@ -11,12 +11,13 @@ dependencies {
 
   Classpaths.inheritGrpcPlatform(project, 'api')
   api 'io.grpc:grpc-api'
+  implementation 'io.grpc:grpc-core'
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
 
   Classpaths.inheritImmutables(project)
-
+  Classpaths.inheritAutoService(project)
   compileOnly 'javax.inject:javax.inject:1'
 
   Classpaths.inheritJUnitPlatform(project)

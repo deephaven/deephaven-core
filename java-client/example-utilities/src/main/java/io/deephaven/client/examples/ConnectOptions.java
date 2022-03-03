@@ -1,5 +1,6 @@
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ChannelHelper;
 import io.deephaven.uri.DeephavenTarget;
 import io.deephaven.uri.DeephavenUri;
 import io.grpc.ManagedChannel;
@@ -10,16 +11,12 @@ public class ConnectOptions {
 
     public static final String DEFAULT_HOST = "localhost";
 
-    public static final int DEFAULT_PORT = 10000;
-
     public static final DeephavenTarget DEFAULT_TARGET = DeephavenTarget.builder()
             .host(DEFAULT_HOST)
-            .port(DEFAULT_PORT)
             .isSecure(false)
             .build();
 
-    public static final String DEFAULT_TARGET_VALUE =
-            DeephavenUri.PLAINTEXT_SCHEME + "://" + DEFAULT_HOST + ":" + DEFAULT_PORT;
+    public static final String DEFAULT_TARGET_VALUE = DeephavenUri.PLAINTEXT_SCHEME + "://" + DEFAULT_HOST;
 
     public static ManagedChannel open(ConnectOptions options) {
         if (options == null) {
@@ -38,13 +35,7 @@ public class ConnectOptions {
     String userAgent;
 
     public ManagedChannel open() {
-        final ManagedChannelBuilder<?> builder =
-                ManagedChannelBuilder.forAddress(target.host(), target.port().orElse(DEFAULT_PORT));
-        if (target.isSecure()) {
-            builder.useTransportSecurity();
-        } else {
-            builder.usePlaintext();
-        }
+        final ManagedChannelBuilder<?> builder = ChannelHelper.channelBuilder(target);
         if (userAgent != null) {
             builder.userAgent(userAgent);
         }

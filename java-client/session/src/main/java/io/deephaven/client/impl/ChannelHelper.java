@@ -1,37 +1,33 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.uri.DeephavenTarget;
-import io.grpc.ManagedChannel;
+import io.grpc.ChannelCredentials;
+import io.grpc.Grpc;
+import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.TlsChannelCredentials;
 
-public class ChannelHelper {
+public final class ChannelHelper {
 
-    public static final int DEFAULT_TLS_PORT = 8080;
+    public static final int DEFAULT_TLS_PORT = 443;
 
-    public static final int DEFAULT_PLAINTEXT_PORT = 8080;
+    public static final int DEFAULT_PLAINTEXT_PORT = 10000;
 
-    public static ManagedChannel channel(DeephavenTarget target) {
-        return channelBuilder(target).build();
-    }
-
+    /**
+     * Creates a basic {@link ManagedChannelBuilder} by invoking
+     * {@link Grpc#newChannelBuilder(String, ChannelCredentials)} with {@link DeephavenTarget#toString()} and the
+     * appropriate {@link io.grpc.CallCredentials}.
+     *
+     * @param target the Deephaven target
+     * @return the channel builder
+     */
     public static ManagedChannelBuilder<?> channelBuilder(DeephavenTarget target) {
-        final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(target.host(), port(target));
+        final ChannelCredentials credentials;
         if (target.isSecure()) {
-            builder.useTransportSecurity();
+            credentials = TlsChannelCredentials.newBuilder().build();
         } else {
-            builder.usePlaintext();
+            credentials = InsecureChannelCredentials.create();
         }
-        return builder;
-    }
-
-    public static int port(DeephavenTarget target) {
-        if (target.port().isPresent()) {
-            return target.port().getAsInt();
-        }
-        // TODO(deephaven-core#1489): Support service discovery for DeephavenTarget
-        if (target.isSecure()) {
-            return Integer.getInteger("deephaven.target.port", DEFAULT_TLS_PORT);
-        }
-        return Integer.getInteger("deephaven.target.plaintext_port", DEFAULT_PLAINTEXT_PORT);
+        return Grpc.newChannelBuilder(target.toString(), credentials);
     }
 }
