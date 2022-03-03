@@ -1,6 +1,6 @@
 # Filter and decorate
 
-In our previous notebook, we showed how to create some tables with fake data. In this notebook, we show how to decorate and filter our data.
+In this notebook, we show how to decorate and filter our data.
 
 Let's start by simulating measurements of our values every minute. This could represent something like stock prices, temperatures, etc.
 
