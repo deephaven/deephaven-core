@@ -27,5 +27,5 @@ runs:
       run: docker-compose -f ${{ github.action_path }}/docker-compose.yml up -d
       shell: sh
     - name: Run python script
-      run: python ${{ github.action_path }}/script.py ${{ github.action_path }}/${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
+      run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
       shell: sh
