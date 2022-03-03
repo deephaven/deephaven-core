@@ -71,7 +71,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return Utils.makeReferentDescription(this);
     }
 
@@ -84,7 +84,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void addReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
+    synchronized void addReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
         checkOutstanding();
         impl.add(referent);
     }
@@ -100,7 +100,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void dropReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
+    synchronized void dropReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
         checkOutstanding();
         impl.drop(referent);
     }
@@ -116,7 +116,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void dropReferences(@NotNull final Collection<? extends LivenessReferent> referents)
+    synchronized void dropReferences(@NotNull final Collection<? extends LivenessReferent> referents)
             throws LivenessStateException {
         checkOutstanding();
         impl.drop(referents);
@@ -133,7 +133,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
      *         invoked
      */
-    synchronized final void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
+    synchronized void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
         checkOutstanding();
         for (final LivenessReferent referent : impl) {
             if (referent != null) {
@@ -166,7 +166,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     }
 
     @Override
-    public final void cleanup() {
+    public void cleanup() {
         ensureReferencesDroppedInternal(true);
     }
 
@@ -175,7 +175,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * Initiate the idempotent cleanup process. This will drop all retained references if their referents still exist.
      * No new references may be added to or dropped from this tracker.
      */
-    final void ensureReferencesDropped() {
+    void ensureReferencesDropped() {
         ensureReferencesDroppedInternal(false);
     }
 
@@ -334,7 +334,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         @NotNull
         @Override
         public Iterator<LivenessReferent> iterator() {
-            return new Iterator<LivenessReferent>() {
+            return new Iterator<>() {
 
                 private final Iterator<WeakReference<? extends LivenessReferent>> internal =
                         retainedReferences.iterator();
