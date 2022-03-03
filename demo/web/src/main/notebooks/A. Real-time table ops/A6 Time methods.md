@@ -1,6 +1,6 @@
 # Time methods
 
-In our previous notebook, we showed how to use conditionals on time series data. In this notebook, we show how to use Deephaven's time methods on time series data.
+In this notebook, we show how to use Deephaven's time methods on time series data.
 
 Let's start again by simulating some real-time data, but this time with a shorter time interval.
 
