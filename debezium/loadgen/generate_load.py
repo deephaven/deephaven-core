@@ -137,29 +137,32 @@ def seed_data(connection, cursor):
     log("Seeding data DONE.")
 
 def get_item_prices(cursor):
-    log("Getting item ID and PRICEs...")
     cursor.execute("SELECT id, price FROM shop.items")
-    log("Getting item ID and PRICEs DONE.")
     return [(row[0], row[1]) for row in cursor]
 
 def calc_max_burst(rate_s, max_parallel):
     return math.ceil(1.0 * rate_s / max_parallel)
 
 class PeriodRateTracker:
-    start_ts: float
-    sent: int
+    start_ts: float   # Timestamp for beginning of period; set on creation
+    sent: int         # Count of messages sent in the period.
     def __init__(self, start_ts: float = 0.0, initial_sent: int = 0):
         self.reset(start_ts, initial_sent)
     def reset(self, start_ts: float, initial_sent: int):
         self.start_ts = start_ts
         self.sent = initial_sent
 
+# Class to support tracking rate of messages sent.
 class RateTracker:
-    max_periods: int
-    period_window_s: float
+    max_periods: int                       # Total number of periods to keep
+    period_window_s: float                 # Size of time window per period, in s.
+    total_sent: int                        # Total messages sent across all trackers
+    # We keep trackers in a deque; when we send messages we add to the individual
+    # period tracker's sent count and to our total; when a period expires we remove the
+    # period tracker and its sent count from the total.  This way we keep a
+    # rolling window of approximately (max_periods * period_window_s).
     period_trackers: Deque['RateTracker']
-    free_trackers: list
-    total_sent: int
+    free_trackers: list                    # We keep unused trackers in a free list
 
     def __init__(self, max_periods: int, period_window_s: float, now: float):
         self.max_periods = max_periods
@@ -206,6 +209,8 @@ def rate_tracker_for_rate(rate_s: float, now: float):
     rt_max_periods = min(10, math.ceil(10.0/rt_period_window_s))
     return RateTracker(rt_max_periods, rt_period_window_s, now)
 
+# Main async loop for executing a given action type while rate controlling it.
+# The action fun should accept a count argument allowing this function to size batches.
 async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: str):
     now = time.time()
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
@@ -308,74 +313,74 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
                 last_rate_check = now
                 max_burst = calc_max_burst(rate_s, max_parallel)
     except CancelledError:
-        pass
+        release_resources()
     log(f"Stopped simulating {action_desc} actions.")
 
-async def loop_purchases(executor, db_resources, producers, item_prices):
+def make_purchases(count):
+    start_time = time.time()
+    partition = random.randint(0, kafka_partitions - 1)
+    for i in range(count):
+        purchase_item = random.choice(item_prices)
+        purchase_user = random.randint(0, user_seed_count - 1)
+        purchase_quantity = random.randint(1,5)
+
+        producer.send(
+            kafka_topic,
+            partition=partition,
+            key=str(purchase_user).encode('ascii'),
+            value=generate_pageview(purchase_user, purchase_item[0], 'products')
+        )
+
+        # Write purchase row
+        cursor.execute(
+            purchase_insert,
+            (
+                purchase_user,
+                purchase_item[0],
+                purchase_quantity,
+                purchase_item[1] * purchase_quantity
+            )
+        )
+        connection.commit()
+        producer.flush()
+    dt = time.time() - start_time
+    return dt, count
+
+async def loop_purchases(executor):
     log("Preparing to loop + seed kafka pageviews and purchases.")
-    def make_purchases(count):
-        # Get a user and item to purchase
-        # Write purchaser pageview
-        start_time = time.time()
-        producer = producers.pop()
-        (connection, cursor) = db_resources.pop()
-        partition = random.randint(0, kafka_partitions - 1)
-        for i in range(count):
-            purchase_item = random.choice(item_prices)
-            purchase_user = random.randint(0, user_seed_count - 1)
-            purchase_quantity = random.randint(1,5)
-
-            producer.send(
-                kafka_topic,
-                partition=partition,
-                key=str(purchase_user).encode('ascii'),
-                value=generate_pageview(purchase_user, purchase_item[0], 'products')
-            )
-
-            # Write purchase row
-            cursor.execute(
-                purchase_insert,
-                (
-                    purchase_user,
-                    purchase_item[0],
-                    purchase_quantity,
-                    purchase_item[1] * purchase_quantity
-                )
-            )
-            connection.commit()
-            producer.flush()
-        db_resources.append((connection, cursor))
-        producers.append(producer)
-        dt = time.time() - start_time
-        return dt, count
     await loop(executor, max_parallel_purchases, make_purchases, purchases_per_second_key, "purchase")
 
-async def loop_random_pageviews(executor, producers):
+def make_random_pageviews(count):
+    start_time = time.time()
+    partition = random.randint(0, kafka_partitions - 1)
+    for i in range(count):
+        rand_user = random.randint(0, user_seed_count - 1)
+        rand_page_type = random.choice(['products', 'profiles'])
+        target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
+        producer.send(
+            kafka_topic,
+            partition=partition,
+            key=str(rand_user).encode('ascii'),
+            value=generate_pageview(rand_user, random.randint(0, target_id_max_range - 1), rand_page_type)
+        )
+    producer.flush()
+    dt = time.time() - start_time
+    return dt, count
+
+async def loop_random_pageviews(executor):
     # Write random pageviews to products or profiles
-    def make_random_pageviews(count):
-        start_time = time.time()
-        producer = producers.pop()
-        partition = random.randint(0, kafka_partitions - 1)
-        for i in range(count):
-            rand_user = random.randint(0, user_seed_count - 1)
-            rand_page_type = random.choice(['products', 'profiles'])
-            target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
-            producer.send(
-                kafka_topic,
-                partition=partition,
-                key=str(rand_user).encode('ascii'),
-                value=generate_pageview(rand_user, random.randint(0, target_id_max_range - 1), rand_page_type)
-            )
-        producer.flush()
-        producers.append(producer)
-        dt = time.time() - start_time
-        return dt, count
     await loop(executor, max_parallel_pageviews, make_random_pageviews, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
 #
-# Simple socket-based command interface.
+# Simple socket-based command interface, to control message rate externally.
+# Sample use from the command line:
+#
+# $ nc localhost 8090
+# LOADGEN Connected.
+# set pageviews_per_second 300000
+# Setting pageviews_per_second: old value was 200000, new value is 300000.
 #
 async def handle_command_client(reader, writer):
     peer = reader._transport.get_extra_info('peername')
@@ -441,104 +446,128 @@ async def run_command_server():
         pass
     log(f"Shutting down command interface.")
 
-##########################
-
-# 
-# Initialize Debezium (Kafka Connect Component)
-#
-requests.post(('http://%s/connectors' % debezium_endpoint),
-    json={
-        "name": "mysql-connector",
-        "config": {
-            "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-            "database.hostname": mysql_host,
-            "database.port": mysql_port,
-            "database.user": mysql_user,
-            "database.password": mysql_pass,
-            "database.server.name": mysql_host,
-            "database.server.id": '1234',
-            "database.history.kafka.bootstrap.servers": kafka_endpoint,
-            "database.history.kafka.topic": "mysql-history",
-            "time.precision.mode": "connect"
-        }
-    }
-)
-
-# Initialize Kafka
-
-producers = []
-db_resources = []
-exit_code = 0
-
-try:
-    KafkaAdminClient(bootstrap_servers=kafka_endpoint).create_topics([
-        NewTopic(
-            name="pageviews",
-            num_partitions=kafka_partitions,
-            replication_factor=1
-        )
-    ])
-
-    for pi in range(max_parallel_purchases + max_parallel_pageviews):
-        producer = KafkaProducer(
-            bootstrap_servers = [kafka_endpoint],
-            acks = kafka_producer_acks,
-            batch_size = kafka_batch_size,
-            max_in_flight_requests_per_connection = max_parallel_purchases + max_parallel_pageviews,
-            linger_ms = kafka_linger_ms,
-            value_serializer = lambda x: json.dumps(x).encode('utf-8')
-        )
-        producers.append(producer)
-
-    for di in range(max_parallel_purchases):
+# We use process-based executors to run purchase and pageview actions;
+# Each has its own kafka producer; purchase action executors also need
+# a database connection.
+producer = None
+cursor = None
+connection = None
+item_prices = None
+def init_resources(kafka_only = False):
+    global producer, cursor, connection, item_prices
+    if not kafka_only:
         connection = connect(host=mysql_host, user=mysql_user, password=mysql_pass)
         cursor = connection.cursor()
-        db_resources.append((connection, cursor))
+        item_prices = get_item_prices(cursor)
 
-    (connection, cursor) = db_resources[0]
-    initialize_database(connection, cursor)
-    seed_data(connection, cursor)
-    item_prices = get_item_prices(cursor)
-    async def shutdown():
-        for task in asyncio.Task.all_tasks():
-            task.cancel()
-    async def run_async():
-        event_loop = asyncio.get_event_loop()
-        signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-        async def handle_signal(signal):
-            await shutdown()
-        for s in signals:
-            event_loop.add_signal_handler(
-                s, lambda s=s: asyncio.create_task(handle_signal(s)))
-        with concurrent.futures.ThreadPoolExecutor(
-                max_workers = max_parallel_purchases + max_parallel_pageviews
-        ) as executor:
-            await asyncio.gather(
-                loop_purchases(executor, db_resources, producers, item_prices),
-                loop_random_pageviews(executor, producers),
-                run_command_server()
-            )
-    log("Starting simulation loops.")
+    producer = KafkaProducer(
+        bootstrap_servers = [kafka_endpoint],
+        acks = kafka_producer_acks,
+        batch_size = kafka_batch_size,
+        max_in_flight_requests_per_connection = max_parallel_purchases + max_parallel_pageviews,
+        linger_ms = kafka_linger_ms,
+        value_serializer = lambda x: json.dumps(x).encode('utf-8')
+    )
+
+async def release_resources():
+    global producer, cursor, connection
+    for x in (producer, cursor, connection):
+        if x is not None:
+            x.close()
+    producer = cursor = connection = None
+
+def main():
+    # Initialize Debezium (Kafka Connect Component)
+    requests.post(('http://%s/connectors' % debezium_endpoint),
+        json={
+            "name": "mysql-connector",
+            "config": {
+                "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+                "database.hostname": mysql_host,
+                "database.port": mysql_port,
+                "database.user": mysql_user,
+                "database.password": mysql_pass,
+                "database.server.name": mysql_host,
+                "database.server.id": '1234',
+                "database.history.kafka.bootstrap.servers": kafka_endpoint,
+                "database.history.kafka.topic": "mysql-history",
+                "time.precision.mode": "connect"
+            }
+        }
+    )
+
+    exit_code = 0
     try:
-        asyncio.run(run_async())
+        # Setup our topic; necessary for num_partitions > 1.
+        KafkaAdminClient(bootstrap_servers=kafka_endpoint).create_topics([
+            NewTopic(
+                name="pageviews",
+                num_partitions=kafka_partitions,
+                replication_factor=1
+            )
+        ])
+
+        # With python 3.10 we will be able to use parenthesis around
+        # 'with' with multiple 'as', and get rid
+        # of the backslashes.
+        with \
+             connect(
+                 host=mysql_host, user=mysql_user, password=mysql_pass
+             ) as connection, \
+             connection.cursor() as cursor \
+        :
+            initialize_database(connection, cursor)
+            seed_data(connection, cursor)
+
+        async def shutdown():
+            for task in asyncio.Task.all_tasks():
+                task.cancel()
+
+        async def run_async():
+            event_loop = asyncio.get_event_loop()
+            signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+            async def handle_signal(signal):
+                await shutdown()
+            for s in signals:
+                event_loop.add_signal_handler(
+                    s, lambda s=s: asyncio.create_task(handle_signal(s)))
+            # With python 3.10 we will be able to use parenthesis around
+            # 'with' with multiple 'as', and get rid
+            # of the backslashes.
+            with \
+                concurrent.futures.ProcessPoolExecutor(
+                    max_workers = max_parallel_purchases,
+                    initializer = lambda: init_resources(kafka_only = False)
+                ) as purchases_executor, \
+                concurrent.futures.ProcessPoolExecutor(
+                    max_workers = max_parallel_pageviews,
+                    initializer = lambda: init_resources(kafka_only = True)
+                ) as pageviews_executor \
+            :
+                await asyncio.gather(
+                    loop_purchases(purchases_executor),
+                    loop_random_pageviews(pageviews_executor),
+                    run_command_server()
+                )
+
+        log("Starting simulation loops.")
+        try:
+            asyncio.run(run_async())
+        except Error as e:
+            log(e)
+            exit_code = 1
+        finally:
+            try:
+                asyncio.run(shutdown())
+            except Error:
+                pass
     except Error as e:
         log(e)
         exit_code = 1
     finally:
-        try:
-            asyncio.run(shutdown())
-        except Error:
-            pass
-    connection.close()
-except Error as e:
-    log(e)
-    exit_code = 1
-finally:
-    for producer in producers:
-        producer.close()
-    for (connection, cursor) in db_resources:
-        cursor.close()
-        connection.close()
-    log("Finished.")
+        log("Finished.")
 
-sys.exit(exit_code)
+    sys.exit(exit_code)
+
+if __name__ == '__main__':
+    main()
