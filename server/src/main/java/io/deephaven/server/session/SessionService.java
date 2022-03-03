@@ -304,8 +304,8 @@ public class SessionService {
                 outstandingCookies.poll();
 
                 synchronized (next.session) {
-                    if (next.session.getExpiration() != null
-                            && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
+                    final TokenExpiration tokenExpiration = next.session.getExpiration();
+                    if (tokenExpiration != null && tokenExpiration.deadline.getMillis() <= now.getMillis()) {
                         next.session.onExpired();
                     }
                 }
