@@ -42,20 +42,24 @@ services:
         condition: service_started
 
   redpanda:
-    extends:
-      file: ../docker-compose-debezium-common.yml
-      service: redpanda
-    depends_on:
-      - redpanda-optimize
-    tmpfs:
-      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
-
-  redpanda-optimize:
-    extends:
-      file: ../docker-compose-debezium-common.yml
-      service: redpanda
+    build:
+      context: redpanda
+      args:
+        - REDPANDA_VERSION=${REDPANDA_VERSION}
     command:
-      - redpanda mode production
+      - redpanda start
+      - --reactor-backend=epoll
+      - --smp ${REDPANDA_SMP}
+      - --memory ${REDPANDA_MEMORY}
+      - --reserve-memory 0M
+      - --node-id 0
+      - --check=false
+      - --set redpanda.enable_transactions=true
+      - --set redpanda.enable_idempotence=true
+    ports:
+      - 9092:9092
+      - 8081:8081
+      - 8082:8082
     tmpfs:
       - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
 
@@ -85,7 +89,8 @@ services:
     environment:
       # Look at extended definition for the rest.
       - MAX_PARALLEL_PURCHASES=4
-      - MAX_PARALLEL_PAGEVIEWS=80
+      - MAX_PARALLEL_PAGEVIEWS=${MAX_PARALLEL_PAGEVIEWS}
+      - KAFKA_PARTITIONS=${MAX_PARALLEL_PAGEVIEWS}
     depends_on:
       mysql:
         condition: service_started

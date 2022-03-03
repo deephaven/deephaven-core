@@ -14,6 +14,7 @@ from collections import deque
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from kafka import KafkaProducer
+from kafka.admin import KafkaAdminClient, NewTopic
 from mysql.connector import connect, Error
 from typing import Deque
 
@@ -24,6 +25,7 @@ max_parallel_purchases = int(os.environ['MAX_PARALLEL_PURCHASES'])
 max_parallel_pageviews = int(os.environ['MAX_PARALLEL_PAGEVIEWS'])
 purchases_per_second_key = 'purchases_per_second'
 pageviews_per_second_key = 'pageviews_per_second'
+kafka_partitions         = int(os.environ['KAFKA_PARTITIONS'])
 kafka_producer_acks      = int(os.environ['KAFKA_PRODUCER_ACKS'])
 kafka_batch_size         = int(os.environ['KAFKA_BATCH_SIZE'])
 kafka_linger_ms          = 40  # Note we flush manually, so this only applies in between our managed batches.
@@ -34,7 +36,7 @@ log_period_seconds  = 10
 rate_check_seconds  = 20
 item_inventory_min  = 1000
 item_inventory_max  = 5000
-min_sleep_seconds   = 0.002
+min_sleep_seconds   = 0.010
 item_price_min      = 5
 item_price_max      = 500
 mysql_host          = 'mysql'
@@ -141,7 +143,7 @@ def get_item_prices(cursor):
     return [(row[0], row[1]) for row in cursor]
 
 def calc_max_burst(rate_s, max_parallel):
-    return math.ceil(30.0 * rate_s / max_parallel)
+    return math.ceil(1.0 * rate_s / max_parallel)
 
 class PeriodRateTracker:
     start_ts: float
@@ -164,7 +166,7 @@ class RateTracker:
         self.period_window_s = period_window_s
         self.period_trackers = deque(maxlen = max_periods)
         self.period_trackers.append(PeriodRateTracker(now, 0))
-        self.free_trackers = [ PeriodRateTracker() for _ in range(0, max_periods - 1) ]
+        self.free_trackers = [ PeriodRateTracker() for _ in range(max_periods) ]
         self.total_sent = 0
     
     def track(self, now: float, sent: int):
@@ -200,8 +202,8 @@ class RateTracker:
         return len(self.period_trackers) == self.max_periods
 
 def rate_tracker_for_rate(rate_s: float, now: float):
-    rt_period_window_s = max(1.0/rate_s, 0.010)
-    rt_max_periods = min(100, math.ceil(10.0/rt_period_window_s))
+    rt_period_window_s = max(1.0/rate_s, 0.1)
+    rt_max_periods = min(10, math.ceil(10.0/rt_period_window_s))
     return RateTracker(rt_max_periods, rt_period_window_s, now)
 
 async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: str):
@@ -209,7 +211,7 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
     sent_since_last_log = 0     # Number of events sent not included in the last summary log.
     last_rate_check = now       # Timestamp for the last time we checked actual events sent versus rate.
-    burst_cap_last_log = False  # Whether we limited the max burst since the last summary log.
+    burst_cap_last_log = 0      # If we limited the max burst since the last summary log, the count that hit the cap; zero otherwise.
     rate_s = params[param_key]  # Target actions per second.
     rate_measure_window = 2     # Time in second to accumulate samples to estimate rate.
     # limit rate if we are falling too far behind.
@@ -249,9 +251,9 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
                 if delta_per_thread < 1:
                     delta_per_thread = 1
                 elif delta_per_thread > max_burst:
+                    burst_cap_last_log = delta_per_thread
                     delta_per_thread = max_burst
                     delta_count = max_burst * available_threads
-                    burst_cap_last_log = True
 
                 sent_since_last_log += delta_count
                 sending_threads = 0
@@ -268,11 +270,11 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
             if last_log_diff >= log_period_seconds:
                 qlen = len(futures)
                 log(f"Simulated {sent_since_last_log} {action_desc} actions in the last {last_log_diff:.1f} seconds, " +
-                    f"effective rate {sent_since_last_log / last_log_diff:.2f} per second; " +
-                    f"on last trigger running={qlen}, sending_threads={sending_threads}, delta_per_thread={delta_per_thread}, burst cap={burst_cap_last_log}.")
+                    f"effective rate {sent_since_last_log / last_log_diff:.2f}/s; " +
+                    f"on last trigger threads total sending={qlen}, new={sending_threads}, delta_per_thread={delta_per_thread}, burst cap={burst_cap_last_log}.")
                 last_log = now
                 sent_since_last_log = 0
-                burst_cap_last_log = False
+                burst_cap_last_log = 0
 
             next_time = tracker_start + (tracker_sent + delta_count + 1)*period_s
 
@@ -288,7 +290,7 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
                     last_rate_check = now
                     effective_rate_s = tracker_sent / dt
                     if abs(effective_rate_s - rate_s)/rate_s > 0.02:
-                        log(f"Warning: too far from target rate {rate_s}/s; achieving " +
+                        log(f"Warning: too far from target rate {rate_s}/s; " +
                             f"sent {tracker_sent} in the last {dt:.1f} seconds for an effective rate of {effective_rate_s:.2f}/s.")
 
             sleep_s = next_time - time.time()
@@ -317,12 +319,18 @@ async def loop_purchases(executor, db_resources, producers, item_prices):
         start_time = time.time()
         producer = producers.pop()
         (connection, cursor) = db_resources.pop()
+        partition = random.randint(0, kafka_partitions - 1)
         for i in range(count):
             purchase_item = random.choice(item_prices)
-            purchase_user = random.randint(0,user_seed_count-1)
+            purchase_user = random.randint(0, user_seed_count - 1)
             purchase_quantity = random.randint(1,5)
 
-            producer.send(kafka_topic, key=str(purchase_user).encode('ascii'), value=generate_pageview(purchase_user, purchase_item[0], 'products'))
+            producer.send(
+                kafka_topic,
+                partition=partition,
+                key=str(purchase_user).encode('ascii'),
+                value=generate_pageview(purchase_user, purchase_item[0], 'products')
+            )
 
             # Write purchase row
             cursor.execute(
@@ -347,11 +355,17 @@ async def loop_random_pageviews(executor, producers):
     def make_random_pageviews(count):
         start_time = time.time()
         producer = producers.pop()
+        partition = random.randint(0, kafka_partitions - 1)
         for i in range(count):
-            rand_user = random.randint(0,user_seed_count)
+            rand_user = random.randint(0, user_seed_count - 1)
             rand_page_type = random.choice(['products', 'profiles'])
             target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
-            producer.send(kafka_topic, key=str(rand_user).encode('ascii'), value=generate_pageview(rand_user, random.randint(0,target_id_max_range), rand_page_type))
+            producer.send(
+                kafka_topic,
+                partition=partition,
+                key=str(rand_user).encode('ascii'),
+                value=generate_pageview(rand_user, random.randint(0, target_id_max_range - 1), rand_page_type)
+            )
         producer.flush()
         producers.append(producer)
         dt = time.time() - start_time
@@ -457,6 +471,14 @@ db_resources = []
 exit_code = 0
 
 try:
+    KafkaAdminClient(bootstrap_servers=kafka_endpoint).create_topics([
+        NewTopic(
+            name="pageviews",
+            num_partitions=kafka_partitions,
+            replication_factor=1
+        )
+    ])
+
     for pi in range(max_parallel_purchases + max_parallel_pageviews):
         producer = KafkaProducer(
             bootstrap_servers = [kafka_endpoint],
