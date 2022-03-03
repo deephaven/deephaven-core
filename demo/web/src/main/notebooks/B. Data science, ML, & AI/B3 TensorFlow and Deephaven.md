@@ -107,7 +107,7 @@ def table_to_numpy_integer(rows, columns):
 
 # A function to scatter integer model predictions back into a table
 def numpy_to_table_integer(predictions, index):
-    return int(data[idx])
+    return int(predictions[index])
 ```
 \
 \
