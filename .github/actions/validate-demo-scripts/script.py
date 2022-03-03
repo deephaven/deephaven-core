@@ -78,7 +78,8 @@ def main(demo_scripts_path: str, host: str, max_retries: int):
         sys.exit(f"Failed to connect to Deephaven after {max_retries} attempts")
 
     is_error = False
-    for file_path in os.popen(f"find {demo_scripts_path} -name '*.md'").read().split("\n"):
+    error_files = []
+    for file_path in os.popen(f"find {demo_scripts_path} -name '*.md' | sort").read().split("\n"):
         if len(file_path) > 0:
             print(f"Reading file {file_path}")
             script_string = extract_python_scripts(file_path)
@@ -87,15 +88,17 @@ def main(demo_scripts_path: str, host: str, max_retries: int):
                 time.sleep(5)
             except DHError as e:
                 print(e)
-                print(script_string)
                 print(f"Deephaven error when trying to run code in {file_path}")
+                error_files.append(file_path)
                 is_error = True
             except Exception as e:
                 print(e)
-                print(script_string)
                 print(f"Unexpected error when trying to run code in {file_path}")
+                error_files.append(file_path)
                 is_error = True
     if is_error:
+        error_files_print = "\n".join(error_files)
+        print(f"Errors were found in the following notebooks: {error_files_print}")
         sys.exit("At least 1 demo notebook failed to run. Check the logs for information on what failed")
 
 usage = """
