@@ -14,44 +14,6 @@ now = currentTime()
 daily_data = create_random_table(time_interval, start_time=minus(now, offset))
 ```
 
-## where
-
-`where` filters can be applied to time series data. This example shows a few ways to filter your time series data.
-
-```python
-even_seconds = daily_data.where("secondOfMinute(Timestamp, TZ_NY) % 2 == 0")
-odd_seconds = daily_data.where("secondOfMinute(Timestamp, TZ_NY) % 2 == 1")
-
-even_minutes = daily_data.where("minuteOfHour(Timestamp, TZ_NY) % 2 == 0")
-odd_minutes = daily_data.where("minuteOfHour(Timestamp, TZ_NY) % 2 == 1")
-```
-
-## update
-
-With a ticking time table, you can add more columns by using `update`. These new columns are evaluated for every row in the table. If using a method to create the new columns, that method will be called for every row as well.
-
-This example shows how to create new columns with the ticking time table.
-
-```python
-def random_fruit():
-    fruits = [
-        "apple",
-        "pear",
-        "orange",
-        "grapefruit",
-        "lime",
-        "banana",
-        "peach",
-        "strawberry",
-        "blueberry",
-        "watermelon"
-    ]
-
-    return random.choice(fruits)
-
-daily_data = daily_data.update("Fruit = random_fruit()")
-```
-
 ## Datetime arithmethic
 
 Deephaven supports datetime arithmetic through methods such as [plus](https://deephaven.io/core/docs/reference/time/datetime/plus/) and [minus](https://deephaven.io/core/docs/reference/time/datetime/minus/).
@@ -64,6 +26,29 @@ from deephaven.DateTimeUtils import convertPeriod
 two_hours = convertPeriod("T2H")
 
 daily_data = daily_data.update("TimestampTwoHoursBefore = minus(Timestamp, two_hours)")
+```
+
+## Downsampling
+
+Downsampling can be done in Deephaven by deciding how to group your data, and then using an appropriate aggregation on the grouped data.
+
+With time series data, binning methods like [lowerBin](https://deephaven.io/core/docs/reference/time/datetime/lowerBin/) can be used to group by time stamps.
+
+This example shows how to group timestamps by the minute, and then store the sum of the `Number` column for each minute.
+
+```python
+from deephaven.DateTimeUtils import expressionToNanos
+from deephaven import Aggregation as agg, as_list
+
+agg_list = as_list([
+    agg.AggSum("Number")
+])
+
+nanos_bin = expressionToNanos("T1M")
+
+daily_data_binned = daily_data.update("TimestampMinute = lowerBin(Timestamp, nanos_bin)")\
+    .dropColumns("Timestamp")\
+    .aggBy(agg_list, "TimestampMinute")
 ```
 
 ## as-of joins
