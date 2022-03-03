@@ -532,9 +532,6 @@ public class BarrageStreamGenerator implements
                 try (WritableRowSet intersect = view.keyspaceViewport().intersect(rowsIncluded.original)) {
                     myAddedOffsets = rowsIncluded.original.invert(intersect);
                 }
-            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-                // there are scoped rows included in the chunks that need to be removed
-                myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
             } else {
                 // use chunk data as-is
                 myAddedOffsets = null;
@@ -550,7 +547,7 @@ public class BarrageStreamGenerator implements
                 // Add the drainable last as it is allowed to immediately close a row set the visitors need
                 addStream.accept(drainableColumn);
             }
-            return myAddedOffsets != null ? myAddedOffsets.size() : rowsAdded.original.size();
+            return myAddedOffsets != null ? myAddedOffsets.size() : rowsIncluded.original.size();
         } finally {
             if (myAddedOffsets != null) {
                 myAddedOffsets.close();
@@ -640,7 +637,9 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.isViewport()) {
+        if (view.keyspaceViewport == null) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
+        } else {
             addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
         }
 

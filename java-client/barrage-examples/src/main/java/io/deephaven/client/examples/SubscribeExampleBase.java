@@ -53,7 +53,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             final BarrageTable table;
             if (headerSize > 0) {
                 // create a table subscription with forward viewport of the specified size
-                table = subscription.partialTable(RowSetFactory.flat(headerSize), null, true);
+                table = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
             } else if (tailSize > 0) {
                 // create a table subscription with reverse viewport of the specified size
                 table = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
