@@ -4,7 +4,7 @@ script.py
 Python script to run the validate demo scripts action. This script reads from every markdown file in the
 given directory, finds the code within the ```python ``` tags, and runs it in Deephaven using the pyclient package.
 """
-#from pydeephaven import Session, DHError
+from pydeephaven import Session, DHError
 
 import sys
 import time

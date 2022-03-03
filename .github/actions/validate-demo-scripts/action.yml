@@ -24,7 +24,7 @@ runs:
         pip install -r ${{ github.action_path }}/requirements.txt
       shell: sh
     - name: Launch Deephaven
-      run: docker-compose up -f ${{ github.action_path }}/docker-compose.yml
+      run: docker-compose up -f ${{ github.action_path }}/docker-compose.yml -d
       shell: sh
     - name: Run python script
       run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
