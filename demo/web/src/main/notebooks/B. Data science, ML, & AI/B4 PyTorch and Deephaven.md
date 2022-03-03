@@ -140,7 +140,7 @@ def table_to_tensor_integer(rows, columns):
 
 # A function to scatter integer model predictions back into a table
 def tensor_to_table_integer(predictions, index):
-    return int(data[idx])
+    return int(predictions[idx])
 ```
 \
 \
@@ -150,7 +150,8 @@ With that done, it's time to put everything together.  Let's start by training t
 learn.learn(
     table = iris_train,
     model_func = train_model,
-    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_tensor_double), learn.Input("Class", table_to_tensor_integer)],
+    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_tensor_double), 
+              learn.Input(["Class"], table_to_tensor_integer)],
     outputs = None,
     batch_size = iris_train.intSize()
 )
