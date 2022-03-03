@@ -117,7 +117,8 @@ With that done, it's time to put everything together.  Let's start by training t
 learn.learn(
     table = iris_train,
     model_func = train_model,
-    inputs = [learn.Input("SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double), learn.Input("Class", table_to_numpy_integer)],
+    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double), 
+              learn.Input(["Class"], table_to_numpy_integer)],
     outputs = None,
     batch_size = iris_train.intSize()
 )
