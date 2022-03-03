@@ -25,6 +25,7 @@ runs:
       shell: sh
     - name: Launch Deephaven
       run: docker-compose up -f ${{ github.action_path }}/docker-compose.yml
+      shell: sh
     - name: Run python script
       run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
       shell: sh
