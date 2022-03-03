@@ -97,7 +97,7 @@ def table_to_numpy_integer(rows, columns):
 
 # A function to scatter integer predictions back into a table
 def numpy_to_table_integer(predictions, index):
-    return int(data[idx])
+    return int(predictions[idx])
 ```
 \
 \
@@ -107,7 +107,8 @@ With that done, it's time to put everything together.  Let's start by fitting ou
 learn.learn(
     table = iris_train,
     model_func = fit_knn,
-    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double), learn.Input("Class", table_to_numpy_integer)],
+    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double), 
+              learn.Input(["Class"], table_to_numpy_integer)],
     outputs = None,
     batch_size = iris_train.intSize()
 )
