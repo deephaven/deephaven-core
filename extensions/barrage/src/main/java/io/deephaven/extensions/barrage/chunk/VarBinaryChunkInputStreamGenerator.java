@@ -7,6 +7,7 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
@@ -31,7 +32,6 @@ import java.util.Iterator;
 public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
 
-    private final Class<T> type;
     private final Appender<T> appendItem;
 
     private byte[] bytes;
@@ -45,10 +45,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         T constructFrom(byte[] buf, int offset, int length) throws IOException;
     }
 
-    VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk,
+    VarBinaryChunkInputStreamGenerator(final ObjectChunk<T, Values> chunk,
                                        final Appender<T> appendItem) {
         super(chunk, 0);
-        this.type = type;
         this.appendItem = appendItem;
     }
 
@@ -266,17 +265,27 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
+    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final Mapper<T> mapper) throws IOException {
+            final Mapper<T> mapper,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.next();
         final long offsetsBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableObjectChunk<T, Values> chunk;
+        if (outChunk != null) {
+            chunk = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(totalRows, nodeInfo.numElements);
+            chunk = WritableObjectChunk.makeWritableChunk(numRows);
+            chunk.setSize(numRows);
+        }
 
         if (nodeInfo.numElements == 0) {
             return chunk;
@@ -328,15 +337,14 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     if (offset + length > serializedData.length) {
                         throw new IllegalStateException("not enough data was serialized to parse this element");
                     }
-                    chunk.set(ii, mapper.constructFrom(serializedData, offset, length));
+                    chunk.set(outOffset + ii, mapper.constructFrom(serializedData, offset, length));
                 } else {
-                    chunk.set(ii, null);
+                    chunk.set(outOffset + ii, null);
                 }
                 nextValid >>= 1;
             }
         }
 
-        chunk.setSize(nodeInfo.numElements);
         return chunk;
     }
 }
