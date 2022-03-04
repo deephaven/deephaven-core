@@ -211,7 +211,7 @@ def rate_tracker_for_rate(rate_s: float, now: float):
 
 # Main async loop for executing a given action type while rate controlling it.
 # The action fun should accept a count argument allowing this function to size batches.
-async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: str):
+async def loop(executor, max_parallel: int, executor_action_fun, param_key, action_desc: str):
     now = time.time()
     last_log = now              # Timestamp for the last time we logged summary information about events sent.
     sent_since_last_log = 0     # Number of events sent not included in the last summary log.
@@ -264,7 +264,7 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
                 sending_threads = 0
                 while delta_count > 0:
                     action_count = min(delta_count, delta_per_thread)
-                    future = event_loop.run_in_executor(executor, action_fun, action_count)
+                    future = event_loop.run_in_executor(executor, executor_action_fun, action_count)
                     now = time.time()
                     rate_tracker.track(now, action_count)
                     futures.append(future)
@@ -313,18 +313,18 @@ async def loop(executor, max_parallel: int, action_fun, param_key, action_desc: 
                 last_rate_check = now
                 max_burst = calc_max_burst(rate_s, max_parallel)
     except CancelledError:
-        release_resources()
+        pass
     log(f"Stopped simulating {action_desc} actions.")
 
-def make_purchases(count):
+def executor_make_purchases(count):
     start_time = time.time()
     partition = random.randint(0, kafka_partitions - 1)
     for i in range(count):
-        purchase_item = random.choice(item_prices)
+        purchase_item = random.choice(executor_item_prices)
         purchase_user = random.randint(0, user_seed_count - 1)
         purchase_quantity = random.randint(1,5)
 
-        producer.send(
+        executor_producer.send(
             kafka_topic,
             partition=partition,
             key=str(purchase_user).encode('ascii'),
@@ -332,7 +332,7 @@ def make_purchases(count):
         )
 
         # Write purchase row
-        cursor.execute(
+        executor_cursor.execute(
             purchase_insert,
             (
                 purchase_user,
@@ -341,35 +341,36 @@ def make_purchases(count):
                 purchase_item[1] * purchase_quantity
             )
         )
-        connection.commit()
-        producer.flush()
+        executor_connection.commit()
+        executor_producer.flush()
     dt = time.time() - start_time
     return dt, count
 
 async def loop_purchases(executor):
-    log("Preparing to loop + seed kafka pageviews and purchases.")
-    await loop(executor, max_parallel_purchases, make_purchases, purchases_per_second_key, "purchase")
+    log("Preparing to loop to send purchases and associated pageviews.")
+    await loop(executor, max_parallel_purchases, executor_make_purchases, purchases_per_second_key, "purchase")
 
-def make_random_pageviews(count):
+def executor_make_pageviews(count):
     start_time = time.time()
     partition = random.randint(0, kafka_partitions - 1)
     for i in range(count):
         rand_user = random.randint(0, user_seed_count - 1)
         rand_page_type = random.choice(['products', 'profiles'])
         target_id_max_range = item_seed_count if rand_page_type == 'products' else user_seed_count
-        producer.send(
+        executor_producer.send(
             kafka_topic,
             partition=partition,
             key=str(rand_user).encode('ascii'),
             value=generate_pageview(rand_user, random.randint(0, target_id_max_range - 1), rand_page_type)
         )
-    producer.flush()
+    executor_producer.flush()
     dt = time.time() - start_time
     return dt, count
 
 async def loop_random_pageviews(executor):
     # Write random pageviews to products or profiles
-    await loop(executor, max_parallel_pageviews, make_random_pageviews, pageviews_per_second_key, "pageview")
+    log("Preparing to loop to send non-purchase associated pageviews.")
+    await loop(executor, max_parallel_pageviews, executor_make_pageviews, pageviews_per_second_key, "pageview")
 
 def chomp(s):
     return s if not s.endswith(os.linesep) else s[:-len(os.linesep)]
@@ -449,18 +450,21 @@ async def run_command_server():
 # We use process-based executors to run purchase and pageview actions;
 # Each has its own kafka producer; purchase action executors also need
 # a database connection.
-producer = None
-cursor = None
-connection = None
-item_prices = None
-def init_resources(kafka_only = False):
-    global producer, cursor, connection, item_prices
+# Note these variables and the methods around initializing and releasing the
+# resources associated to them are not used from main, but only from the
+# code run by the forked process executor processes.
+executor_producer = None
+executor_cursor = None
+executor_connection = None
+executor_item_prices = None
+def executor_init_resources(kafka_only = False):
+    global executor_producer, executor_cursor, executor_connection, executor_item_prices
     if not kafka_only:
-        connection = connect(host=mysql_host, user=mysql_user, password=mysql_pass)
-        cursor = connection.cursor()
-        item_prices = get_item_prices(cursor)
+        executor_connection = connect(host=mysql_host, user=mysql_user, password=mysql_pass)
+        executor_cursor = executor_connection.cursor()
+        executor_item_prices = get_item_prices(executor_cursor)
 
-    producer = KafkaProducer(
+    executor_producer = KafkaProducer(
         bootstrap_servers = [kafka_endpoint],
         acks = kafka_producer_acks,
         batch_size = kafka_batch_size,
@@ -469,13 +473,24 @@ def init_resources(kafka_only = False):
         value_serializer = lambda x: json.dumps(x).encode('utf-8')
     )
 
-async def release_resources():
-    global producer, cursor, connection
-    for x in (producer, cursor, connection):
+# In the current version of concurrent.futures there is no clean and
+# easy way to register tear down code; as it stands our code will
+# cleanup the kafka and database resources only as the processes
+# started by process executor finish.
+def executor_release_resources():
+    global executor_producer, executor_cursor, executor_connection
+    for x in (executor_producer, executor_cursor, executor_connection):
         if x is not None:
             x.close()
-    producer = cursor = connection = None
+    executor_producer = executor_cursor = executor_connection = None
 
+# main sets up the initial database and redpanda state,
+# and creates executor pools where the actions are executed async.
+# We use process executors, so the actions run in separate
+# processes forked from the parent that runs main.
+# Main schedules actions on the executor processes asynchronously,
+# monitoring effective rates and trying to keep the
+# requested action rate.
 def main():
     # Initialize Debezium (Kafka Connect Component)
     requests.post(('http://%s/connectors' % debezium_endpoint),
@@ -537,11 +552,11 @@ def main():
             with \
                 concurrent.futures.ProcessPoolExecutor(
                     max_workers = max_parallel_purchases,
-                    initializer = lambda: init_resources(kafka_only = False)
+                    initializer = lambda: executor_init_resources(kafka_only = False)
                 ) as purchases_executor, \
                 concurrent.futures.ProcessPoolExecutor(
                     max_workers = max_parallel_pageviews,
-                    initializer = lambda: init_resources(kafka_only = True)
+                    initializer = lambda: executor_init_resources(kafka_only = True)
                 ) as pageviews_executor \
             :
                 await asyncio.gather(
