@@ -997,6 +997,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         boolean firstSubscription = false;
+        boolean pendingChanges = false;
 
         // check for pending changes (under the lock)
         synchronized (this) {
@@ -1005,6 +1006,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (!pendingSubscriptions.isEmpty()) {
                 updatedSubscriptions = this.pendingSubscriptions;
                 pendingSubscriptions = new ArrayList<>();
+                pendingChanges = true;
             }
 
             if (updatedSubscriptions != null) {
@@ -1146,12 +1148,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             try (final WritableRowSet snapshotRowSet = RowSetFactory.empty();
                     final WritableRowSet reverseSnapshotRowSet = RowSetFactory.empty()) {
 
-                final long GLOBAL_MAX = Long.MAX_VALUE - 1;
-
                 // satisfy the subscriptions in priority order
                 for (final Subscription subscription : growingSubscriptions) {
                     try (final WritableRowSet missingRows = subscription.targetViewport == null
-                            ? RowSetFactory.flat(parent.size())
+                            ? RowSetFactory.flat(Long.MAX_VALUE)
                             : subscription.targetViewport.copy()) {
 
                         // TODO: check this logic, if column set changes then previous viewport is also invalid
@@ -1173,7 +1173,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         // shrink this to the `rowsRemaining` value
                         if (missingRows.size() > rowsRemaining) {
                             final long key = missingRows.get(rowsRemaining);
-                            missingRows.removeRange(key, GLOBAL_MAX);
+                            missingRows.removeRange(key, Long.MAX_VALUE - 1);
                         }
 
                         // "grow" the snapshot viewport (snapshotViewport is always null)
@@ -1275,7 +1275,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             // cleanup for next iteration
             clearObjectDeltaColumns(objectColumnsToClear);
-            if (growingSubscriptions.size() > 0) {
+            if (pendingChanges) {
                 objectColumnsToClear.clear();
                 objectColumnsToClear.or(objectColumns);
                 objectColumnsToClear.and(activeColumns);

@@ -69,6 +69,8 @@ public class BarrageStreamGenerator implements
 
         boolean isViewport();
 
+        boolean isInitialSnapshot();
+
         StreamReaderOptions options();
 
         RowSet keyspaceViewport();
@@ -269,6 +271,10 @@ public class BarrageStreamGenerator implements
             return this.viewport != null;
         }
 
+        public boolean isInitialSnapshot() {
+            return this.isInitialSnapshot;
+        }
+
         public final StreamReaderOptions options() {
             return options;
         }
@@ -345,6 +351,10 @@ public class BarrageStreamGenerator implements
             return this.viewport != null;
         }
 
+        public boolean isInitialSnapshot() {
+            return true;
+        }
+
         public final StreamReaderOptions options() {
             return options;
         }
@@ -371,6 +381,10 @@ public class BarrageStreamGenerator implements
 
         @Override
         public boolean isViewport() {
+            return false;
+        }
+
+        public boolean isInitialSnapshot() {
             return false;
         }
 
@@ -533,8 +547,15 @@ public class BarrageStreamGenerator implements
                     myAddedOffsets = rowsIncluded.original.invert(intersect);
                 }
             } else {
-                // use chunk data as-is
-                myAddedOffsets = null;
+                if (view.isInitialSnapshot()) {
+                    // use chunk data as-is, rely on snapshot process to avoid duplicates
+                    myAddedOffsets = null;
+                } else {
+                    // there may be scoped rows included in the chunks that need to be removed
+                    try (WritableRowSet intersect = rowsIncluded.original.intersect(rowsAdded.original)) {
+                        myAddedOffsets = rowsIncluded.original.invert(intersect);
+                    }
+                }
             }
 
             // add the add-column streams
@@ -638,7 +659,15 @@ public class BarrageStreamGenerator implements
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
         if (view.keyspaceViewport == null) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
+            if (view.isInitialSnapshot()) {
+                // use chunk data as-is, rely on snapshot process to avoid duplicates
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
+            } else {
+                // there may be scoped rows included in the chunks that need to be removed
+                try (WritableRowSet intersect = rowsIncluded.original.intersect(rowsAdded.original)) {
+                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(intersect, metadata);
+                }
+            }
         } else {
             addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
         }
