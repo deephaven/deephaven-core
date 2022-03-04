@@ -223,7 +223,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
                 final long beforeClock) {
             final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<>(
-                            scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -519,20 +519,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             final Consumer<Subscription> updateSubscription) {
         final Function<List<Subscription>, Boolean> findAndUpdate = (List<Subscription> subscriptions) -> {
             for (final Subscription sub : subscriptions) {
-                        if (sub.listener == listener) {
-                            updateSubscription.accept(sub);
-                            if (!sub.hasPendingUpdate) {
-                                sub.hasPendingUpdate = true;
-                                pendingSubscriptions.add(sub);
-                            }
-
-                            updatePropagationJob.scheduleImmediately();
-                            return true;
-                        }
+                if (sub.listener == listener) {
+                    updateSubscription.accept(sub);
+                    if (!sub.hasPendingUpdate) {
+                        sub.hasPendingUpdate = true;
+                        pendingSubscriptions.add(sub);
                     }
 
-                    return false;
-                };
+                    updatePropagationJob.scheduleImmediately();
+                    return true;
+                }
+            }
+
+            return false;
+        };
 
         synchronized (this) {
             return findAndUpdate.apply(activeSubscriptions) || findAndUpdate.apply(pendingSubscriptions);
