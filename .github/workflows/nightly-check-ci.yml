@@ -77,6 +77,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
+          # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
           check_name: check report ${{ matrix.gradle-check }} java${{ matrix.test-jvm-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
