@@ -6,25 +6,26 @@ import unittest
 
 import jpy
 
+from deephaven2._jcompat import j_hashset
 from deephaven2.table import Table
-from deephaven2.uri import get_deephaven_wrapper_types, resolve, wrap_resolved_object
+from deephaven2.uri import resolve
 from tests.testbase import BaseTestCase
 
 
 class UriTestCase(BaseTestCase):
-    def test_list_all_wrapper_classes(self):
-        wrapper_cls_set = get_deephaven_wrapper_types()
-        self.assertGreater(len(wrapper_cls_set), 0)  # add assertion here
-
     def test_uri_local_table(self):
         _JResolver = jpy.get_type("io.deephaven.server.uri.CsvTableResolver")
-        _JURI = jpy.get_type("java.net.URI")
-        j_resolver = _JResolver()
-        juri = _JURI.create(
-            "csv+https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro"
-            ".csv"
+        _JUriResolvers = jpy.get_type("io.deephaven.uri.resolver.UriResolvers")
+        _JUriResolversInstance = jpy.get_type(
+            "io.deephaven.uri.resolver.UriResolversInstance"
         )
-        t = wrap_resolved_object(j_resolver.resolve(juri))
+        j_resolver = _JResolver()
+        j_resolver_set = j_hashset({j_resolver})
+        j_resolvers = _JUriResolvers(j_resolver_set)
+        _JUriResolversInstance.init(j_resolvers)
+
+        uri = "csv+https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro.csv"
+        t = resolve(uri)
         self.assertIsInstance(t, Table)
 
 

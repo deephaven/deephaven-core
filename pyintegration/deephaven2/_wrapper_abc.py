@@ -11,12 +11,16 @@ import jpy
 
 
 class JObjectWrapper(ABC):
+    def __init_subclass__(cls, *args, **kwargs):
+        required_cls_attr = "j_object_type"
+        if not hasattr(cls, required_cls_attr):
+            raise NotImplementedError(
+                f"Class {cls} lacks required `{required_cls_attr}` class attribute"
+            )
+        if not isinstance(getattr(cls, required_cls_attr), type):
+            raise TypeError(f"{required_cls_attr!r} of Class {cls} is not a Class")
+
     @property
     @abstractmethod
     def j_object(self) -> jpy.JType:
-        ...
-
-    @classmethod
-    @abstractmethod
-    def j_object_type(cls) -> jpy.JType:
         ...

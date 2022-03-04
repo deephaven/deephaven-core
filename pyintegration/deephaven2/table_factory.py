@@ -6,11 +6,10 @@ from typing import List, Dict, Any
 
 import jpy
 
-from deephaven2._wrapper_abc import JObjectWrapper
-from deephaven2.dtypes import DType
-
 from deephaven2 import DHError
+from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.column import InputColumn
+from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -127,6 +126,8 @@ class DynamicTableWriter(JObjectWrapper):
     This class implements the context manager protocol and thus can be used in with statements.
     """
 
+    j_object_type = _JDynamicTableWriter
+
     def __init__(self, col_defs: Dict[str, DType]):
         """Initializes the writer and creates a new in-memory table.
 
@@ -149,10 +150,6 @@ class DynamicTableWriter(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self._j_table_writer
-
-    @classmethod
-    def j_object_type(cls) -> jpy.JType:
-        return jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
 
     def __enter__(self):
         return self

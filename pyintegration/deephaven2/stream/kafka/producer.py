@@ -6,8 +6,8 @@ from typing import Dict, Callable, List
 
 import jpy
 
-from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
 from deephaven2 import DHError
+from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
 from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.table import Table
 
@@ -17,18 +17,14 @@ _JKafkaTools_Produce = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
 
 
 class KeyValueSpec(JObjectWrapper):
-    _j_spec: jpy.JType
+    j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce$KeyOrValueSpec")
 
-    def __init__(self, j_spec):
+    def __init__(self, j_spec: jpy.JType):
         self._j_spec = j_spec
 
     @property
     def j_object(self) -> jpy.JType:
         return self._j_spec
-
-    @classmethod
-    def j_object_type(cls) -> jpy.JType:
-        return jpy.get_type("io.deephaven.kafka.KafkaTools$Produce$KeyOrValueSpec")
 
 
 KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)

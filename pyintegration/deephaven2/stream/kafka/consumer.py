@@ -56,18 +56,14 @@ _ALL_PARTITIONS_SEEK_TO_END = _JKafkaTools.ALL_PARTITIONS_SEEK_TO_END
 
 
 class KeyValueSpec(JObjectWrapper):
-    _j_spec: jpy.JType
+    j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume$KeyOrValueSpec")
 
-    def __init__(self, j_spec):
+    def __init__(self, j_spec: jpy.JType):
         self._j_spec = j_spec
 
     @property
     def j_object(self) -> jpy.JType:
         return self._j_spec
-
-    @classmethod
-    def j_object_type(cls) -> jpy.JType:
-        return jpy.get_type("io.deephaven.kafka.KafkaTools$Consume$KeyOrValueSpec")
 
 
 KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Consume.IGNORE)

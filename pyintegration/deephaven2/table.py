@@ -30,7 +30,9 @@ class Table(JObjectWrapper):
 
     """
 
-    def __init__(self, j_table):
+    j_object_type = jpy.get_type("io.deephaven.engine.table.Table")
+
+    def __init__(self, j_table: jpy.JType):
         self.j_table = j_table
         self._definition = self.j_table.getDefinition()
         self._schema = None
@@ -90,10 +92,6 @@ class Table(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
-
-    @classmethod
-    def j_object_type(cls) -> jpy.JType:
-        return jpy.get_type("io.deephaven.engine.table.Table")
 
     def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
