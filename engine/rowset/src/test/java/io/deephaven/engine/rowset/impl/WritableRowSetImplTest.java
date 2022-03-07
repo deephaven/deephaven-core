@@ -14,6 +14,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.impl.rsp.container.MutableInteger;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -3249,5 +3250,123 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(card, rb.getCardinality());
         final OrderedLongSet result = rb.ixRemove(sr);
         assertEquals(card - sr.getCardinality(), result.ixCardinality());
+    }
+
+    public void testSubSetForPositions() {
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
+        final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
+                65536 * 3 + 5};
+        for (long v : vs) {
+            b.appendKey(v);
+        }
+        final RowSet ix = b.build();
+        final long sz = ix.size();
+
+        // test the empty ranges
+        try (final RowSet empty = RowSetFactory.empty()) {
+            assertEquals("empty range, fwd", ix.subSetForPositions(empty, false).size(), 0);
+            assertEquals("empty range, rev", ix.subSetForPositions(empty, true).size(), 0);
+        }
+
+        final int EXTRA_RANGE = 10;
+
+        // single range, deliberately allow some to be outside the upper boundary
+        for (int start = 0; start < vs.length; start++) {
+            for (int end = start; end <= vs.length + EXTRA_RANGE; end++) {
+
+                int coercedEnd = Math.min(end, vs.length - 1);
+                int expectedSize = coercedEnd - start + 1; // rowset ranges are inclusive
+
+                String m = "single range, s=" + start + ", end=" + end;
+                try (final RowSequence rs = RowSetFactory.fromRange(start, end)) {
+                    try (final RowSet ret = ix.subSetForPositions(rs, false)) {
+                        // verify the size is correct
+                        assertEquals(m + ", fwd: size check", expectedSize, ret.size());
+                        for (int i = 0; i < ret.size(); i++) {
+                            int idx = start + i;
+                            assertEquals(m + ", fwd: i=" + i, vs[idx], ret.get(i));
+                        }
+                    }
+                    // now test the reversed functionality
+                    try (final RowSet ret = ix.subSetForPositions(rs, true)) {
+                        // verify the size is correct
+                        assertEquals(m + ", rev: size check", expectedSize, ret.size());
+                        int lastPos = vs.length - 1;
+                        for (int i = 0; i < ret.size(); i++) {
+                            int idx = lastPos - coercedEnd + i;
+                            assertEquals(m + ", rev: i=" + i, vs[idx], ret.get(i));
+                        }
+                    }
+                }
+            }
+        }
+
+        // complex ranges, deliberately allow some to be outside the upper boundary
+        for (int rangeSize = 1; rangeSize < vs.length + EXTRA_RANGE + 1 / 2; rangeSize++) {
+            String m = "complex range, rangeSize=" + rangeSize;
+
+            final RowSetBuilderSequential rb = RowSetFactory.builderSequential();
+
+            int expectedSize = 0;
+
+            // create ranges of these sizes, skipping 1 value each time
+            long idx = 0;
+            while (idx < vs.length + EXTRA_RANGE) {
+                long s = idx;
+                long e = idx + rangeSize - 1;
+
+                // compute the expected size
+                if (s < vs.length) {
+                    expectedSize += Math.min(e, vs.length - 1) - s + 1;
+                }
+
+                rb.appendRange(idx, e); // range is inclusive
+                idx += rangeSize + 1; // skip a value
+            }
+
+            try (final RowSequence rs = rb.build()) {
+                try (final RowSet ret = ix.subSetForPositions(rs, false)) {
+                    // verify the size is correct
+                    assertEquals(m + ", fwd: size check", expectedSize, ret.size());
+
+                    // keep track of the index of the working set
+                    final MutableInteger retIndex = new MutableInteger(0);
+
+                    rs.forEachRowKeyRange((final long start, final long end) -> {
+                        for (long i = start; i <= end; i++) {
+                            int index = (int) i;
+                            if (index >= 0 && index < vs.length) {
+                                assertEquals(m + ", fwd: i=" + index, vs[index], ret.get(retIndex.value));
+                                retIndex.value++;
+                            }
+                        }
+                        return true;
+                    });
+                }
+
+                // now test the reversed functionality
+                try (final RowSet ret = ix.subSetForPositions(rs, true)) {
+                    // verify the size is correct
+                    assertEquals(m + ", rev: size check", expectedSize, ret.size());
+
+                    // keep track of the index of the working set
+                    final MutableInteger retIndex = new MutableInteger(0);
+                    final int lastPos = vs.length - 1;
+
+                    rs.forEachRowKeyRange((final long start, final long end) -> {
+                        // translate into reversed positions
+                        for (long i = start; i <= end; i++) {
+                            int index = lastPos - (int) i;
+                            if (index >= 0 && index < vs.length) {
+                                assertEquals(m + ", fwd: i=" + index, vs[index],
+                                        ret.get(ret.size() - retIndex.value - 1));
+                                retIndex.value++;
+                            }
+                        }
+                        return true;
+                    });
+                }
+            }
+        }
     }
 }

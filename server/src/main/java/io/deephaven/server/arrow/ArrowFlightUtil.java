@@ -506,24 +506,33 @@ public class ArrowFlightUtil {
                                         hasColumns ? BitSet.valueOf(snapshotRequest.columnsAsByteBuffer()) : null;
 
                                 final boolean hasViewport = snapshotRequest.viewportVector() != null;
-                                final RowSet viewport =
+                                RowSet viewport =
                                         hasViewport
                                                 ? BarrageProtoUtil.toRowSet(snapshotRequest.viewportAsByteBuffer())
                                                 : null;
 
-                                // get ourselves some data!
-                                final BarrageMessage msg =
-                                        ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this,
-                                                table, columns, viewport);
+                                final boolean reverseViewport = snapshotRequest.reverseViewport();
+
+                                // get ourselves some data (reversing viewport as instructed)
+                                final BarrageMessage msg;
+                                if (reverseViewport) {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, null, viewport);
+                                } else {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, viewport, null);
+                                }
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
                                 try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
                                         final RowSet keySpaceViewport =
-                                                hasViewport ? msg.rowsAdded.subSetForPositions(viewport) : null) {
+                                                hasViewport
+                                                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                                        : null) {
                                     listener.onNext(
                                             bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport,
-                                                    keySpaceViewport, columns));
+                                                    reverseViewport, keySpaceViewport, columns));
                                 }
 
                                 listener.onCompleted();
@@ -642,7 +651,10 @@ public class ArrowFlightUtil {
                 final RowSet viewport =
                         isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport);
+                final boolean reverseViewport = subscriptionRequest.reverseViewport();
+
+                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport,
+                        reverseViewport);
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                     apply(request);
