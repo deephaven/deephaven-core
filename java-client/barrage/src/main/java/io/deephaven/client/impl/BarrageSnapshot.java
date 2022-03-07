@@ -50,22 +50,7 @@ public interface BarrageSnapshot extends LivenessReferent, AutoCloseable {
      * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
      * the data that is received.
      *
-     * @param viewport the position-space viewport to use for the snapshot
-     * @param columns the columns to include in the snapshot
-     *
      * @return the {@code BarrageTable}
      */
     BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException;
-
-    /**
-     * Request a partial snapshot of the data limited by viewport or column set and populate a {@link BarrageTable} with
-     * the data that is received. Allows the viewport to be reversed.
-     *
-     * @param viewport the position-space viewport to use for the snapshot
-     * @param columns the columns to include in the snapshot
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
-     *
-     * @return the {@code BarrageTable}
-     */
-    BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) throws InterruptedException;
 }

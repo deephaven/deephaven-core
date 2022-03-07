@@ -43,7 +43,6 @@ public class BarrageMessage implements SafeCloseable {
 
     public boolean isSnapshot;
     public RowSet snapshotRowSet;
-    public boolean snapshotRowSetIsReversed;
     public BitSet snapshotColumns;
 
     public RowSet rowsAdded;

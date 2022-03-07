@@ -195,7 +195,6 @@ public class BarrageStreamGenerator implements
      * @param options serialization options for this specific view
      * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
      * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
@@ -204,11 +203,9 @@ public class BarrageStreamGenerator implements
     public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final RowSet viewport,
-            final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
-        return new SubView(this, options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
-                subscribedColumns);
+        return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
     }
 
     /**
@@ -220,7 +217,7 @@ public class BarrageStreamGenerator implements
      */
     @Override
     public SubView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
-        return getSubView(options, isInitialSnapshot, null, false, null, null);
+        return getSubView(options, isInitialSnapshot, null, null, null);
     }
 
     public static class SubView implements View {
@@ -228,7 +225,6 @@ public class BarrageStreamGenerator implements
         public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
         public final RowSet viewport;
-        public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
@@ -238,14 +234,12 @@ public class BarrageStreamGenerator implements
                 final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 @Nullable final RowSet viewport,
-                final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.viewport = viewport;
-            this.reverseViewport = reverseViewport;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
             this.hasModBatch = generator.doesSubViewHaveMods(this);
@@ -284,7 +278,6 @@ public class BarrageStreamGenerator implements
      *
      * @param options serialization options for this specific view
      * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
      * @param keyspaceViewport is the key-space viewport
      * @param snapshotColumns are the columns subscribed for this view
      * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
@@ -292,10 +285,9 @@ public class BarrageStreamGenerator implements
     @Override
     public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
-            final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet snapshotColumns) {
-        return new SnapshotView(this, options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
+        return new SnapshotView(this, options, viewport, keyspaceViewport, snapshotColumns);
     }
 
     /**
@@ -306,14 +298,13 @@ public class BarrageStreamGenerator implements
      */
     @Override
     public SnapshotView getSnapshotView(BarrageSnapshotOptions options) {
-        return getSnapshotView(options, null, false, null, null);
+        return getSnapshotView(options, null, null, null);
     }
 
     public static class SnapshotView implements View {
         public final BarrageStreamGenerator generator;
         public final BarrageSnapshotOptions options;
         public final RowSet viewport;
-        public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
@@ -321,14 +312,11 @@ public class BarrageStreamGenerator implements
         public SnapshotView(final BarrageStreamGenerator generator,
                 final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
-                final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.viewport = viewport;
-            this.reverseViewport = reverseViewport;
-
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
             this.hasAddBatch = generator.rowsIncluded.original.isNonempty();
@@ -523,7 +511,6 @@ public class BarrageStreamGenerator implements
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
-
         // Added Chunk Data:
         RowSet myAddedOffsets = null;
         try {
@@ -671,7 +658,6 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
         BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
         BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);

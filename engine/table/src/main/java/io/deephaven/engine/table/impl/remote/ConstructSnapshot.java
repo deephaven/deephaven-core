@@ -10,8 +10,10 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -520,7 +522,7 @@ public class ConstructSnapshot {
      */
     public static BarrageMessage constructBackplaneSnapshot(final Object logIdentityObject,
             final BaseTable table) {
-        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null, null);
+        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null);
     }
 
     /**
@@ -537,10 +539,9 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot,
-            @Nullable final RowSet reversePositionsToSnapshot) {
+            @Nullable final RowSet positionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, reversePositionsToSnapshot, makeSnapshotControl(false, table));
+                positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     /**
@@ -558,7 +559,6 @@ public class ConstructSnapshot {
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet positionsToSnapshot,
-            @Nullable final RowSet reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
@@ -567,30 +567,16 @@ public class ConstructSnapshot {
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
             final RowSet keysToSnapshot;
-            if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
+            if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
-            } else {
-                final RowSet rowSetToUse = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
-                try (final SafeCloseable ignored = usePrev ? rowSetToUse : null) {
-                    final WritableRowSet forwardKeys =
-                            positionsToSnapshot == null ? null : rowSetToUse.subSetForPositions(positionsToSnapshot);
-                    final RowSet reverseKeys = reversePositionsToSnapshot == null ? null
-                            : rowSetToUse.subSetForReversePositions(reversePositionsToSnapshot);
-                    if (forwardKeys != null) {
-                        if (reverseKeys != null) {
-                            forwardKeys.insert(reverseKeys);
-                            reverseKeys.close();
-                        }
-                        keysToSnapshot = forwardKeys;
-                    } else {
-                        keysToSnapshot = reverseKeys;
-                    }
+            } else if (usePrev) {
+                try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
+                    keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
                 }
+            } else {
+                keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
             }
-            try (final RowSet ignored = keysToSnapshot) {
-                return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize,
-                        keysToSnapshot);
-            }
+            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
 
         snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
@@ -1287,6 +1273,7 @@ public class ConstructSnapshot {
      * @param logIdentityObject an object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param keysToSnapshot A RowSet of keys within the table to include, null for all
+     *
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
     public static boolean serializeAllTable(final boolean usePrev,
@@ -1295,7 +1282,6 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
-
         snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];

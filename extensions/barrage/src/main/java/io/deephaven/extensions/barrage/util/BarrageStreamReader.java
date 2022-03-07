@@ -81,8 +81,6 @@ public class BarrageStreamReader implements StreamReader {
                         msg = new BarrageMessage();
 
                         msg.isSnapshot = metadata.isSnapshot();
-                        msg.snapshotRowSetIsReversed = metadata.effectiveReverseViewport();
-
                         numAddBatchesRemaining = metadata.numAddBatches();
                         numModBatchesRemaining = metadata.numModBatches();
                         if (numAddBatchesRemaining > 1 || numModBatchesRemaining > 1) {

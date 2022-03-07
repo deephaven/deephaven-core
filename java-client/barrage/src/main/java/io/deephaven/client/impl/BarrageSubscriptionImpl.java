@@ -134,16 +134,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     @Override
     public BarrageTable entireTable() {
-        return partialTable(null, null, false);
+        return partialTable(null, null);
     }
 
     @Override
     public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) {
-        return partialTable(viewport, columns, false);
-    }
-
-    @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
@@ -151,8 +146,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!subscribed) {
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(
-                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, options)))
                     .build());
             subscribed = true;
         }
@@ -198,7 +192,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
-            boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -222,7 +215,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
         BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
         BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
-        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
         metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();

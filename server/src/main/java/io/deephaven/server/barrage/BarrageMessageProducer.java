@@ -9,6 +9,7 @@ import com.google.common.collect.Streams;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -18,9 +19,27 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.MemoizedOperationKey;
+import io.deephaven.engine.table.impl.NotificationStepReceiver;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -47,7 +66,13 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -129,13 +154,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          * @param options serialization options for this specific view
          * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
          * @param viewport is the position-space viewport
-         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
          * @param keyspaceViewport is the key-space viewport
          * @param subscribedColumns are the columns subscribed for this view
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
         MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot, @Nullable RowSet viewport,
-                boolean reverseViewport, @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+                @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
 
         /**
          * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single requestor.
@@ -150,11 +174,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
          *
          * @param options serialization options for this specific view
          * @param viewport is the position-space viewport
-         * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
+         * @param keyspaceViewport is the key-space viewport
          * @param snapshotColumns are the columns included for this view
          * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
          */
-        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport, boolean reverseViewport,
+        MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport,
                 @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
     }
@@ -323,11 +347,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * notes on {@link Subscription} for details of the subscription life cycle.
      */
     private RowSet activeViewport = null;
-    private RowSet activeReverseViewport = null;
-
     private RowSet postSnapshotViewport = null;
-    private RowSet postSnapshotReverseViewport = null;
-
     private final BitSet activeColumns = new BitSet();
     private final BitSet postSnapshotColumns = new BitSet();
     private final BitSet objectColumnsToClear = new BitSet();
@@ -426,25 +446,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         RowSet viewport; // active viewport
         BitSet subscribedColumns; // active subscription columns
-        boolean reverseViewport = false; // is the active viewport reversed (indexed from end of table)
 
         boolean isActive = false; // is this subscription in our active list?
         boolean pendingDelete = false; // is this subscription deleted as far as the client is concerned?
         boolean hasPendingUpdate = false; // is this subscription in our pending list?
         boolean pendingInitialSnapshot = true; // do we need to send the initial snapshot?
         RowSet pendingViewport; // if an update is pending this is our new viewport
-        boolean pendingReverseViewport; // is the pending viewport reversed (indexed from end of table)
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
-
         RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
-        boolean snapshotReverseViewport = false; // captured setting during snapshot portion of propagation job
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
-                final @Nullable RowSet initialViewport,
-                final boolean reverseViewport) {
+                final @Nullable RowSet initialViewport) {
             this.options = options;
             this.listener = listener;
             this.logPrefix = "Sub{" + Integer.toHexString(System.identityHashCode(listener)) + "}: ";
@@ -452,7 +467,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.subscribedColumns = new BitSet();
             this.pendingColumns = subscribedColumns;
             this.pendingViewport = initialViewport;
-            this.pendingReverseViewport = this.reverseViewport = reverseViewport;
         }
 
         public boolean isViewport() {
@@ -471,8 +485,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     public void addSubscription(final StreamObserver<MessageView> listener,
             final BarrageSubscriptionOptions options,
             final @Nullable BitSet columnsToSubscribe,
-            final @Nullable RowSet initialViewport,
-            final boolean reverseViewport) {
+            final @Nullable RowSet initialViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
@@ -488,8 +501,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             } else {
                 cols = (BitSet) columnsToSubscribe.clone();
             }
-            final Subscription subscription =
-                    new Subscription(listener, options, cols, initialViewport, reverseViewport);
+            final Subscription subscription = new Subscription(listener, options, cols, initialViewport);
 
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)
@@ -545,17 +557,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     public boolean updateViewport(final StreamObserver<MessageView> listener,
             final RowSet newViewport) {
-        return updateViewport(listener, newViewport, false);
-    }
-
-    public boolean updateViewport(final StreamObserver<MessageView> listener, final RowSet newViewport,
-            final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
-            sub.pendingReverseViewport = newReverseViewport;
             if (sub.pendingColumns == null) {
                 sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
             }
@@ -566,17 +572,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener,
             final RowSet newViewport, final BitSet columnsToSubscribe) {
-        return updateViewportAndColumns(listener, newViewport, columnsToSubscribe);
-    }
-
-    public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener, final RowSet newViewport,
-            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
-            sub.pendingReverseViewport = newReverseViewport;
             sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();
@@ -690,22 +690,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
-        } else if (activeViewport != null || activeReverseViewport != null) {
-            // build the combined position-space viewport (from forward and reverse)
-            try (final WritableRowSet forwardDeltaViewport =
-                    activeViewport == null ? null : rowSet.subSetForPositions(activeViewport);
-                    final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null
-                            : rowSet.subSetForReversePositions(activeReverseViewport)) {
-                final RowSet deltaViewport;
-                if (forwardDeltaViewport != null) {
-                    if (reverseDeltaViewport != null) {
-                        forwardDeltaViewport.insert(reverseDeltaViewport);
-                    }
-                    deltaViewport = forwardDeltaViewport;
-                } else {
-                    deltaViewport = reverseDeltaViewport;
-                }
-
+        } else if (activeViewport != null) {
+            try (final WritableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
                 addsToRecord = deltaViewport.intersect(upstream.added());
                 modsToRecord = deltaViewport.intersect(upstream.modified());
             }
@@ -719,8 +705,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current RowSet is empty, we have nothing to
         // store. If prev RowSet is empty, all rows are new and are already in addsToRecord.
-        if ((activeViewport != null || activeReverseViewport != null)
-                && (upstream.added().isNonempty() || upstream.removed().isNonempty())
+        if (activeViewport != null && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
@@ -731,74 +716,23 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         continue;
                     }
 
-                    final ShiftInversionHelper inverter =
-                            new ShiftInversionHelper(upstream.shifted(), sub.reverseViewport);
+                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted());
 
                     sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
-                        final long localStart, localEnd;
-
-                        // handle reverse viewports
-                        if (sub.reverseViewport) {
-                            // compute positions to be relative to the final position of rowSet
-                            final long lastRowPosition = rowSet.size() - 1;
-
-                            localStart = Math.max(lastRowPosition - posEnd, 0);
-                            localEnd = lastRowPosition - posStart;
-
-                            if (localEnd < 0) {
-                                // This range does not overlap with the available positions at all
-                                return;
-                            }
-                        } else {
-                            localStart = posStart;
-                            localEnd = posEnd;
-                        }
-
                         // Note: we already know that both rowSet and prevRowSet are non-empty.
-                        final long currKeyStart, currKeyEnd;
-                        if (sub.reverseViewport) {
-                            // using the reverse ShiftHelper, must pass `key` in descending order
-                            currKeyEnd =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
-                            currKeyStart =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)),
-                                            false);
-                        } else {
-                            // using the forward ShiftHelper, must pass `key` in ascending order
-                            currKeyStart =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localStart, rowSet.size() - 1)),
-                                            false);
-                            currKeyEnd =
-                                    inverter.mapToPrevKeyspace(rowSet.get(Math.min(localEnd, rowSet.size() - 1)), true);
-                        }
+                        final long currKeyStart =
+                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(posStart, rowSet.size() - 1)), false);
+                        final long currKeyEnd =
+                                inverter.mapToPrevKeyspace(rowSet.get(Math.min(posEnd, rowSet.size() - 1)), true);
 
                         // if our current viewport includes no previous values this range may be empty
                         if (currKeyEnd < currKeyStart) {
                             return;
                         }
 
-                        final long prevStart;
-                        final long prevEnd;
-                        if (sub.reverseViewport) {
-                            final long lastPrevRowPosition = prevRowSet.size() - 1;
-
-                            prevStart = Math.max(lastPrevRowPosition - posEnd, 0);
-                            prevEnd = lastPrevRowPosition - posStart; // this can be left of the prev rowset (i.e. <0)
-                        } else {
-                            prevStart = localStart;
-                            prevEnd = localEnd; // this can be right of the prev rowset (i.e. >= size())
-                        }
-
-                        // get the key that represents the start of the viewport in the prev rowset key space or
-                        // prevRowSet.lastRowKey() + 1 if the start is past the end of prev rowset
                         final long prevKeyStart =
-                                prevStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1
-                                        : prevRowSet.get(prevStart);
-
-                        // get the key that represents the end of the viewport in the prev rowset key space or
-                        // -1 if the end is before the beginning of prev rowset
-                        final long prevKeyEnd =
-                                prevEnd < 0 ? -1 : prevRowSet.get(Math.min(prevEnd, prevRowSet.size() - 1));
+                                posStart >= prevRowSet.size() ? prevRowSet.lastRowKey() + 1 : prevRowSet.get(posStart);
+                        final long prevKeyEnd = prevRowSet.get(Math.min(posEnd, prevRowSet.size() - 1));
 
                         // Note: we already know that scoped rows must touch viewport boundaries
                         if (currKeyStart < prevKeyStart) {
@@ -862,8 +796,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 final BiConsumer<RowSet, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
                     try (final RowSequence.Iterator rsIt = keysToAdd.getRowSequenceIterator()) {
                         while (rsIt.hasMore()) {
-                            // NB: This will never return more keys than deltaChunkSize
-                            final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE);
+                            final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE); // NB: This
+                                                                                                             // will
+                                                                                                             // never
+                                                                                                             // return
+                                                                                                             // more
+                                                                                                             // keys
+                                                                                                             // than
+                                                                                                             // deltaChunkSize
                             try (final RowSequence dstKeys =
                                     RowSequenceFactory.forRange(nextFreeDeltaKey,
                                             nextFreeDeltaKey + srcKeys.size() - 1)) {
@@ -993,8 +933,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean firstSubscription = false;
         BitSet snapshotColumns = null;
         RowSetBuilderRandom snapshotRows = null;
-        RowSetBuilderRandom reverseSnapshotRows = null;
-
         List<Subscription> updatedSubscriptions = null;
 
         // first, we take out any new subscriptions (under the lock)
@@ -1019,7 +957,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         needsSnapshot = true;
                         snapshotColumns = new BitSet();
                         snapshotRows = RowSetFactory.builderRandom();
-                        reverseSnapshotRows = RowSetFactory.builderRandom();
                     }
 
                     subscription.hasPendingUpdate = false;
@@ -1040,12 +977,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         subscription.snapshotViewport = subscription.pendingViewport;
                         subscription.pendingViewport = null;
                         if (!needsFullSnapshot) {
-                            // track forward and reverse viewport rows separately
-                            if (subscription.pendingReverseViewport) {
-                                reverseSnapshotRows.addRowSet(subscription.snapshotViewport);
-                            } else {
-                                snapshotRows.addRowSet(subscription.snapshotViewport);
-                            }
+                            snapshotRows.addRowSet(subscription.snapshotViewport);
                         }
                     }
 
@@ -1057,15 +989,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             needsFullSnapshot = true;
                         }
                     }
-
-                    subscription.snapshotReverseViewport = subscription.pendingReverseViewport;
-                } // end updatedSubscriptions loop
+                }
 
                 boolean haveViewport = false;
                 postSnapshotColumns.clear();
-
                 final RowSetBuilderRandom postSnapshotViewportBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom postSnapshotReverseViewportBuilder = RowSetFactory.builderRandom();
 
                 for (int i = 0; i < activeSubscriptions.size(); ++i) {
                     final Subscription sub = activeSubscriptions.get(i);
@@ -1082,20 +1010,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                     if (sub.isViewport()) {
                         haveViewport = true;
-                        // handle forward and reverse snapshots separately
-                        if (sub.snapshotReverseViewport) {
-                            postSnapshotReverseViewportBuilder
-                                    .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
-                        } else {
-                            postSnapshotViewportBuilder
-                                    .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
-                        }
+                        postSnapshotViewportBuilder
+                                .addRowSet(sub.snapshotViewport != null ? sub.snapshotViewport : sub.viewport);
                     }
                     postSnapshotColumns.or(sub.snapshotColumns != null ? sub.snapshotColumns : sub.subscribedColumns);
                 }
 
                 postSnapshotViewport = haveViewport ? postSnapshotViewportBuilder.build() : null;
-                postSnapshotReverseViewport = haveViewport ? postSnapshotReverseViewportBuilder.build() : null;
 
                 if (!needsSnapshot) {
                     // i.e. We have only removed subscriptions; we can update this state immediately.
@@ -1111,11 +1032,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         // then we spend the effort to take a snapshot
         if (needsSnapshot) {
-            try (final RowSet snapshotRowSet = snapshotRows.build();
-                    final RowSet reverseSnapshotRowSet = reverseSnapshotRows.build()) {
+            try (final RowSet snapshotRowSet = snapshotRows.build()) {
                 snapshot =
-                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet,
-                                needsFullSnapshot ? null : reverseSnapshotRowSet);
+                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
             }
         }
 
@@ -1168,6 +1087,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 objectColumnsToClear.or(objectColumns);
                 objectColumnsToClear.and(activeColumns);
             }
+
 
             nextFreeDeltaKey = 0;
             for (final Delta delta : pendingDeltas) {
@@ -1232,12 +1152,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         : subscription.subscribedColumns;
 
                 try (final RowSet clientView =
-                        subscription.isViewport()
-                                ? propRowSetForMessage.subSetForPositions(vp, subscription.reverseViewport)
-                                : null) {
+                        subscription.isViewport() ? propRowSetForMessage.subSetForPositions(vp) : null) {
                     subscription.listener
-                            .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
-                                    clientView, cols));
+                            .onNext(generator.getSubView(subscription.options, false, vp, clientView, cols));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(GrpcUtil.securelyWrapError(log, e));
@@ -1292,9 +1209,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             final boolean isViewport = subscription.viewport != null;
             try (final RowSet keySpaceViewport =
-                    isViewport
-                            ? snapshotGenerator.getMessage().rowsAdded
-                                    .subSetForPositions(subscription.viewport, subscription.reverseViewport)
+                    isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport)
                             : null) {
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
@@ -1305,8 +1220,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
-                                subscription.viewport, subscription.reverseViewport, keySpaceViewport,
-                                subscription.subscribedColumns));
+                                subscription.viewport, keySpaceViewport, subscription.subscribedColumns));
             } catch (final Exception e) {
                 GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
                 removeSubscription(subscription.listener);
@@ -1352,11 +1266,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             modColumnSet = firstDelta.modifiedColumns;
 
             downstream.rowsAdded = firstDelta.update.added().copy();
-
             downstream.rowsRemoved = firstDelta.update.removed().copy();
             downstream.shifted = firstDelta.update.shifted();
             downstream.rowsIncluded = firstDelta.recordedAdds.copy();
-
             downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
             downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
 
@@ -1640,7 +1552,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (subscription.snapshotViewport != null) {
                 final RowSet tmp = subscription.viewport;
                 subscription.viewport = subscription.snapshotViewport;
-                subscription.reverseViewport = subscription.snapshotReverseViewport;
                 subscription.snapshotViewport = tmp;
             }
             if (subscription.snapshotColumns != null) {
@@ -1657,19 +1568,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (this.activeViewport != null) {
             this.activeViewport.close();
         }
-        if (this.activeReverseViewport != null) {
-            this.activeReverseViewport.close();
-        }
-
-        this.activeViewport = this.postSnapshotViewport == null || this.postSnapshotViewport.isEmpty() ? null
-                : this.postSnapshotViewport;
-
-        this.activeReverseViewport =
-                this.postSnapshotReverseViewport == null || this.postSnapshotReverseViewport.isEmpty() ? null
-                        : this.postSnapshotReverseViewport;
-
+        this.activeViewport = this.postSnapshotViewport;
         this.postSnapshotViewport = null;
-        this.postSnapshotReverseViewport = null;
 
         // Pre-condition: activeObjectColumns == objectColumns & activeColumns
         this.objectColumnsToClear.or(postSnapshotColumns);
@@ -1749,8 +1649,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     @VisibleForTesting
     BarrageMessage getSnapshot(final List<Subscription> snapshotSubscriptions,
             final BitSet columnsToSnapshot,
-            final RowSet positionsToSnapshot,
-            final RowSet reversePositionsToSnapshot) {
+            final RowSet positionsToSnapshot) {
         if (onGetSnapshot != null) {
             onGetSnapshot.run();
         }
@@ -1759,8 +1658,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // TODO: Let notification-indifferent use cases skip notification test
         final SnapshotControl snapshotControl = new SnapshotControl(snapshotSubscriptions);
         return ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
-                this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
-                snapshotControl);
+                this, parent, columnsToSnapshot, positionsToSnapshot, snapshotControl);
     }
 
     ////////////////////////////////////////////////////
