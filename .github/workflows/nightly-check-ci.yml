@@ -87,7 +87,9 @@ jobs:
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' }}
         with:
-          slack-message:
-            Nightly build failure in ${{ matrix.gradle-check }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}
+          payload: |
+            {
+              "slack-message": "Nightly build failure in ${{ matrix.gradle-check }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}"
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
