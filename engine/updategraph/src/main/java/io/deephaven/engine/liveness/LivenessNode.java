@@ -3,8 +3,8 @@ package io.deephaven.engine.liveness;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A {@link LivenessReferent} that is also a {@link LivenessManager}, transitively enforcing liveness on its referents.
@@ -40,10 +40,10 @@ public interface LivenessNode extends LivenessReferent, LivenessManager {
      */
     @SuppressWarnings("unused")
     @FinalDefault
-    default void unmanage(@NotNull Collection<? extends LivenessReferent> referents) {
+    default void unmanage(@NotNull Stream<? extends LivenessReferent> referents) {
         if (!tryUnmanage(referents)) {
             throw new LivenessStateException(this + " is no longer live and cannot unmanage " +
-                    referents.stream().map(LivenessReferent::getReferentDescription).collect(Collectors.joining()));
+                    referents.map(LivenessReferent::getReferentDescription).collect(Collectors.joining()));
         }
     }
 
@@ -55,5 +55,5 @@ public interface LivenessNode extends LivenessReferent, LivenessManager {
      * @return Whether this node was live and thus in fact tried to drop a reference
      */
     @SuppressWarnings("unused")
-    boolean tryUnmanage(@NotNull Collection<? extends LivenessReferent> referents);
+    boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents);
 }

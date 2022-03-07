@@ -6,7 +6,7 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
@@ -110,7 +110,7 @@ public abstract class ReferenceCountedLivenessNode extends ReferenceCounted impl
     }
 
     @Override
-    public final boolean tryUnmanage(@NotNull final Collection<? extends LivenessReferent> referents) {
+    public final boolean tryUnmanage(@NotNull final Stream<? extends LivenessReferent> referents) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return true;
         }
