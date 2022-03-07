@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.io.log.impl.DynamicDelayedLogEntryPoolImpl",
+ "methods": {},
+ "path": "io.deephaven.io.log.impl.DynamicDelayedLogEntryPoolImpl",
+ "typeName": "class"
+}

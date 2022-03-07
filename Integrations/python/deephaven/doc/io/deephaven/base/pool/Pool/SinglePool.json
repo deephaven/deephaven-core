@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.base.pool.Pool$SinglePool",
+ "methods": {},
+ "path": "io.deephaven.base.pool.Pool.SinglePool",
+ "text": "Must implement at least: One thread may call give(), one thread may call take()",
+ "typeName": "interface"
+}

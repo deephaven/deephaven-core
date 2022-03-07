@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.util.process.ShutdownManager$Task",
+ "methods": {
+  "invoke": "Invoke this task for shutdown processing."
+ },
+ "path": "io.deephaven.util.process.ShutdownManager.Task",
+ "text": "A single unit of work for shutdown.",
+ "typeName": "interface"
+}

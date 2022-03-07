@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Function$Unary_Long",
+ "methods": {
+  "call": ":param arg: long\n:return: Function.Unary_Long.R"
+ },
+ "path": "io.deephaven.base.Function.Unary_Long",
+ "typeName": "interface"
+}

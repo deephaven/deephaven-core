@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Procedure$UnaryFloat",
+ "methods": {
+  "call": ":param arg: float"
+ },
+ "path": "io.deephaven.base.Procedure.UnaryFloat",
+ "typeName": "interface"
+}

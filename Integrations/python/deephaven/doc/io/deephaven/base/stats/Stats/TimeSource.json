@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.stats.Stats$TimeSource",
+ "methods": {
+  "currentTimeMillis": ":return: long"
+ },
+ "path": "io.deephaven.base.stats.Stats.TimeSource",
+ "typeName": "interface"
+}
