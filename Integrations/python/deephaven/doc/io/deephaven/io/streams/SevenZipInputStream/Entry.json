@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.io.streams.SevenZipInputStream$Entry",
+ "methods": {
+  "getName": ":return: java.lang.String",
+  "isDirectory": ":return: boolean"
+ },
+ "path": "io.deephaven.io.streams.SevenZipInputStream.Entry",
+ "typeName": "class"
+}

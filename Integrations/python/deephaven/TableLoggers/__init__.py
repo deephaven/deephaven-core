@@ -1,6 +1,6 @@
 
 """
-Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.
+Accessors for Deephaven tables of instrumentation logs. These tables include query logs and performance logs
 """
 
 
@@ -121,8 +121,6 @@ def queryPerformanceLog():
 def updatePerformanceLog():
     """
     Return a table with update performance data.
-    
-     Note this table will only tick if/since startUpdatePerformanceLog is called.
     
     :return: (io.deephaven.engine.table.impl.QueryTable) A table with update performance data.
     """

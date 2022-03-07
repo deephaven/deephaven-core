@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.util.process.LoggerShutdownTask",
+ "methods": {},
+ "path": "io.deephaven.util.process.LoggerShutdownTask",
+ "typeName": "class"
+}

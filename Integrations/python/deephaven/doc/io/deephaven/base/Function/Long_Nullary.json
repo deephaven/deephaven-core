@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Function$Long_Nullary",
+ "methods": {
+  "call": ":return: long"
+ },
+ "path": "io.deephaven.base.Function.Long_Nullary",
+ "typeName": "interface"
+}
