@@ -188,4 +188,4 @@ pageviews_summary = pageviews_stg \
         as_list([
             agg.AggCount('total'),
             agg.AggMax('max_received_at = received_at')])) \
-    .updateView('dt_ms = (DateTime.now() - max_received_at)/1_000_000.0')
+    .update('dt_ms = (DateTime.now() - max_received_at)/1_000_000.0')
