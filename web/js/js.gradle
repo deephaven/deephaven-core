@@ -14,7 +14,7 @@ dependencies {
 /**
  * Attach the static js/html/css to the main jar so that can be served from jetty
  */
-tasks.named('jar', Jar, { jar ->
+tasks.named(JavaPlugin.JAR_TASK_NAME, Jar, { jar ->
     jar.from(configurations.js)
 })
 
