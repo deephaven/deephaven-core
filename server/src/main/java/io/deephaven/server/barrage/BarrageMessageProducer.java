@@ -84,6 +84,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
+    private static final long TARGET_SNAPSHOT_MILLIS =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
+                    "target_snapshot_millis", 25);
+    private static final long MIN_SNAPSHOT_ROWS =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
+                    "min_snapshot_rows", 1000);
+
+    private long nextCellsTarget;
+
     /**
      * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different
      * subscribers that may subscribe to different viewports and columns.
@@ -1107,15 +1116,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         BitSet snapshotColumns = null;
 
-        ArrayList<Subscription> growingSubscriptions =
-                new ArrayList<>();
+        // create a prioritized list for the subscriptions
+        TreeMap<Integer, Subscription> growingSubscriptionsMap = new TreeMap<>(Collections.reverseOrder());
+        List<Subscription> growingSubscriptions = new ArrayList<>();;
 
         if (numGrowingSubscriptions > 0) {
             snapshotColumns = new BitSet();
-
-            ArrayList<Subscription> reverse = new ArrayList<>();
-            ArrayList<Subscription> forward = new ArrayList<>();
-            ArrayList<Subscription> full = new ArrayList<>();
 
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.isGrowingViewport) {
@@ -1123,23 +1129,20 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     snapshotColumns.or(subscription.targetColumns);
 
                     if (subscription.targetViewport == null) {
-                        full.add(subscription);
-                    } else if (subscription.targetReverseViewport) {
-                        reverse.add(subscription);
+                        growingSubscriptionsMap.put(0, subscription); // full, lowest priority
+                    } else if (!subscription.targetReverseViewport) {
+                        growingSubscriptionsMap.put(1, subscription); // forward VP, medium priority
                     } else {
-                        forward.add(subscription);
+                        growingSubscriptionsMap.put(2, subscription); // reverse VP, high priority
                     }
                 }
             }
 
-            // have to determine priorities between reverse / forward / full snapshots
-            growingSubscriptions.addAll(reverse);
-            growingSubscriptions.addAll(forward);
-            growingSubscriptions.addAll(full);
+            growingSubscriptions.addAll(growingSubscriptionsMap.values());
 
-            // TODO: determine this by LTM usage percentage
-            long MAX_CELLS = 100;
-            long rowsRemaining = MAX_CELLS / snapshotColumns.cardinality();
+            // MIN_SNAPSHOT_ROWS helps prevent viewports from getting partial delivery (breaking js client)
+            final long minCells = MIN_SNAPSHOT_ROWS * snapshotColumns.cardinality();
+            long rowsRemaining = Math.max(minCells, nextCellsTarget / Math.max(1, snapshotColumns.cardinality()));
 
             // some builders to help generate the rowsets we need
             RowSetBuilderRandom viewportBuilder = RowSetFactory.builderRandom();
@@ -1154,13 +1157,16 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             ? RowSetFactory.flat(Long.MAX_VALUE)
                             : subscription.targetViewport.copy()) {
 
-                        // TODO: check this logic, if column set changes then previous viewport is also invalid
-                        final boolean viewportValid =
-                                subscription.reverseViewport == subscription.targetReverseViewport;
+                        // TODO: check this logic
+                        // if viewport direction changes then previous viewport is invalid, also if subscribed columns
+                        // change and new columns are added then viewport is invalid
 
-                        if (!viewportValid) {
-                            System.out.println();
-                        }
+                        BitSet missingColumns = (BitSet) subscription.targetColumns.clone();
+                        missingColumns.andNot(subscription.subscribedColumns);
+
+                        final boolean viewportValid =
+                                subscription.reverseViewport == subscription.targetReverseViewport
+                                        && missingColumns.isEmpty();
 
                         // if we haven't reversed viewports, can exclude current viewport
                         if (viewportValid && subscription.viewport != null) {
@@ -1226,8 +1232,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 postSnapshotColumns.or(snapshotColumns);
 
-                // finally, grab the snapshot
+                // finally, grab the snapshot and measure elapsed time for next projections
+                long start = scheduler.currentTime().getNanos();
                 snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet, reverseSnapshotRowSet);
+                long elapsed = scheduler.currentTime().getNanos() - start;
+
+                if (snapshot.rowsIncluded.size() > 0) {
+                    // TODO: determine this by LTM usage percentage
+                    long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * snapshotColumns.cardinality());
+                    // capped until we get auto-chunked delivery
+                    if (nanosPerCell > 0) {
+                        nextCellsTarget = Math.min((TARGET_SNAPSHOT_MILLIS * 1000000) / nanosPerCell, 400000L);
+                        nextCellsTarget = Math.max(nextCellsTarget, 1000 * snapshotColumns.cardinality());
+                    }
+                }
+                // System.out.println("nextCellsTarget: " + nextCellsTarget);
             }
         }
 
