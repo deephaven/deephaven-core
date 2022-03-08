@@ -10,10 +10,10 @@ on:
     branches: [ 'nightly/**', 'release/v*' ]
 
 jobs:
-  check:
+  nightly:
     strategy:
       matrix:
-        gradle-check: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
+        gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
         test-jvm-version: ['11', '17']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-20.04
@@ -45,18 +45,18 @@ jobs:
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
           cat gradle.properties
 
-      - name: Run gradle ${{ matrix.gradle-check }} on java ${{ matrix.test-jvm-version }}
+      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}
         uses: burrunan/gradle-cache-action@v1
         with:
-          job-id: check
-          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-check }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
+          job-id: gradle-run
+          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
           gradle-version: wrapper
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: nightly-${{ matrix.gradle-check }}-java${{ matrix.test-jvm-version }}-ci-results
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
           path: |
             **/build/test-results/*/TEST-*.xml
             **/build/reports/tests/**
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: nightly-${{ matrix.gradle-check }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*
@@ -78,7 +78,7 @@ jobs:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
-          check_name: check report ${{ matrix.gradle-check }} java${{ matrix.test-jvm-version }}
+          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
@@ -89,7 +89,7 @@ jobs:
         with:
           payload: |
             {
-              "slack-message": "Nightly build failure in ${{ matrix.gradle-check }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}"
+              "slack-message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.event.head_commit.url }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
