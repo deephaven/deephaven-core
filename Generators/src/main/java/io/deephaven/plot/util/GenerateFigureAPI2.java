@@ -10,6 +10,7 @@ import java.util.*;
 public class GenerateFigureAPI2 {
 
     private static final String INDENT = "    ";
+    private static final String JCLASS = "io.deephaven.plot.Figure";
 
     /**
      * A Key for indexing common method names.
@@ -79,13 +80,15 @@ public class GenerateFigureAPI2 {
      * A Python input parameter.
      */
     private static class PyParameter {
+        private final int precedence;
         private final String name;
         private final String typeAnnotation;
         private final String defaultValue;
         private final String docString;
         //todo conversion function?
 
-        public PyParameter(final String name, final String typeAnnotation, final String defaultValue, final String docString) {
+        public PyParameter(final int precedence, final String name, final String typeAnnotation, final String defaultValue, final String docString) {
+            this.precedence = precedence;
             this.name = name;
             this.typeAnnotation = typeAnnotation;
             this.defaultValue = defaultValue;
@@ -95,7 +98,8 @@ public class GenerateFigureAPI2 {
         @Override
         public String toString() {
             return "PyParameter{" +
-                    "name='" + name + '\'' +
+                    "precedence=" + precedence +
+                    ", name='" + name + '\'' +
                     ", typeAnnotation='" + typeAnnotation + '\'' +
                     ", defaultValue='" + defaultValue + '\'' +
                     ", docString='" + docString + '\'' +
@@ -118,13 +122,13 @@ public class GenerateFigureAPI2 {
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
-        rst.put("seriesName", new PyParameter("series_name", "str", null, "name of the created dataset"));
-        rst.put("function", new PyParameter("function", "Callable", "None", "function to plot"));
-        rst.put("t", new PyParameter("t", "Union[Table,SelectableDataSet]", "None", "table or selectable data set (e.g. OneClick filterable table)"));
-        rst.put("x", new PyParameter("x", "Union[str,List[int],List[float],List[DateTime]]", "None", "x-values or column name"));
-        rst.put("y", new PyParameter("y", "Union[str,List[int],List[float],List[DateTime]]", "None", "y-values or column name"));
-        rst.put("hasXTimeAxis", new PyParameter("has_x_time_axis", "bool", "None", "whether to treat the x-values as time data")); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter("has_y_time_axis", "bool", "None", "whether to treat the y-values as time data")); //todo needed?
+        rst.put("seriesName", new PyParameter(1, "series_name", "str", null, "name of the created dataset"));
+        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", "None", "table or selectable data set (e.g. OneClick filterable table)"));
+        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", "None", "x-values or column name"));
+        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", "None", "y-values or column name"));
+        rst.put("function", new PyParameter(5, "function", "Callable", "None", "function to plot"));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", "None", "whether to treat the x-values as time data")); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", "None", "whether to treat the y-values as time data")); //todo needed?
 
         //
 
@@ -134,18 +138,17 @@ public class GenerateFigureAPI2 {
     }
 
     /**
-     * Gets the signatures of public io.deephaven.plot.Figure methods.
+     * Gets the signatures of public JCLASS methods.
      *
      * @return Map of method keys to a list of all relevant signatures.
      * @throws ClassNotFoundException
      */
     public static Map<Key, ArrayList<JavaFunction>> getSignatures() throws ClassNotFoundException {
-        final String imp = "io.deephaven.plot.Figure";
-        final Class<?> c = Class.forName(imp);
+        final Class<?> c = Class.forName(JCLASS);
         final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
 
         for (final Method m : c.getMethods()) {
-            if (!m.getReturnType().getTypeName().equals(imp)) {
+            if (!m.getReturnType().getTypeName().equals(JCLASS)) {
                 // only look at methods of the plot builder
                 continue;
             }
@@ -219,24 +222,27 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    private static Set<PyParameter> pyMethodArgs(final ArrayList<JavaFunction> signatures) {
+    private static List<PyParameter> pyMethodArgs(final ArrayList<JavaFunction> signatures) {
         final Map<String, PyParameter> pyparams = getPyParameters();
 
         //todo figure out arg order -- maybe have ranking in pyargs
 
-        final Set<PyParameter> args = new HashSet<>();
+        final Set<PyParameter> argSet = new HashSet<>();
 
         for (final JavaFunction f : signatures) {
             for (final String param : f.getParameterNames()) {
                 final PyParameter pyparam = pyparams.get(param);
-                args.add(pyparam);
+                argSet.add(pyparam);
             }
         }
+
+        final List<PyParameter> args = new ArrayList<>(argSet);
+        args.sort((a,b)->Integer.compare(a.precedence,b.precedence));
 
         return args;
     }
 
-    private static String pyFuncSignature(final Key key, final Set<PyParameter> args) {
+    private static String pyFuncSignature(final Key key, final List<PyParameter> args) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(INDENT).append("def ").append(camelToSnake(key.name)).append("(\n");
@@ -260,7 +266,7 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String pyDocString(final Set<PyParameter> args){
+    private static String pyDocString(final List<PyParameter> args){
         final StringBuilder sb = new StringBuilder();
 
         //todo doc string
@@ -288,7 +294,7 @@ public class GenerateFigureAPI2 {
     private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
 
-        final Set<PyParameter> args = pyMethodArgs(signatures);
+        final List<PyParameter> args = pyMethodArgs(signatures);
 
         final String sig = pyFuncSignature(key, args);
         final String pydocs = pyDocString(args);
@@ -304,7 +310,21 @@ public class GenerateFigureAPI2 {
     private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("class Figure:\n");
+        sb.append("import jpy\n");
+        sb.append("from deephaven2._wrapper_abc import JObjectWrapper\n");
+        sb.append("\n");
+
+        sb.append("class Figure(JObjectWrapper):\n");
+        sb.append("\n");
+        sb.append(INDENT).append("j_object_type = jpy.get_type(\"").append(JCLASS).append("\")\n");
+        sb.append("\n");
+        sb.append(INDENT).append("def __init__(self, j_figure: jpy.JType):\n");
+        sb.append(INDENT).append(INDENT).append("self.j_figure = j_figure\n");
+        sb.append("\n");
+        sb.append(INDENT).append("@property\n");
+        sb.append(INDENT).append("def j_object(self) -> jpy.JType:\n");
+        sb.append(INDENT).append(INDENT).append("return self.j_figure\n");
+        sb.append("\n");
 
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
