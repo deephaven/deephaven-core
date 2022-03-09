@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -38,6 +39,7 @@ import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.tablelogger.Row;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -84,14 +86,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
-    private static final long TARGET_SNAPSHOT_MILLIS =
-            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
-                    "target_snapshot_millis", 25);
-    private static final long MIN_SNAPSHOT_ROWS =
-            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
-                    "min_snapshot_rows", 1000);
+    private static final boolean SUBSCRIPTION_GROWTH_ENABLED =
+            Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
+                    "subscriptionGrowthEnabled", false);
 
-    private long nextCellsTarget;
+    private static final double TARGET_SNAPSHOT_PERCENTAGE =
+            Configuration.getInstance().getDoubleForClassWithDefault(BarrageMessageProducer.class,
+                    "targetSnapshotPercentage", 0.25);
+    private static final long INITIAL_SNAPSHOT_CELL_COUNT =
+            Configuration.getInstance().getLongForClassWithDefault(BarrageMessageProducer.class,
+                    "initialSnapshotCellCount", 10000);
+
+    private long snapshotTargetCellCount = INITIAL_SNAPSHOT_CELL_COUNT;
+    private double snapshotNanosPerCell = 0;
 
     /**
      * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different
@@ -1129,7 +1136,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     snapshotColumns.or(subscription.targetColumns);
 
                     if (subscription.targetViewport == null) {
-                        growingSubscriptionsMap.put(0, subscription); // full, lowest priority
+                        growingSubscriptionsMap.put(0, subscription); // full, low priority
                     } else if (!subscription.targetReverseViewport) {
                         growingSubscriptionsMap.put(1, subscription); // forward VP, medium priority
                     } else {
@@ -1140,9 +1147,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             growingSubscriptions.addAll(growingSubscriptionsMap.values());
 
-            // MIN_SNAPSHOT_ROWS helps prevent viewports from getting partial delivery (breaking js client)
-            final long minCells = MIN_SNAPSHOT_ROWS * snapshotColumns.cardinality();
-            long rowsRemaining = Math.max(minCells, nextCellsTarget / Math.max(1, snapshotColumns.cardinality()));
+            // we want to limit the size of the snapshot to keep the UGP responsive
+            long rowsRemaining;
+            if (SUBSCRIPTION_GROWTH_ENABLED) {
+                rowsRemaining = snapshotTargetCellCount / Math.max(1, snapshotColumns.cardinality());
+            } else {
+               // growth is disabled, allow unlimited snapshot size
+                rowsRemaining = Long.MAX_VALUE;
+            }
 
             // some builders to help generate the rowsets we need
             RowSetBuilderRandom viewportBuilder = RowSetFactory.builderRandom();
@@ -1157,7 +1169,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             ? RowSetFactory.flat(Long.MAX_VALUE)
                             : subscription.targetViewport.copy()) {
 
-                        // TODO: check this logic
                         // if viewport direction changes then previous viewport is invalid, also if subscribed columns
                         // change and new columns are added then viewport is invalid
 
@@ -1168,7 +1179,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 subscription.reverseViewport == subscription.targetReverseViewport
                                         && missingColumns.isEmpty();
 
-                        // if we haven't reversed viewports, can exclude current viewport
+                        // if we have a valid viewport, can exclude current viewport from requested rows
                         if (viewportValid && subscription.viewport != null) {
                             missingRows.remove(subscription.viewport);
                         }
@@ -1182,45 +1193,41 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             missingRows.removeRange(key, Long.MAX_VALUE - 1);
                         }
 
-                        // "grow" the snapshot viewport (snapshotViewport is always null)
                         subscription.snapshotViewport = viewportValid && subscription.viewport != null
                                 ? subscription.viewport.copy()
                                 : RowSetFactory.empty();
-                        subscription.snapshotViewport.insert(missingRows);
 
-                        // add all the rows from the current snapshot
-                        subscription.snapshotViewport
-                                .insert(subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet);
-
+                        // add the new rows to the upcoming snapshot
                         if (subscription.targetReverseViewport) {
-                            if (subscription.targetViewport != null) {
-                                // add this set to the BMP viewport
-                                reverseViewportBuilder.addRowSet(missingRows);
-
-                                // retain only the rows that apply to this sub
-                                subscription.snapshotViewport.retain(subscription.targetViewport);
-                            }
-
-                            // add the new rows to the upcoming snapshot
                             reverseSnapshotRowSet.insert(missingRows);
                         } else {
-                            if (subscription.targetViewport != null) {
-                                // add this set to the BMP viewport
-                                viewportBuilder.addRowSet(missingRows);
-
-                                // retain only the rows that apply to this sub
-                                subscription.snapshotViewport.retain(subscription.targetViewport);
-                            }
-
-                            // add the new rows to the upcoming snapshot
                             snapshotRowSet.insert(missingRows);
                         }
 
+                        // "grow" the snapshot viewport with rows from the current snapshot
+                        subscription.snapshotViewport
+                                .insert(subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet);
+
+                        // extra bookkeeping for viewport subscriptions
+                        if (subscription.targetViewport != null) {
+                            if (subscription.targetReverseViewport) {
+                                // add this set to the BMP reverse viewport
+                                reverseViewportBuilder.addRowSet(missingRows);
+                            } else {
+                                // add this set to the BMP forward viewport
+                                viewportBuilder.addRowSet(missingRows);
+                            }
+                            // retain only the rows that apply to this subscription
+                            subscription.snapshotViewport.retain(subscription.targetViewport);
+                        }
+
+                        // save the column set
                         subscription.snapshotColumns = (BitSet) subscription.targetColumns.clone();
 
-                        rowsRemaining -= missingRows.size();
-
+                        // save the forward/reverse viewport setting
                         subscription.snapshotReverseViewport = subscription.targetReverseViewport;
+
+                        rowsRemaining -= missingRows.size();
                     }
                 }
 
@@ -1233,20 +1240,30 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 postSnapshotColumns.or(snapshotColumns);
 
                 // finally, grab the snapshot and measure elapsed time for next projections
-                long start = scheduler.currentTime().getNanos();
+                long start = System.nanoTime();
                 snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet, reverseSnapshotRowSet);
-                long elapsed = scheduler.currentTime().getNanos() - start;
+                long elapsed = System.nanoTime() - start;
 
-                if (snapshot.rowsIncluded.size() > 0) {
-                    // TODO: determine this by LTM usage percentage
-                    long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * snapshotColumns.cardinality());
-                    // capped until we get auto-chunked delivery
-                    if (nanosPerCell > 0) {
-                        nextCellsTarget = Math.min((TARGET_SNAPSHOT_MILLIS * 1000000) / nanosPerCell, 400000L);
-                        nextCellsTarget = Math.max(nextCellsTarget, 1000 * snapshotColumns.cardinality());
+                if (SUBSCRIPTION_GROWTH_ENABLED) {
+                    // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
+                    // not exceed the target UGP processing time percentage
+                    if (snapshot.rowsIncluded.size() > 0) {
+                        long targetNanos = (long)(TARGET_SNAPSHOT_PERCENTAGE
+                                * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000000);
+                        long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * snapshotColumns.cardinality());
+                        if (nanosPerCell > 0) {
+                            // apply an exponential moving average to filter the data
+                            if (snapshotNanosPerCell == 0) {
+                                snapshotNanosPerCell = nanosPerCell; // initialize to first value
+                            } else {
+                                // EMA smoothing factor is 0.1 (N = 10)
+                                snapshotNanosPerCell = (snapshotNanosPerCell * 0.9) + (nanosPerCell * 0.1);
+                            }
+                            // TODO: remove this when auto-chunking BarrageMessages exists
+                            snapshotTargetCellCount = Math.min((long)(targetNanos / snapshotNanosPerCell), 400000L);
+                        }
                     }
                 }
-                // System.out.println("nextCellsTarget: " + nextCellsTarget);
             }
         }
 
@@ -1793,27 +1810,19 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private void finalizeSnapshotForSubscriptions(
             final List<Subscription> subscriptions) {
         for (final Subscription subscription : subscriptions) {
-            // test whether we have completed the viewport
-            if (subscription.targetViewport == null) { // full subscription
-                // are all the rows in parent covered by the current viewport?
-                try (final RowSet keysInViewport = parent.getRowSet().subSetForPositions(subscription.viewport)) {
-                    if (parent.getRowSet().subsetOf(keysInViewport)) {
-                        // remove this subscription from the growing list
-                        subscription.isGrowingViewport = false;
-                        --numGrowingSubscriptions;
+            // are there any outstanding rows in the parent that should belong to this subscription?
+            try (final RowSet remaining = subscription.targetViewport == null
+                    ? RowSetFactory.flat(Long.MAX_VALUE).minus(subscription.viewport)
+                    : subscription.targetViewport.minus(subscription.viewport);
+                 final RowSet remainingKeys = parent.getRowSet().subSetForPositions(remaining)) {
 
-                        // change the viewport to `null` to signify full subscription
-                        try (final RowSet ignored = subscription.viewport) {
-                            subscription.viewport = null;
-                        }
-                    }
-
-                }
-            } else {
-                if (subscription.targetViewport.subsetOf(subscription.viewport)) {
-                    // remove this subscription from the growing list
+                if (remainingKeys.size() == 0) {
+                    // this subscription is complete, remove it from the growing list
                     subscription.isGrowingViewport = false;
                     --numGrowingSubscriptions;
+
+                    // set the active viewport to the target viewport
+                    subscription.viewport = subscription.targetViewport;
                 }
             }
         }

@@ -166,6 +166,18 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return Arrays.stream(destSources).map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
     }
 
+    public RowSet getServerViewport() {
+        return serverViewport;
+    }
+
+    public boolean getServerReverseViewport() {
+        return serverReverseViewport;
+    }
+
+    public BitSet getServerColumns() {
+        return serverColumns;
+    }
+
     /**
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
      *

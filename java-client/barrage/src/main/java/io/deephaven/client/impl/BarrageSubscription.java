@@ -45,7 +45,7 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @return the {@code BarrageTable}
      */
-    BarrageTable entireTable();
+    BarrageTable entireTable() throws InterruptedException;
 
     // TODO (deephaven-core#712): java-client viewport support
     /**
