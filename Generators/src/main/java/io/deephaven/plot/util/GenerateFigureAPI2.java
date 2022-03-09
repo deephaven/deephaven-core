@@ -83,15 +83,15 @@ public class GenerateFigureAPI2 {
         private final int precedence;
         private final String name;
         private final String typeAnnotation;
-        private final String defaultValue;
+        private final boolean required;
         private final String docString;
         //todo conversion function?
 
-        public PyParameter(final int precedence, final String name, final String typeAnnotation, final String defaultValue, final String docString) {
+        public PyParameter(final int precedence, final String name, final String typeAnnotation, final boolean required, final String docString) {
             this.precedence = precedence;
             this.name = name;
             this.typeAnnotation = typeAnnotation;
-            this.defaultValue = defaultValue;
+            this.required = required;
             this.docString = docString;
         }
 
@@ -101,7 +101,7 @@ public class GenerateFigureAPI2 {
                     "precedence=" + precedence +
                     ", name='" + name + '\'' +
                     ", typeAnnotation='" + typeAnnotation + '\'' +
-                    ", defaultValue='" + defaultValue + '\'' +
+                    ", required='" + required + '\'' +
                     ", docString='" + docString + '\'' +
                     '}';
         }
@@ -122,13 +122,13 @@ public class GenerateFigureAPI2 {
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
-        rst.put("seriesName", new PyParameter(1, "series_name", "str", null, "name of the created dataset"));
-        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", "None", "table or selectable data set (e.g. OneClick filterable table)"));
-        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", "None", "x-values or column name"));
-        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", "None", "y-values or column name"));
-        rst.put("function", new PyParameter(5, "function", "Callable", "None", "function to plot"));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", "None", "whether to treat the x-values as time data")); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", "None", "whether to treat the y-values as time data")); //todo needed?
+        rst.put("seriesName", new PyParameter(1, "series_name", "str", true, "name of the created dataset"));
+        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", false, "table or selectable data set (e.g. OneClick filterable table)"));
+        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", false, "x-values or column name"));
+        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", false, "y-values or column name"));
+        rst.put("function", new PyParameter(5, "function", "Callable", false, "function to plot"));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", false, "whether to treat the x-values as time data")); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", false, "whether to treat the y-values as time data")); //todo needed?
 
         //
 
@@ -252,8 +252,8 @@ public class GenerateFigureAPI2 {
         for (final PyParameter arg : args) {
             sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
 
-            if (arg.defaultValue != null) {
-                sb.append(" = ").append(arg.defaultValue);
+            if (!arg.required) {
+                sb.append(" = None");
             }
 
             sb.append(",\n");
@@ -326,6 +326,8 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append(INDENT).append("return self.j_figure\n");
         sb.append("\n");
 
+        int nGenerated = 0;
+
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
             final ArrayList<JavaFunction> sigs = entry.getValue();
@@ -345,7 +347,11 @@ public class GenerateFigureAPI2 {
             System.out.println(pyFunc);
 
             sb.append("\n").append(pyFunc);
+            nGenerated++;
         }
+
+        //todo remove print
+        System.out.println("GENSTATS: " + nGenerated + " of " + signatures.size() + "(" + (nGenerated/(double)signatures.size()) + ")");
 
         return sb.toString();
     }
