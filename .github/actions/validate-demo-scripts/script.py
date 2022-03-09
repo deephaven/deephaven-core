@@ -40,7 +40,7 @@ def extract_python_scripts(file_path):
 
     return "\n".join(python_scripts)
 
-def main(demo_scripts_path: str, host: str, max_retries: int):
+def main(demo_scripts_path: str, host: str, port: int, max_retries: int):
     """
     Main method for the script. Reads each file line by line and grabs lines
     between the ```python ``` tags to run in Deephaven.
@@ -48,20 +48,21 @@ def main(demo_scripts_path: str, host: str, max_retries: int):
     Parameters:
         demo_scripts_path (str): The path to the demo notebooks
         host (str): The host name of the Deephaven instance
+        port (int): The port on the host to access
         max_retries (int): The maximum attempts to retry connecting to Deephaven
 
     Returns:
         None
     """
 
-    print("Attempting to connect to host at")
-    print(host)
+    print(f"Attempting to connect to host at {host} on port {port}")
 
     #Simple retry loop in case the server tries to launch before Deephaven is ready
     count = 0
+    session = None
     while (count < max_retries):
         try:
-            session = Session(host=host)
+            session = Session(host=host, port=port)
             print("Connected to Deephaven")
             break
         except DHError as e:
@@ -98,22 +99,23 @@ def main(demo_scripts_path: str, host: str, max_retries: int):
                 is_error = True
     if is_error:
         error_files_print = "\n".join(error_files)
-        print(f"Errors were found in the following notebooks: {error_files_print}")
+        print(f"Errors were found in the following notebooks:\n {error_files_print}")
         sys.exit("At least 1 demo notebook failed to run. Check the logs for information on what failed")
 
 usage = """
-usage: python script.py demo_scripts_path host max_retries
+usage: python script.py demo_scripts_path host port max_retries
 """
 
 if __name__ == '__main__':
-    if len(sys.argv) > 4:
+    if len(sys.argv) > 5:
         sys.exit(usage)
 
     try:
         demo_scripts_path = sys.argv[1]
         host = sys.argv[2]
-        max_retries = int(sys.argv[3])
+        port = int(sys.argv[3])
+        max_retries = int(sys.argv[4])
     except:
         sys.exit(usage)
 
-    main(demo_scripts_path, host, max_retries)
+    main(demo_scripts_path, host, port, max_retries)

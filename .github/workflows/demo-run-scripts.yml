@@ -20,3 +20,4 @@ jobs:
         with:
           demo-scripts-path: "demo/web/src/main/notebooks/"
           host: "localhost"
+          port: 10000

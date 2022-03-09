@@ -7,6 +7,9 @@ inputs:
   host:
     description: The host name or IP address of the Deephaven instance
     required: true
+  port:
+    description: The port to access on the host
+    required: true
   max-retries:
     description: The maximum attempts to retry connecting to Deephaven
     required: false
@@ -29,5 +32,5 @@ runs:
         docker-compose -f ${{ github.action_path }}/docker-compose.yml up -d
       shell: sh
     - name: Run python script
-      run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.max-retries }}
+      run: python ${{ github.action_path }}/script.py ${{ inputs.demo-scripts-path }} ${{ inputs.host }} ${{ inputs.port }} ${{ inputs.max-retries }}
       shell: sh
