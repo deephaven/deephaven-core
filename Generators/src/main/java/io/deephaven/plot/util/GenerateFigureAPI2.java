@@ -9,6 +9,8 @@ import java.util.*;
 
 public class GenerateFigureAPI2 {
 
+    private static final String INDENT = "    ";
+
     /**
      * A Key for indexing common method names.
      */
@@ -74,7 +76,66 @@ public class GenerateFigureAPI2 {
     }
 
     /**
+     * A Python input parameter.
+     */
+    private static class PyParameter {
+        private final String name;
+        private final String typeAnnotation;
+        private final String defaultValue;
+        private final String docString;
+        //todo conversion function?
+
+        public PyParameter(final String name, final String typeAnnotation, final String defaultValue, final String docString) {
+            this.name = name;
+            this.typeAnnotation = typeAnnotation;
+            this.defaultValue = defaultValue;
+            this.docString = docString;
+        }
+
+        @Override
+        public String toString() {
+            return "PyParameter{" +
+                    "name='" + name + '\'' +
+                    ", typeAnnotation='" + typeAnnotation + '\'' +
+                    ", defaultValue='" + defaultValue + '\'' +
+                    ", docString='" + docString + '\'' +
+                    '}';
+        }
+    }
+
+    /**
+     * Convert camel case to snake case.
+     *
+     * @param str input
+     * @return snake case string
+     */
+    private static String camelToSnake(final String str) {
+        String regex = "([a-z])([A-Z]+)";
+        String replacement = "$1_$2";
+        return str.replaceAll(regex, replacement).toLowerCase();
+    }
+
+    private static Map<String, PyParameter> getPyParameters() {
+        final Map<String, PyParameter> rst = new HashMap<>();
+
+        rst.put("seriesName", new PyParameter("series_name", "str", null, "name of the created dataset"));
+        rst.put("function", new PyParameter("function", "Callable", "None", "function to plot"));
+        rst.put("t", new PyParameter("t", "Union[Table,SelectableDataSet]", "None", "table or selectable data set (e.g. OneClick filterable table)"));
+        rst.put("x", new PyParameter("x", "Union[str,List[int],List[float],List[DateTime]]", "None", "x-values or column name"));
+        rst.put("y", new PyParameter("y", "Union[str,List[int],List[float],List[DateTime]]", "None", "y-values or column name"));
+        rst.put("hasXTimeAxis", new PyParameter("has_x_time_axis", "bool", "None", "whether to treat the x-values as time data")); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter("has_y_time_axis", "bool", "None", "whether to treat the y-values as time data")); //todo needed?
+
+        //
+
+        rst.put("sds", rst.get("t"));
+
+        return rst;
+    }
+
+    /**
      * Gets the signatures of public io.deephaven.plot.Figure methods.
+     *
      * @return Map of method keys to a list of all relevant signatures.
      * @throws ClassNotFoundException
      */
@@ -104,7 +165,7 @@ public class GenerateFigureAPI2 {
     /**
      * Prints details for a method signature.
      *
-     * @param key signature key
+     * @param key        signature key
      * @param signatures list of signatures
      */
     private static void printSignature(final Key key, final ArrayList<JavaFunction> signatures) {
@@ -158,6 +219,68 @@ public class GenerateFigureAPI2 {
         }
     }
 
+    private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
+        final StringBuilder sb = new StringBuilder();
+
+        // Get args
+
+        final Map<String, PyParameter> pyparams = getPyParameters();
+
+        //todo figure out arg order -- maybe have ranking in pyargs
+
+        final Set<PyParameter> args = new HashSet<>();
+
+        for (final JavaFunction f : signatures) {
+            for (final String param : f.getParameterNames()) {
+                final PyParameter pyparam = pyparams.get(param);
+                args.add(pyparam);
+            }
+        }
+
+        // Generate function signature
+
+        sb.append("def ").append(camelToSnake(key.name)).append("(");
+
+        int count = 0;
+        for (final PyParameter arg : args) {
+            if (count != 0) {
+                sb.append(", ");
+            }
+
+            sb.append(arg.name).append(": ").append(arg.typeAnnotation);
+
+            if (arg.defaultValue != null) {
+                sb.append(" = ").append(arg.defaultValue);
+            }
+
+            count++;
+        }
+
+        sb.append(") -> Figure:\n");
+
+        // Generate docs
+
+        //todo doc string
+        sb.append(INDENT).append("\"\"\"").append("TODO: doc string here").append("\n");
+        sb.append(INDENT).append("Args:\n");
+
+        for (final PyParameter arg : args) {
+            sb.append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation).append("): ").append(arg.docString).append("\n");
+        }
+
+        sb.append("\n").append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append("a new Figure\n");
+
+        sb.append(INDENT).append("\"\"\"\n");
+
+        // Generate function body
+
+        sb.append(INDENT).append("pass;\n\n");
+
+        // return result
+
+        return sb.toString();
+    }
+
     public static void main(String[] args) throws ClassNotFoundException {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
@@ -165,5 +288,28 @@ public class GenerateFigureAPI2 {
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             printSignature(entry.getKey(), entry.getValue());
         }
+
+        for (int i = 0; i < 10; i++) {
+            System.out.println("===========================================================");
+        }
+
+        String pyCode = "";
+
+        for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+            final Key key = entry.getKey();
+            final ArrayList<JavaFunction> sigs = entry.getValue();
+
+            if (!key.name.equals("plot")) {
+                continue;
+            }
+
+            printSignature(key, sigs);
+
+            final String pyFunc = generatePythonFunction(key, sigs);
+            pyCode += "\n" + pyFunc;
+        }
+
+        System.out.println(pyCode);
+
     }
 }
