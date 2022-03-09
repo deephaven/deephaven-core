@@ -240,6 +240,7 @@ public class GenerateFigureAPI2 {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("def ").append(camelToSnake(key.name)).append("(\n");
+        sb.append(INDENT).append("self,\n");
 
         int count = 0;
         for (final PyParameter arg : args) {
@@ -277,6 +278,13 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
+    private static String pyFuncBody(final ArrayList<JavaFunction> signatures) {
+        final StringBuilder sb = new StringBuilder();
+        //todo implement function body
+        sb.append(INDENT).append("pass;\n\n");
+        return sb.toString();
+    }
+
     private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
 
@@ -296,7 +304,8 @@ public class GenerateFigureAPI2 {
 
         // Generate function body
 
-        sb.append(INDENT).append("pass;\n\n");
+        final String pybody = pyFuncBody(signatures);
+        sb.append(pybody);
 
         // return result
 
