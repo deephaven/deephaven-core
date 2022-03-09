@@ -12,7 +12,7 @@ on:
 jobs:
   nightly:
     strategy:
-      fast-fail: false
+      fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
         test-jvm-version: ['11', '17']
