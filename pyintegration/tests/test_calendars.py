@@ -51,7 +51,7 @@ class CalendarsTestCase(BaseTestCase):
         self.assertEqual(p.length, 6.5 * 60 * 60 * 10 ** 9)
 
     def test_business_schedule_business_day(self):
-        b_schedule = self.test_calendar.get_business_schedule(self.nb_day)
+        b_schedule = self.test_calendar.get_business_schedule(self.prev_nb_day)
         self.assertFalse(b_schedule.is_business_day())
 
         b_schedule = self.test_calendar.get_business_schedule(self.b_day)
@@ -109,7 +109,7 @@ class CalendarsTestCase(BaseTestCase):
 
     def test_business_schedule_non_business_day(self):
         default_calendar = BusinessCalendar()
-        business_schedule = default_calendar.get_business_schedule("2022-01-01")
+        business_schedule = default_calendar.get_business_schedule(self.next_nb_day)
         self.assertEqual(business_schedule.business_periods, [])
         self.assertFalse(business_schedule.is_business_day())
 
