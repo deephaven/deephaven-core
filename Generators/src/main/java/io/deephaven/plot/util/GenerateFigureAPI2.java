@@ -239,12 +239,12 @@ public class GenerateFigureAPI2 {
     private static String pyFuncSignature(final Key key, final Set<PyParameter> args) {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("def ").append(camelToSnake(key.name)).append("(\n");
-        sb.append(INDENT).append("self,\n");
+        sb.append(INDENT).append("def ").append(camelToSnake(key.name)).append("(\n");
+        sb.append(INDENT).append(INDENT).append("self,\n");
 
         int count = 0;
         for (final PyParameter arg : args) {
-            sb.append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
+            sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
 
             if (arg.defaultValue != null) {
                 sb.append(" = ").append(arg.defaultValue);
@@ -255,7 +255,7 @@ public class GenerateFigureAPI2 {
             count++;
         }
 
-        sb.append(") -> Figure:\n");
+        sb.append(INDENT).append(") -> Figure:\n");
 
         return sb.toString();
     }
@@ -264,16 +264,16 @@ public class GenerateFigureAPI2 {
         final StringBuilder sb = new StringBuilder();
 
         //todo doc string
-        sb.append(INDENT).append("\"\"\"").append("TODO: doc string here").append("\n");
-        sb.append(INDENT).append("Args:\n");
+        sb.append(INDENT).append(INDENT).append("\"\"\"").append("TODO: doc string here").append("\n");
+        sb.append(INDENT).append(INDENT).append("Args:\n");
 
         for (final PyParameter arg : args) {
-            sb.append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation).append("): ").append(arg.docString).append("\n");
+            sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation).append("): ").append(arg.docString).append("\n");
         }
 
-        sb.append("\n").append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append("a new Figure\n");
+        sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
 
-        sb.append(INDENT).append("\"\"\"\n");
+        sb.append(INDENT).append(INDENT).append("\"\"\"\n");
 
         return sb.toString();
     }
@@ -281,37 +281,54 @@ public class GenerateFigureAPI2 {
     private static String pyFuncBody(final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
         //todo implement function body
-        sb.append(INDENT).append("pass;\n\n");
+        sb.append(INDENT).append(INDENT).append("pass;\n\n");
         return sb.toString();
     }
 
     private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
 
-        // Get args
-
         final Set<PyParameter> args = pyMethodArgs(signatures);
 
-        // Generate function signature
-
         final String sig = pyFuncSignature(key, args);
-        sb.append(sig);
-
-        // Generate docs
-
         final String pydocs = pyDocString(args);
-        sb.append(pydocs);
-
-        // Generate function body
-
         final String pybody = pyFuncBody(signatures);
-        sb.append(pybody);
 
-        // return result
+        sb.append(sig);
+        sb.append(pydocs);
+        sb.append(pybody);
 
         return sb.toString();
     }
 
+    private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("class Figure:\n");
+
+        for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+            final Key key = entry.getKey();
+            final ArrayList<JavaFunction> sigs = entry.getValue();
+
+            //todo remove plot filter
+            if (!key.name.equals("plot")) {
+                continue;
+            }
+
+            //todo remove printSignature
+            printSignature(key, sigs);
+
+            final String pyFunc = generatePythonFunction(key, sigs);
+
+            //todo remove print pyFunc
+            System.out.println("\n");
+            System.out.println(pyFunc);
+
+            sb.append("\n").append(pyFunc);
+        }
+
+        return sb.toString();
+    }
     public static void main(String[] args) throws ClassNotFoundException {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
@@ -324,23 +341,12 @@ public class GenerateFigureAPI2 {
             System.out.println("===========================================================");
         }
 
-        String pyCode = "";
+        String pyCode = generatePythonClass(signatures);
 
-        for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            final Key key = entry.getKey();
-            final ArrayList<JavaFunction> sigs = entry.getValue();
-
-            if (!key.name.equals("plot")) {
-                continue;
-            }
-
-            printSignature(key, sigs);
-
-            final String pyFunc = generatePythonFunction(key, sigs);
-            pyCode += "\n" + pyFunc;
+        for (int i = 0; i < 10; i++) {
+            System.out.println("===========================================================");
         }
 
         System.out.println(pyCode);
-
     }
 }
