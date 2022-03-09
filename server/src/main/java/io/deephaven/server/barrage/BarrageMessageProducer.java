@@ -1152,7 +1152,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (SUBSCRIPTION_GROWTH_ENABLED) {
                 rowsRemaining = snapshotTargetCellCount / Math.max(1, snapshotColumns.cardinality());
             } else {
-               // growth is disabled, allow unlimited snapshot size
+                // growth is disabled, allow unlimited snapshot size
                 rowsRemaining = Long.MAX_VALUE;
             }
 
@@ -1248,7 +1248,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
                     if (snapshot.rowsIncluded.size() > 0) {
-                        long targetNanos = (long)(TARGET_SNAPSHOT_PERCENTAGE
+                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
                                 * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000000);
                         long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * snapshotColumns.cardinality());
                         if (nanosPerCell > 0) {
@@ -1260,7 +1260,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                                 snapshotNanosPerCell = (snapshotNanosPerCell * 0.9) + (nanosPerCell * 0.1);
                             }
                             // TODO: remove this when auto-chunking BarrageMessages exists
-                            snapshotTargetCellCount = Math.min((long)(targetNanos / snapshotNanosPerCell), 400000L);
+                            snapshotTargetCellCount = Math.min((long) (targetNanos / snapshotNanosPerCell), 400000L);
                         }
                     }
                 }
@@ -1814,7 +1814,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             try (final RowSet remaining = subscription.targetViewport == null
                     ? RowSetFactory.flat(Long.MAX_VALUE).minus(subscription.viewport)
                     : subscription.targetViewport.minus(subscription.viewport);
-                 final RowSet remainingKeys = parent.getRowSet().subSetForPositions(remaining)) {
+                    final RowSet remainingKeys = parent.getRowSet().subSetForPositions(remaining)) {
 
                 if (remainingKeys.size() == 0) {
                     // this subscription is complete, remove it from the growing list
