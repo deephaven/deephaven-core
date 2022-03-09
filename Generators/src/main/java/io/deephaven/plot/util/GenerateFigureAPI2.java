@@ -9,7 +9,10 @@ import java.util.*;
 
 public class GenerateFigureAPI2 {
 
-    private static class Key implements Comparable<Key>{
+    /**
+     * A Key for indexing common method names.
+     */
+    private static class Key implements Comparable<Key> {
         private final String name;
         private final boolean isStatic;
         private final boolean isPublic;
@@ -46,20 +49,20 @@ public class GenerateFigureAPI2 {
         public int compareTo(@NotNull Key o) {
             final int c1 = this.name.compareTo(o.name);
 
-            if(c1 != 0){
+            if (c1 != 0) {
                 return c1;
             }
 
-            if(this.isStatic != o.isStatic){
-                if(this.isStatic){
+            if (this.isStatic != o.isStatic) {
+                if (this.isStatic) {
                     return 1;
                 } else {
                     return -1;
                 }
             }
 
-            if(this.isPublic != o.isPublic){
-                if(this.isPublic){
+            if (this.isPublic != o.isPublic) {
+                if (this.isPublic) {
                     return 1;
                 } else {
                     return -1;
@@ -70,43 +73,55 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    public static Map<Key, ArrayList<JavaFunction>> getSignatures(final String imp) throws ClassNotFoundException {
-            final Class<?> c = Class.forName(imp);
-            final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
+    /**
+     * Gets the signatures of public io.deephaven.plot.Figure methods.
+     * @return Map of method keys to a list of all relevant signatures.
+     * @throws ClassNotFoundException
+     */
+    public static Map<Key, ArrayList<JavaFunction>> getSignatures() throws ClassNotFoundException {
+        final String imp = "io.deephaven.plot.Figure";
+        final Class<?> c = Class.forName(imp);
+        final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
 
-            for (final Method m : c.getMethods()) {
-                if(!m.getReturnType().getTypeName().equals(imp)){
-                    // only look at methods of the plot builder
-                    continue;
-                }
-
-                final Key key = new Key(m);
-                final JavaFunction f = new JavaFunction(m);
-
-                if(key.isPublic) {
-                    final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
-                    sigs.add(f);
-                }
+        for (final Method m : c.getMethods()) {
+            if (!m.getReturnType().getTypeName().equals(imp)) {
+                // only look at methods of the plot builder
+                continue;
             }
 
-            return signatures;
+            final Key key = new Key(m);
+            final JavaFunction f = new JavaFunction(m);
+
+            if (key.isPublic) {
+                final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
+                sigs.add(f);
+            }
+        }
+
+        return signatures;
     }
 
-    private static void printSignature(final Key key, final ArrayList<JavaFunction> signatures){
+    /**
+     * Prints details for a method signature.
+     *
+     * @param key signature key
+     * @param signatures list of signatures
+     */
+    private static void printSignature(final Key key, final ArrayList<JavaFunction> signatures) {
         System.out.println("-----------------------------------------------------------------------");
 
         System.out.println("Name: " + key.name);
-        System.out.println("IsPublic: " + key.isPublic );
+        System.out.println("IsPublic: " + key.isPublic);
         System.out.println("IsStatic: " + key.isStatic);
 
         final Set<String> returnTypes = new TreeSet<>();
         final Map<String, Set<String>> params = new TreeMap<>();
 
-        for(final JavaFunction f : signatures) {
+        for (final JavaFunction f : signatures) {
             returnTypes.add(f.getReturnType().getTypeName());
 
-            for(int i=0; i<f.getParameterNames().length; i++){
-                final Set<String> paramTypes = params.computeIfAbsent(f.getParameterNames()[i], n-> new TreeSet<>());
+            for (int i = 0; i < f.getParameterNames().length; i++) {
+                final Set<String> paramTypes = params.computeIfAbsent(f.getParameterNames()[i], n -> new TreeSet<>());
                 paramTypes.add(f.getParameterTypes()[i].getTypeName());
             }
         }
@@ -125,12 +140,12 @@ public class GenerateFigureAPI2 {
 
         System.out.println("Signatures:");
 
-        for(final JavaFunction f : signatures){
+        for (final JavaFunction f : signatures) {
             StringBuilder sig = new StringBuilder(f.getReturnType().getTypeName());
             sig.append(" (");
 
-            for(int i=0; i<f.getParameterNames().length; i++){
-                if(i >0){
+            for (int i = 0; i < f.getParameterNames().length; i++) {
+                if (i > 0) {
                     sig.append(", ");
                 }
 
@@ -145,8 +160,7 @@ public class GenerateFigureAPI2 {
 
     public static void main(String[] args) throws ClassNotFoundException {
 
-        final String imp = "io.deephaven.plot.Figure";
-        final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures(imp);
+        final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
 
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             printSignature(entry.getKey(), entry.getValue());
