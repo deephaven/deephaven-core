@@ -6,8 +6,6 @@ gradle.ext.buildStartTime = new Date()
 
 rootProject.name='Deephaven Community Core'
 
-String[] bins = ['configs', 'test-configs' ]
-
 String[] mods = [
         'Util',
         'Numerics',
@@ -37,7 +35,6 @@ String[] webMods = [
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
-        'open-api-shared-rpc', // contains the open api rpc interfaces, and all relevant dependencies
         'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
@@ -51,7 +48,6 @@ Map<String, String> pyMods = [
 ]
 
 // Include our modules
-include bins
 include webMods
 include mods
 
@@ -61,10 +57,19 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
+include 'bom'
+
+include(':configs')
+project(':configs').projectDir = file('props/configs')
+
+include(':test-configs')
+project(':test-configs').projectDir = file('props/test-configs')
+
+include 'combined-javadoc'
+
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
 
-include 'fishconfig-local'
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
@@ -274,11 +279,14 @@ project(':docker-server').projectDir = file('docker/server')
 include(':docker-web')
 project(':docker-web').projectDir = file('docker/web')
 
+include(':docker-web-plugin-packager')
+project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
+
 include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')
 
 file("${rootDir}/docker/registry").list().each { name ->
-    if (file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {
+    if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
         project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
     }
@@ -300,22 +308,6 @@ mods.each {
         }
     }
     source.projectDir = sourceDir
-}
-
-// "bin modules" are projects with a single directory filled with static resources we put into jars.
-// In order to use "separate modules per sourceset" option in IntelliJ, we must give these projects
-// a different directory than their resource directory to use as the project root.
-// We'll use "$rootDir/projects/bin" for the project root of the :bin project,
-// with $rootDir/bin as the resource root, so IntelliJ doesn't blow up (a resource dir cannot contain project root dir).
-bins.each {
-    String mod->
-    def source = project(":$mod")
-    File sourceDir = new File(root, 'projects')
-    source.projectDir = new File(sourceDir, mod)
-    File buildscript = new File(source.projectDir, "${mod}.gradle".toString())
-    if (buildscript.file) {
-        source.buildFileName = buildscript.name
-    }
 }
 
 Closure configureWebModule = {

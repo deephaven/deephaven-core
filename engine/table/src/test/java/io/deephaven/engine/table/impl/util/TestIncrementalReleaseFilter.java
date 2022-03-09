@@ -36,7 +36,11 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
+            if (filtered.size() == source.size()) {
+                break;
+            }
         }
+        assertEquals(source.size(), filtered.size());
     }
 
     public void testBigTable() {

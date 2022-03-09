@@ -31,11 +31,9 @@ public class SharedContext implements ResettableContext {
     /**
      * The entries in this shared context.
      */
-    private final Map<Key, ResettableContext> entries;
+    private Map<Key, ResettableContext> entries;
 
-    protected SharedContext() {
-        entries = new HashMap<>();
-    }
+    protected SharedContext() {}
 
     /**
      * Key marker interface.
@@ -59,6 +57,9 @@ public class SharedContext implements ResettableContext {
      */
     public final <V extends ResettableContext, K extends Key<V>> V getOrCreate(final K key,
             @NotNull final Supplier<V> valueFactory) {
+        if (entries == null) {
+            entries = new HashMap<>();
+        }
         // noinspection unchecked
         return (V) entries.computeIfAbsent(key, k -> valueFactory.get());
     }
@@ -74,6 +75,9 @@ public class SharedContext implements ResettableContext {
     @Override
     @OverridingMethodsMustInvokeSuper
     public void reset() {
+        if (entries == null) {
+            return;
+        }
         entries.values().forEach(ResettableContext::reset);
     }
 
@@ -88,6 +92,9 @@ public class SharedContext implements ResettableContext {
     @Override
     @OverridingMethodsMustInvokeSuper
     public void close() {
+        if (entries == null) {
+            return;
+        }
         entries.values().forEach(SafeCloseable::close);
         entries.clear();
     }

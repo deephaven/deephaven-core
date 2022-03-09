@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.util.process.DefaultFatalErrorReporter",
+ "methods": {},
+ "path": "io.deephaven.util.process.DefaultFatalErrorReporter",
+ "typeName": "class"
+}

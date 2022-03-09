@@ -33,7 +33,7 @@ public class ViewportRow implements TableData.Row {
             throw new java.util.NoSuchElementException(
                     "Column " + column.getName() + " not found in row, was it specified in the viewport?");
         }
-        return uncheckedData.getAnyAt(offsetInSnapshot);
+        return uncheckedData.getAtAsAny(offsetInSnapshot);
     }
 
     @Override
@@ -45,18 +45,18 @@ public class ViewportRow implements TableData.Row {
         String formatString = null;
         if (column.getStyleColumnIndex() != null) {
             JsArray<Any> colors = Js.uncheckedCast(dataColumns[column.getStyleColumnIndex()]);
-            cellColors = colors.getAnyAt(offsetInSnapshot).asLong();
+            cellColors = colors.getAtAsAny(offsetInSnapshot).asLong();
         }
         if (rowStyleColumn != null) {
-            rowColors = rowStyleColumn.getAnyAt(offsetInSnapshot).asLong();
+            rowColors = rowStyleColumn.getAtAsAny(offsetInSnapshot).asLong();
         }
         if (column.getFormatColumnIndex() != null) {
             JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatColumnIndex()]);
-            numberFormat = formatStrings.getAnyAt(offsetInSnapshot).asString();
+            numberFormat = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
         if (column.getFormatStringColumnIndex() != null) {
             JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
-            formatString = formatStrings.getAnyAt(offsetInSnapshot).asString();
+            formatString = formatStrings.getAtAsAny(offsetInSnapshot).asString();
         }
         return new Format(cellColors, rowColors, numberFormat, formatString);
     }

@@ -8,6 +8,8 @@ services:
     extends:
       file: ../../docker-compose-common.yml
       service: server
+    volumes:
+      - ../scripts:/scripts
 
   web:
     extends:

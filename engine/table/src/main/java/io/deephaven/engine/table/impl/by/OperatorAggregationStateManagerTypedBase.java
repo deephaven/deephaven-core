@@ -14,7 +14,6 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.util.QueryConstants;
 
 import static io.deephaven.util.SafeCloseable.closeArray;
 
@@ -38,9 +37,9 @@ public abstract class OperatorAggregationStateManagerTypedBase
      * </p>
      *
      * <p>
-     * This has the effect of only using hash table locations < hashTablePivot. When we want to expand the table we can
-     * move some of the entries from the location {@code tableHashPivot - 2^(L-1)} to tableHashPivot. This provides for
-     * incremental expansion of the hash table, without the need for a full rehash.
+     * This has the effect of only using hash table locations &lt; hashTablePivot. When we want to expand the table we
+     * can move some of the entries from the location {@code tableHashPivot - 2^(L-1)} to tableHashPivot. This provides
+     * for incremental expansion of the hash table, without the need for a full rehash.
      * </p>
      */
     protected int tableHashPivot;

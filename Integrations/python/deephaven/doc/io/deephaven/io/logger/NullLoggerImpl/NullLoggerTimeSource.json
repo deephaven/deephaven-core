@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.io.logger.NullLoggerImpl$NullLoggerTimeSource",
+ "methods": {
+  "currentTimeMicros": ":return: long"
+ },
+ "path": "io.deephaven.io.logger.NullLoggerImpl.NullLoggerTimeSource",
+ "typeName": "class"
+}

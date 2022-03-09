@@ -1,11 +1,13 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     implementation project(':java-client-session-dagger')
     implementation project(':java-client-example-utilities')
+
+    Classpaths.inheritGrpcPlatform(project)
     runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)

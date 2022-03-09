@@ -20,10 +20,12 @@ import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
@@ -162,11 +164,18 @@ public class DynamicTableWriter implements TableWriter {
      * @return a RowSetter for the given column
      */
     @Override
-    public RowSetter getSetter(String name) {
+    public PermissiveRowSetter getSetter(String name) {
         if (primaryRow == null) {
             primaryRow = new DynamicTableRow();
         }
         return primaryRow.getSetter(name);
+    }
+
+    private RowSetterImpl getSetter(final int columnIndex) {
+        if (primaryRow == null) {
+            primaryRow = new DynamicTableRow();
+        }
+        return primaryRow.setters[columnIndex];
     }
 
     @Override
@@ -244,7 +253,50 @@ public class DynamicTableWriter implements TableWriter {
         }
         for (int ii = 0; ii < values.length; ++ii) {
             // noinspection unchecked
-            getSetter(columnNames[ii]).set(values[ii]);
+            getSetter(ii).set(values[ii]);
+        }
+        writeRow();
+        flush();
+    }
+
+    /**
+     * This is a convenience function so that you can log an entire row at a time using a Map. You must specify all
+     * values in the setters map (and can't have any extras). The type of the value must be convertible (safely or
+     * unsafely) to the type of the permissive setter.
+     *
+     * @param values a map from column name to value for the row to be logged
+     */
+    @SuppressWarnings("unused")
+    public void logRowPermissive(Map<String, Object> values) {
+        if (values.size() != factoryMap.size()) {
+            throw new RuntimeException(
+                    "Incompatible logRowPermissive call: " + values.keySet() + " != " + factoryMap.keySet());
+        }
+        for (final Map.Entry<String, Object> value : values.entrySet()) {
+            // noinspection unchecked
+            getSetter(value.getKey()).setPermissive(value.getValue());
+        }
+        writeRow();
+        flush();
+    }
+
+    /**
+     * This is a convenience function so that you can log an entire row at a time. You must specify all values in the
+     * setters map (and can't have any extras). The type of the value must be convertible (safely or unsafely) to the
+     * type of the permissive setter.
+     *
+     * @param values an array containing values to be logged, in order of the fields specified by the constructor
+     */
+    @SuppressWarnings("unused")
+    public void logRowPermissive(Object... values) {
+        if (values.length != factoryMap.size()) {
+            throw new RuntimeException(
+                    "Incompatible logRowPermissive call, values length=" + values.length + " != setters="
+                            + factoryMap.size());
+        }
+        for (int ii = 0; ii < values.length; ++ii) {
+            // noinspection unchecked
+            getSetter(ii).setPermissive(values[ii]);
         }
         writeRow();
         flush();
@@ -305,6 +357,7 @@ public class DynamicTableWriter implements TableWriter {
             final IntFunction<Class<?>> columnTypes,
             final Map<String, Object> constantValues,
             final int allocatedSize) {
+
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
@@ -380,7 +433,11 @@ public class DynamicTableWriter implements TableWriter {
         return new ObjectRowSetterImpl(buffer, type);
     }
 
-    private static abstract class RowSetterImpl implements RowSetter {
+    public interface PermissiveRowSetter<T> extends RowSetter<T> {
+        void setPermissive(T value);
+    }
+
+    private static abstract class RowSetterImpl implements PermissiveRowSetter {
         protected final ArrayBackedColumnSource columnSource;
         protected int row;
         private final Class type;
@@ -405,6 +462,11 @@ public class DynamicTableWriter implements TableWriter {
         @Override
         public void set(Object value) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setPermissive(Object value) {
+            set(value);
         }
 
         @Override
@@ -485,6 +547,11 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
+        public void setPermissive(Object value) {
+            setByte(value == null ? QueryConstants.NULL_BYTE : ((Number) value).byteValue());
+        }
+
+        @Override
         public void setByte(byte value) {
             pendingByte = value;
         }
@@ -531,6 +598,11 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
+        public void setPermissive(Object value) {
+            setInt(value == null ? QueryConstants.NULL_INT : ((Number) value).intValue());
+        }
+
+        @Override
         public void setInt(int value) {
             pendingInt = value;
         }
@@ -551,6 +623,11 @@ public class DynamicTableWriter implements TableWriter {
         @Override
         public void set(Object value) {
             setDouble(value == null ? QueryConstants.NULL_DOUBLE : (Double) value);
+        }
+
+        @Override
+        public void setPermissive(Object value) {
+            setDouble(value == null ? QueryConstants.NULL_DOUBLE : ((Number) value).doubleValue());
         }
 
         @Override
@@ -577,6 +654,11 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
+        public void setPermissive(Object value) {
+            setFloat(value == null ? QueryConstants.NULL_FLOAT : ((Number) value).floatValue());
+        }
+
+        @Override
         public void setFloat(float value) {
             pendingFloat = value;
         }
@@ -600,6 +682,11 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
+        public void setPermissive(Object value) {
+            setLong(value == null ? QueryConstants.NULL_LONG : ((Number) value).longValue());
+        }
+
+        @Override
         public void setLong(long value) {
             pendingLong = value;
         }
@@ -620,6 +707,11 @@ public class DynamicTableWriter implements TableWriter {
         @Override
         public void set(Object value) {
             setShort(value == null ? QueryConstants.NULL_SHORT : (Short) value);
+        }
+
+        @Override
+        public void setPermissive(Object value) {
+            setShort(value == null ? QueryConstants.NULL_SHORT : ((Number) value).shortValue());
         }
 
         @Override
@@ -664,14 +756,21 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     private class DynamicTableRow implements Row {
+        private final RowSetterImpl[] setters;
+        private final Map<String, RowSetterImpl> columnToSetter;
         private int row = lastSetterRow;
-        private final Map<String, RowSetterImpl> setterMap = factoryMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
         private Row.Flags flags = Flags.SingleRow;
 
+        private DynamicTableRow() {
+            setters = Arrays.stream(columnNames).map(cn -> factoryMap.get(cn).apply(row)).toArray(RowSetterImpl[]::new);
+            final MutableInt ci = new MutableInt(0);
+            columnToSetter = Arrays.stream(columnNames)
+                    .collect(Collectors.toMap(Function.identity(), cn -> setters[ci.getAndIncrement()]));
+        }
+
         @Override
-        public RowSetter getSetter(final String name) {
-            final RowSetter rowSetter = setterMap.get(name);
+        public PermissiveRowSetter getSetter(final String name) {
+            final PermissiveRowSetter rowSetter = columnToSetter.get(name);
             if (rowSetter == null) {
                 if (table.getColumnSourceMap().containsKey(name)) {
                     throw new RuntimeException("Column has a constant value, can not get setter " + name);
@@ -704,7 +803,7 @@ public class DynamicTableWriter implements TableWriter {
             // Before this row can be returned to a pool, it needs to ensure that the underlying sources
             // are appropriately sized to avoid race conditions.
             ensureCapacity(row);
-            setterMap.values().forEach((x) -> x.setRow(row));
+            columnToSetter.values().forEach((x) -> x.setRow(row));
 
             // The row has been committed during set, we just need to insert the row keys into the table
             if (doFlush) {

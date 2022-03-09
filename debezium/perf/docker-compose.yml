@@ -9,7 +9,9 @@ services:
       file: ../../docker-compose-common.yml
       service: server
     environment:
-      - JAVA_TOOL_OPTIONS=-Xmx8g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - JAVA_TOOL_OPTIONS=-Xmx${DEEPHAVEN_HEAP} -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+    volumes:
+      - ../scripts:/scripts
 
   web:
     extends:
@@ -40,14 +42,36 @@ services:
         condition: service_started
 
   redpanda:
-    extends:
-      file: ../docker-compose-debezium-common.yml
-      service: redpanda
+    # We build a tweaked version of redpanda's docker image to
+    # change the configuration towards production defaults.
+    build:
+      context: redpanda
+      args:
+        - REDPANDA_VERSION=${REDPANDA_VERSION}
+    command:
+      - redpanda start
+      - --reactor-backend=epoll
+      - --smp ${REDPANDA_SMP}
+      - --memory ${REDPANDA_MEMORY}
+      - --reserve-memory 0M
+      - --node-id 0
+      - --check=false
+      - --set redpanda.enable_transactions=true
+      - --set redpanda.enable_idempotence=true
+    ports:
+      - 9092:9092
+      - 8081:8081
+      - 8082:8082
+    tmpfs:
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=${REDPANDA_DISK}
 
   mysql:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: mysql
+    tmpfs:
+      - /run/mysqld:uid=999,gid=999,mode=1777,size=4G
+      - /var/cache:exec,size=256M
 
   debezium:
     extends:
@@ -61,6 +85,9 @@ services:
     extends:
       file: ../docker-compose-debezium-common.yml
       service: loadgen
+    build:
+      context: ../loadgen
+      dockerfile: pypy-Dockerfile
     depends_on:
       mysql:
         condition: service_started
@@ -68,11 +95,12 @@ services:
         condition: service_started
 
   materialized:
-    image: materialize/materialized:v0.19.0
-    command: -w2 --disable-telemetry
+    image: materialize/materialized:${MATERIALIZE_VERSION}
+    command: -w${MATERIALIZE_WORKERS} --disable-telemetry
     ports:
       - 6875:6875
 
   mzcli:
     image: materialize/cli
-      
+    volumes:
+      - ../scripts:/scripts

@@ -26,7 +26,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * element type).
  */
 public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, long[]> implements MutableColumnSourceGetDefaults.LongBacked<T> {
-
     private static SoftRecycler<long[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[BLOCK_SIZE], null);
     private long[][] blocks;
@@ -82,6 +81,19 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;
+        }
+        return oldValue;
+    }
+
+    public final long getAndAddUnsafe(long index, long addend) {
+        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (index & INDEX_MASK);
+        final long oldValue = blocks[blockIndex][indexWithinBlock];
+        if (addend != 0) {
+            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+                prevBlocks[blockIndex][indexWithinBlock] = oldValue;
+            }
+            blocks[blockIndex][indexWithinBlock] = oldValue + addend;
         }
         return oldValue;
     }

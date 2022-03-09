@@ -96,10 +96,15 @@ def processMemory():
 @_passThrough
 def queryOperationPerformance(evaluationNumber):
     """
-    Takes in a query id and returns a view for that query's individual operations's performance data.
+    Takes in a query evaluation number and returns a view for that query's individual operations's performance data.
      
     
-     The query operation performance log contains data on how long each individual operation of a query (where(),
+     You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
+     QueryPerformance and QueryOperationPerformance tables, calling
+     TableLoggers.queryPerformanceLog() or TableLoggers.queryOperationPerformanceLog().
+     
+    
+     The query operation performance result contains data on how long each individual operation of a query (where(),
      update(), naturalJoin(), etc., as well as internal functions) takes to execute, and the change in resource
      consumption while each was executing.
      
@@ -114,7 +119,12 @@ def queryOperationPerformance(evaluationNumber):
 @_passThrough
 def queryPerformance(evaluationNumber):
     """
-    Takes in a query id and returns a view for that query's performance data.
+    Takes in a query evaluation number and returns a view for that query's performance data.
+     
+    
+     You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
+     QueryPerformance and QueryOperationPerformance tables, calling
+     TableLoggers.queryPerformanceLog() or TableLoggers.queryOperationPerformanceLog().
      
     
      The query performance log contains data on how long each query takes to run. Examples of what constitutes one
@@ -136,7 +146,13 @@ def queryPerformance(evaluationNumber):
 @_passThrough
 def queryUpdatePerformance(evaluationNumber):
     """
-    Takes in a query id and returns a view for that query's update performance data.
+    Takes in a query evaluation number and returns a view for that query's update performance data.
+     
+    
+     You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
+     QueryPerformance and QueryOperationPerformance tables, calling
+     TableLoggers.queryPerformanceLog() or TableLoggers.queryOperationPerformanceLog().
+     
     
     :param evaluationNumber: (long) - evaluation number
     :return: (io.deephaven.engine.table.Table) query update performance table.
@@ -148,7 +164,24 @@ def queryUpdatePerformance(evaluationNumber):
 @_passThrough
 def queryUpdatePerformanceMap(evaluationNumber):
     """
-    Creates a map of query update performance tables.
+    Creates multiple tables with performance data for a given query identified by an evaluation number. The tables
+     are returned in a map with the following String keys:
+     
+    
+    * QueryUpdatePerformance (QUP) The table created by the method of the same name in this class
+    * UpdateWorst Same table as above but sorted as to show slower updates (column Ratio)
+     first
+    * WorstInterval Show only operations in the slowest update interval in QUP
+    * UpdateMostRecent Show only operations in the last update interval in QUP
+    * UpdateAggregate Summary if update performance data per update interval
+    * UpdateSummaryStats Percentiles and maximum for Ratio and QueryMemUsed columns per
+     update interval
+    
+    
+     You can obtain query evaluation numbers, which uniquely identify a query and its subqueries, via the
+     QueryPerformance and QueryOperationPerformance tables, calling
+     TableLoggers.queryPerformanceLog() or TableLoggers.queryOperationPerformanceLog().
+     
     
     :param evaluationNumber: (long) - evaluation number
     :return: (java.util.Map<java.lang.String,io.deephaven.engine.table.Table>) map of query update performance tables.

@@ -27,6 +27,8 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
@@ -257,12 +259,17 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testLongArraySerializationDHNulls() throws IOException {
         testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
-                new LongArrayIdentityValidator<>());
+                new LongArrayIdentityValidator());
     }
 
     public void testLongArraySerialization() throws IOException {
         testRoundTripSerialization(OPT_DEFAULT, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
-                new LongArrayIdentityValidator<>());
+                new LongArrayIdentityValidator());
+    }
+
+    public void testLongVectorSerialization() throws IOException {
+        testRoundTripSerialization(OPT_DEFAULT, LongVector.class, BarrageColumnRoundTripTest::initLongVectorChunk,
+                new LongVectorIdentityValidator());
     }
 
     private static class Unique {
@@ -325,9 +332,27 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             } else {
                 final long[] entry = new long[j];
                 for (int k = 0; k < j; ++k) {
-                    entry[k] = i * 10000 + k;
+                    entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, entry);
+            }
+        }
+    }
+
+    private static void initLongVectorChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random();
+        final WritableObjectChunk<LongVector, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final int j = random.nextInt(20) - 1;
+            if (j < 0) {
+                chunk.set(i, null);
+            } else {
+                final long[] entry = new long[j];
+                for (int k = 0; k < j; ++k) {
+                    entry[k] = i * 10000L + k;
+                }
+                chunk.set(i, new LongVectorDirect(entry));
             }
         }
     }
@@ -392,7 +417,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    private static final class LongArrayIdentityValidator<T> implements Validator {
+    private static final class LongArrayIdentityValidator implements Validator {
         @Override
         public void assertExpected(final WritableChunk<Values> untypedOriginal,
                 final WritableChunk<Values> unTypedComputed,
@@ -421,6 +446,36 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    private static final class LongVectorIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset) {
+            final WritableObjectChunk<LongVector, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<LongVector, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final LongVector ntv = original.get((int) i);
+                if (ntv == null) {
+                    Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
+                } else {
+                    final long[] nt = ntv.toArray();
+                    final long[] ct = computed.get(off.getAndIncrement()).toArray();
+                    if (ct.length != nt.length) {
+                        System.out.println("found");
+                    }
+                    Assert.equals(nt.length, "nt.length", ct.length, "ct.length");
+                    for (int k = 0; k < nt.length; ++k) {
+                        Assert.equals(nt[k], "nt[k]", ct[k], "ct[k]");
+                    }
+                }
+            });
+        }
+    }
+
     @SuppressWarnings("UnstableApiUsage")
     private static <T> void testRoundTripSerialization(
             final BarrageSubscriptionOptions options, final Class<T> type,
@@ -432,7 +487,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         initData.accept(data);
 
         try (ChunkInputStreamGenerator generator =
-                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, data)) {
+                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data)) {
 
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
@@ -450,7 +505,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                chunkType, type, type.getComponentType(), fieldNodes.iterator(), bufferNodes.iterator(),
+                                dis)) {
                     Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, null);
                 }
@@ -472,7 +528,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                chunkType, type, type.getComponentType(), fieldNodes.iterator(), bufferNodes.iterator(),
+                                dis)) {
                     Assert.eq(rtData.size(), "rtData.size()", 0);
                 }
 
@@ -502,7 +559,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData =
                         (WritableChunk<Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                                chunkType, type, type.getComponentType(), fieldNodes.iterator(), bufferNodes.iterator(),
+                                dis)) {
                     Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, subset);
                 }

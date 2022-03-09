@@ -1,0 +1,66 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java'
+}
+
+configurations {
+    combinedJavadoc
+}
+
+String javaDocOverviewLocation = 'build/docs/overview.html'
+
+// TODO(deephaven-core#2000): Ensure build work from zipped source
+def gitHash
+gitHash = "${-> gitHash = 'git rev-list --max-count=1 HEAD'.execute([], rootDir).text.trim()}"
+def writeJavadocVersion = tasks.register 'writeJavadocVersion', {
+    Task t ->
+        t.description "Write $version to $javaDocOverviewLocation"
+        File versionFile = file(javaDocOverviewLocation)
+        t.inputs.property('version', version)
+        t.inputs.property('gitHash', gitHash)
+        t.outputs.file(versionFile)
+        t.doLast {
+            versionFile.text = '<body>Deephaven Javadoc for ' + version + '\n<!-- VCS hash: ' + gitHash + ' --></body>\n'
+        }
+}
+
+def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
+    Javadoc jdoc ->
+        // TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
+        jdoc.javadocTool = javaToolchains.javadocToolFor{it ->
+            // Javadoc version >=11 is needed for search
+            // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
+            languageVersion = JavaLanguageVersion.of(15)
+        }
+        jdoc.inputs.file javaDocOverviewLocation
+        jdoc.options.encoding = 'UTF-8'
+        jdoc.options.tags = ['apiNote', 'implNote']
+        // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
+        jdoc.options.overview = new File(javaDocOverviewLocation)
+        jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
+        jdoc.options.addStringOption('Xdoclint:none', '-quiet')
+
+        def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
+
+        jdoc.source = rootProject.subprojects
+                .findAll {  it -> isForJavadocs(it) }
+                .collect { it.sourceSets.main.allJava }
+
+        jdoc.classpath = files(rootProject.subprojects
+                .findAll {  it -> isForJavadocs(it) }
+                .collect { it.sourceSets.main.compileClasspath })
+
+        // https://github.com/gradle/gradle/issues/19869
+        def sourcepath = files()
+        rootProject.subprojects.findAll{ it -> isForJavadocs(it) } .each {
+            sourcepath = sourcepath + (FileCollection) it.sourceSets.main.allJava.getSourceDirectories()
+        }
+        options.addStringOption('sourcepath', sourcepath.getAsPath())
+
+        jdoc.destinationDir = file("${buildDir}/docs/javadoc")
+        jdoc.dependsOn(writeJavadocVersion)
+}
+
+artifacts {
+    combinedJavadoc allJavadoc
+}

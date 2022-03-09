@@ -1,0 +1,12 @@
+// TODO(deephaven-core#1997): Remove license-gradle-plugin
+plugins {
+    id 'license'
+}
+
+license {
+    header rootProject.file('license-header')
+    include "**/*.java"
+    strictCheck true
+    useDefaultMappings true
+    ignoreFailures true
+}

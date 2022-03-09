@@ -27,11 +27,11 @@ public class VersionedTextDocumentIdentifier extends TextDocumentIdentifier impl
         this();
 
         if (source.has("uri")) {
-            uri = source.getAny("uri").asString();
+            uri = source.getAsAny("uri").asString();
         }
 
         if (source.has("version")) {
-            version = source.getAny("version").asInt();
+            version = source.getAsAny("version").asInt();
         }
     }
 }

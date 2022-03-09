@@ -23,8 +23,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
+import java.util.*;
 import java.util.function.LongConsumer;
 
 public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements WritableRowSet, Externalizable {
@@ -335,27 +334,78 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
-    public final WritableRowSet subSetForPositions(RowSet posRowSet) {
+    public final WritableRowSet subSetForPositions(RowSequence posRowSequence, boolean reversed) {
+        if (reversed) {
+            return subSetForReversePositions(posRowSequence);
+        }
+        return subSetForPositions(posRowSequence);
+    }
+
+    @Override
+    public final WritableRowSet subSetForPositions(RowSequence positions) {
+        if (positions.isEmpty()) {
+            return RowSetFactory.empty();
+        }
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        posRowSet.forEachRowKeyRange((start, end) -> {
+        positions.forEachRowKeyRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range
                 iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
                 currentOffset.setValue(start);
             }
-
             if (!iter.hasMore()) {
                 return false;
             }
-
             iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
                     .forAllRowKeyRanges(builder::appendRange);
             currentOffset.setValue(end + 1);
             return iter.hasMore();
         });
         return builder.build();
+    }
+
+    @Override
+    public final WritableRowSet subSetForReversePositions(RowSequence positions) {
+        if (positions.isEmpty()) {
+            return RowSetFactory.empty();
+        }
+
+        final long lastRowPosition = size() - 1;
+        if (positions.size() == positions.lastRowKey() - positions.firstRowKey() + 1) {
+            // We have a single range in the input sequence
+            final long forwardEnd = lastRowPosition - positions.firstRowKey();
+            if (forwardEnd < 0) {
+                // The single range does not overlap with the available positions at all
+                return RowSetFactory.empty();
+            }
+            // Clamp the single range end to 0
+            final long forwardStart = Math.max(lastRowPosition - positions.lastRowKey(), 0);
+            try (final RowSequence forwardPositions = RowSequenceFactory.forRange(forwardStart, forwardEnd)) {
+                return subSetForPositions(forwardPositions);
+            }
+        }
+
+        // We have some non-trivial input sequence
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        positions.forEachRowKeyRange((start, end) -> {
+            final long forwardEnd = lastRowPosition - start;
+            if (forwardEnd < 0) {
+                // This range does not overlap with the available positions at all, and thus neither can subsequent
+                // ranges that are offset further from the lastRowPosition.
+                return false;
+            }
+            // Clamp the range end to 0
+            final long forwardStart = Math.max(lastRowPosition - end, 0);
+            builder.addRange(forwardStart, forwardEnd);
+
+            // Continue iff subsequent ranges may overlap the available positions
+            return forwardStart != 0;
+        });
+        try (final RowSequence forwardPositions = builder.build()) {
+            return subSetForPositions(forwardPositions);
+        }
     }
 
     @Override

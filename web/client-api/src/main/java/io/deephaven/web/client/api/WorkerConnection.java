@@ -126,7 +126,7 @@ public class WorkerConnection {
 
     static {
         // TODO configurable, let us support this even when ssl?
-        if (DomGlobal.window.location.getProtocol().equals("http:")) {
+        if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
             Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
         } else {
@@ -863,6 +863,10 @@ public class WorkerConnection {
         return flightServiceClient;
     }
 
+    public BrowserFlightServiceClient browserFlightServiceClient() {
+        return browserFlightServiceClient;
+    }
+
     public InputTableServiceClient inputTableServiceClient() {
         return inputTableServiceClient;
     }
@@ -1318,7 +1322,7 @@ public class WorkerConnection {
                                 BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
                                         new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
                                                 data.getAppMetadata_asU8()));
-                        if (barrageMessageWrapper.msgType() == 0) {
+                        if (barrageMessageWrapper.msgType() == BarrageMessageType.None) {
                             // continue previous message, just read RecordBatch
                             appendAndMaybeFlush(header, body);
                         } else {

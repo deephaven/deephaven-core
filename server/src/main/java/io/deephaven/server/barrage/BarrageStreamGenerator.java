@@ -11,13 +11,17 @@ import com.google.protobuf.WireFormat;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -99,7 +103,8 @@ public class BarrageStreamGenerator implements
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
-            data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(), col.type, col.data);
+            data = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                    col.data.getChunkType(), col.type, col.componentType, col.data);
         }
     }
 
@@ -140,8 +145,8 @@ public class BarrageStreamGenerator implements
             addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 final BarrageMessage.AddColumnData acd = message.addColumnData[i];
-                addColumnData[i] =
-                        ChunkInputStreamGenerator.makeInputStreamGenerator(acd.data.getChunkType(), acd.type, acd.data);
+                addColumnData[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                        acd.data.getChunkType(), acd.type, acd.componentType, acd.data);
             }
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
@@ -190,6 +195,7 @@ public class BarrageStreamGenerator implements
      * @param options serialization options for this specific view
      * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
      * @param viewport is the position-space viewport
+     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
@@ -198,9 +204,11 @@ public class BarrageStreamGenerator implements
     public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final RowSet viewport,
+            final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
-        return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
+        return new SubView(this, options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
+                subscribedColumns);
     }
 
     /**
@@ -212,7 +220,7 @@ public class BarrageStreamGenerator implements
      */
     @Override
     public SubView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
-        return getSubView(options, isInitialSnapshot, null, null, null);
+        return getSubView(options, isInitialSnapshot, null, false, null, null);
     }
 
     public static class SubView implements View {
@@ -220,6 +228,7 @@ public class BarrageStreamGenerator implements
         public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
         public final RowSet viewport;
+        public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
@@ -229,12 +238,14 @@ public class BarrageStreamGenerator implements
                 final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 @Nullable final RowSet viewport,
+                final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.viewport = viewport;
+            this.reverseViewport = reverseViewport;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
             this.hasModBatch = generator.doesSubViewHaveMods(this);
@@ -273,6 +284,7 @@ public class BarrageStreamGenerator implements
      *
      * @param options serialization options for this specific view
      * @param viewport is the position-space viewport
+     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
      * @param keyspaceViewport is the key-space viewport
      * @param snapshotColumns are the columns subscribed for this view
      * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
@@ -280,9 +292,10 @@ public class BarrageStreamGenerator implements
     @Override
     public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
+            final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet snapshotColumns) {
-        return new SnapshotView(this, options, viewport, keyspaceViewport, snapshotColumns);
+        return new SnapshotView(this, options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
     }
 
     /**
@@ -293,29 +306,31 @@ public class BarrageStreamGenerator implements
      */
     @Override
     public SnapshotView getSnapshotView(BarrageSnapshotOptions options) {
-        return getSnapshotView(options, null, null, null);
+        return getSnapshotView(options, null, false, null, null);
     }
 
     public static class SnapshotView implements View {
         public final BarrageStreamGenerator generator;
         public final BarrageSnapshotOptions options;
         public final RowSet viewport;
+        public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
-        public final boolean hasModBatch;
 
         public SnapshotView(final BarrageStreamGenerator generator,
                 final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
+                final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.viewport = viewport;
+            this.reverseViewport = reverseViewport;
+
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
-            this.hasModBatch = false;
             this.hasAddBatch = generator.rowsIncluded.original.isNonempty();
         }
 
@@ -419,35 +434,42 @@ public class BarrageStreamGenerator implements
         final long numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Values> nodeOffsets =
-                WritableObjectChunk.makeWritableChunk(addColumnData.length);
-                final WritableLongChunk<Values> bufferInfos =
-                        WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
-            nodeOffsets.setSize(0);
-            bufferInfos.setSize(0);
+        try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
+                final SizedLongChunk<Values> bufferInfos = new SizedLongChunk<>()) {
+            nodeOffsets.ensureCapacity(addColumnData.length);
+            nodeOffsets.get().setSize(0);
+            bufferInfos.ensureCapacity(addColumnData.length * 3);
+            bufferInfos.get().setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> nodeOffsets
-                            .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                    (numElements, nullCount) -> {
+                        nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
+                        nodeOffsets.get().asWritableObjectChunk()
+                                .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                    };
 
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
                 totalBufferLength.add(length);
-                bufferInfos.add(length);
+                bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
+                bufferInfos.get().add(length);
             };
             numRows = columnVisitor.visit(view, addStream, fieldNodeListener, bufferListener);
 
-            RecordBatch.startNodesVector(header, nodeOffsets.size());
-            for (int i = nodeOffsets.size() - 1; i >= 0; --i) {
-                final ChunkInputStreamGenerator.FieldNodeInfo node = nodeOffsets.get(i);
+            final WritableChunk<Values> noChunk = nodeOffsets.get();
+            RecordBatch.startNodesVector(header, noChunk.size());
+            for (int i = noChunk.size() - 1; i >= 0; --i) {
+                final ChunkInputStreamGenerator.FieldNodeInfo node =
+                        (ChunkInputStreamGenerator.FieldNodeInfo) noChunk.asObjectChunk().get(i);
                 FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
             nodesOffset = header.endVector();
 
-            RecordBatch.startBuffersVector(header, bufferInfos.size());
-            for (int i = bufferInfos.size() - 1; i >= 0; --i) {
-                totalBufferLength.subtract(bufferInfos.get(i));
-                Buffer.createBuffer(header, totalBufferLength.longValue(), bufferInfos.get(i));
+            final WritableLongChunk<Values> biChunk = bufferInfos.get();
+            RecordBatch.startBuffersVector(header, biChunk.size());
+            for (int i = biChunk.size() - 1; i >= 0; --i) {
+                totalBufferLength.subtract(biChunk.get(i));
+                Buffer.createBuffer(header, totalBufferLength.longValue(), biChunk.get(i));
             }
             buffersOffset = header.endVector();
         }
@@ -501,30 +523,39 @@ public class BarrageStreamGenerator implements
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+
         // Added Chunk Data:
-        final RowSet myAddedOffsets;
-        if (view.isViewport()) {
-            // only include added rows that are within the viewport
-            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport().intersect(rowsIncluded.original));
-        } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-            // there are scoped rows included in the chunks that need to be removed
-            myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
-        } else {
-            // use chunk data as-is
-            myAddedOffsets = null;
-        }
+        RowSet myAddedOffsets = null;
+        try {
+            if (view.isViewport()) {
+                // only include added rows that are within the viewport
+                try (WritableRowSet intersect = view.keyspaceViewport().intersect(rowsIncluded.original)) {
+                    myAddedOffsets = rowsIncluded.original.invert(intersect);
+                }
+            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+                // there are scoped rows included in the chunks that need to be removed
+                myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
+            } else {
+                // use chunk data as-is
+                myAddedOffsets = null;
+            }
 
-        // add the add-column streams
-        for (final ChunkInputStreamGenerator col : addColumnData) {
-            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    col.getInputStream(view.options(), myAddedOffsets);
-            drainableColumn.visitFieldNodes(fieldNodeListener);
-            drainableColumn.visitBuffers(bufferListener);
+            // add the add-column streams
+            for (final ChunkInputStreamGenerator col : addColumnData) {
+                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                        col.getInputStream(view.options(), myAddedOffsets);
+                drainableColumn.visitFieldNodes(fieldNodeListener);
+                drainableColumn.visitBuffers(bufferListener);
 
-            // Add the drainable last as it is allowed to immediately close a row set the visitors need
-            addStream.accept(drainableColumn);
+                // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                addStream.accept(drainableColumn);
+            }
+            return myAddedOffsets != null ? myAddedOffsets.size() : rowsAdded.original.size();
+        } finally {
+            if (myAddedOffsets != null) {
+                myAddedOffsets.close();
+            }
         }
-        return rowsAdded.original.size();
     }
 
     private long appendModColumns(final View view,
@@ -534,24 +565,32 @@ public class BarrageStreamGenerator implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
-            RowSet myModOffsets = null;
-            if (view.isViewport()) {
-                // only include added rows that are within the viewport
-                myModOffsets =
-                        mcd.rowsModified.original.invert(view.keyspaceViewport().intersect(mcd.rowsModified.original));
-                numRows = Math.max(numRows, myModOffsets.size());
-            } else {
-                numRows = Math.max(numRows, mcd.rowsModified.original.size());
+            RowSet myModOffsets = null;// needs to be closed, if non-null
+            try {
+                if (view.isViewport()) {
+                    // only include modified rows that are within the viewport
+                    try (WritableRowSet intersect = view.keyspaceViewport().intersect(mcd.rowsModified.original)) {
+                        myModOffsets =
+                                mcd.rowsModified.original.invert(intersect);
+                    }
+                    numRows = Math.max(numRows, myModOffsets.size());
+                } else {
+                    numRows = Math.max(numRows, mcd.rowsModified.original.size());
+                }
+
+                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                        mcd.data.getInputStream(view.options(), myModOffsets);
+
+                drainableColumn.visitFieldNodes(fieldNodeListener);
+                drainableColumn.visitBuffers(bufferListener);
+
+                // See comment in appendAddColumns
+                addStream.accept(drainableColumn);
+            } finally {
+                if (myModOffsets != null) {
+                    myModOffsets.close();
+                }
             }
-
-            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    mcd.data.getInputStream(view.options(), myModOffsets);
-
-            drainableColumn.visitFieldNodes(fieldNodeListener);
-            drainableColumn.visitBuffers(bufferListener);
-
-            // See comment in appendAddColumns
-            addStream.accept(drainableColumn);
         }
         return numRows;
     }
@@ -632,6 +671,7 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
         BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
         BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);

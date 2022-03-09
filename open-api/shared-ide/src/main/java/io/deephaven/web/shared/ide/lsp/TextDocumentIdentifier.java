@@ -24,7 +24,7 @@ public class TextDocumentIdentifier implements Serializable {
         this();
 
         if (source.has("uri")) {
-            uri = source.getAny("uri").asString();
+            uri = source.getAsAny("uri").asString();
         }
     }
 }

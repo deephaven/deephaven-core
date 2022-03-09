@@ -22,10 +22,10 @@ import org.gradle.internal.Actions
 class Classpaths {
 
     static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.0.0-RC1'
+    static final String ELEMENTAL_VERSION = '1.1.0'
 
     static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.8.2'
+    static final String GWT_VERSION = '2.9.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
@@ -43,7 +43,7 @@ class Classpaths {
     static final String JGIT_VERSION = '5.8.1.202007141445-r'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '1.0.2'
+    static final String JS_INTEROP_VERSION = '2.0.0'
 
     static final String COMMONS_GROUP = 'org.apache.commons'
 
@@ -138,7 +138,7 @@ class Classpaths {
         addDependency compile, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.0-RC1' : JS_INTEROP_VERSION
+                name == 'base'? '1.0.0' : JS_INTEROP_VERSION
     }
 
     static void inheritElemental(Project p, String name = 'elemental2-core') {
@@ -218,6 +218,6 @@ class Classpaths {
 
     static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + 'grpc-bom' + ":" + GRPC_VERSION))
+        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":grpc-bom:" + GRPC_VERSION))
     }
 }

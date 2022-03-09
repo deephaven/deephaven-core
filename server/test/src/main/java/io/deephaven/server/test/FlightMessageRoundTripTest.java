@@ -1,8 +1,10 @@
 package io.deephaven.server.test;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
@@ -27,21 +29,17 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
-import org.apache.arrow.flight.AsyncPutListener;
-import org.apache.arrow.flight.CallHeaders;
-import org.apache.arrow.flight.CallStatus;
-import org.apache.arrow.flight.Criteria;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightClientMiddleware;
-import org.apache.arrow.flight.FlightDescriptor;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.flight.Location;
-import org.apache.arrow.flight.Ticket;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -64,10 +62,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
@@ -133,6 +128,7 @@ public abstract class FlightMessageRoundTripTest {
     private ManagedChannel channel;
     private FlightClient client;
 
+    SessionService sessionService;
     private UUID sessionToken;
     private SessionState currentSession;
     private AbstractScriptSession scriptSession;
@@ -146,6 +142,7 @@ public abstract class FlightMessageRoundTripTest {
         int actualPort = server.getPort();
 
         scriptSession = component.scriptSession();
+        sessionService = component.sessionService();
 
         client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
                 .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
@@ -174,16 +171,24 @@ public abstract class FlightMessageRoundTripTest {
         assertNotNull(response.getSessionToken());
         sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
 
-        currentSession = component.sessionService().getSessionForToken(sessionToken);
+        currentSession = sessionService.getSessionForToken(sessionToken);
     }
 
     protected abstract TestComponent component();
 
     @After
     public void teardown() {
+        sessionService.closeAllSessions();
         scriptSession.release();
 
         channel.shutdown();
+        try {
+            client.close();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
         server.stopWithTimeout(1, TimeUnit.MINUTES);
 
         try {
@@ -219,34 +224,35 @@ public abstract class FlightMessageRoundTripTest {
     };
 
     @Test
-    public void testSimpleEmptyTableDoGet() {
+    public void testSimpleEmptyTableDoGet() throws Exception {
         Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
         currentSession.newExport(simpleTableTicket, "test")
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
-        FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
-        assertTrue(stream.next());
-        VectorSchemaRoot root = stream.getRoot();
-        // row count should match what we expect
-        assertEquals(10, root.getRowCount());
+        try (FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
+            assertTrue(stream.next());
+            VectorSchemaRoot root = stream.getRoot();
+            // row count should match what we expect
+            assertEquals(10, root.getRowCount());
 
-        // only one column was sent
-        assertEquals(1, root.getFieldVectors().size());
-        Field i = root.getSchema().findField("I");
+            // only one column was sent
+            assertEquals(1, root.getFieldVectors().size());
+            Field i = root.getSchema().findField("I");
 
-        // all DH columns are nullable, even primitives
-        assertTrue(i.getFieldType().isNullable());
-        // verify it is a java int type, which is an arrow 32bit int
-        assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
-        assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
-        assertEquals("int", i.getMetadata().get("deephaven:type"));
+            // all DH columns are nullable, even primitives
+            assertTrue(i.getFieldType().isNullable());
+            // verify it is a java int type, which is an arrow 32bit int
+            assertEquals(ArrowType.ArrowTypeID.Int, i.getFieldType().getType().getTypeID());
+            assertEquals(32, ((ArrowType.Int) i.getFieldType().getType()).getBitWidth());
+            assertEquals("int", i.getMetadata().get("deephaven:type"));
 
-        // verify that the server didn't send more data after the first payload
-        assertFalse(stream.next());
+            // verify that the server didn't send more data after the first payload
+            assertFalse(stream.next());
+        }
     }
 
     @Test
-    public void testRoundTripData() throws InterruptedException, ExecutionException {
+    public void testRoundTripData() throws Exception {
         // tables without columns, as flight-based way of doing emptyTable
         assertRoundTripDataEqual(TableTools.emptyTable(0));
         assertRoundTripDataEqual(TableTools.emptyTable(10));
@@ -274,12 +280,12 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testTimestampColumn() throws InterruptedException, ExecutionException {
+    public void testTimestampColumn() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
     }
 
     @Test
-    public void testStringCol() throws InterruptedException, ExecutionException {
+    public void testStringCol() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
@@ -307,7 +313,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testLongCol() throws InterruptedException, ExecutionException {
+    public void testLongCol() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = ii"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {ii}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
@@ -387,6 +393,131 @@ public abstract class FlightMessageRoundTripTest {
         }
     }
 
+    @Test
+    public void testDoExchangeSnapshot() throws Exception {
+        final String staticTableName = "flightInfoTest";
+        final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+            // stuff table into the scope
+            scriptSession.setVariable(staticTableName, table);
+
+            // build up a snapshot request
+            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+
+            FlightDescriptor fd = FlightDescriptor.command(magic);
+
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+                final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+                int optOffset =
+                        BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, ColumnConversionMode.Stringify,
+                                false, 1000);
+
+                final int ticOffset =
+                        BarrageSnapshotRequest.createTicketVector(metadata,
+                                ScopeTicketHelper.nameToBytes(staticTableName));
+                BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+                BarrageSnapshotRequest.addColumns(metadata, 0);
+                BarrageSnapshotRequest.addViewport(metadata, 0);
+                BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+                BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+                metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+                final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+                final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+                wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                        wrapper,
+                        0x6E687064, // the numerical representation of the ASCII "dphn".
+                        BarrageMessageType.BarrageSnapshotRequest,
+                        innerOffset));
+
+                // extract the bytes and package them in an ArrowBuf for transmission
+                byte[] msg = wrapper.sizedByteArray();
+                ArrowBuf data = allocator.buffer(msg.length);
+                data.writeBytes(msg);
+
+                erw.getWriter().putMetadata(data);
+                erw.getWriter().completed();
+
+                // read everything from the server (expecting schema message and one data message)
+                int numMessages = 0;
+                while (erw.getReader().next()) {
+                    ++numMessages;
+                }
+                assertEquals(1, numMessages); // only one data message
+
+                // at this point should have the data, verify it matches the created table
+                assertEquals(erw.getReader().getRoot().getRowCount(), table.size());
+
+                // check the values against the source table
+                org.apache.arrow.vector.IntVector iv =
+                        (org.apache.arrow.vector.IntVector) erw.getReader().getRoot().getVector(0);
+                for (int i = 0; i < table.size(); i++) {
+                    assertEquals("int match:", table.getColumn(0).get(i), iv.get(i));
+                }
+                org.apache.arrow.vector.Float8Vector dv =
+                        (org.apache.arrow.vector.Float8Vector) erw.getReader().getRoot().getVector(1);
+                for (int i = 0; i < table.size(); i++) {
+                    assertEquals("double match: ", table.getColumn(1).get(i), dv.get(i));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDoExchangeProtocol() throws Exception {
+        final String staticTableName = "flightInfoTest";
+        final Table table = TableTools.emptyTable(10).update("I = i", "J = i + 0.01");
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
+            // stuff table into the scope
+            scriptSession.setVariable(staticTableName, table);
+
+            // build up a snapshot request incorrectly
+            byte[] empty = new byte[0];
+
+            FlightDescriptor fd = FlightDescriptor.command(empty);
+
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd)) {
+
+                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                    erw.getReader().next();
+                });
+
+                String expectedMessage = "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd";
+                String actualMessage = exception.getMessage();
+
+                assertTrue(actualMessage.contains(expectedMessage));
+            }
+
+            byte[] magic = new byte[] {100, 112, 104, 110}; // equivalent to '0x6E687064' (ASCII "dphn")
+            fd = FlightDescriptor.command(magic);
+            try (FlightClient.ExchangeReaderWriter erw = client.doExchange(fd);
+                    final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
+
+                byte[] msg = new byte[0];
+                ArrowBuf data = allocator.buffer(msg.length);
+                data.writeBytes(msg);
+
+                erw.getWriter().putMetadata(data);
+                erw.getWriter().completed();
+
+                Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                    erw.getReader().next();
+                });
+
+                String expectedMessage = "failed to receive Barrage request metadata";
+                String actualMessage = exception.getMessage();
+
+                assertTrue(actualMessage.contains(expectedMessage));
+            }
+
+        }
+    }
+
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {
         return FlightDescriptor.path(ScopeTicketHelper.nameToPath(name));
     }
@@ -432,23 +563,26 @@ public abstract class FlightMessageRoundTripTest {
 
     private static int nextTicket = 1;
 
-    private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
+    private void assertRoundTripDataEqual(Table deephavenTable) throws Exception {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
         currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
 
         // fetch with DoGet
-        FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()));
-        VectorSchemaRoot root = stream.getRoot();
+        int flightDescriptorTicketValue;
+        FlightClient.ClientStreamListener putStream;
+        try (FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()))) {
+            VectorSchemaRoot root = stream.getRoot();
 
-        // start the DoPut and send the schema
-        int flightDescriptorTicketValue = nextTicket++;
-        FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-        FlightClient.ClientStreamListener putStream = client.startPut(descriptor, root, new AsyncPutListener());
+            // start the DoPut and send the schema
+            flightDescriptorTicketValue = nextTicket++;
+            FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+            putStream = client.startPut(descriptor, root, new AsyncPutListener());
 
-        // send the body of the table
-        while (stream.next()) {
-            putStream.putNext();
+            // send the body of the table
+            while (stream.next()) {
+                putStream.putNext();
+            }
         }
 
         // tell the server we are finished sending data

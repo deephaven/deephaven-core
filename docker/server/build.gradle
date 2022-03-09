@@ -3,6 +3,7 @@ import io.deephaven.tools.License
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 def targetArch = Architecture.targetArchitecture(project)
@@ -42,13 +43,6 @@ def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 def context= project.layout.buildDirectory.dir('context')
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
-    // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
-    // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to
-    // make sure that dockerCreateDockerfile has the proper dependencies.
-    // If we change how our build works in the future (so that gradle is responsible for pushing the
-    // image), we can remove this extra dependency.
-    dependsOn baseMap.keySet().collect { base -> Docker.registryTask(project, base) }
-
     // deephaven-jpy.whl
     def deephavenJpyWheel = project(':deephaven-jpy').tasks.getByName('buildWheel')
 
@@ -83,6 +77,15 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
         into 'licenses'
     }
     into context
+}
+
+// TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
+// Currently, GH build-ci.yml calls prepareDockerAll, and relies on buildx; so we need to
+// make sure that dockerCreateDockerfile has the proper dependencies.
+// If we change how our build works in the future (so that gradle is responsible for pushing the
+// image), we can remove this extra dependency.
+project.tasks.register('prepareDockerAll') {
+    dependsOn prepareDocker, baseMap.keySet().collect { base -> Docker.registryTask(project, base) }
 }
 
 def buildDockerClosure = { String base, String server ->

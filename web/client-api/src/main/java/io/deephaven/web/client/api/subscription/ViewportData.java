@@ -109,42 +109,42 @@ public class ViewportData implements TableData {
         switch (columnType) {
             case "int":
                 return (data, i) -> {
-                    int value = data.getAnyAt(i).asInt();
+                    int value = data.getAtAsAny(i).asInt();
                     if (value == QueryConstants.NULL_INT) {
                         data.setAt(i, null);
                     }
                 };
             case "byte":
                 return (data, i) -> {
-                    byte value = data.getAnyAt(i).asByte();
+                    byte value = data.getAtAsAny(i).asByte();
                     if (value == QueryConstants.NULL_BYTE) {
                         data.setAt(i, null);
                     }
                 };
             case "short":
                 return (data, i) -> {
-                    short value = data.getAnyAt(i).asShort();
+                    short value = data.getAtAsAny(i).asShort();
                     if (value == QueryConstants.NULL_SHORT) {
                         data.setAt(i, null);
                     }
                 };
             case "double":
                 return (data, i) -> {
-                    double value = data.getAnyAt(i).asDouble();
+                    double value = data.getAtAsAny(i).asDouble();
                     if (value == QueryConstants.NULL_DOUBLE) {
                         data.setAt(i, null);
                     }
                 };
             case "float":
                 return (data, i) -> {
-                    float value = data.getAnyAt(i).asFloat();
+                    float value = data.getAtAsAny(i).asFloat();
                     if (value == QueryConstants.NULL_FLOAT) {
                         data.setAt(i, null);
                     }
                 };
             case "char":
                 return (data, i) -> {
-                    char value = data.getAnyAt(i).asChar();
+                    char value = data.getAtAsAny(i).asChar();
                     if (value == QueryConstants.NULL_CHAR) {
                         data.setAt(i, null);
                     }
@@ -167,7 +167,7 @@ public class ViewportData implements TableData {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 LongWrapper[] cleanData = new LongWrapper[values.length];
                 for (int i = 0; i < values.length; i++) {
-                    long value = values.getAnyAt(i).asLong();
+                    long value = values.getAtAsAny(i).asLong();
                     if (value == QueryConstants.NULL_LONG) {
                         cleanData[i] = null;
                     } else {
@@ -180,7 +180,7 @@ public class ViewportData implements TableData {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 DateWrapper[] cleanData = new DateWrapper[values.length];
                 for (int i = 0; i < values.length; i++) {
-                    long value = values.getAnyAt(i).asLong();
+                    long value = values.getAtAsAny(i).asLong();
                     if (value == QueryConstants.NULL_LONG) {
                         cleanData[i] = null;
                     } else {
@@ -193,7 +193,7 @@ public class ViewportData implements TableData {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 java.lang.Boolean[] cleanData = new java.lang.Boolean[values.length];
                 for (int i = 0; i < values.length; i++) {
-                    int value = values.getAnyAt(i).asInt();
+                    int value = values.getAtAsAny(i).asInt();
                     if (value == 1) {
                         cleanData[i] = true;
                     } else if (value == 0) {
@@ -462,7 +462,7 @@ public class ViewportData implements TableData {
                     continue;// data we don't need to see, either meant for another table, or we just sent a viewport
                              // update
                 }
-                existingColumnData.setAt((int) internalOffset, updatedColumnData.getAnyAt(i));
+                existingColumnData.setAt((int) internalOffset, updatedColumnData.getAtAsAny(i));
                 updated.modified.add((int) internalOffset);
                 i++;
             }
@@ -492,7 +492,7 @@ public class ViewportData implements TableData {
                                  // viewport update
                     }
                     assert internalOffset < existingColumnData.length;
-                    existingColumnData.setAt(internalOffset, addedColumnData.getAnyAt(i));
+                    existingColumnData.setAt(internalOffset, addedColumnData.getAtAsAny(i));
                     updated.added.add(internalOffset);
                     i++;
                 }

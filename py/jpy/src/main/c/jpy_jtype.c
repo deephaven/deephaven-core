@@ -423,6 +423,36 @@ int JType_CreateJavaShortObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, 
     return JType_CreateJavaObject(jenv, type, pyArg, JPy_Short_JClass, JPy_Short_Init_MID, value, objectRef);
 }
 
+int JType_CreateJavaNumberFromPythonInt(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jobject* objectRef)
+{
+    jvalue value;
+    char b;
+    short s;
+    long i;
+    long long j;
+    j = JPy_AS_JLONG(pyArg);
+    i = (int) j;
+    s = (short) j;
+    b = (char) j;
+
+    if (i != j) {
+        value.j = j;
+        return JType_CreateJavaObject(jenv, type, pyArg, JPy_Long_JClass, JPy_Long_Init_MID, value, objectRef);
+    }
+    if (s != i) {
+        value.i = i;
+        return JType_CreateJavaObject(jenv, type, pyArg, JPy_Integer_JClass, JPy_Integer_Init_MID, value,
+                                     objectRef);
+    }
+    if (b != s) {
+        value.s = s;
+        return JType_CreateJavaObject(jenv, type, pyArg, JPy_Short_JClass, JPy_Short_Init_MID, value,
+                                      objectRef);
+    }
+    value.b = b;
+    return JType_CreateJavaObject(jenv, type, pyArg, JPy_Byte_JClass, JPy_Byte_Init_MID, value, objectRef);
+}
+
 int JType_CreateJavaIntegerObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jobject* objectRef)
 {
     jvalue value;
@@ -861,7 +891,9 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
         return JPy_AsJString(jenv, pyArg, objectRef);
     } else if (PyBool_Check(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Boolean_JClass, type->classRef)))) {
         return JType_CreateJavaBooleanObject(jenv, type, pyArg, objectRef);
-    } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Integer_JClass, type->classRef)))) {
+    } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject || (*jenv)->IsAssignableFrom(jenv, JPy_Number_JClass, type->classRef))) {
+        return JType_CreateJavaNumberFromPythonInt(jenv, type, pyArg, objectRef);
+    } else if (JPy_IS_CLONG(pyArg) && ((*jenv)->IsAssignableFrom(jenv, JPy_Integer_JClass, type->classRef))) {
         return JType_CreateJavaIntegerObject(jenv, type, pyArg, objectRef);
     } else if (JPy_IS_CLONG(pyArg) && (type == JPy_JObject || ((*jenv)->IsAssignableFrom(jenv, JPy_Long_JClass, type->classRef)))) {
         return JType_CreateJavaLongObject(jenv, type, pyArg, objectRef);

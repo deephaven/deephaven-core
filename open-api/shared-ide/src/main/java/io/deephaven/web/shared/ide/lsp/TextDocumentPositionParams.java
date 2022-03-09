@@ -22,11 +22,11 @@ public class TextDocumentPositionParams implements Serializable {
 
     protected void updateFromJsPropertyMap(JsPropertyMap<Object> source) {
         if (source.has("textDocument")) {
-            textDocument = new TextDocumentIdentifier(source.getAny("textDocument").asPropertyMap());
+            textDocument = new TextDocumentIdentifier(source.getAsAny("textDocument").asPropertyMap());
         }
 
         if (source.has("position")) {
-            position = new Position(source.getAny("position").asPropertyMap());
+            position = new Position(source.getAsAny("position").asPropertyMap());
         }
     }
 }

@@ -271,6 +271,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             @Override
             public void run() {
                 cycleEnd = timeProvider.currentTime();
+                UpdateGraphProcessor.DEFAULT.requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");
                     final long durationNanos = cycleEnd.getNanos() - firstCycle.getNanos();

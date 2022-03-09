@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Function$Binary",
+ "methods": {
+  "call": ":param arg: Function.Binary.A1\n:param arg2: Function.Binary.A2\n:return: Function.Binary.R"
+ },
+ "path": "io.deephaven.base.Function.Binary",
+ "typeName": "interface"
+}

@@ -85,6 +85,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
     public void startTrackingPrevValues() {}
 
     @Override
+    public void beginUpdateCycle() {}
+
+    @Override
     public void setRowSize(int outputPosition, long size) {
         rowCountSource.set(outputPosition, size);
     }

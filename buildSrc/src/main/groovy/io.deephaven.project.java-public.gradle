@@ -1,0 +1,14 @@
+import io.deephaven.project.util.JavaDependencies
+
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'io.deephaven.java-common-conventions'
+    id 'io.deephaven.java-test-conventions'
+    id 'io.deephaven.java-coding-conventions'
+    id 'io.deephaven.java-publishing-conventions'
+    id 'io.deephaven.default-description'
+}
+
+project.tasks
+        .getByName('quick')
+        .dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)

@@ -43,6 +43,7 @@ public class BarrageMessage implements SafeCloseable {
 
     public boolean isSnapshot;
     public RowSet snapshotRowSet;
+    public boolean snapshotRowSetIsReversed;
     public BitSet snapshotColumns;
 
     public RowSet rowsAdded;
@@ -55,6 +56,9 @@ public class BarrageMessage implements SafeCloseable {
 
     // Ensure that we clean up only after all copies of the update are released.
     private volatile int refCount = 1;
+
+    // Underlying RecordBatch.length, visible for reading snapshots
+    public long length;
 
     // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
     // each instance.

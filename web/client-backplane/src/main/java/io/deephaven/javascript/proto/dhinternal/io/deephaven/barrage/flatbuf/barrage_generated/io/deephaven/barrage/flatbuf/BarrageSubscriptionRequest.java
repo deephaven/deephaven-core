@@ -131,6 +131,8 @@ public class BarrageSubscriptionRequest {
 
     public static native void addColumns(Builder builder, double columnsOffset);
 
+    public static native void addReverseViewport(Builder builder, boolean reverseViewport);
+
     public static native void addSubscriptionOptions(
             Builder builder, double subscriptionOptionsOffset);
 
@@ -272,6 +274,8 @@ public class BarrageSubscriptionRequest {
     public native Int8Array columnsArray();
 
     public native double columnsLength();
+
+    public native boolean reverseViewport();
 
     public native BarrageSubscriptionOptions subscriptionOptions();
 
