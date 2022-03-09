@@ -226,7 +226,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     // test to see if the viewport matches the requested
                     if (viewport == null && resultTable.getServerViewport() == null) {
                         completed = true;
-                    } else if (viewport != null && resultTable.getServerViewport() != null) {
+                    } else if (viewport != null && resultTable.getServerViewport() != null
+                                && reverseViewport == resultTable.getServerReverseViewport()) {
                         completed = viewport.subsetOf(resultTable.getServerViewport());
                     } else {
                         completed = false;
