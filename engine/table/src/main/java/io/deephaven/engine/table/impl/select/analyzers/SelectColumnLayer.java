@@ -2,31 +2,32 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
-import io.deephaven.time.DateTime;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.updategraph.UpdateCommitterEx;
+import io.deephaven.time.DateTime;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
+import java.util.stream.StreamSupport;
+
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
@@ -45,6 +46,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean canParallelizeThisColumn;
     private final boolean resultTypeIsLivenessReferent;
     private final boolean resultTypeIsTable;
+
+    private UpdateCommitterEx<SelectColumnLayer, LivenessNode> prevUnmanager;
+    private List<WritableObjectChunk<? extends LivenessReferent, Values>> prevValueChunksToUnmanage;
 
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
@@ -79,8 +83,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         resultTypeIsLivenessReferent = LivenessReferent.class.isAssignableFrom(ws.getType());
 
         // We assume that formulas producing Tables are likely to
-        //     1. be expensive to evaluate and
-        //     2. have wildly varying job size,
+        // 1. be expensive to evaluate and
+        // 2. have wildly varying job size,
         // and so we ignore minimum size to parallelize and limit divisionSize to 1 to maximize the
         // effect of our parallelism.
         resultTypeIsTable = Table.class.isAssignableFrom(ws.getType());
@@ -100,8 +104,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
             final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
             final SelectLayerCompletionHandler onCompletion) {
-        if (isRedirected && upstream.removed().isNonempty()) {
-            clearObjectsAtThisLevel(upstream.removed());
+        if (upstream.removed().isNonempty()) {
+            if (isRedirected) {
+                clearObjectsAtThisLevel(upstream.removed());
+            }
+            if (resultTypeIsLivenessReferent && liveResultOwner != null) {
+                addRemovesToPrevUnmanager(upstream.removed(), liveResultOwner);
+            }
         }
 
         // recurse so that dependent intermediate columns are already updated
@@ -117,8 +126,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
                                 (resultTypeIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
-                            final long divisionSize = resultTypeIsTable ? 1 :
-                                    Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
+                            final long divisionSize = resultTypeIsTable ? 1
+                                    : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
                             final List<TableUpdate> updates = new ArrayList<>();
                             // divide up the additions and modifications
@@ -153,7 +162,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             }
 
                             jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                            liveResultOwner, onCompletion, this::onError, updates),
+                                    liveResultOwner, onCompletion, this::onError, updates),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
@@ -291,7 +300,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 Assert.gtZero(destCapacity, "destCapacity");
                                 final RowSequence sourceKeys = keyIter.getNextRowSequenceWithLength(destCapacity);
                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk, sourceKeys);
-                                maybeManageResults(backingChunk, liveResultOwner);
+                                maybeManageAdds(backingChunk, liveResultOwner);
                                 destinationOffset += destCapacity;
                             }
                         }
@@ -319,7 +328,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                             .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
                                     if (destCapacity >= (lastDest - firstDest + 1)) {
                                         chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
-                                        maybeManageResults(backingChunk, liveResultOwner);
+                                        maybeManageAdds(backingChunk, liveResultOwner);
                                     } else {
                                         long chunkDestCapacity = destCapacity;
                                         try (final RowSequence.Iterator chunkIterator = keys.getRowSequenceIterator()) {
@@ -328,7 +337,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                                         chunkIterator.getNextRowSequenceWithLength(chunkDestCapacity);
                                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk,
                                                         chunkSourceKeys);
-                                                maybeManageResults(backingChunk, liveResultOwner);
+                                                maybeManageAdds(backingChunk, liveResultOwner);
                                                 firstDest += chunkDestCapacity;
                                                 if (firstDest <= lastDest) {
                                                     chunkDestCapacity = Math.min(
@@ -341,7 +350,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     }
                                 } else {
                                     writableSource.fillFromChunk(destContext,
-                                            maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys),
+                                            maybeManageAdds(chunkSource.getChunk(chunkSourceContext, keys),
                                                     liveResultOwner),
                                             destKeys);
                                 }
@@ -354,7 +363,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         while (keyIter.hasMore()) {
                             final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                             writableSource.fillFromChunk(destContext,
-                                    maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
+                                    maybeManageAdds(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
                                     keys);
                         }
                     }
@@ -365,19 +374,28 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (modifiesAffectUs) {
                 assert !flattenedResult;
                 assert chunkSourceContext != null;
-                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator()) {
+                final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
+                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
+                        final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
+                                ? upstream.getModifiedPreShift().getRowSequenceIterator()
+                                : null;
+                        final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
+                                ? columnSource.makeFillContext(PAGE_SIZE)
+                                : null) {
                     while (keyIter.hasMore()) {
                         final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                        writableSource.fillFromChunk(destContext,
-                                maybeManageResults(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
-                                keys);
+                        final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
+                        writableSource.fillFromChunk(destContext, modifiedResults, keys);
+                        if (needToUnmanagePrevValues) {
+                            addPrevModifiedToPrevUnmanager(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
+                        }
                     }
                 }
             }
         }
     }
 
-    private <CT extends Chunk<?>> CT maybeManageResults(
+    private <CT extends Chunk<?>> CT maybeManageAdds(
             @NotNull final CT resultChunk,
             @Nullable final LivenessNode liveResultOwner) {
         if (resultTypeIsLivenessReferent && liveResultOwner != null) {
@@ -391,19 +409,72 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         return resultChunk;
     }
 
-    private <CT extends Chunk<?>> CT maybeUnmanageResults(
-            @NotNull final CT resultChunk,
-            @Nullable final LivenessNode liveResultOwner) {
-        // TODO-RWC: Use this for removes and pre-shift previous modifies
-        if (resultTypeIsLivenessReferent && liveResultOwner != null) {
-            final ObjectChunk<? extends LivenessReferent, ?> typedChunk =
-                    resultChunk.asObjectChunk().asTypedObjectChunk();
-            final int chunkSize = typedChunk.size();
-            for (int ii = 0; ii < chunkSize; ++ii) {
-                liveResultOwner.unmanage(typedChunk.get(ii));
+    private void addRemovesToPrevUnmanager(
+            @NotNull final RowSequence removedKeys,
+            @NotNull final LivenessNode liveResultOwner) {
+        try (final RowSequence.Iterator removedKeysIterator = removedKeys.getRowSequenceIterator();
+                final ChunkSource.FillContext fillContext = columnSource.makeFillContext(
+                        (int) Math.min(removedKeys.size(), LARGEST_POOLED_CHUNK_CAPACITY))) {
+            while (removedKeysIterator.hasMore()) {
+                final RowSequence chunkRemovedKeys =
+                        removedKeysIterator.getNextRowSequenceThrough(LARGEST_POOLED_CHUNK_CAPACITY);
+                final WritableObjectChunk<? extends LivenessReferent, Values> removedValues =
+                        WritableObjectChunk.makeWritableChunk(chunkRemovedKeys.intSize());
+                columnSource.fillPrevChunk(fillContext, removedValues, chunkRemovedKeys);
+                addToPrevUnmanager(liveResultOwner, removedValues);
             }
         }
-        return resultChunk;
+    }
+
+    private void addPrevModifiedToPrevUnmanager(
+            @NotNull final LivenessNode liveResultOwner,
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final RowSequence.Iterator prevKeyIter,
+            @NotNull final Chunk<? extends Values> modifiedResults) {
+        final RowSequence prevKeys = prevKeyIter.getNextRowSequenceWithLength(modifiedResults.size());
+        final ObjectChunk<? extends LivenessReferent, ? extends Values> typedModifiedResults =
+                modifiedResults.asObjectChunk().asTypedObjectChunk();
+        final WritableObjectChunk<? extends LivenessReferent, Values> prevModifiedResults =
+                WritableObjectChunk.makeWritableChunk(prevKeys.intSize());
+        columnSource.fillPrevChunk(fillContext, prevModifiedResults, prevKeys);
+        final int chunkSize = prevModifiedResults.size();
+        int sameCount = 0;
+        for (int ci = 0; ci < chunkSize; ++ci) {
+            if (typedModifiedResults.get(ci) == prevModifiedResults.get(ci)) {
+                prevModifiedResults.set(ci, null);
+                ++sameCount;
+            }
+        }
+        if (prevModifiedResults.size() == sameCount) {
+            prevModifiedResults.close();
+        } else {
+            addToPrevUnmanager(liveResultOwner, prevModifiedResults);
+        }
+    }
+
+    private synchronized void addToPrevUnmanager(
+            @NotNull final LivenessNode liveResultOwner,
+            @NotNull final WritableObjectChunk<? extends LivenessReferent, Values> prevValuesToUnmanage) {
+        if (prevUnmanager == null) {
+            prevUnmanager = new UpdateCommitterEx<>(this, SelectColumnLayer::unmanagePreviousValues);
+        }
+        prevUnmanager.maybeActivate(liveResultOwner);
+        if (prevValueChunksToUnmanage == null) {
+            prevValueChunksToUnmanage = new ArrayList<>();
+        }
+        prevValueChunksToUnmanage.add(prevValuesToUnmanage);
+    }
+
+    private synchronized void unmanagePreviousValues(@NotNull final LivenessNode liveResultOwner) {
+        if (prevValueChunksToUnmanage == null || prevValueChunksToUnmanage.isEmpty()) {
+            return;
+        }
+        liveResultOwner.tryUnmanage(prevValueChunksToUnmanage.stream()
+                .flatMap(pvc -> StreamSupport.stream(Spliterators.spliterator(
+                        new ObjectChunkIterator<>(pvc), pvc.size(), Spliterator.ORDERED), false))
+                .filter(Objects::nonNull));
+        prevValueChunksToUnmanage.forEach(SafeCloseable::closeSingle);
+        prevValueChunksToUnmanage.clear();
     }
 
     private void doEnsureCapacity() {

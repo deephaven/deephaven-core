@@ -88,9 +88,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class, "debug", false);
-    private static final int DELTA_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "deltaChunkSize",
-                    1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
+    private static final int DELTA_CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(
+            BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
