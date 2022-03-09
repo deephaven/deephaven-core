@@ -219,11 +219,7 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
-        final StringBuilder sb = new StringBuilder();
-
-        // Get args
-
+    private static Set<PyParameter> pyMethodArgs(final ArrayList<JavaFunction> signatures) {
         final Map<String, PyParameter> pyparams = getPyParameters();
 
         //todo figure out arg order -- maybe have ranking in pyargs
@@ -237,28 +233,34 @@ public class GenerateFigureAPI2 {
             }
         }
 
-        // Generate function signature
+        return args;
+    }
 
-        sb.append("def ").append(camelToSnake(key.name)).append("(");
+    private static String pyFuncSignature(final Key key, final Set<PyParameter> args) {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("def ").append(camelToSnake(key.name)).append("(\n");
 
         int count = 0;
         for (final PyParameter arg : args) {
-            if (count != 0) {
-                sb.append(", ");
-            }
-
-            sb.append(arg.name).append(": ").append(arg.typeAnnotation);
+            sb.append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
 
             if (arg.defaultValue != null) {
                 sb.append(" = ").append(arg.defaultValue);
             }
+
+            sb.append(",\n");
 
             count++;
         }
 
         sb.append(") -> Figure:\n");
 
-        // Generate docs
+        return sb.toString();
+    }
+
+    private static String pyDocString(final Set<PyParameter> args){
+        final StringBuilder sb = new StringBuilder();
 
         //todo doc string
         sb.append(INDENT).append("\"\"\"").append("TODO: doc string here").append("\n");
@@ -271,6 +273,26 @@ public class GenerateFigureAPI2 {
         sb.append("\n").append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append("a new Figure\n");
 
         sb.append(INDENT).append("\"\"\"\n");
+
+        return sb.toString();
+    }
+
+    private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
+        final StringBuilder sb = new StringBuilder();
+
+        // Get args
+
+        final Set<PyParameter> args = pyMethodArgs(signatures);
+
+        // Generate function signature
+
+        final String sig = pyFuncSignature(key, args);
+        sb.append(sig);
+
+        // Generate docs
+
+        final String pydocs = pyDocString(args);
+        sb.append(pydocs);
 
         // Generate function body
 
