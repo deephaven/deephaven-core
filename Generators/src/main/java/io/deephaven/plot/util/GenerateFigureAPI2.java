@@ -284,10 +284,78 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String pyFuncBody(final ArrayList<JavaFunction> signatures) {
+    /**
+     * Gets the valid Java method argument name combinations.
+     *
+     * @param signatures java functions with the same name.
+     * @return valid Java method argument name combinations.
+     */
+    private static List<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
+        final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
+
+        for(JavaFunction f : signatures) {
+            final String[] params = f.getParameterNames();
+            final Set<String> s = new HashSet<>(Arrays.asList(params));
+
+            if (vals.containsKey(s) && !Arrays.equals(params, vals.get(s))) {
+                throw new RuntimeException("Parameters are already present: " + Arrays.toString(params));
+            }
+
+            vals.put(s, params);
+        }
+
+        return new ArrayList<>(vals.values());
+    }
+
+    private static String pyFuncBody(final Key key, final List<PyParameter> args, final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
-        //todo implement function body
-        sb.append(INDENT).append(INDENT).append("pass;\n\n");
+
+        // validate
+
+        for(final PyParameter arg:args){
+            if(!arg.required){
+                continue;
+            }
+
+            sb.append(INDENT).append(INDENT).append("if not ").append(arg.name).append(": raise DHError(\"required parameter is not set: ").append(arg.name).append("\")\n");
+        }
+
+        sb.append("\n");
+
+        // non-null params
+
+        sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
+
+        for(final PyParameter arg:args){
+            sb.append(INDENT).append(INDENT).append("if ").append(arg.name).append("is not None: non_null_params.add(").append(arg.name).append(")\n");
+        }
+
+        sb.append("\n");
+
+        // function calls
+
+        final List<String[]> argNames = javaArgNames(signatures);
+
+        boolean isFirst = true;
+
+        for(final String[] an : argNames){
+            final String[] quoted_an = Arrays.stream(an).map(s-> "\""+s+"\"").toArray(String[]::new);
+
+            sb.append(INDENT).append(INDENT)
+                    .append(isFirst ? "if" : "elif")
+                    .append(" non_null_params == {")
+                    .append(String.join(",",quoted_an))
+                    .append("}: return Figure(self.j_figure.")
+                    .append(key.name)
+                    .append("(")
+                    .append(String.join(",", an))
+                    .append("))\n");
+
+            isFirst = false;
+        }
+
+        sb.append(INDENT).append(INDENT).append("else: raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
+
         return sb.toString();
     }
 
@@ -298,7 +366,7 @@ public class GenerateFigureAPI2 {
 
         final String sig = pyFuncSignature(key, args);
         final String pydocs = pyDocString(args);
-        final String pybody = pyFuncBody(signatures);
+        final String pybody = pyFuncBody(key, args, signatures);
 
         sb.append(sig);
         sb.append(pydocs);
@@ -312,6 +380,7 @@ public class GenerateFigureAPI2 {
 
         sb.append("import jpy\n");
         sb.append("from deephaven2._wrapper_abc import JObjectWrapper\n");
+        sb.append("from deephaven2 import DHError\n");
         sb.append("\n");
 
         sb.append("class Figure(JObjectWrapper):\n");
