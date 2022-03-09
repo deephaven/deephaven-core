@@ -1810,6 +1810,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private void finalizeSnapshotForSubscriptions(
             final List<Subscription> subscriptions) {
         for (final Subscription subscription : subscriptions) {
+
+            // TODO: parent.getRowSet().subSetForPositions is inefficient in this context, would prefer some method that
+            // short circuits if any matching key of parent.getRowSet() is found. Something like:
+            // long firstKeyforPositions(final RowSequence positions); // returns -1 for no match
+
             // are there any outstanding rows in the parent that should belong to this subscription?
             try (final RowSet remaining = subscription.targetViewport == null
                     ? RowSetFactory.flat(Long.MAX_VALUE).minus(subscription.viewport)

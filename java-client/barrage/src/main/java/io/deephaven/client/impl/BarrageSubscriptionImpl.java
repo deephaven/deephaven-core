@@ -55,6 +55,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private volatile Condition completedCondition;
     private volatile boolean completed = false;
     private volatile Throwable exceptionWhileCompleting = null;
+    private InstrumentedTableUpdateListener listener = null;
 
     private boolean subscribed = false;
     private volatile boolean connected = true;
@@ -143,18 +144,46 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    @Override
+    public synchronized void waitForCompletion() throws InterruptedException {
+        while (!completed && exceptionWhileCompleting == null) {
+            // handle the condition where this function may have the exclusive lock
+            if (completedCondition != null) {
+                completedCondition.await();
+            } else {
+                wait(); // barragesnapshotimpl lock
+            }
+        }
+    }
+
+    @Override
     public BarrageTable entireTable() throws InterruptedException {
-        return partialTable(null, null, false);
+        return entireTable(true);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
-        return partialTable(viewport, columns, false);
+    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+        return partialTable(null, null, false, blockUntilComplete);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return partialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
             throws InterruptedException {
+        return partialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+            boolean blockUntilComplete) throws InterruptedException {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
@@ -179,7 +208,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             subscribed = true;
 
             // use a listener to decide when the table is complete
-            InstrumentedTableUpdateListener listener = new InstrumentedTableUpdateListener("example-listener") {
+            listener = new InstrumentedTableUpdateListener("example-listener") {
                 @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     exceptionWhileCompleting = originalException;
@@ -211,22 +240,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                                 BarrageSubscriptionImpl.this.notifyAll();
                             }
                         }
+
+                        // no longer need to listen for completion
+                        resultTable.removeUpdateListener(this);
+                        listener = null;
                     }
                 }
             };
 
             resultTable.listenForUpdates(listener);
 
-            while (!completed && exceptionWhileCompleting == null) {
-                // handle the condition where this function may have the exclusive lock
-                if (completedCondition != null) {
-                    completedCondition.await();
-                } else {
-                    wait(); // barragesubscriptionimpl lock
-                }
+            if (blockUntilComplete) {
+                waitForCompletion();
             }
-
-            resultTable.removeUpdateListener(listener);
         }
 
         if (exceptionWhileCompleting == null) {
