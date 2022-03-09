@@ -59,5 +59,20 @@ public class TestGroovyDeephavenSession {
         final Class<?> colClass = definition.getColumn("X").getDataType();
         Assert.equals(colClass, "colClass", java.util.List.class);
     }
+
+    @Test
+    public void testScriptDefinedClass() {
+        session.evaluateScript("class MyObj {\n" +
+                "    public int a;\n" +
+                "    MyObj(int a) {\n" +
+                "        this.a = a\n" +
+                "    }\n" +
+                "}\n" +
+                "obj = new MyObj(1)\n" +
+                "result = emptyTable(1).select(\"A = obj.a\")");
+        Assert.neqNull(fetch("obj", Object.class), "fetchObject");
+        final Table result = fetchTable("result");
+        Assert.eqFalse(result.isFailed(), "result.isFailed()");
+    }
 }
 
