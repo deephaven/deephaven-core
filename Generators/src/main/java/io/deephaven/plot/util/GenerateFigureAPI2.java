@@ -7,7 +7,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class GenerateFigureAPI {
+public class GenerateFigureAPI2 {
 
     private static class Key implements Comparable<Key>{
         private final String name;
@@ -82,8 +82,11 @@ public class GenerateFigureAPI {
 
                 final Key key = new Key(m);
                 final JavaFunction f = new JavaFunction(m);
-                final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
-                sigs.add(f);
+
+                if(key.isPublic) {
+                    final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
+                    sigs.add(f);
+                }
             }
 
             return signatures;
@@ -145,13 +148,7 @@ public class GenerateFigureAPI {
         final String imp = "io.deephaven.plot.Figure";
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures(imp);
 
-//        System.out.println(signatures);
-
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            if(!entry.getKey().isPublic){
-                continue;
-            }
-
             printSignature(entry.getKey(), entry.getValue());
         }
     }
