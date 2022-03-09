@@ -327,7 +327,7 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
 
         for(final PyParameter arg:args){
-            sb.append(INDENT).append(INDENT).append("if ").append(arg.name).append("is not None: non_null_params.add(").append(arg.name).append(")\n");
+            sb.append(INDENT).append(INDENT).append("if ").append(arg.name).append(" is not None: non_null_params.add(").append(arg.name).append(")\n");
         }
 
         sb.append("\n");
