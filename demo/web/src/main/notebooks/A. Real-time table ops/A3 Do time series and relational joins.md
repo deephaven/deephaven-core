@@ -1,6 +1,6 @@
 # Time series and relational joins
 
-In our [previous notebook](A2%20Filter%20and%20decorate%20.md), we showed how to filter and decorate our time tables. In this notebook, we show how to perform joins with our time series data.
+In this notebook, we show how to perform joins with our time series data.
 
 Let's start again by simulating measurements of our values every minute, but this time using two tables with slightly different timestamps. This is great for a simulation because there's no guarantee that a real example will collect data with exact timestamp matches.
 

@@ -1,6 +1,6 @@
 # Grouping and aggregating time series data
 
-In our previous notebook, we showed how to do time series and relational joins on our data. In this notebook, we show how to perform groupings and aggregations with our time series data.
+In this notebook, we show how to perform groupings and aggregations with our time series data.
 
 Let's start again by simulating some real-time data. Here, we'll use a shorter time interval.
 
