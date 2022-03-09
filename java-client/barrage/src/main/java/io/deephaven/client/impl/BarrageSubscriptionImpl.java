@@ -60,8 +60,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private boolean subscribed = false;
     private volatile boolean connected = true;
 
-    private RowSet targetViewport = null;
-
     /**
      * Represents a BarrageSubscription.
      *
@@ -289,8 +287,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private void cleanup() {
         this.connected = false;
         this.tableHandle.close();
-        if (targetViewport != null)
-            targetViewport.close();
         resultTable = null;
     }
 
@@ -305,9 +301,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             @Nullable final BitSet columns,
             boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options) {
-
-        // store the viewport for comparison to received data to determine completion of growing snapshot
-        targetViewport = viewport != null ? viewport.copy() : null;
 
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 

@@ -1879,8 +1879,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         long step = -1;
         final List<Subscription> snapshotSubscriptions;
 
-        SnapshotControl(
-                final List<Subscription> snapshotSubscriptions) {
+        SnapshotControl(final List<Subscription> snapshotSubscriptions) {
             this.snapshotSubscriptions = snapshotSubscriptions;
         }
 
