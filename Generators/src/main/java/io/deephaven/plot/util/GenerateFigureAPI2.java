@@ -166,6 +166,10 @@ public class GenerateFigureAPI2 {
         set.add("catPlotBy"); //todo combine with catPlot?
         set.add("chart");
         set.add("chartRemoveSeries");
+        set.add("chartTitle");
+        set.add("chartTitleColor");
+        set.add("chartTitleFont");
+        set.add("colSpan");
 
         return set;
     }
@@ -219,6 +223,11 @@ public class GenerateFigureAPI2 {
         rst.put("rowNum", new PyParameter(10, "row", taInt, false, "row index in the Figure's grid. The row index starts at 0.", null));
         rst.put("colNum", new PyParameter(10, "col", taInt, false, "column index in this Figure's grid. The column index starts at 0.", null));
         rst.put("index", new PyParameter(10, "index", taInt, false, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
+        rst.put("showColumnNamesInTitle", new PyParameter(10, "show_column_names_in_title", taBool, false, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("title", new PyParameter(10, "title", taStr, false, "title", null));
+        rst.put("titleColumns", new PyParameter(11, "title_columns", taStrs, false, "columns to include in the chart title", null));
+        rst.put("titleFormat", new PyParameter(12, "title_format", taStr, false, "a java.text.MessageFormat format string for the chart title", null));
+        rst.put("n", new PyParameter(10, "width", taInt, false, "how many columns wide", null));
 
         //
 
