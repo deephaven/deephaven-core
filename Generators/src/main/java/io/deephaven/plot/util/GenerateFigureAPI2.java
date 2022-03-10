@@ -148,24 +148,26 @@ public class GenerateFigureAPI2 {
 
     private static Set<String> getImplemented() {
         //todo remove plot filter
-        final Set<String> filter = new HashSet<>();
-        filter.add("plot");
-        filter.add("catPlot");
-        filter.add("axes");
-        filter.add("axesRemoveSeries");
-        filter.add("axis");
-        filter.add("axisColor");
-        filter.add("axisFormat");
-        filter.add("axisFormatPattern");
-        filter.add("axisLabel");
-        filter.add("axisLabelFont");
-        filter.add("businessTime");
-        filter.add("catErrorBar");
-        filter.add("catErrorBarBy"); //todo combine with catErrorBar?
-        filter.add("catHistPlot");
-        filter.add("catPlotBy")
+        final Set<String> set = new HashSet<>();
+        set.add("plot");
+        set.add("axes");
+        set.add("axesRemoveSeries");
+        set.add("axis");
+        set.add("axisColor");
+        set.add("axisFormat");
+        set.add("axisFormatPattern");
+        set.add("axisLabel");
+        set.add("axisLabelFont");
+        set.add("businessTime");
+        set.add("catErrorBar");
+        set.add("catErrorBarBy"); //todo combine with catErrorBar?
+        set.add("catHistPlot");
+        set.add("catPlot");
+        set.add("catPlotBy"); //todo combine with catPlot?
+        set.add("chart");
+        set.add("chartRemoveSeries");
 
-        return filter;
+        return set;
     }
 
     private static Map<String, PyParameter> getPyParameters() {
@@ -214,6 +216,9 @@ public class GenerateFigureAPI2 {
         rst.put("style", new PyParameter(10, "style", taStr, false, "font style", null));
         rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar, false, "business calendar", null));
         rst.put("valueColumn", new PyParameter(10, "values", taStr, false, "column name", null));
+        rst.put("rowNum", new PyParameter(10, "row", taInt, false, "row index in the Figure's grid. The row index starts at 0.", null));
+        rst.put("colNum", new PyParameter(10, "col", taInt, false, "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("index", new PyParameter(10, "index", taInt, false, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
 
         //
 
