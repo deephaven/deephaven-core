@@ -1574,19 +1574,19 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     // region Category Histogram Plot
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String columnName) {
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String values) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        if (ArgumentValidations.isTime(t, columnName, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        final Table counts = PlotUtils.createCategoryHistogramTable(t, columnName);
-        final TableHandle h = new TableHandle(counts, columnName, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        final Table counts = PlotUtils.createCategoryHistogramTable(t, values);
+        final TableHandle h = new TableHandle(counts, values, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
         final CategoryDataSeriesTableMap ds =
-                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, columnName, COUNT);
+                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, values, COUNT);
         ds.addTableHandle(h);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
@@ -1594,59 +1594,59 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public CategoryDataSeriesSwappableTableMap catHistPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String columnName) {
+            final String values) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        if (ArgumentValidations.isTime(sds, columnName, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(sds, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
         final List<String> cols = new ArrayList<>();
-        cols.add(columnName);
+        cols.add(values);
         if (sds instanceof SelectableDataSetOneClick) {
             cols.addAll(Arrays.asList(((SelectableDataSetOneClick) sds).getByColumns()));
         }
 
         final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> PlotUtils
                 .createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, columnName,
+        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, values,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         final CategoryDataSeriesSwappableTableMap ds = new CategoryDataSeriesSwappableTableMap(this,
-                dataSeries.nextId(), seriesName, counts, columnName, COUNT);
+                dataSeries.nextId(), seriesName, counts, values, COUNT);
         ds.addSwappableTable(counts);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final T[] x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final T[] values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final int[] x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final int[] values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final long[] x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final long[] values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final float[] x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final float[] values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final double[] x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final double[] values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> x) {
-        return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
+    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> values) {
+        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
     }
 
     // endregion

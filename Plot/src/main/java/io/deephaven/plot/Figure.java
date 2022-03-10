@@ -98,21 +98,21 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, T[] x );
+    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, T[] values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, double[] x );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, double[] values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, float[] x );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, float[] values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, int[] x );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, int[] values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, long[] x );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, long[] values );
 
-    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> x );
+    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String values );
 
     @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values );
 

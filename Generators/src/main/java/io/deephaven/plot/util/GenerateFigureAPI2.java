@@ -160,6 +160,10 @@ public class GenerateFigureAPI2 {
         filter.add("axisLabel");
         filter.add("axisLabelFont");
         filter.add("businessTime");
+        filter.add("catErrorBar");
+        filter.add("catErrorBarBy"); //todo combine with catErrorBar?
+        filter.add("catHistPlot");
+        filter.add("catPlotBy")
 
         return filter;
     }
@@ -183,6 +187,7 @@ public class GenerateFigureAPI2 {
         final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
 
         rst.put("seriesName", new PyParameter(1, "series_name", taStr, true, "name of the created dataset", null));
+        rst.put("byColumns", new PyParameter(1, "by", taStrs, false, "columns that hold grouping data", null));
         rst.put("t", new PyParameter(2, "t", taTable, false, "table or selectable data set (e.g. OneClick filterable table)", null));
         rst.put("x", new PyParameter(3, "x", taDataNumeric, false, "x-values or column name", null));
         rst.put("y", new PyParameter(4, "y", taDataNumeric, false, "y-values or column name", null));
@@ -192,6 +197,8 @@ public class GenerateFigureAPI2 {
 
         rst.put("categories", new PyParameter(3, "categories", taDataCategory, false, "discrete data or column name", null));
         rst.put("values", new PyParameter(4, "values", taDataNumeric, false, "numeric data or column name", null));
+        rst.put("yLow", new PyParameter(5, "y_low", taDataNumeric, false, "low value in y dimension", null));
+        rst.put("yHigh", new PyParameter(6, "y_high", taDataNumeric, false, "high value in y dimension", null));
 
         rst.put("id", new PyParameter(10, "axes", taInt, false, "axes id", null));
         rst.put("name", new PyParameter(10, "name", taStr, false, "axes name", null));
@@ -207,6 +214,7 @@ public class GenerateFigureAPI2 {
         rst.put("style", new PyParameter(10, "style", taStr, false, "font style", null));
         rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar, false, "business calendar", null));
         rst.put("valueColumn", new PyParameter(10, "values", taStr, false, "column name", null));
+
         //
 
         rst.put("sds", rst.get("t"));

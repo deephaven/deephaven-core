@@ -1158,76 +1158,76 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param columnName column in {@code t}
+     * @param values column in {@code t}
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final Table t, final String columnName);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final Table t, final String values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param columnName column in {@code sds}
+     * @param values column in {@code sds}
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final SelectableDataSet sds, final String values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @param <T> data type of the categorical data
      * @return dataset created for plot
      */
-    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final T[] x);
+    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final T[] values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final int[] x);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final int[] values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final long[] x);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final long[] values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final float[] x);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final float[] values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final double[] x);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final double[] values);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param x data
+     * @param values data
      * @param <T> data type of the categorical data
      * @return dataset created for plot
      */
-    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final List<T> x);
+    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final List<T> values);
 
     ////////////////////////// category plot //////////////////////////
 

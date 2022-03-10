@@ -572,51 +572,51 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] x ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> x ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, columnName);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, values);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String values ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, columnName);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, values);
         return make(series);
     }
 
