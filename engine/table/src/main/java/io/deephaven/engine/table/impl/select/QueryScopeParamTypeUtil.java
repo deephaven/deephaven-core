@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import groovy.lang.Closure;
-import groovy.lang.GroovyObject;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.util.type.TypeUtils;
 
@@ -97,8 +96,6 @@ public class QueryScopeParamTypeUtil {
             type = ((Enum<?>) value).getDeclaringClass();
         } else if (value instanceof Closure) {
             type = Closure.class;
-        } else if (value instanceof GroovyObject) {
-            type = GroovyObject.class;
         } else {
             type = value.getClass();
         }
