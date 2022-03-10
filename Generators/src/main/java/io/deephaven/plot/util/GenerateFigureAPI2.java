@@ -3,14 +3,18 @@ package io.deephaven.plot.util;
 import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class GenerateFigureAPI2 {
 
     private static final String INDENT = "    ";
     private static final String JCLASS = "io.deephaven.plot.Figure";
+    private static final String PREAMBLE = "Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
 
     /**
      * A Key for indexing common method names.
@@ -141,7 +145,7 @@ public class GenerateFigureAPI2 {
      * Gets the signatures of public JCLASS methods.
      *
      * @return Map of method keys to a list of all relevant signatures.
-     * @throws ClassNotFoundException
+     * @throws ClassNotFoundException JCLASS is not found
      */
     public static Map<Key, ArrayList<JavaFunction>> getSignatures() throws ClassNotFoundException {
         final Class<?> c = Class.forName(JCLASS);
@@ -224,14 +228,16 @@ public class GenerateFigureAPI2 {
 
     private static List<PyParameter> pyMethodArgs(final ArrayList<JavaFunction> signatures) {
         final Map<String, PyParameter> pyparams = getPyParameters();
-
-        //todo figure out arg order -- maybe have ranking in pyargs
-
         final Set<PyParameter> argSet = new HashSet<>();
 
         for (final JavaFunction f : signatures) {
             for (final String param : f.getParameterNames()) {
                 final PyParameter pyparam = pyparams.get(param);
+
+                if(pyparam == null){
+                    throw new IllegalArgumentException("Unsupported python parameter: " + param);
+                }
+
                 argSet.add(pyparam);
             }
         }
@@ -248,7 +254,6 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append("def ").append(camelToSnake(key.name)).append("(\n");
         sb.append(INDENT).append(INDENT).append("self,\n");
 
-        int count = 0;
         for (final PyParameter arg : args) {
             sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
 
@@ -257,8 +262,6 @@ public class GenerateFigureAPI2 {
             }
 
             sb.append(",\n");
-
-            count++;
         }
 
         sb.append(INDENT).append(") -> Figure:\n");
@@ -375,34 +378,27 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) {
+    private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
+
         final StringBuilder sb = new StringBuilder();
 
-        sb.append("import jpy\n");
-        sb.append("from deephaven2._wrapper_abc import JObjectWrapper\n");
-        sb.append("from deephaven2 import DHError\n");
-        sb.append("\n");
-
-        sb.append("class Figure(JObjectWrapper):\n");
-        sb.append("\n");
-        sb.append(INDENT).append("j_object_type = jpy.get_type(\"").append(JCLASS).append("\")\n");
-        sb.append("\n");
-        sb.append(INDENT).append("def __init__(self, j_figure: jpy.JType):\n");
-        sb.append(INDENT).append(INDENT).append("self.j_figure = j_figure\n");
-        sb.append("\n");
-        sb.append(INDENT).append("@property\n");
-        sb.append(INDENT).append("def j_object(self) -> jpy.JType:\n");
-        sb.append(INDENT).append(INDENT).append("return self.j_figure\n");
+        final String preamble = Files.readString(Path.of(PREAMBLE));
+        sb.append(preamble);
         sb.append("\n");
 
         int nGenerated = 0;
+
+        //todo remove plot filter
+        final Set<String> filter = new HashSet<>();
+        filter.add("plot");
+//        filter.add("catPlot");
 
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
             final ArrayList<JavaFunction> sigs = entry.getValue();
 
             //todo remove plot filter
-            if (!key.name.equals("plot")) {
+            if (!filter.contains(key.name)) {
                 continue;
             }
 
@@ -424,7 +420,8 @@ public class GenerateFigureAPI2 {
 
         return sb.toString();
     }
-    public static void main(String[] args) throws ClassNotFoundException {
+
+    public static void main(String[] args) throws ClassNotFoundException, IOException {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
 
