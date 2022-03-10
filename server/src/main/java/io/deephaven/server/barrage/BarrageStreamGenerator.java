@@ -64,8 +64,10 @@ import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerato
 public class BarrageStreamGenerator implements
         BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
+    // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
+    // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", 1 << 16);
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;

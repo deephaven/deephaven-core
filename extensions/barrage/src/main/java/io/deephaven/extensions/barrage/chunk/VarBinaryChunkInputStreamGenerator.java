@@ -343,7 +343,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                         final int offset = offsets.get(ei);
                         final int length = offsets.get(ei + 1) - offset;
                         if (offset + length > serializedData.length) {
-                            throw new IllegalStateException("not enough data was serialized to parse this element");
+                            throw new IllegalStateException("not enough data was serialized to parse this element: " +
+                                    "elementIndex=" + ei + " offset=" + offset + " length=" + length +
+                                    " serializedLen=" + serializedData.length);
                         }
                         chunk.set(outOffset + ei++, mapper.constructFrom(serializedData, offset, length));                        validityWord >>= 1;
                         bitsLeftInThisWord--;
