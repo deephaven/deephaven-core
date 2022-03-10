@@ -178,6 +178,16 @@ public class GenerateFigureAPI2 {
         set.add("errorBarXYBy"); //todo combine with errorBarXY? (combine all error bar plots??)
         set.add("errorBarY");
         set.add("errorBarYBy"); //todo combine with errorBarY?
+        set.add("figureRemoveSeries");
+        set.add("figureTitle"); //todo title is required here... may need to handle requires differently
+        set.add("figureTitleColor");
+        set.add("figureTitleFont");
+        set.add("funcNPoints");
+        set.add("funcRange");
+        //todo set.add("gradientVisible");
+        set.add("gridLinesVisible");
+        //todo set.add("group");
+        set.add("histPlot");
 
         return set;
     }
@@ -238,6 +248,10 @@ public class GenerateFigureAPI2 {
         rst.put("titleColumns", new PyParameter(11, "title_columns", taStrs, false, "columns to include in the chart title", null));
         rst.put("titleFormat", new PyParameter(12, "title_format", taStr, false, "a java.text.MessageFormat format string for the chart title", null));
         rst.put("n", new PyParameter(10, "width", taInt, false, "how many columns wide", null));
+        rst.put("npoints", new PyParameter(10, "npoints", taInt, false, "number of points", null));
+        rst.put("xmin", new PyParameter(10, "xmin", taFloat, false, "range minimum", null));
+        rst.put("xmax", new PyParameter(11, "xmax", taFloat, false, "range minimum", null));
+        rst.put("visible", new PyParameter(10, "visible", taInt, true, "whether the Chart's grid lines are drawn", null));
 
         //
 
