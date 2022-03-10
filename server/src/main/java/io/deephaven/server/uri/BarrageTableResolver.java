@@ -275,7 +275,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ChannelHelper.channel(target));
+        return newSession(ChannelHelper.channelBuilder(target).build());
     }
 
     private BarrageSession newSession(ManagedChannel channel) {
