@@ -170,6 +170,14 @@ public class GenerateFigureAPI2 {
         set.add("chartTitleColor");
         set.add("chartTitleFont");
         set.add("colSpan");
+//todo        set.add("errorBarColor");
+        //todo fix naming of errorbar funcs -> auto-snake-casing is not working well
+        set.add("errorBarX");
+        set.add("errorBarXBy"); //todo combine with errorBarX?
+        set.add("errorBarXY");
+        set.add("errorBarXYBy"); //todo combine with errorBarXY? (combine all error bar plots??)
+        set.add("errorBarY");
+        set.add("errorBarYBy"); //todo combine with errorBarY?
 
         return set;
     }
@@ -203,8 +211,10 @@ public class GenerateFigureAPI2 {
 
         rst.put("categories", new PyParameter(3, "categories", taDataCategory, false, "discrete data or column name", null));
         rst.put("values", new PyParameter(4, "values", taDataNumeric, false, "numeric data or column name", null));
-        rst.put("yLow", new PyParameter(5, "y_low", taDataNumeric, false, "low value in y dimension", null));
-        rst.put("yHigh", new PyParameter(6, "y_high", taDataNumeric, false, "high value in y dimension", null));
+        rst.put("xLow", new PyParameter(5, "x_low", taDataNumeric, false, "low value in x dimension", null));
+        rst.put("xHigh", new PyParameter(6, "x_high", taDataNumeric, false, "high value in x dimension", null));
+        rst.put("yLow", new PyParameter(7, "y_low", taDataNumeric, false, "low value in y dimension", null));
+        rst.put("yHigh", new PyParameter(8, "y_high", taDataNumeric, false, "high value in y dimension", null));
 
         rst.put("id", new PyParameter(10, "axes", taInt, false, "axes id", null));
         rst.put("name", new PyParameter(10, "name", taStr, false, "axes name", null));
