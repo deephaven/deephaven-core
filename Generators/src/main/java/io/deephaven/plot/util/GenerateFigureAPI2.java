@@ -146,15 +146,41 @@ public class GenerateFigureAPI2 {
         return str.replaceAll(regex, replacement).toLowerCase();
     }
 
+    private static Set<String> getImplemented() {
+        //todo remove plot filter
+        final Set<String> filter = new HashSet<>();
+        filter.add("plot");
+        filter.add("catPlot");
+        filter.add("axes");
+        filter.add("axesRemoveSeries");
+        filter.add("axis");
+        filter.add("axisColor");
+        filter.add("axisFormat");
+        filter.add("axisFormatPattern");
+        filter.add("axisLabel");
+        filter.add("axisLabelFont");
+        filter.add("businessTime");
+
+        return filter;
+    }
+
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
         final String[] taStr = new String[]{"str"};
+        final String[] taStrs = new String[]{"List[str]"};
         final String[] taBool = new String[]{"bool"};
+        final String[] taInt = new String[]{"int"};
+        final String[] taFloat = new String[]{"float"};
         final String[] taCallable = new String[]{"Callable"};
         final String[] taTable = new String[]{"Table","SelectableDataSet"};
         final String[] taDataCategory = new String[]{"str", "List[str]"};
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"};
+
+        final String[] taColor = new String[]{"str", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
+        final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
+        final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
+        final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
 
         rst.put("seriesName", new PyParameter(1, "series_name", taStr, true, "name of the created dataset", null));
         rst.put("t", new PyParameter(2, "t", taTable, false, "table or selectable data set (e.g. OneClick filterable table)", null));
@@ -167,6 +193,20 @@ public class GenerateFigureAPI2 {
         rst.put("categories", new PyParameter(3, "categories", taDataCategory, false, "discrete data or column name", null));
         rst.put("values", new PyParameter(4, "values", taDataNumeric, false, "numeric data or column name", null));
 
+        rst.put("id", new PyParameter(10, "axes", taInt, false, "axes id", null));
+        rst.put("name", new PyParameter(10, "name", taStr, false, "axes name", null));
+        rst.put("names", new PyParameter(10, "names", taStrs, true, "series names", null));
+        rst.put("dim", new PyParameter(10, "dim", taInt, true, "dimension of the axis", null));
+        rst.put("color", new PyParameter(10, "color", taColor, true, "color", null));
+        rst.put("format", new PyParameter(10, "format", taAxisFormat, true, "axis format", null));
+        rst.put("pattern", new PyParameter(10, "pattern", taStr, true, "axis format pattern", null));
+        rst.put("label", new PyParameter(10, "label", taStr, true, "label", null));
+        rst.put("family", new PyParameter(10, "family", taStr, false, "font family; if null, set to Arial", null));
+        rst.put("font", new PyParameter(10, "font", taFont, false, "font", null));
+        rst.put("size", new PyParameter(10, "size", taInt, false, "font size", null));
+        rst.put("style", new PyParameter(10, "style", taStr, false, "font style", null));
+        rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar, false, "business calendar", null));
+        rst.put("valueColumn", new PyParameter(10, "values", taStr, false, "column name", null));
         //
 
         rst.put("sds", rst.get("t"));
@@ -346,6 +386,8 @@ public class GenerateFigureAPI2 {
     }
 
     private static String pyFuncBody(final Key key, final List<PyParameter> args, final ArrayList<JavaFunction> signatures) {
+        final Map<String,PyParameter> pyParameterMap = getPyParameters();
+
         final StringBuilder sb = new StringBuilder();
 
         // validate
@@ -409,7 +451,7 @@ public class GenerateFigureAPI2 {
         boolean isFirst = true;
 
         for(final String[] an : argNames){
-            final String[] quoted_an = Arrays.stream(an).map(s-> "\""+s+"\"").toArray(String[]::new);
+            final String[] quoted_an = Arrays.stream(an).map(s-> "\""+pyParameterMap.get(s).name+"\"").toArray(String[]::new);
 
             sb.append(INDENT)
                     .append(INDENT)
@@ -423,7 +465,7 @@ public class GenerateFigureAPI2 {
                     .append("return Figure(self.j_figure.")
                     .append(key.name)
                     .append("(")
-                    .append(String.join(",", an))
+                    .append(String.join(",", Arrays.stream(an).map(s->pyParameterMap.get(s).name).toArray(String[]::new)))
                     .append("))\n");
 
             isFirst = false;
@@ -467,9 +509,7 @@ public class GenerateFigureAPI2 {
         int nGenerated = 0;
 
         //todo remove plot filter
-        final Set<String> filter = new HashSet<>();
-        filter.add("plot");
-        filter.add("catPlot");
+        final Set<String> filter = getImplemented();
 
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
@@ -481,13 +521,13 @@ public class GenerateFigureAPI2 {
             }
 
             //todo remove printSignature
-            printSignature(key, sigs);
+//            printSignature(key, sigs);
 
             final String pyFunc = generatePythonFunction(key, sigs);
 
             //todo remove print pyFunc
-            System.out.println("\n");
-            System.out.println(pyFunc);
+//            System.out.println("\n");
+//            System.out.println(pyFunc);
 
             sb.append("\n").append(pyFunc);
             nGenerated++;
@@ -503,8 +543,13 @@ public class GenerateFigureAPI2 {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
 
+        //todo remove filter
+        final Set<String> implemented = getImplemented();
+
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            printSignature(entry.getKey(), entry.getValue());
+            if(!implemented.contains(entry.getKey().name)) {
+                printSignature(entry.getKey(), entry.getValue());
+            }
         }
 
         for (int i = 0; i < 10; i++) {
