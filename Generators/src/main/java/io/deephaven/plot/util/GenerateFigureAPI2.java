@@ -89,14 +89,15 @@ public class GenerateFigureAPI2 {
         private final String typeAnnotation;
         private final boolean required;
         private final String docString;
-        //todo conversion function?
+        private final String javaConverter;
 
-        public PyParameter(final int precedence, final String name, final String typeAnnotation, final boolean required, final String docString) {
+        public PyParameter(final int precedence, final String name, final String typeAnnotation, final boolean required, final String docString, final String javaConverter) {
             this.precedence = precedence;
             this.name = name;
             this.typeAnnotation = typeAnnotation;
             this.required = required;
             this.docString = docString;
+            this.javaConverter = javaConverter;
         }
 
         @Override
@@ -105,8 +106,9 @@ public class GenerateFigureAPI2 {
                     "precedence=" + precedence +
                     ", name='" + name + '\'' +
                     ", typeAnnotation='" + typeAnnotation + '\'' +
-                    ", required='" + required + '\'' +
+                    ", required=" + required +
                     ", docString='" + docString + '\'' +
+                    ", javaConverter='" + javaConverter + '\'' +
                     '}';
         }
     }
@@ -126,13 +128,13 @@ public class GenerateFigureAPI2 {
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
-        rst.put("seriesName", new PyParameter(1, "series_name", "str", true, "name of the created dataset"));
-        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", false, "table or selectable data set (e.g. OneClick filterable table)"));
-        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", false, "x-values or column name"));
-        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", false, "y-values or column name"));
-        rst.put("function", new PyParameter(5, "function", "Callable", false, "function to plot"));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", false, "whether to treat the x-values as time data")); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", false, "whether to treat the y-values as time data")); //todo needed?
+        rst.put("seriesName", new PyParameter(1, "series_name", "str", true, "name of the created dataset", null));
+        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", false, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", false, "x-values or column name", null));
+        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", false, "y-values or column name", null));
+        rst.put("function", new PyParameter(5, "function", "Callable", false, "function to plot", null));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", false, "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", false, "whether to treat the y-values as time data", null)); //todo needed?
 
         //
 
@@ -341,7 +343,18 @@ public class GenerateFigureAPI2 {
                     .append(INDENT)
                     .append(INDENT)
                     .append("non_null_params.add(")
-                    .append(arg.name).append(")\n");
+                    .append(arg.name).append(")\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(arg.name)
+                    .append(" = ")
+                    .append(arg.javaConverter == null ? "_convert_j" : arg.javaConverter)
+                    .append("(\"")
+                    .append(arg.name)
+                    .append("\",")
+                    .append(arg.name)
+                    .append(")\n");
         }
 
         sb.append("\n");
