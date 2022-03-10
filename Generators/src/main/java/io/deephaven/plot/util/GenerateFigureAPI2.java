@@ -282,6 +282,8 @@ public class GenerateFigureAPI2 {
 
         sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
 
+        sb.append("\n").append(INDENT).append(INDENT).append("Raises:\n").append(INDENT).append(INDENT).append(INDENT).append("DHError\n");
+
         sb.append(INDENT).append(INDENT).append("\"\"\"\n");
 
         return sb.toString();
@@ -330,7 +332,16 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
 
         for(final PyParameter arg:args){
-            sb.append(INDENT).append(INDENT).append("if ").append(arg.name).append(" is not None: non_null_params.add(").append(arg.name).append(")\n");
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("if ")
+                    .append(arg.name)
+                    .append(" is not None:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("non_null_params.add(")
+                    .append(arg.name).append(")\n");
         }
 
         sb.append("\n");
@@ -344,11 +355,16 @@ public class GenerateFigureAPI2 {
         for(final String[] an : argNames){
             final String[] quoted_an = Arrays.stream(an).map(s-> "\""+s+"\"").toArray(String[]::new);
 
-            sb.append(INDENT).append(INDENT)
+            sb.append(INDENT)
+                    .append(INDENT)
                     .append(isFirst ? "if" : "elif")
                     .append(" non_null_params == {")
                     .append(String.join(",",quoted_an))
-                    .append("}: return Figure(self.j_figure.")
+                    .append("}:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("return Figure(self.j_figure.")
                     .append(key.name)
                     .append("(")
                     .append(String.join(",", an))
@@ -357,7 +373,13 @@ public class GenerateFigureAPI2 {
             isFirst = false;
         }
 
-        sb.append(INDENT).append(INDENT).append("else: raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
+        sb.append(INDENT)
+                .append(INDENT)
+                .append("else:\n")
+                .append(INDENT)
+                .append(INDENT)
+                .append(INDENT)
+                .append("raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
 
         return sb.toString();
     }
