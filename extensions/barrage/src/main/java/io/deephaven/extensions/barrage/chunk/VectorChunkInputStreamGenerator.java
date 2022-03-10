@@ -256,7 +256,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                 if (outChunk != null) {
                     return outChunk.asWritableObjectChunk();
                 }
-                return WritableObjectChunk.makeWritableChunk(0);
+                return WritableObjectChunk.makeWritableChunk(totalRows);
             }
         }
 

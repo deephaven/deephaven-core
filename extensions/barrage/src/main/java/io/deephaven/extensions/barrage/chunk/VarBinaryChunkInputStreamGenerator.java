@@ -278,25 +278,26 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         final long offsetsBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
+        final int numElements = nodeInfo.numElements;
         final WritableObjectChunk<T, Values> chunk;
         if (outChunk != null) {
             chunk = outChunk.asWritableObjectChunk();
         } else {
-            final int numRows = Math.max(totalRows, nodeInfo.numElements);
+            final int numRows = Math.max(totalRows, numElements);
             chunk = WritableObjectChunk.makeWritableChunk(numRows);
             chunk.setSize(numRows);
         }
 
-        if (nodeInfo.numElements == 0) {
+        if (numElements == 0) {
             return chunk;
         }
 
-        final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
-             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
+        final int numValidityWords = (numElements + 63) / 64;
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityWords);
+             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
+            for (; jj < Math.min(numValidityWords, validityBuffer / 8); ++jj) {
                 isValid.set(jj, is.readLong());
             }
             final long valBufRead = jj * 8L;
@@ -304,16 +305,16 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
             }
             // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
+            for (; jj < numValidityWords; ++jj) {
                 isValid.set(jj, -1); // -1 is bit-wise representation of all ones
             }
 
             // Read offsets:
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
+            final long offBufRead = (numElements + 1L) * Integer.BYTES;
             if (offsetsBuffer < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }
-            for (int i = 0; i < nodeInfo.numElements + 1; ++i) {
+            for (int i = 0; i < numElements + 1; ++i) {
                 offsets.set(i, is.readInt());
             }
             if (offBufRead < offsetsBuffer) {
@@ -326,22 +327,37 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             is.readFully(serializedData);
 
             // Deserialize:
-            long nextValid = 0;
-            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                if ((ii % 64) == 0) {
-                    nextValid = isValid.get(ii / 64);
-                }
-                if ((nextValid & 0x1) == 0x1) {
-                    final int offset = offsets.get(ii);
-                    final int length = offsets.get(ii + 1) - offset;
-                    if (offset + length > serializedData.length) {
-                        throw new IllegalStateException("not enough data was serialized to parse this element");
+            int ei = 0;
+            int pendingSkips = 0;
+
+            for (int vi = 0; vi < numValidityWords; ++vi) {
+                int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+                long validityWord = isValid.get(vi);
+                do {
+                    if ((validityWord & 1) == 1) {
+                        if (pendingSkips > 0) {
+                            chunk.fillWithNullValue(outOffset + ei, pendingSkips);
+                            ei += pendingSkips;
+                            pendingSkips = 0;
+                        }
+                        final int offset = offsets.get(ei);
+                        final int length = offsets.get(ei + 1) - offset;
+                        if (offset + length > serializedData.length) {
+                            throw new IllegalStateException("not enough data was serialized to parse this element");
+                        }
+                        chunk.set(outOffset + ei++, mapper.constructFrom(serializedData, offset, length));                        validityWord >>= 1;
+                        bitsLeftInThisWord--;
+                    } else {
+                        final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                        pendingSkips += skips;
+                        validityWord >>= skips;
+                        bitsLeftInThisWord -= skips;
                     }
-                    chunk.set(outOffset + ii, mapper.constructFrom(serializedData, offset, length));
-                } else {
-                    chunk.set(outOffset + ii, null);
-                }
-                nextValid >>= 1;
+                } while (bitsLeftInThisWord > 0);
+            }
+
+            if (pendingSkips > 0) {
+                chunk.fillWithNullValue(outOffset + ei, pendingSkips);
             }
         }
 

@@ -66,7 +66,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
             if (outChunk != null) {
                 return outChunk.asWritableObjectChunk();
             }
-            return WritableObjectChunk.makeWritableChunk(0);
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
         final int itemsInBatch = perElementLengthDest.size() - 1;

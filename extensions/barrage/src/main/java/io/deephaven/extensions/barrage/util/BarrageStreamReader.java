@@ -235,10 +235,6 @@ public class BarrageStreamReader implements StreamReader {
                                     columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
                                     bufferInfoIter, ois, (WritableChunk<Values>) mcd.data, numModRowsRead,
                                     numModdedRows);
-                            if (mcd.data.size() != numModdedRows) {
-                                throw new IllegalStateException(
-                                        "Mod column data does not have the expected number of rows.");
-                            }
                         }
                         numModRowsRead += batch.length();
                     }

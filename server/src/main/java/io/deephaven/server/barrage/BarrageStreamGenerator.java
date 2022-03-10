@@ -296,7 +296,7 @@ public class BarrageStreamGenerator implements
 
             // require an add batch if there are no mod batches
             final long needsAddBatch = this.numModBatches == 0 ? 1 : 0;
-            this.numAddBatches = Math.max(needsAddBatch, (addRowOffsets.size() + batchSize - 1) / batchSize);
+            numAddBatches = Math.max(needsAddBatch, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
@@ -314,8 +314,8 @@ public class BarrageStreamGenerator implements
             for (long ii = 0; ii < numModBatches; ++ii) {
                 visitor.accept(generator.getInputStream(
                         this, offset, offset + batchSize, metadata, generator::appendModColumns));
-                metadata = null;
                 offset += batchSize;
+                metadata = null;
             }
 
             // clean up the helper indexes
@@ -422,15 +422,12 @@ public class BarrageStreamGenerator implements
                 try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
                     addRowOffsets = generator.rowsIncluded.original.invert(intersect);
                 }
-            } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
-                // there are scoped rows included in the chunks that need to be removed
-                addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
             } else {
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
             // require a batch to at least send the metadata
-            this.numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
+            numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
