@@ -149,13 +149,23 @@ public class GenerateFigureAPI2 {
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
-        rst.put("seriesName", new PyParameter(1, "series_name", new String[]{"str"}, true, "name of the created dataset", null));
-        rst.put("t", new PyParameter(2, "t", new String[]{"Table","SelectableDataSet"}, false, "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("x", new PyParameter(3, "x", new String[]{"str", "List[int]", "List[float]", "List[DateTime]"}, false, "x-values or column name", null));
-        rst.put("y", new PyParameter(4, "y", new String[]{"str", "List[int]", "List[float]", "List[DateTime]"}, false, "y-values or column name", null));
-        rst.put("function", new PyParameter(5, "function", new String[]{"Callable"}, false, "function to plot", null));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", new String[]{"bool"}, false, "whether to treat the x-values as time data", null)); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", new String[]{"bool"}, false, "whether to treat the y-values as time data", null)); //todo needed?
+        final String[] taStr = new String[]{"str"};
+        final String[] taBool = new String[]{"bool"};
+        final String[] taCallable = new String[]{"Callable"};
+        final String[] taTable = new String[]{"Table","SelectableDataSet"};
+        final String[] taDataCategory = new String[]{"str", "List[str]"};
+        final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"};
+
+        rst.put("seriesName", new PyParameter(1, "series_name", taStr, true, "name of the created dataset", null));
+        rst.put("t", new PyParameter(2, "t", taTable, false, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyParameter(3, "x", taDataNumeric, false, "x-values or column name", null));
+        rst.put("y", new PyParameter(4, "y", taDataNumeric, false, "y-values or column name", null));
+        rst.put("function", new PyParameter(5, "function", taCallable, false, "function to plot", null));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", taBool, false, "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", taBool, false, "whether to treat the y-values as time data", null)); //todo needed?
+
+        rst.put("categories", new PyParameter(3, "categories", taDataCategory, false, "discrete data or column name", null));
+        rst.put("values", new PyParameter(4, "values", taDataNumeric, false, "numeric data or column name", null));
 
         //
 
@@ -345,7 +355,17 @@ public class GenerateFigureAPI2 {
                 continue;
             }
 
-            sb.append(INDENT).append(INDENT).append("if not ").append(arg.name).append(": raise DHError(\"required parameter is not set: ").append(arg.name).append("\")\n");
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("if not ")
+                    .append(arg.name)
+                    .append(":\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("raise DHError(\"required parameter is not set: ")
+                    .append(arg.name)
+                    .append("\")\n");
         }
 
         sb.append("\n");
@@ -449,7 +469,7 @@ public class GenerateFigureAPI2 {
         //todo remove plot filter
         final Set<String> filter = new HashSet<>();
         filter.add("plot");
-//        filter.add("catPlot");
+        filter.add("catPlot");
 
         for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();

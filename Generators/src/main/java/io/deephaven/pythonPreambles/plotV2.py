@@ -70,7 +70,7 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
     elif isinstance(obj, JObjectWrapper):
         return obj.j_object
     elif isinstance(obj, List):
-        #TODO: support lists
+        #TODO: support lists ... subscripts are available via types
         raise DHError(f"Lists are not yet supported")
     elif isinstance(obj, Callable):
         #TODO: support callables
