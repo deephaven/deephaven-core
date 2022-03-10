@@ -14,9 +14,7 @@ from deephaven2.table import Table
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JDynamicTableWriter = jpy.get_type(
-    "io.deephaven.engine.table.impl.util.DynamicTableWriter"
-)
+_JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
 
 
 def empty_table(size: int) -> Table:
@@ -113,9 +111,7 @@ def merge_sorted(tables: List[Table], order_by: str) -> Table:
         DHError
     """
     try:
-        return Table(
-            j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables])
-        )
+        return Table(j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables]))
     except Exception as e:
         raise DHError(e, "merge sorted operation failed.") from e
 
@@ -140,9 +136,7 @@ class DynamicTableWriter(JObjectWrapper):
         col_names = list(col_defs.keys())
         col_dtypes = list(col_defs.values())
         try:
-            self._j_table_writer = _JDynamicTableWriter(
-                col_names, [t.qst_type for t in col_dtypes]
-            )
+            self._j_table_writer = _JDynamicTableWriter(col_names, [t.qst_type for t in col_dtypes])
             self.table = Table(j_table=self._j_table_writer.getTable())
         except Exception as e:
             raise DHError(e, "failed to create a DynamicTableWriter.") from e

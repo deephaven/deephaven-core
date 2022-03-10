@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" Tools for resolving URIs into objects including Tables. """
+""" Tools for resolving Uniform Resource Identifiers (URIs) into objects. """
 
 import inspect
 from typing import Any, Union
@@ -15,6 +15,7 @@ _JResolveTools = jpy.get_type("io.deephaven.uri.ResolveTools")
 
 
 def _is_direct_initialisable(cls):
+    """ Returns whether a wrapper class instance can be initialized with a Java object. """
     funcs = inspect.getmembers(cls, inspect.isfunction)
     init_funcs = [func for name, func in funcs if name == "__init__"]
     if init_funcs:
@@ -29,19 +30,14 @@ def _is_direct_initialisable(cls):
 
 
 def _find_deephaven_wrappers():
-    """Returns a set of Python classes that wrap the Deephaven Java ones and must be
-    directly initialisable."""
+    """Returns a set of directly initializable Python classes that wrap the Deephaven Java classes."""
     import deephaven2
 
     modules = inspect.getmembers(deephaven2, inspect.ismodule)
     wrapper_cls_set = set()
     for _, m in modules:
         classes = inspect.getmembers(m, inspect.isclass)
-        wrappers = [
-            cls
-            for _, cls in classes
-            if issubclass(cls, JObjectWrapper) and cls is not JObjectWrapper
-        ]
+        wrappers = [cls for _, cls in classes if issubclass(cls, JObjectWrapper) and cls is not JObjectWrapper]
         wrapper_cls_set.update(wrappers)
 
     return {wc for wc in wrapper_cls_set if _is_direct_initialisable(wc)}
@@ -51,6 +47,7 @@ _wrapped_cls_dict = {wc.j_object_type: wc for wc in _find_deephaven_wrappers()}
 
 
 def _lookup_wrapped_class(j_obj: jpy.JType) -> Any:
+    """ Returns the wrapper class for the specified Java object. """
     for j_clz, wc in _wrapped_cls_dict.items():
         if j_clz.jclass.isInstance(j_obj):
             return wc
@@ -59,6 +56,7 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Any:
 
 
 def _wrap_resolved_object(j_obj: jpy.JType) -> Any:
+    """ Wraps the specified Java object as an instance of a predefined wrapper class. """
     if j_obj is None:
         return None
 
@@ -68,12 +66,12 @@ def _wrap_resolved_object(j_obj: jpy.JType) -> Any:
 
 
 def resolve(uri: str) -> Union[jpy.JType, JObjectWrapper]:
-    """Resolves the uri string into a Java object. If the Java object can be wrapped with a custom Python wrapper
-    such as Table, this function returns an instance of the wrapper class.
+    """Resolves a URI string into an object. Objects with custom Python wrappers, like Table, return an instance of
+    the wrapper class; otherwise, the raw Java object is returned.
 
 
     Args:
-        uri (str): a uri string
+        uri (str): a URI string
 
     Returns:
         an object
@@ -84,4 +82,4 @@ def resolve(uri: str) -> Union[jpy.JType, JObjectWrapper]:
     try:
         return _wrap_resolved_object(_JResolveTools.resolve(uri))
     except Exception as e:
-        raise DHError(e, "failed to resolve the uri.") from e
+        raise DHError(e, "failed to resolve the URI.") from e

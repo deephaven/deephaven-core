@@ -82,9 +82,7 @@ def produce(
             try:
                 runnable.run()
             except Exception as ex:
-                raise DHError(
-                    ex, "failed to stop publishing to Kafka and the clean-up."
-                ) from ex
+                raise DHError(ex, "failed to stop publishing to Kafka and the clean-up.") from ex
 
         return cleanup
     except Exception as e:

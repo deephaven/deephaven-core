@@ -23,7 +23,7 @@ _ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
 
 class TableType(Enum):
-    """A Enum that defines the supported Table Type for consuming Kafka."""
+    """An Enum that defines the supported Table Type for consuming Kafka."""
 
     Stream = _JTableType.Stream
     """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
@@ -156,9 +156,7 @@ def consume(
         value_spec = KeyValueSpec.FROM_PROPERTIES if value_spec is None else value_spec
 
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
-            raise ValueError(
-                "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE"
-            )
+            raise ValueError("at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
         kafka_config = j_properties(kafka_config)
         return Table(
