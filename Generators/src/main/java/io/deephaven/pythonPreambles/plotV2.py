@@ -5,8 +5,7 @@
 #TODO: document
 
 from __future__ import annotations
-from typing import Union
-from typing import Tuple, List, Callable
+from typing import Union, Tuple, List, Callable, _GenericAlias
 import numbers
 import jpy
 
@@ -26,28 +25,32 @@ class SelectableDataSet:
         return self.j_sds
 
 
-def _assert_type(name: str, obj: Any, types: Tuple) -> None:
+def _assert_type(name: str, obj: Any, types: List) -> None:
     """Assert that the input object is of the proper type.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (Tuple): tuple of acceptable types for the object
+        types (List): acceptable types for the object
 
     Raises:
         DHError
     """
-    if not isinstance(obj, types):
-        raise DHError(f"Improper input type: name={name} type={type(obj)} supported={[t.__name__ for t in types]}")
+
+    types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t  for t in types))
+
+    if not isinstance(obj, types_no_subscript):
+        supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
+        raise DHError(f"Improper input type: name={name} type={type(obj)} supported={supported}")
 
 
-def _convert_j(name: str, obj: Any, types: Tuple) -> Any:
+def _convert_j(name: str, obj: Any, types: List) -> Any:
     """Convert the input object into a Java object that can be used for plotting.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (Tuple): tuple of acceptable types for the object
+        types (List): acceptable types for the object
 
     Raises:
         DHError
