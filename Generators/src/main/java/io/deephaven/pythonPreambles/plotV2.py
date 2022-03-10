@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 from typing import Union
-from typing import List, Callable
+from typing import Tuple, List, Callable
 import numbers
 import jpy
 
@@ -26,19 +26,39 @@ class SelectableDataSet:
         return self.j_sds
 
 
-def _convert_j(name:str, obj:Any) -> Any:
-    """Convert the input object into a Java object that can be used for plotting.
+def _assert_type(name: str, obj: Any, types: Tuple) -> None:
+    """Assert that the input object is of the proper type.
 
     Args:
-        name (str): name of the variable being converted
+        name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
+        types (Tuple): tuple of acceptable types for the object
 
     Raises:
         DHError
     """
+    if not isinstance(obj, types):
+        raise DHError(f"Improper input type: name={name} type={type(obj)} supported={[t.__name__ for t in types]}")
+
+
+def _convert_j(name: str, obj: Any, types: Tuple) -> Any:
+    """Convert the input object into a Java object that can be used for plotting.
+
+    Args:
+        name (str): name of the variable being converted to Java
+        obj (Any): object being converted to Java
+        types (Tuple): tuple of acceptable types for the object
+
+    Raises:
+        DHError
+    """
+
     if obj is None:
         return None
-    elif isinstance(variable, numbers.Number):
+
+    _assert_type(name, obj, types)
+
+    if isinstance(variable, numbers.Number):
         return obj
     elif isinstance(obj, str):
         return obj
@@ -53,7 +73,7 @@ def _convert_j(name:str, obj:Any) -> Any:
         #TODO: support callables
         raise DHError(f"Callables are not yet supported")
     else:
-        raise DHError(f"Unsupported object type: name={name} type={type(obj)}")
+        raise DHError(f"Unsupported input type: name={name} type={type(obj)}")
 
 
 class Figure(JObjectWrapper):

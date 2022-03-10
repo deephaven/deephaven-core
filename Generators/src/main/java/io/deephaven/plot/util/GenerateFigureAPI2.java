@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GenerateFigureAPI2 {
 
@@ -81,20 +82,55 @@ public class GenerateFigureAPI2 {
     }
 
     /**
+     * A Python type annotation.
+     */
+    private static class PyTypeAnnotation {
+        private final String name;
+        private final String[] specializations;
+
+        public PyTypeAnnotation(String name, String... specializations) {
+            this.name = name;
+            this.specializations = specializations;
+        }
+
+        @Override
+        public String toString() {
+            return "PyTypeAnnotation{" +
+                    "name='" + name + '\'' +
+                    ", specializations=" + Arrays.toString(specializations) +
+                    '}';
+        }
+
+        public List<String> annotations() {
+            final ArrayList<String> rst = new ArrayList<>();
+
+            if(specializations.length == 0){
+                rst.add(name);
+            } else {
+                for (String s : specializations) {
+                    rst.add(name + "[" + s + "]");
+                }
+            }
+
+            return rst;
+        }
+    }
+
+    /**
      * A Python input parameter.
      */
     private static class PyParameter {
         private final int precedence;
         private final String name;
-        private final String typeAnnotation;
+        private final PyTypeAnnotation[] typeAnnotations;
         private final boolean required;
         private final String docString;
         private final String javaConverter;
 
-        public PyParameter(final int precedence, final String name, final String typeAnnotation, final boolean required, final String docString, final String javaConverter) {
+        public PyParameter(final int precedence, final String name, final PyTypeAnnotation[] typeAnnotations, final boolean required, final String docString, final String javaConverter) {
             this.precedence = precedence;
             this.name = name;
-            this.typeAnnotation = typeAnnotation;
+            this.typeAnnotations = typeAnnotations;
             this.required = required;
             this.docString = docString;
             this.javaConverter = javaConverter;
@@ -105,12 +141,39 @@ public class GenerateFigureAPI2 {
             return "PyParameter{" +
                     "precedence=" + precedence +
                     ", name='" + name + '\'' +
-                    ", typeAnnotation='" + typeAnnotation + '\'' +
+                    ", typeAnnotations='" + Arrays.toString(typeAnnotations) + '\'' +
                     ", required=" + required +
                     ", docString='" + docString + '\'' +
                     ", javaConverter='" + javaConverter + '\'' +
                     '}';
         }
+
+        /**
+         * Returns the type annotation string.
+         *
+         * @return type annotation string
+         */
+        public String typeAnnotation() {
+            final List<String> annotations = Arrays.stream(typeAnnotations)
+                    .flatMap(ta -> ta.annotations().stream())
+                    .collect(Collectors.toList());
+
+            return annotations.size() == 1 ? annotations.get(0) : "Union[" + String.join(",", annotations) + "]";
+        }
+
+        /**
+         * Returns the type assertion tuple string.
+         *
+         * @return type assertion tuple string
+         */
+        public String typeAssertion() {
+            final List<String> types = Arrays.stream(typeAnnotations)
+                    .map(ta -> ta.name)
+                    .collect(Collectors.toList());
+
+            return "(" + String.join(",", types) + ")";
+        }
+
     }
 
     /**
@@ -128,13 +191,13 @@ public class GenerateFigureAPI2 {
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
-        rst.put("seriesName", new PyParameter(1, "series_name", "str", true, "name of the created dataset", null));
-        rst.put("t", new PyParameter(2, "t", "Union[Table,SelectableDataSet]", false, "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("x", new PyParameter(3, "x", "Union[str,List[int],List[float],List[DateTime]]", false, "x-values or column name", null));
-        rst.put("y", new PyParameter(4, "y", "Union[str,List[int],List[float],List[DateTime]]", false, "y-values or column name", null));
-        rst.put("function", new PyParameter(5, "function", "Callable", false, "function to plot", null));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", "bool", false, "whether to treat the x-values as time data", null)); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", "bool", false, "whether to treat the y-values as time data", null)); //todo needed?
+        rst.put("seriesName", new PyParameter(1, "series_name", new PyTypeAnnotation[]{new PyTypeAnnotation("str")}, true, "name of the created dataset", null));
+        rst.put("t", new PyParameter(2, "t", new PyTypeAnnotation[]{new PyTypeAnnotation("Table"), new PyTypeAnnotation("SelectableDataSet")}, false, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyParameter(3, "x", new PyTypeAnnotation[]{new PyTypeAnnotation("str"), new PyTypeAnnotation("List", "int", "float", "DateTime")}, false, "x-values or column name", null));
+        rst.put("y", new PyParameter(4, "y", new PyTypeAnnotation[]{new PyTypeAnnotation("str"), new PyTypeAnnotation("List", "int", "float", "DateTime")}, false, "y-values or column name", null));
+        rst.put("function", new PyParameter(5, "function", new PyTypeAnnotation[]{new PyTypeAnnotation("Callable")}, false, "function to plot", null));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", new PyTypeAnnotation[]{new PyTypeAnnotation("bool")}, false, "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", new PyTypeAnnotation[]{new PyTypeAnnotation("bool")}, false, "whether to treat the y-values as time data", null)); //todo needed?
 
         //
 
@@ -257,7 +320,7 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append(INDENT).append("self,\n");
 
         for (final PyParameter arg : args) {
-            sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation);
+            sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
 
             if (!arg.required) {
                 sb.append(" = None");
@@ -279,7 +342,7 @@ public class GenerateFigureAPI2 {
         sb.append(INDENT).append(INDENT).append("Args:\n");
 
         for (final PyParameter arg : args) {
-            sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation).append("): ").append(arg.docString).append("\n");
+            sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation()).append("): ").append(arg.docString).append("\n");
         }
 
         sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
@@ -354,6 +417,8 @@ public class GenerateFigureAPI2 {
                     .append(arg.name)
                     .append("\",")
                     .append(arg.name)
+                    .append(",")
+                    .append(arg.typeAssertion())
                     .append(")\n");
         }
 
