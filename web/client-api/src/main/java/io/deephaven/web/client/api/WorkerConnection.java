@@ -945,9 +945,9 @@ public class WorkerConnection {
             // table's creation, which can race this
             BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                     headers -> flightServiceClient.doPut(headers),
-                    (firstPayload, headers) -> browserFlightServiceClient.openDoPut(firstPayload, headers),
-                    (nextPayload, headers, callback) -> browserFlightServiceClient.nextDoPut(nextPayload, headers,
-                            callback::apply));
+                    (first, headers) -> browserFlightServiceClient.openDoPut(first, headers),
+                    (next, headers, callback) -> browserFlightServiceClient.nextDoPut(next, headers, callback::apply),
+                    new FlightData());
             stream.send(schemaMessage);
 
             stream.onEnd(status -> {
@@ -1300,9 +1300,9 @@ public class WorkerConnection {
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),
-                        (firstPayload, headers) -> browserFlightServiceClient.openDoExchange(firstPayload, headers),
-                        (nextPayload, headers, c) -> browserFlightServiceClient.nextDoExchange(nextPayload, headers,
-                                c::apply));
+                        (first, headers) -> browserFlightServiceClient.openDoExchange(first, headers),
+                        (next, headers, c) -> browserFlightServiceClient.nextDoExchange(next, headers, c::apply),
+                        new FlightData());
 
                 stream.send(request);
                 stream.onData(new JsConsumer<FlightData>() {
