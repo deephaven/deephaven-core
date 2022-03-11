@@ -17,6 +17,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -36,6 +37,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.Drainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
@@ -62,9 +64,12 @@ import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerato
 public class BarrageStreamGenerator implements
         BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
+    // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
+    // to receive multiple record batches we crank this up to MAX_INT.
+    private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
 
     public interface View {
-
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
 
         boolean isViewport();
@@ -72,6 +77,10 @@ public class BarrageStreamGenerator implements
         StreamReaderOptions options();
 
         RowSet keyspaceViewport();
+
+        RowSet addRowOffsets();
+
+        RowSet modRowOffsets(int col);
     }
 
     @Singleton
@@ -231,8 +240,10 @@ public class BarrageStreamGenerator implements
         public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
-        public final boolean hasAddBatch;
-        public final boolean hasModBatch;
+        public final long numAddBatches;
+        public final long numModBatches;
+        public final RowSet addRowOffsets;
+        public final RowSet[] modRowOffsets;
 
         public SubView(final BarrageStreamGenerator generator,
                 final BarrageSubscriptionOptions options,
@@ -248,35 +259,108 @@ public class BarrageStreamGenerator implements
             this.reverseViewport = reverseViewport;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
-            this.hasModBatch = generator.doesSubViewHaveMods(this);
-            // require an add batch if the mod batch is being skipped
-            this.hasAddBatch = !this.hasModBatch || generator.rowsIncluded.original.isNonempty();
+
+            final int batchSize = batchSize();
+
+            if (keyspaceViewport != null) {
+                this.modRowOffsets = new WritableRowSet[generator.modColumnData.length];
+            } else {
+                this.modRowOffsets = null;
+            }
+
+            // precompute the modified column indexes, and calculate total rows needed
+            long numModRows = 0;
+            for (int ii = 0; ii < generator.modColumnData.length; ++ii) {
+                final ModColumnData mcd = generator.modColumnData[ii];
+
+                if (keyspaceViewport != null) {
+                    try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
+                        this.modRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
+                        numModRows = Math.max(numModRows, intersect.size());
+                    }
+                } else {
+                    numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
+                }
+            }
+            numModBatches = (numModRows + batchSize - 1) / batchSize;
+
+            // precompute add row offsets
+            if (keyspaceViewport != null) {
+                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
+                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
+                }
+            } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
+                // there are scoped rows included in the chunks that need to be removed
+                addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
+            } else {
+                addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
+            }
+
+            // require an add batch if there are no mod batches
+            final long needsAddBatch = this.numModBatches == 0 ? 1 : 0;
+            numAddBatches = Math.max(needsAddBatch, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
-            if (hasAddBatch) {
-                visitor.accept(generator.getInputStream(this, metadata, generator::appendAddColumns));
+            long offset = 0;
+            final long batchSize = batchSize();
+            for (long ii = 0; ii < numAddBatches; ++ii) {
+                visitor.accept(generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
+                offset += batchSize;
                 metadata = null;
             }
-            if (hasModBatch) {
-                visitor.accept(generator.getInputStream(this, metadata, generator::appendModColumns));
+            offset = 0;
+            for (long ii = 0; ii < numModBatches; ++ii) {
+                visitor.accept(generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendModColumns));
+                offset += batchSize;
+                metadata = null;
+            }
+
+            // clean up the helper indexes
+            addRowOffsets.close();
+            if (modRowOffsets != null) {
+                for (final RowSet modViewport : modRowOffsets) {
+                    modViewport.close();
+                }
             }
         }
 
-        public boolean isViewport() {
-            return this.viewport != null;
+        private int batchSize() {
+            int batchSize = options().batchSize();
+            if (batchSize <= 0) {
+                batchSize = DEFAULT_BATCH_SIZE;
+            }
+            return batchSize;
         }
 
-        public final StreamReaderOptions options() {
+        @Override
+        public boolean isViewport() {
+            return viewport != null;
+        }
+
+        @Override
+        public StreamReaderOptions options() {
             return options;
         }
 
-        public final RowSet keyspaceViewport() {
-            return this.keyspaceViewport;
-        };
+        @Override
+        public RowSet keyspaceViewport() {
+            return keyspaceViewport;
+        }
 
+        @Override
+        public RowSet addRowOffsets() {
+            return addRowOffsets;
+        }
+
+        @Override
+        public RowSet modRowOffsets(int col) {
+            return modRowOffsets[col];
+        }
     }
 
     /**
@@ -316,7 +400,8 @@ public class BarrageStreamGenerator implements
         public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
-        public final boolean hasAddBatch;
+        public final long numAddBatches;
+        public final RowSet addRowOffsets;
 
         public SnapshotView(final BarrageStreamGenerator generator,
                 final BarrageSnapshotOptions options,
@@ -331,27 +416,67 @@ public class BarrageStreamGenerator implements
 
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
-            this.hasAddBatch = generator.rowsIncluded.original.isNonempty();
+
+            final int batchSize = batchSize();
+
+            // precompute add row offsets
+            if (keyspaceViewport != null) {
+                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
+                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
+                }
+            } else {
+                addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
+            }
+
+            // require a batch to at least send the metadata
+            numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
-            if (hasAddBatch) {
-                visitor.accept(generator.getInputStream(this, null, generator::appendAddColumns));
+            long offset = 0;
+            final long batchSize = batchSize();
+            for (long ii = 0; ii < numAddBatches; ++ii) {
+                visitor.accept(generator.getInputStream(
+                        this, offset, offset + batchSize, null, generator::appendAddColumns));
+                offset += batchSize;
             }
+
+            addRowOffsets.close();
         }
 
+        private int batchSize() {
+            int batchSize = options().batchSize();
+            if (batchSize <= 0) {
+                batchSize = DEFAULT_BATCH_SIZE;
+            }
+            return batchSize;
+        }
+
+        @Override
         public boolean isViewport() {
-            return this.viewport != null;
+            return viewport != null;
         }
 
+        @Override
         public final StreamReaderOptions options() {
             return options;
         }
 
+        @Override
         public final RowSet keyspaceViewport() {
-            return this.keyspaceViewport;
-        };
+            return keyspaceViewport;
+        }
+
+        @Override
+        public RowSet addRowOffsets() {
+            return addRowOffsets;
+        }
+
+        @Override
+        public RowSet modRowOffsets(int col) {
+            throw new UnsupportedOperationException("asked for mod row on SnapshotView");
+        }
     }
 
     public static class SchemaView implements View {
@@ -383,11 +508,21 @@ public class BarrageStreamGenerator implements
         public RowSet keyspaceViewport() {
             return null;
         }
+
+        @Override
+        public RowSet addRowOffsets() {
+            return null;
+        }
+
+        @Override
+        public RowSet modRowOffsets(int col) {
+            return null;
+        }
     }
 
     @FunctionalInterface
     private interface ColumnVisitor {
-        long visit(final View view,
+        long visit(final View view, final long startRange, final long endRange,
                 final Consumer<InputStream> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
@@ -397,12 +532,14 @@ public class BarrageStreamGenerator implements
      * Returns an InputStream of the message filtered to the viewport.
      *
      * @param view the view of the overall chunk to generate a RecordBatch for
+     * @param startRange the start of the batch in position space w.r.t. the view (inclusive)
+     * @param endRange the end of the batch in position space w.r.t. the view (exclusive)
      * @param metadata the optional flight data metadata to attach to the message
      * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final View view, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
-            throws IOException {
+    private InputStream getInputStream(final View view, final long startRange, final long endRange,
+            final ByteBuffer metadata, final ColumnVisitor columnVisitor) throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
 
@@ -454,7 +591,7 @@ public class BarrageStreamGenerator implements
                 bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
                 bufferInfos.get().add(length);
             };
-            numRows = columnVisitor.visit(view, addStream, fieldNodeListener, bufferListener);
+            numRows = columnVisitor.visit(view, startRange, endRange, addStream, fieldNodeListener, bufferListener);
 
             final WritableChunk<Values> noChunk = nodeOffsets.get();
             RecordBatch.startNodesVector(header, noChunk.size());
@@ -519,27 +656,13 @@ public class BarrageStreamGenerator implements
         return builder.endVector();
     }
 
-    private long appendAddColumns(final View view,
+    private long appendAddColumns(final View view, final long startRange, final long endRange,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
 
         // Added Chunk Data:
-        RowSet myAddedOffsets = null;
-        try {
-            if (view.isViewport()) {
-                // only include added rows that are within the viewport
-                try (WritableRowSet intersect = view.keyspaceViewport().intersect(rowsIncluded.original)) {
-                    myAddedOffsets = rowsIncluded.original.invert(intersect);
-                }
-            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-                // there are scoped rows included in the chunks that need to be removed
-                myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
-            } else {
-                // use chunk data as-is
-                myAddedOffsets = null;
-            }
-
+        try (final RowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
             // add the add-column streams
             for (final ChunkInputStreamGenerator col : addColumnData) {
                 final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
@@ -550,34 +673,35 @@ public class BarrageStreamGenerator implements
                 // Add the drainable last as it is allowed to immediately close a row set the visitors need
                 addStream.accept(drainableColumn);
             }
-            return myAddedOffsets != null ? myAddedOffsets.size() : rowsAdded.original.size();
-        } finally {
-            if (myAddedOffsets != null) {
-                myAddedOffsets.close();
-            }
+            return myAddedOffsets.size();
         }
     }
 
-    private long appendModColumns(final View view,
+    private long appendModColumns(final View view, final long startRange, final long endRange,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
-        for (final ModColumnData mcd : modColumnData) {
-            RowSet myModOffsets = null;// needs to be closed, if non-null
-            try {
-                if (view.isViewport()) {
-                    // only include modified rows that are within the viewport
-                    try (WritableRowSet intersect = view.keyspaceViewport().intersect(mcd.rowsModified.original)) {
-                        myModOffsets =
-                                mcd.rowsModified.original.invert(intersect);
-                    }
-                    numRows = Math.max(numRows, myModOffsets.size());
-                } else {
-                    numRows = Math.max(numRows, mcd.rowsModified.original.size());
-                }
+        for (int ii = 0; ii < modColumnData.length; ++ii) {
+            final ModColumnData mcd = modColumnData[ii];
 
+            final RowSet myModOffsets;
+            if (view.isViewport()) {
+                // only include modified rows that are within the viewport
+                myModOffsets = view.modRowOffsets(ii).subSetByPositionRange(startRange, endRange);
+            } else {
+                final long lastKey = Math.min(endRange - 1, mcd.rowsModified.original.size() - 1);
+                if (lastKey < startRange) {
+                    // not all mod columns have the same length
+                    myModOffsets = RowSetFactory.empty();
+                } else {
+                    myModOffsets = RowSetFactory.fromRange(startRange, lastKey);
+                }
+            }
+            numRows = Math.max(numRows, myModOffsets.size());
+
+            try {
                 final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                         mcd.data.getInputStream(view.options(), myModOffsets);
 
@@ -587,29 +711,10 @@ public class BarrageStreamGenerator implements
                 // See comment in appendAddColumns
                 addStream.accept(drainableColumn);
             } finally {
-                if (myModOffsets != null) {
-                    myModOffsets.close();
-                }
+                myModOffsets.close();
             }
         }
         return numRows;
-    }
-
-    private boolean doesSubViewHaveMods(final SubView view) {
-        for (final ModColumnData mcd : modColumnData) {
-            RowSet myModOffsets = null;
-            if (view.isViewport()) {
-                // only include added rows that are within the viewport
-                if (view.keyspaceViewport.overlaps(mcd.rowsModified.original)) {
-                    return true;
-                }
-            } else {
-                if (mcd.rowsModified.original.isNonempty()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private ByteBuffer getSubscriptionMetadata(final SubView view) throws IOException {
@@ -664,8 +769,10 @@ public class BarrageStreamGenerator implements
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, view.hasAddBatch ? 1 : 0);
-        BarrageUpdateMetadata.addNumModBatches(metadata, view.hasModBatch ? 1 : 0);
+        BarrageUpdateMetadata.addNumAddBatches(metadata,
+                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
+        BarrageUpdateMetadata.addNumModBatches(metadata,
+                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numModBatches));
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);

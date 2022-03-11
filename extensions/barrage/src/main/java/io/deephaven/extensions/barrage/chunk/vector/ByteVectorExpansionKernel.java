@@ -59,27 +59,38 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel {
 
     @Override
     public <A extends Any> WritableObjectChunk<Vector<?>, A> contract(
-            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest) {
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
+            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
         if (perElementLengthDest.size() == 0) {
-            return WritableObjectChunk.makeWritableChunk(0);
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        final int itemsInBatch = perElementLengthDest.size() - 1;
         final ByteChunk<A> typedSource = source.asByteChunk();
-        final WritableObjectChunk<Vector<?>, A> result =
-                WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
+        final WritableObjectChunk<Vector<?>, A> result;
+        if (outChunk != null) {
+            result = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(itemsInBatch, totalRows);
+            result = WritableObjectChunk.makeWritableChunk(numRows);
+            result.setSize(numRows);
+        }
 
         int lenRead = 0;
-        for (int i = 0; i < result.size(); ++i) {
+        for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(i, ZERO_LEN_VECTOR);
+                result.set(outOffset + i, ZERO_LEN_VECTOR);
             } else {
                 final byte[] row = new byte[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }
                 lenRead += ROW_LEN;
-                result.set(i, new ByteVectorDirect(row));
+                result.set(outOffset + i, new ByteVectorDirect(row));
             }
         }
 

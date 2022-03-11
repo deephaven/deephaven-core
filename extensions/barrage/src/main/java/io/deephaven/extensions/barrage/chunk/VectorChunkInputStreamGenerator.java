@@ -231,13 +231,16 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         }
     }
 
-    static ObjectChunk<Vector<?>, Values> extractChunkFromInputStream(
+    static WritableObjectChunk<Vector<?>, Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
             final Class<Vector<?>> type,
             final Class<?> inComponentType,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.next();
@@ -247,9 +250,13 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         final ChunkType chunkType = ChunkType.fromElementType(componentType);
 
         if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> ignored = (WritableChunk<Values>)ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is)) {
-                return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+            try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
+                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is,
+                    null, 0, 0)) {
+                if (outChunk != null) {
+                    return outChunk.asWritableObjectChunk();
+                }
+                return WritableObjectChunk.makeWritableChunk(totalRows);
             }
         }
 
@@ -285,9 +292,10 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             final VectorExpansionKernel kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
-            try (final WritableChunk<Values> inner = (WritableChunk<Values>)ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is)) {
-                chunk = kernel.contract(inner, offsets);
+            try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
+                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter, is,
+                    null, 0, 0)) {
+                chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 
                 long nextValid = 0;
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
@@ -295,14 +303,13 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                         nextValid = isValid.get(ii / 64);
                     }
                     if ((nextValid & 0x1) == 0x0) {
-                        chunk.set(ii, null);
+                        chunk.set(outOffset + ii, null);
                     }
                     nextValid >>= 1;
                 }
             }
         }
 
-        chunk.setSize(nodeInfo.numElements);
         return chunk;
     }
 }

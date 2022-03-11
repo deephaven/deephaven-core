@@ -15,6 +15,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -77,10 +78,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class, "debug", false);
-    // NB: It's probably best for this to default to a poolable chunk size. See
-    // ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY.
     private static final int DELTA_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "deltaChunkSize", 1 << 16);
+            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "deltaChunkSize",
+                    1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 

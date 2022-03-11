@@ -9,10 +9,11 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -23,6 +24,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -57,7 +59,6 @@ import java.util.Iterator;
 import java.util.Queue;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
-import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SNAPSHOT_DESER_OPTIONS;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -173,7 +174,7 @@ public class ArrowFlightUtil {
                     try {
                         acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
                                 columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                bufferInfoIter, mi.inputStream);
+                                bufferInfoIter, mi.inputStream, null, 0, 0);
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
                     }
@@ -303,7 +304,8 @@ public class ArrowFlightUtil {
 
         private final TicketRouter ticketRouter;
         private final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory;
-        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter;
+        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
+        private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
 
         /**
          * Interface for the individual handlers for the DoExchange.
@@ -319,13 +321,15 @@ public class ArrowFlightUtil {
                 final TicketRouter ticketRouter,
                 final BarrageMessageProducer.Operation.Factory<BarrageStreamGenerator.View> operationFactory,
                 final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
-                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> optionsAdapter,
+                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
+                final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
 
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";
             this.ticketRouter = ticketRouter;
             this.operationFactory = operationFactory;
-            this.optionsAdapter = optionsAdapter;
+            this.subscriptionOptAdapter = subscriptionOptAdapter;
+            this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
             this.listener = listenerAdapter.adapt(responseObserver);
 
@@ -531,7 +535,7 @@ public class ArrowFlightUtil {
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                                                         : null) {
                                     listener.onNext(
-                                            bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS, viewport,
+                                            bsg.getSnapshotView(snapshotOptAdapter.adapt(snapshotRequest), viewport,
                                                     reverseViewport, keySpaceViewport, columns));
                                 }
 
@@ -653,7 +657,7 @@ public class ArrowFlightUtil {
 
                 final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
-                bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport,
+                bmp.addSubscription(listener, subscriptionOptAdapter.adapt(subscriptionRequest), columns, viewport,
                         reverseViewport);
 
                 for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
