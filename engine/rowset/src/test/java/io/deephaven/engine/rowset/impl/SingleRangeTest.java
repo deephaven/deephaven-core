@@ -462,4 +462,14 @@ public class SingleRangeTest {
         assertTrue(valid);
         assertEquals(1000, rsIt.peekNextKey());
     }
+
+    @Test
+    public void testSaturation() {
+        final long first = 1073741821;
+        final long last = first + 6;
+        final SingleRange sr = SingleRange.make(first, last);
+        final OrderedLongSet res = sr.ixSubindexByPosOnNew(5, Long.MAX_VALUE);
+        assertEquals(last - 1, res.ixFirstKey());
+        assertEquals(last, res.ixLastKey());
+    }
 }
