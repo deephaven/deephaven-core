@@ -532,13 +532,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateSubscription(final StreamObserver<MessageView> listener,
-              final RowSet newViewport, final BitSet columnsToSubscribe) {
+            final RowSet newViewport, final BitSet columnsToSubscribe) {
         // assume forward viewport when not specified
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
     public boolean updateSubscription(final StreamObserver<MessageView> listener, final RowSet newViewport,
-              final BitSet columnsToSubscribe, final boolean newReverseViewport) {
+            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
