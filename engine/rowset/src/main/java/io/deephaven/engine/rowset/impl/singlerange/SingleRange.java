@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import static io.deephaven.util.SaturationArithmetic.addSaturated;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -203,6 +202,14 @@ public abstract class SingleRange implements OrderedLongSet {
             return make(rangeStart(), key - 1);
         }
         return OrderedLongSet.twoRanges(rangeStart(), key - 1, key + 1, rangeEnd());
+    }
+
+    private static long addSaturated(final long x, final long y) {
+        final long res = x + y;
+        if (res < x) {
+            return Long.MAX_VALUE;
+        }
+        return res;
     }
 
     @Override
