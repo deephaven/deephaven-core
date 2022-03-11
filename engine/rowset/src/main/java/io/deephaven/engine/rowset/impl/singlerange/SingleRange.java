@@ -228,7 +228,7 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixCowRef();
         }
         return make(
-                addSaturated(rangeStart(), startPos),
+                rangeStart() + startPos,  // cannot overflow given previous checks: startPos < cardinality
                 Math.min(addSaturated(rangeStart(), endPos), rangeEnd()));
     }
 
