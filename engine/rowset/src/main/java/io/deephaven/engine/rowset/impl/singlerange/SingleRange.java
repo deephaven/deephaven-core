@@ -205,8 +205,9 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     private static long addSaturated(final long x, final long y) {
+        // we know x >= 0, y >= 0.
         final long res = x + y;
-        if (res < x) {
+        if (res < 0) {
             return Long.MAX_VALUE;
         }
         return res;
@@ -227,7 +228,7 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixCowRef();
         }
         return make(
-                Math.max(addSaturated(rangeStart(), startPos), rangeStart()),
+                addSaturated(rangeStart(), startPos),
                 Math.min(addSaturated(rangeStart(), endPos), rangeEnd()));
     }
 
