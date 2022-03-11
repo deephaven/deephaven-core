@@ -537,7 +537,7 @@ public interface Table extends
      * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
      * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
      * <p>
-     * If the firstPosition is nega tive and the lastPosition is negative, they are both counted from the end of the
+     * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
      *
      * @param firstPositionInclusive the first position to include in the result
