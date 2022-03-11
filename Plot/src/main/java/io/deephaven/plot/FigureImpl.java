@@ -1628,9 +1628,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table counts ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, counts);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t);
         return make(series);
     }
 
@@ -1676,69 +1676,69 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, columnName, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, x, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, columnName, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, x, nbins);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, T0[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, T0[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, double[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, double[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, float[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, float[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, int[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, int[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, long[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, long[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, short[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, short[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, columnName, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, columnName, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, x, xmin, xmax, nbins);
         return make(series);
     }
 
@@ -1787,6 +1787,12 @@ public class FigureImpl implements io.deephaven.plot.Figure {
     @Override public  FigureImpl log( ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxisImpl axis = (AxisImpl) axis(fc).log();
+        return make(null, axis);
+    }
+
+    @Override public  FigureImpl log( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxisImpl axis = (AxisImpl) axis(fc).log( useLog);
         return make(null, axis);
     }
 

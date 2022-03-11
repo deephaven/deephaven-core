@@ -444,6 +444,12 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
+    public Axis log(final boolean useLog) {
+        this.log = useLog;
+        return this;
+    }
+
+    @Override
     public AxisImpl businessTime(final BusinessCalendar calendar) {
         return transform(new AxisTransformBusinessCalendar(calendar));
     }

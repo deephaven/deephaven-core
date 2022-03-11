@@ -127,6 +127,14 @@ public interface Axis extends Serializable {
     Axis log();
 
     /**
+     * Sets the AxisTransform as log base 10.
+     *
+     * @param useLog true to use a log axis transform; false to use a linear axis transform.
+     * @return this Axis
+     */
+    Axis log(final boolean useLog);
+
+    /**
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param calendar business calendar of the {@link AxisTransformBusinessCalendar}

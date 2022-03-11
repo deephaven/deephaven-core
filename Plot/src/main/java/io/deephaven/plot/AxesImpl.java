@@ -1461,14 +1461,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     // region Histogram Plots
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table counts) {
-        ArgumentValidations.assertColumnsInTable(counts, new PlotInfo(this, seriesName), BIN_MIN, BIN_MID, BIN_MAX,
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t) {
+        ArgumentValidations.assertColumnsInTable(t, new PlotInfo(this, seriesName), BIN_MIN, BIN_MID, BIN_MAX,
                 COUNT);
         configureXYPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
 
-        final TableHandle h = new TableHandle(counts, BIN_MIN, BIN_MID, BIN_MAX, COUNT);
+        final TableHandle h = new TableHandle(t, BIN_MIN, BIN_MID, BIN_MAX, COUNT);
         final IndexableNumericData startX = new IndexableNumericDataTable(h, BIN_MIN, new PlotInfo(this, seriesName));
         final IndexableNumericData midX = new IndexableNumericDataTable(h, BIN_MID, new PlotInfo(this, seriesName));
         final IndexableNumericData endX = new IndexableNumericDataTable(h, BIN_MAX, new PlotInfo(this, seriesName));
@@ -1482,41 +1482,41 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName,
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String x,
             final int nbins) {
-        ArgumentValidations.assertIsNumeric(t, columnName,
-                "Histogram can not be computed on non-numeric column: " + columnName, new PlotInfo(this, seriesName));
-        return histPlot(seriesName, HistogramCalculator.calc(t, columnName, nbins, new PlotInfo(this, seriesName)));
+        ArgumentValidations.assertIsNumeric(t, x,
+                "Histogram can not be computed on non-numeric column: " + x, new PlotInfo(this, seriesName));
+        return histPlot(seriesName, HistogramCalculator.calc(t, x, nbins, new PlotInfo(this, seriesName)));
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName,
-            final double rangeMin, final double rangeMax, final int nbins) {
-        ArgumentValidations.assertIsNumeric(t, columnName,
-                "Histogram can not be computed on non-numeric column: " + columnName, new PlotInfo(this, seriesName));
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String x,
+            final double xmin, final double xmax, final int nbins) {
+        ArgumentValidations.assertIsNumeric(t, x,
+                "Histogram can not be computed on non-numeric column: " + x, new PlotInfo(this, seriesName));
         return histPlot(seriesName,
-                HistogramCalculator.calc(t, columnName, rangeMin, rangeMax, nbins, new PlotInfo(this, seriesName)));
+                HistogramCalculator.calc(t, x, xmin, xmax, nbins, new PlotInfo(this, seriesName)));
     }
 
-    private IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SwappableTable counts) {
+    private IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SwappableTable sds) {
         configureXYPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        ArgumentValidations.assertColumnsInTable(counts.getTableDefinition(), new PlotInfo(this, seriesName), BIN_MIN,
+        ArgumentValidations.assertColumnsInTable(sds.getTableDefinition(), new PlotInfo(this, seriesName), BIN_MIN,
                 BIN_MID, BIN_MAX, COUNT);
 
         final IndexableNumericData startX =
-                new IndexableNumericDataSwappableTable(counts, BIN_MIN, new PlotInfo(this, seriesName));
+                new IndexableNumericDataSwappableTable(sds, BIN_MIN, new PlotInfo(this, seriesName));
         final IndexableNumericData midX =
-                new IndexableNumericDataSwappableTable(counts, BIN_MID, new PlotInfo(this, seriesName));
+                new IndexableNumericDataSwappableTable(sds, BIN_MID, new PlotInfo(this, seriesName));
         final IndexableNumericData endX =
-                new IndexableNumericDataSwappableTable(counts, BIN_MAX, new PlotInfo(this, seriesName));
+                new IndexableNumericDataSwappableTable(sds, BIN_MAX, new PlotInfo(this, seriesName));
         // does Y need separate values for min, mid, and max?
         final IndexableNumericData y =
-                new IndexableNumericDataSwappableTable(counts, COUNT, new PlotInfo(this, seriesName));
+                new IndexableNumericDataSwappableTable(sds, COUNT, new PlotInfo(this, seriesName));
         final IntervalXYDataSeriesArray ds = new IntervalXYDataSeriesArray(this, dataSeries.nextId(), seriesName,
-                counts, startX, midX, endX, y, y, y);
-        ds.addSwappableTable(counts);
+                sds, startX, midX, endX, y, y, y);
+        ds.addSwappableTable(sds);
 
         registerDataSeries(SeriesCollection.SeriesType.INTERVAL, false, ds);
         return ds;
@@ -1524,10 +1524,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String columnName, final int nbins) {
+                                              final String x, final int nbins) {
         final PlotInfo plotInfo = new PlotInfo(this, seriesName);
-        ArgumentValidations.assertIsNumeric(sds, columnName,
-                "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
+        ArgumentValidations.assertIsNumeric(sds, x,
+                "Histogram can not be computed on non-numeric column: " + x, plotInfo);
 
         final List<String> byCols;
         if (sds instanceof SelectableDataSetOneClick) {
@@ -1536,10 +1536,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             byCols = Collections.emptyList();
         }
         final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator
-                .calc(t, columnName, nbins, plotInfo, byCols);
+                .calc(t, x, nbins, plotInfo, byCols);
 
         final List<String> allCols = new ArrayList<>(byCols);
-        allCols.add(columnName);
+        allCols.add(x);
         final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
                 allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return histPlot(seriesName, ht);
@@ -1547,10 +1547,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String columnName, final double rangeMin, final double rangeMax, final int nbins) {
+                                              final String x, final double xmin, final double xmax, final int nbins) {
         final PlotInfo plotInfo = new PlotInfo(this, seriesName);
-        ArgumentValidations.assertIsNumeric(sds, columnName,
-                "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
+        ArgumentValidations.assertIsNumeric(sds, x,
+                "Histogram can not be computed on non-numeric column: " + x, plotInfo);
 
         final List<String> byCols;
         if (sds instanceof SelectableDataSetOneClick) {
@@ -1560,10 +1560,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         }
 
         final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator
-                .calc(t, columnName, rangeMin, rangeMax, nbins, plotInfo, byCols);
+                .calc(t, x, xmin, xmax, nbins, plotInfo, byCols);
 
         final List<String> allCols = new ArrayList<>(byCols);
-        allCols.add(columnName);
+        allCols.add(x);
         final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
                 allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return histPlot(seriesName, ht);

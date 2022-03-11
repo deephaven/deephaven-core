@@ -450,7 +450,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure gridLinesVisible( boolean visible );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table counts );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t );
 
     @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, T0[] x, int nbins );
 
@@ -466,27 +466,27 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, int nbins );
 
-    @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, T0[] x, double rangeMin, double rangeMax, int nbins );
+    @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, T0[] x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, double[] x, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, double[] x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, float[] x, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, float[] x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, int[] x, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, int[] x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, long[] x, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, long[] x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, short[] x, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, short[] x, double xmin, double xmax, int nbins );
 
-    @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double rangeMin, double rangeMax, int nbins );
+    @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, double xmin, double xmax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, double xmin, double xmax, int nbins );
 
     @Override  Figure invert( );
 
@@ -503,6 +503,8 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
     @Override  Figure legendVisible( boolean visible );
 
     @Override  Figure log( );
+
+    @Override  Figure log( boolean useLog );
 
     @Override  Figure max( double max );
 

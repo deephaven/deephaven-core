@@ -188,6 +188,14 @@ public class GenerateFigureAPI2 {
         set.add("gridLinesVisible");
         //todo set.add("group");
         set.add("histPlot");
+        set.add("invert");
+        set.add("legendColor");
+        set.add("legendFont");
+        set.add("legendVisible");
+        //todo set.add("lineColor");
+        //todo set.add("lineStyle");
+        //todo set.add("linesVisible");
+        set.add("log");
 
         return set;
     }
@@ -251,7 +259,10 @@ public class GenerateFigureAPI2 {
         rst.put("npoints", new PyParameter(10, "npoints", taInt, false, "number of points", null));
         rst.put("xmin", new PyParameter(10, "xmin", taFloat, false, "range minimum", null));
         rst.put("xmax", new PyParameter(11, "xmax", taFloat, false, "range minimum", null));
-        rst.put("visible", new PyParameter(10, "visible", taInt, true, "whether the Chart's grid lines are drawn", null));
+        rst.put("visible", new PyParameter(10, "visible", taInt, true, "true to draw the design element; false otherwise.", null));
+        rst.put("invert", new PyParameter(10, "invert", taBool, false, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
+        rst.put("useLog", new PyParameter(10, "use_log", taBool, false, "true to use a log axis transform; false to use a linear axis transform.", null));
+        rst.put("nbins", new PyParameter(15, "nbins", taInt, false, "number of bins", null));
 
         //
 

@@ -1088,50 +1088,50 @@ public interface Axes extends Serializable {
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
-     * @param counts table
+     * @param t table
      * @return dataset created for plot
      * @throws IllegalArgumentException {@code counts} must contain columns "BinMin", "BinMid", "BinMax", "Count"
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table counts);
+    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table t);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param columnName column in {@code t}
+     * @param x column in {@code t}
      * @param nbins number of bins in the resulting histogram
      * @return dataset created for plot
      * @throws IllegalArgumentException {@code columnName} must be a numeric column in {@code t}
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table t, final String columnName, final int nbins);
+    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table t, final String x, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param columnName column in {@code t}
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param x column in {@code t}
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins in the resulting histogram
      * @return dataset created for plot
      * @throws IllegalArgumentException {@code columnName} must be a numeric column in {@code t}
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table t, final String columnName,
-            final double rangeMin, final double rangeMax, final int nbins);
+    IntervalXYDataSeries histPlot(final Comparable seriesName, final Table t, final String x,
+            final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param columnName column in {@code sds}
+     * @param x column in {@code sds}
      * @param nbins number of bins in the resulting histogram
      * @return dataset created for plot
      * @throws IllegalArgumentException {@code columnName} must be a numeric column in {@code sds}
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName,
+    IntervalXYDataSeries histPlot(final Comparable seriesName, final SelectableDataSet sds, final String x,
             final int nbins);
 
     /**
@@ -1139,15 +1139,15 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param columnName column in {@code sds}
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param x column in {@code sds}
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins in the resulting histogram
      * @return dataset created for plot
      * @throws IllegalArgumentException {@code columnName} must be a numeric column in {@code sds}
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName,
-            final double rangeMin, final double rangeMax, final int nbins);
+    IntervalXYDataSeries histPlot(final Comparable seriesName, final SelectableDataSet sds, final String x,
+            final double xmin, final double xmax, final int nbins);
 
 
     ////////////////////////// cat hist plot //////////////////////////
