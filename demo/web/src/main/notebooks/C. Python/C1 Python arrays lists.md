@@ -1,8 +1,6 @@
-# Python arrays and lists
+# Python lists
 
-This notebook will demonstrate how to use Python arrays and lists within Deephaven.
-
-## Python lists
+This notebook will demonstrate how to use Python lists within Deephaven.
 
 Lists are native Python data structures that can be declared using the bracket `[ ]` syntax.
 
