@@ -6,7 +6,7 @@
 import jpy
 
 from deephaven2 import dtypes, DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.table import Table
 
 _JReplayer = jpy.get_type("io.deephaven.engine.table.impl.replay.Replayer")

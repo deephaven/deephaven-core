@@ -8,7 +8,7 @@ import jpy
 
 from deephaven2 import DHError
 from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.table import Table
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")

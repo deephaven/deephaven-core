@@ -9,7 +9,7 @@ import jpy
 
 from deephaven2 import dtypes
 from deephaven2._jcompat import j_hashmap, j_properties
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.column import Column
 from deephaven2.dherror import DHError
 from deephaven2.dtypes import DType

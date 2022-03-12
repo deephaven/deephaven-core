@@ -10,7 +10,7 @@ import jpy
 
 from deephaven2 import DHError, dtypes
 from deephaven2._jcompat import j_array_list
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
