@@ -4,6 +4,7 @@
 
 package io.deephaven.csv;
 
+import ch.randelshofer.fastdoubleparser.FastDoubleParserFromByteArray;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Procedure;
 import io.deephaven.chunk.ByteChunk;
@@ -106,6 +107,7 @@ public class CsvTools {
         return CsvSpecs.builder()
                 .headerLegalizer(ColumnNameLegalizer.INSTANCE)
                 .headerValidator(ColumnNameLegalizer.INSTANCE)
+                .customDoubleParser(FastDoubleParserFromByteArray::parseDouble)
                 .customTimeZoneParser(new DeephavenTimeZoneParser());
     }
 
