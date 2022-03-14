@@ -279,11 +279,10 @@ public class TableViewportSubscription extends HasEventHandling {
                 WorkerConnection connection = table.getConnection();
                 BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
                         headers -> connection.flightServiceClient().doExchange(headers),
-                        (firstPayload, headers) -> connection.browserFlightServiceClient().openDoExchange(firstPayload,
-                                headers),
-                        (nextPayload, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(nextPayload,
-                                headers,
-                                c::apply));
+                        (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                        (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
+                                c::apply),
+                        new FlightData());
 
                 Builder doGetRequest = new Builder(1024);
                 double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
