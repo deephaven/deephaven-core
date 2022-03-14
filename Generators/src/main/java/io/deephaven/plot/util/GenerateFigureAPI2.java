@@ -244,7 +244,7 @@ public class GenerateFigureAPI2 {
         rst.put("family", new PyParameter(10, "family", taStr,  "font family; if null, set to Arial", null));
         rst.put("font", new PyParameter(10, "font", taFont,  "font", null));
         rst.put("size", new PyParameter(10, "size", taInt,  "font size", null));
-        rst.put("style", new PyParameter(10, "style", taStr,  "font style", null));
+        rst.put("style", new PyParameter(10, "style", taStr,  "style", null));
         rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar,  "business calendar", null));
         rst.put("valueColumn", new PyParameter(10, "values", taStr,  "column name", null));
         rst.put("rowNum", new PyParameter(10, "row", taInt,  "row index in the Figure's grid. The row index starts at 0.", null));
@@ -273,6 +273,8 @@ public class GenerateFigureAPI2 {
         rst.put("high", new PyParameter(4, "high", taDataNumeric,  "bar high y-values.", null));
         rst.put("low", new PyParameter(5, "low", taDataNumeric,  "bar low y-values.", null));
         rst.put("close", new PyParameter(6, "close", taDataNumeric,  "bar close y-values.", null));
+
+        rst.put("orientation", new PyParameter(10, "orientation", taStr,  "plot orientation.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -344,6 +346,14 @@ public class GenerateFigureAPI2 {
         //todo piePercentLabelFormat
         rst.add(new PyFunc("pie_plot", new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot", new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_orientation", new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("plot_style", new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        //todo pointColor / pointColorByY / pointColorInteger
+        //todo pointLabel
+        //todo pointLabelFormat
+        //todo pointShape
+        //todo pointSize
+        //todo pointsVisible
 
         return rst;
     }
