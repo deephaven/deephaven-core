@@ -330,6 +330,8 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("min", new String[]{"min"}, null, "TODO pydoc"));
         rst.add(new PyFunc("minor_ticks", new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("minor_ticks_visible", new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("new_axes", new String[]{"newAxes"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("new_chart", new String[]{"newChart"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("plot", new String[]{"plot"}, new String[]{"series_name"}, "TODO pydoc"));
 
@@ -474,7 +476,7 @@ public class GenerateFigureAPI2 {
     private static String pyDocString(final PyFunc func, final List<PyParameter> args){
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(INDENT).append(INDENT).append("\"\"\"").append(func.pydoc).append("\n");
+        sb.append(INDENT).append(INDENT).append("\"\"\"").append(func.pydoc).append("\n\n");
         sb.append(INDENT).append(INDENT).append("Args:\n");
 
         for (final PyParameter arg : args) {
