@@ -293,6 +293,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("axis_label", "TODO pydoc", new String[]{"axisLabel"}, new String[]{"label"})); //todo req?
         rst.add(new PyFunc("axis_label_font", "TODO pydoc", new String[]{"axisLabelFont"}, null));
         rst.add(new PyFunc("business_time", "TODO pydoc", new String[]{"businessTime"}, null));
+        //todo should cat_error_bar be under cat_plot?
         rst.add(new PyFunc("cat_error_bar", "TODO pydoc", new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}));
         rst.add(new PyFunc("cat_hist_plot", "TODO pydoc", new String[]{"catHistPlot"}, new String[]{"series_name"}));
         rst.add(new PyFunc("cat_plot", "TODO pydoc", new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}));
@@ -303,12 +304,9 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("chart_title_font", "TODO pydoc", new String[]{"chartTitleFont"}, null));
         rst.add(new PyFunc("col_span", "TODO pydoc", new String[]{"colSpan"}, new String[]{"n"})); //todo req?
 ////todo        set.add("errorBarColor");
-//        set.add("errorBarX");
-//        set.add("errorBarXBy"); //todo combine with errorBarX?
-//        set.add("errorBarXY");
-//        set.add("errorBarXYBy"); //todo combine with errorBarXY? (combine all error bar plots??)
-//        set.add("errorBarY");
-//        set.add("errorBarYBy"); //todo combine with errorBarY?
+        //todo should error_bar be part of plot?
+        rst.add(new PyFunc("error_bar", "TODO pydoc", new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}));
+
         rst.add(new PyFunc("figure_remove_series", "TODO pydoc", new String[]{"figureRemoveSeries"}, new String[]{"names"})); //todo req?
         rst.add(new PyFunc("figure_title", "TODO pydoc", new String[]{"figureTitle"}, new String[]{"title"})); //todo req?
         rst.add(new PyFunc("figure_title_color", "TODO pydoc", new String[]{"figureTitleColor"}, null));
@@ -335,15 +333,7 @@ public class GenerateFigureAPI2 {
 
         rst.add(new PyFunc("plot", "TODO pydoc", new String[]{"plot"}, new String[]{"series_name"}));
 
-
-
         return rst;
-
-        //todo remove plot filter
-//
-//        set.add("plot");
-//
-//        return set;
     }
 
     /**
