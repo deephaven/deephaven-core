@@ -3,7 +3,7 @@ version: "3.4"
 services:
   server:
     image: ${DEEPHAVEN_SERVER_IMAGE}
-    # For jprofiler, replace the line before this comment block with the lines below:
+    # For jprofiler, replace the line before this comment block with the line below:
     # build: ./jprofiler-server
     environment:
       # https://bugs.openjdk.java.net/browse/JDK-8230305
