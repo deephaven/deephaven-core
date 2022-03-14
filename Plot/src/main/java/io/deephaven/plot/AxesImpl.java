@@ -1369,13 +1369,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public OHLCDataSeriesTableArray ohlcPlot(final Comparable seriesName, final Table t, final String timeCol,
-            final String openCol, final String highCol, final String lowCol, final String closeCol) {
+    public OHLCDataSeriesTableArray ohlcPlot(final Comparable seriesName, final Table t, final String time,
+                                             final String open, final String high, final String low, final String close) {
         configureOHLCPlot();
-        final TableHandle h = new TableHandle(t, timeCol, openCol, highCol, lowCol, closeCol);
+        final TableHandle h = new TableHandle(t, time, open, high, low, close);
 
         final OHLCDataSeriesTableArray ds = new OHLCDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h,
-                timeCol, openCol, highCol, lowCol, closeCol);
+                time, open, high, low, close);
 
         registerDataSeries(SeriesCollection.SeriesType.OHLC, false, ds);
         ds.addTableHandle(h);
@@ -1385,13 +1385,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String timeCol,
-            final String openCol, final String highCol, final String lowCol, final String closeCol) {
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String time,
+                                        final String open, final String high, final String low, final String close) {
         configureOHLCPlot();
-        final SwappableTable t = sds.getSwappableTable(seriesName, chart, timeCol, openCol, highCol, lowCol, closeCol);
+        final SwappableTable t = sds.getSwappableTable(seriesName, chart, time, open, high, low, close);
 
         final OHLCDataSeriesSwappableTableArray ds = new OHLCDataSeriesSwappableTableArray(this, dataSeries.nextId(),
-                seriesName, t, timeCol, openCol, highCol, lowCol, closeCol);
+                seriesName, t, time, open, high, low, close);
 
         registerDataSeries(SeriesCollection.SeriesType.OHLC, false, ds);
         ds.addSwappableTable(t);
@@ -1401,22 +1401,22 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiOHLCSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String timeCol,
-            final String openCol, final String highCol, final String lowCol, final String closeCol,
-            final String... byColumns) {
+    public MultiOHLCSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String time,
+                                      final String open, final String high, final String low, final String close,
+                                      final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(timeCol, "timeCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(openCol, "openCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(highCol, "highCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(lowCol, "lowCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(closeCol, "closeCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(time, "timeCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(open, "openCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(high, "highCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(low, "lowCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(close, "closeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureOHLCPlot();
 
         final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t,
-                Arrays.asList(timeCol, openCol, highCol, lowCol, closeCol), byColumns, new PlotInfo(this, seriesName));
-        final MultiOHLCSeries series = new MultiOHLCSeries(this, dataSeries.nextId(), seriesName, h, timeCol, openCol,
-                highCol, lowCol, closeCol, byColumns);
+                Arrays.asList(time, open, high, low, close), byColumns, new PlotInfo(this, seriesName));
+        final MultiOHLCSeries series = new MultiOHLCSeries(this, dataSeries.nextId(), seriesName, h, time, open,
+                high, low, close, byColumns);
 
         axes[0].axisFormat(new NanosAxisFormat());
 
@@ -1427,28 +1427,28 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public MultiOHLCSeriesSwappable ohlcPlotBy(final Comparable seriesName, final SelectableDataSet sds,
-            final String timeCol, final String openCol, final String highCol, final String lowCol,
-            final String closeCol, final String... byColumns) {
+                                               final String time, final String open, final String high, final String low,
+                                               final String close, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(timeCol, "timeCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(openCol, "openCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(highCol, "highCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(lowCol, "lowCol", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(closeCol, "closeCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(time, "timeCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(open, "openCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(high, "highCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(low, "lowCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(close, "closeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
 
         final String[] columns = new String[byColumns.length + 5];
-        columns[0] = timeCol;
-        columns[1] = openCol;
-        columns[2] = highCol;
-        columns[3] = lowCol;
-        columns[4] = closeCol;
+        columns[0] = time;
+        columns[1] = open;
+        columns[2] = high;
+        columns[3] = low;
+        columns[4] = close;
         System.arraycopy(byColumns, 0, columns, 5, byColumns.length);
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureOHLCPlot();
         final MultiOHLCSeriesSwappable series = new MultiOHLCSeriesSwappable(this, dataSeries.nextId(), seriesName, t,
-                timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+                time, open, high, low, close, byColumns);
 
         axes[0].axisFormat(new NanosAxisFormat());
 
@@ -2245,32 +2245,32 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x, final double rangeMin, final double rangeMax, final int nbins) {
-        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
+    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x, final double xmin, final double xmax, final int nbins) {
+        return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", xmin, xmax, nbins);
     }
 
     @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {

@@ -679,15 +679,15 @@ public class GenerateAxesPlotMethods {
                         "     *\n" +
                         "     * @param seriesName name of the created dataset\n" +
                         "     * @param x data\n" +
-                        "     * @param rangeMin minimum of the range\n" +
-                        "     * @param rangeMax maximum of the range\n" +
+                        "     * @param xmin minimum of the range\n" +
+                        "     * @param xmax maximum of the range\n" +
                         "     * @param nbins number of bins\n" +
                         "$JAVADOCS$" +
                         "     * @return dataset created by the plot\n" +
                         "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final double rangeMin, final double rangeMax, final int nbins) {\n"
+                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final double xmin, final double xmax, final int nbins) {\n"
                         +
-                        "        return histPlot(seriesName, PlotUtils.doubleTable(x, \"Y\"), \"Y\", rangeMin, rangeMax, nbins);\n"
+                        "        return histPlot(seriesName, PlotUtils.doubleTable(x, \"Y\"), \"Y\", xmin, xmax, nbins);\n"
                         +
                         "    }\n",
                 new String[] {

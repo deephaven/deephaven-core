@@ -210,6 +210,7 @@ public class GenerateFigureAPI2 {
         final String[] taTable = new String[]{"Table","SelectableDataSet"};
         final String[] taDataCategory = new String[]{"str", "List[str]"};
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"};
+        final String[] taDataTime = new String[]{"str", "List[DateTime]"};
 
         final String[] taColor = new String[]{"str", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
@@ -265,6 +266,13 @@ public class GenerateFigureAPI2 {
         rst.put("min", new PyParameter(10, "min", taFloat,  "range minimum", null));
         rst.put("max", new PyParameter(11, "max", taFloat,  "range maximum", null));
         rst.put("count", new PyParameter(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
+
+        //todo is time the right x-axis label?  Maybe generalize to x?
+        rst.put("time", new PyParameter(2, "time", taDataTime,  "time x-values.", null));
+        rst.put("open", new PyParameter(3, "open", taDataNumeric,  "bar open y-values.", null));
+        rst.put("high", new PyParameter(4, "high", taDataNumeric,  "bar high y-values.", null));
+        rst.put("low", new PyParameter(5, "low", taDataNumeric,  "bar low y-values.", null));
+        rst.put("close", new PyParameter(6, "close", taDataNumeric,  "bar close y-values.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -332,8 +340,10 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("minor_ticks_visible", new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("new_axes", new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("new_chart", new String[]{"newChart"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("plot", new String[]{"plot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("ohlc_plot", new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        //todo piePercentLabelFormat
+        rst.add(new PyFunc("pie_plot", new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot", new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
         return rst;
     }
@@ -433,7 +443,7 @@ public class GenerateFigureAPI2 {
                     final PyParameter pyparam = pyparams.get(param);
 
                     if(pyparam == null) {
-                        throw new IllegalArgumentException("Unsupported python parameter: " + param);
+                        throw new IllegalArgumentException("Unsupported python parameter: func=" + pyFunc + " param=" + param);
                     }
 
                     argSet.add(pyparam);

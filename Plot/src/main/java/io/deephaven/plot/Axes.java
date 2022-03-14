@@ -1023,62 +1023,62 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param timeCol column in {@code t} that holds the time data
-     * @param openCol column in {@code t} that holds the open data
-     * @param highCol column in {@code t} that holds the high data
-     * @param lowCol column in {@code t} that holds the low data
-     * @param closeCol column in {@code t} that holds the close data
+     * @param time column in {@code t} that holds the time data
+     * @param open column in {@code t} that holds the open data
+     * @param high column in {@code t} that holds the high data
+     * @param low column in {@code t} that holds the low data
+     * @param close column in {@code t} that holds the close data
      * @return dataset created for plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Table t, final String timeCol, final String openCol,
-            final String highCol, final String lowCol, final String closeCol);
+    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Table t, final String time, final String open,
+            final String high, final String low, final String close);
 
     /**
      * Creates an open-high-low-close plot.
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param timeCol column in {@code sds} that holds the time data
-     * @param openCol column in {@code sds} that holds the open data
-     * @param highCol column in {@code sds} that holds the high data
-     * @param lowCol column in {@code sds} that holds the low data
-     * @param closeCol column in {@code sds} that holds the close data
+     * @param time column in {@code sds} that holds the time data
+     * @param open column in {@code sds} that holds the open data
+     * @param high column in {@code sds} that holds the high data
+     * @param low column in {@code sds} that holds the low data
+     * @param close column in {@code sds} that holds the close data
      * @return dataset created for plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String timeCol,
-            final String openCol, final String highCol, final String lowCol, final String closeCol);
+    OHLCDataSeries ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String time,
+            final String open, final String high, final String low, final String close);
 
     /**
      * Creates an open-high-low-close plot per distinct grouping value specified in {@code byColumns}.
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param timeCol column in {@code t} that holds the time data
-     * @param openCol column in {@code t} that holds the open data
-     * @param highCol column in {@code t} that holds the high data
-     * @param lowCol column in {@code t} that holds the low data
-     * @param closeCol column in {@code t} that holds the close data
+     * @param time column in {@code t} that holds the time data
+     * @param open column in {@code t} that holds the open data
+     * @param high column in {@code t} that holds the high data
+     * @param low column in {@code t} that holds the low data
+     * @param close column in {@code t} that holds the close data
      * @param byColumns column(s) in {@code t} that holds the grouping data
      * @return dataset created for plot
      */
-    MultiSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String timeCol, final String openCol,
-            final String highCol, final String lowCol, final String closeCol, final String... byColumns);
+    MultiSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String time, final String open,
+            final String high, final String low, final String close, final String... byColumns);
 
     /**
      * Creates an open-high-low-close plot per distinct grouping value specified in {@code byColumns}.
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param timeCol column in {@code sds} that holds the time data
-     * @param openCol column in {@code sds} that holds the open data
-     * @param highCol column in {@code sds} that holds the high data
-     * @param lowCol column in {@code sds} that holds the low data
-     * @param closeCol column in {@code sds} that holds the close data
+     * @param time column in {@code sds} that holds the time data
+     * @param open column in {@code sds} that holds the open data
+     * @param high column in {@code sds} that holds the high data
+     * @param low column in {@code sds} that holds the low data
+     * @param close column in {@code sds} that holds the close data
      * @param byColumns column(s) in {@code sds} that holds the grouping data
      * @return dataset created for plot
      */
-    MultiSeries ohlcPlotBy(final Comparable seriesName, final SelectableDataSet sds, final String timeCol,
-            final String openCol, final String highCol, final String lowCol, final String closeCol,
+    MultiSeries ohlcPlotBy(final Comparable seriesName, final SelectableDataSet sds, final String time,
+            final String open, final String high, final String low, final String close,
             final String... byColumns);
 
     ////////////////////////// hist plot //////////////////////////
@@ -2460,86 +2460,86 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-     IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final double rangeMin, final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-     IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final double rangeMin, final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-     IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final double rangeMin, final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-     IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final double rangeMin, final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-     IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final double rangeMin, final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final T0[] x, final double rangeMin, final double rangeMax, final int nbins);
+    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final T0[] x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates a histogram.
      *
      * @param seriesName name of the created dataset
      * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
+     * @param xmin minimum of the range
+     * @param xmax maximum of the range
      * @param nbins number of bins
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final List<T0> x, final double rangeMin, final double rangeMax, final int nbins);
+    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final List<T0> x, final double xmin, final double xmax, final int nbins);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.

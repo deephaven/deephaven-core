@@ -1970,27 +1970,27 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, t, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, sds, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
+    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, t, time, open, high, low, close, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
+    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, sds, time, open, high, low, close, byColumns);
         return make(series);
     }
 
