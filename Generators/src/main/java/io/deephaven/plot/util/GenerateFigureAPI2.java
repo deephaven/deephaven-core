@@ -89,15 +89,13 @@ public class GenerateFigureAPI2 {
         private final int precedence;
         private final String name;
         private final String[] typeAnnotations;
-        private final boolean required;
         private final String docString;
         private final String javaConverter;
 
-        public PyParameter(final int precedence, final String name, final String[] typeAnnotations, final boolean required, final String docString, final String javaConverter) {
+        public PyParameter(final int precedence, final String name, final String[] typeAnnotations, final String docString, final String javaConverter) {
             this.precedence = precedence;
             this.name = name;
             this.typeAnnotations = typeAnnotations;
-            this.required = required;
             this.docString = docString;
             this.javaConverter = javaConverter;
         }
@@ -108,7 +106,6 @@ public class GenerateFigureAPI2 {
                     "precedence=" + precedence +
                     ", name='" + name + '\'' +
                     ", typeAnnotations='" + Arrays.toString(typeAnnotations) + '\'' +
-                    ", required=" + required +
                     ", docString='" + docString + '\'' +
                     ", javaConverter='" + javaConverter + '\'' +
                     '}';
@@ -135,76 +132,72 @@ public class GenerateFigureAPI2 {
     }
 
     /**
-     * Convert camel case to snake case.
-     *
-     * @param str input
-     * @return snake case string
+     * A Python function.
      */
-    private static String camelToSnake(final String str) {
-        String regex = "([a-z])([A-Z]+)";
-        String replacement = "$1_$2";
-        return str.replaceAll(regex, replacement).toLowerCase();
+    private static class PyFunc {
+        private final String name;
+        private final String pydoc;
+        private final String[] javaFuncs;
+        private final String[] requiredParams;
+
+        public PyFunc(final String name, final String pydoc,  final String[] javaFuncs, final String[] requiredParams) {
+            this.name = name;
+            this.pydoc = pydoc;
+            this.javaFuncs = javaFuncs;
+            this.requiredParams = requiredParams == null ? new String[]{} : requiredParams;
+        }
+
+        @Override
+        public String toString() {
+            return "PyFunc{" +
+                    "name='" + name + '\'' +
+                    ", pydoc='" + pydoc + '\'' +
+                    ", javaFuncs=" + Arrays.toString(javaFuncs) +
+                    ", requiredParams=" + Arrays.toString(requiredParams) +
+                    '}';
+        }
+
+        /**
+         * Gets the Java signatures for this method.
+         *
+         * @param signatures java signatures
+         * @return Java signatures for this method.
+         */
+        public Map<Key, ArrayList<JavaFunction>> getSignatures(final Map<Key, ArrayList<JavaFunction>> signatures){
+            final Set<String> funcs = new HashSet<>(Arrays.asList(javaFuncs));
+            return signatures.entrySet().stream().filter(e->funcs.contains(e.getKey().name)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        /**
+         * Is the parameter required for the function?
+         *
+         * @param parameter python parameter
+         * @return is the parameter requried for the function?
+         */
+        public boolean isRequired(final PyParameter parameter) {
+            return Arrays.asList(requiredParams).contains(parameter.name);
+        }
     }
 
-    private static Set<String> getImplemented() {
-        //todo remove plot filter
-        final Set<String> set = new HashSet<>();
-        set.add("plot");
-        set.add("axes");
-        set.add("axesRemoveSeries");
-        set.add("axis");
-        set.add("axisColor");
-        set.add("axisFormat");
-        set.add("axisFormatPattern");
-        set.add("axisLabel");
-        set.add("axisLabelFont");
-        set.add("businessTime");
-        set.add("catErrorBar");
-        set.add("catErrorBarBy"); //todo combine with catErrorBar?
-        set.add("catHistPlot");
-        set.add("catPlot");
-        set.add("catPlotBy"); //todo combine with catPlot?
-        set.add("chart");
-        set.add("chartRemoveSeries");
-        set.add("chartTitle");
-        set.add("chartTitleColor");
-        set.add("chartTitleFont");
-        set.add("colSpan");
-//todo        set.add("errorBarColor");
-        //todo fix naming of errorbar funcs -> auto-snake-casing is not working well
-        set.add("errorBarX");
-        set.add("errorBarXBy"); //todo combine with errorBarX?
-        set.add("errorBarXY");
-        set.add("errorBarXYBy"); //todo combine with errorBarXY? (combine all error bar plots??)
-        set.add("errorBarY");
-        set.add("errorBarYBy"); //todo combine with errorBarY?
-        set.add("figureRemoveSeries");
-        set.add("figureTitle"); //todo title is required here... may need to handle requires differently
-        set.add("figureTitleColor");
-        set.add("figureTitleFont");
-        set.add("funcNPoints");
-        set.add("funcRange");
-        //todo set.add("gradientVisible");
-        set.add("gridLinesVisible");
-        //todo set.add("group");
-        set.add("histPlot");
-        set.add("invert");
-        set.add("legendColor");
-        set.add("legendFont");
-        set.add("legendVisible");
-        //todo set.add("lineColor");
-        //todo set.add("lineStyle");
-        //todo set.add("linesVisible");
-        set.add("log");
-        set.add("max");
-        set.add("maxRowsInTitle");
-        set.add("min");
-        set.add("minorTicks");
-        set.add("minorTicksVisible");
+    //todo nuke?
+//    /**
+//     * Convert camel case to snake case.
+//     *
+//     * @param str input
+//     * @return snake case string
+//     */
+//    private static String camelToSnake(final String str) {
+//        String regex = "([a-z])([A-Z]+)";
+//        String replacement = "$1_$2";
+//        return str.replaceAll(regex, replacement).toLowerCase();
+//    }
 
-        return set;
-    }
 
+    /**
+     * A map of Java parameter names to Python parameters.
+     *
+     * @return map of Java parameter names to Python parameters.
+     */
     private static Map<String, PyParameter> getPyParameters() {
         final Map<String, PyParameter> rst = new HashMap<>();
 
@@ -223,55 +216,55 @@ public class GenerateFigureAPI2 {
         final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
         final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
 
-        rst.put("seriesName", new PyParameter(1, "series_name", taStr, true, "name of the created dataset", null));
-        rst.put("byColumns", new PyParameter(1, "by", taStrs, false, "columns that hold grouping data", null));
-        rst.put("t", new PyParameter(2, "t", taTable, false, "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("x", new PyParameter(3, "x", taDataNumeric, false, "x-values or column name", null));
-        rst.put("y", new PyParameter(4, "y", taDataNumeric, false, "y-values or column name", null));
-        rst.put("function", new PyParameter(5, "function", taCallable, false, "function to plot", null));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", taBool, false, "whether to treat the x-values as time data", null)); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", taBool, false, "whether to treat the y-values as time data", null)); //todo needed?
+        rst.put("seriesName", new PyParameter(1, "series_name", taStr, "name of the created dataset", null));
+        rst.put("byColumns", new PyParameter(9, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("t", new PyParameter(2, "t", taTable,  "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyParameter(3, "x", taDataNumeric,  "x-values or column name", null));
+        rst.put("y", new PyParameter(4, "y", taDataNumeric,  "y-values or column name", null));
+        rst.put("function", new PyParameter(5, "function", taCallable,  "function to plot", null));
+        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", taBool,  "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", taBool,  "whether to treat the y-values as time data", null)); //todo needed?
 
-        rst.put("categories", new PyParameter(3, "categories", taDataCategory, false, "discrete data or column name", null));
-        rst.put("values", new PyParameter(4, "values", taDataNumeric, false, "numeric data or column name", null));
-        rst.put("xLow", new PyParameter(5, "x_low", taDataNumeric, false, "low value in x dimension", null));
-        rst.put("xHigh", new PyParameter(6, "x_high", taDataNumeric, false, "high value in x dimension", null));
-        rst.put("yLow", new PyParameter(7, "y_low", taDataNumeric, false, "low value in y dimension", null));
-        rst.put("yHigh", new PyParameter(8, "y_high", taDataNumeric, false, "high value in y dimension", null));
+        rst.put("categories", new PyParameter(3, "categories", taDataCategory,  "discrete data or column name", null));
+        rst.put("values", new PyParameter(4, "values", taDataNumeric,  "numeric data or column name", null));
+        rst.put("xLow", new PyParameter(5, "x_low", taDataNumeric,  "low value in x dimension", null));
+        rst.put("xHigh", new PyParameter(6, "x_high", taDataNumeric,  "high value in x dimension", null));
+        rst.put("yLow", new PyParameter(7, "y_low", taDataNumeric,  "low value in y dimension", null));
+        rst.put("yHigh", new PyParameter(8, "y_high", taDataNumeric,  "high value in y dimension", null));
 
-        rst.put("id", new PyParameter(10, "axes", taInt, false, "axes id", null));
-        rst.put("name", new PyParameter(10, "name", taStr, false, "axes name", null));
-        rst.put("names", new PyParameter(10, "names", taStrs, true, "series names", null));
-        rst.put("dim", new PyParameter(10, "dim", taInt, true, "dimension of the axis", null));
-        rst.put("color", new PyParameter(10, "color", taColor, true, "color", null));
-        rst.put("format", new PyParameter(10, "format", taAxisFormat, true, "axis format", null));
-        rst.put("pattern", new PyParameter(10, "pattern", taStr, true, "axis format pattern", null));
-        rst.put("label", new PyParameter(10, "label", taStr, true, "label", null));
-        rst.put("family", new PyParameter(10, "family", taStr, false, "font family; if null, set to Arial", null));
-        rst.put("font", new PyParameter(10, "font", taFont, false, "font", null));
-        rst.put("size", new PyParameter(10, "size", taInt, false, "font size", null));
-        rst.put("style", new PyParameter(10, "style", taStr, false, "font style", null));
-        rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar, false, "business calendar", null));
-        rst.put("valueColumn", new PyParameter(10, "values", taStr, false, "column name", null));
-        rst.put("rowNum", new PyParameter(10, "row", taInt, false, "row index in the Figure's grid. The row index starts at 0.", null));
-        rst.put("colNum", new PyParameter(10, "col", taInt, false, "column index in this Figure's grid. The column index starts at 0.", null));
-        rst.put("index", new PyParameter(10, "index", taInt, false, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
-        rst.put("showColumnNamesInTitle", new PyParameter(10, "show_column_names_in_title", taBool, false, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-        rst.put("title", new PyParameter(10, "title", taStr, false, "title", null));
-        rst.put("titleColumns", new PyParameter(11, "title_columns", taStrs, false, "columns to include in the chart title", null));
-        rst.put("titleFormat", new PyParameter(12, "title_format", taStr, false, "a java.text.MessageFormat format string for the chart title", null));
-        rst.put("n", new PyParameter(10, "width", taInt, false, "how many columns wide", null));
-        rst.put("npoints", new PyParameter(10, "npoints", taInt, false, "number of points", null));
-        rst.put("xmin", new PyParameter(10, "xmin", taFloat, false, "range minimum", null));
-        rst.put("xmax", new PyParameter(11, "xmax", taFloat, false, "range minimum", null));
-        rst.put("visible", new PyParameter(10, "visible", taInt, true, "true to draw the design element; false otherwise.", null));
-        rst.put("invert", new PyParameter(10, "invert", taBool, false, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
-        rst.put("useLog", new PyParameter(10, "use_log", taBool, false, "true to use a log axis transform; false to use a linear axis transform.", null));
-        rst.put("nbins", new PyParameter(15, "nbins", taInt, false, "number of bins", null));
-        rst.put("maxRowsCount", new PyParameter(10, "max_rows", taInt, false, "maximum number of row values to show in chart title", null));
-        rst.put("min", new PyParameter(10, "min", taFloat, false, "range minimum", null));
-        rst.put("max", new PyParameter(11, "max", taFloat, false, "range maximum", null));
-        rst.put("count", new PyParameter(10, "count", taInt, false, "number of minor ticks between consecutive major ticks.", null));
+        rst.put("id", new PyParameter(10, "axes", taInt,  "axes id", null));
+        rst.put("name", new PyParameter(10, "name", taStr,  "axes name", null));
+        rst.put("names", new PyParameter(10, "names", taStrs,  "series names", null));
+        rst.put("dim", new PyParameter(10, "dim", taInt,  "dimension of the axis", null));
+        rst.put("color", new PyParameter(10, "color", taColor,  "color", null));
+        rst.put("format", new PyParameter(10, "format", taAxisFormat,  "axis format", null));
+        rst.put("pattern", new PyParameter(10, "pattern", taStr,  "axis format pattern", null));
+        rst.put("label", new PyParameter(10, "label", taStr,  "label", null));
+        rst.put("family", new PyParameter(10, "family", taStr,  "font family; if null, set to Arial", null));
+        rst.put("font", new PyParameter(10, "font", taFont,  "font", null));
+        rst.put("size", new PyParameter(10, "size", taInt,  "font size", null));
+        rst.put("style", new PyParameter(10, "style", taStr,  "font style", null));
+        rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar,  "business calendar", null));
+        rst.put("valueColumn", new PyParameter(10, "values", taStr,  "column name", null));
+        rst.put("rowNum", new PyParameter(10, "row", taInt,  "row index in the Figure's grid. The row index starts at 0.", null));
+        rst.put("colNum", new PyParameter(10, "col", taInt,  "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("index", new PyParameter(10, "index", taInt,  "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
+        rst.put("showColumnNamesInTitle", new PyParameter(10, "show_column_names_in_title", taBool,  "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("title", new PyParameter(10, "title", taStr,  "title", null));
+        rst.put("titleColumns", new PyParameter(11, "title_columns", taStrs,  "columns to include in the chart title", null));
+        rst.put("titleFormat", new PyParameter(12, "title_format", taStr,  "a java.text.MessageFormat format string for the chart title", null));
+        rst.put("n", new PyParameter(10, "width", taInt,  "how many columns wide", null));
+        rst.put("npoints", new PyParameter(10, "npoints", taInt,  "number of points", null));
+        rst.put("xmin", new PyParameter(10, "xmin", taFloat,  "range minimum", null));
+        rst.put("xmax", new PyParameter(11, "xmax", taFloat,  "range minimum", null));
+        rst.put("visible", new PyParameter(10, "visible", taInt,  "true to draw the design element; false otherwise.", null));
+        rst.put("invert", new PyParameter(10, "invert", taBool,  "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
+        rst.put("useLog", new PyParameter(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
+        rst.put("nbins", new PyParameter(15, "nbins", taInt,  "number of bins", null));
+        rst.put("maxRowsCount", new PyParameter(10, "max_rows", taInt,  "maximum number of row values to show in chart title", null));
+        rst.put("min", new PyParameter(10, "min", taFloat,  "range minimum", null));
+        rst.put("max", new PyParameter(11, "max", taFloat,  "range maximum", null));
+        rst.put("count", new PyParameter(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -280,6 +273,77 @@ public class GenerateFigureAPI2 {
         rst.put("sds", rst.get("t"));
 
         return rst;
+    }
+
+    /**
+     * Supported Python functions to generate.
+     *
+     * @return supported Python functions to generate.
+     */
+    private static List<PyFunc> getPyFuncs() {
+        final ArrayList<PyFunc> rst = new ArrayList<>();
+
+        //todo how to combine these into better composite functions?
+        //todo pydocs
+        rst.add(new PyFunc("axes", "TODO pydoc", new String[]{"axes"}, null));
+        rst.add(new PyFunc("axes_remove_series", "TODO pydoc", new String[]{"axesRemoveSeries"}, new String[]{"names"})); //todo req?
+        rst.add(new PyFunc("axis", "TODO pydoc", new String[]{"axis"}, new String[]{"dim"})); //todo req?
+        rst.add(new PyFunc("axis_color", "TODO pydoc", new String[]{"axisColor"}, null));
+        rst.add(new PyFunc("axis_format", "TODO pydoc", new String[]{"axisFormat", "axisFormatPattern"}, null));
+        rst.add(new PyFunc("axis_label", "TODO pydoc", new String[]{"axisLabel"}, new String[]{"label"})); //todo req?
+        rst.add(new PyFunc("axis_label_font", "TODO pydoc", new String[]{"axisLabelFont"}, null));
+        rst.add(new PyFunc("business_time", "TODO pydoc", new String[]{"businessTime"}, null));
+        rst.add(new PyFunc("cat_error_bar", "TODO pydoc", new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}));
+        rst.add(new PyFunc("cat_hist_plot", "TODO pydoc", new String[]{"catHistPlot"}, new String[]{"series_name"}));
+        rst.add(new PyFunc("cat_plot", "TODO pydoc", new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}));
+        rst.add(new PyFunc("chart", "TODO pydoc", new String[]{"chart"}, null));
+        rst.add(new PyFunc("chart_remove_series", "TODO pydoc", new String[]{"chartRemoveSeries"}, new String[]{"names"})); //todo req?
+        rst.add(new PyFunc("chart_title", "TODO pydoc", new String[]{"chartTitle"}, null));
+        rst.add(new PyFunc("chart_title_color", "TODO pydoc", new String[]{"chartTitleColor"}, null));
+        rst.add(new PyFunc("chart_title_font", "TODO pydoc", new String[]{"chartTitleFont"}, null));
+        rst.add(new PyFunc("col_span", "TODO pydoc", new String[]{"colSpan"}, new String[]{"n"})); //todo req?
+////todo        set.add("errorBarColor");
+//        set.add("errorBarX");
+//        set.add("errorBarXBy"); //todo combine with errorBarX?
+//        set.add("errorBarXY");
+//        set.add("errorBarXYBy"); //todo combine with errorBarXY? (combine all error bar plots??)
+//        set.add("errorBarY");
+//        set.add("errorBarYBy"); //todo combine with errorBarY?
+        rst.add(new PyFunc("figure_remove_series", "TODO pydoc", new String[]{"figureRemoveSeries"}, new String[]{"names"})); //todo req?
+        rst.add(new PyFunc("figure_title", "TODO pydoc", new String[]{"figureTitle"}, new String[]{"title"})); //todo req?
+        rst.add(new PyFunc("figure_title_color", "TODO pydoc", new String[]{"figureTitleColor"}, null));
+        rst.add(new PyFunc("figure_title_font", "TODO pydoc", new String[]{"figureTitleFont"}, null));
+        rst.add(new PyFunc("func_n_points", "TODO pydoc", new String[]{"funcNPoints"}, new String[]{"npoints"})); //todo req?
+        rst.add(new PyFunc("func_range", "TODO pydoc", new String[]{"funcRange"}, new String[]{"xmin", "xmax"})); //todo req?
+//        //todo set.add("gradientVisible");
+        rst.add(new PyFunc("grid_lines_visible", "TODO pydoc", new String[]{"gridLinesVisible"}, new String[]{"visible"})); //todo req?
+//        //todo set.add("group");
+        rst.add(new PyFunc("hist_plot", "TODO pydoc", new String[]{"histPlot"}, new String[]{"series_name"}));
+        rst.add(new PyFunc("invert", "TODO pydoc", new String[]{"invert"}, null));
+        rst.add(new PyFunc("legend_color", "TODO pydoc", new String[]{"legendColor"}, null));
+        rst.add(new PyFunc("legend_font", "TODO pydoc", new String[]{"legendFont"}, null));
+        rst.add(new PyFunc("legend_visible", "TODO pydoc", new String[]{"legendVisible"}, new String[]{"visible"})); //todo req?
+//        //todo set.add("lineColor");
+//        //todo set.add("lineStyle");
+//        //todo set.add("linesVisible");
+        rst.add(new PyFunc("log", "TODO pydoc", new String[]{"log"}, null));
+        rst.add(new PyFunc("max", "TODO pydoc", new String[]{"max"}, null));
+        rst.add(new PyFunc("max_rows_in_title", "TODO pydoc", new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"})); //todo req?
+        rst.add(new PyFunc("min", "TODO pydoc", new String[]{"min"}, null));
+        rst.add(new PyFunc("minor_ticks", "TODO pydoc", new String[]{"minorTicks"}, new String[]{"count"})); //todo req?
+        rst.add(new PyFunc("minor_ticks_visible", "TODO pydoc", new String[]{"minorTicksVisible"}, new String[]{"visible"})); //todo req?
+
+        rst.add(new PyFunc("plot", "TODO pydoc", new String[]{"plot"}, new String[]{"series_name"}));
+
+
+
+        return rst;
+
+        //todo remove plot filter
+//
+//        set.add("plot");
+//
+//        return set;
     }
 
     /**
@@ -367,38 +431,45 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    private static List<PyParameter> pyMethodArgs(final ArrayList<JavaFunction> signatures) {
+    private static List<PyParameter> pyMethodArgs(final PyFunc pyFunc, final Map<Key, ArrayList<JavaFunction>> sigs) {
         final Map<String, PyParameter> pyparams = getPyParameters();
         final Set<PyParameter> argSet = new HashSet<>();
 
-        for (final JavaFunction f : signatures) {
-            for (final String param : f.getParameterNames()) {
-                final PyParameter pyparam = pyparams.get(param);
+        for(final ArrayList<JavaFunction> signatures : sigs.values()) {
+            for (final JavaFunction f : signatures) {
+                for (final String param : f.getParameterNames()) {
+                    final PyParameter pyparam = pyparams.get(param);
 
-                if(pyparam == null){
-                    throw new IllegalArgumentException("Unsupported python parameter: " + param);
+                    if(pyparam == null) {
+                        throw new IllegalArgumentException("Unsupported python parameter: " + param);
+                    }
+
+                    argSet.add(pyparam);
                 }
-
-                argSet.add(pyparam);
             }
         }
 
         final List<PyParameter> args = new ArrayList<>(argSet);
-        args.sort((a,b)->Integer.compare(a.precedence,b.precedence));
+        args.sort((a,b)-> {
+            final boolean ra = pyFunc.isRequired(a);
+            final boolean rb = pyFunc.isRequired(b);
+
+            return ra != rb ? (ra ? -1 : 1) : Integer.compare(a.precedence,b.precedence);
+        });
 
         return args;
     }
 
-    private static String pyFuncSignature(final Key key, final List<PyParameter> args) {
+    private static String pyFuncSignature(final PyFunc pyFunc, final List<PyParameter> args) {
         final StringBuilder sb = new StringBuilder();
 
-        sb.append(INDENT).append("def ").append(camelToSnake(key.name)).append("(\n");
+        sb.append(INDENT).append("def ").append(pyFunc.name).append("(\n");
         sb.append(INDENT).append(INDENT).append("self,\n");
 
         for (final PyParameter arg : args) {
             sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
 
-            if (!arg.required) {
+            if (!pyFunc.isRequired(arg)) {
                 sb.append(" = None");
             }
 
@@ -410,11 +481,10 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String pyDocString(final List<PyParameter> args){
+    private static String pyDocString(final PyFunc func, final List<PyParameter> args){
         final StringBuilder sb = new StringBuilder();
 
-        //todo doc string
-        sb.append(INDENT).append(INDENT).append("\"\"\"").append("TODO: doc string here").append("\n");
+        sb.append(INDENT).append(INDENT).append("\"\"\"").append(func.pydoc).append("\n");
         sb.append(INDENT).append(INDENT).append("Args:\n");
 
         for (final PyParameter arg : args) {
@@ -453,7 +523,7 @@ public class GenerateFigureAPI2 {
         return new ArrayList<>(vals.values());
     }
 
-    private static String pyFuncBody(final Key key, final List<PyParameter> args, final ArrayList<JavaFunction> signatures) {
+    private static String pyFuncBody(final PyFunc pyFunc, final List<PyParameter> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
         final Map<String,PyParameter> pyParameterMap = getPyParameters();
 
         final StringBuilder sb = new StringBuilder();
@@ -461,7 +531,7 @@ public class GenerateFigureAPI2 {
         // validate
 
         for(final PyParameter arg:args){
-            if(!arg.required){
+            if(!pyFunc.isRequired(arg)){
                 continue;
             }
 
@@ -514,29 +584,43 @@ public class GenerateFigureAPI2 {
 
         // function calls
 
-        final List<String[]> argNames = javaArgNames(signatures);
+        final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
-        boolean isFirst = true;
+        for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+            final Key key = entry.getKey();
+            final ArrayList<JavaFunction> sigs = entry.getValue();
+            final List<String[]> argNames = javaArgNames(sigs);
 
-        for(final String[] an : argNames){
-            final String[] quoted_an = Arrays.stream(an).map(s-> "\""+pyParameterMap.get(s).name+"\"").toArray(String[]::new);
+            boolean isFirst = true;
 
-            sb.append(INDENT)
-                    .append(INDENT)
-                    .append(isFirst ? "if" : "elif")
-                    .append(" non_null_params == {")
-                    .append(String.join(",",quoted_an))
-                    .append("}:\n")
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append("return Figure(self.j_figure.")
-                    .append(key.name)
-                    .append("(")
-                    .append(String.join(",", Arrays.stream(an).map(s->pyParameterMap.get(s).name).toArray(String[]::new)))
-                    .append("))\n");
+            for (final String[] an : argNames) {
+                final Set<String> argSet = new HashSet<>(Arrays.asList(an));
 
-            isFirst = false;
+                if(alreadyGenerated.contains(argSet)) {
+                    throw new RuntimeException("Java functions have same signature: function=" + pyFunc + " sig=" + Arrays.toString(an));
+                } else {
+                    alreadyGenerated.add(argSet);
+                }
+
+                final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + pyParameterMap.get(s).name + "\"").toArray(String[]::new);
+
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append(isFirst ? "if" : "elif")
+                        .append(" non_null_params == {")
+                        .append(String.join(",", quoted_an))
+                        .append("}:\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("return Figure(self.j_figure.")
+                        .append(key.name)
+                        .append("(")
+                        .append(String.join(",", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
+                        .append("))\n");
+
+                isFirst = false;
+            }
         }
 
         sb.append(INDENT)
@@ -550,20 +634,16 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String generatePythonFunction(final Key key, final ArrayList<JavaFunction> signatures) {
-        final StringBuilder sb = new StringBuilder();
+    private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
+        final List<PyParameter> args = pyMethodArgs(func, signatures);
 
-        final List<PyParameter> args = pyMethodArgs(signatures);
+        final String sig = pyFuncSignature(func, args);
+        final String pydocs = pyDocString(func, args);
+        final String pybody = pyFuncBody(func, args, signatures);
 
-        final String sig = pyFuncSignature(key, args);
-        final String pydocs = pyDocString(args);
-        final String pybody = pyFuncBody(key, args, signatures);
-
-        sb.append(sig);
-        sb.append(pydocs);
-        sb.append(pybody);
-
-        return sb.toString();
+        return sig +
+                pydocs +
+                pybody;
     }
 
     private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
@@ -574,35 +654,17 @@ public class GenerateFigureAPI2 {
         sb.append(preamble);
         sb.append("\n");
 
-        int nGenerated = 0;
+        final List<PyFunc> pyFuncs = getPyFuncs();
 
-        //todo remove plot filter
-        final Set<String> filter = getImplemented();
+        for(final PyFunc pyFunc : pyFuncs) {
+            //todo make maps deterministic for code gen
+            final Map<Key, ArrayList<JavaFunction>> sigs = pyFunc.getSignatures(signatures);
 
-        for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            final Key key = entry.getKey();
-            final ArrayList<JavaFunction> sigs = entry.getValue();
+            sigs.forEach((k,v) -> signatures.remove(k));
 
-            //todo remove plot filter
-            if (!filter.contains(key.name)) {
-                continue;
-            }
-
-            //todo remove printSignature
-//            printSignature(key, sigs);
-
-            final String pyFunc = generatePythonFunction(key, sigs);
-
-            //todo remove print pyFunc
-//            System.out.println("\n");
-//            System.out.println(pyFunc);
-
-            sb.append("\n").append(pyFunc);
-            nGenerated++;
+            final String pyFuncCode = generatePythonFunction(pyFunc, sigs);
+            sb.append("\n").append(pyFuncCode);
         }
-
-        //todo remove print
-        System.out.println("GENSTATS: " + nGenerated + " of " + signatures.size() + "(" + (nGenerated/(double)signatures.size()) + ")");
 
         return sb.toString();
     }
@@ -610,15 +672,7 @@ public class GenerateFigureAPI2 {
     public static void main(String[] args) throws ClassNotFoundException, IOException {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
-
-        //todo remove filter
-        final Set<String> implemented = getImplemented();
-
-        for (Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            if(!implemented.contains(entry.getKey().name)) {
-                printSignature(entry.getKey(), entry.getValue());
-            }
-        }
+        final int nSig1 = signatures.size();
 
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
@@ -631,5 +685,25 @@ public class GenerateFigureAPI2 {
         }
 
         System.out.println(pyCode);
+
+        for (int i = 0; i < 10; i++) {
+            System.out.println("===========================================================");
+        }
+
+        final int nSig2 = signatures.size();
+        final int nSigGenerated = nSig1-nSig2;
+
+        System.out.println("GENSTATS: " + nSigGenerated + " of " + nSig1 + "(" + (nSigGenerated/(double)nSig1) + ")");
+
+        for (int i = 0; i < 10; i++) {
+            System.out.println("===========================================================");
+        }
+
+        for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+            final Key key = entry.getKey();
+            final ArrayList<JavaFunction> sigs = entry.getValue();
+            printSignature(key, sigs);
+        }
+
     }
 }
