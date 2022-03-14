@@ -34,10 +34,19 @@ public class ConnectOptions {
     @Option(names = {"-u", "--user-agent"}, description = "The user-agent.")
     String userAgent;
 
+    @Option(names = {"--max-inbound-message-size"}, description = "The maximum inbound message size, " +
+            "defaults to Integer.MAX_VALUE")
+    int maxInboundMessageSize;
+
     public ManagedChannel open() {
         final ManagedChannelBuilder<?> builder = ChannelHelper.channelBuilder(target);
         if (userAgent != null) {
             builder.userAgent(userAgent);
+        }
+        if (maxInboundMessageSize == 0) {
+            builder.maxInboundMessageSize(Integer.MAX_VALUE);
+        } else {
+            builder.maxInboundMessageSize(maxInboundMessageSize);
         }
         return builder.build();
     }
