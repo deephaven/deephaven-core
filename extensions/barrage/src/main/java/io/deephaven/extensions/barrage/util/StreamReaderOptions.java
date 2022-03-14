@@ -6,4 +6,6 @@ public interface StreamReaderOptions {
     boolean useDeephavenNulls();
 
     ColumnConversionMode columnConversionMode();
+
+    int batchSize();
 }

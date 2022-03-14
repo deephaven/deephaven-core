@@ -15,6 +15,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -79,10 +80,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class, "debug", false);
-    // NB: It's probably best for this to default to a poolable chunk size. See
-    // ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY.
     private static final int DELTA_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "deltaChunkSize", 1 << 16);
+            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "deltaChunkSize",
+                    1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
 
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
@@ -556,52 +556,29 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     public boolean updateSubscription(final StreamObserver<MessageView> listener,
-            final BitSet newSubscribedColumns) {
-        return findAndUpdateSubscription(listener, sub -> {
-            sub.pendingColumns = (BitSet) newSubscribedColumns.clone();
-            if (sub.isViewport() && sub.pendingViewport == null) {
-                sub.pendingViewport = sub.viewport.copy();
-            }
-            log.info().append(logPrefix).append(sub.logPrefix)
-                    .append("scheduling update immediately, for column updates.").endl();
-        });
+            final @Nullable RowSet newViewport, final @Nullable BitSet columnsToSubscribe) {
+        // assume forward viewport when not specified
+        return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
-    public boolean updateViewport(final StreamObserver<MessageView> listener,
-            final RowSet newViewport) {
-        return updateViewport(listener, newViewport, false);
-    }
-
-    public boolean updateViewport(final StreamObserver<MessageView> listener, final RowSet newViewport,
-            final boolean newReverseViewport) {
+    public boolean updateSubscription(final StreamObserver<MessageView> listener, final @Nullable RowSet newViewport,
+            final @Nullable BitSet columnsToSubscribe, final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport.copy();
             sub.pendingReverseViewport = newReverseViewport;
-            if (sub.pendingColumns == null) {
-                sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
-            }
-            log.info().append(logPrefix).append(sub.logPrefix)
-                    .append("scheduling update immediately, for viewport updates.").endl();
-        });
-    }
 
-    public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener,
-            final RowSet newViewport, final BitSet columnsToSubscribe) {
-        return updateViewportAndColumns(listener, newViewport, columnsToSubscribe);
-    }
-
-    public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener, final RowSet newViewport,
-            final BitSet columnsToSubscribe, final boolean newReverseViewport) {
-        return findAndUpdateSubscription(listener, sub -> {
-            if (sub.pendingViewport != null) {
-                sub.pendingViewport.close();
+            final BitSet cols;
+            if (columnsToSubscribe == null) {
+                cols = new BitSet(sourceColumns.length);
+                cols.set(0, sourceColumns.length);
+            } else {
+                cols = (BitSet) columnsToSubscribe.clone();
             }
-            sub.pendingViewport = newViewport.copy();
-            sub.pendingReverseViewport = newReverseViewport;
-            sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
+
+            sub.pendingColumns = cols;
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();
         });

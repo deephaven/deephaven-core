@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.io.sched.Scheduler$ExecutorAdaptor",
+ "methods": {
+  "execute": ":param runnable: java.lang.Runnable"
+ },
+ "path": "io.deephaven.io.sched.Scheduler.ExecutorAdaptor",
+ "typeName": "class"
+}

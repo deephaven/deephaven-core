@@ -99,8 +99,12 @@ public interface VectorExpansionKernel {
      * @param source the source chunk of T to contract
      * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
      *        {@code source.get(i).length}
+     * @param outChunk the returned chunk from an earlier record batch
+     * @param outOffset the offset to start writing into {@code outChunk}
+     * @param totalRows the total known rows for this column; if known (else 0)
      * @return a result chunk of T[]
      */
-    <A extends Any> WritableObjectChunk<Vector<?>, A> contract(Chunk<A> source,
-            IntChunk<ChunkPositions> perElementLengthDest);
+    <A extends Any> WritableObjectChunk<Vector<?>, A> contract(
+            Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest,
+            WritableChunk<A> outChunk, int outOffset, int totalRows);
 }

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.FIFOMutex",
+ "methods": {
+  "getOwner": ":return: java.lang.Thread"
+ },
+ "path": "io.deephaven.base.FIFOMutex",
+ "typeName": "class"
+}

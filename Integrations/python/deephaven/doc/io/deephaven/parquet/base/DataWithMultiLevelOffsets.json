@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.parquet.base.DataWithMultiLevelOffsets",
+ "methods": {},
+ "path": "io.deephaven.parquet.base.DataWithMultiLevelOffsets",
+ "typeName": "class"
+}

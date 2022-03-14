@@ -6,7 +6,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 from ._init.bootstrap import build_py_session
 from .dherror import DHError

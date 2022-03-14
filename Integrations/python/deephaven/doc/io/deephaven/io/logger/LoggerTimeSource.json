@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.io.logger.LoggerTimeSource",
+ "methods": {
+  "currentTimeMicros": ":return: long"
+ },
+ "path": "io.deephaven.io.logger.LoggerTimeSource",
+ "typeName": "interface"
+}

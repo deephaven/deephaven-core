@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Copyable",
+ "methods": {
+  "copyValues": ":param other: Copyable.T"
+ },
+ "path": "io.deephaven.base.Copyable",
+ "typeName": "interface"
+}

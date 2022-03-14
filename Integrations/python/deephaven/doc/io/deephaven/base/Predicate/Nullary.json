@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Predicate$Nullary",
+ "methods": {
+  "call": ":return: boolean"
+ },
+ "path": "io.deephaven.base.Predicate.Nullary",
+ "typeName": "interface"
+}

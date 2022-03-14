@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.array.FastArray$ReadExternalFunction",
+ "methods": {
+  "readExternal": ":param in: java.io.ObjectInput\n:param item: FastArray.ReadExternalFunction.C"
+ },
+ "path": "io.deephaven.base.array.FastArray.ReadExternalFunction",
+ "typeName": "interface"
+}

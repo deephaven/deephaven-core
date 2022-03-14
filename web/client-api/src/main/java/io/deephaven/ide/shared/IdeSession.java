@@ -81,14 +81,11 @@ public class IdeSession extends HasEventHandling {
         this.closer = closer;
 
         BiDiStream.Factory<AutoCompleteRequest, AutoCompleteResponse> factory = connection.streamFactory();
-        streamFactory = () -> {
-            return factory.create(
-                    connection.consoleServiceClient()::autoCompleteStream,
-                    (firstPayload, headers) -> connection.consoleServiceClient().openAutoCompleteStream(firstPayload,
-                            headers),
-                    (nextPayload, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(nextPayload,
-                            headers, c::apply));
-        };
+        streamFactory = () -> factory.create(
+                connection.consoleServiceClient()::autoCompleteStream,
+                (first, headers) -> connection.consoleServiceClient().openAutoCompleteStream(first, headers),
+                (next, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(next, headers, c::apply),
+                new AutoCompleteRequest());
     }
 
     // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)

@@ -55,27 +55,39 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
     }
 
     @Override
-    public <T, A extends Any> WritableObjectChunk<T, A> contract(final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableObjectChunk<T, A> contract(
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
+            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
         if (perElementLengthDest.size() == 0) {
-            return WritableObjectChunk.makeWritableChunk(0);
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        final int itemsInBatch = perElementLengthDest.size() - 1;
         final ObjectChunk<T, A> typedSource = source.asObjectChunk();
-        final WritableObjectChunk<Object, A> result = WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
+        final WritableObjectChunk<Object, A> result;
+        if (outChunk != null) {
+            result = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(itemsInBatch, totalRows);
+            result = WritableObjectChunk.makeWritableChunk(numRows);
+            result.setSize(numRows);
+        }
 
         int lenRead = 0;
-        for (int i = 0; i < result.size(); ++i) {
+        for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
             } else {
-                //noinspection unchecked
-                final T[] row = (T[])Array.newInstance(componentType, ROW_LEN);
+                final Object[] row = (Object[])Array.newInstance(componentType, ROW_LEN);
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }
                 lenRead += ROW_LEN;
-                result.set(i, row);
+                result.set(outOffset + i, row);
             }
         }
 

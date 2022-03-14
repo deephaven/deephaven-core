@@ -63,7 +63,7 @@ services:
       - 8081:8081
       - 8082:8082
     tmpfs:
-      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=4G
+      - /var/lib/redpanda/data:exec,uid=101,gid=101,size=${REDPANDA_DISK}
 
   mysql:
     extends:

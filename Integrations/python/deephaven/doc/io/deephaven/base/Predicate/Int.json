@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Predicate$Int",
+ "methods": {
+  "call": ":param arg: int\n:return: boolean"
+ },
+ "path": "io.deephaven.base.Predicate.Int",
+ "typeName": "interface"
+}

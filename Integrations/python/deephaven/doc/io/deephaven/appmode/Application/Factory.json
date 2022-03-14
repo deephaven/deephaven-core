@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.appmode.Application$Factory",
+ "methods": {
+  "create": ":return: io.deephaven.appmode.Application"
+ },
+ "path": "io.deephaven.appmode.Application.Factory",
+ "typeName": "interface"
+}

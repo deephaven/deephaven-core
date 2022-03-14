@@ -41,7 +41,6 @@ import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
-import io.deephaven.tablelogger.Row;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -316,12 +315,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             viewport = newViewport;
             reverseViewport = newReverseViewport;
 
-            barrageMessageProducer.updateViewport(dummyObserver, viewport, reverseViewport);
+            // maintain the existing subscribedColumns set
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, reverseViewport);
         }
 
         public void setSubscribedColumns(final BitSet newColumns) {
             subscribedColumns = newColumns;
-            barrageMessageProducer.updateSubscription(dummyObserver, newColumns);
+
+            // maintain the existing viewport and viewport direction
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, reverseViewport);
         }
 
         public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns) {
@@ -334,7 +336,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             viewport = newViewport;
             reverseViewport = newReverseViewport;
             subscribedColumns = newColumns;
-            barrageMessageProducer.updateViewportAndColumns(dummyObserver, viewport, subscribedColumns);
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, newReverseViewport);
         }
     }
 
@@ -439,11 +441,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         public void createNuggets() {
-            createNuggetsForTableMaker(() -> sourceTable); // test the explicit updates
-            createNuggetsForTableMaker(sourceTable::flatten); // test shift aggressive version of these updates
-            createNuggetsForTableMaker(() -> sourceTable.sort("doubleCol")); // test updates in the middle of the
-                                                                             // keyspace
-            createNuggetsForTableMaker(() -> sourceTable.where("intCol % 12 < 5")); // test sparse(r) updates
+            // test the explicit updates
+            createNuggetsForTableMaker(() -> sourceTable);
+            // test shift aggressive version of these updates
+            createNuggetsForTableMaker(sourceTable::flatten);
+            // test updates in the middle of the keyspace
+            createNuggetsForTableMaker(() -> sourceTable.sort("doubleCol"));
+            // test sparse(r) updates
+            createNuggetsForTableMaker(() -> sourceTable.where("intCol % 12 < 5"));
         }
 
         void runTest(final Runnable simulateSourceStep) {

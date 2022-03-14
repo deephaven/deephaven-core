@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -14,7 +15,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.CharChunk;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.type.TypeUtils;
@@ -156,29 +156,42 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         CharConversion IDENTITY = (char a) -> a;
     }
 
-    static Chunk<Values> extractChunkFromInputStream(
+    static WritableChunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
         return extractChunkFromInputStreamWithConversion(
-                elementSize, options, CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
+                elementSize, options, CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 
-    static Chunk<Values> extractChunkFromInputStreamWithConversion(
+    static WritableChunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final StreamReaderOptions options,
             final CharConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
-            final DataInput is) throws IOException {
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableCharChunk<Values> chunk;
+        if (outChunk != null) {
+            chunk = outChunk.asWritableCharChunk();
+        } else {
+            final int numRows = Math.max(totalRows, nodeInfo.numElements);
+            chunk = WritableCharChunk.makeWritableChunk(numRows);
+            chunk.setSize(numRows);
+        }
 
         if (nodeInfo.numElements == 0) {
             return chunk;
@@ -209,9 +222,9 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                useDeephavenNulls(conversion, is, nodeInfo, chunk);
+                useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
             } else {
-                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, isValid);
+                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -220,7 +233,6 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
         }
 
-        chunk.setSize(nodeInfo.numElements);
         return chunk;
     }
 
@@ -228,16 +240,17 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             final CharConversion conversion,
             final DataInput is,
             final FieldNodeInfo nodeInfo,
-            final WritableCharChunk<Values> chunk) throws IOException {
+            final WritableCharChunk<Values> chunk,
+            final int offset) throws IOException {
         if (conversion == CharConversion.IDENTITY) {
             for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                chunk.set(ii, is.readChar());
+                chunk.set(offset + ii, is.readChar());
             }
         } else {
             for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                 final char in = is.readChar();
                 final char out = in == NULL_CHAR ? in : conversion.apply(in);
-                chunk.set(ii, out);
+                chunk.set(offset + ii, out);
             }
         }
     }
@@ -248,6 +261,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             final DataInput is,
             final FieldNodeInfo nodeInfo,
             final WritableCharChunk<Values> chunk,
+            final int offset,
             final WritableLongChunk<Values> isValid) throws IOException {
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
@@ -262,11 +276,11 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 if ((validityWord & 1) == 1) {
                     if (pendingSkips > 0) {
                         is.skipBytes(pendingSkips * elementSize);
-                        chunk.fillWithNullValue(ei, pendingSkips);
+                        chunk.fillWithNullValue(offset + ei, pendingSkips);
                         ei += pendingSkips;
                         pendingSkips = 0;
                     }
-                    chunk.set(ei++, conversion.apply(is.readChar()));
+                    chunk.set(offset + ei++, conversion.apply(is.readChar()));
                     validityWord >>= 1;
                     bitsLeftInThisWord--;
                 } else {
@@ -280,7 +294,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
         if (pendingSkips > 0) {
             is.skipBytes(pendingSkips * elementSize);
-            chunk.fillWithNullValue(ei, pendingSkips);
+            chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }
 }

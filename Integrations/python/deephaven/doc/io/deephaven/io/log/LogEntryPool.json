@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.io.log.LogEntryPool",
+ "methods": {},
+ "path": "io.deephaven.io.log.LogEntryPool",
+ "typeName": "interface"
+}

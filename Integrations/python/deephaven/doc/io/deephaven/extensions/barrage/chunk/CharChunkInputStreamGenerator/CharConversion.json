@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.extensions.barrage.chunk.CharChunkInputStreamGenerator$CharConversion",
+ "methods": {
+  "apply": ":param in: char\n:return: char"
+ },
+ "path": "io.deephaven.extensions.barrage.chunk.CharChunkInputStreamGenerator.CharConversion",
+ "typeName": "interface"
+}
