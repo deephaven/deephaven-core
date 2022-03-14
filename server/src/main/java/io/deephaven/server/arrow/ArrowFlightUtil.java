@@ -11,9 +11,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -293,8 +291,6 @@ public class ArrowFlightUtil {
 
         private final String myPrefix;
         private final SessionState session;
-
-        private boolean isViewport;
 
         private final StreamObserver<BarrageStreamGenerator.View> listener;
 
@@ -651,9 +647,9 @@ public class ArrowFlightUtil {
                 final BitSet columns =
                         hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
-                isViewport = subscriptionRequest.viewportVector() != null;
+                final boolean hasViewport = subscriptionRequest.viewportVector() != null;
                 final RowSet viewport =
-                        isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
+                        hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
                 final boolean reverseViewport = subscriptionRequest.reverseViewport();
 
@@ -676,22 +672,16 @@ public class ArrowFlightUtil {
             private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
                 final boolean hasColumns = subscriptionRequest.columnsVector() != null;
                 final BitSet columns =
-                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
+                        hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
                 final boolean hasViewport = subscriptionRequest.viewportVector() != null;
                 final RowSet viewport =
-                        isViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
+                        hasViewport ? BarrageProtoUtil.toRowSet(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-                final boolean subscriptionFound;
-                if (isViewport && hasColumns && hasViewport) {
-                    subscriptionFound = bmp.updateViewportAndColumns(listener, viewport, columns);
-                } else if (isViewport && hasViewport) {
-                    subscriptionFound = bmp.updateViewport(listener, viewport);
-                } else if (hasColumns) {
-                    subscriptionFound = bmp.updateSubscription(listener, columns);
-                } else {
-                    subscriptionFound = true;
-                }
+                final boolean reverseViewport = subscriptionRequest.reverseViewport();
+
+
+                final boolean subscriptionFound = bmp.updateSubscription(listener, viewport, columns, reverseViewport);
 
                 if (!subscriptionFound) {
                     throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");

@@ -315,12 +315,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             viewport = newViewport;
             reverseViewport = newReverseViewport;
 
-            barrageMessageProducer.updateViewport(dummyObserver, viewport, reverseViewport);
+            // maintain the existing subscribedColumns set
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, reverseViewport);
         }
 
         public void setSubscribedColumns(final BitSet newColumns) {
             subscribedColumns = newColumns;
-            barrageMessageProducer.updateSubscription(dummyObserver, newColumns);
+
+            // maintain the existing viewport and viewport direction
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, reverseViewport);
         }
 
         public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns) {
@@ -333,7 +336,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             viewport = newViewport;
             reverseViewport = newReverseViewport;
             subscribedColumns = newColumns;
-            barrageMessageProducer.updateViewportAndColumns(dummyObserver, viewport, subscribedColumns);
+            barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, newReverseViewport);
         }
     }
 
