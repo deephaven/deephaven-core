@@ -354,6 +354,12 @@ public class GenerateFigureAPI2 {
         //todo pointShape
         //todo pointSize
         //todo pointsVisible
+        rst.add(new PyFunc("range", new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("remove_chart", new String[]{"removeChart"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("row_span", new String[]{"rowSpan"}, new String[]{"n"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("save", new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
+
+
 
         return rst;
     }
