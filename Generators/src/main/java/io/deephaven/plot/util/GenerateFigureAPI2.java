@@ -196,6 +196,11 @@ public class GenerateFigureAPI2 {
         //todo set.add("lineStyle");
         //todo set.add("linesVisible");
         set.add("log");
+        set.add("max");
+        set.add("maxRowsInTitle");
+        set.add("min");
+        set.add("minorTicks");
+        set.add("minorTicksVisible");
 
         return set;
     }
@@ -263,6 +268,12 @@ public class GenerateFigureAPI2 {
         rst.put("invert", new PyParameter(10, "invert", taBool, false, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
         rst.put("useLog", new PyParameter(10, "use_log", taBool, false, "true to use a log axis transform; false to use a linear axis transform.", null));
         rst.put("nbins", new PyParameter(15, "nbins", taInt, false, "number of bins", null));
+        rst.put("maxRowsCount", new PyParameter(10, "max_rows", taInt, false, "maximum number of row values to show in chart title", null));
+        rst.put("min", new PyParameter(10, "min", taFloat, false, "range minimum", null));
+        rst.put("max", new PyParameter(11, "max", taFloat, false, "range maximum", null));
+        rst.put("count", new PyParameter(10, "count", taInt, false, "number of minor ticks between consecutive major ticks.", null));
+
+        //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
         //
 
