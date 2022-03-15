@@ -267,6 +267,31 @@ public class GenerateFigureAPI2 {
 
             return sb.toString();
         }
+
+        /**
+         * Generates code for the python function doc string.
+         *
+         * @param args function arguments
+         * @return code for the python function doc string.
+         */
+        private String pyDocString(final List<PyArg> args){
+            final StringBuilder sb = new StringBuilder();
+
+            sb.append(INDENT).append(INDENT).append("\"\"\"").append(pydoc).append("\n\n");
+            sb.append(INDENT).append(INDENT).append("Args:\n");
+
+            for (final PyArg arg : args) {
+                sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation()).append("): ").append(arg.docString).append("\n");
+            }
+
+            sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
+
+            sb.append("\n").append(INDENT).append(INDENT).append("Raises:\n").append(INDENT).append(INDENT).append(INDENT).append("DHError\n");
+
+            sb.append(INDENT).append(INDENT).append("\"\"\"\n");
+
+            return sb.toString();
+        }
     }
 
 
@@ -630,24 +655,6 @@ public class GenerateFigureAPI2 {
     }
 
 
-    private static String pyDocString(final PyFunc func, final List<PyArg> args){
-        final StringBuilder sb = new StringBuilder();
-
-        sb.append(INDENT).append(INDENT).append("\"\"\"").append(func.pydoc).append("\n\n");
-        sb.append(INDENT).append(INDENT).append("Args:\n");
-
-        for (final PyArg arg : args) {
-            sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation()).append("): ").append(arg.docString).append("\n");
-        }
-
-        sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
-
-        sb.append("\n").append(INDENT).append(INDENT).append("Raises:\n").append(INDENT).append(INDENT).append(INDENT).append("DHError\n");
-
-        sb.append(INDENT).append(INDENT).append("\"\"\"\n");
-
-        return sb.toString();
-    }
 
     /**
      * Gets the valid Java method argument name combinations.
@@ -808,7 +815,7 @@ public class GenerateFigureAPI2 {
         final List<PyArg> args = func.pyArgs(signatures);
 
         final String sig = func.pyFuncDef(args);
-        final String pydocs = pyDocString(func, args);
+        final String pydocs = func.pyDocString(args);
         final String pybody = pyFuncBody(func, args, signatures);
 
         return sig +
