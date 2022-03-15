@@ -240,6 +240,33 @@ public class GenerateFigureAPI2 {
 
             return args;
         }
+
+        /**
+         * Generates code for the python function definition.
+         *
+         * @param args function arguments
+         * @return code for the python function definition.
+         */
+        private String pyFuncDef(final List<PyArg> args) {
+            final StringBuilder sb = new StringBuilder();
+
+            sb.append(INDENT).append("def ").append(name).append("(\n");
+            sb.append(INDENT).append(INDENT).append("self,\n");
+
+            for (final PyArg arg : args) {
+                sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
+
+                if (!isRequired(arg)) {
+                    sb.append(" = None");
+                }
+
+                sb.append(",\n");
+            }
+
+            sb.append(INDENT).append(") -> Figure:\n");
+
+            return sb.toString();
+        }
     }
 
 
@@ -603,27 +630,6 @@ public class GenerateFigureAPI2 {
     }
 
 
-    private static String pyFuncSignature(final PyFunc pyFunc, final List<PyArg> args) {
-        final StringBuilder sb = new StringBuilder();
-
-        sb.append(INDENT).append("def ").append(pyFunc.name).append("(\n");
-        sb.append(INDENT).append(INDENT).append("self,\n");
-
-        for (final PyArg arg : args) {
-            sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
-
-            if (!pyFunc.isRequired(arg)) {
-                sb.append(" = None");
-            }
-
-            sb.append(",\n");
-        }
-
-        sb.append(INDENT).append(") -> Figure:\n");
-
-        return sb.toString();
-    }
-
     private static String pyDocString(final PyFunc func, final List<PyArg> args){
         final StringBuilder sb = new StringBuilder();
 
@@ -801,7 +807,7 @@ public class GenerateFigureAPI2 {
     private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
         final List<PyArg> args = func.pyArgs(signatures);
 
-        final String sig = pyFuncSignature(func, args);
+        final String sig = func.pyFuncDef(args);
         final String pydocs = pyDocString(func, args);
         final String pybody = pyFuncBody(func, args, signatures);
 
