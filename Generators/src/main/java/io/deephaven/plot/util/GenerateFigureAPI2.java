@@ -564,6 +564,42 @@ public class GenerateFigureAPI2 {
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /**
+     * Generates python code for the module.
+     *
+     * NOTE: when python code is generated, the relevant methods are removed from signatures.
+     *
+     * @param signatures java method signatures
+     * @return generated python code
+     * @throws IOException problem reading the preamble
+     */
+    private static String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
+
+        final StringBuilder sb = new StringBuilder();
+
+        final String preamble = Files.readString(Path.of(PREAMBLE));
+        sb.append(preamble);
+        sb.append("\n");
+
+        final List<PyFunc> pyFuncs = getPyFuncs();
+
+        for(final PyFunc pyFunc : pyFuncs) {
+            final Map<Key, ArrayList<JavaFunction>> sigs = pyFunc.getSignatures(signatures);
+
+            sigs.forEach((k,v) -> signatures.remove(k));
+
+            final String pyFuncCode = pyFunc.generatePy(sigs);
+            sb.append("\n").append(pyFuncCode);
+        }
+
+        return sb.toString();
+    }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -833,43 +869,6 @@ public class GenerateFigureAPI2 {
         Collections.sort(rst);
         return rst;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    /**
-     * Generates python code for the module.
-     *
-     * NOTE: when python code is generated, the relevant methods are removed from signatures.
-     *
-     * @param signatures java method signatures
-     * @return generated python code
-     * @throws IOException problem reading the preamble
-     */
-    private static String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
-
-        final StringBuilder sb = new StringBuilder();
-
-        final String preamble = Files.readString(Path.of(PREAMBLE));
-        sb.append(preamble);
-        sb.append("\n");
-
-        final List<PyFunc> pyFuncs = getPyFuncs();
-
-        for(final PyFunc pyFunc : pyFuncs) {
-            final Map<Key, ArrayList<JavaFunction>> sigs = pyFunc.getSignatures(signatures);
-
-            sigs.forEach((k,v) -> signatures.remove(k));
-
-            final String pyFuncCode = pyFunc.generatePy(sigs);
-            sb.append("\n").append(pyFuncCode);
-        }
-
-        return sb.toString();
-    }
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
