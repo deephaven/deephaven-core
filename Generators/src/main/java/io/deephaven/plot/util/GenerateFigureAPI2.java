@@ -205,7 +205,9 @@ public class GenerateFigureAPI2 {
         final String[] taStrs = new String[]{"List[str]"};
         final String[] taBool = new String[]{"bool"};
         final String[] taInt = new String[]{"int"};
+        final String[] taInts = new String[]{"List[int]"};
         final String[] taFloat = new String[]{"float"};
+        final String[] taFloats = new String[]{"List[float]"};
         final String[] taCallable = new String[]{"Callable"};
         final String[] taTable = new String[]{"Table","SelectableDataSet"};
         final String[] taDataCategory = new String[]{"str", "List[str]"};
@@ -214,6 +216,7 @@ public class GenerateFigureAPI2 {
 
         final String[] taColor = new String[]{"str", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
+        final String[] taAxisTransform = new String[]{"AxisTransform"}; //todo support io.deephaven.plot.axistransformations.AxisTransform
         final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
         final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
 
@@ -284,6 +287,11 @@ public class GenerateFigureAPI2 {
 
         rst.put("rowSpan", new PyParameter(10, "row_span", taInt,  "how many rows high.", null));
         rst.put("colSpan", new PyParameter(11, "col_span", taInt,  "how many rows wide.", null));
+        rst.put("angle", new PyParameter(10, "angle", taInt,  "angle in degrees.", null));
+
+        rst.put("gapBetweenTicks", new PyParameter(10, "gap", taFloat,  "distance between ticks.", null));
+        rst.put("tickLocations", new PyParameter(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
+        rst.put("transform", new PyParameter(10, "transform", taAxisTransform,  "transform.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -370,6 +378,15 @@ public class GenerateFigureAPI2 {
         //todo seriesNamingFunction
         rst.add(new PyFunc("show", new String[]{"show"}, null, "TODO pydoc"));
         rst.add(new PyFunc("span", new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
+        rst.add(new PyFunc("tick_label_angle", new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("ticks", new String[]{"ticks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks_font", new String[]{"ticksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks_visible", new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        //todo toolTipPattern
+        rst.add(new PyFunc("transform", new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("twin", new String[]{"twin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("twin_x", new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
+        rst.add(new PyFunc("twin_y", new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
 
 
 
