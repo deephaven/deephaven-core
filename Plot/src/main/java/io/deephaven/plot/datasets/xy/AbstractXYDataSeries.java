@@ -365,13 +365,13 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final Table t, final String columnName) {
+    public AbstractXYDataSeries pointColor(final Table t, final String colors) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+        final TableHandle tableHandle = new TableHandle(t, colors);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newNumericHandler(tableHandle, colors, getPlotInfo());
 
         if (columnHandler.typeClassification() == ColumnHandlerFactory.TypeClassification.INTEGER &&
                 (columnHandler.type() == int.class || columnHandler.type() == Integer.class)) {
@@ -380,31 +380,31 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
             return pointColor(new IndexableDataTable<>(columnHandler, getPlotInfo()));
         } else {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + columnName + "\ttype=" + columnHandler.type(),
+                    "Column can not be converted into a color: column=" + colors + "\ttype=" + columnHandler.type(),
                     this);
         }
     }
 
     @Override
-    public AbstractXYDataSeries pointColor(final SelectableDataSet sds, final String columnName) {
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
-        final Class type = sds.getTableDefinition().getColumn(columnName).getDataType();
+    public AbstractXYDataSeries pointColor(final SelectableDataSet sds, final String colors) {
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), colors);
+        final Class type = sds.getTableDefinition().getColumn(colors).getDataType();
         final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class)
                 || type.equals(Short.class);
         final boolean isPaint = Paint.class.isAssignableFrom(type);
 
         if (!isInt && !isPaint) {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + columnName + "\ttype=" + type, this);
+                    "Column can not be converted into a color: column=" + colors + "\ttype=" + type, this);
         }
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), colors);
         addSwappableTable(t);
 
         if (isInt) {
-            return pointColor(new IndexableDataSwappableTablePaint(t, columnName, chart()));
+            return pointColor(new IndexableDataSwappableTablePaint(t, colors, chart()));
         } else if (isPaint) {
-            return pointColor(new IndexableDataSwappableTable<Paint>(t, columnName, getPlotInfo()));
+            return pointColor(new IndexableDataSwappableTable<Paint>(t, colors, getPlotInfo()));
         } else {
             throw new PlotIllegalStateException("Should never reach here", this);
         }

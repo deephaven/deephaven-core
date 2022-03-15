@@ -214,7 +214,9 @@ public class GenerateFigureAPI2 {
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"};
         final String[] taDataTime = new String[]{"str", "List[DateTime]"};
 
-        final String[] taColor = new String[]{"str", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
+        final String[] taKey = new String[]{"List[Any]"}; //todo keys are technically Object[].  How to support?
+        final String[] taColor = new String[]{"str", "int", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
+        final String[] taColors = new String[]{"str", "List[str]", "List[Color]", "List[int]", "Dict[str,Color]", "Callable"}; //todo support Color (io.deephaven.gui.color.Paint)
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
         final String[] taAxisTransform = new String[]{"AxisTransform"}; //todo support io.deephaven.plot.axistransformations.AxisTransform
         final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
@@ -225,7 +227,7 @@ public class GenerateFigureAPI2 {
         rst.put("t", new PyParameter(2, "t", taTable,  "table or selectable data set (e.g. OneClick filterable table)", null));
         rst.put("x", new PyParameter(3, "x", taDataNumeric,  "x-values or column name", null));
         rst.put("y", new PyParameter(4, "y", taDataNumeric,  "y-values or column name", null));
-        rst.put("function", new PyParameter(5, "function", taCallable,  "function to plot", null));
+        rst.put("function", new PyParameter(5, "function", taCallable,  "function", null));
         rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", taBool,  "whether to treat the x-values as time data", null)); //todo needed
         rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", taBool,  "whether to treat the y-values as time data", null)); //todo needed?
 
@@ -241,6 +243,7 @@ public class GenerateFigureAPI2 {
         rst.put("names", new PyParameter(10, "names", taStrs,  "series names", null));
         rst.put("dim", new PyParameter(10, "dim", taInt,  "dimension of the axis", null));
         rst.put("color", new PyParameter(10, "color", taColor,  "color", null));
+        rst.put("colors", new PyParameter(10, "colors", taColors,  "colors", null));
         rst.put("format", new PyParameter(10, "format", taAxisFormat,  "axis format", null));
         rst.put("pattern", new PyParameter(10, "pattern", taStr,  "axis format pattern", null));
         rst.put("label", new PyParameter(10, "label", taStr,  "label", null));
@@ -294,6 +297,9 @@ public class GenerateFigureAPI2 {
         rst.put("transform", new PyParameter(10, "transform", taAxisTransform,  "transform.", null));
         rst.put("updateIntervalMillis", new PyParameter(10, "millis", taInt,  "milliseconds.", null));
 
+        rst.put("keys", new PyParameter(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
+        rst.put("keyColumn", new PyParameter(20, "key_col", taStr,  "colum name specifying category values.", null)); //todo doc/value?
+
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
         //
@@ -330,7 +336,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("chart_title", new String[]{"chartTitle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart_title_color", new String[]{"chartTitleColor"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart_title_font", new String[]{"chartTitleFont"}, null, "TODO pydoc"));
-////todo        set.add("errorBarColor");
+        rst.add(new PyFunc("error_bar_color", new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         //todo should error_bar be part of plot?
         rst.add(new PyFunc("error_bar", new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
@@ -340,17 +346,17 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("figure_title_font", new String[]{"figureTitleFont"}, null, "TODO pydoc"));
         rst.add(new PyFunc("func_n_points", new String[]{"funcNPoints"}, new String[]{"npoints"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("func_range", new String[]{"funcRange"}, new String[]{"xmin", "xmax"}, "TODO pydoc")); //todo req?
-//        //todo set.add("gradientVisible");
+        rst.add(new PyFunc("gradient_visible", new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("grid_lines_visible", new String[]{"gridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-//        //todo set.add("group");
+//todo        rst.add(new PyFunc("group", new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("hist_plot", new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("invert", new String[]{"invert"}, null, "TODO pydoc"));
         rst.add(new PyFunc("legend_color", new String[]{"legendColor"}, null, "TODO pydoc"));
         rst.add(new PyFunc("legend_font", new String[]{"legendFont"}, null, "TODO pydoc"));
         rst.add(new PyFunc("legend_visible", new String[]{"legendVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-//        //todo set.add("lineColor");
-//        //todo set.add("lineStyle");
-//        //todo set.add("linesVisible");
+        rst.add(new PyFunc("line_color", new String[]{"lineColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("line_style", new String[]{"lineStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("lines_visible", new String[]{"linesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("log", new String[]{"log"}, null, "TODO pydoc"));
         rst.add(new PyFunc("max", new String[]{"max"}, null, "TODO pydoc"));
         rst.add(new PyFunc("max_rows_in_title", new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
@@ -360,35 +366,38 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("new_axes", new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("new_chart", new String[]{"newChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ohlc_plot", new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        //todo piePercentLabelFormat
+        rst.add(new PyFunc("pie_percent_label_format", new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("pie_plot", new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot", new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_orientation", new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("plot_style", new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
-        //todo pointColor / pointColorByY / pointColorInteger
+        //todo point colors...
+//        rst.add(new PyFunc("point_color", new String[]{"pointColor"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("point_color_by_y", new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("point_color_integer", new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
+
         //todo pointLabel
-        //todo pointLabelFormat
+        rst.add(new PyFunc("point_label_format", new String[]{"pointLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         //todo pointShape
         //todo pointSize
-        //todo pointsVisible
+        rst.add(new PyFunc("points_visible", new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("range", new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("remove_chart", new String[]{"removeChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("save", new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
         rst.add(new PyFunc("series", new String[]{"series"}, null, "TODO pydoc"));
-        //todo seriesColor
-        //todo seriesNamingFunction
+        rst.add(new PyFunc("series_color", new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("series_naming_function", new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("show", new String[]{"show"}, null, "TODO pydoc"));
         rst.add(new PyFunc("span", new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
         rst.add(new PyFunc("tick_label_angle", new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("ticks", new String[]{"ticks"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_font", new String[]{"ticksFont"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_visible", new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        //todo toolTipPattern
+        rst.add(new PyFunc("tool_tip_pattern", new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("transform", new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("twin", new String[]{"twin"}, null, "TODO pydoc"));
         rst.add(new PyFunc("twin_x", new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
         rst.add(new PyFunc("twin_y", new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
-        //todo toolTipPattern
         rst.add(new PyFunc("update_interval", new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
 
         rst.add(new PyFunc("x_axis", new String[]{"xAxis"}, null, "TODO pydoc"));
@@ -409,7 +418,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("x_ticks", new String[]{"xTicks"}, null, "TODO pydoc"));
         rst.add(new PyFunc("x_ticks_font", new String[]{"xTicksFont"}, null, "TODO pydoc"));
         rst.add(new PyFunc("x_ticks_visible", new String[]{"xTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        //todo rst.add(new PyFunc("x_tool_tip_pattern", new String[]{"xToolTipPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_tool_tip_pattern", new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("x_transform", new String[]{"xTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("y_axis", new String[]{"yAxis"}, null, "TODO pydoc"));
@@ -430,7 +439,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("y_ticks", new String[]{"yTicks"}, null, "TODO pydoc"));
         rst.add(new PyFunc("y_ticks_font", new String[]{"yTicksFont"}, null, "TODO pydoc"));
         rst.add(new PyFunc("y_ticks_visible", new String[]{"yTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        //todo rst.add(new PyFunc("y_tool_tip_pattern", new String[]{"yToolTipPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_tool_tip_pattern", new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_transform", new String[]{"yTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
 

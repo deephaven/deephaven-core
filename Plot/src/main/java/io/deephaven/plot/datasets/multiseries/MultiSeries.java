@@ -22,17 +22,17 @@ public interface MultiSeries extends Series {
      * Defines the procedure to name a generated series. The input of the naming function is the table map key
      * corresponding to the new series.
      *
-     * @param namingFunction series naming function
+     * @param function series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
+    MultiSeries seriesNamingFunction(final Function<Object, String> function);
 
     /**
      * Defines the procedure to name a generated series. The input of the naming function is the table map key
      * corresponding to the new series.
      *
-     * @param namingFunction series naming closure
+     * @param function series naming closure
      */
-    MultiSeries seriesNamingFunction(final Closure<String> namingFunction);
+    MultiSeries seriesNamingFunction(final Closure<String> function);
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
@@ -251,10 +251,10 @@ public interface MultiSeries extends Series {
     <T extends io.deephaven.gui.color.Paint> MultiSeries pointColor(final io.deephaven.plot.datasets.data.IndexableData<T> colors, final Object... keys);
 
 
-    MultiSeries pointColor(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointColor(final io.deephaven.engine.table.Table t, final java.lang.String colors, final Object... keys);
 
 
-    MultiSeries pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String colors, final Object... keys);
 
 
     MultiSeries pointColorInteger(final io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, final Object... keys);

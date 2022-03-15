@@ -137,20 +137,20 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override
     public AbstractMultiSeries<SERIES> seriesNamingFunction(
-            final java.util.function.Function<Object, String> namingFunction) {
-        if (namingFunction == null) {
+            final java.util.function.Function<Object, String> function) {
+        if (function == null) {
             this.namingFunction = DEFAULT_NAMING_FUNCTION;
         } else {
-            this.namingFunction = namingFunction;
+            this.namingFunction = function;
         }
 
-        applyNamingFunction(namingFunction);
+        applyNamingFunction(function);
         return this;
     }
 
     @Override
-    public AbstractMultiSeries<SERIES> seriesNamingFunction(final Closure<String> namingFunction) {
-        return seriesNamingFunction(namingFunction == null ? null : new ClosureFunction<>(namingFunction));
+    public AbstractMultiSeries<SERIES> seriesNamingFunction(final Closure<String> function) {
+        return seriesNamingFunction(function == null ? null : new ClosureFunction<>(function));
     }
 
     /**
@@ -714,13 +714,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointColor(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointColor(final io.deephaven.engine.table.Table t, final java.lang.String colors, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColor for arguments [interface io.deephaven.engine.table.Table, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String colors, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColor for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 

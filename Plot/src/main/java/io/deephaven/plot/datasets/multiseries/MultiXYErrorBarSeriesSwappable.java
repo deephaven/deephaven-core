@@ -420,14 +420,14 @@ public class MultiXYErrorBarSeriesSwappable extends AbstractSwappableMultiSeries
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringMap() {
         return pointColorSeriesNameToTableStringMap;
     }
-    @Override public MultiXYErrorBarSeriesSwappable pointColor(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
-    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, columnName);
+    @Override public MultiXYErrorBarSeriesSwappable pointColor(final io.deephaven.engine.table.Table t, final java.lang.String colors, final Object... keys) {
+    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, colors);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
-            pointColorSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, columnName});
+            pointColorSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, colors});
         } else {
             pointColorSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ tHandle, columnName});
+                new Object[]{ tHandle, colors});
         }
 
         return this;
@@ -439,12 +439,12 @@ public class MultiXYErrorBarSeriesSwappable extends AbstractSwappableMultiSeries
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToSelectableDataSetStringMap() {
         return pointColorSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYErrorBarSeriesSwappable pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYErrorBarSeriesSwappable pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String colors, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            pointColorSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, columnName});
+            pointColorSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, colors});
         } else {
             pointColorSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ sds, columnName});
+                new Object[]{ sds, colors});
         }
 
         return this;

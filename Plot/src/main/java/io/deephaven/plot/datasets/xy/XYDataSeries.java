@@ -151,19 +151,19 @@ public interface XYDataSeries extends DataSeries {
      * Sets the point color. Unspecified points use the default color.
      *
      * @param t table containing colors
-     * @param columnName column in {@code t} containing colors. The color data for point i comes from row i.
+     * @param colors column in {@code t} containing colors. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(Table t, String columnName);
+    XYDataSeries pointColor(Table t, String colors);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing colors
-     * @param columnName column in {@code sds} containing colors. The color data for point i comes from row i.
+     * @param colors column in {@code sds} containing colors. The color data for point i comes from row i.
      * @return this XYDataSeries
      */
-    XYDataSeries pointColor(SelectableDataSet sds, String columnName);
+    XYDataSeries pointColor(SelectableDataSet sds, String colors);
 
 
     ////////////////////////// point labels //////////////////////////

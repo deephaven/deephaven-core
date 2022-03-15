@@ -1008,9 +1008,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointColor( int[] colors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String colors );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String colors, java.lang.Object... keys );
 
     @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
@@ -1024,9 +1024,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointColor( io.deephaven.gui.color.Paint[] colors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String colors );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String colors, java.lang.Object... keys );
 
     @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn );
 
@@ -1222,9 +1222,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure seriesColor( java.lang.String color, java.lang.Object... keys );
 
-    @Override  Figure seriesNamingFunction( groovy.lang.Closure<java.lang.String> namingFunction );
+    @Override  Figure seriesNamingFunction( groovy.lang.Closure<java.lang.String> function );
 
-    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction );
+    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> function );
 
     @Override  Figure toolTipPattern( java.lang.String format );
 
