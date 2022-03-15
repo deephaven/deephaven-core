@@ -315,7 +315,7 @@ public class GenerateFigureAPI2 {
          * @param signatures java functions with the same name.
          * @return valid Java method argument name combinations.
          */
-        private static List<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
+        private static Collection<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
             final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
 
             for(JavaFunction f : signatures) {
@@ -329,26 +329,39 @@ public class GenerateFigureAPI2 {
                 vals.put(s, params);
             }
 
-            final ArrayList<String[]> rst = new ArrayList<>(vals.values());
+            return vals.values();
+        }
 
-            rst.sort((first, second) -> {
-                final int c1 = Integer.compare(first.length, second.length);
+        /**
+         * Gets the valid Python method argument name combinations.
+         *
+         * @param signatures java functions with the same name.
+         * @return valid Java method argument name combinations.
+         */
+        private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures, final Map<String, PyArg> pyParameterMap) {
+            final Set<Set<String>> seen = new HashSet<>();
 
-                if (c1 != 0) {
-                    return c1;
-                }
+            return javaArgNames(signatures)
+                    .stream()
+                    .map(an -> Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new))
+                    .filter(an -> seen.add(new HashSet<>(Arrays.asList(an))))
+                    .sorted((first, second) -> {
+                        final int c1 = Integer.compare(first.length, second.length);
 
-                for (int i = 0; i < first.length; i++) {
-                    final int c2 = first[i].compareTo(second[i]);
-                    if (c2 != 0) {
-                        return c2;
-                    }
-                }
+                        if (c1 != 0) {
+                            return c1;
+                        }
 
-                return 0;
-            });
+                        for (int i = 0; i < first.length; i++) {
+                            final int c2 = first[i].compareTo(second[i]);
+                            if (c2 != 0) {
+                                return c2;
+                            }
+                        }
 
-            return rst;
+                        return 0;
+                    })
+                    .collect(Collectors.toList());
         }
 
         /**
@@ -474,7 +487,7 @@ public class GenerateFigureAPI2 {
 
             // non-null params
 
-            sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
+            sb.append(INDENT).append(INDENT).append("non_null_params = set()\n\n");
 
             for(final PyArg arg:args){
                 sb.append(INDENT)
@@ -485,8 +498,8 @@ public class GenerateFigureAPI2 {
                         .append(INDENT)
                         .append(INDENT)
                         .append(INDENT)
-                        .append("non_null_params.add(")
-                        .append(arg.name).append(")\n")
+                        .append("non_null_params.add(\"")
+                        .append(arg.name).append("\")\n")
                         .append(INDENT)
                         .append(INDENT)
                         .append(INDENT)
@@ -511,7 +524,7 @@ public class GenerateFigureAPI2 {
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
-                final List<String[]> argNames = javaArgNames(sigs);
+                final List<String[]> argNames = pyArgNames(sigs, pyParameterMap);
 
                 boolean isFirst = true;
 
@@ -524,7 +537,7 @@ public class GenerateFigureAPI2 {
                         alreadyGenerated.add(argSet);
                     }
 
-                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + pyParameterMap.get(s).name + "\"").toArray(String[]::new);
+                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
 
                     sb.append(INDENT)
                             .append(INDENT)
@@ -538,7 +551,7 @@ public class GenerateFigureAPI2 {
                             .append("return Figure(self.j_figure.")
                             .append(key.name)
                             .append("(")
-                            .append(String.join(", ", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
+                            .append(String.join(", ", an))
                             .append("))\n");
 
                     isFirst = false;
@@ -885,6 +898,13 @@ public class GenerateFigureAPI2 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static void printMethodSignatures(final Map<Key, ArrayList<JavaFunction>> signatures) {
+        for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+            final Key key = entry.getKey();
+            final ArrayList<JavaFunction> sigs = entry.getValue();
+            System.out.println(describeMethodSignatures(key, sigs));
+        }
+    }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
 
@@ -907,11 +927,7 @@ public class GenerateFigureAPI2 {
             System.out.println("===========================================================");
         }
 
-        for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            final Key key = entry.getKey();
-            final ArrayList<JavaFunction> sigs = entry.getValue();
-            System.out.println(describeMethodSignatures(key, sigs));
-        }
+        printMethodSignatures(signatures);
 
         if(!signatures.isEmpty()){
             throw new RuntimeException("Not all methods were generated.");
