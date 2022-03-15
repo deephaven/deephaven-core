@@ -60,7 +60,7 @@ public class GenerateFigureAPI2 {
      * @param signatures list of signatures
      * @return descriptive string for a method signature
      */
-    private static String methodSignatureDescription(final Key key, final ArrayList<JavaFunction> signatures) {
+    private static String describeMethodSignatures(final Key key, final ArrayList<JavaFunction> signatures) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("-----------------------------------------------------------------------\n");
@@ -910,7 +910,7 @@ public class GenerateFigureAPI2 {
         for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
             final ArrayList<JavaFunction> sigs = entry.getValue();
-            System.out.println(methodSignatureDescription(key, sigs));
+            System.out.println(describeMethodSignatures(key, sigs));
         }
 
         if(!signatures.isEmpty()){
