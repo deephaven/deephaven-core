@@ -205,6 +205,41 @@ public class GenerateFigureAPI2 {
         public boolean isRequired(final PyArg parameter) {
             return Arrays.asList(requiredParams).contains(parameter.name);
         }
+
+        /**
+         * Gets the complete set of arguments for the python function.
+         *
+         * @param sigs java functions
+         * @return complete set of arguments for the python function.
+         */
+        private List<PyArg> pyArgs(final Map<Key, ArrayList<JavaFunction>> sigs) {
+            final Map<String, PyArg> pyparams = getPyParameters();
+            final Set<PyArg> argSet = new HashSet<>();
+
+            for(final ArrayList<JavaFunction> signatures : sigs.values()) {
+                for (final JavaFunction f : signatures) {
+                    for (final String param : f.getParameterNames()) {
+                        final PyArg pyparam = pyparams.get(param);
+
+                        if(pyparam == null) {
+                            throw new IllegalArgumentException("Unsupported python parameter: func=" + this + " param=" + param);
+                        }
+
+                        argSet.add(pyparam);
+                    }
+                }
+            }
+
+            final List<PyArg> args = new ArrayList<>(argSet);
+            args.sort((a,b)-> {
+                final boolean ra = isRequired(a);
+                final boolean rb = isRequired(b);
+
+                return ra != rb ? (ra ? -1 : 1) : a.compareTo(b);
+            });
+
+            return args;
+        }
     }
 
 
@@ -567,34 +602,6 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    private static List<PyArg> pyMethodArgs(final PyFunc pyFunc, final Map<Key, ArrayList<JavaFunction>> sigs) {
-        final Map<String, PyArg> pyparams = getPyParameters();
-        final Set<PyArg> argSet = new HashSet<>();
-
-        for(final ArrayList<JavaFunction> signatures : sigs.values()) {
-            for (final JavaFunction f : signatures) {
-                for (final String param : f.getParameterNames()) {
-                    final PyArg pyparam = pyparams.get(param);
-
-                    if(pyparam == null) {
-                        throw new IllegalArgumentException("Unsupported python parameter: func=" + pyFunc + " param=" + param);
-                    }
-
-                    argSet.add(pyparam);
-                }
-            }
-        }
-
-        final List<PyArg> args = new ArrayList<>(argSet);
-        args.sort((a,b)-> {
-            final boolean ra = pyFunc.isRequired(a);
-            final boolean rb = pyFunc.isRequired(b);
-
-            return ra != rb ? (ra ? -1 : 1) : a.compareTo(b);
-        });
-
-        return args;
-    }
 
     private static String pyFuncSignature(final PyFunc pyFunc, final List<PyArg> args) {
         final StringBuilder sb = new StringBuilder();
@@ -792,7 +799,7 @@ public class GenerateFigureAPI2 {
     }
 
     private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
-        final List<PyArg> args = pyMethodArgs(func, signatures);
+        final List<PyArg> args = func.pyArgs(signatures);
 
         final String sig = pyFuncSignature(func, args);
         final String pydocs = pyDocString(func, args);
@@ -825,7 +832,7 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
