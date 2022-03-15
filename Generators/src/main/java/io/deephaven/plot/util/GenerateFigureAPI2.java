@@ -292,6 +292,125 @@ public class GenerateFigureAPI2 {
 
             return sb.toString();
         }
+
+        /**
+         * Generates code for the python function body.
+         *
+         * @param args function arguments
+         * @param signatures java functions
+         * @return code for the python function body.
+         */
+        private String pyFuncBody(final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
+            final Map<String, PyArg> pyParameterMap = getPyParameters();
+
+            final StringBuilder sb = new StringBuilder();
+
+            // validate
+
+            for(final PyArg arg:args){
+                if(!isRequired(arg)){
+                    continue;
+                }
+
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append("if not ")
+                        .append(arg.name)
+                        .append(":\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("raise DHError(\"required parameter is not set: ")
+                        .append(arg.name)
+                        .append("\")\n");
+            }
+
+            sb.append("\n");
+
+            // non-null params
+
+            sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
+
+            for(final PyArg arg:args){
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append("if ")
+                        .append(arg.name)
+                        .append(" is not None:\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("non_null_params.add(")
+                        .append(arg.name).append(")\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(arg.name)
+                        .append(" = ")
+                        .append(arg.javaConverter)
+                        .append("(\"")
+                        .append(arg.name)
+                        .append("\",")
+                        .append(arg.name)
+                        .append(",")
+                        .append(arg.typeList())
+                        .append(")\n");
+            }
+
+            sb.append("\n");
+
+            // function calls
+
+            final Set<Set<String>> alreadyGenerated = new HashSet<>();
+
+            for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+                final Key key = entry.getKey();
+                final ArrayList<JavaFunction> sigs = entry.getValue();
+                final List<String[]> argNames = javaArgNames(sigs);
+
+                boolean isFirst = true;
+
+                for (final String[] an : argNames) {
+                    final Set<String> argSet = new HashSet<>(Arrays.asList(an));
+
+                    if(alreadyGenerated.contains(argSet)) {
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an));
+                    } else {
+                        alreadyGenerated.add(argSet);
+                    }
+
+                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + pyParameterMap.get(s).name + "\"").toArray(String[]::new);
+
+                    sb.append(INDENT)
+                            .append(INDENT)
+                            .append(isFirst ? "if" : "elif")
+                            .append(" non_null_params == {")
+                            .append(String.join(",", quoted_an))
+                            .append("}:\n")
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("return Figure(self.j_figure.")
+                            .append(key.name)
+                            .append("(")
+                            .append(String.join(",", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
+                            .append("))\n");
+
+                    isFirst = false;
+                }
+            }
+
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("else:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
+
+            return sb.toString();
+        }
+
     }
 
 
@@ -700,123 +819,13 @@ public class GenerateFigureAPI2 {
         return rst;
     }
 
-    private static String pyFuncBody(final PyFunc pyFunc, final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
-        final Map<String, PyArg> pyParameterMap = getPyParameters();
-
-        final StringBuilder sb = new StringBuilder();
-
-        // validate
-
-        for(final PyArg arg:args){
-            if(!pyFunc.isRequired(arg)){
-                continue;
-            }
-
-            sb.append(INDENT)
-                    .append(INDENT)
-                    .append("if not ")
-                    .append(arg.name)
-                    .append(":\n")
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append("raise DHError(\"required parameter is not set: ")
-                    .append(arg.name)
-                    .append("\")\n");
-        }
-
-        sb.append("\n");
-
-        // non-null params
-
-        sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
-
-        for(final PyArg arg:args){
-            sb.append(INDENT)
-                    .append(INDENT)
-                    .append("if ")
-                    .append(arg.name)
-                    .append(" is not None:\n")
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append("non_null_params.add(")
-                    .append(arg.name).append(")\n")
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append(INDENT)
-                    .append(arg.name)
-                    .append(" = ")
-                    .append(arg.javaConverter)
-                    .append("(\"")
-                    .append(arg.name)
-                    .append("\",")
-                    .append(arg.name)
-                    .append(",")
-                    .append(arg.typeList())
-                    .append(")\n");
-        }
-
-        sb.append("\n");
-
-        // function calls
-
-        final Set<Set<String>> alreadyGenerated = new HashSet<>();
-
-        for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
-            final Key key = entry.getKey();
-            final ArrayList<JavaFunction> sigs = entry.getValue();
-            final List<String[]> argNames = javaArgNames(sigs);
-
-            boolean isFirst = true;
-
-            for (final String[] an : argNames) {
-                final Set<String> argSet = new HashSet<>(Arrays.asList(an));
-
-                if(alreadyGenerated.contains(argSet)) {
-                    throw new RuntimeException("Java functions have same signature: function=" + pyFunc + " sig=" + Arrays.toString(an));
-                } else {
-                    alreadyGenerated.add(argSet);
-                }
-
-                final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + pyParameterMap.get(s).name + "\"").toArray(String[]::new);
-
-                sb.append(INDENT)
-                        .append(INDENT)
-                        .append(isFirst ? "if" : "elif")
-                        .append(" non_null_params == {")
-                        .append(String.join(",", quoted_an))
-                        .append("}:\n")
-                        .append(INDENT)
-                        .append(INDENT)
-                        .append(INDENT)
-                        .append("return Figure(self.j_figure.")
-                        .append(key.name)
-                        .append("(")
-                        .append(String.join(",", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
-                        .append("))\n");
-
-                isFirst = false;
-            }
-        }
-
-        sb.append(INDENT)
-                .append(INDENT)
-                .append("else:\n")
-                .append(INDENT)
-                .append(INDENT)
-                .append(INDENT)
-                .append("raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
-
-        return sb.toString();
-    }
 
     private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
         final List<PyArg> args = func.pyArgs(signatures);
 
         final String sig = func.pyFuncDef(args);
         final String pydocs = func.pyDocString(args);
-        final String pybody = pyFuncBody(func, args, signatures);
+        final String pybody = func.pyFuncBody(args, signatures);
 
         return sig +
                 pydocs +
