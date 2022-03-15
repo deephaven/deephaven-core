@@ -240,7 +240,7 @@ public class GenerateFigureAPI2 {
          * @return list of types string
          */
         public String typeList() {
-            return "[" + String.join(",", typeAnnotations) + "]";
+            return "[" + String.join(", ", typeAnnotations) + "]";
         }
     }
 
@@ -530,7 +530,7 @@ public class GenerateFigureAPI2 {
                             .append(INDENT)
                             .append(isFirst ? "if" : "elif")
                             .append(" non_null_params == {")
-                            .append(String.join(",", quoted_an))
+                            .append(String.join(", ", quoted_an))
                             .append("}:\n")
                             .append(INDENT)
                             .append(INDENT)
@@ -538,7 +538,7 @@ public class GenerateFigureAPI2 {
                             .append("return Figure(self.j_figure.")
                             .append(key.name)
                             .append("(")
-                            .append(String.join(",", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
+                            .append(String.join(", ", Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new)))
                             .append("))\n");
 
                     isFirst = false;
