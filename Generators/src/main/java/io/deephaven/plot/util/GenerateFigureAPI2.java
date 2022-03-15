@@ -25,6 +25,102 @@ public class GenerateFigureAPI2 {
 
 
     /**
+     * Gets the method signatures of public JCLASS methods.
+     *
+     * @return Map of method keys to a list of all relevant method signatures.
+     * @throws ClassNotFoundException JCLASS is not found
+     */
+    public static Map<Key, ArrayList<JavaFunction>> getMethodSignatures() throws ClassNotFoundException {
+        final Class<?> c = Class.forName(JCLASS);
+        final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
+
+        for (final Method m : c.getMethods()) {
+            if (!m.getReturnType().getTypeName().equals(JCLASS)) {
+                // only look at methods of the plot builder
+                continue;
+            }
+            //todo print the other cases
+
+            final Key key = new Key(m);
+            final JavaFunction f = new JavaFunction(m);
+
+            if (key.isPublic) {
+                final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
+                sigs.add(f);
+            }
+        }
+
+        return signatures;
+    }
+
+    /**
+     * Descriptive string for a method signature.
+     *
+     * @param key        signature key
+     * @param signatures list of signatures
+     * @return descriptive string for a method signature
+     */
+    private static String methodSignatureDescription(final Key key, final ArrayList<JavaFunction> signatures) {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("-----------------------------------------------------------------------\n");
+
+        sb.append("Name: ").append(key.name).append("\n");
+        sb.append("IsPublic: ").append(key.isPublic).append("\n");
+        sb.append("IsStatic: ").append(key.isStatic).append("\n");
+
+        final Set<String> returnTypes = new TreeSet<>();
+        final Map<String, Set<String>> params = new TreeMap<>();
+
+        for (final JavaFunction f : signatures) {
+            returnTypes.add(f.getReturnType().getTypeName());
+
+            for (int i = 0; i < f.getParameterNames().length; i++) {
+                final Set<String> paramTypes = params.computeIfAbsent(f.getParameterNames()[i], n -> new TreeSet<>());
+                paramTypes.add(f.getParameterTypes()[i].getTypeName());
+            }
+        }
+
+        sb.append("ReturnTypes:\n");
+
+        for (String returnType : returnTypes) {
+            sb.append("\t").append(returnType).append("\n");
+        }
+
+        sb.append("Params:\n");
+
+        for (Map.Entry<String, Set<String>> entry : params.entrySet()) {
+            sb.append("\t").append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+        }
+
+        sb.append("Signatures:\n");
+
+        for (final JavaFunction f : signatures) {
+            sb.append("\t");
+            sb.append(f.getReturnType().getTypeName());
+            sb.append(" (");
+
+            for (int i = 0; i < f.getParameterNames().length; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+
+                sb.append(f.getParameterNames()[i]).append("=").append(f.getParameterTypes()[i].getTypeName());
+            }
+
+            sb.append(")\n");
+        }
+
+        return sb.toString();
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /**
      * A Key for indexing common method names.
      */
     private static class Key implements Comparable<Key> {
@@ -744,92 +840,15 @@ public class GenerateFigureAPI2 {
 
 
     /**
-     * Gets the signatures of public JCLASS methods.
+     * Generates python code for the module.
      *
-     * @return Map of method keys to a list of all relevant signatures.
-     * @throws ClassNotFoundException JCLASS is not found
-     */
-    public static Map<Key, ArrayList<JavaFunction>> getSignatures() throws ClassNotFoundException {
-        final Class<?> c = Class.forName(JCLASS);
-        final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
-
-        for (final Method m : c.getMethods()) {
-            if (!m.getReturnType().getTypeName().equals(JCLASS)) {
-                // only look at methods of the plot builder
-                continue;
-            }
-
-            final Key key = new Key(m);
-            final JavaFunction f = new JavaFunction(m);
-
-            if (key.isPublic) {
-                final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
-                sigs.add(f);
-            }
-        }
-
-        return signatures;
-    }
-
-    /**
-     * Prints details for a method signature.
+     * NOTE: when python code is generated, the relevant methods are removed from signatures.
      *
-     * @param key        signature key
-     * @param signatures list of signatures
+     * @param signatures java method signatures
+     * @return generated python code
+     * @throws IOException problem reading the preamble
      */
-    private static void printSignature(final Key key, final ArrayList<JavaFunction> signatures) {
-        System.out.println("-----------------------------------------------------------------------");
-
-        System.out.println("Name: " + key.name);
-        System.out.println("IsPublic: " + key.isPublic);
-        System.out.println("IsStatic: " + key.isStatic);
-
-        final Set<String> returnTypes = new TreeSet<>();
-        final Map<String, Set<String>> params = new TreeMap<>();
-
-        for (final JavaFunction f : signatures) {
-            returnTypes.add(f.getReturnType().getTypeName());
-
-            for (int i = 0; i < f.getParameterNames().length; i++) {
-                final Set<String> paramTypes = params.computeIfAbsent(f.getParameterNames()[i], n -> new TreeSet<>());
-                paramTypes.add(f.getParameterTypes()[i].getTypeName());
-            }
-        }
-
-        System.out.println("ReturnTypes: ");
-
-        for (String returnType : returnTypes) {
-            System.out.println("\t" + returnType);
-        }
-
-        System.out.println("Params:");
-
-        for (Map.Entry<String, Set<String>> entry : params.entrySet()) {
-            System.out.println("\t" + entry.getKey() + "=" + entry.getValue());
-        }
-
-        System.out.println("Signatures:");
-
-        for (final JavaFunction f : signatures) {
-            StringBuilder sig = new StringBuilder(f.getReturnType().getTypeName());
-            sig.append(" (");
-
-            for (int i = 0; i < f.getParameterNames().length; i++) {
-                if (i > 0) {
-                    sig.append(", ");
-                }
-
-                sig.append(f.getParameterNames()[i]).append("=").append(f.getParameterTypes()[i].getTypeName());
-            }
-
-            sig.append(")");
-
-            System.out.println("\t" + sig);
-        }
-    }
-
-
-    private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
+    private static String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
 
         final StringBuilder sb = new StringBuilder();
 
@@ -859,14 +878,14 @@ public class GenerateFigureAPI2 {
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
 
-        final Map<Key, ArrayList<JavaFunction>> signatures = getSignatures();
+        final Map<Key, ArrayList<JavaFunction>> signatures = getMethodSignatures();
         final int nSig1 = signatures.size();
 
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
         }
 
-        String pyCode = generatePythonClass(signatures);
+        String pyCode = generatePy(signatures);
 
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
@@ -890,7 +909,7 @@ public class GenerateFigureAPI2 {
         for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
             final Key key = entry.getKey();
             final ArrayList<JavaFunction> sigs = entry.getValue();
-            printSignature(key, sigs);
+            System.out.println(methodSignatureDescription(key, sigs));
         }
 
     }
