@@ -165,7 +165,13 @@ public class GenerateFigureAPI2 {
          */
         public Map<Key, ArrayList<JavaFunction>> getSignatures(final Map<Key, ArrayList<JavaFunction>> signatures){
             final Set<String> funcs = new HashSet<>(Arrays.asList(javaFuncs));
-            return signatures.entrySet().stream().filter(e->funcs.contains(e.getKey().name)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            return new TreeMap<>(
+                    signatures
+                            .entrySet()
+                            .stream()
+                            .filter(e->funcs.contains(e.getKey().name))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+            );
         }
 
         /**
@@ -199,7 +205,7 @@ public class GenerateFigureAPI2 {
      * @return map of Java parameter names to Python parameters.
      */
     private static Map<String, PyParameter> getPyParameters() {
-        final Map<String, PyParameter> rst = new HashMap<>();
+        final Map<String, PyParameter> rst = new TreeMap<>();
 
         final String[] taStr = new String[]{"str"};
         final String[] taStrs = new String[]{"List[str]"};
@@ -633,7 +639,28 @@ public class GenerateFigureAPI2 {
             vals.put(s, params);
         }
 
-        return new ArrayList<>(vals.values());
+        final ArrayList<String[]> rst = new ArrayList<>(vals.values());
+
+        rst.sort((first, second) -> {
+            final int l1 = first.length;
+            final int l2 = second.length;
+            final int c1 = Integer.compare(l1, l2);
+
+            if (c1 != 0) {
+                return c1;
+            }
+
+            for (int i = 0; i < l1; i++) {
+                final int c2 = first[i].compareTo(second[i]);
+                if (c2 != 0) {
+                    return c2;
+                }
+            }
+
+            return 0;
+        });
+
+        return rst;
     }
 
     private static String pyFuncBody(final PyFunc pyFunc, final List<PyParameter> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
@@ -770,7 +797,6 @@ public class GenerateFigureAPI2 {
         final List<PyFunc> pyFuncs = getPyFuncs();
 
         for(final PyFunc pyFunc : pyFuncs) {
-            //todo make maps deterministic for code gen
             final Map<Key, ArrayList<JavaFunction>> sigs = pyFunc.getSignatures(signatures);
 
             sigs.forEach((k,v) -> signatures.remove(k));
