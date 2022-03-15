@@ -247,7 +247,7 @@ public class GenerateFigureAPI2 {
          * @param args function arguments
          * @return code for the python function definition.
          */
-        private String pyFuncDef(final List<PyArg> args) {
+        private String generatePyFuncDef(final List<PyArg> args) {
             final StringBuilder sb = new StringBuilder();
 
             sb.append(INDENT).append("def ").append(name).append("(\n");
@@ -274,7 +274,7 @@ public class GenerateFigureAPI2 {
          * @param args function arguments
          * @return code for the python function doc string.
          */
-        private String pyDocString(final List<PyArg> args){
+        private String generatePyDocString(final List<PyArg> args){
             final StringBuilder sb = new StringBuilder();
 
             sb.append(INDENT).append(INDENT).append("\"\"\"").append(pydoc).append("\n\n");
@@ -300,7 +300,7 @@ public class GenerateFigureAPI2 {
          * @param signatures java functions
          * @return code for the python function body.
          */
-        private String pyFuncBody(final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
+        private String generatePyFuncBody(final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
             final Map<String, PyArg> pyParameterMap = getPyParameters();
 
             final StringBuilder sb = new StringBuilder();
@@ -411,6 +411,19 @@ public class GenerateFigureAPI2 {
             return sb.toString();
         }
 
+        /**
+         * Generates code for the python function body.
+         *
+         * @param signatures java functions
+         * @return code for the python function body.
+         */
+        public String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) {
+            final List<PyArg> args = pyArgs(signatures);
+            final String sig = generatePyFuncDef(args);
+            final String pydocs = generatePyDocString(args);
+            final String pybody = generatePyFuncBody(args, signatures);
+            return sig + pydocs + pybody;
+        }
     }
 
 
@@ -820,18 +833,6 @@ public class GenerateFigureAPI2 {
     }
 
 
-    private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
-        final List<PyArg> args = func.pyArgs(signatures);
-
-        final String sig = func.pyFuncDef(args);
-        final String pydocs = func.pyDocString(args);
-        final String pybody = func.pyFuncBody(args, signatures);
-
-        return sig +
-                pydocs +
-                pybody;
-    }
-
     private static String generatePythonClass(final Map<Key, ArrayList<JavaFunction>> signatures) throws IOException {
 
         final StringBuilder sb = new StringBuilder();
@@ -847,7 +848,7 @@ public class GenerateFigureAPI2 {
 
             sigs.forEach((k,v) -> signatures.remove(k));
 
-            final String pyFuncCode = generatePythonFunction(pyFunc, sigs);
+            final String pyFuncCode = pyFunc.generatePy(sigs);
             sb.append("\n").append(pyFuncCode);
         }
 
