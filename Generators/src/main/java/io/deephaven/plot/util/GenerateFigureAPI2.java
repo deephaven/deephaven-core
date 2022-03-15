@@ -252,12 +252,18 @@ public class GenerateFigureAPI2 {
         private final String pydoc;
         private final String[] javaFuncs;
         private final String[] requiredParams;
+        private final boolean generate;
 
-        public PyFunc(final String name, final String[] javaFuncs, final String[] requiredParams, final String pydoc) {
+        public PyFunc(final String name, final String[] javaFuncs, final String[] requiredParams, final String pydoc, final boolean generate) {
             this.name = name;
             this.pydoc = pydoc;
             this.javaFuncs = javaFuncs;
             this.requiredParams = requiredParams == null ? new String[]{} : requiredParams;
+            this.generate = generate;
+        }
+
+        public PyFunc(final String name, final String[] javaFuncs, final String[] requiredParams, final String pydoc) {
+            this(name, javaFuncs, requiredParams, pydoc, true);
         }
 
         @Override
@@ -267,6 +273,7 @@ public class GenerateFigureAPI2 {
                     ", pydoc='" + pydoc + '\'' +
                     ", javaFuncs=" + Arrays.toString(javaFuncs) +
                     ", requiredParams=" + Arrays.toString(requiredParams) +
+                    ", generate=" + generate +
                     '}';
         }
 
@@ -550,12 +557,16 @@ public class GenerateFigureAPI2 {
         }
 
         /**
-         * Generates code for the python function body.
+         * Generates code for the python function body.  If this method is set to not generate, an empty string is returned.
          *
          * @param signatures java functions
          * @return code for the python function body.
          */
         public String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) {
+            if(!generate){
+                return "";
+            }
+
             final List<PyArg> args = pyArgs(signatures);
             final String sig = generatePyFuncDef(args);
             final String pydocs = generatePyDocString(args);
