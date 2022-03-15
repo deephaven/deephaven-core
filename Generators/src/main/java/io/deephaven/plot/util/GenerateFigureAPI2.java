@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+//todo rename
+//todo doc
 public class GenerateFigureAPI2 {
 
     private static final String INDENT = "    ";
@@ -83,26 +85,26 @@ public class GenerateFigureAPI2 {
 
 
     /**
-     * A Python input parameter.
+     * A Python method argument.
      */
-    private static class PyParameter {
+    private static class PyArg implements Comparable<PyArg>{
         private final int precedence;
         private final String name;
         private final String[] typeAnnotations;
         private final String docString;
         private final String javaConverter;
 
-        public PyParameter(final int precedence, final String name, final String[] typeAnnotations, final String docString, final String javaConverter) {
+        public PyArg(final int precedence, final String name, final String[] typeAnnotations, final String docString, final String javaConverter) {
             this.precedence = precedence;
             this.name = name;
             this.typeAnnotations = typeAnnotations;
             this.docString = docString;
-            this.javaConverter = javaConverter;
+            this.javaConverter = javaConverter == null ? "_convert_j" : javaConverter
         }
 
         @Override
         public String toString() {
-            return "PyParameter{" +
+            return "PyArg{" +
                     "precedence=" + precedence +
                     ", name='" + name + '\'' +
                     ", typeAnnotations='" + Arrays.toString(typeAnnotations) + '\'' +
@@ -129,6 +131,16 @@ public class GenerateFigureAPI2 {
             return "[" + String.join(",", typeAnnotations) + "]";
         }
 
+        @Override
+        public int compareTo(@NotNull PyArg o) {
+            final int c1 = Integer.compare(this.precedence, o.precedence);
+
+            if (c1 != 0) {
+                return c1;
+            }
+
+            return this.name.compareTo(o.name);
+        }
     }
 
     /**
@@ -180,7 +192,7 @@ public class GenerateFigureAPI2 {
          * @param parameter python parameter
          * @return is the parameter requried for the function?
          */
-        public boolean isRequired(final PyParameter parameter) {
+        public boolean isRequired(final PyArg parameter) {
             return Arrays.asList(requiredParams).contains(parameter.name);
         }
     }
@@ -204,8 +216,8 @@ public class GenerateFigureAPI2 {
      *
      * @return map of Java parameter names to Python parameters.
      */
-    private static Map<String, PyParameter> getPyParameters() {
-        final Map<String, PyParameter> rst = new TreeMap<>();
+    private static Map<String, PyArg> getPyParameters() {
+        final Map<String, PyArg> rst = new TreeMap<>();
 
         final String[] taStr = new String[]{"str"};
         final String[] taStrs = new String[]{"List[str]"};
@@ -233,92 +245,92 @@ public class GenerateFigureAPI2 {
         final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
 
 
-        rst.put("seriesName", new PyParameter(1, "series_name", taStr, "name of the created dataset", null));
-        rst.put("byColumns", new PyParameter(9, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("t", new PyParameter(2, "t", taTable,  "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("x", new PyParameter(3, "x", taDataNumeric,  "x-values or column name", null));
-        rst.put("y", new PyParameter(4, "y", taDataNumeric,  "y-values or column name", null));
-        rst.put("function", new PyParameter(5, "function", taCallable,  "function", null));
-        rst.put("hasXTimeAxis", new PyParameter(6, "has_x_time_axis", taBool,  "whether to treat the x-values as time data", null)); //todo needed
-        rst.put("hasYTimeAxis", new PyParameter(7, "has_y_time_axis", taBool,  "whether to treat the y-values as time data", null)); //todo needed?
+        rst.put("seriesName", new PyArg(1, "series_name", taStr, "name of the created dataset", null));
+        rst.put("byColumns", new PyArg(9, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("t", new PyArg(2, "t", taTable,  "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyArg(3, "x", taDataNumeric,  "x-values or column name", null));
+        rst.put("y", new PyArg(4, "y", taDataNumeric,  "y-values or column name", null));
+        rst.put("function", new PyArg(5, "function", taCallable,  "function", null));
+        rst.put("hasXTimeAxis", new PyArg(6, "has_x_time_axis", taBool,  "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyArg(7, "has_y_time_axis", taBool,  "whether to treat the y-values as time data", null)); //todo needed?
 
-        rst.put("categories", new PyParameter(3, "categories", taDataCategory,  "discrete data or column name", null));
-        rst.put("values", new PyParameter(4, "values", taDataNumeric,  "numeric data or column name", null));
-        rst.put("xLow", new PyParameter(5, "x_low", taDataNumeric,  "low value in x dimension", null));
-        rst.put("xHigh", new PyParameter(6, "x_high", taDataNumeric,  "high value in x dimension", null));
-        rst.put("yLow", new PyParameter(7, "y_low", taDataNumeric,  "low value in y dimension", null));
-        rst.put("yHigh", new PyParameter(8, "y_high", taDataNumeric,  "high value in y dimension", null));
+        rst.put("categories", new PyArg(3, "categories", taDataCategory,  "discrete data or column name", null));
+        rst.put("values", new PyArg(4, "values", taDataNumeric,  "numeric data or column name", null));
+        rst.put("xLow", new PyArg(5, "x_low", taDataNumeric,  "low value in x dimension", null));
+        rst.put("xHigh", new PyArg(6, "x_high", taDataNumeric,  "high value in x dimension", null));
+        rst.put("yLow", new PyArg(7, "y_low", taDataNumeric,  "low value in y dimension", null));
+        rst.put("yHigh", new PyArg(8, "y_high", taDataNumeric,  "high value in y dimension", null));
 
-        rst.put("id", new PyParameter(10, "axes", taInt,  "identifier", null));
-        rst.put("name", new PyParameter(10, "name", taStr,  "name", null));
-        rst.put("names", new PyParameter(10, "names", taStrs,  "series names", null));
-        rst.put("dim", new PyParameter(10, "dim", taInt,  "dimension of the axis", null));
-        rst.put("color", new PyParameter(10, "color", taColor,  "color", null));
-        rst.put("colors", new PyParameter(10, "colors", taColors,  "colors", null));
-        rst.put("format", new PyParameter(10, "format", taAxisFormat,  "axis format", null));
-        rst.put("pattern", new PyParameter(10, "pattern", taStr,  "axis format pattern", null));
-        rst.put("label", new PyParameter(10, "label", taStr,  "label", null));
-        rst.put("labels", new PyParameter(10, "labels", taStrs,  "labels", null));
-        rst.put("family", new PyParameter(10, "family", taStr,  "font family; if null, set to Arial", null));
-        rst.put("font", new PyParameter(10, "font", taFont,  "font", null));
-        rst.put("size", new PyParameter(10, "size", taInt,  "size", null));
-        rst.put("style", new PyParameter(10, "style", taStr,  "style", null));
-        rst.put("calendar", new PyParameter(10, "calendar", taBusinessCalendar,  "business calendar", null));
-        rst.put("valueColumn", new PyParameter(10, "values", taStr,  "column name", null));
-        rst.put("rowNum", new PyParameter(10, "row", taInt,  "row index in the Figure's grid. The row index starts at 0.", null));
-        rst.put("colNum", new PyParameter(10, "col", taInt,  "column index in this Figure's grid. The column index starts at 0.", null));
-        rst.put("index", new PyParameter(10, "index", taInt,  "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
-        rst.put("showColumnNamesInTitle", new PyParameter(10, "show_column_names_in_title", taBool,  "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-        rst.put("title", new PyParameter(10, "title", taStr,  "title", null));
-        rst.put("titleColumns", new PyParameter(11, "title_columns", taStrs,  "columns to include in the chart title", null));
-        rst.put("titleFormat", new PyParameter(12, "title_format", taStr,  "a java.text.MessageFormat format string for the chart title", null));
-        rst.put("n", new PyParameter(10, "width", taInt,  "how many columns wide", null));
-        rst.put("npoints", new PyParameter(10, "npoints", taInt,  "number of points", null));
-        rst.put("xmin", new PyParameter(10, "xmin", taFloat,  "range minimum", null));
-        rst.put("xmax", new PyParameter(11, "xmax", taFloat,  "range minimum", null));
-        rst.put("visible", new PyParameter(10, "visible", taInt,  "true to draw the design element; false otherwise.", null));
-        rst.put("invert", new PyParameter(10, "invert", taBool,  "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
-        rst.put("useLog", new PyParameter(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
-        rst.put("nbins", new PyParameter(15, "nbins", taInt,  "number of bins", null));
-        rst.put("maxRowsCount", new PyParameter(10, "max_rows", taInt,  "maximum number of row values to show in chart title", null));
-        rst.put("min", new PyParameter(10, "min", taFloat,  "range minimum", null));
-        rst.put("max", new PyParameter(11, "max", taFloat,  "range maximum", null));
-        rst.put("count", new PyParameter(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
+        rst.put("id", new PyArg(10, "axes", taInt,  "identifier", null));
+        rst.put("name", new PyArg(10, "name", taStr,  "name", null));
+        rst.put("names", new PyArg(10, "names", taStrs,  "series names", null));
+        rst.put("dim", new PyArg(10, "dim", taInt,  "dimension of the axis", null));
+        rst.put("color", new PyArg(10, "color", taColor,  "color", null));
+        rst.put("colors", new PyArg(10, "colors", taColors,  "colors", null));
+        rst.put("format", new PyArg(10, "format", taAxisFormat,  "axis format", null));
+        rst.put("pattern", new PyArg(10, "pattern", taStr,  "axis format pattern", null));
+        rst.put("label", new PyArg(10, "label", taStr,  "label", null));
+        rst.put("labels", new PyArg(10, "labels", taStrs,  "labels", null));
+        rst.put("family", new PyArg(10, "family", taStr,  "font family; if null, set to Arial", null));
+        rst.put("font", new PyArg(10, "font", taFont,  "font", null));
+        rst.put("size", new PyArg(10, "size", taInt,  "size", null));
+        rst.put("style", new PyArg(10, "style", taStr,  "style", null));
+        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar,  "business calendar", null));
+        rst.put("valueColumn", new PyArg(10, "values", taStr,  "column name", null));
+        rst.put("rowNum", new PyArg(10, "row", taInt,  "row index in the Figure's grid. The row index starts at 0.", null));
+        rst.put("colNum", new PyArg(10, "col", taInt,  "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("index", new PyArg(10, "index", taInt,  "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
+        rst.put("showColumnNamesInTitle", new PyArg(10, "show_column_names_in_title", taBool,  "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("title", new PyArg(10, "title", taStr,  "title", null));
+        rst.put("titleColumns", new PyArg(11, "title_columns", taStrs,  "columns to include in the chart title", null));
+        rst.put("titleFormat", new PyArg(12, "title_format", taStr,  "a java.text.MessageFormat format string for the chart title", null));
+        rst.put("n", new PyArg(10, "width", taInt,  "how many columns wide", null));
+        rst.put("npoints", new PyArg(10, "npoints", taInt,  "number of points", null));
+        rst.put("xmin", new PyArg(10, "xmin", taFloat,  "range minimum", null));
+        rst.put("xmax", new PyArg(11, "xmax", taFloat,  "range minimum", null));
+        rst.put("visible", new PyArg(10, "visible", taInt,  "true to draw the design element; false otherwise.", null));
+        rst.put("invert", new PyArg(10, "invert", taBool,  "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
+        rst.put("useLog", new PyArg(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
+        rst.put("nbins", new PyArg(15, "nbins", taInt,  "number of bins", null));
+        rst.put("maxRowsCount", new PyArg(10, "max_rows", taInt,  "maximum number of row values to show in chart title", null));
+        rst.put("min", new PyArg(10, "min", taFloat,  "range minimum", null));
+        rst.put("max", new PyArg(11, "max", taFloat,  "range maximum", null));
+        rst.put("count", new PyArg(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
 
         //todo is time the right x-axis label?  Maybe generalize to x?
-        rst.put("time", new PyParameter(2, "time", taDataTime,  "time x-values.", null));
-        rst.put("open", new PyParameter(3, "open", taDataNumeric,  "bar open y-values.", null));
-        rst.put("high", new PyParameter(4, "high", taDataNumeric,  "bar high y-values.", null));
-        rst.put("low", new PyParameter(5, "low", taDataNumeric,  "bar low y-values.", null));
-        rst.put("close", new PyParameter(6, "close", taDataNumeric,  "bar close y-values.", null));
+        rst.put("time", new PyArg(2, "time", taDataTime,  "time x-values.", null));
+        rst.put("open", new PyArg(3, "open", taDataNumeric,  "bar open y-values.", null));
+        rst.put("high", new PyArg(4, "high", taDataNumeric,  "bar high y-values.", null));
+        rst.put("low", new PyArg(5, "low", taDataNumeric,  "bar low y-values.", null));
+        rst.put("close", new PyArg(6, "close", taDataNumeric,  "bar close y-values.", null));
 
-        rst.put("orientation", new PyParameter(10, "orientation", taStr,  "plot orientation.", null));
+        rst.put("orientation", new PyArg(10, "orientation", taStr,  "plot orientation.", null));
 
-        rst.put("path", new PyParameter(1, "path", taStr,  "output path.", null));
-        rst.put("height", new PyParameter(2, "height", taInt,  "figure height.", null));
-        rst.put("width", new PyParameter(3, "width", taInt,  "figure width.", null));
-        rst.put("wait", new PyParameter(4, "wait", taBool,  "whether to hold the calling thread until the file is written.", null));
-        rst.put("timeoutSeconds", new PyParameter(5, "timeout_seconds", taInt,  "timeout in seconds to wait for the file to be written.", null));
+        rst.put("path", new PyArg(1, "path", taStr,  "output path.", null));
+        rst.put("height", new PyArg(2, "height", taInt,  "figure height.", null));
+        rst.put("width", new PyArg(3, "width", taInt,  "figure width.", null));
+        rst.put("wait", new PyArg(4, "wait", taBool,  "whether to hold the calling thread until the file is written.", null));
+        rst.put("timeoutSeconds", new PyArg(5, "timeout_seconds", taInt,  "timeout in seconds to wait for the file to be written.", null));
 
-        rst.put("rowSpan", new PyParameter(10, "row_span", taInt,  "how many rows high.", null));
-        rst.put("colSpan", new PyParameter(11, "col_span", taInt,  "how many rows wide.", null));
-        rst.put("angle", new PyParameter(10, "angle", taInt,  "angle in degrees.", null));
+        rst.put("rowSpan", new PyArg(10, "row_span", taInt,  "how many rows high.", null));
+        rst.put("colSpan", new PyArg(11, "col_span", taInt,  "how many rows wide.", null));
+        rst.put("angle", new PyArg(10, "angle", taInt,  "angle in degrees.", null));
 
-        rst.put("gapBetweenTicks", new PyParameter(10, "gap", taFloat,  "distance between ticks.", null));
-        rst.put("tickLocations", new PyParameter(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
-        rst.put("transform", new PyParameter(10, "transform", taAxisTransform,  "transform.", null));
-        rst.put("updateIntervalMillis", new PyParameter(10, "millis", taInt,  "milliseconds.", null));
+        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat,  "distance between ticks.", null));
+        rst.put("tickLocations", new PyArg(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
+        rst.put("transform", new PyArg(10, "transform", taAxisTransform,  "transform.", null));
+        rst.put("updateIntervalMillis", new PyArg(10, "millis", taInt,  "milliseconds.", null));
 
-        rst.put("keys", new PyParameter(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
-        rst.put("keyColumn", new PyParameter(20, "key_col", taStr,  "colum name specifying category values.", null)); //todo doc/value?
+        rst.put("keys", new PyArg(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
+        rst.put("keyColumn", new PyArg(20, "key_col", taStr,  "colum name specifying category values.", null)); //todo doc/value?
 
-        rst.put("category", new PyParameter(1, "category", taStr,  "category.", null)); //todo doc/value?
-        rst.put("shape", new PyParameter(2, "shape", taShape,  "shape.", null));
-        rst.put("shapes", new PyParameter(2, "shapes", taShapes,  "shapes.", null));
+        rst.put("category", new PyArg(1, "category", taStr,  "category.", null)); //todo doc/value?
+        rst.put("shape", new PyArg(2, "shape", taShape,  "shape.", null));
+        rst.put("shapes", new PyArg(2, "shapes", taShapes,  "shapes.", null));
 
-        rst.put("factor", new PyParameter(3, "size", taFactor,  "size.", null));
-        rst.put("factors", new PyParameter(3, "sizes", taFactors,  "sizes.", null));
-        rst.put("group", new PyParameter(110, "group", taInt,  "group for the data series.", null));
+        rst.put("factor", new PyArg(3, "size", taFactor,  "size.", null));
+        rst.put("factors", new PyArg(3, "sizes", taFactors,  "sizes.", null));
+        rst.put("group", new PyArg(110, "group", taInt,  "group for the data series.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -550,14 +562,14 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    private static List<PyParameter> pyMethodArgs(final PyFunc pyFunc, final Map<Key, ArrayList<JavaFunction>> sigs) {
-        final Map<String, PyParameter> pyparams = getPyParameters();
-        final Set<PyParameter> argSet = new HashSet<>();
+    private static List<PyArg> pyMethodArgs(final PyFunc pyFunc, final Map<Key, ArrayList<JavaFunction>> sigs) {
+        final Map<String, PyArg> pyparams = getPyParameters();
+        final Set<PyArg> argSet = new HashSet<>();
 
         for(final ArrayList<JavaFunction> signatures : sigs.values()) {
             for (final JavaFunction f : signatures) {
                 for (final String param : f.getParameterNames()) {
-                    final PyParameter pyparam = pyparams.get(param);
+                    final PyArg pyparam = pyparams.get(param);
 
                     if(pyparam == null) {
                         throw new IllegalArgumentException("Unsupported python parameter: func=" + pyFunc + " param=" + param);
@@ -568,24 +580,24 @@ public class GenerateFigureAPI2 {
             }
         }
 
-        final List<PyParameter> args = new ArrayList<>(argSet);
+        final List<PyArg> args = new ArrayList<>(argSet);
         args.sort((a,b)-> {
             final boolean ra = pyFunc.isRequired(a);
             final boolean rb = pyFunc.isRequired(b);
 
-            return ra != rb ? (ra ? -1 : 1) : Integer.compare(a.precedence,b.precedence);
+            return ra != rb ? (ra ? -1 : 1) : a.compareTo(b);
         });
 
         return args;
     }
 
-    private static String pyFuncSignature(final PyFunc pyFunc, final List<PyParameter> args) {
+    private static String pyFuncSignature(final PyFunc pyFunc, final List<PyArg> args) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(INDENT).append("def ").append(pyFunc.name).append("(\n");
         sb.append(INDENT).append(INDENT).append("self,\n");
 
-        for (final PyParameter arg : args) {
+        for (final PyArg arg : args) {
             sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
 
             if (!pyFunc.isRequired(arg)) {
@@ -600,13 +612,13 @@ public class GenerateFigureAPI2 {
         return sb.toString();
     }
 
-    private static String pyDocString(final PyFunc func, final List<PyParameter> args){
+    private static String pyDocString(final PyFunc func, final List<PyArg> args){
         final StringBuilder sb = new StringBuilder();
 
         sb.append(INDENT).append(INDENT).append("\"\"\"").append(func.pydoc).append("\n\n");
         sb.append(INDENT).append(INDENT).append("Args:\n");
 
-        for (final PyParameter arg : args) {
+        for (final PyArg arg : args) {
             sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation()).append("): ").append(arg.docString).append("\n");
         }
 
@@ -663,14 +675,14 @@ public class GenerateFigureAPI2 {
         return rst;
     }
 
-    private static String pyFuncBody(final PyFunc pyFunc, final List<PyParameter> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
-        final Map<String,PyParameter> pyParameterMap = getPyParameters();
+    private static String pyFuncBody(final PyFunc pyFunc, final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
+        final Map<String, PyArg> pyParameterMap = getPyParameters();
 
         final StringBuilder sb = new StringBuilder();
 
         // validate
 
-        for(final PyParameter arg:args){
+        for(final PyArg arg:args){
             if(!pyFunc.isRequired(arg)){
                 continue;
             }
@@ -694,7 +706,7 @@ public class GenerateFigureAPI2 {
 
         sb.append(INDENT).append(INDENT).append("non_null_params = set()\n");
 
-        for(final PyParameter arg:args){
+        for(final PyArg arg:args){
             sb.append(INDENT)
                     .append(INDENT)
                     .append("if ")
@@ -710,7 +722,7 @@ public class GenerateFigureAPI2 {
                     .append(INDENT)
                     .append(arg.name)
                     .append(" = ")
-                    .append(arg.javaConverter == null ? "_convert_j" : arg.javaConverter)
+                    .append(arg.javaConverter)
                     .append("(\"")
                     .append(arg.name)
                     .append("\",")
@@ -775,7 +787,7 @@ public class GenerateFigureAPI2 {
     }
 
     private static String generatePythonFunction(final PyFunc func, final Map<Key, ArrayList<JavaFunction>> signatures) {
-        final List<PyParameter> args = pyMethodArgs(func, signatures);
+        final List<PyArg> args = pyMethodArgs(func, signatures);
 
         final String sig = pyFuncSignature(func, args);
         final String pydocs = pyDocString(func, args);
