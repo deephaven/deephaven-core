@@ -19,6 +19,11 @@ public class GenerateFigureAPI2 {
     private static final String JCLASS = "io.deephaven.plot.Figure";
     private static final String PREAMBLE = "Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
     /**
      * A Key for indexing common method names.
      */
@@ -99,7 +104,7 @@ public class GenerateFigureAPI2 {
             this.name = name;
             this.typeAnnotations = typeAnnotations;
             this.docString = docString;
-            this.javaConverter = javaConverter == null ? "_convert_j" : javaConverter
+            this.javaConverter = javaConverter == null ? "_convert_j" : javaConverter;
         }
 
         @Override
@@ -111,6 +116,17 @@ public class GenerateFigureAPI2 {
                     ", docString='" + docString + '\'' +
                     ", javaConverter='" + javaConverter + '\'' +
                     '}';
+        }
+
+        @Override
+        public int compareTo(@NotNull PyArg o) {
+            final int c1 = Integer.compare(this.precedence, o.precedence);
+
+            if (c1 != 0) {
+                return c1;
+            }
+
+            return this.name.compareTo(o.name);
         }
 
         /**
@@ -130,23 +146,12 @@ public class GenerateFigureAPI2 {
         public String typeList() {
             return "[" + String.join(",", typeAnnotations) + "]";
         }
-
-        @Override
-        public int compareTo(@NotNull PyArg o) {
-            final int c1 = Integer.compare(this.precedence, o.precedence);
-
-            if (c1 != 0) {
-                return c1;
-            }
-
-            return this.name.compareTo(o.name);
-        }
     }
 
     /**
      * A Python function.
      */
-    private static class PyFunc {
+    private static class PyFunc implements Comparable<PyFunc> {
         private final String name;
         private final String pydoc;
         private final String[] javaFuncs;
@@ -167,6 +172,11 @@ public class GenerateFigureAPI2 {
                     ", javaFuncs=" + Arrays.toString(javaFuncs) +
                     ", requiredParams=" + Arrays.toString(requiredParams) +
                     '}';
+        }
+
+        @Override
+        public int compareTo(@NotNull PyFunc o) {
+            return this.name.compareTo(o.name);
         }
 
         /**
@@ -197,19 +207,10 @@ public class GenerateFigureAPI2 {
         }
     }
 
-    //todo nuke?
-//    /**
-//     * Convert camel case to snake case.
-//     *
-//     * @param str input
-//     * @return snake case string
-//     */
-//    private static String camelToSnake(final String str) {
-//        String regex = "([a-z])([A-Z]+)";
-//        String replacement = "$1_$2";
-//        return str.replaceAll(regex, replacement).toLowerCase();
-//    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * A map of Java parameter names to Python parameters.
@@ -472,10 +473,14 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("y_tool_tip_pattern", new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_transform", new String[]{"yTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
-
-
+        Collections.sort(rst);
         return rst;
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     /**
      * Gets the signatures of public JCLASS methods.
@@ -819,6 +824,12 @@ public class GenerateFigureAPI2 {
 
         return sb.toString();
     }
+
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
 
