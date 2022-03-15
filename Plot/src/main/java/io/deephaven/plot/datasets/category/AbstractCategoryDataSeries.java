@@ -398,18 +398,18 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointSize(Table t, String keyColumn, String valueColumn) {
+    public AbstractCategoryDataSeries pointSize(Table t, String keyColumn, String factor) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(factor, "valueColumn", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
+        final TableHandle tableHandle = new TableHandle(t, keyColumn, factor);
         addTableHandle(tableHandle);
 
         ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
                 "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, keyColumn, valueColumn,
+        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, keyColumn, factor,
                 Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {
@@ -421,20 +421,20 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String valueColumn) {
+    public AbstractCategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String factor) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(factor, "valueColumn", getPlotInfo());
 
         final Function<Table, Table> tableTransform =
                 (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, valueColumn);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, factor);
         addSwappableTable(t);
 
         ArgumentValidations.assertInstance(t.getTableDefinition(), keyColumn, Comparable.class,
                 "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, keyColumn, valueColumn,
+        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, keyColumn, factor,
                 Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {

@@ -274,14 +274,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final Table t, final String columnName) {
+    public AbstractXYDataSeries pointSize(final Table t, final String factor) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
+        ArgumentValidations.assertNotNull(factor, "columnName", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+        final TableHandle tableHandle = new TableHandle(t, factor);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newNumericHandler(tableHandle, factor, getPlotInfo());
 
         if (columnHandler.typeClassification().isNumeric()) {
             shapeSizes.setSpecific(new IndexableDataTable<Double>(columnHandler, getPlotInfo()) {
@@ -291,7 +291,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
                 }
             }, true);
         } else {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a size: column=" + columnName,
+            throw new PlotUnsupportedOperationException("Column can not be converted into a size: column=" + factor,
                     this);
         }
 
@@ -299,15 +299,15 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointSize(final SelectableDataSet sds, final String columnName) {
+    public AbstractXYDataSeries pointSize(final SelectableDataSet sds, final String factor) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
-        ArgumentValidations.assertIsNumericOrTime(sds, columnName, getPlotInfo());
+        ArgumentValidations.assertNotNull(factor, "columnName", getPlotInfo());
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), factor);
+        ArgumentValidations.assertIsNumericOrTime(sds, factor, getPlotInfo());
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), factor);
         addSwappableTable(t);
-        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, columnName, getPlotInfo()), true);
+        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, factor, getPlotInfo()), true);
 
         return this;
     }
@@ -449,22 +449,22 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(@NotNull Table t, @NotNull String columnName) {
-        final TableHandle tableHandle = new TableHandle(t, columnName);
+    public AbstractXYDataSeries pointLabel(@NotNull Table t, @NotNull String label) {
+        final TableHandle tableHandle = new TableHandle(t, label);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler columnHandler =
-                ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                ColumnHandlerFactory.newObjectHandler(tableHandle, label, getPlotInfo());
 
         return pointLabel(new IndexableDataTableString(columnHandler, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds, @NotNull String columnName) {
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
+    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds, @NotNull String label) {
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), label);
 
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), label);
         addSwappableTable(t);
-        return pointLabel(new IndexableDataSwappableTableString(t, columnName, getPlotInfo()));
+        return pointLabel(new IndexableDataSwappableTableString(t, label, getPlotInfo()));
     }
 
 
@@ -517,48 +517,48 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public XYDataSeries pointShape(final Table t, final String columnName) {
+    public XYDataSeries pointShape(final Table t, final String shape) {
         ArgumentValidations.assertNotNull(t, "t", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
+        ArgumentValidations.assertNotNull(shape, "columnName", getPlotInfo());
 
-        final Class columnType = ArgumentValidations.getColumnType(t, columnName, getPlotInfo());
+        final Class columnType = ArgumentValidations.getColumnType(t, shape, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, columnName);
+            final TableHandle tableHandle = new TableHandle(t, shape);
             addTableHandle(tableHandle);
             final ColumnHandlerFactory.ColumnHandler columnHandler =
-                    ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                    ColumnHandlerFactory.newObjectHandler(tableHandle, shape, getPlotInfo());
             return pointShape(new IndexableDataTableString<>(columnHandler, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, columnName);
+            final TableHandle tableHandle = new TableHandle(t, shape);
             addTableHandle(tableHandle);
             final ColumnHandlerFactory.ColumnHandler columnHandler =
-                    ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+                    ColumnHandlerFactory.newObjectHandler(tableHandle, shape, getPlotInfo());
             pointShapes.setSpecific(new IndexableDataTablePointShapeObject(columnHandler, getPlotInfo()), true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName,
+            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + shape,
                     this);
         }
     }
 
     @Override
-    public XYDataSeries pointShape(final SelectableDataSet sds, final String columnName) {
+    public XYDataSeries pointShape(final SelectableDataSet sds, final String shape) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(columnName, "columnName", getPlotInfo());
-        final Class columnType = ArgumentValidations.getColumnType(sds, columnName, getPlotInfo());
+        ArgumentValidations.assertNotNull(shape, "columnName", getPlotInfo());
+        final Class columnType = ArgumentValidations.getColumnType(sds, shape, getPlotInfo());
 
         if (String.class.isAssignableFrom(columnType)) {
-            final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+            final SwappableTable t = sds.getSwappableTable(name(), chart(), shape);
             addSwappableTable(t);
-            return pointShape(new IndexableDataSwappableTableString<>(t, columnName, getPlotInfo()));
+            return pointShape(new IndexableDataSwappableTableString<>(t, shape, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
-            final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
+            final SwappableTable t = sds.getSwappableTable(name(), chart(), shape);
             addSwappableTable(t);
-            pointShapes.setSpecific(new IndexableDataSwappableTablePointShapeObject(t, columnName, getPlotInfo()),
+            pointShapes.setSpecific(new IndexableDataSwappableTablePointShapeObject(t, shape, getPlotInfo()),
                     true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName,
+            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + shape,
                     this);
         }
     }

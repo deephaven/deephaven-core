@@ -565,10 +565,10 @@ public interface CategoryDataSeries extends DataSeries {
      *
      * @param t table
      * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying point sizes
+     * @param factor column in {@code t}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointSize(Table t, String keyColumn, String factor);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
@@ -576,10 +576,10 @@ public interface CategoryDataSeries extends DataSeries {
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
      * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying point sizes
+     * @param factor column in {@code sds}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String factor);
 
 
     ////////////////////// tool tips /////////////////////////////

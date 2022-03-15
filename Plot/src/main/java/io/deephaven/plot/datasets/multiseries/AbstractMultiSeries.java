@@ -672,13 +672,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.engine.table.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.engine.table.Table t, final java.lang.String keyColumn, final java.lang.String factor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointSize for arguments [interface io.deephaven.engine.table.Table, class java.lang.String, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String factor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointSize for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
@@ -744,13 +744,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String label, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointLabel for arguments [interface io.deephaven.engine.table.Table, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String label, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointLabel for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
@@ -774,13 +774,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointShape(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointShape(final io.deephaven.engine.table.Table t, final java.lang.String shape, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointShape for arguments [interface io.deephaven.engine.table.Table, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String shape, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointShape for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
@@ -816,13 +816,13 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.engine.table.Table t, final java.lang.String factor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointSize for arguments [interface io.deephaven.engine.table.Table, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String factor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointSize for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 

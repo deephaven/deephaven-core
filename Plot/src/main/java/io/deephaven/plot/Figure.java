@@ -1060,25 +1060,25 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName );
-
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys );
-
     @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
     @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String label );
+
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String label, java.lang.Object... keys );
 
     @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels );
 
     @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName );
-
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys );
-
     @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn );
 
     @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String label );
+
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String label, java.lang.Object... keys );
 
     @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object label );
 
@@ -1100,13 +1100,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointShape( groovy.lang.Closure<java.lang.String> shapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName );
-
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys );
-
     @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
     @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String shape );
+
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String shape, java.lang.Object... keys );
 
     @Override  Figure pointShape( io.deephaven.gui.shape.Shape shape );
 
@@ -1120,13 +1120,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName );
-
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys );
-
     @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn );
 
     @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String shape );
+
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String shape, java.lang.Object... keys );
 
     @Override  Figure pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape );
 
@@ -1160,25 +1160,25 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointSize( int[] factors, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String factor, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys );
 
     @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors );
 
     @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String factor, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys );
 
     @Override  Figure pointSize( java.lang.Comparable category, double factor );
 

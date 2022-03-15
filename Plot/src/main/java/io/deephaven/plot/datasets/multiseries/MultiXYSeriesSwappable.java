@@ -489,14 +489,14 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringMap() {
         return pointLabelSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
-    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, columnName);
+    @Override public MultiXYSeriesSwappable pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String label, final Object... keys) {
+    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, label);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
-            pointLabelSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, columnName});
+            pointLabelSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, label});
         } else {
             pointLabelSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ tHandle, columnName});
+                new Object[]{ tHandle, label});
         }
 
         return this;
@@ -508,12 +508,12 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToSelectableDataSetStringMap() {
         return pointLabelSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String label, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            pointLabelSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, columnName});
+            pointLabelSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, label});
         } else {
             pointLabelSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ sds, columnName});
+                new Object[]{ sds, label});
         }
 
         return this;
@@ -627,14 +627,14 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringMap() {
         return pointShapeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointShape(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
-    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, columnName);
+    @Override public MultiXYSeriesSwappable pointShape(final io.deephaven.engine.table.Table t, final java.lang.String shape, final Object... keys) {
+    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, shape);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
-            pointShapeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, columnName});
+            pointShapeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, shape});
         } else {
             pointShapeSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ tHandle, columnName});
+                new Object[]{ tHandle, shape});
         }
 
         return this;
@@ -646,12 +646,12 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToSelectableDataSetStringMap() {
         return pointShapeSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String shape, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            pointShapeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, columnName});
+            pointShapeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, shape});
         } else {
             pointShapeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ sds, columnName});
+                new Object[]{ sds, shape});
         }
 
         return this;
@@ -765,14 +765,14 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringMap() {
         return pointSizeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointSize(final io.deephaven.engine.table.Table t, final java.lang.String columnName, final Object... keys) {
-    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, columnName);
+    @Override public MultiXYSeriesSwappable pointSize(final io.deephaven.engine.table.Table t, final java.lang.String factor, final Object... keys) {
+    final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, factor);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
-            pointSizeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, columnName});
+            pointSizeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, factor});
         } else {
             pointSizeSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ tHandle, columnName});
+                new Object[]{ tHandle, factor});
         }
 
         return this;
@@ -784,12 +784,12 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToSelectableDataSetStringMap() {
         return pointSizeSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String factor, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            pointSizeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, columnName});
+            pointSizeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, factor});
         } else {
             pointSizeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                new Object[]{ sds, columnName});
+                new Object[]{ sds, factor});
         }
 
         return this;
