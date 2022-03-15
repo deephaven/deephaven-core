@@ -292,6 +292,7 @@ public class GenerateFigureAPI2 {
         rst.put("gapBetweenTicks", new PyParameter(10, "gap", taFloat,  "distance between ticks.", null));
         rst.put("tickLocations", new PyParameter(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
         rst.put("transform", new PyParameter(10, "transform", taAxisTransform,  "transform.", null));
+        rst.put("updateIntervalMillis", new PyParameter(10, "millis", taInt,  "milliseconds.", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -387,6 +388,50 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("twin", new String[]{"twin"}, null, "TODO pydoc"));
         rst.add(new PyFunc("twin_x", new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
         rst.add(new PyFunc("twin_y", new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
+        //todo toolTipPattern
+        rst.add(new PyFunc("update_interval", new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
+
+        rst.add(new PyFunc("x_axis", new String[]{"xAxis"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_business_time", new String[]{"xBusinessTime"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_color", new String[]{"xColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_format", new String[]{"xFormat", "xFormatPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_grid_lines_visible", new String[]{"xGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_invert", new String[]{"xInvert"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_label", new String[]{"xLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_label_font", new String[]{"xLabelFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_log", new String[]{"xLog"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_max", new String[]{"xMax"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_min", new String[]{"xMin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_minor_ticks", new String[]{"xMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_minor_ticks_visible", new String[]{"xMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_range", new String[]{"xRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_tick_label_angle", new String[]{"xTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_ticks", new String[]{"xTicks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks_font", new String[]{"xTicksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks_visible", new String[]{"xTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        //todo rst.add(new PyFunc("x_tool_tip_pattern", new String[]{"xToolTipPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_transform", new String[]{"xTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+
+        rst.add(new PyFunc("y_axis", new String[]{"yAxis"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_business_time", new String[]{"yBusinessTime"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_color", new String[]{"yColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_format", new String[]{"yFormat", "yFormatPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_grid_lines_visible", new String[]{"yGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_invert", new String[]{"yInvert"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_label", new String[]{"yLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_label_font", new String[]{"yLabelFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_log", new String[]{"yLog"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_max", new String[]{"yMax"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_min", new String[]{"yMin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_minor_ticks", new String[]{"yMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_minor_ticks_visible", new String[]{"yMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_range", new String[]{"yRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_tick_label_angle", new String[]{"yTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_ticks", new String[]{"yTicks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks_font", new String[]{"yTicksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks_visible", new String[]{"yTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        //todo rst.add(new PyFunc("y_tool_tip_pattern", new String[]{"yToolTipPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_transform", new String[]{"yTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
 
 
