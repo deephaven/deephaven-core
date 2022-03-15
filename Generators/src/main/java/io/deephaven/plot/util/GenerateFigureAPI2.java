@@ -207,6 +207,48 @@ public class GenerateFigureAPI2 {
         }
 
         /**
+         * Gets the valid Java method argument name combinations.
+         *
+         * @param signatures java functions with the same name.
+         * @return valid Java method argument name combinations.
+         */
+        private static List<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
+            final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
+
+            for(JavaFunction f : signatures) {
+                final String[] params = f.getParameterNames();
+                final Set<String> s = new HashSet<>(Arrays.asList(params));
+
+                if (vals.containsKey(s) && !Arrays.equals(params, vals.get(s))) {
+                    throw new RuntimeException("Parameters are already present: " + Arrays.toString(params));
+                }
+
+                vals.put(s, params);
+            }
+
+            final ArrayList<String[]> rst = new ArrayList<>(vals.values());
+
+            rst.sort((first, second) -> {
+                final int c1 = Integer.compare(first.length, second.length);
+
+                if (c1 != 0) {
+                    return c1;
+                }
+
+                for (int i = 0; i < first.length; i++) {
+                    final int c2 = first[i].compareTo(second[i]);
+                    if (c2 != 0) {
+                        return c2;
+                    }
+                }
+
+                return 0;
+            });
+
+            return rst;
+        }
+
+        /**
          * Gets the complete set of arguments for the python function.
          *
          * @param sigs java functions
@@ -784,52 +826,6 @@ public class GenerateFigureAPI2 {
 
             System.out.println("\t" + sig);
         }
-    }
-
-
-
-    /**
-     * Gets the valid Java method argument name combinations.
-     *
-     * @param signatures java functions with the same name.
-     * @return valid Java method argument name combinations.
-     */
-    private static List<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
-        final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
-
-        for(JavaFunction f : signatures) {
-            final String[] params = f.getParameterNames();
-            final Set<String> s = new HashSet<>(Arrays.asList(params));
-
-            if (vals.containsKey(s) && !Arrays.equals(params, vals.get(s))) {
-                throw new RuntimeException("Parameters are already present: " + Arrays.toString(params));
-            }
-
-            vals.put(s, params);
-        }
-
-        final ArrayList<String[]> rst = new ArrayList<>(vals.values());
-
-        rst.sort((first, second) -> {
-            final int l1 = first.length;
-            final int l2 = second.length;
-            final int c1 = Integer.compare(l1, l2);
-
-            if (c1 != 0) {
-                return c1;
-            }
-
-            for (int i = 0; i < l1; i++) {
-                final int c2 = first[i].compareTo(second[i]);
-                if (c2 != 0) {
-                    return c2;
-                }
-            }
-
-            return 0;
-        });
-
-        return rst;
     }
 
 
