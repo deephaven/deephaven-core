@@ -890,27 +890,18 @@ public class GenerateFigureAPI2 {
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getMethodSignatures();
         final int nSig1 = signatures.size();
-
-        for (int i = 0; i < 10; i++) {
-            System.out.println("===========================================================");
-        }
-
         String pyCode = generatePy(signatures);
-
-        for (int i = 0; i < 10; i++) {
-            System.out.println("===========================================================");
-        }
-
-        System.out.println(pyCode);
-
-        for (int i = 0; i < 10; i++) {
-            System.out.println("===========================================================");
-        }
-
         final int nSig2 = signatures.size();
         final int nSigGenerated = nSig1-nSig2;
 
         System.out.println("GENSTATS: " + nSigGenerated + " of " + nSig1 + "(" + (nSigGenerated/(double)nSig1) + ")");
+
+        for (int i = 0; i < 10; i++) {
+            System.out.println("===========================================================");
+        }
+
+        //todo output pyCode
+        System.out.println(pyCode);
 
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
@@ -922,5 +913,8 @@ public class GenerateFigureAPI2 {
             System.out.println(methodSignatureDescription(key, sigs));
         }
 
+        if(!signatures.isEmpty()){
+            throw new RuntimeException("Not all methods were generated.");
+        }
     }
 }
