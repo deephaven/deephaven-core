@@ -508,9 +508,9 @@ public class GenerateFigureAPI2 {
                         .append(arg.javaConverter)
                         .append("(\"")
                         .append(arg.name)
-                        .append("\",")
+                        .append("\", ")
                         .append(arg.name)
-                        .append(",")
+                        .append(", ")
                         .append(arg.typeList())
                         .append(")\n");
             }
