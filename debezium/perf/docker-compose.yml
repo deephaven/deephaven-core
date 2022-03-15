@@ -53,7 +53,7 @@ services:
     # We build a tweaked version of redpanda's docker image to
     # change the configuration towards production defaults.
     build:
-      context: redpanda
+      context: ./redpanda
       args:
         - REDPANDA_VERSION=${REDPANDA_VERSION}
     command:
