@@ -22,13 +22,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
     Figure show();
 
 
-    @Override  Figure save( java.lang.String saveLocation );
+    @Override  Figure save( java.lang.String path );
 
-    @Override  Figure save( java.lang.String saveLocation, int width, int height );
+    @Override  Figure save( java.lang.String path, int width, int height );
 
-    @Override  Figure save( java.lang.String saveLocation, boolean wait, long timeoutSeconds );
+    @Override  Figure save( java.lang.String path, boolean wait, long timeoutSeconds );
 
-    @Override  Figure save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds );
+    @Override  Figure save( java.lang.String path, int width, int height, boolean wait, long timeoutSeconds );
 
     @Override  Figure axes( java.lang.String name );
 
@@ -188,7 +188,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure chartTitleFont( java.lang.String family, java.lang.String style, int size );
 
-    @Override  Figure colSpan( int n );
+    @Override  Figure colSpan( int colSpan );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, T3[] y );
 
@@ -794,7 +794,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure removeChart( int rowNum, int colNum );
 
-    @Override  Figure rowSpan( int n );
+    @Override  Figure rowSpan( int rowSpan );
 
     @Override  Figure series( int id );
 

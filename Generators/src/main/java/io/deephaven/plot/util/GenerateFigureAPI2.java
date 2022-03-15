@@ -233,8 +233,8 @@ public class GenerateFigureAPI2 {
         rst.put("yLow", new PyParameter(7, "y_low", taDataNumeric,  "low value in y dimension", null));
         rst.put("yHigh", new PyParameter(8, "y_high", taDataNumeric,  "high value in y dimension", null));
 
-        rst.put("id", new PyParameter(10, "axes", taInt,  "axes id", null));
-        rst.put("name", new PyParameter(10, "name", taStr,  "axes name", null));
+        rst.put("id", new PyParameter(10, "axes", taInt,  "identifier", null));
+        rst.put("name", new PyParameter(10, "name", taStr,  "name", null));
         rst.put("names", new PyParameter(10, "names", taStrs,  "series names", null));
         rst.put("dim", new PyParameter(10, "dim", taInt,  "dimension of the axis", null));
         rst.put("color", new PyParameter(10, "color", taColor,  "color", null));
@@ -276,6 +276,15 @@ public class GenerateFigureAPI2 {
 
         rst.put("orientation", new PyParameter(10, "orientation", taStr,  "plot orientation.", null));
 
+        rst.put("path", new PyParameter(1, "path", taStr,  "output path.", null));
+        rst.put("height", new PyParameter(2, "height", taInt,  "figure height.", null));
+        rst.put("width", new PyParameter(3, "width", taInt,  "figure width.", null));
+        rst.put("wait", new PyParameter(4, "wait", taBool,  "whether to hold the calling thread until the file is written.", null));
+        rst.put("timeoutSeconds", new PyParameter(5, "timeout_seconds", taInt,  "timeout in seconds to wait for the file to be written.", null));
+
+        rst.put("rowSpan", new PyParameter(10, "row_span", taInt,  "how many rows high.", null));
+        rst.put("colSpan", new PyParameter(11, "col_span", taInt,  "how many rows wide.", null));
+
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
         //
@@ -312,7 +321,6 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("chart_title", new String[]{"chartTitle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart_title_color", new String[]{"chartTitleColor"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart_title_font", new String[]{"chartTitleFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("col_span", new String[]{"colSpan"}, new String[]{"n"}, "TODO pydoc")); //todo req?
 ////todo        set.add("errorBarColor");
         //todo should error_bar be part of plot?
         rst.add(new PyFunc("error_bar", new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
@@ -356,8 +364,12 @@ public class GenerateFigureAPI2 {
         //todo pointsVisible
         rst.add(new PyFunc("range", new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("remove_chart", new String[]{"removeChart"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("row_span", new String[]{"rowSpan"}, new String[]{"n"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("save", new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("save", new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
+        rst.add(new PyFunc("series", new String[]{"series"}, null, "TODO pydoc"));
+        //todo seriesColor
+        //todo seriesNamingFunction
+        rst.add(new PyFunc("show", new String[]{"show"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("span", new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
 
 
 

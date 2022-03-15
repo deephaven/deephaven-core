@@ -244,28 +244,28 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return new FigureWidget(make(fc));
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation ) {
+    @Override public  FigureImpl save( java.lang.String path ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation );
+        figure(fc).save( path );
         return make(fc);
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height ) {
+    @Override public  FigureImpl save( java.lang.String path, int width, int height ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, width, height );
+        figure(fc).save( path, width, height );
         return make(fc);
     }
 
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, boolean wait, long timeoutSeconds ) {
+    @Override public  FigureImpl save( java.lang.String path, boolean wait, long timeoutSeconds ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, wait, timeoutSeconds );
+        figure(fc).save( path, wait, timeoutSeconds );
         return make(fc);
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds ) {
+    @Override public  FigureImpl save( java.lang.String path, int width, int height, boolean wait, long timeoutSeconds ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, width, height, wait, timeoutSeconds );
+        figure(fc).save( path, width, height, wait, timeoutSeconds );
         return make(fc);
     }
 
@@ -842,9 +842,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl colSpan( int n ) {
+    @Override public  FigureImpl colSpan( int colSpan ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).colSpan( n);
+        final ChartImpl chart = (ChartImpl) chart(fc).colSpan( colSpan);
         return make(chart);
     }
 
@@ -2660,9 +2660,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(fc);
     }
 
-    @Override public  FigureImpl rowSpan( int n ) {
+    @Override public  FigureImpl rowSpan( int rowSpan ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).rowSpan( n);
+        final ChartImpl chart = (ChartImpl) chart(fc).rowSpan( rowSpan);
         return make(chart);
     }
 

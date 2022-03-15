@@ -250,18 +250,18 @@ public interface Chart extends Serializable {
     /**
      * Sets the size of this Chart within the grid of the figure.
      *
-     * @param n how many columns wide
+     * @param colSpan how many columns wide
      * @return this Chart
      */
-    Chart colSpan(final int n);
+    Chart colSpan(final int colSpan);
 
     /**
      * Sets the size of this Chart within the grid of the figure.
      *
-     * @param n how many rows tall
+     * @param rowSpan how many rows tall
      * @return this Chart
      */
-    Chart rowSpan(final int n);
+    Chart rowSpan(final int rowSpan);
 
 
     ////////////////////////// Axes Creation //////////////////////////

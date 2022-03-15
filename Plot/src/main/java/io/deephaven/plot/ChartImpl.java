@@ -551,14 +551,14 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     @Override
-    public ChartImpl colSpan(final int n) {
-        resize(rowspan, n);
+    public ChartImpl colSpan(final int colSpan) {
+        resize(rowspan, colSpan);
         return this;
     }
 
     @Override
-    public ChartImpl rowSpan(final int n) {
-        resize(n, colspan);
+    public ChartImpl rowSpan(final int rowSpan) {
+        resize(rowSpan, colspan);
         return this;
     }
 

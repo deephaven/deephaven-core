@@ -167,52 +167,52 @@ public interface BaseFigure extends Serializable {
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation) {
-        return save(saveLocation, false, -1);
+    default BaseFigure save(String path) {
+        return save(path, false, -1);
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param wait whether to hold the calling thread until the file is written
      * @param timeoutSeconds timeout in seconds to wait.
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, boolean wait, long timeoutSeconds) {
+    default BaseFigure save(String path, boolean wait, long timeoutSeconds) {
         throw new UnsupportedOperationException(getClass() + " does not implement save");
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param width image width
      * @param height image height
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, int width, int height) {
-        return save(saveLocation, width, height, false, -1);
+    default BaseFigure save(String path, int width, int height) {
+        return save(path, width, height, false, -1);
     }
 
     /**
      * Saves the Figure as an image.
      *
-     * @param saveLocation save location. Must not be null
+     * @param path path where the figure is saved. Must not be null
      * @param width image width
      * @param height image height
      * @param wait whether to hold the calling thread until the file is written
      * @param timeoutSeconds timeout in seconds to wait.
      * @return figure
-     * @throws io.deephaven.base.verify.RequirementFailure saveLocation is null
+     * @throws io.deephaven.base.verify.RequirementFailure path is null
      */
-    default BaseFigure save(String saveLocation, int width, int height, boolean wait, long timeoutSeconds) {
+    default BaseFigure save(String path, int width, int height, boolean wait, long timeoutSeconds) {
         throw new UnsupportedOperationException(getClass() + " does not implement save");
     }
 }
