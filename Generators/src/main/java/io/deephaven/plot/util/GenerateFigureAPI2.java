@@ -119,6 +119,20 @@ public class GenerateFigureAPI2 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Type of function call.
+     */
+    private enum FunctionCallType {
+        /**
+         * Exactly one java function call is executed.
+         */
+        SINGLETON,
+        /**
+         * Multiple java function calls are sequentially executed.
+         */
+        SEQUENTIAL,
+    }
+
 
     /**
      * A Key for indexing common method names.
@@ -249,30 +263,33 @@ public class GenerateFigureAPI2 {
      */
     private static class PyFunc implements Comparable<PyFunc> {
         private final String name;
-        private final String pydoc;
+        private final FunctionCallType functionCallType;
         private final String[] javaFuncs;
         private final String[] requiredParams;
+        private final String pydoc;
         private final boolean generate;
 
-        public PyFunc(final String name, final String[] javaFuncs, final String[] requiredParams, final String pydoc, final boolean generate) {
+        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs, final String[] requiredParams, final String pydoc, final boolean generate) {
             this.name = name;
-            this.pydoc = pydoc;
+            this.functionCallType = functionCallType;
             this.javaFuncs = javaFuncs;
             this.requiredParams = requiredParams == null ? new String[]{} : requiredParams;
+            this.pydoc = pydoc;
             this.generate = generate;
         }
 
-        public PyFunc(final String name, final String[] javaFuncs, final String[] requiredParams, final String pydoc) {
-            this(name, javaFuncs, requiredParams, pydoc, true);
+        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs, final String[] requiredParams, final String pydoc) {
+            this(name, functionCallType, javaFuncs, requiredParams, pydoc, true);
         }
 
         @Override
         public String toString() {
             return "PyFunc{" +
                     "name='" + name + '\'' +
-                    ", pydoc='" + pydoc + '\'' +
+                    ", functionCallType=" + functionCallType +
                     ", javaFuncs=" + Arrays.toString(javaFuncs) +
                     ", requiredParams=" + Arrays.toString(requiredParams) +
+                    ", pydoc='" + pydoc + '\'' +
                     ", generate=" + generate +
                     '}';
         }
@@ -519,6 +536,28 @@ public class GenerateFigureAPI2 {
 
             // function calls
 
+            switch (functionCallType) {
+                case SINGLETON:
+                    generatePyFuncCallSingleton(sb, signatures, pyParameterMap);
+                    break;
+                case SEQUENTIAL:
+                    generatePyFuncCallSequential(sb, signatures, pyParameterMap);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported FunctionCallType: " + functionCallType);
+            }
+
+            return sb.toString();
+        }
+
+        /**
+         * Generates code for calling a single java function from python.
+         *
+         * @param sb string builder
+         * @param signatures java function signatures
+         * @param pyParameterMap possible python function arguments
+         */
+        private void generatePyFuncCallSingleton(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap) {
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
@@ -565,8 +604,17 @@ public class GenerateFigureAPI2 {
                     .append(INDENT)
                     .append(INDENT)
                     .append("raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
+        }
 
-            return sb.toString();
+        /**
+         * Generates code for sequentially calling multiple java functions from python.
+         *
+         * @param sb string builder
+         * @param signatures java function signatures
+         * @param pyParameterMap possible python function arguments
+         */
+        private void generatePyFuncCallSequential(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap) {
+            throw new UnsupportedOperationException("Unsupported generation");
         }
 
         /**
@@ -767,128 +815,130 @@ public class GenerateFigureAPI2 {
     private static List<PyFunc> getPyFuncs() {
         final ArrayList<PyFunc> rst = new ArrayList<>();
 
+        final FunctionCallType fct = FunctionCallType.SINGLETON; //todo handle function call types
+
         //todo how to combine these into better composite functions?
         //todo pydocs
-        rst.add(new PyFunc("axes", new String[]{"axes"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axes_remove_series", new String[]{"axesRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("axis", new String[]{"axis"}, new String[]{"dim"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("axis_color", new String[]{"axisColor"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axis_format", new String[]{"axisFormat", "axisFormatPattern"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axis_label", new String[]{"axisLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("axis_label_font", new String[]{"axisLabelFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("business_time", new String[]{"businessTime"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axes", fct, new String[]{"axes"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axes_remove_series", fct, new String[]{"axesRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("axis", fct, new String[]{"axis"}, new String[]{"dim"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("axis_color", fct, new String[]{"axisColor"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axis_format", fct, new String[]{"axisFormat", "axisFormatPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axis_label", fct, new String[]{"axisLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("axis_label_font", fct, new String[]{"axisLabelFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("business_time", fct, new String[]{"businessTime"}, null, "TODO pydoc"));
         //todo should cat_error_bar be under cat_plot?
-        rst.add(new PyFunc("cat_error_bar", new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("cat_hist_plot", new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("cat_plot", new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("chart", new String[]{"chart"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("chart_remove_series", new String[]{"chartRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("chart_title", new String[]{"chartTitle"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("chart_title_color", new String[]{"chartTitleColor"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("chart_title_font", new String[]{"chartTitleFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("error_bar_color", new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("cat_error_bar", fct, new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("cat_hist_plot", fct, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("cat_plot", fct, new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("chart", fct, new String[]{"chart"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_remove_series", fct, new String[]{"chartRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("chart_title", fct, new String[]{"chartTitle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_title_color", fct, new String[]{"chartTitleColor"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_title_font", fct, new String[]{"chartTitleFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("error_bar_color", fct, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         //todo should error_bar be part of plot?
-        rst.add(new PyFunc("error_bar", new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("error_bar", fct, new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
-        rst.add(new PyFunc("figure_remove_series", new String[]{"figureRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("figure_title", new String[]{"figureTitle"}, new String[]{"title"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("figure_title_color", new String[]{"figureTitleColor"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("figure_title_font", new String[]{"figureTitleFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("func_n_points", new String[]{"funcNPoints"}, new String[]{"npoints"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("func_range", new String[]{"funcRange"}, new String[]{"xmin", "xmax"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("gradient_visible", new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("grid_lines_visible", new String[]{"gridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("group", new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("hist_plot", new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("invert", new String[]{"invert"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("legend_color", new String[]{"legendColor"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("legend_font", new String[]{"legendFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("legend_visible", new String[]{"legendVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("line_color", new String[]{"lineColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("line_style", new String[]{"lineStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("lines_visible", new String[]{"linesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("log", new String[]{"log"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("max", new String[]{"max"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("max_rows_in_title", new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("min", new String[]{"min"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("minor_ticks", new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("minor_ticks_visible", new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("new_axes", new String[]{"newAxes"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("new_chart", new String[]{"newChart"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("ohlc_plot", new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("pie_percent_label_format", new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("pie_plot", new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("plot", new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("plot_orientation", new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("plot_style", new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_color", new String[]{"pointColor"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("point_color_by_y", new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_color_integer", new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_label", new String[]{"pointLabel"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("point_label_format", new String[]{"pointLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_shape", new String[]{"pointShape"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("point_size", new String[]{"pointSize"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("points_visible", new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("range", new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("remove_chart", new String[]{"removeChart"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("save", new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
-        rst.add(new PyFunc("series", new String[]{"series"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("series_color", new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("series_naming_function", new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("show", new String[]{"show"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("span", new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
-        rst.add(new PyFunc("tick_label_angle", new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("ticks", new String[]{"ticks"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("ticks_font", new String[]{"ticksFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("ticks_visible", new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("tool_tip_pattern", new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("transform", new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("twin", new String[]{"twin"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("twin_x", new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
-        rst.add(new PyFunc("twin_y", new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
-        rst.add(new PyFunc("update_interval", new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
+        rst.add(new PyFunc("figure_remove_series", fct, new String[]{"figureRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("figure_title", fct, new String[]{"figureTitle"}, new String[]{"title"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("figure_title_color", fct, new String[]{"figureTitleColor"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("figure_title_font", fct, new String[]{"figureTitleFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("func_n_points", fct, new String[]{"funcNPoints"}, new String[]{"npoints"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("func_range", fct, new String[]{"funcRange"}, new String[]{"xmin", "xmax"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("gradient_visible", fct, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("grid_lines_visible", fct, new String[]{"gridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("group", fct, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("hist_plot", fct, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("invert", fct, new String[]{"invert"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("legend_color", fct, new String[]{"legendColor"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("legend_font", fct, new String[]{"legendFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("legend_visible", fct, new String[]{"legendVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("line_color", fct, new String[]{"lineColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("line_style", fct, new String[]{"lineStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("lines_visible", fct, new String[]{"linesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("log", fct, new String[]{"log"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("max", fct, new String[]{"max"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("max_rows_in_title", fct, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("min", fct, new String[]{"min"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("minor_ticks", fct, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("minor_ticks_visible", fct, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("new_axes", fct, new String[]{"newAxes"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("new_chart", fct, new String[]{"newChart"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ohlc_plot", fct, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("pie_percent_label_format", fct, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("pie_plot", fct, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot", fct, new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_orientation", fct, new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("plot_style", fct, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("point_color", fct, new String[]{"pointColor"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("point_color_by_y", fct, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("point_color_integer", fct, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("point_label", fct, new String[]{"pointLabel"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("point_label_format", fct, new String[]{"pointLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("point_shape", fct, new String[]{"pointShape"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("point_size", fct, new String[]{"pointSize"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("points_visible", fct, new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("range", fct, new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("remove_chart", fct, new String[]{"removeChart"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("save", fct, new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
+        rst.add(new PyFunc("series", fct, new String[]{"series"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("series_color", fct, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("series_naming_function", fct, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("show", fct, new String[]{"show"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("span", fct, new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
+        rst.add(new PyFunc("tick_label_angle", fct, new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("ticks", fct, new String[]{"ticks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks_font", fct, new String[]{"ticksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks_visible", fct, new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("tool_tip_pattern", fct, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("transform", fct, new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("twin", fct, new String[]{"twin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("twin_x", fct, new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
+        rst.add(new PyFunc("twin_y", fct, new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
+        rst.add(new PyFunc("update_interval", fct, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
 
-        rst.add(new PyFunc("x_axis", new String[]{"xAxis"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_business_time", new String[]{"xBusinessTime"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_color", new String[]{"xColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_format", new String[]{"xFormat", "xFormatPattern"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_grid_lines_visible", new String[]{"xGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_invert", new String[]{"xInvert"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_label", new String[]{"xLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_label_font", new String[]{"xLabelFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_log", new String[]{"xLog"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_max", new String[]{"xMax"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_min", new String[]{"xMin"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_minor_ticks", new String[]{"xMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_minor_ticks_visible", new String[]{"xMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_range", new String[]{"xRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_tick_label_angle", new String[]{"xTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_ticks", new String[]{"xTicks"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_ticks_font", new String[]{"xTicksFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("x_ticks_visible", new String[]{"xTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_tool_tip_pattern", new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_transform", new String[]{"xTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_axis", fct, new String[]{"xAxis"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_business_time", fct, new String[]{"xBusinessTime"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_color", fct, new String[]{"xColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_format", fct, new String[]{"xFormat", "xFormatPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_grid_lines_visible", fct, new String[]{"xGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_invert", fct, new String[]{"xInvert"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_label", fct, new String[]{"xLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_label_font", fct, new String[]{"xLabelFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_log", fct, new String[]{"xLog"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_max", fct, new String[]{"xMax"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_min", fct, new String[]{"xMin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_minor_ticks", fct, new String[]{"xMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_minor_ticks_visible", fct, new String[]{"xMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_range", fct, new String[]{"xRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_tick_label_angle", fct, new String[]{"xTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_ticks", fct, new String[]{"xTicks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks_font", fct, new String[]{"xTicksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks_visible", fct, new String[]{"xTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_tool_tip_pattern", fct, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("x_transform", fct, new String[]{"xTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
-        rst.add(new PyFunc("y_axis", new String[]{"yAxis"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_business_time", new String[]{"yBusinessTime"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_color", new String[]{"yColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_format", new String[]{"yFormat", "yFormatPattern"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_grid_lines_visible", new String[]{"yGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_invert", new String[]{"yInvert"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_label", new String[]{"yLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_label_font", new String[]{"yLabelFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_log", new String[]{"yLog"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_max", new String[]{"yMax"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_min", new String[]{"yMin"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_minor_ticks", new String[]{"yMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_minor_ticks_visible", new String[]{"yMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_range", new String[]{"yRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_tick_label_angle", new String[]{"yTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_ticks", new String[]{"yTicks"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_ticks_font", new String[]{"yTicksFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("y_ticks_visible", new String[]{"yTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_tool_tip_pattern", new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_transform", new String[]{"yTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_axis", fct, new String[]{"yAxis"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_business_time", fct, new String[]{"yBusinessTime"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_color", fct, new String[]{"yColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_format", fct, new String[]{"yFormat", "yFormatPattern"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_grid_lines_visible", fct, new String[]{"yGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_invert", fct, new String[]{"yInvert"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_label", fct, new String[]{"yLabel"}, new String[]{"label"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_label_font", fct, new String[]{"yLabelFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_log", fct, new String[]{"yLog"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_max", fct, new String[]{"yMax"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_min", fct, new String[]{"yMin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_minor_ticks", fct, new String[]{"yMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_minor_ticks_visible", fct, new String[]{"yMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_range", fct, new String[]{"yRange"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_tick_label_angle", fct, new String[]{"yTickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_ticks", fct, new String[]{"yTicks"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks_font", fct, new String[]{"yTicksFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks_visible", fct, new String[]{"yTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_tool_tip_pattern", fct, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("y_transform", fct, new String[]{"yTransform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
 
         Collections.sort(rst);
         return rst;
