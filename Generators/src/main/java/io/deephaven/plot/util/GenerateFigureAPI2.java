@@ -933,14 +933,28 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("lines_visible", SINGLETON, new String[]{"linesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
 
+        rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_pie", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
+//        rst.add(new PyFunc("plot", SINGLETON, new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        //todo should error_bar be part of plot?
+//        rst.add(new PyFunc("error_bar", SINGLETON, new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_xy", SINGLETON, new String[]{"plot", "plotBy", "errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        //todo should cat_error_bar be under cat_plot?
+//        rst.add(new PyFunc("cat_error_bar", SINGLETON, new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
+//        rst.add(new PyFunc("cat_plot", SINGLETON, new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
+
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
 
-        rst.add(new PyFunc("update_interval", SINGLETON, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
-        rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
-
         rst.add(new PyFunc("figure_remove_series", SINGLETON, new String[]{"figureRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("update_interval", SINGLETON, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
+
+        //todo chart and figure...
+        rst.add(new PyFunc("max_rows_in_title", SINGLETON, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart", SINGLETON, new String[]{"chart"}, null, "TODO pydoc"));
@@ -958,7 +972,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("series_naming_function", SINGLETON, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-
+        rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("invert", SINGLETON, new String[]{"invert"}, null, "TODO pydoc"));
         rst.add(new PyFunc("log", SINGLETON, new String[]{"log"}, null, "TODO pydoc"));
@@ -973,20 +987,6 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("tick_label_angle", SINGLETON, new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("minor_ticks", SINGLETON, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("minor_ticks_visible", SINGLETON, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-
-        //todo chart and figure...
-        rst.add(new PyFunc("max_rows_in_title", SINGLETON, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
-
-        rst.add(new PyFunc("hist_plot", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("ohlc_plot", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("plot", SINGLETON, new String[]{"plot", "plotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        //todo should error_bar be part of plot?
-        rst.add(new PyFunc("error_bar", SINGLETON, new String[]{"errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("pie_plot", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        //todo should cat_error_bar be under cat_plot?
-        rst.add(new PyFunc("cat_error_bar", SINGLETON, new String[]{"catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("cat_hist_plot", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
-        rst.add(new PyFunc("cat_plot", SINGLETON, new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
         rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("pie_percent_label_format", SINGLETON, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
