@@ -161,6 +161,14 @@ public interface Axis extends Serializable {
      */
     Axis businessTime();
 
+    /**
+     * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
+     *
+     * @param useBusinessTime true to use a business time axis transform; false to use a linear axis transform.
+     * @return this Axis using the default business calendar or this Axis using a linear axis transform.
+     */
+    Axis businessTime(boolean useBusinessTime);
+
 
     ////////////////////////// axis rescaling //////////////////////////
 

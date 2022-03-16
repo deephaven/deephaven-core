@@ -23,6 +23,11 @@ public class GenerateFigureAPI2 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static final Map<String,String[][]> javaExcludes = new HashMap<>() {{
+        put("invert", new String[][]{new String[]{}});
+        put("log", new String[][]{new String[]{}});
+        put("businessTime", new String[][]{new String[]{}});
+    }};
 
     /**
      * Gets the method signatures of public JCLASS methods.
@@ -43,6 +48,15 @@ public class GenerateFigureAPI2 {
 
             final Key key = new Key(m);
             final JavaFunction f = new JavaFunction(m);
+
+            if(javaExcludes.containsKey(key.name)) {
+                final boolean isExcluded = Arrays.stream(javaExcludes.get(key.name))
+                        .anyMatch(exclude -> Arrays.equals(exclude, f.getParameterNames()));
+
+                if(isExcluded){
+                    continue;
+                }
+            }
 
             if (key.isPublic) {
                 final ArrayList<JavaFunction> sigs = signatures.computeIfAbsent(key, k -> new ArrayList<>());
@@ -551,6 +565,27 @@ public class GenerateFigureAPI2 {
         }
 
         /**
+         * Gets a list of functions with conflicting signatures.
+         *
+         * @param signatures java function signatures
+         * @param pyParameterMap possible python function arguments
+         * @param argSet conflicting argument set
+         * @return conflicting function names
+         */
+        private List<String> conflictingFuncs(final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap, final Set<String> argSet) {
+            return signatures.entrySet()
+                    .stream()
+                    .filter(e ->
+                            pyArgNames(e.getValue(), pyParameterMap)
+                                    .stream()
+                                    .map(a -> new HashSet<>(Arrays.asList(a)))
+                                    .anyMatch(argSet::equals)
+                    )
+                    .map(e -> e.getKey().name)
+                    .collect(Collectors.toList());
+        }
+
+        /**
          * Generates code for calling a single java function from python.
          *
          * @param sb string builder
@@ -571,7 +606,7 @@ public class GenerateFigureAPI2 {
                     final Set<String> argSet = new HashSet<>(Arrays.asList(an));
 
                     if(alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an));
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyParameterMap, argSet));
                     } else {
                         alreadyGenerated.add(argSet);
                     }
@@ -633,8 +668,8 @@ public class GenerateFigureAPI2 {
                 for (final String[] an : argNames) {
                     final Set<String> argSet = new HashSet<>(Arrays.asList(an));
 
-                    if(alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an));
+                    if (alreadyGenerated.contains(argSet)) {
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyParameterMap, argSet));
                     } else {
                         alreadyGenerated.add(argSet);
                     }
@@ -820,6 +855,7 @@ public class GenerateFigureAPI2 {
         rst.put("visible", new PyArg(10, "visible", taInt,  "true to draw the design element; false otherwise.", null));
         rst.put("invert", new PyArg(10, "invert", taBool,  "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
         rst.put("useLog", new PyArg(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
+        rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool,  "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
         rst.put("nbins", new PyArg(15, "nbins", taInt,  "number of bins", null));
         rst.put("maxRowsCount", new PyArg(10, "max_rows", taInt,  "maximum number of row values to show in chart title", null));
         rst.put("min", new PyArg(10, "min", taFloat,  "range minimum", null));

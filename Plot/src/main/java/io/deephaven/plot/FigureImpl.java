@@ -440,6 +440,12 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
+    @Override public  FigureImpl businessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxisImpl axis = (AxisImpl) axis(fc).businessTime( useBusinessTime);
+        return make(null, axis);
+    }
+
     @Override public  FigureImpl businessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxisImpl axis = (AxisImpl) axis(fc).businessTime( calendar);

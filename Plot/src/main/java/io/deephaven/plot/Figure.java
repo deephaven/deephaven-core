@@ -54,6 +54,8 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure businessTime( );
 
+    @Override  Figure businessTime( boolean useBusinessTime );
+
     @Override  Figure businessTime( io.deephaven.time.calendar.BusinessCalendar calendar );
 
     @Override  Figure businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );

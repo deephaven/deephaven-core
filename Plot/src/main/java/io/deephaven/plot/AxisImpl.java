@@ -465,6 +465,10 @@ public class AxisImpl implements Axis, PlotExceptionCause {
         return businessTime(Calendars.calendar());
     }
 
+    @Override
+    public AxisImpl businessTime(boolean useBusinessTime) {
+        return useBusinessTime ? businessTime() : transform(null);
+    }
 
     ////////////////////////// axis rescaling //////////////////////////
 
