@@ -504,7 +504,7 @@ public class GenerateFigureAPI2 {
 
             // non-null params
 
-            sb.append(INDENT).append(INDENT).append("non_null_params = set()\n\n");
+            sb.append(INDENT).append(INDENT).append("non_null_args = set()\n\n");
 
             for(final PyArg arg:args){
                 sb.append(INDENT)
@@ -515,7 +515,7 @@ public class GenerateFigureAPI2 {
                         .append(INDENT)
                         .append(INDENT)
                         .append(INDENT)
-                        .append("non_null_params.add(\"")
+                        .append("non_null_args.add(\"")
                         .append(arg.name).append("\")\n")
                         .append(INDENT)
                         .append(INDENT)
@@ -581,7 +581,7 @@ public class GenerateFigureAPI2 {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append(isFirst ? "if" : "elif")
-                            .append(" non_null_params == {")
+                            .append(" non_null_args == {")
                             .append(String.join(", ", quoted_an))
                             .append("}:\n")
                             .append(INDENT)
@@ -603,7 +603,7 @@ public class GenerateFigureAPI2 {
                     .append(INDENT)
                     .append(INDENT)
                     .append(INDENT)
-                    .append("raise DHError(f\"unsupported parameter combination: {non_null_params}\")\n");
+                    .append("raise DHError(f\"unsupported parameter combination: {non_null_args}\")\n");
         }
 
         /**
@@ -614,7 +614,70 @@ public class GenerateFigureAPI2 {
          * @param pyParameterMap possible python function arguments
          */
         private void generatePyFuncCallSequential(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap) {
-            throw new UnsupportedOperationException("Unsupported generation");
+
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("f_called = False\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("j_figure = self.j_figure\n\n");
+
+
+            final Set<Set<String>> alreadyGenerated = new HashSet<>();
+
+            for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
+                final Key key = entry.getKey();
+                final ArrayList<JavaFunction> sigs = entry.getValue();
+                final List<String[]> argNames = pyArgNames(sigs, pyParameterMap);
+
+                for (final String[] an : argNames) {
+                    final Set<String> argSet = new HashSet<>(Arrays.asList(an));
+
+                    if(alreadyGenerated.contains(argSet)) {
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an));
+                    } else {
+                        alreadyGenerated.add(argSet);
+                    }
+
+                    final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+
+                    sb.append(INDENT)
+                            .append(INDENT)
+                            .append("if {")
+                            .append(String.join(", ", quoted_an))
+                            .append("}.issubset(non_null_args):\n")
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("j_figure = self.j_figure.")
+                            .append(key.name)
+                            .append("(")
+                            .append(String.join(", ", an))
+                            .append(")\n")
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("non_null_args = non_null_args.difference({")
+                            .append(String.join(", ", quoted_an))
+                            .append("})\n")
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("f_called = True\n\n");
+                }
+            }
+
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("if not f_called or non_null_args:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("raise DHError(f\"unsupported parameter combination: {non_null_args}\")\n\n");
+
+            sb.append(INDENT)
+                    .append(INDENT)
+                    .append("return Figure(j_figure)\n");
         }
 
         /**
@@ -816,6 +879,7 @@ public class GenerateFigureAPI2 {
         final ArrayList<PyFunc> rst = new ArrayList<>();
 
         final FunctionCallType fct = FunctionCallType.SINGLETON; //todo handle function call types
+//        final FunctionCallType fct = FunctionCallType.SEQUENTIAL; //todo handle function call types
 
         //todo how to combine these into better composite functions?
         //todo pydocs
