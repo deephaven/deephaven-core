@@ -379,9 +379,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl axesRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl axesRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).axesRemoveSeries( names);
+        final AxesImpl axes = (AxesImpl) axes(fc).axesRemoveSeries( removeSeriesNames);
         return make(axes);
     }
 
@@ -776,9 +776,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl chartRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl chartRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).chartRemoveSeries( names);
+        final ChartImpl chart = (ChartImpl) chart(fc).chartRemoveSeries( removeSeriesNames);
         return make(chart);
     }
 
@@ -1592,9 +1592,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl figureRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl figureRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).figureRemoveSeries( names);
+        figure(fc).figureRemoveSeries( removeSeriesNames);
         return make(fc);
     }
 

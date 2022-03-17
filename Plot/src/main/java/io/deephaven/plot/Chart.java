@@ -25,10 +25,10 @@ public interface Chart extends Serializable {
     /**
      * Removes the series with the specified {@code names} from this Chart.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Chart
      */
-    Chart chartRemoveSeries(final String... names);
+    Chart chartRemoveSeries(final String... removeSeriesNames);
 
 
     ////////////////////////// Title //////////////////////////

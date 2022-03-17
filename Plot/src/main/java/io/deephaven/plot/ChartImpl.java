@@ -383,9 +383,9 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
 
     @Override
-    public ChartImpl chartRemoveSeries(final String... names) {
+    public ChartImpl chartRemoveSeries(final String... removeSeriesNames) {
         for (Axes ax : axes) {
-            ax.axesRemoveSeries(names);
+            ax.axesRemoveSeries(removeSeriesNames);
         }
 
         return this;

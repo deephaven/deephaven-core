@@ -229,9 +229,9 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
 
     @Override
-    public BaseFigureImpl figureRemoveSeries(final String... names) {
+    public BaseFigureImpl figureRemoveSeries(final String... removeSeriesNames) {
         for (Chart chart : charts.getCharts()) {
-            chart.chartRemoveSeries(names);
+            chart.chartRemoveSeries(removeSeriesNames);
         }
 
         return this;

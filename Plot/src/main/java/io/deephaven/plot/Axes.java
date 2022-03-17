@@ -40,10 +40,10 @@ public interface Axes extends Serializable {
     /**
      * Removes the series with the specified {@code names} from this Axes.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Chart
      */
-    Axes axesRemoveSeries(final String... names);
+    Axes axesRemoveSeries(final String... removeSeriesNames);
 
     /**
      * Gets a data series.

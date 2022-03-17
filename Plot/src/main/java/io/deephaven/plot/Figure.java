@@ -34,7 +34,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure axes( int id );
 
-    @Override  Figure axesRemoveSeries( java.lang.String... names );
+    @Override  Figure axesRemoveSeries( java.lang.String... removeSeriesNames );
 
     @Override  Figure axis( int dim );
 
@@ -166,7 +166,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure chart( int rowNum, int colNum );
 
-    @Override  Figure chartRemoveSeries( java.lang.String... names );
+    @Override  Figure chartRemoveSeries( java.lang.String... removeSeriesNames );
 
     @Override  Figure chartTitle( java.lang.String title );
 
@@ -438,7 +438,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure errorBarYBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override  Figure figureRemoveSeries( java.lang.String... names );
+    @Override  Figure figureRemoveSeries( java.lang.String... removeSeriesNames );
 
     @Override  Figure figureTitle( java.lang.String title );
 

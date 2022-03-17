@@ -327,12 +327,12 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     /**
      * Removes the series with the specified {@code names} from this Axes.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Chart
      */
     @Override
-    public AxesImpl axesRemoveSeries(final String... names) {
-        dataSeries.remove(names);
+    public AxesImpl axesRemoveSeries(final String... removeSeriesNames) {
+        dataSeries.remove(removeSeriesNames);
         return this;
     }
 

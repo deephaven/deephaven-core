@@ -20,10 +20,10 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes all series with {@code names} from this Figure.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Figure
      */
-    BaseFigure figureRemoveSeries(final String... names);
+    BaseFigure figureRemoveSeries(final String... removeSeriesNames);
 
 
     ////////////////////////// figure configuration //////////////////////////
