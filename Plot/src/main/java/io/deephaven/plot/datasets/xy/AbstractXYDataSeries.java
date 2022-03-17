@@ -139,8 +139,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries gradientVisible(boolean visible) {
-        setGradientVisible(visible);
+    public AbstractXYDataSeries gradientVisible(boolean gradientVisible) {
+        setGradientVisible(gradientVisible);
         return this;
     }
 
@@ -171,20 +171,20 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final Paint color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final Paint errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final int color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final int errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries errorBarColor(final String color) {
-        setErrorBarColor(color);
+    public AbstractXYDataSeries errorBarColor(final String errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
@@ -570,14 +570,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public AbstractXYDataSeries xToolTipPattern(final String format) {
-        setXToolTipPattern(format);
+    public AbstractXYDataSeries xToolTipPattern(final String xToolTipPattern) {
+        setXToolTipPattern(xToolTipPattern);
         return this;
     }
 
     @Override
-    public AbstractXYDataSeries yToolTipPattern(final String format) {
-        setYToolTipPattern(format);
+    public AbstractXYDataSeries yToolTipPattern(final String yToolTipPattern) {
+        setYToolTipPattern(yToolTipPattern);
         return this;
     }
 
@@ -761,9 +761,9 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries toolTipPattern(final String format) {
-        xToolTipPattern(format);
-        yToolTipPattern(format);
+    public AbstractXYDataSeries toolTipPattern(final String toolTipPattern) {
+        xToolTipPattern(toolTipPattern);
+        yToolTipPattern(toolTipPattern);
         return this;
     }
 

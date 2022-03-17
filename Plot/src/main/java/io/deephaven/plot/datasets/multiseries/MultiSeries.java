@@ -74,16 +74,16 @@ public interface MultiSeries extends Series {
     <NUMBER extends java.lang.Number> MultiSeries pointSize(final java.util.function.Function<java.lang.Comparable, NUMBER> factors, final Object... keys);
 
 
-    MultiSeries errorBarColor(final java.lang.String color, final Object... keys);
+    MultiSeries errorBarColor(final java.lang.String errorBarColor, final Object... keys);
 
 
-    MultiSeries errorBarColor(final int color, final Object... keys);
+    MultiSeries errorBarColor(final int errorBarColor, final Object... keys);
 
 
-    MultiSeries errorBarColor(final io.deephaven.gui.color.Paint color, final Object... keys);
+    MultiSeries errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... keys);
 
 
-    MultiSeries gradientVisible(final boolean visible, final Object... keys);
+    MultiSeries gradientVisible(final boolean gradientVisible, final Object... keys);
 
 
     MultiSeries lineColor(final java.lang.String color, final Object... keys);
@@ -137,13 +137,13 @@ public interface MultiSeries extends Series {
     MultiSeries seriesColor(final io.deephaven.gui.color.Paint color, final Object... keys);
 
 
-    MultiSeries toolTipPattern(final java.lang.String format, final Object... keys);
+    MultiSeries toolTipPattern(final java.lang.String toolTipPattern, final Object... keys);
 
 
-    MultiSeries xToolTipPattern(final java.lang.String format, final Object... keys);
+    MultiSeries xToolTipPattern(final java.lang.String xToolTipPattern, final Object... keys);
 
 
-    MultiSeries yToolTipPattern(final java.lang.String format, final Object... keys);
+    MultiSeries yToolTipPattern(final java.lang.String yToolTipPattern, final Object... keys);
 
 
     MultiSeries group(final int group, final Object... keys);

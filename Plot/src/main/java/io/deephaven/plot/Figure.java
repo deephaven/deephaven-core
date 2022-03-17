@@ -960,17 +960,17 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yTransform( io.deephaven.plot.axistransformations.AxisTransform transform );
 
-    @Override  Figure errorBarColor( int color );
+    @Override  Figure errorBarColor( int errorBarColor );
 
-    @Override  Figure errorBarColor( int color, java.lang.Object... keys );
+    @Override  Figure errorBarColor( int errorBarColor, java.lang.Object... keys );
 
-    @Override  Figure errorBarColor( io.deephaven.gui.color.Paint color );
+    @Override  Figure errorBarColor( io.deephaven.gui.color.Paint errorBarColor );
 
-    @Override  Figure errorBarColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys );
+    @Override  Figure errorBarColor( io.deephaven.gui.color.Paint errorBarColor, java.lang.Object... keys );
 
-    @Override  Figure errorBarColor( java.lang.String color );
+    @Override  Figure errorBarColor( java.lang.String errorBarColor );
 
-    @Override  Figure errorBarColor( java.lang.String color, java.lang.Object... keys );
+    @Override  Figure errorBarColor( java.lang.String errorBarColor, java.lang.Object... keys );
 
     @Override  Figure funcNPoints( int npoints );
 
@@ -978,9 +978,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure funcRange( double xmin, double xmax, int npoints );
 
-    @Override  Figure gradientVisible( boolean visible );
+    @Override  Figure gradientVisible( boolean gradientVisible );
 
-    @Override  Figure gradientVisible( boolean visible, java.lang.Object... keys );
+    @Override  Figure gradientVisible( boolean gradientVisible, java.lang.Object... keys );
 
     @Override  Figure group( int group );
 
@@ -1236,17 +1236,17 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> function );
 
-    @Override  Figure toolTipPattern( java.lang.String format );
+    @Override  Figure toolTipPattern( java.lang.String toolTipPattern );
 
-    @Override  Figure toolTipPattern( java.lang.String format, java.lang.Object... keys );
+    @Override  Figure toolTipPattern( java.lang.String toolTipPattern, java.lang.Object... keys );
 
-    @Override  Figure xToolTipPattern( java.lang.String format );
+    @Override  Figure xToolTipPattern( java.lang.String xToolTipPattern );
 
-    @Override  Figure xToolTipPattern( java.lang.String format, java.lang.Object... keys );
+    @Override  Figure xToolTipPattern( java.lang.String xToolTipPattern, java.lang.Object... keys );
 
-    @Override  Figure yToolTipPattern( java.lang.String format );
+    @Override  Figure yToolTipPattern( java.lang.String yToolTipPattern );
 
-    @Override  Figure yToolTipPattern( java.lang.String format, java.lang.Object... keys );
+    @Override  Figure yToolTipPattern( java.lang.String yToolTipPattern, java.lang.Object... keys );
 
     @Override <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.Map<CATEGORY, COLOR> colors );
 

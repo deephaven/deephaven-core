@@ -59,10 +59,10 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the visibility of bar gradients for this dataset.
      *
-     * @param visible whether to display bar gradients or not
+     * @param gradientVisible whether to display bar gradients or not
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries gradientVisible(boolean visible);
+    CategoryDataSeries gradientVisible(boolean gradientVisible);
 
 
     ////////////////////////// color //////////////////////////
@@ -102,26 +102,26 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final Paint color);
+    CategoryDataSeries errorBarColor(final Paint errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color index of the color in the series color palette
+     * @param errorBarColor index of the color in the series color palette
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final int color);
+    CategoryDataSeries errorBarColor(final int errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries errorBarColor(final String color);
+    CategoryDataSeries errorBarColor(final String errorBarColor);
 
 
     ////////////////////////// line style //////////////////////////

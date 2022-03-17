@@ -42,10 +42,10 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets whether bar gradients are visible.
      *
-     * @param visible bar gradient visibility
+     * @param gradientVisible bar gradient visibility
      * @return this data series.
      */
-    DataSeries gradientVisible(boolean visible);
+    DataSeries gradientVisible(boolean gradientVisible);
 
 
     ////////////////////////// point sizes //////////////////////////
@@ -176,26 +176,26 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final Paint color);
+    DataSeries errorBarColor(final Paint errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color index of the color in the series color palette
+     * @param errorBarColor index of the color in the series color palette
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final int color);
+    DataSeries errorBarColor(final int errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final String color);
+    DataSeries errorBarColor(final String errorBarColor);
 
 
     ////////////////////////// point labels //////////////////////////
@@ -290,12 +290,12 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the tooltip format.
      *
-     * @param format format
+     * @param toolTipPattern format
      * @return this data series.
      */
-    default DataSeries toolTipPattern(final String format) {
-        xToolTipPattern(format);
-        yToolTipPattern(format);
+    default DataSeries toolTipPattern(final String toolTipPattern) {
+        xToolTipPattern(toolTipPattern);
+        yToolTipPattern(toolTipPattern);
         return this;
     }
 
@@ -303,16 +303,16 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the x-value tooltip format.
      *
-     * @param format format
+     * @param xToolTipPattern format
      * @return this data series.
      */
-    DataSeries xToolTipPattern(final String format);
+    DataSeries xToolTipPattern(final String xToolTipPattern);
 
     /**
      * Sets the y-value tooltip format.
      *
-     * @param format format
+     * @param yToolTipPattern format
      * @return this data series.
      */
-    DataSeries yToolTipPattern(final String format);
+    DataSeries yToolTipPattern(final String yToolTipPattern);
 }

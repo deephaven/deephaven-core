@@ -360,25 +360,25 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> errorBarColor(final java.lang.String color, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> errorBarColor(final java.lang.String errorBarColor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method errorBarColor for arguments [class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> errorBarColor(final int color, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> errorBarColor(final int errorBarColor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method errorBarColor for arguments [int]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> errorBarColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method errorBarColor for arguments [interface io.deephaven.gui.color.Paint]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> gradientVisible(final boolean visible, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> gradientVisible(final boolean gradientVisible, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method gradientVisible for arguments [boolean]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
@@ -486,19 +486,19 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> toolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> toolTipPattern(final java.lang.String toolTipPattern, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method toolTipPattern for arguments [class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> xToolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> xToolTipPattern(final java.lang.String xToolTipPattern, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method xToolTipPattern for arguments [class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 
 
-    @Override public AbstractMultiSeries<SERIES> yToolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> yToolTipPattern(final java.lang.String yToolTipPattern, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method yToolTipPattern for arguments [class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 

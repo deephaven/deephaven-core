@@ -181,8 +181,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries gradientVisible(final boolean visible) {
-        setGradientVisible(visible);
+    public AbstractCategoryDataSeries gradientVisible(final boolean gradientVisible) {
+        setGradientVisible(gradientVisible);
         return this;
     }
 
@@ -253,20 +253,20 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
 
 
     @Override
-    public AbstractCategoryDataSeries errorBarColor(final Paint color) {
-        setErrorBarColor(color);
+    public AbstractCategoryDataSeries errorBarColor(final Paint errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractCategoryDataSeries errorBarColor(final int color) {
-        setErrorBarColor(color);
+    public AbstractCategoryDataSeries errorBarColor(final int errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
     @Override
-    public AbstractCategoryDataSeries errorBarColor(final String color) {
-        setErrorBarColor(color);
+    public AbstractCategoryDataSeries errorBarColor(final String errorBarColor) {
+        setErrorBarColor(errorBarColor);
         return this;
     }
 
@@ -645,14 +645,14 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries xToolTipPattern(final String format) {
-        setXToolTipPattern(format);
+    public AbstractCategoryDataSeries xToolTipPattern(final String xToolTipPattern) {
+        setXToolTipPattern(xToolTipPattern);
         return this;
     }
 
     @Override
-    public AbstractCategoryDataSeries yToolTipPattern(final String format) {
-        setYToolTipPattern(format);
+    public AbstractCategoryDataSeries yToolTipPattern(final String yToolTipPattern) {
+        setYToolTipPattern(yToolTipPattern);
         return this;
     }
 
@@ -952,9 +952,9 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries toolTipPattern(final String format) {
-        xToolTipPattern(format);
-        yToolTipPattern(format);
+    public AbstractCategoryDataSeries toolTipPattern(final String toolTipPattern) {
+        xToolTipPattern(toolTipPattern);
+        yToolTipPattern(toolTipPattern);
         return this;
     }
 

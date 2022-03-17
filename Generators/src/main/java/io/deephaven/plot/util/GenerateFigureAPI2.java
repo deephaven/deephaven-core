@@ -50,7 +50,6 @@ public class GenerateFigureAPI2 {
                 // only look at methods of the plot builder
                 continue;
             }
-            //todo print the other cases
 
             final Key key = new Key(m);
             final JavaFunction f = new JavaFunction(m);
@@ -910,6 +909,12 @@ public class GenerateFigureAPI2 {
         rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taInt,  "y-grid is visible.", null));
         rst.put("pieLabelFormat", new PyArg(10, "pie_label_format", taStr,  "pie chart format of the percentage point label.", null));
 
+        rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr,  "x and y tool tip format pattern", null));
+        rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr,  "x tool tip format pattern", null));
+        rst.put("yToolTipPattern", new PyArg(12, "y_tool_tip_pattern", taStr,  "y tool tip format pattern", null));
+        rst.put("errorBarColor", new PyArg(13, "error_bar_color", taColor,  "error bar color.", null));
+        rst.put("gradientVisible", new PyArg(13, "gradient_visible", taBool,  "bar gradient visibility.", null));
+
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
         //
@@ -1085,16 +1090,18 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("remove_chart", SINGLETON, new String[]{"removeChart"}, null, "TODO pydoc"));
 
 
-        rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("series_color", SINGLETON, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("series_color", SINGLETON, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("series_naming_function", SINGLETON, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-//***
+//        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+
+        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible"}, null, "TODO pydoc"));
+        //todo ***
 
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?

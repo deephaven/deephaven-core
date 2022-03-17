@@ -271,12 +271,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> errorBarColorSeriesNameToStringMap() {
         return errorBarColorSeriesNameToStringMap;
     }
-    @Override public MultiCatSeries errorBarColor(final java.lang.String color, final Object... keys) {
+    @Override public MultiCatSeries errorBarColor(final java.lang.String errorBarColor, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            errorBarColorSeriesNameToStringMap.setDefault(color);
+            errorBarColorSeriesNameToStringMap.setDefault(errorBarColor);
         } else {
             errorBarColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                color);
+                errorBarColor);
         }
 
         return this;
@@ -288,12 +288,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> errorBarColorSeriesNameTointMap() {
         return errorBarColorSeriesNameTointMap;
     }
-    @Override public MultiCatSeries errorBarColor(final int color, final Object... keys) {
+    @Override public MultiCatSeries errorBarColor(final int errorBarColor, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            errorBarColorSeriesNameTointMap.setDefault(color);
+            errorBarColorSeriesNameTointMap.setDefault(errorBarColor);
         } else {
             errorBarColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                color);
+                errorBarColor);
         }
 
         return this;
@@ -305,12 +305,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> errorBarColorSeriesNameToPaintMap() {
         return errorBarColorSeriesNameToPaintMap;
     }
-    @Override public MultiCatSeries errorBarColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
+    @Override public MultiCatSeries errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            errorBarColorSeriesNameToPaintMap.setDefault(color);
+            errorBarColorSeriesNameToPaintMap.setDefault(errorBarColor);
         } else {
             errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                color);
+                errorBarColor);
         }
 
         return this;
@@ -322,12 +322,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> gradientVisibleSeriesNameTobooleanMap() {
         return gradientVisibleSeriesNameTobooleanMap;
     }
-    @Override public MultiCatSeries gradientVisible(final boolean visible, final Object... keys) {
+    @Override public MultiCatSeries gradientVisible(final boolean gradientVisible, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            gradientVisibleSeriesNameTobooleanMap.setDefault(visible);
+            gradientVisibleSeriesNameTobooleanMap.setDefault(gradientVisible);
         } else {
             gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                visible);
+                gradientVisible);
         }
 
         return this;
@@ -1146,12 +1146,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> toolTipPatternSeriesNameToStringMap() {
         return toolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatSeries toolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public MultiCatSeries toolTipPattern(final java.lang.String toolTipPattern, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            toolTipPatternSeriesNameToStringMap.setDefault(format);
+            toolTipPatternSeriesNameToStringMap.setDefault(toolTipPattern);
         } else {
             toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                format);
+                toolTipPattern);
         }
 
         return this;
@@ -1163,12 +1163,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> xToolTipPatternSeriesNameToStringMap() {
         return xToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatSeries xToolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public MultiCatSeries xToolTipPattern(final java.lang.String xToolTipPattern, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            xToolTipPatternSeriesNameToStringMap.setDefault(format);
+            xToolTipPatternSeriesNameToStringMap.setDefault(xToolTipPattern);
         } else {
             xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                format);
+                xToolTipPattern);
         }
 
         return this;
@@ -1180,12 +1180,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> yToolTipPatternSeriesNameToStringMap() {
         return yToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatSeries yToolTipPattern(final java.lang.String format, final Object... keys) {
+    @Override public MultiCatSeries yToolTipPattern(final java.lang.String yToolTipPattern, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            yToolTipPatternSeriesNameToStringMap.setDefault(format);
+            yToolTipPatternSeriesNameToStringMap.setDefault(yToolTipPattern);
         } else {
             yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                format);
+                yToolTipPattern);
         }
 
         return this;
