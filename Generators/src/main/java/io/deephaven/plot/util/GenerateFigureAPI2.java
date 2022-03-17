@@ -1049,6 +1049,11 @@ public class GenerateFigureAPI2 {
         //        rst.add(new PyFunc("update_interval", SINGLETON, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
         rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"updateInterval"}, null, "TODO pydoc"));
 
+        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("axes", SINGLETON, new String[]{"axes"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "plotStyle"}, null, "TODO pydoc"));
+
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
@@ -1069,9 +1074,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("plot_orientation", SINGLETON, new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("pie_percent_label_format", SINGLETON, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
 
-        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axes", SINGLETON, new String[]{"axes"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
+        // in axes
         rst.add(new PyFunc("axes_remove_series", SINGLETON, new String[]{"axesRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
