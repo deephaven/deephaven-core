@@ -893,6 +893,7 @@ public class GenerateFigureAPI2 {
         rst.put("updateIntervalMillis", new PyArg(10, "millis", taInt,  "milliseconds.", null));
 
         rst.put("keys", new PyArg(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
+        rst.put("key", new PyArg(20, "key", taKey,  "multi-series keys or a column name containing keys.", null));
         rst.put("keyColumn", new PyArg(20, "key_col", taStr,  "colum name specifying category values.", null)); //todo doc/value?
 
         rst.put("category", new PyArg(1, "category", taStr,  "category.", null)); //todo doc/value?
@@ -1037,6 +1038,14 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("cat_plot", SINGLETON, new String[]{"catPlot", "catPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
+        //        rst.add(new PyFunc("point_color", SINGLETON, new String[]{"pointColor"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("point_label", SINGLETON, new String[]{"pointLabel"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("point_label_format", SINGLETON, new String[]{"pointLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("point_shape", SINGLETON, new String[]{"pointShape"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("point_size", SINGLETON, new String[]{"pointSize"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("points_visible", SINGLETON, new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
+
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
@@ -1074,15 +1083,8 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("plot_orientation", SINGLETON, new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
 
-        rst.add(new PyFunc("point_color", SINGLETON, new String[]{"pointColor"}, null, "TODO pydoc"));
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_label", SINGLETON, new String[]{"pointLabel"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("point_label_format", SINGLETON, new String[]{"pointLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("point_shape", SINGLETON, new String[]{"pointShape"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("point_size", SINGLETON, new String[]{"pointSize"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("points_visible", SINGLETON, new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
 
         Collections.sort(rst);
         return rst;

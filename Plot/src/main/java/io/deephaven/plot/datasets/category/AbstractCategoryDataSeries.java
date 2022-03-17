@@ -398,18 +398,18 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointSize(Table t, String keyColumn, String factor) {
+    public AbstractCategoryDataSeries pointSize(Table t, String key, String factor) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(factor, "valueColumn", getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, keyColumn, factor);
+        final TableHandle tableHandle = new TableHandle(t, key, factor);
         addTableHandle(tableHandle);
 
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, keyColumn, factor,
+        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, key, factor,
                 Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {
@@ -421,20 +421,20 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String factor) {
+    public AbstractCategoryDataSeries pointSize(SelectableDataSet sds, String key, String factor) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(factor, "valueColumn", getPlotInfo());
 
         final Function<Table, Table> tableTransform =
-                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
+                (Function<Table, Table> & Serializable) table -> table.lastBy(key);
         final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, factor);
         addSwappableTable(t);
 
-        ArgumentValidations.assertInstance(t.getTableDefinition(), keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t.getTableDefinition(), key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, keyColumn, factor,
+        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, key, factor,
                 Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {
@@ -511,62 +511,62 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointColor(final Table t, final String keyColumn, final String valueColumn) {
+    public AbstractCategoryDataSeries pointColor(final Table t, final String key, final String color) {
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(color, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertInstance(t, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
+        final TableHandle tableHandle = new TableHandle(t, key, color);
         addTableHandle(tableHandle);
         final ColumnHandlerFactory.ColumnHandler valueColumnHandler =
-                ColumnHandlerFactory.newNumericHandler(tableHandle, valueColumn, getPlotInfo());
+                ColumnHandlerFactory.newNumericHandler(tableHandle, color, getPlotInfo());
 
         if (valueColumnHandler.typeClassification().equals(ColumnHandlerFactory.TypeClassification.INTEGER) &&
                 (valueColumnHandler.type() == int.class || valueColumnHandler.type() == Integer.class)) {
-            this.colors.setSpecific(new AssociativeDataTableComparablePaint(tableHandle, keyColumn, valueColumn,
+            this.colors.setSpecific(new AssociativeDataTableComparablePaint(tableHandle, key, color,
                     chart(), getPlotInfo()));
         } else if (valueColumnHandler.typeClassification().equals(ColumnHandlerFactory.TypeClassification.PAINT)) {
-            this.colors.setSpecific(new AssociativeDataTable<>(tableHandle, keyColumn, valueColumn, Comparable.class,
+            this.colors.setSpecific(new AssociativeDataTable<>(tableHandle, key, color, Comparable.class,
                     Paint.class, getPlotInfo()));
         } else {
             throw new PlotUnsupportedOperationException("Column can not be converted into a color: column="
-                    + valueColumn + "\ttype=" + valueColumnHandler.type(), this);
+                    + color + "\ttype=" + valueColumnHandler.type(), this);
         }
 
         return this;
     }
 
     @Override
-    public AbstractCategoryDataSeries pointColor(final SelectableDataSet sds, final String keyColumn,
-            final String valueColumn) {
+    public AbstractCategoryDataSeries pointColor(final SelectableDataSet sds, final String key,
+            final String color) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(color, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertInstance(sds, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        final Class type = sds.getTableDefinition().getColumn(valueColumn).getDataType();
+        final Class type = sds.getTableDefinition().getColumn(color).getDataType();
         final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class)
                 || type.equals(Short.class);
         final boolean isPaint = Paint.class.isAssignableFrom(type);
 
         if (!isInt && !isPaint) {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + valueColumn + "\ttype=" + type, this);
+                    "Column can not be converted into a color: column=" + color + "\ttype=" + type, this);
         }
 
         final Function<Table, Table> tableTransform =
-                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, keyColumn, valueColumn);
+                (Function<Table, Table> & Serializable) table -> table.lastBy(key);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, key, color);
         addSwappableTable(t);
 
         if (isInt) {
-            this.colors.setSpecific(new AssociativeDataSwappableTableComparablePaint(t, keyColumn, valueColumn, chart(),
+            this.colors.setSpecific(new AssociativeDataSwappableTableComparablePaint(t, key, color, chart(),
                     getPlotInfo()));
         } else if (isPaint) {
-            this.colors.setSpecific(new AssociativeDataSwappableTable<>(t, keyColumn, valueColumn, Comparable.class,
+            this.colors.setSpecific(new AssociativeDataSwappableTable<>(t, key, color, Comparable.class,
                     Paint.class, getPlotInfo()));
         } else {
             throw new PlotIllegalStateException("Should never reach here", this);
@@ -621,13 +621,13 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointLabel(final Table t, final String keyColumn, final String valueColumn) {
-        final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
+    public AbstractCategoryDataSeries pointLabel(final Table t, final String key, final String label) {
+        final TableHandle tableHandle = new TableHandle(t, key, label);
         addTableHandle(tableHandle);
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        this.labels.setSpecific(new AssociativeDataTableLabel(tableHandle, keyColumn, valueColumn, getPlotInfo()));
+        this.labels.setSpecific(new AssociativeDataTableLabel(tableHandle, key, label, getPlotInfo()));
 
         return this;
     }
@@ -657,17 +657,17 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointLabel(final SelectableDataSet sds, final String keyColumn,
-            final String valueColumn) {
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), keyColumn, valueColumn);
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+    public AbstractCategoryDataSeries pointLabel(final SelectableDataSet sds, final String key,
+            final String label) {
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), key, label);
+        ArgumentValidations.assertInstance(sds, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
         final Function<Table, Table> tableTransform =
-                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
-        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, keyColumn, valueColumn);
+                (Function<Table, Table> & Serializable) table -> table.lastBy(key);
+        final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, key, label);
         addSwappableTable(t);
-        this.labels.setSpecific(new AssociativeDataSwappableTableLabel(t, keyColumn, valueColumn, getPlotInfo()));
+        this.labels.setSpecific(new AssociativeDataSwappableTableLabel(t, key, label, getPlotInfo()));
 
         return this;
     }
@@ -720,57 +720,57 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public CategoryDataSeries pointShape(final Table t, final String keyColumn, final String valueColumn) {
+    public CategoryDataSeries pointShape(final Table t, final String key, final String shape) {
         ArgumentValidations.assertNotNull(t, "t", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(shape, "valueColumn", getPlotInfo());
 
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        final Class columnType = ArgumentValidations.getColumnType(t, valueColumn, getPlotInfo());
+        final Class columnType = ArgumentValidations.getColumnType(t, shape, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
+            final TableHandle tableHandle = new TableHandle(t, key, shape);
             addTableHandle(tableHandle);
             this.shapes.setSpecific(
-                    new AssociativeDataTablePointShapeString(tableHandle, keyColumn, valueColumn, getPlotInfo()));
+                    new AssociativeDataTablePointShapeString(tableHandle, key, shape, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
-            final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
+            final TableHandle tableHandle = new TableHandle(t, key, shape);
             addTableHandle(tableHandle);
             this.shapes.setSpecific(
-                    new AssociativeDataTablePointShapeObj(tableHandle, keyColumn, valueColumn, getPlotInfo()));
+                    new AssociativeDataTablePointShapeObj(tableHandle, key, shape, getPlotInfo()));
         } else {
             throw new PlotRuntimeException(
-                    "column is not a supported type (String or Shape): columnName=" + valueColumn, this);
+                    "column is not a supported type (String or Shape): columnName=" + shape, this);
         }
 
         return this;
     }
 
     @Override
-    public CategoryDataSeries pointShape(final SelectableDataSet sds, final String keyColumn,
-            final String valueColumn) {
+    public CategoryDataSeries pointShape(final SelectableDataSet sds, final String key,
+            final String shape) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
-        ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
-        ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(key, "keyColumn", getPlotInfo());
+        ArgumentValidations.assertNotNull(shape, "valueColumn", getPlotInfo());
 
-        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), keyColumn, valueColumn);
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
-                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), key, shape);
+        ArgumentValidations.assertInstance(sds, key, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + key, getPlotInfo());
 
-        final SwappableTable swappableTable = sds.getSwappableTable(name(), chart(), keyColumn, valueColumn);
-        final Class columnType = ArgumentValidations.getColumnType(sds, valueColumn, getPlotInfo());
+        final SwappableTable swappableTable = sds.getSwappableTable(name(), chart(), key, shape);
+        final Class columnType = ArgumentValidations.getColumnType(sds, shape, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
             addSwappableTable(swappableTable);
-            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeString(swappableTable, keyColumn,
-                    valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeString(swappableTable, key,
+                    shape, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
             addSwappableTable(swappableTable);
-            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeObj(swappableTable, keyColumn,
-                    valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeObj(swappableTable, key,
+                    shape, getPlotInfo()));
         } else {
             throw new PlotRuntimeException(
-                    "column is not a supported type (String OR Shape): columnName=" + valueColumn, this);
+                    "column is not a supported type (String OR Shape): columnName=" + shape, this);
         }
         return this;
     }

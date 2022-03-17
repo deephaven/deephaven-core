@@ -257,23 +257,23 @@ public interface CategoryDataSeries extends DataSeries {
      * Sets the point color. Unspecified points use the default color.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying {@link Paint}s or ints/Integers representing color palette
+     * @param key column in {@code t}, specifying category values
+     * @param color column in {@code t}, specifying {@link Paint}s or ints/Integers representing color palette
      *        values.
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointColor(Table t, String key, String color);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying {@link Paint}s or ints/Integers representing color palette
+     * @param key column in {@code sds}, specifying category values
+     * @param color column in {@code sds}, specifying {@link Paint}s or ints/Integers representing color palette
      *        values.
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointColor(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointColor(SelectableDataSet sds, String key, String color);
 
     /**
      * Sets the point color for a data point based upon the y-value.
@@ -334,22 +334,22 @@ public interface CategoryDataSeries extends DataSeries {
      * unlabeled.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying labels
+     * @param key column in {@code t}, specifying category values
+     * @param label column in {@code t}, specifying labels
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointLabel(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointLabel(Table t, String key, String label);
 
     /**
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying labels
+     * @param key column in {@code sds}, specifying category values
+     * @param label column in {@code sds}, specifying labels
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointLabel(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointLabel(SelectableDataSet sds, String key, String label);
 
     /**
      * Sets the format of the percentage point label format in pie plots.
@@ -417,22 +417,22 @@ public interface CategoryDataSeries extends DataSeries {
      * default shapes.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
-     * @param valueColumn column in {@code t}, specifying shapes
+     * @param key column in {@code t}, specifying category values
+     * @param shape column in {@code t}, specifying shapes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(Table t, String keyColumn, String valueColumn);
+    CategoryDataSeries pointShape(Table t, String key, String shape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
-     * @param valueColumn column in {@code sds}, specifying shapes
+     * @param key column in {@code sds}, specifying category values
+     * @param shape column in {@code sds}, specifying shapes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointShape(SelectableDataSet sds, String keyColumn, String valueColumn);
+    CategoryDataSeries pointShape(SelectableDataSet sds, String key, String shape);
 
 
 
@@ -564,22 +564,22 @@ public interface CategoryDataSeries extends DataSeries {
      * Unspecified points use the default size.
      *
      * @param t table
-     * @param keyColumn column in {@code t}, specifying category values
+     * @param key column in {@code t}, specifying category values
      * @param factor column in {@code t}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(Table t, String keyColumn, String factor);
+    CategoryDataSeries pointSize(Table t, String key, String factor);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param keyColumn column in {@code sds}, specifying category values
+     * @param key column in {@code sds}, specifying category values
      * @param factor column in {@code sds}, specifying point sizes
      * @return this CategoryDataSeries
      */
-    CategoryDataSeries pointSize(SelectableDataSet sds, String keyColumn, String factor);
+    CategoryDataSeries pointSize(SelectableDataSet sds, String key, String factor);
 
 
     ////////////////////// tool tips /////////////////////////////
