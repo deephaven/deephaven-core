@@ -1232,9 +1232,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure seriesColor( java.lang.String color, java.lang.Object... keys );
 
-    @Override  Figure seriesNamingFunction( groovy.lang.Closure<java.lang.String> function );
+    @Override  Figure seriesNamingFunction( groovy.lang.Closure<java.lang.String> namingFunction );
 
-    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> function );
+    @Override  Figure seriesNamingFunction( java.util.function.Function<java.lang.Object, java.lang.String> namingFunction );
 
     @Override  Figure toolTipPattern( java.lang.String toolTipPattern );
 

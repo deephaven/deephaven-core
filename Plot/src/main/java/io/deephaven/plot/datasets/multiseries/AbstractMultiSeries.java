@@ -137,20 +137,20 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override
     public AbstractMultiSeries<SERIES> seriesNamingFunction(
-            final java.util.function.Function<Object, String> function) {
-        if (function == null) {
+            final java.util.function.Function<Object, String> namingFunction) {
+        if (namingFunction == null) {
             this.namingFunction = DEFAULT_NAMING_FUNCTION;
         } else {
-            this.namingFunction = function;
+            this.namingFunction = namingFunction;
         }
 
-        applyNamingFunction(function);
+        applyNamingFunction(namingFunction);
         return this;
     }
 
     @Override
-    public AbstractMultiSeries<SERIES> seriesNamingFunction(final Closure<String> function) {
-        return seriesNamingFunction(function == null ? null : new ClosureFunction<>(function));
+    public AbstractMultiSeries<SERIES> seriesNamingFunction(final Closure<String> namingFunction) {
+        return seriesNamingFunction(namingFunction == null ? null : new ClosureFunction<>(namingFunction));
     }
 
     /**

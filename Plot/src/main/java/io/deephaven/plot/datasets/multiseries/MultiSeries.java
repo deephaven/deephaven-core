@@ -22,17 +22,17 @@ public interface MultiSeries extends Series {
      * Defines the procedure to name a generated series. The input of the naming function is the table map key
      * corresponding to the new series.
      *
-     * @param function series naming function
+     * @param namingFunction series naming function
      */
-    MultiSeries seriesNamingFunction(final Function<Object, String> function);
+    MultiSeries seriesNamingFunction(final Function<Object, String> namingFunction);
 
     /**
      * Defines the procedure to name a generated series. The input of the naming function is the table map key
      * corresponding to the new series.
      *
-     * @param function series naming closure
+     * @param namingFunction series naming closure
      */
-    MultiSeries seriesNamingFunction(final Closure<String> function);
+    MultiSeries seriesNamingFunction(final Closure<String> namingFunction);
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////

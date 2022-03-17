@@ -913,7 +913,8 @@ public class GenerateFigureAPI2 {
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr,  "x tool tip format pattern", null));
         rst.put("yToolTipPattern", new PyArg(12, "y_tool_tip_pattern", taStr,  "y tool tip format pattern", null));
         rst.put("errorBarColor", new PyArg(13, "error_bar_color", taColor,  "error bar color.", null));
-        rst.put("gradientVisible", new PyArg(13, "gradient_visible", taBool,  "bar gradient visibility.", null));
+        rst.put("gradientVisible", new PyArg(14, "gradient_visible", taBool,  "bar gradient visibility.", null));
+        rst.put("namingFunction", new PyArg(15, "naming_function", taCallable,  "series naming function", null));
 
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
@@ -1076,6 +1077,17 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "plotStyle"}, null, "TODO pydoc"));
 
+        //        rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("series_color", SINGLETON, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("series_naming_function", SINGLETON, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
+
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
@@ -1089,19 +1101,6 @@ public class GenerateFigureAPI2 {
 
         rst.add(new PyFunc("remove_chart", SINGLETON, new String[]{"removeChart"}, null, "TODO pydoc"));
 
-
-//        rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("series_color", SINGLETON, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("series_naming_function", SINGLETON, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-
-        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible"}, null, "TODO pydoc"));
-        //todo ***
 
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
