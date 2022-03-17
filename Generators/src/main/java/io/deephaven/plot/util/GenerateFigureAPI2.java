@@ -918,6 +918,10 @@ public class GenerateFigureAPI2 {
 
         rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs,  "names of series to remove", null));
 
+        rst.put("removeChartIndex", new PyArg(10, "remove_chart_index", taInt,  "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
+        rst.put("removeChartRowNum", new PyArg(11, "remove_chart_row", taInt,  "row index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("removeChartColNum", new PyArg(12, "remove_chart_col", taInt,  "column index in this Figure's grid. The row index starts at 0.", null));
+
         //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
 
         //
@@ -979,7 +983,7 @@ public class GenerateFigureAPI2 {
 
         rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
 
-        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "updateInterval"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
@@ -992,10 +996,6 @@ public class GenerateFigureAPI2 {
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
-
-        // remove a chart from a figure
-        rst.add(new PyFunc("remove_chart", SINGLETON, new String[]{"removeChart"}, null, "TODO pydoc"));
-
 
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?

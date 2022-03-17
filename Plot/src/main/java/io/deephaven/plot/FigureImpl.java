@@ -2654,15 +2654,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl removeChart( int index ) {
+    @Override public  FigureImpl removeChart( int removeChartIndex ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).removeChart( index);
+        figure(fc).removeChart( removeChartIndex);
         return make(fc);
     }
 
-    @Override public  FigureImpl removeChart( int rowNum, int colNum ) {
+    @Override public  FigureImpl removeChart( int removeChartRowNum, int removeChartColNum ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).removeChart( rowNum, colNum);
+        figure(fc).removeChart( removeChartRowNum, removeChartColNum);
         return make(fc);
     }
 

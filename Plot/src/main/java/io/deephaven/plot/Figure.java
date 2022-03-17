@@ -792,9 +792,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure range( double min, double max );
 
-    @Override  Figure removeChart( int index );
+    @Override  Figure removeChart( int removeChartIndex );
 
-    @Override  Figure removeChart( int rowNum, int colNum );
+    @Override  Figure removeChart( int removeChartRowNum, int removeChartColNum );
 
     @Override  Figure rowSpan( int rowSpan );
 
