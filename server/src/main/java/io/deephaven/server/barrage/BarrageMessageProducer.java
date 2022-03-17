@@ -40,7 +40,6 @@ import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.tablelogger.Row;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -458,11 +457,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
         boolean snapshotReverseViewport = false; // captured setting during snapshot portion of propagation job
 
-        RowSet targetViewport; // target viewport for a growing subscription
+        RowSet targetViewport = null; // target viewport for a growing subscription
         boolean targetReverseViewport; // is the target viewport reversed (indexed from end of table)
         BitSet targetColumns; // target column subscription set
 
         boolean isGrowingViewport; // does this have a growing viewport?
+        WritableRowSet growRemainingViewport = null; // remaining viewport rows for a growing subscription
+        WritableRowSet growIncrementalViewport = null; // remaining viewport rows for a growing subscription
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -1037,13 +1038,18 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         subscription.pendingViewport = null;
                     }
 
-                    if (subscription.pendingColumns != null) {
-                        subscription.targetColumns = subscription.pendingColumns;
-                        subscription.pendingColumns = null;
-                    }
+                    subscription.targetColumns = subscription.pendingColumns;
+                    subscription.pendingColumns = null;
 
                     subscription.targetReverseViewport = subscription.pendingReverseViewport;
 
+                    // get the set of remaining rows for this subscription
+                    if (subscription.growRemainingViewport != null) {
+                        subscription.growRemainingViewport.close();
+                    }
+                    subscription.growRemainingViewport = subscription.targetViewport == null
+                            ? RowSetFactory.flat(Long.MAX_VALUE)
+                            : subscription.targetViewport.copy();
                 }
 
                 // remove deleted subscriptions while we still hold the lock
@@ -1076,7 +1082,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     // handle forward and reverse snapshots separately
                     if (sub.snapshotReverseViewport) {
                         postSnapshotReverseViewportBuilder
-                                .addRowSet(sub.viewport);
+                                    .addRowSet(sub.viewport);
                     } else {
                         postSnapshotViewportBuilder
                                 .addRowSet(sub.viewport);
@@ -1101,8 +1107,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         BitSet snapshotColumns = null;
 
         // create a prioritized list for the subscriptions
-        TreeMap<Integer, Subscription> growingSubscriptionsMap = new TreeMap<>(Collections.reverseOrder());
-        List<Subscription> growingSubscriptions = new ArrayList<>();;
+        LinkedList<Subscription> growingSubscriptions = new LinkedList<>();;
 
         if (numGrowingSubscriptions > 0) {
             snapshotColumns = new BitSet();
@@ -1113,21 +1118,18 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     snapshotColumns.or(subscription.targetColumns);
 
                     if (subscription.targetViewport == null) {
-                        growingSubscriptionsMap.put(0, subscription); // full, low priority
-                    } else if (!subscription.targetReverseViewport) {
-                        growingSubscriptionsMap.put(1, subscription); // forward VP, medium priority
+                        growingSubscriptions.addLast(subscription); // full gets low priority
                     } else {
-                        growingSubscriptionsMap.put(2, subscription); // reverse VP, high priority
+                        growingSubscriptions.addFirst(subscription); // viewport gets higher priority
                     }
                 }
             }
-
-            growingSubscriptions.addAll(growingSubscriptionsMap.values());
 
             // we want to limit the size of the snapshot to keep the UGP responsive
             long rowsRemaining;
             if (SUBSCRIPTION_GROWTH_ENABLED) {
                 rowsRemaining = snapshotTargetCellCount / Math.max(1, snapshotColumns.cardinality());
+                rowsRemaining = 4;
             } else {
                 // growth is disabled, allow unlimited snapshot size
                 rowsRemaining = Long.MAX_VALUE;
@@ -1140,72 +1142,79 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             try (final WritableRowSet snapshotRowSet = RowSetFactory.empty();
                     final WritableRowSet reverseSnapshotRowSet = RowSetFactory.empty()) {
 
-                // satisfy the subscriptions in priority order
+                // satisfy the subscriptions in order
                 for (final Subscription subscription : growingSubscriptions) {
-                    try (final WritableRowSet missingRows = subscription.targetViewport == null
-                            ? RowSetFactory.flat(Long.MAX_VALUE)
-                            : subscription.targetViewport.copy()) {
 
-                        // if viewport direction changes then previous viewport is invalid, also if subscribed columns
-                        // change and new columns are added then viewport is invalid
+                    // we need to determine if the `activeViewport` is valid. if the viewport direction changes or
+                    // columns were added, the client viewport is invalid
 
-                        BitSet missingColumns = (BitSet) subscription.targetColumns.clone();
-                        missingColumns.andNot(subscription.subscribedColumns);
+                    BitSet addedCols = (BitSet) subscription.targetColumns.clone();
+                    addedCols.andNot(subscription.subscribedColumns);
 
-                        final boolean viewportValid =
-                                subscription.reverseViewport == subscription.targetReverseViewport
-                                        && missingColumns.isEmpty();
+                    final boolean viewportValid =
+                            subscription.reverseViewport == subscription.targetReverseViewport
+                                    && addedCols.isEmpty();
 
-                        // if we have a valid viewport, can exclude current viewport from requested rows
-                        if (viewportValid && subscription.viewport != null) {
-                            missingRows.remove(subscription.viewport);
-                        }
-
-                        // remove rows that we already have selected for the upcoming snapshot
-                        missingRows.remove(subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet);
-
-                        // shrink this to the `rowsRemaining` value
-                        if (missingRows.size() > rowsRemaining) {
-                            final long key = missingRows.get(rowsRemaining);
-                            missingRows.removeRange(key, Long.MAX_VALUE - 1);
-                        }
-
-                        subscription.snapshotViewport = viewportValid && subscription.viewport != null
-                                ? subscription.viewport.copy()
-                                : RowSetFactory.empty();
-
-                        // add the new rows to the upcoming snapshot
-                        if (subscription.targetReverseViewport) {
-                            reverseSnapshotRowSet.insert(missingRows);
-                        } else {
-                            snapshotRowSet.insert(missingRows);
-                        }
-
-                        // "grow" the snapshot viewport with rows from the current snapshot
-                        subscription.snapshotViewport
-                                .insert(subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet);
-
-                        // extra bookkeeping for viewport subscriptions
-                        if (subscription.targetViewport != null) {
-                            if (subscription.targetReverseViewport) {
-                                // add this set to the BMP reverse viewport
-                                reverseViewportBuilder.addRowSet(missingRows);
-                            } else {
-                                // add this set to the BMP forward viewport
-                                viewportBuilder.addRowSet(missingRows);
-                            }
-                            // retain only the rows that apply to this subscription
-                            subscription.snapshotViewport.retain(subscription.targetViewport);
-                        }
-
-                        // save the column set
-                        subscription.snapshotColumns = (BitSet) subscription.targetColumns.clone();
-
-                        // save the forward/reverse viewport setting
-                        subscription.snapshotReverseViewport = subscription.targetReverseViewport;
-
-                        rowsRemaining -= missingRows.size();
+                    // don't request valid rows that the client already possesses
+                    if (viewportValid && subscription.viewport != null) {
+                        subscription.growRemainingViewport.remove(subscription.viewport);
                     }
+
+                    // get the current set for this viewport direction
+                    final WritableRowSet currentSet =
+                            subscription.targetReverseViewport ? reverseSnapshotRowSet : snapshotRowSet;
+
+                    // get the rows that we need that are already in the snapshot
+                    try (final RowSet overlap = subscription.growRemainingViewport.extract(currentSet)) {
+                        if (rowsRemaining <= 0) {
+                            subscription.growIncrementalViewport = overlap.copy();
+                        } else {
+                            try (final WritableRowSet additional = subscription.growRemainingViewport.copy()) {
+
+                                // shrink the set of new rows to <= `rowsRemaining` size
+                                if (additional.size() > rowsRemaining) {
+                                    final long key = additional.get(rowsRemaining);
+                                    additional.removeRange(key, Long.MAX_VALUE - 1);
+                                }
+
+                                // store the rowset for this subscription for this snapshot
+                                subscription.growIncrementalViewport = overlap.union(additional);
+
+                                // add the new rows to the upcoming snapshot
+                                currentSet.insert(additional);
+
+                                // extra bookkeeping for viewport subscriptions
+                                if (subscription.targetViewport != null) {
+                                    if (subscription.targetReverseViewport) {
+                                        // add this set to the BMP reverse viewport
+                                        reverseViewportBuilder.addRowSet(additional);
+                                    } else {
+                                        // add this set to the BMP forward viewport
+                                        viewportBuilder.addRowSet(additional);
+                                    }
+                                }
+
+                                // decrement the remaining row count
+                                rowsRemaining -= additional.size();
+                            }
+                        }
+                   }
+
+                    // "grow" the snapshot viewport with rows from the current snapshot
+                    if (viewportValid && subscription.viewport != null) {
+                        subscription.snapshotViewport = subscription.viewport.union(subscription.growIncrementalViewport);
+                    } else {
+                        subscription.snapshotViewport = subscription.growIncrementalViewport.copy();
+                    }
+
+                    // remove the rows we are about to snapshot from the remaining set
+                    subscription.growRemainingViewport.remove(subscription.growIncrementalViewport);
+
+                    // save the column set
+                    subscription.snapshotColumns = (BitSet) subscription.targetColumns.clone();
+
+                    // save the forward/reverse viewport setting
+                    subscription.snapshotReverseViewport = subscription.targetReverseViewport;
                 }
 
                 // update the postSnapshot viewports/columns to include the new viewports (excluding `full`)
@@ -1404,15 +1413,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         // the parent table listener needs to be recording data as if we've already sent the successful snapshot.
 
         if (subscription.snapshotViewport != null) {
+            subscription.snapshotViewport.close();
+            subscription.snapshotViewport = null;
             needsSnapshot = true;
-            try (final RowSet ignored = subscription.snapshotViewport) {
-                subscription.snapshotViewport = null;
-            }
         }
 
         if (subscription.snapshotColumns != null) {
-            needsSnapshot = true;
             subscription.snapshotColumns = null;
+            needsSnapshot = true;
         }
 
         if (needsSnapshot) {
@@ -1421,12 +1429,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         .append(System.identityHashCode(subscription)).endl();
             }
 
-            final boolean isViewport = subscription.viewport != null;
-            try (final RowSet keySpaceViewport =
-                    isViewport
-                            ? snapshotGenerator.getMessage().rowsAdded
-                                    .subSetForPositions(subscription.viewport, subscription.reverseViewport)
-                            : null) {
+            try (final RowSet keySpaceViewport = snapshotGenerator.getMessage().rowsAdded
+                     .subSetForPositions(subscription.growIncrementalViewport, subscription.reverseViewport)) {
+//            final boolean isViewport = subscription.viewport != null;
+//            try (final RowSet keySpaceViewport =
+//                    isViewport
+//                            ? snapshotGenerator.getMessage().rowsAdded
+//                                    .subSetForPositions(subscription.viewport, subscription.reverseViewport)
+//                            : null) {
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
@@ -1442,6 +1452,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 GrpcUtil.safelyExecute(() -> subscription.listener.onError(GrpcUtil.securelyWrapError(log, e)));
                 removeSubscription(subscription.listener);
             }
+        }
+
+        if (subscription.growIncrementalViewport != null) {
+            subscription.growIncrementalViewport.close();
+            subscription.growIncrementalViewport = null;
         }
 
         subscription.pendingInitialSnapshot = false;
@@ -1805,6 +1820,15 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                     // set the active viewport to the target viewport
                     subscription.viewport = subscription.targetViewport;
+
+                    // expand the postSnapshot viewports to include this entire snapshot
+                    if (subscription.isViewport()) {
+                        if (subscription.reverseViewport) {
+                            postSnapshotReverseViewport.insert(subscription.viewport);
+                        } else {
+                            postSnapshotViewport.insert(subscription.viewport);
+                        }
+                    }
                 }
             }
         }

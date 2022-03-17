@@ -288,16 +288,8 @@ public class BarrageStreamGenerator implements
                     addRowOffsets = generator.rowsIncluded.original.invert(intersect);
                 }
             } else {
-                if (isInitialSnapshot) {
-                    // use chunk data as-is, rely on snapshot process to avoid duplicates
-                    addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
-                } else {
-                    // there may be scoped rows included in the chunks that need to be removed
-                    try (WritableRowSet intersect =
-                            generator.rowsIncluded.original.intersect(generator.rowsAdded.original)) {
-                        addRowOffsets = generator.rowsIncluded.original.invert(intersect);
-                    }
-                }
+                // use chunk data as-is, rely on snapshot process to avoid duplicates
+                addRowOffsets = RowSetFactory.flat(generator.rowsIncluded.original.size());
             }
 
             // require an add batch if there are no mod batches
@@ -662,7 +654,7 @@ public class BarrageStreamGenerator implements
                 // Add the drainable last as it is allowed to immediately close a row set the visitors need
                 addStream.accept(drainableColumn);
             }
-            return myAddedOffsets != null ? myAddedOffsets.size() : rowsAdded.original.size();
+            return myAddedOffsets.size();
         }
     }
 
@@ -734,25 +726,17 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.keyspaceViewport == null) {
-            if (view.isInitialSnapshot) {
-                // use chunk data as-is, rely on snapshot process to avoid duplicates
-                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
-            } else {
-                // there may be scoped rows included in the chunks that need to be removed
-                try (WritableRowSet intersect = rowsIncluded.original.intersect(rowsAdded.original)) {
-                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(intersect, metadata);
-                }
-            }
-        } else {
+        if (view.keyspaceViewport != null) {
             addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        } else {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
         }
 
         // now add mod-column streams, and write the mod column indexes
         TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
         for (final ModColumnData mcd : modColumnData) {
             final int myModRowOffset;
-            if (view.isViewport()) {
+            if (view.keyspaceViewport != null) {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(view.keyspaceViewport, metadata);
             } else {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
