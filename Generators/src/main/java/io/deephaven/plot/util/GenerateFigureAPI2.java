@@ -890,7 +890,7 @@ public class GenerateFigureAPI2 {
         rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat,  "distance between ticks.", null));
         rst.put("tickLocations", new PyArg(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
         rst.put("transform", new PyArg(10, "transform", taAxisTransform,  "transform.", null));
-        rst.put("updateIntervalMillis", new PyArg(10, "millis", taInt,  "milliseconds.", null));
+        rst.put("updateIntervalMillis", new PyArg(10, "update_millis", taInt,  "update interval in milliseconds.", null));
 
         rst.put("keys", new PyArg(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
         rst.put("key", new PyArg(20, "key", taKey,  "multi-series keys or a column name containing keys.", null));
@@ -1046,12 +1046,14 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("points_visible", SINGLETON, new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
 
+        //        rst.add(new PyFunc("update_interval", SINGLETON, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
+        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"updateInterval"}, null, "TODO pydoc"));
+
         ////////////////////////////////////////////////////////////////
 
         //todo how to combine these into better composite functions?
 
         rst.add(new PyFunc("figure_remove_series", SINGLETON, new String[]{"figureRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("update_interval", SINGLETON, new String[]{"updateInterval"}, new String[]{"millis"}, "TODO pydoc"));
 
         //todo chart and figure...
         rst.add(new PyFunc("max_rows_in_title", SINGLETON, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
@@ -1064,9 +1066,12 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("span", SINGLETON, new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc"));
         rst.add(new PyFunc("x_grid_lines_visible", SINGLETON, new String[]{"xGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_grid_lines_visible", SINGLETON, new String[]{"yGridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("plot_orientation", SINGLETON, new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("pie_percent_label_format", SINGLETON, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("axes", SINGLETON, new String[]{"axes"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("axes_remove_series", SINGLETON, new String[]{"axesRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
@@ -1077,11 +1082,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-
         rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("pie_percent_label_format", SINGLETON, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("plot_orientation", SINGLETON, new String[]{"plotOrientation"}, new String[]{"orientation"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("plot_style", SINGLETON, new String[]{"plotStyle"}, new String[]{"style"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
