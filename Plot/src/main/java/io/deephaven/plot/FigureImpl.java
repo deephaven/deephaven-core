@@ -1814,9 +1814,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl maxRowsInTitle( int maxRowsCount ) {
+    @Override public  FigureImpl maxRowsInTitle( int maxTitleRows ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).maxRowsInTitle( maxRowsCount);
+        final ChartImpl chart = (ChartImpl) chart(fc).maxRowsInTitle( maxTitleRows);
         return make(chart);
     }
 

@@ -512,7 +512,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure max( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max );
 
-    @Override  Figure maxRowsInTitle( int maxRowsCount );
+    @Override  Figure maxRowsInTitle( int maxTitleRows );
 
     @Override  Figure min( double min );
 

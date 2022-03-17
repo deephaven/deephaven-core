@@ -449,14 +449,14 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     @Override
-    public Chart maxRowsInTitle(final int maxRowsCount) {
+    public Chart maxRowsInTitle(final int maxTitleRows) {
         if (chartTitle == null) {
             chartTitle = new ChartTitle(getPlotInfo());
         }
 
         // we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any order.
-        this.maxVisibleRowsCount = maxRowsCount;
-        chartTitle.maxVisibleRowsCount = maxRowsCount;
+        this.maxVisibleRowsCount = maxTitleRows;
+        chartTitle.maxVisibleRowsCount = maxTitleRows;
         return this;
     }
 

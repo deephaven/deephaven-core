@@ -124,10 +124,10 @@ public interface Chart extends Serializable {
      * if {@code maxRowsCount} is 0, then just first value will be shown without ellipsis. <br/>
      * The default is 0.
      *
-     * @param maxRowsCount maximum number of row values to show in chart title
+     * @param maxTitleRows maximum number of row values to show in chart title
      * @return this Chart
      */
-    Chart maxRowsInTitle(final int maxRowsCount);
+    Chart maxRowsInTitle(final int maxTitleRows);
 
     /**
      * Sets the font of this Chart's title.

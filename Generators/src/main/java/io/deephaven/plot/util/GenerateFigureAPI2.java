@@ -864,7 +864,7 @@ public class GenerateFigureAPI2 {
         rst.put("useLog", new PyArg(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
         rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool,  "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
         rst.put("nbins", new PyArg(15, "nbins", taInt,  "number of bins", null));
-        rst.put("maxRowsCount", new PyArg(10, "max_rows", taInt,  "maximum number of row values to show in chart title", null));
+        rst.put("maxTitleRows", new PyArg(10, "max_rows", taInt,  "maximum number of row values to show in title", null));
         rst.put("min", new PyArg(10, "min", taFloat,  "range minimum", null));
         rst.put("max", new PyArg(11, "max", taFloat,  "range maximum", null));
         rst.put("count", new PyArg(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
@@ -1010,7 +1010,8 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("chart_title", SINGLETON, new String[]{"chartTitle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_title_color", SINGLETON, new String[]{"chartTitleColor"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_title_font", SINGLETON, new String[]{"chartTitleFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("max_rows_in_title", SINGLETON, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
 
         //        rst.add(new PyFunc("figure_title", SINGLETON, new String[]{"figureTitle"}, new String[]{"title"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("figure_title_color", SINGLETON, new String[]{"figureTitleColor"}, null, "TODO pydoc"));
@@ -1083,19 +1084,17 @@ public class GenerateFigureAPI2 {
 
         rst.add(new PyFunc("remove_chart", SINGLETON, new String[]{"removeChart"}, null, "TODO pydoc"));
 
-        //todo chart and figure...
-        rst.add(new PyFunc("max_rows_in_title", SINGLETON, new String[]{"maxRowsInTitle"}, new String[]{"maxRowsCount"}, "TODO pydoc")); //todo req?
-
 
         rst.add(new PyFunc("series", SINGLETON, new String[]{"series"}, null, "TODO pydoc"));
         rst.add(new PyFunc("series_color", SINGLETON, new String[]{"seriesColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("series_naming_function", SINGLETON, new String[]{"seriesNamingFunction"}, new String[]{"function"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("x_tool_tip_pattern", SINGLETON, new String[]{"xToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_tool_tip_pattern", SINGLETON, new String[]{"yToolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
+//***
 
         rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
