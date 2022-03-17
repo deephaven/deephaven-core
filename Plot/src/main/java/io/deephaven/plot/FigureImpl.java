@@ -2799,15 +2799,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl xBusinessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( useBusinessTime);
+        return make(axes);
+    }
+
     @Override public  FigureImpl xBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( calendar);
         return make(axes);
     }
 
-    @Override public  FigureImpl xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( sds, calendar);
         return make(axes);
     }
 
@@ -2877,15 +2883,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl xLog( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).xLog( useLog);
+        return make(axes);
+    }
+
     @Override public  FigureImpl xMax( double max ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).xMax( max);
         return make(axes);
     }
 
-    @Override public  FigureImpl xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMax( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMax( sds, max);
         return make(axes);
     }
 
@@ -2895,9 +2907,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMin( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMin( sds, min);
         return make(axes);
     }
 
@@ -2974,15 +2986,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl yBusinessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( useBusinessTime);
+        return make(axes);
+    }
+
     @Override public  FigureImpl yBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( calendar);
         return make(axes);
     }
 
-    @Override public  FigureImpl yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( sds, calendar);
         return make(axes);
     }
 
@@ -3052,15 +3070,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl yLog( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).yLog( useLog);
+        return make(axes);
+    }
+
     @Override public  FigureImpl yMax( double max ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).yMax( max);
         return make(axes);
     }
 
-    @Override public  FigureImpl yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMax( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMax( sds, max);
         return make(axes);
     }
 
@@ -3070,9 +3094,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMin( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMin( sds, min);
         return make(axes);
     }
 

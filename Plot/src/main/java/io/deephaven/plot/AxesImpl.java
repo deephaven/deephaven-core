@@ -597,6 +597,18 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
+    public AxesImpl xLog(final boolean useLog) {
+        xAxis().log(useLog);
+        return this;
+    }
+
+    @Override
+    public AxesImpl yLog(final boolean useLog) {
+        yAxis().log(useLog);
+        return this;
+    }
+
+    @Override
     public AxesImpl xBusinessTime(final BusinessCalendar calendar) {
         xAxis().businessTime(calendar);
         return this;
@@ -609,14 +621,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xBusinessTime(final SelectableDataSet sds, final String valueColumn) {
-        xAxis().businessTime(sds, valueColumn);
+    public AxesImpl xBusinessTime(final SelectableDataSet sds, final String calendar) {
+        xAxis().businessTime(sds, calendar);
         return this;
     }
 
     @Override
-    public AxesImpl yBusinessTime(final SelectableDataSet sds, final String valueColumn) {
-        yAxis().businessTime(sds, valueColumn);
+    public AxesImpl yBusinessTime(final SelectableDataSet sds, final String calendar) {
+        yAxis().businessTime(sds, calendar);
         return this;
     }
 
@@ -629,6 +641,18 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     @Override
     public AxesImpl yBusinessTime() {
         yAxis().businessTime();
+        return this;
+    }
+
+    @Override
+    public AxesImpl xBusinessTime(boolean useBusinessTime) {
+        xAxis().businessTime(useBusinessTime);
+        return this;
+    }
+
+    @Override
+    public AxesImpl yBusinessTime(boolean useBusinessTime) {
+        yAxis().businessTime(useBusinessTime);
         return this;
     }
     // endregion
@@ -684,14 +708,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xMin(final SelectableDataSet sds, final String valueColumn) {
-        xAxis().min(sds, valueColumn);
+    public AxesImpl xMin(final SelectableDataSet sds, final String min) {
+        xAxis().min(sds, min);
         return this;
     }
 
     @Override
-    public AxesImpl yMin(final SelectableDataSet sds, final String valueColumn) {
-        yAxis().min(sds, valueColumn);
+    public AxesImpl yMin(final SelectableDataSet sds, final String min) {
+        yAxis().min(sds, min);
         return this;
     }
 
@@ -708,14 +732,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xMax(final SelectableDataSet sds, final String valueColumn) {
-        xAxis().max(sds, valueColumn);
+    public AxesImpl xMax(final SelectableDataSet sds, final String max) {
+        xAxis().max(sds, max);
         return this;
     }
 
     @Override
-    public AxesImpl yMax(final SelectableDataSet sds, final String valueColumn) {
-        yAxis().max(sds, valueColumn);
+    public AxesImpl yMax(final SelectableDataSet sds, final String max) {
+        yAxis().max(sds, max);
         return this;
     }
     // endregion

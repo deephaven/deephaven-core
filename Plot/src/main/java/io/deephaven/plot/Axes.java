@@ -392,6 +392,22 @@ public interface Axes extends Serializable {
     Axes yLog();
 
     /**
+     * Sets the {@link AxisTransform} of the x-{@link Axis} to log base 10
+     *
+     * @param useLog true to use a log axis transform; false to use a linear axis transform.
+     * @return this Axes
+     */
+    Axes xLog(final boolean useLog);
+
+    /**
+     * Sets the {@link AxisTransform} of the y-{@link Axis} to log base 10
+     *
+     * @param useLog true to use a log axis transform; false to use a linear axis transform.
+     * @return this Axes
+     */
+    Axes yLog(final boolean useLog);
+
+    /**
      * Sets the {@link AxisTransform} of the x-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param calendar business calendar for the {@link AxisTransformBusinessCalendar}
@@ -411,23 +427,23 @@ public interface Axes extends Serializable {
      * Sets the {@link AxisTransform} of the x-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing the business calendar.
-     * @param valueColumn name of a column containing String values, where each value is the name of a
+     * @param calendar name of a column containing String values, where each value is the name of a
      *        {@link BusinessCalendar}.
      * @return this Axes using the business calendar from row 0 of the filtered {@code sds} for the x-{@link Axis}
      *         business calendar. If no value is found, no transform will be applied.
      */
-    Axes xBusinessTime(final SelectableDataSet sds, final String valueColumn);
+    Axes xBusinessTime(final SelectableDataSet sds, final String calendar);
 
     /**
      * Sets the {@link AxisTransform} of the y-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing the business calendar.
-     * @param valueColumn name of a column containing String values, where each value is the name of a
+     * @param calendar name of a column containing String values, where each value is the name of a
      *        {@link BusinessCalendar}.
      * @return this Axes using the business calendar from row 0 of the filtered {@code sds} for the y-{@link Axis}
      *         business calendar. If no value is found, no transform will be applied.
      */
-    Axes yBusinessTime(final SelectableDataSet sds, final String valueColumn);
+    Axes yBusinessTime(final SelectableDataSet sds, final String calendar);
 
     /**
      * Sets the {@link AxisTransform} of the x-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
@@ -443,6 +459,21 @@ public interface Axes extends Serializable {
      */
     Axes yBusinessTime();
 
+    /**
+     * Sets the {@link AxisTransform} of the x-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
+     *
+     * @param useBusinessTime true to use a business time axis transform; false to use a linear axis transform.
+     * @return this Axes using the default {@link BusinessCalendar} for the x-{@link Axis}.
+     */
+    Axes xBusinessTime(boolean useBusinessTime);
+
+    /**
+     * Sets the {@link AxisTransform} of the y-{@link Axis} as an {@link AxisTransformBusinessCalendar}.
+     *
+     * @param useBusinessTime true to use a business time axis transform; false to use a linear axis transform.
+     * @return this Axes using the default {@link BusinessCalendar} for the y-{@link Axis}.
+     */
+    Axes yBusinessTime(boolean useBusinessTime);
 
     ////////////////////////// axis rescaling //////////////////////////
 
@@ -514,19 +545,19 @@ public interface Axes extends Serializable {
      * Sets the minimum of the x-{@link Axis}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param valueColumn column in {@code sds}. The value in row 0 is used for the minimum.
+     * @param min column in {@code sds}. The value in row 0 is used for the minimum.
      * @return this Axes
      */
-    Axes xMin(final SelectableDataSet sds, final String valueColumn);
+    Axes xMin(final SelectableDataSet sds, final String min);
 
     /**
      * Sets the minimum of the y-{@link Axis}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param valueColumn column in {@code sds}. The value in row 0 is used for the minimum.
+     * @param min column in {@code sds}. The value in row 0 is used for the minimum.
      * @return this Axes
      */
-    Axes yMin(final SelectableDataSet sds, final String valueColumn);
+    Axes yMin(final SelectableDataSet sds, final String min);
 
     /**
      * Sets the maximum of the x-{@link Axis}.
@@ -548,19 +579,19 @@ public interface Axes extends Serializable {
      * Sets the maximum of the x-{@link Axis}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param valueColumn column in {@code sds}. The value in row 0 is used for the maximum.
+     * @param max column in {@code sds}. The value in row 0 is used for the maximum.
      * @return this Axes
      */
-    Axes xMax(final SelectableDataSet sds, final String valueColumn);
+    Axes xMax(final SelectableDataSet sds, final String max);
 
     /**
      * Sets the maximum of the y-{@link Axis}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param valueColumn column in {@code sds}. The value in row 0 is used for the maximum.
+     * @param max column in {@code sds}. The value in row 0 is used for the maximum.
      * @return this Axes
      */
-    Axes yMax(final SelectableDataSet sds, final String valueColumn);
+    Axes yMax(final SelectableDataSet sds, final String max);
 
 
     ////////////////////////// axis ticks //////////////////////////

@@ -840,9 +840,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure xBusinessTime( );
 
+    @Override  Figure xBusinessTime( boolean useBusinessTime );
+
     @Override  Figure xBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar );
 
-    @Override  Figure xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar );
 
     @Override  Figure xColor( java.lang.String color );
 
@@ -866,13 +868,15 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure xLog( );
 
+    @Override  Figure xLog( boolean useLog );
+
     @Override  Figure xMax( double max );
 
-    @Override  Figure xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max );
 
     @Override  Figure xMin( double min );
 
-    @Override  Figure xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
     @Override  Figure xMinorTicks( int count );
 
@@ -898,9 +902,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yBusinessTime( );
 
+    @Override  Figure yBusinessTime( boolean useBusinessTime );
+
     @Override  Figure yBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar );
 
-    @Override  Figure yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar );
 
     @Override  Figure yColor( java.lang.String color );
 
@@ -924,13 +930,15 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yLog( );
 
+    @Override  Figure yLog( boolean useLog );
+
     @Override  Figure yMax( double max );
 
-    @Override  Figure yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max );
 
     @Override  Figure yMin( double min );
 
-    @Override  Figure yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
     @Override  Figure yMinorTicks( int count );
 
