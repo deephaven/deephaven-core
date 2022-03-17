@@ -354,10 +354,10 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the format of the percentage point label format in pie plots.
      *
-     * @param format format
+     * @param pieLabelFormat format
      * @return this data series.
      */
-    CategoryDataSeries piePercentLabelFormat(final String format);
+    CategoryDataSeries piePercentLabelFormat(final String pieLabelFormat);
 
     ////////////////////////// point shapes //////////////////////////
 

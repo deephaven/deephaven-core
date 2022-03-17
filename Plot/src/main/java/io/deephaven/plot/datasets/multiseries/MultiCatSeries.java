@@ -441,12 +441,12 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> piePercentLabelFormatSeriesNameToStringMap() {
         return piePercentLabelFormatSeriesNameToStringMap;
     }
-    @Override public MultiCatSeries piePercentLabelFormat(final java.lang.String format, final Object... keys) {
+    @Override public MultiCatSeries piePercentLabelFormat(final java.lang.String pieLabelFormat, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            piePercentLabelFormatSeriesNameToStringMap.setDefault(format);
+            piePercentLabelFormatSeriesNameToStringMap.setDefault(pieLabelFormat);
         } else {
             piePercentLabelFormatSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                format);
+                pieLabelFormat);
         }
 
         return this;

@@ -450,7 +450,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure figureTitleFont( java.lang.String family, java.lang.String style, int size );
 
-    @Override  Figure gridLinesVisible( boolean visible );
+    @Override  Figure gridLinesVisible( boolean gridVisible );
 
     @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t );
 
@@ -854,7 +854,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure xFormatPattern( java.lang.String pattern );
 
-    @Override  Figure xGridLinesVisible( boolean visible );
+    @Override  Figure xGridLinesVisible( boolean xGridVisible );
 
     @Override  Figure xInvert( );
 
@@ -916,7 +916,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yFormatPattern( java.lang.String pattern );
 
-    @Override  Figure yGridLinesVisible( boolean visible );
+    @Override  Figure yGridLinesVisible( boolean yGridVisible );
 
     @Override  Figure yInvert( );
 
@@ -1006,9 +1006,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure linesVisible( java.lang.Boolean visible, java.lang.Object... keys );
 
-    @Override  Figure piePercentLabelFormat( java.lang.String format );
+    @Override  Figure piePercentLabelFormat( java.lang.String pieLabelFormat );
 
-    @Override  Figure piePercentLabelFormat( java.lang.String format, java.lang.Object... keys );
+    @Override  Figure piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... keys );
 
     @Override  Figure pointColor( int color );
 
@@ -1176,7 +1176,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor, java.lang.Object... keys );
 
     @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors );
 
@@ -1188,7 +1188,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor, java.lang.Object... keys );
 
     @Override  Figure pointSize( java.lang.Comparable category, double factor );
 

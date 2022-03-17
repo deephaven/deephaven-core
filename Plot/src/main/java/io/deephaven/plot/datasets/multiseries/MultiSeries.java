@@ -149,7 +149,7 @@ public interface MultiSeries extends Series {
     MultiSeries group(final int group, final Object... keys);
 
 
-    MultiSeries piePercentLabelFormat(final java.lang.String format, final Object... keys);
+    MultiSeries piePercentLabelFormat(final java.lang.String pieLabelFormat, final Object... keys);
 
 
     <CATEGORY extends java.lang.Comparable, COLOR extends io.deephaven.gui.color.Paint> MultiSeries pointColor(final java.util.Map<CATEGORY, COLOR> colors, final Object... keys);

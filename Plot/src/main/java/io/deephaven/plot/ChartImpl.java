@@ -486,21 +486,21 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     ////////////////////////// Grid Lines //////////////////////////
 
     @Override
-    public Chart gridLinesVisible(final boolean visible) {
-        xGridLinesVisible(visible);
-        yGridLinesVisible(visible);
+    public Chart gridLinesVisible(final boolean gridVisible) {
+        xGridLinesVisible(gridVisible);
+        yGridLinesVisible(gridVisible);
         return this;
     }
 
     @Override
-    public Chart xGridLinesVisible(final boolean visible) {
-        this.displayXGridLines = visible;
+    public Chart xGridLinesVisible(final boolean xGridVisible) {
+        this.displayXGridLines = xGridVisible;
         return this;
     }
 
     @Override
-    public Chart yGridLinesVisible(final boolean visible) {
-        this.displayYGridLines = visible;
+    public Chart yGridLinesVisible(final boolean yGridVisible) {
+        this.displayYGridLines = yGridVisible;
         return this;
     }
 

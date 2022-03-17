@@ -510,7 +510,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> piePercentLabelFormat(final java.lang.String format, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> piePercentLabelFormat(final java.lang.String pieLabelFormat, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method piePercentLabelFormat for arguments [class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
     }
 

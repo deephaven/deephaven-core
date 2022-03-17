@@ -1628,9 +1628,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(fc);
     }
 
-    @Override public  FigureImpl gridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl gridLinesVisible( boolean gridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).gridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).gridLinesVisible( gridVisible);
         return make(chart);
     }
 
@@ -2841,9 +2841,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xGridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl xGridLinesVisible( boolean xGridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).xGridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).xGridLinesVisible( xGridVisible);
         return make(chart);
     }
 
@@ -3028,9 +3028,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yGridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl yGridLinesVisible( boolean yGridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).yGridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).yGridLinesVisible( yGridVisible);
         return make(chart);
     }
 
@@ -3443,28 +3443,28 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl piePercentLabelFormat( java.lang.String format ) {
+    @Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).piePercentLabelFormat( format);
+            CategoryDataSeries result = ((CategoryDataSeries) series).piePercentLabelFormat( pieLabelFormat);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).piePercentLabelFormat(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).piePercentLabelFormat(pieLabelFormat, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat )'", figure);
         }
     }
 
-    @Override public  FigureImpl piePercentLabelFormat( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... keys ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).piePercentLabelFormat( format, keys);
+            MultiSeries result = ((MultiSeries) series).piePercentLabelFormat( pieLabelFormat, keys);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... keys )'", figure);
         }
     }
 
@@ -4510,14 +4510,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor, java.lang.Object... keys ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( t, keyColumn, factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( t, key, factor, keys);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor, java.lang.Object... keys )'", figure);
         }
     }
 
@@ -4585,14 +4585,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor, java.lang.Object... keys ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( sds, keyColumn, factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( sds, key, factor, keys);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor, java.lang.Object... keys )'", figure);
         }
     }
 

@@ -168,26 +168,26 @@ public interface Chart extends Serializable {
     /**
      * Sets whether the Chart has grid lines.
      *
-     * @param visible whether the Chart's grid lines are drawn
+     * @param gridVisible whether the Chart's grid lines are drawn
      * @return this Chart
      */
-    Chart gridLinesVisible(final boolean visible);
+    Chart gridLinesVisible(final boolean gridVisible);
 
     /**
      * Sets whether the Chart has grid lines in the x direction.
      *
-     * @param visible whether the Chart's x grid lines are drawn
+     * @param xGridVisible whether the Chart's x grid lines are drawn
      * @return this Chart
      */
-    Chart xGridLinesVisible(final boolean visible);
+    Chart xGridLinesVisible(final boolean xGridVisible);
 
     /**
      * Sets whether the Chart has grid lines in the y direction
      *
-     * @param visible whether the Chart's y grid lines are drawn
+     * @param yGridVisible whether the Chart's y grid lines are drawn
      * @return this Chart
      */
-    Chart yGridLinesVisible(final boolean visible);
+    Chart yGridLinesVisible(final boolean yGridVisible);
 
     ////////////////////////// Legend //////////////////////////
 

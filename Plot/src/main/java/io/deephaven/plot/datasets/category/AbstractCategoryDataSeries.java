@@ -639,8 +639,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries piePercentLabelFormat(final String format) {
-        setPiePercentLabelFormat(format);
+    public AbstractCategoryDataSeries piePercentLabelFormat(final String pieLabelFormat) {
+        setPiePercentLabelFormat(pieLabelFormat);
         return this;
     }
 
