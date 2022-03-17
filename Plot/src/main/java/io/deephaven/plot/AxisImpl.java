@@ -455,7 +455,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl businessTime(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl businessTime(final SelectableDataSet sds, final String calendar) {
         throw new PlotUnsupportedOperationException(
                 "Selectable business time transformation is not currently supported", this);
     }
@@ -507,12 +507,12 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl min(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl min(final SelectableDataSet sds, final String min) {
         throw new PlotUnsupportedOperationException("Selectable min transformation is not currently supported", this);
     }
 
     @Override
-    public AxisImpl max(final SelectableDataSet sds, final String valueColumn) {
+    public AxisImpl max(final SelectableDataSet sds, final String max) {
         throw new PlotUnsupportedOperationException("Selectable max transformation is not currently supported", this);
     }
 

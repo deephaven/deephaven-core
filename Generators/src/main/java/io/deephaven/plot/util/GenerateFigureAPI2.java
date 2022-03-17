@@ -931,19 +931,21 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("axis_label_font", SINGLETON, new String[]{"axisLabelFont"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("invert", SINGLETON, new String[]{"invert"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("log", SINGLETON, new String[]{"log"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("max", SINGLETON, new String[]{"max"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("min", SINGLETON, new String[]{"min"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("range", SINGLETON, new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("max", SINGLETON, new String[]{"max"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("min", SINGLETON, new String[]{"min"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("range", SINGLETON, new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("business_time", SINGLETON, new String[]{"businessTime"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("transform", SINGLETON, new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
-////        rst.add(new PyFunc("ticks", SINGLETON, new String[]{"ticks"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("ticks_font", SINGLETON, new String[]{"ticksFont"}, null, "TODO pydoc"));
-////        rst.add(new PyFunc("ticks_visible", SINGLETON, new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-////        rst.add(new PyFunc("tick_label_angle", SINGLETON, new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
-////        rst.add(new PyFunc("minor_ticks", SINGLETON, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
-////        rst.add(new PyFunc("minor_ticks_visible", SINGLETON, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-//        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "max", "min", "range", "transform", "ticks", "ticksFont", "ticksVisible", "tickLabelAngle", "minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("transform", SINGLETON, new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "max", "min", "range", "businessTime", "transform"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("ticks", SINGLETON, new String[]{"ticks"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("ticks_font", SINGLETON, new String[]{"ticksFont"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("ticks_visible", SINGLETON, new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("tick_label_angle", SINGLETON, new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("minor_ticks", SINGLETON, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
+//        rst.add(new PyFunc("minor_ticks_visible", SINGLETON, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
+        rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
+//        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont"}, null, "TODO pydoc"));
 
 //        rst.add(new PyFunc("chart_title", SINGLETON, new String[]{"chartTitle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_title_color", SINGLETON, new String[]{"chartTitleColor"}, null, "TODO pydoc"));
@@ -997,7 +999,7 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("chart_remove_series", SINGLETON, new String[]{"chartRemoveSeries"}, new String[]{"names"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("remove_chart", SINGLETON, new String[]{"removeChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("grid_lines_visible", SINGLETON, new String[]{"gridLinesVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("span", SINGLETON, new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc")); //todo combine with row and col span
+        rst.add(new PyFunc("span", SINGLETON, new String[]{"span", "colSpan", "rowSpan"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("axes", SINGLETON, new String[]{"axes"}, null, "TODO pydoc"));
@@ -1009,20 +1011,6 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("tool_tip_pattern", SINGLETON, new String[]{"toolTipPattern"}, new String[]{"format"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("gradient_visible", SINGLETON, new String[]{"gradientVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("group", SINGLETON, new String[]{"group"}, new String[]{"group"}, "TODO pydoc")); //todo req?
-
-        rst.add(new PyFunc("invert", SINGLETON, new String[]{"invert"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("log", SINGLETON, new String[]{"log"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("max", SINGLETON, new String[]{"max"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("min", SINGLETON, new String[]{"min"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("range", SINGLETON, new String[]{"range"}, new String[]{"min", "max"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("business_time", SINGLETON, new String[]{"businessTime"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("transform", SINGLETON, new String[]{"transform"}, new String[]{"transform"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("ticks", SINGLETON, new String[]{"ticks"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("ticks_font", SINGLETON, new String[]{"ticksFont"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("ticks_visible", SINGLETON, new String[]{"ticksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("tick_label_angle", SINGLETON, new String[]{"tickLabelAngle"}, new String[]{"angle"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("minor_ticks", SINGLETON, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
-        rst.add(new PyFunc("minor_ticks_visible", SINGLETON, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
 
         rst.add(new PyFunc("error_bar_color", SINGLETON, new String[]{"errorBarColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("pie_percent_label_format", SINGLETON, new String[]{"piePercentLabelFormat"}, new String[]{"format"}, "TODO pydoc")); //todo req?

@@ -147,12 +147,12 @@ public interface Axis extends Serializable {
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing the business calendar.
-     * @param valueColumn name of a column containing String values, where each value is the name of a
+     * @param calendar name of a column containing String values, where each value is the name of a
      *        {@link BusinessCalendar}.
      * @return this Axis using the business calendar from row 0 of the filtered {@code sds} for the business calendar.
      *         If no value is found, no transform will be applied.
      */
-    Axis businessTime(final SelectableDataSet sds, final String valueColumn);
+    Axis businessTime(final SelectableDataSet sds, final String calendar);
 
     /**
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
@@ -218,19 +218,19 @@ public interface Axis extends Serializable {
      * Sets the minimum range of this Axis.
      *
      * @param sds selectable dataset
-     * @param valueColumn column in {@code sds}, where the minimum value is stored in row 0.
+     * @param min column in {@code sds}, where the minimum value is stored in row 0.
      * @return this Axes
      */
-    Axis min(final SelectableDataSet sds, final String valueColumn);
+    Axis min(final SelectableDataSet sds, final String min);
 
     /**
      * Sets the maximum range of this Axis.
      *
      * @param sds selectable dataset
-     * @param valueColumn column in {@code sds}, where the maximum value is stored in row 0.
+     * @param max column in {@code sds}, where the maximum value is stored in row 0.
      * @return this Axes
      */
-    Axis max(final SelectableDataSet sds, final String valueColumn);
+    Axis max(final SelectableDataSet sds, final String max);
 
 
 

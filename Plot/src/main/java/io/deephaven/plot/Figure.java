@@ -58,7 +58,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure businessTime( io.deephaven.time.calendar.BusinessCalendar calendar );
 
-    @Override  Figure businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar );
 
     @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] values, T2[] yLow, T3[] yHigh );
 
@@ -510,13 +510,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure max( double max );
 
-    @Override  Figure max( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure max( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max );
 
     @Override  Figure maxRowsInTitle( int maxRowsCount );
 
     @Override  Figure min( double min );
 
-    @Override  Figure min( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn );
+    @Override  Figure min( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
     @Override  Figure minorTicks( int count );
 
