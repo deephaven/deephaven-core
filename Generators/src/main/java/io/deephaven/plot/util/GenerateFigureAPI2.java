@@ -951,6 +951,8 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("minor_ticks", SINGLETON, new String[]{"minorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("minor_ticks_visible", SINGLETON, new String[]{"minorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
+
 
 //        rst.add(new PyFunc("x_axis", SINGLETON, new String[]{"xAxis"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("x_color", SINGLETON, new String[]{"xColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
@@ -973,6 +975,7 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("x_minor_ticks", SINGLETON, new String[]{"xMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("x_minor_ticks_visible", SINGLETON, new String[]{"xMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("x_ticks_minor", SEQUENTIAL, new String[]{"xMinorTicks", "xMinorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_twin", SINGLETON, new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
 
         //        rst.add(new PyFunc("y_axis", SINGLETON, new String[]{"yAxis"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("y_color", SINGLETON, new String[]{"yColor"}, new String[]{"color"}, "TODO pydoc")); //todo req?
@@ -995,6 +998,7 @@ public class GenerateFigureAPI2 {
 //        rst.add(new PyFunc("y_minor_ticks", SINGLETON, new String[]{"yMinorTicks"}, new String[]{"count"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("y_minor_ticks_visible", SINGLETON, new String[]{"yMinorTicksVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[]{"yMinorTicks", "yMinorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
 
 //        rst.add(new PyFunc("chart_title", SINGLETON, new String[]{"chartTitle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_title_color", SINGLETON, new String[]{"chartTitleColor"}, null, "TODO pydoc"));
@@ -1079,10 +1083,6 @@ public class GenerateFigureAPI2 {
         rst.add(new PyFunc("point_size", SINGLETON, new String[]{"pointSize"}, null, "TODO pydoc"));
         rst.add(new PyFunc("points_visible", SINGLETON, new String[]{"pointsVisible"}, new String[]{"visible"}, "TODO pydoc")); //todo req?
 //        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("twin_x", SINGLETON, new String[]{"twinX"}, null, "TODO pydoc")); //todo combine with twin?
-        rst.add(new PyFunc("twin_y", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc")); //todo combine with twin?
 
         Collections.sort(rst);
         return rst;
