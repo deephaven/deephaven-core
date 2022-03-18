@@ -868,7 +868,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
         final String[] taDataTime = new String[]{"str", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
 
-        final String[] taKey = new String[]{"List[Any]"}; //todo keys are technically Object[].  How to support?
+        final String[] taMultiSeriesKey = new String[]{"List[Any]"}; //todo keys are technically Object[].  How to support?
         final String[] taColor = new String[]{"str", "int", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
         final String[] taAxisTransform = new String[]{"AxisTransform"}; //todo support io.deephaven.plot.axistransformations.AxisTransform
@@ -907,8 +907,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("xmin", new PyArg(20, "xmin", taFloat, "minimum x value to display", null));
         rst.put("xmax", new PyArg(21, "xmax", taFloat, "maximum x value to display", null));
         rst.put("nbins", new PyArg(22, "nbins", taInt, "number of bins", null));
-        //todo keys are weird -- should look at what they are doing
-        rst.put("keys", new PyArg(23, "keys", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("multiSeriesKey", new PyArg(23, "multi_series_key", taMultiSeriesKey, "multi-series keys or a column name containing keys.", null));
         rst.put("byColumns", new PyArg(24, "by", taStrs, "columns that hold grouping data", null));
         rst.put("hasXTimeAxis", new PyArg(25, "x_time_axis", taBool, "whether to treat the x-values as times", null));
         rst.put("hasYTimeAxis", new PyArg(26, "y_time_axis", taBool, "whether to treat the y-values as times", null));

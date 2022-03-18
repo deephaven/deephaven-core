@@ -206,76 +206,76 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
         $$initializeSeries$$(series);
     }
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final groovy.lang.Closure<COLOR> pointColor, final Object... keys) {
-        return pointColor(new io.deephaven.plot.util.functions.ClosureFunction<>(pointColor), keys);
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final groovy.lang.Closure<COLOR> pointColor, final Object... multiSeriesKey) {
+        return pointColor(new io.deephaven.plot.util.functions.ClosureFunction<>(pointColor), multiSeriesKey);
     }
 
 
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final java.util.function.Function<java.lang.Comparable, COLOR> pointColor, final Object... keys) {
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final java.util.function.Function<java.lang.Comparable, COLOR> pointColor, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
         applyFunction(pointColor, newColumn, getX(), io.deephaven.gui.color.Paint.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, keys), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
 
 
-    @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final groovy.lang.Closure<COLOR> colors, final Object... keys) {
-        return pointColorInteger(new io.deephaven.plot.util.functions.ClosureFunction<>(colors), keys);
+    @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final groovy.lang.Closure<COLOR> colors, final Object... multiSeriesKey) {
+        return pointColorInteger(new io.deephaven.plot.util.functions.ClosureFunction<>(colors), multiSeriesKey);
     }
 
 
 
-    @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final java.util.function.Function<java.lang.Comparable, COLOR> colors, final Object... keys) {
+    @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final java.util.function.Function<java.lang.Comparable, COLOR> colors, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
         applyFunction(colors, newColumn, getX(), java.lang.Integer.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, keys), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
 
 
-    @Override public <LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final groovy.lang.Closure<LABEL> pointLabels, final Object... keys) {
-        return pointLabel(new io.deephaven.plot.util.functions.ClosureFunction<>(pointLabels), keys);
+    @Override public <LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final groovy.lang.Closure<LABEL> pointLabels, final Object... multiSeriesKey) {
+        return pointLabel(new io.deephaven.plot.util.functions.ClosureFunction<>(pointLabels), multiSeriesKey);
     }
 
 
 
-    @Override public <LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, final Object... keys) {
+    @Override public <LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_LABEL + this.hashCode();
         applyFunction(pointLabels, newColumn, getX(), java.lang.Object.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointLabel(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, keys), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointLabel(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
 
 
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final groovy.lang.Closure<java.lang.String> pointShapes, final Object... keys) {
-        return pointShape(new io.deephaven.plot.util.functions.ClosureFunction<>(pointShapes), keys);
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final groovy.lang.Closure<java.lang.String> pointShapes, final Object... multiSeriesKey) {
+        return pointShape(new io.deephaven.plot.util.functions.ClosureFunction<>(pointShapes), multiSeriesKey);
     }
 
 
 
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_SHAPE + this.hashCode();
         applyFunction(pointShapes, newColumn, getX(), java.lang.String.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointShape(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, keys), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointShape(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
 
 
-    @Override public <NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final groovy.lang.Closure<NUMBER> pointSizes, final Object... keys) {
-        return pointSize(new io.deephaven.plot.util.functions.ClosureFunction<>(pointSizes), keys);
+    @Override public <NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final groovy.lang.Closure<NUMBER> pointSizes, final Object... multiSeriesKey) {
+        return pointSize(new io.deephaven.plot.util.functions.ClosureFunction<>(pointSizes), multiSeriesKey);
     }
 
 
 
-    @Override public <NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, final Object... keys) {
+    @Override public <NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, final Object... multiSeriesKey) {
         final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_SIZE + this.hashCode();
         applyFunction(pointSizes, newColumn, getX(), java.lang.Number.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointSize(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, keys), this));
+        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointSize(new SelectableDataSetSwappableTable(getSwappableTable()), getX(), newColumn, multiSeriesKey), this));
         return this;
     }
 
@@ -285,11 +285,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> errorBarColorSeriesNameToStringMap() {
         return errorBarColorSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final java.lang.String errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final java.lang.String errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToStringMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -302,11 +302,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> errorBarColorSeriesNameTointMap() {
         return errorBarColorSeriesNameTointMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final int errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final int errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameTointMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -319,11 +319,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> errorBarColorSeriesNameToPaintMap() {
         return errorBarColorSeriesNameToPaintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToPaintMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -336,11 +336,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> gradientVisibleSeriesNameTobooleanMap() {
         return gradientVisibleSeriesNameTobooleanMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable gradientVisible(final boolean gradientVisible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable gradientVisible(final boolean gradientVisible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             gradientVisibleSeriesNameTobooleanMap.setDefault(gradientVisible);
         } else {
-            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 gradientVisible);
         }
 
@@ -353,11 +353,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> groupSeriesNameTointMap() {
         return groupSeriesNameTointMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable group(final int group, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable group(final int group, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             groupSeriesNameTointMap.setDefault(group);
         } else {
-            groupSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            groupSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 group);
         }
 
@@ -370,11 +370,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> lineColorSeriesNameToStringMap() {
         return lineColorSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable lineColor(final java.lang.String color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable lineColor(final java.lang.String color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToStringMap.setDefault(color);
         } else {
-            lineColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -387,11 +387,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> lineColorSeriesNameTointMap() {
         return lineColorSeriesNameTointMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable lineColor(final int color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable lineColor(final int color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameTointMap.setDefault(color);
         } else {
-            lineColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -404,11 +404,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> lineColorSeriesNameToPaintMap() {
         return lineColorSeriesNameToPaintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable lineColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable lineColor(final io.deephaven.gui.color.Paint color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            lineColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -421,11 +421,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.LineStyle> lineStyleSeriesNameToLineStyleMap() {
         return lineStyleSeriesNameToLineStyleMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
-            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 lineStyle);
         }
 
@@ -438,11 +438,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> linesVisibleSeriesNameToBooleanMap() {
         return linesVisibleSeriesNameToBooleanMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable linesVisible(final java.lang.Boolean visible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable linesVisible(final java.lang.Boolean visible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             linesVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 visible);
         }
 
@@ -455,11 +455,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> piePercentLabelFormatSeriesNameToStringMap() {
         return piePercentLabelFormatSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable piePercentLabelFormat(final java.lang.String pieLabelFormat, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable piePercentLabelFormat(final java.lang.String pieLabelFormat, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             piePercentLabelFormatSeriesNameToStringMap.setDefault(pieLabelFormat);
         } else {
-            piePercentLabelFormatSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            piePercentLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pieLabelFormat);
         }
 
@@ -472,11 +472,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointColorSeriesNameToStringMap() {
         return pointColorSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.String pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.String pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -489,11 +489,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> pointColorSeriesNameTointMap() {
         return pointColorSeriesNameTointMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final int pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final int pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -506,11 +506,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> pointColorSeriesNameToPaintMap() {
         return pointColorSeriesNameToPaintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.gui.color.Paint pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.gui.color.Paint pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -523,11 +523,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointColorSeriesNameToMapMap() {
         return pointColorSeriesNameToMapMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable, COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final java.util.Map<CATEGORY, COLOR> pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable, COLOR extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeriesSwappable pointColor(final java.util.Map<CATEGORY, COLOR> pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToMapMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -540,11 +540,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToComparableStringMap() {
         return pointColorSeriesNameToComparableStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final java.lang.String pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final java.lang.String pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparableStringMap.setDefault(new Object[]{category, pointColor});
         } else {
-            pointColorSeriesNameToComparableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointColor});
         }
 
@@ -557,11 +557,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToComparableintMap() {
         return pointColorSeriesNameToComparableintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final int pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final int pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparableintMap.setDefault(new Object[]{category, pointColor});
         } else {
-            pointColorSeriesNameToComparableintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointColor});
         }
 
@@ -574,11 +574,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToComparablePaintMap() {
         return pointColorSeriesNameToComparablePaintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final io.deephaven.gui.color.Paint color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final java.lang.Comparable category, final io.deephaven.gui.color.Paint color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToComparablePaintMap.setDefault(new Object[]{category, color});
         } else {
-            pointColorSeriesNameToComparablePaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToComparablePaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, color});
         }
 
@@ -591,13 +591,13 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringStringMap() {
         return pointColorSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointColor, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointColor, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, category, pointColor);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointColor});
         } else {
-            pointColorSeriesNameToTableStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, category, pointColor});
         }
 
@@ -610,11 +610,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToSelectableDataSetStringStringMap() {
         return pointColorSeriesNameToSelectableDataSetStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointColor});
         } else {
-            pointColorSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, category, pointColor});
         }
 
@@ -627,11 +627,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointColorIntegerSeriesNameToMapMap() {
         return pointColorIntegerSeriesNameToMapMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable, COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final java.util.Map<CATEGORY, COLOR> colors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable, COLOR extends java.lang.Integer> MultiCatErrorBarSeriesSwappable pointColorInteger(final java.util.Map<CATEGORY, COLOR> colors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorIntegerSeriesNameToMapMap.setDefault(colors);
         } else {
-            pointColorIntegerSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorIntegerSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 colors);
         }
 
@@ -644,11 +644,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object> pointLabelSeriesNameToObjectMap() {
         return pointLabelSeriesNameToObjectMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final java.lang.Object pointLabel, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final java.lang.Object pointLabel, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectMap.setDefault(pointLabel);
         } else {
-            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabel);
         }
 
@@ -661,11 +661,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointLabelSeriesNameToMapMap() {
         return pointLabelSeriesNameToMapMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable, LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final java.util.Map<CATEGORY, LABEL> pointLabels, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable, LABEL> MultiCatErrorBarSeriesSwappable pointLabel(final java.util.Map<CATEGORY, LABEL> pointLabels, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToMapMap.setDefault(pointLabels);
         } else {
-            pointLabelSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabels);
         }
 
@@ -678,11 +678,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToComparableObjectMap() {
         return pointLabelSeriesNameToComparableObjectMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final java.lang.Comparable category, final java.lang.Object pointLabel, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final java.lang.Comparable category, final java.lang.Object pointLabel, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToComparableObjectMap.setDefault(new Object[]{category, pointLabel});
         } else {
-            pointLabelSeriesNameToComparableObjectMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToComparableObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointLabel});
         }
 
@@ -695,13 +695,13 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringStringMap() {
         return pointLabelSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointLabel, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointLabel, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, category, pointLabel);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointLabel});
         } else {
-            pointLabelSeriesNameToTableStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, category, pointLabel});
         }
 
@@ -714,11 +714,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToSelectableDataSetStringStringMap() {
         return pointLabelSeriesNameToSelectableDataSetStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointLabel, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointLabel, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointLabel});
         } else {
-            pointLabelSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, category, pointLabel});
         }
 
@@ -731,11 +731,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointLabelFormatSeriesNameToStringMap() {
         return pointLabelFormatSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabelFormat(final java.lang.String pointLabelFormat, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabelFormat(final java.lang.String pointLabelFormat, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelFormatSeriesNameToStringMap.setDefault(pointLabelFormat);
         } else {
-            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabelFormat);
         }
 
@@ -748,11 +748,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointShapeSeriesNameToStringMap() {
         return pointShapeSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.String pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.String pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShape);
         }
 
@@ -765,11 +765,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.shape.Shape> pointShapeSeriesNameToShapeMap() {
         return pointShapeSeriesNameToShapeMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.gui.shape.Shape pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.gui.shape.Shape pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShape);
         }
 
@@ -782,11 +782,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointShapeSeriesNameToMapMap() {
         return pointShapeSeriesNameToMapMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointShape(final java.util.Map<CATEGORY, java.lang.String> pointShapes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointShape(final java.util.Map<CATEGORY, java.lang.String> pointShapes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToMapMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShapes);
         }
 
@@ -799,11 +799,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToComparableStringMap() {
         return pointShapeSeriesNameToComparableStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.Comparable category, final java.lang.String pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.Comparable category, final java.lang.String pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToComparableStringMap.setDefault(new Object[]{category, pointShape});
         } else {
-            pointShapeSeriesNameToComparableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToComparableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointShape});
         }
 
@@ -816,11 +816,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToComparableShapeMap() {
         return pointShapeSeriesNameToComparableShapeMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.Comparable category, final io.deephaven.gui.shape.Shape pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final java.lang.Comparable category, final io.deephaven.gui.shape.Shape pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToComparableShapeMap.setDefault(new Object[]{category, pointShape});
         } else {
-            pointShapeSeriesNameToComparableShapeMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToComparableShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointShape});
         }
 
@@ -833,13 +833,13 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringStringMap() {
         return pointShapeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointShape, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointShape, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, category, pointShape);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointShape});
         } else {
-            pointShapeSeriesNameToTableStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, category, pointShape});
         }
 
@@ -852,11 +852,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToSelectableDataSetStringStringMap() {
         return pointShapeSeriesNameToSelectableDataSetStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointShape});
         } else {
-            pointShapeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, category, pointShape});
         }
 
@@ -869,11 +869,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Number> pointSizeSeriesNameToNumberMap() {
         return pointSizeSeriesNameToNumberMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Number pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Number pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToNumberMap.setDefault(pointSize);
         } else {
-            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSize);
         }
 
@@ -886,11 +886,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointSizeSeriesNameToMapMap() {
         return pointSizeSeriesNameToMapMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable, NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final java.util.Map<CATEGORY, NUMBER> pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable, NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final java.util.Map<CATEGORY, NUMBER> pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToMapMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToMapMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -903,11 +903,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap() {
         return pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable, NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final NUMBER[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable, NUMBER extends java.lang.Number> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final NUMBER[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -920,11 +920,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToCATEGORYArraydoubleArrayMap() {
         return pointSizeSeriesNameToCATEGORYArraydoubleArrayMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final double[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final double[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -937,11 +937,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToCATEGORYArrayintArrayMap() {
         return pointSizeSeriesNameToCATEGORYArrayintArrayMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final int[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final int[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArrayintArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArrayintArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToCATEGORYArrayintArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -954,11 +954,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToCATEGORYArraylongArrayMap() {
         return pointSizeSeriesNameToCATEGORYArraylongArrayMap;
     }
-    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final long[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <CATEGORY extends java.lang.Comparable> MultiCatErrorBarSeriesSwappable pointSize(final CATEGORY[] categories, final long[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToCATEGORYArraylongArrayMap.setDefault(new Object[]{categories, pointSizes});
         } else {
-            pointSizeSeriesNameToCATEGORYArraylongArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToCATEGORYArraylongArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ categories, pointSizes});
         }
 
@@ -971,11 +971,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToComparableNumberMap() {
         return pointSizeSeriesNameToComparableNumberMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final java.lang.Number pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final java.lang.Number pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparableNumberMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparableNumberMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToComparableNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointSize});
         }
 
@@ -988,11 +988,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToComparabledoubleMap() {
         return pointSizeSeriesNameToComparabledoubleMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final double pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final double pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparabledoubleMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparabledoubleMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToComparabledoubleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1005,11 +1005,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToComparableintMap() {
         return pointSizeSeriesNameToComparableintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final int pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final int pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparableintMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparableintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToComparableintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1022,11 +1022,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToComparablelongMap() {
         return pointSizeSeriesNameToComparablelongMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final long pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final java.lang.Comparable category, final long pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToComparablelongMap.setDefault(new Object[]{category, pointSize});
         } else {
-            pointSizeSeriesNameToComparablelongMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToComparablelongMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ category, pointSize});
         }
 
@@ -1039,13 +1039,13 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringStringMap() {
         return pointSizeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointSize, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final io.deephaven.engine.table.Table t, final java.lang.String category, final java.lang.String pointSize, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, category, pointSize);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTableStringStringMap.setDefault(new Object[]{tHandle, category, pointSize});
         } else {
-            pointSizeSeriesNameToTableStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToTableStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, category, pointSize});
         }
 
@@ -1058,11 +1058,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToSelectableDataSetStringStringMap() {
         return pointSizeSeriesNameToSelectableDataSetStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String category, final java.lang.String pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToSelectableDataSetStringStringMap.setDefault(new Object[]{sds, category, pointSize});
         } else {
-            pointSizeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, category, pointSize});
         }
 
@@ -1075,11 +1075,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> pointsVisibleSeriesNameToBooleanMap() {
         return pointsVisibleSeriesNameToBooleanMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointsVisible(final java.lang.Boolean visible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable pointsVisible(final java.lang.Boolean visible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointsVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 visible);
         }
 
@@ -1092,11 +1092,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> seriesColorSeriesNameToStringMap() {
         return seriesColorSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final java.lang.String color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final java.lang.String color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToStringMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -1109,11 +1109,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> seriesColorSeriesNameTointMap() {
         return seriesColorSeriesNameTointMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final int color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final int color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameTointMap.setDefault(color);
         } else {
-            seriesColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -1126,11 +1126,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> seriesColorSeriesNameToPaintMap() {
         return seriesColorSeriesNameToPaintMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable seriesColor(final io.deephaven.gui.color.Paint color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -1143,11 +1143,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> toolTipPatternSeriesNameToStringMap() {
         return toolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable toolTipPattern(final java.lang.String toolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable toolTipPattern(final java.lang.String toolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             toolTipPatternSeriesNameToStringMap.setDefault(toolTipPattern);
         } else {
-            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 toolTipPattern);
         }
 
@@ -1160,11 +1160,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> xToolTipPatternSeriesNameToStringMap() {
         return xToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable xToolTipPattern(final java.lang.String xToolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable xToolTipPattern(final java.lang.String xToolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             xToolTipPatternSeriesNameToStringMap.setDefault(xToolTipPattern);
         } else {
-            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 xToolTipPattern);
         }
 
@@ -1177,11 +1177,11 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> yToolTipPatternSeriesNameToStringMap() {
         return yToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable yToolTipPattern(final java.lang.String yToolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiCatErrorBarSeriesSwappable yToolTipPattern(final java.lang.String yToolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             yToolTipPatternSeriesNameToStringMap.setDefault(yToolTipPattern);
         } else {
-            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 yToolTipPattern);
         }
 

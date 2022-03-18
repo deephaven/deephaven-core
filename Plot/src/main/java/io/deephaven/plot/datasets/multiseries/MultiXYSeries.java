@@ -90,11 +90,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> errorBarColorSeriesNameToStringMap() {
         return errorBarColorSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries errorBarColor(final java.lang.String errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries errorBarColor(final java.lang.String errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToStringMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -107,11 +107,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> errorBarColorSeriesNameTointMap() {
         return errorBarColorSeriesNameTointMap;
     }
-    @Override public MultiXYSeries errorBarColor(final int errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries errorBarColor(final int errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameTointMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -124,11 +124,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> errorBarColorSeriesNameToPaintMap() {
         return errorBarColorSeriesNameToPaintMap;
     }
-    @Override public MultiXYSeries errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries errorBarColor(final io.deephaven.gui.color.Paint errorBarColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             errorBarColorSeriesNameToPaintMap.setDefault(errorBarColor);
         } else {
-            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            errorBarColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 errorBarColor);
         }
 
@@ -141,11 +141,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> gradientVisibleSeriesNameTobooleanMap() {
         return gradientVisibleSeriesNameTobooleanMap;
     }
-    @Override public MultiXYSeries gradientVisible(final boolean gradientVisible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries gradientVisible(final boolean gradientVisible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             gradientVisibleSeriesNameTobooleanMap.setDefault(gradientVisible);
         } else {
-            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            gradientVisibleSeriesNameTobooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 gradientVisible);
         }
 
@@ -158,11 +158,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> lineColorSeriesNameToStringMap() {
         return lineColorSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries lineColor(final java.lang.String color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries lineColor(final java.lang.String color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToStringMap.setDefault(color);
         } else {
-            lineColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -175,11 +175,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> lineColorSeriesNameTointMap() {
         return lineColorSeriesNameTointMap;
     }
-    @Override public MultiXYSeries lineColor(final int color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries lineColor(final int color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameTointMap.setDefault(color);
         } else {
-            lineColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -192,11 +192,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> lineColorSeriesNameToPaintMap() {
         return lineColorSeriesNameToPaintMap;
     }
-    @Override public MultiXYSeries lineColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries lineColor(final io.deephaven.gui.color.Paint color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            lineColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -209,11 +209,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.LineStyle> lineStyleSeriesNameToLineStyleMap() {
         return lineStyleSeriesNameToLineStyleMap;
     }
-    @Override public MultiXYSeries lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
-            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 lineStyle);
         }
 
@@ -226,11 +226,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> linesVisibleSeriesNameToBooleanMap() {
         return linesVisibleSeriesNameToBooleanMap;
     }
-    @Override public MultiXYSeries linesVisible(final java.lang.Boolean visible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries linesVisible(final java.lang.Boolean visible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             linesVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            linesVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 visible);
         }
 
@@ -243,11 +243,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, int[]> pointColorSeriesNameTointArrayMap() {
         return pointColorSeriesNameTointArrayMap;
     }
-    @Override public MultiXYSeries pointColor(final int[] pointColors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final int[] pointColors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameTointArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColors);
         }
 
@@ -260,11 +260,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint[]> pointColorSeriesNameToPaintArrayMap() {
         return pointColorSeriesNameToPaintArrayMap;
     }
-    @Override public MultiXYSeries pointColor(final io.deephaven.gui.color.Paint[] pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final io.deephaven.gui.color.Paint[] pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintArrayMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToPaintArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -277,11 +277,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer[]> pointColorSeriesNameToIntegerArrayMap() {
         return pointColorSeriesNameToIntegerArrayMap;
     }
-    @Override public MultiXYSeries pointColor(final java.lang.Integer[] pointColors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final java.lang.Integer[] pointColors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToIntegerArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameToIntegerArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToIntegerArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColors);
         }
 
@@ -294,11 +294,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String[]> pointColorSeriesNameToStringArrayMap() {
         return pointColorSeriesNameToStringArrayMap;
     }
-    @Override public MultiXYSeries pointColor(final java.lang.String[] pointColors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final java.lang.String[] pointColors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringArrayMap.setDefault(pointColors);
         } else {
-            pointColorSeriesNameToStringArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColors);
         }
 
@@ -311,11 +311,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointColorSeriesNameToStringMap() {
         return pointColorSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries pointColor(final java.lang.String pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final java.lang.String pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToStringMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -328,11 +328,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> pointColorSeriesNameTointMap() {
         return pointColorSeriesNameTointMap;
     }
-    @Override public MultiXYSeries pointColor(final int pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final int pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameTointMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -345,11 +345,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> pointColorSeriesNameToPaintMap() {
         return pointColorSeriesNameToPaintMap;
     }
-    @Override public MultiXYSeries pointColor(final io.deephaven.gui.color.Paint pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final io.deephaven.gui.color.Paint pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToPaintMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -362,11 +362,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.datasets.data.IndexableData> pointColorSeriesNameToIndexableDataMap() {
         return pointColorSeriesNameToIndexableDataMap;
     }
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiXYSeries pointColor(final io.deephaven.plot.datasets.data.IndexableData<T> pointColor, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <T extends io.deephaven.gui.color.Paint> MultiXYSeries pointColor(final io.deephaven.plot.datasets.data.IndexableData<T> pointColor, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToIndexableDataMap.setDefault(pointColor);
         } else {
-            pointColorSeriesNameToIndexableDataMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointColor);
         }
 
@@ -379,13 +379,13 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringMap() {
         return pointColorSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointColor(final io.deephaven.engine.table.Table t, final java.lang.String pointColors, final Object... keys) {
+    @Override public MultiXYSeries pointColor(final io.deephaven.engine.table.Table t, final java.lang.String pointColors, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, pointColors);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointColors});
         } else {
-            pointColorSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, pointColors});
         }
 
@@ -398,11 +398,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToSelectableDataSetStringMap() {
         return pointColorSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeries pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointColors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointColors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointColors});
         } else {
-            pointColorSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, pointColors});
         }
 
@@ -415,11 +415,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.datasets.data.IndexableData> pointColorIntegerSeriesNameToIndexableDataMap() {
         return pointColorIntegerSeriesNameToIndexableDataMap;
     }
-    @Override public MultiXYSeries pointColorInteger(final io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointColorInteger(final io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointColorIntegerSeriesNameToIndexableDataMap.setDefault(colors);
         } else {
-            pointColorIntegerSeriesNameToIndexableDataMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointColorIntegerSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 colors);
         }
 
@@ -432,11 +432,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToObjectArrayMap() {
         return pointLabelSeriesNameToObjectArrayMap;
     }
-    @Override public MultiXYSeries pointLabel(final java.lang.Object[] pointLabels, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointLabel(final java.lang.Object[] pointLabels, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectArrayMap.setDefault(new Object[]{pointLabels});
         } else {
-            pointLabelSeriesNameToObjectArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToObjectArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{pointLabels});
         }
 
@@ -449,11 +449,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object> pointLabelSeriesNameToObjectMap() {
         return pointLabelSeriesNameToObjectMap;
     }
-    @Override public MultiXYSeries pointLabel(final java.lang.Object pointLabel, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointLabel(final java.lang.Object pointLabel, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToObjectMap.setDefault(pointLabel);
         } else {
-            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToObjectMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabel);
         }
 
@@ -466,11 +466,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.datasets.data.IndexableData> pointLabelSeriesNameToIndexableDataMap() {
         return pointLabelSeriesNameToIndexableDataMap;
     }
-    @Override public MultiXYSeries pointLabel(final io.deephaven.plot.datasets.data.IndexableData<?> pointLabels, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointLabel(final io.deephaven.plot.datasets.data.IndexableData<?> pointLabels, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToIndexableDataMap.setDefault(pointLabels);
         } else {
-            pointLabelSeriesNameToIndexableDataMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabels);
         }
 
@@ -483,13 +483,13 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringMap() {
         return pointLabelSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String pointLabel, final Object... keys) {
+    @Override public MultiXYSeries pointLabel(final io.deephaven.engine.table.Table t, final java.lang.String pointLabel, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, pointLabel);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointLabel});
         } else {
-            pointLabelSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, pointLabel});
         }
 
@@ -502,11 +502,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToSelectableDataSetStringMap() {
         return pointLabelSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeries pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointLabel, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointLabel(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointLabel, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointLabel});
         } else {
-            pointLabelSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, pointLabel});
         }
 
@@ -519,11 +519,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointLabelFormatSeriesNameToStringMap() {
         return pointLabelFormatSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries pointLabelFormat(final java.lang.String pointLabelFormat, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointLabelFormat(final java.lang.String pointLabelFormat, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointLabelFormatSeriesNameToStringMap.setDefault(pointLabelFormat);
         } else {
-            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointLabelFormatSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointLabelFormat);
         }
 
@@ -536,11 +536,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.shape.Shape[]> pointShapeSeriesNameToShapeArrayMap() {
         return pointShapeSeriesNameToShapeArrayMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.gui.shape.Shape[] pointShapes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final io.deephaven.gui.shape.Shape[] pointShapes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeArrayMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToShapeArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToShapeArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShapes);
         }
 
@@ -553,11 +553,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String[]> pointShapeSeriesNameToStringArrayMap() {
         return pointShapeSeriesNameToStringArrayMap;
     }
-    @Override public MultiXYSeries pointShape(final java.lang.String[] pointShapes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final java.lang.String[] pointShapes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringArrayMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToStringArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToStringArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShapes);
         }
 
@@ -570,11 +570,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> pointShapeSeriesNameToStringMap() {
         return pointShapeSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries pointShape(final java.lang.String pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final java.lang.String pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToStringMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShape);
         }
 
@@ -587,11 +587,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.shape.Shape> pointShapeSeriesNameToShapeMap() {
         return pointShapeSeriesNameToShapeMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.gui.shape.Shape pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final io.deephaven.gui.shape.Shape pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToShapeMap.setDefault(pointShape);
         } else {
-            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToShapeMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShape);
         }
 
@@ -604,11 +604,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.datasets.data.IndexableData> pointShapeSeriesNameToIndexableDataMap() {
         return pointShapeSeriesNameToIndexableDataMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToIndexableDataMap.setDefault(pointShapes);
         } else {
-            pointShapeSeriesNameToIndexableDataMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointShapes);
         }
 
@@ -621,13 +621,13 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringMap() {
         return pointShapeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.engine.table.Table t, final java.lang.String pointShape, final Object... keys) {
+    @Override public MultiXYSeries pointShape(final io.deephaven.engine.table.Table t, final java.lang.String pointShape, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, pointShape);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointShape});
         } else {
-            pointShapeSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, pointShape});
         }
 
@@ -640,11 +640,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToSelectableDataSetStringMap() {
         return pointShapeSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointShape, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointShape(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointShape, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointShapeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointShape});
         } else {
-            pointShapeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointShapeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, pointShape});
         }
 
@@ -657,11 +657,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object> pointSizeSeriesNameToTArrayMap() {
         return pointSizeSeriesNameToTArrayMap;
     }
-    @Override public <T extends java.lang.Number> MultiXYSeries pointSize(final T[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public <T extends java.lang.Number> MultiXYSeries pointSize(final T[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToTArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToTArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -674,11 +674,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, double[]> pointSizeSeriesNameTodoubleArrayMap() {
         return pointSizeSeriesNameTodoubleArrayMap;
     }
-    @Override public MultiXYSeries pointSize(final double[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final double[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTodoubleArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTodoubleArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameTodoubleArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -691,11 +691,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, int[]> pointSizeSeriesNameTointArrayMap() {
         return pointSizeSeriesNameTointArrayMap;
     }
-    @Override public MultiXYSeries pointSize(final int[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final int[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTointArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTointArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameTointArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -708,11 +708,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, long[]> pointSizeSeriesNameTolongArrayMap() {
         return pointSizeSeriesNameTolongArrayMap;
     }
-    @Override public MultiXYSeries pointSize(final long[] pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final long[] pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameTolongArrayMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameTolongArrayMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameTolongArrayMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -725,11 +725,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Number> pointSizeSeriesNameToNumberMap() {
         return pointSizeSeriesNameToNumberMap;
     }
-    @Override public MultiXYSeries pointSize(final java.lang.Number pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final java.lang.Number pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToNumberMap.setDefault(pointSize);
         } else {
-            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToNumberMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSize);
         }
 
@@ -742,11 +742,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.datasets.data.IndexableData> pointSizeSeriesNameToIndexableDataMap() {
         return pointSizeSeriesNameToIndexableDataMap;
     }
-    @Override public MultiXYSeries pointSize(final io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToIndexableDataMap.setDefault(pointSizes);
         } else {
-            pointSizeSeriesNameToIndexableDataMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToIndexableDataMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 pointSizes);
         }
 
@@ -759,13 +759,13 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringMap() {
         return pointSizeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointSize(final io.deephaven.engine.table.Table t, final java.lang.String pointSizes, final Object... keys) {
+    @Override public MultiXYSeries pointSize(final io.deephaven.engine.table.Table t, final java.lang.String pointSizes, final Object... multiSeriesKey) {
     final io.deephaven.plot.util.tables.TableHandle tHandle = new io.deephaven.plot.util.tables.TableHandle(t, pointSizes);
     addTableHandle(tHandle);
-        if(keys == null || keys.length == 0) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToTableStringMap.setDefault(new Object[]{tHandle, pointSizes});
         } else {
-            pointSizeSeriesNameToTableStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToTableStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ tHandle, pointSizes});
         }
 
@@ -778,11 +778,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToSelectableDataSetStringMap() {
         return pointSizeSeriesNameToSelectableDataSetStringMap;
     }
-    @Override public MultiXYSeries pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointSize, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointSize(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String pointSize, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointSizeSeriesNameToSelectableDataSetStringMap.setDefault(new Object[]{sds, pointSize});
         } else {
-            pointSizeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointSizeSeriesNameToSelectableDataSetStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 new Object[]{ sds, pointSize});
         }
 
@@ -795,11 +795,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Boolean> pointsVisibleSeriesNameToBooleanMap() {
         return pointsVisibleSeriesNameToBooleanMap;
     }
-    @Override public MultiXYSeries pointsVisible(final java.lang.Boolean visible, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries pointsVisible(final java.lang.Boolean visible, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             pointsVisibleSeriesNameToBooleanMap.setDefault(visible);
         } else {
-            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            pointsVisibleSeriesNameToBooleanMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 visible);
         }
 
@@ -812,11 +812,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> seriesColorSeriesNameToStringMap() {
         return seriesColorSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries seriesColor(final java.lang.String color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries seriesColor(final java.lang.String color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToStringMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -829,11 +829,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Integer> seriesColorSeriesNameTointMap() {
         return seriesColorSeriesNameTointMap;
     }
-    @Override public MultiXYSeries seriesColor(final int color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries seriesColor(final int color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameTointMap.setDefault(color);
         } else {
-            seriesColorSeriesNameTointMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameTointMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -846,11 +846,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.gui.color.Paint> seriesColorSeriesNameToPaintMap() {
         return seriesColorSeriesNameToPaintMap;
     }
-    @Override public MultiXYSeries seriesColor(final io.deephaven.gui.color.Paint color, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries seriesColor(final io.deephaven.gui.color.Paint color, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             seriesColorSeriesNameToPaintMap.setDefault(color);
         } else {
-            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            seriesColorSeriesNameToPaintMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 color);
         }
 
@@ -863,11 +863,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> toolTipPatternSeriesNameToStringMap() {
         return toolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries toolTipPattern(final java.lang.String toolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries toolTipPattern(final java.lang.String toolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             toolTipPatternSeriesNameToStringMap.setDefault(toolTipPattern);
         } else {
-            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            toolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 toolTipPattern);
         }
 
@@ -880,11 +880,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> xToolTipPatternSeriesNameToStringMap() {
         return xToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries xToolTipPattern(final java.lang.String xToolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries xToolTipPattern(final java.lang.String xToolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             xToolTipPatternSeriesNameToStringMap.setDefault(xToolTipPattern);
         } else {
-            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            xToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 xToolTipPattern);
         }
 
@@ -897,11 +897,11 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> yToolTipPatternSeriesNameToStringMap() {
         return yToolTipPatternSeriesNameToStringMap;
     }
-    @Override public MultiXYSeries yToolTipPattern(final java.lang.String yToolTipPattern, final Object... keys) {
-        if(keys == null || keys.length == 0) {
+    @Override public MultiXYSeries yToolTipPattern(final java.lang.String yToolTipPattern, final Object... multiSeriesKey) {
+        if(multiSeriesKey == null || multiSeriesKey.length == 0) {
             yToolTipPatternSeriesNameToStringMap.setDefault(yToolTipPattern);
         } else {
-            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
+            yToolTipPatternSeriesNameToStringMap.put(namingFunction.apply(multiSeriesKey.length == 1 ? multiSeriesKey[0] : new io.deephaven.datastructures.util.SmartKey(multiSeriesKey)), 
                 yToolTipPattern);
         }
 
