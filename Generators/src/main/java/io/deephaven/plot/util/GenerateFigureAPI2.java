@@ -10,9 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 //todo rename
 //todo doc
+//todo format
 public class GenerateFigureAPI2 {
 
     private static final String INDENT = "    ";
@@ -327,19 +329,34 @@ public class GenerateFigureAPI2 {
         /**
          * Gets the Java signatures for this method.
          *
+         * Signatures are sorted based upon the order in the input javaFuncs.
+         *
          * @param signatures java signatures
          * @return Java signatures for this method.
          */
         public Map<Key, ArrayList<JavaFunction>> getSignatures(final Map<Key, ArrayList<JavaFunction>> signatures){
-            //todo sort in the order of the java funcs
-            final Set<String> funcs = new HashSet<>(Arrays.asList(javaFuncs));
-            return new TreeMap<>(
+            final Map<String,Integer> order = IntStream.range(0, javaFuncs.length)
+                    .boxed()
+                    .collect(Collectors.toMap(i->javaFuncs[i], i->i));
+
+            final Map<Key, ArrayList<JavaFunction>> rst = new TreeMap<>((a,b)-> Integer.compare(order.get(a.name), order.get(b.name)));
+
+            rst.putAll(
                     signatures
-                            .entrySet()
-                            .stream()
-                            .filter(e->funcs.contains(e.getKey().name))
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+                    .entrySet()
+                    .stream()
+                    .filter(e->order.containsKey(e.getKey().name))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
             );
+
+            if(rst.size() != javaFuncs.length){
+                final Set<String> required = new TreeSet<>(Arrays.asList(javaFuncs));
+                final Set<String> actual = rst.keySet().stream().map(k->k.name).collect(Collectors.toSet());
+                required.removeAll(actual);
+                throw new IllegalArgumentException("Java methods are not present in signatures: func=" + this + " methods=" + required);
+            }
+
+            return rst;
         }
 
         /**
