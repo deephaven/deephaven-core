@@ -887,18 +887,23 @@ public class GeneratePyV2FigureAPI {
         rst.put("t", new PyArg(2, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
         rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
         rst.put("x", new PyArg(3, "x", taDataNumeric, "x-values or column name", null));
+        rst.put("time", new PyArg(3, "x", taDataTime, "x-values or column name", null));
         rst.put("xLow", new PyArg(4, "x_low", taDataNumeric, "lower x error bar", null));
         rst.put("xHigh", new PyArg(5, "x_high", taDataNumeric, "upper x error bar", null));
         rst.put("y", new PyArg(6, "y", taDataNumeric, "y-values or column name", null));
         rst.put("yLow", new PyArg(7, "y_low", taDataNumeric, "lower y error bar", null));
         rst.put("yHigh", new PyArg(8, "y_high", taDataNumeric, "upper y error bar", null));
-        rst.put("function", new PyArg(9, "function", taCallable, "function", null));
-        rst.put("xmin", new PyArg(10, "xmin", taFloat, "minimum x value to display", null));
-        rst.put("xmax", new PyArg(11, "xmax", taFloat, "maximum x value to display", null));
-        rst.put("nbins", new PyArg(12, "nbins", taInt, "number of bins", null));
-        rst.put("byColumns", new PyArg(13, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("hasXTimeAxis", new PyArg(14, "x_time_axis", taBool, "whether to treat the x-values as times", null));
-        rst.put("hasYTimeAxis", new PyArg(15, "y_time_axis", taBool, "whether to treat the y-values as times", null));
+        rst.put("open", new PyArg(9, "open", taDataNumeric, "bar open y-values.", null));
+        rst.put("high", new PyArg(10, "high", taDataNumeric, "bar high y-values.", null));
+        rst.put("low", new PyArg(11, "low", taDataNumeric, "bar low y-values.", null));
+        rst.put("close", new PyArg(12, "close", taDataNumeric, "bar close y-values.", null));
+        rst.put("function", new PyArg(13, "function", taCallable, "function", null));
+        rst.put("xmin", new PyArg(14, "xmin", taFloat, "minimum x value to display", null));
+        rst.put("xmax", new PyArg(15, "xmax", taFloat, "maximum x value to display", null));
+        rst.put("nbins", new PyArg(16, "nbins", taInt, "number of bins", null));
+        rst.put("byColumns", new PyArg(17, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("hasXTimeAxis", new PyArg(18, "x_time_axis", taBool, "whether to treat the x-values as times", null));
+        rst.put("hasYTimeAxis", new PyArg(19, "y_time_axis", taBool, "whether to treat the y-values as times", null));
 
         rst.put("path", new PyArg(1, "path", taStr, "output path.", null));
         rst.put("height", new PyArg(2, "height", taInt, "figure height.", null));
@@ -966,12 +971,6 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("max", new PyArg(11, "max", taFloat, "range maximum", null));
 //        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
 //
-//        //todo is time the right x-axis label?  Maybe generalize to x?
-//        rst.put("time", new PyArg(2, "time", taDataTime, "time x-values.", null));
-//        rst.put("open", new PyArg(3, "open", taDataNumeric, "bar open y-values.", null));
-//        rst.put("high", new PyArg(4, "high", taDataNumeric, "bar high y-values.", null));
-//        rst.put("low", new PyArg(5, "low", taDataNumeric, "bar low y-values.", null));
-//        rst.put("close", new PyArg(6, "close", taDataNumeric, "bar close y-values.", null));
 //
 //        rst.put("orientation", new PyArg(10, "orientation", taStr, "plot orientation.", null));
 //
@@ -1059,7 +1058,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_pie", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
-//        rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
         ////////////////////////////////////////////////////////////////
 
