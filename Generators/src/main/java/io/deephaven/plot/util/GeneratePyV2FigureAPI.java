@@ -890,6 +890,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("name", new PyArg(1, "name", taStr, "name", null));
         rst.put("dim", new PyArg(2, "dim", taInt, "dimension of the axis", null));
         rst.put("id", new PyArg(3, "axes", taInt, "identifier", null));
+        rst.put("group", new PyArg(4, "group", taInt, "group for the data series.", null));
         rst.put("seriesName", new PyArg(4, "series_name", taStr, "name of the data series", null));
         rst.put("t", new PyArg(5, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
         rst.put("categories", new PyArg(6, "categories", taDataCategory, "discrete data or column name", null));
@@ -962,15 +963,15 @@ public class GeneratePyV2FigureAPI {
         rst.put("tickLocations", new PyArg(32, "loc", taFloats, "coordinates of the tick locations.", null));
         rst.put("nminor", new PyArg(33, "nminor", taInt, "number of minor ticks between consecutive major ticks.", null));
         rst.put("angle", new PyArg(34, "angle", taInt, "angle in degrees.", null));
+        rst.put("toolTipPattern", new PyArg(35, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
+        rst.put("xToolTipPattern", new PyArg(36, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
+        rst.put("yToolTipPattern", new PyArg(37, "y_tool_tip_pattern", taStr, "y tool tip format pattern", null));
+        rst.put("errorBarColor", new PyArg(38, "error_bar_color", taColor, "error bar color.", null));
+        rst.put("gradientVisible", new PyArg(39, "gradient_visible", taBool, "bar gradient visibility.", null));
+        rst.put("namingFunction", new PyArg(40, "naming_function", taCallable, "series naming function", null));
 
         rst.put("visible", new PyArg(100, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
-        rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
-        rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
-        rst.put("yToolTipPattern", new PyArg(12, "y_tool_tip_pattern", taStr, "y tool tip format pattern", null));
-        rst.put("errorBarColor", new PyArg(13, "error_bar_color", taColor, "error bar color.", null));
-        rst.put("gradientVisible", new PyArg(14, "gradient_visible", taBool, "bar gradient visibility.", null));
-        rst.put("namingFunction", new PyArg(15, "naming_function", taCallable, "series naming function", null));
 
 
         ////////////////////////////////////////////////////////////////
@@ -1008,7 +1009,6 @@ public class GeneratePyV2FigureAPI {
 //
 //        rst.put("factor", new PyArg(3, "size", taFactor, "size.", null));
 //        rst.put("factors", new PyArg(3, "sizes", taFactors, "sizes.", null));
-//        rst.put("group", new PyArg(110, "group", taInt, "group for the data series.", null));
 
 
         //
@@ -1062,7 +1062,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[]{"yMinorTicks", "yMinorTicksVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc"));
 
-//        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
