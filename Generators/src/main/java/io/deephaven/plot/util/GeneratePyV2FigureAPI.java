@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-//todo format
 
 /**
  * Generate the plotting Figure API for Python V2.
@@ -29,11 +28,11 @@ public class GeneratePyV2FigureAPI {
 
     /**
      * Java method signatures that are excluded from analysis.
-     * 
+     * <p>
      * Key = java function name
      * Value = array of java function signatures to exclude.  The signatures are lists of parameter names.  The order matters.
      */
-    private static final Map<String,String[][]> javaExcludes = new HashMap<>() {{
+    private static final Map<String, String[][]> javaExcludes = new HashMap<>() {{
         put("invert", new String[][]{new String[]{}});
         put("log", new String[][]{new String[]{}});
         put("businessTime", new String[][]{new String[]{}});
@@ -64,11 +63,11 @@ public class GeneratePyV2FigureAPI {
             final Key key = new Key(m);
             final JavaFunction f = new JavaFunction(m);
 
-            if(javaExcludes.containsKey(key.name)) {
+            if (javaExcludes.containsKey(key.name)) {
                 final boolean isExcluded = Arrays.stream(javaExcludes.get(key.name))
                         .anyMatch(exclude -> Arrays.equals(exclude, f.getParameterNames()));
 
-                if(isExcluded){
+                if (isExcluded) {
                     continue;
                 }
             }
@@ -231,7 +230,7 @@ public class GeneratePyV2FigureAPI {
     /**
      * A Python method argument.
      */
-    private static class PyArg implements Comparable<PyArg>{
+    private static class PyArg implements Comparable<PyArg> {
         private final int precedence;
         private final String name;
         private final String[] typeAnnotations;
@@ -330,30 +329,30 @@ public class GeneratePyV2FigureAPI {
 
         /**
          * Gets the Java signatures for this method.
-         *
+         * <p>
          * Signatures are sorted based upon the order in the input javaFuncs.
          *
          * @param signatures java signatures
          * @return Java signatures for this method.
          */
-        public Map<Key, ArrayList<JavaFunction>> getSignatures(final Map<Key, ArrayList<JavaFunction>> signatures){
-            final Map<String,Integer> order = IntStream.range(0, javaFuncs.length)
+        public Map<Key, ArrayList<JavaFunction>> getSignatures(final Map<Key, ArrayList<JavaFunction>> signatures) {
+            final Map<String, Integer> order = IntStream.range(0, javaFuncs.length)
                     .boxed()
-                    .collect(Collectors.toMap(i->javaFuncs[i], i->i));
+                    .collect(Collectors.toMap(i -> javaFuncs[i], i -> i));
 
             final Map<Key, ArrayList<JavaFunction>> rst = new TreeMap<>(Comparator.comparingInt(a -> order.get(a.name)));
 
             rst.putAll(
                     signatures
-                    .entrySet()
-                    .stream()
-                    .filter(e->order.containsKey(e.getKey().name))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+                            .entrySet()
+                            .stream()
+                            .filter(e -> order.containsKey(e.getKey().name))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
             );
 
-            if(rst.size() != javaFuncs.length){
+            if (rst.size() != javaFuncs.length) {
                 final Set<String> required = new TreeSet<>(Arrays.asList(javaFuncs));
-                final Set<String> actual = rst.keySet().stream().map(k->k.name).collect(Collectors.toSet());
+                final Set<String> actual = rst.keySet().stream().map(k -> k.name).collect(Collectors.toSet());
                 required.removeAll(actual);
                 throw new IllegalArgumentException("Java methods are not present in signatures: func=" + this + " methods=" + required);
             }
@@ -380,7 +379,7 @@ public class GeneratePyV2FigureAPI {
         private static Collection<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
             final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
 
-            for(JavaFunction f : signatures) {
+            for (JavaFunction f : signatures) {
                 final String[] params = f.getParameterNames();
                 final Set<String> s = new HashSet<>(Arrays.asList(params));
 
@@ -436,12 +435,12 @@ public class GeneratePyV2FigureAPI {
             final Map<String, PyArg> pyparams = getPyArgs();
             final Set<PyArg> argSet = new HashSet<>();
 
-            for(final ArrayList<JavaFunction> signatures : sigs.values()) {
+            for (final ArrayList<JavaFunction> signatures : sigs.values()) {
                 for (final JavaFunction f : signatures) {
                     for (final String param : f.getParameterNames()) {
                         final PyArg pyparam = pyparams.get(param);
 
-                        if(pyparam == null) {
+                        if (pyparam == null) {
                             throw new IllegalArgumentException("Unsupported python parameter: func=" + this + " param=" + param);
                         }
 
@@ -451,7 +450,7 @@ public class GeneratePyV2FigureAPI {
             }
 
             final List<PyArg> args = new ArrayList<>(argSet);
-            args.sort((a,b)-> {
+            args.sort((a, b) -> {
                 final boolean ra = isRequired(a);
                 final boolean rb = isRequired(b);
 
@@ -494,21 +493,58 @@ public class GeneratePyV2FigureAPI {
          * @param args function arguments
          * @return code for the python function doc string.
          */
-        private String generatePyDocString(final List<PyArg> args){
+        private String generatePyDocString(final List<PyArg> args) {
             final StringBuilder sb = new StringBuilder();
 
-            sb.append(INDENT).append(INDENT).append("\"\"\"").append(pydoc).append("\n\n");
-            sb.append(INDENT).append(INDENT).append("Args:\n");
+            sb
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("\"\"\"")
+                    .append(pydoc)
+                    .append("\n\n");
+
+            sb
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("Args:\n");
 
             for (final PyArg arg : args) {
-                sb.append(INDENT).append(INDENT).append(INDENT).append(arg.name).append(" (").append(arg.typeAnnotation()).append("): ").append(arg.docString).append("\n");
+                sb
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(arg.name)
+                        .append(" (")
+                        .append(arg.typeAnnotation())
+                        .append("): ")
+                        .append(arg.docString)
+                        .append("\n");
             }
 
-            sb.append("\n").append(INDENT).append(INDENT).append("Returns:\n").append(INDENT).append(INDENT).append(INDENT).append("a new Figure\n");
+            sb
+                    .append("\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("Returns:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("a new Figure\n");
 
-            sb.append("\n").append(INDENT).append(INDENT).append("Raises:\n").append(INDENT).append(INDENT).append(INDENT).append("DHError\n");
+            sb
+                    .append("\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("Raises:\n")
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("DHError\n");
 
-            sb.append(INDENT).append(INDENT).append("\"\"\"\n");
+            sb
+                    .append(INDENT)
+                    .append(INDENT)
+                    .append("\"\"\"\n");
 
             return sb.toString();
         }
@@ -516,7 +552,7 @@ public class GeneratePyV2FigureAPI {
         /**
          * Generates code for the python function body.
          *
-         * @param args function arguments
+         * @param args       function arguments
          * @param signatures java functions
          * @return code for the python function body.
          */
@@ -527,8 +563,8 @@ public class GeneratePyV2FigureAPI {
 
             // validate
 
-            for(final PyArg arg:args){
-                if(!isRequired(arg)){
+            for (final PyArg arg : args) {
+                if (!isRequired(arg)) {
                     continue;
                 }
 
@@ -551,7 +587,7 @@ public class GeneratePyV2FigureAPI {
 
             sb.append(INDENT).append(INDENT).append("non_null_args = set()\n\n");
 
-            for(final PyArg arg:args){
+            for (final PyArg arg : args) {
                 sb.append(INDENT)
                         .append(INDENT)
                         .append("if ")
@@ -599,8 +635,8 @@ public class GeneratePyV2FigureAPI {
          * Gets a list of functions with conflicting signatures.
          *
          * @param signatures java function signatures
-         * @param pyArgMap possible python function arguments
-         * @param argSet conflicting argument set
+         * @param pyArgMap   possible python function arguments
+         * @param argSet     conflicting argument set
          * @return conflicting function names
          */
         private List<String> conflictingFuncs(final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap, final Set<String> argSet) {
@@ -619,15 +655,15 @@ public class GeneratePyV2FigureAPI {
         /**
          * Validate argument names.  Make sure that code for a set of argument names has not yet been generated.
          *
-         * @param argNames argument names
+         * @param argNames         argument names
          * @param alreadyGenerated Set of argument names that have already been generated.
-         * @param signatures java function signatures
-         * @param pyArgMap possible python function arguments
+         * @param signatures       java function signatures
+         * @param pyArgMap         possible python function arguments
          */
         private void validateArgNames(String[] argNames, Set<Set<String>> alreadyGenerated, Map<Key, ArrayList<JavaFunction>> signatures, Map<String, PyArg> pyArgMap) {
             final Set<String> argSet = new HashSet<>(Arrays.asList(argNames));
 
-            if(alreadyGenerated.contains(argSet)) {
+            if (alreadyGenerated.contains(argSet)) {
                 throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(argNames) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
             } else {
                 alreadyGenerated.add(argSet);
@@ -637,9 +673,9 @@ public class GeneratePyV2FigureAPI {
         /**
          * Generates code for calling a single java function from python.
          *
-         * @param sb string builder
+         * @param sb         string builder
          * @param signatures java function signatures
-         * @param pyArgMap possible python function arguments
+         * @param pyArgMap   possible python function arguments
          */
         private void generatePyFuncCallSingleton(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
@@ -686,9 +722,9 @@ public class GeneratePyV2FigureAPI {
         /**
          * Generates code for sequentially calling multiple java functions from python.
          *
-         * @param sb string builder
+         * @param sb         string builder
          * @param signatures java function signatures
-         * @param pyArgMap possible python function arguments
+         * @param pyArgMap   possible python function arguments
          */
         private void generatePyFuncCallSequential(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
 
@@ -757,7 +793,7 @@ public class GeneratePyV2FigureAPI {
          * @return code for the python function body.
          */
         public String generatePy(final Map<Key, ArrayList<JavaFunction>> signatures) {
-            if(!generate){
+            if (!generate) {
                 return "";
             }
 
@@ -776,7 +812,7 @@ public class GeneratePyV2FigureAPI {
 
     /**
      * Generates python code for the module.
-     *
+     * <p>
      * NOTE: when python code is generated, the relevant methods are removed from signatures.
      *
      * @param signatures java method signatures
@@ -793,10 +829,10 @@ public class GeneratePyV2FigureAPI {
 
         final List<PyFunc> pyFuncs = getPyFuncs();
 
-        for(final PyFunc pyFunc : pyFuncs) {
+        for (final PyFunc pyFunc : pyFuncs) {
             final Map<Key, ArrayList<JavaFunction>> sigs = pyFunc.getSignatures(signatures);
 
-            sigs.forEach((k,v) -> signatures.remove(k));
+            sigs.forEach((k, v) -> signatures.remove(k));
 
             final String pyFuncCode = pyFunc.generatePy(sigs);
             sb.append("\n").append(pyFuncCode);
@@ -826,7 +862,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taFloat = new String[]{"float"};
         final String[] taFloats = new String[]{"List[float]"};
         final String[] taCallable = new String[]{"Callable"};
-        final String[] taTable = new String[]{"Table","SelectableDataSet"};
+        final String[] taTable = new String[]{"Table", "SelectableDataSet"};
         final String[] taDataCategory = new String[]{"str", "List[str]"};
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"};
         final String[] taDataTime = new String[]{"str", "List[DateTime]"};
@@ -846,110 +882,110 @@ public class GeneratePyV2FigureAPI {
 
         rst.put("seriesName", new PyArg(1, "series_name", taStr, "name of the created dataset", null));
         rst.put("byColumns", new PyArg(9, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("t", new PyArg(2, "t", taTable,  "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("x", new PyArg(3, "x", taDataNumeric,  "x-values or column name", null));
-        rst.put("y", new PyArg(4, "y", taDataNumeric,  "y-values or column name", null));
-        rst.put("function", new PyArg(5, "function", taCallable,  "function", null));
-        rst.put("hasXTimeAxis", new PyArg(6, "has_x_time_axis", taBool,  "whether to treat the x-values as time data", null)); //todo needed
-        rst.put("hasYTimeAxis", new PyArg(7, "has_y_time_axis", taBool,  "whether to treat the y-values as time data", null)); //todo needed?
+        rst.put("t", new PyArg(2, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("x", new PyArg(3, "x", taDataNumeric, "x-values or column name", null));
+        rst.put("y", new PyArg(4, "y", taDataNumeric, "y-values or column name", null));
+        rst.put("function", new PyArg(5, "function", taCallable, "function", null));
+        rst.put("hasXTimeAxis", new PyArg(6, "has_x_time_axis", taBool, "whether to treat the x-values as time data", null)); //todo needed
+        rst.put("hasYTimeAxis", new PyArg(7, "has_y_time_axis", taBool, "whether to treat the y-values as time data", null)); //todo needed?
 
-        rst.put("categories", new PyArg(3, "categories", taDataCategory,  "discrete data or column name", null));
-        rst.put("values", new PyArg(4, "values", taDataNumeric,  "numeric data or column name", null));
-        rst.put("xLow", new PyArg(5, "x_low", taDataNumeric,  "low value in x dimension", null));
-        rst.put("xHigh", new PyArg(6, "x_high", taDataNumeric,  "high value in x dimension", null));
-        rst.put("yLow", new PyArg(7, "y_low", taDataNumeric,  "low value in y dimension", null));
-        rst.put("yHigh", new PyArg(8, "y_high", taDataNumeric,  "high value in y dimension", null));
+        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
+        rst.put("values", new PyArg(4, "values", taDataNumeric, "numeric data or column name", null));
+        rst.put("xLow", new PyArg(5, "x_low", taDataNumeric, "low value in x dimension", null));
+        rst.put("xHigh", new PyArg(6, "x_high", taDataNumeric, "high value in x dimension", null));
+        rst.put("yLow", new PyArg(7, "y_low", taDataNumeric, "low value in y dimension", null));
+        rst.put("yHigh", new PyArg(8, "y_high", taDataNumeric, "high value in y dimension", null));
 
-        rst.put("id", new PyArg(10, "axes", taInt,  "identifier", null));
-        rst.put("name", new PyArg(10, "name", taStr,  "name", null));
-        rst.put("names", new PyArg(10, "names", taStrs,  "series names", null));
-        rst.put("dim", new PyArg(10, "dim", taInt,  "dimension of the axis", null));
-        rst.put("color", new PyArg(10, "color", taColor,  "color", null));
-        rst.put("colors", new PyArg(10, "colors", taColors,  "colors", null));
-        rst.put("format", new PyArg(10, "format", taAxisFormat,  "axis format", null));
-        rst.put("pattern", new PyArg(10, "pattern", taStr,  "axis format pattern", null));
-        rst.put("label", new PyArg(10, "label", taStr,  "label", null));
-        rst.put("labels", new PyArg(10, "labels", taStrs,  "labels", null));
-        rst.put("family", new PyArg(10, "family", taStr,  "font family; if null, set to Arial", null));
-        rst.put("font", new PyArg(10, "font", taFont,  "font", null));
-        rst.put("size", new PyArg(10, "size", taInt,  "size", null));
-        rst.put("style", new PyArg(10, "style", taStr,  "style", null));
-        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar,  "business calendar", null));
-        rst.put("valueColumn", new PyArg(10, "values", taStr,  "column name", null));
-        rst.put("rowNum", new PyArg(10, "row", taInt,  "row index in the Figure's grid. The row index starts at 0.", null));
-        rst.put("colNum", new PyArg(10, "col", taInt,  "column index in this Figure's grid. The column index starts at 0.", null));
-        rst.put("index", new PyArg(10, "index", taInt,  "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
-        rst.put("showColumnNamesInTitle", new PyArg(10, "show_column_names_in_title", taBool,  "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-        rst.put("title", new PyArg(10, "title", taStr,  "title", null));
-        rst.put("titleColumns", new PyArg(11, "title_columns", taStrs,  "columns to include in the chart title", null));
-        rst.put("titleFormat", new PyArg(12, "title_format", taStr,  "a java.text.MessageFormat format string for the chart title", null));
-        rst.put("n", new PyArg(10, "width", taInt,  "how many columns wide", null));
-        rst.put("npoints", new PyArg(10, "npoints", taInt,  "number of points", null));
-        rst.put("xmin", new PyArg(10, "xmin", taFloat,  "range minimum", null));
-        rst.put("xmax", new PyArg(11, "xmax", taFloat,  "range minimum", null));
-        rst.put("visible", new PyArg(10, "visible", taInt,  "true to draw the design element; false otherwise.", null));
-        rst.put("invert", new PyArg(10, "invert", taBool,  "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
-        rst.put("useLog", new PyArg(10, "use_log", taBool,  "true to use a log axis transform; false to use a linear axis transform.", null));
-        rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool,  "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
-        rst.put("nbins", new PyArg(15, "nbins", taInt,  "number of bins", null));
-        rst.put("maxTitleRows", new PyArg(10, "max_rows", taInt,  "maximum number of row values to show in title", null));
-        rst.put("min", new PyArg(10, "min", taFloat,  "range minimum", null));
-        rst.put("max", new PyArg(11, "max", taFloat,  "range maximum", null));
-        rst.put("count", new PyArg(10, "count", taInt,  "number of minor ticks between consecutive major ticks.", null));
+        rst.put("id", new PyArg(10, "axes", taInt, "identifier", null));
+        rst.put("name", new PyArg(10, "name", taStr, "name", null));
+        rst.put("names", new PyArg(10, "names", taStrs, "series names", null));
+        rst.put("dim", new PyArg(10, "dim", taInt, "dimension of the axis", null));
+        rst.put("color", new PyArg(10, "color", taColor, "color", null));
+        rst.put("colors", new PyArg(10, "colors", taColors, "colors", null));
+        rst.put("format", new PyArg(10, "format", taAxisFormat, "axis format", null));
+        rst.put("pattern", new PyArg(10, "pattern", taStr, "axis format pattern", null));
+        rst.put("label", new PyArg(10, "label", taStr, "label", null));
+        rst.put("labels", new PyArg(10, "labels", taStrs, "labels", null));
+        rst.put("family", new PyArg(10, "family", taStr, "font family; if null, set to Arial", null));
+        rst.put("font", new PyArg(10, "font", taFont, "font", null));
+        rst.put("size", new PyArg(10, "size", taInt, "size", null));
+        rst.put("style", new PyArg(10, "style", taStr, "style", null));
+        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar, "business calendar", null));
+        rst.put("valueColumn", new PyArg(10, "values", taStr, "column name", null));
+        rst.put("rowNum", new PyArg(10, "row", taInt, "row index in the Figure's grid. The row index starts at 0.", null));
+        rst.put("colNum", new PyArg(10, "col", taInt, "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("index", new PyArg(10, "index", taInt, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
+        rst.put("showColumnNamesInTitle", new PyArg(10, "show_column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("title", new PyArg(10, "title", taStr, "title", null));
+        rst.put("titleColumns", new PyArg(11, "title_columns", taStrs, "columns to include in the chart title", null));
+        rst.put("titleFormat", new PyArg(12, "title_format", taStr, "a java.text.MessageFormat format string for the chart title", null));
+        rst.put("n", new PyArg(10, "width", taInt, "how many columns wide", null));
+        rst.put("npoints", new PyArg(10, "npoints", taInt, "number of points", null));
+        rst.put("xmin", new PyArg(10, "xmin", taFloat, "range minimum", null));
+        rst.put("xmax", new PyArg(11, "xmax", taFloat, "range minimum", null));
+        rst.put("visible", new PyArg(10, "visible", taInt, "true to draw the design element; false otherwise.", null));
+        rst.put("invert", new PyArg(10, "invert", taBool, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
+        rst.put("useLog", new PyArg(10, "use_log", taBool, "true to use a log axis transform; false to use a linear axis transform.", null));
+        rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool, "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
+        rst.put("nbins", new PyArg(15, "nbins", taInt, "number of bins", null));
+        rst.put("maxTitleRows", new PyArg(10, "max_rows", taInt, "maximum number of row values to show in title", null));
+        rst.put("min", new PyArg(10, "min", taFloat, "range minimum", null));
+        rst.put("max", new PyArg(11, "max", taFloat, "range maximum", null));
+        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
 
         //todo is time the right x-axis label?  Maybe generalize to x?
-        rst.put("time", new PyArg(2, "time", taDataTime,  "time x-values.", null));
-        rst.put("open", new PyArg(3, "open", taDataNumeric,  "bar open y-values.", null));
-        rst.put("high", new PyArg(4, "high", taDataNumeric,  "bar high y-values.", null));
-        rst.put("low", new PyArg(5, "low", taDataNumeric,  "bar low y-values.", null));
-        rst.put("close", new PyArg(6, "close", taDataNumeric,  "bar close y-values.", null));
+        rst.put("time", new PyArg(2, "time", taDataTime, "time x-values.", null));
+        rst.put("open", new PyArg(3, "open", taDataNumeric, "bar open y-values.", null));
+        rst.put("high", new PyArg(4, "high", taDataNumeric, "bar high y-values.", null));
+        rst.put("low", new PyArg(5, "low", taDataNumeric, "bar low y-values.", null));
+        rst.put("close", new PyArg(6, "close", taDataNumeric, "bar close y-values.", null));
 
-        rst.put("orientation", new PyArg(10, "orientation", taStr,  "plot orientation.", null));
+        rst.put("orientation", new PyArg(10, "orientation", taStr, "plot orientation.", null));
 
-        rst.put("path", new PyArg(1, "path", taStr,  "output path.", null));
-        rst.put("height", new PyArg(2, "height", taInt,  "figure height.", null));
-        rst.put("width", new PyArg(3, "width", taInt,  "figure width.", null));
-        rst.put("wait", new PyArg(4, "wait", taBool,  "whether to hold the calling thread until the file is written.", null));
-        rst.put("timeoutSeconds", new PyArg(5, "timeout_seconds", taInt,  "timeout in seconds to wait for the file to be written.", null));
+        rst.put("path", new PyArg(1, "path", taStr, "output path.", null));
+        rst.put("height", new PyArg(2, "height", taInt, "figure height.", null));
+        rst.put("width", new PyArg(3, "width", taInt, "figure width.", null));
+        rst.put("wait", new PyArg(4, "wait", taBool, "whether to hold the calling thread until the file is written.", null));
+        rst.put("timeoutSeconds", new PyArg(5, "timeout_seconds", taInt, "timeout in seconds to wait for the file to be written.", null));
 
-        rst.put("rowSpan", new PyArg(10, "row_span", taInt,  "how many rows high.", null));
-        rst.put("colSpan", new PyArg(11, "col_span", taInt,  "how many rows wide.", null));
-        rst.put("angle", new PyArg(10, "angle", taInt,  "angle in degrees.", null));
+        rst.put("rowSpan", new PyArg(10, "row_span", taInt, "how many rows high.", null));
+        rst.put("colSpan", new PyArg(11, "col_span", taInt, "how many rows wide.", null));
+        rst.put("angle", new PyArg(10, "angle", taInt, "angle in degrees.", null));
 
-        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat,  "distance between ticks.", null));
-        rst.put("tickLocations", new PyArg(10, "loc", taFloats,  "coordinates of the major tick locations.", null));
-        rst.put("transform", new PyArg(10, "transform", taAxisTransform,  "transform.", null));
-        rst.put("updateIntervalMillis", new PyArg(10, "update_millis", taInt,  "update interval in milliseconds.", null));
+        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat, "distance between ticks.", null));
+        rst.put("tickLocations", new PyArg(10, "loc", taFloats, "coordinates of the major tick locations.", null));
+        rst.put("transform", new PyArg(10, "transform", taAxisTransform, "transform.", null));
+        rst.put("updateIntervalMillis", new PyArg(10, "update_millis", taInt, "update interval in milliseconds.", null));
 
-        rst.put("keys", new PyArg(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
-        rst.put("key", new PyArg(20, "key", taKey,  "multi-series keys or a column name containing keys.", null));
-        rst.put("keyColumn", new PyArg(20, "key_col", taStr,  "colum name specifying category values.", null));
+        rst.put("keys", new PyArg(20, "keys", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("key", new PyArg(20, "key", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("keyColumn", new PyArg(20, "key_col", taStr, "colum name specifying category values.", null));
 
-        rst.put("category", new PyArg(1, "category", taStr,  "category.", null));
-        rst.put("shape", new PyArg(2, "shape", taShape,  "shape.", null));
-        rst.put("shapes", new PyArg(2, "shapes", taShapes,  "shapes.", null));
+        rst.put("category", new PyArg(1, "category", taStr, "category.", null));
+        rst.put("shape", new PyArg(2, "shape", taShape, "shape.", null));
+        rst.put("shapes", new PyArg(2, "shapes", taShapes, "shapes.", null));
 
-        rst.put("factor", new PyArg(3, "size", taFactor,  "size.", null));
-        rst.put("factors", new PyArg(3, "sizes", taFactors,  "sizes.", null));
-        rst.put("group", new PyArg(110, "group", taInt,  "group for the data series.", null));
+        rst.put("factor", new PyArg(3, "size", taFactor, "size.", null));
+        rst.put("factors", new PyArg(3, "sizes", taFactors, "sizes.", null));
+        rst.put("group", new PyArg(110, "group", taInt, "group for the data series.", null));
 
-        rst.put("gridVisible", new PyArg(10, "grid_visible", taInt,  "x-grid and y-grid are visible.", null));
-        rst.put("xGridVisible", new PyArg(11, "x_grid_visible", taInt,  "x-grid is visible.", null));
-        rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taInt,  "y-grid is visible.", null));
-        rst.put("pieLabelFormat", new PyArg(10, "pie_label_format", taStr,  "pie chart format of the percentage point label.", null));
+        rst.put("gridVisible", new PyArg(10, "grid_visible", taInt, "x-grid and y-grid are visible.", null));
+        rst.put("xGridVisible", new PyArg(11, "x_grid_visible", taInt, "x-grid is visible.", null));
+        rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taInt, "y-grid is visible.", null));
+        rst.put("pieLabelFormat", new PyArg(10, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
 
-        rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr,  "x and y tool tip format pattern", null));
-        rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr,  "x tool tip format pattern", null));
-        rst.put("yToolTipPattern", new PyArg(12, "y_tool_tip_pattern", taStr,  "y tool tip format pattern", null));
-        rst.put("errorBarColor", new PyArg(13, "error_bar_color", taColor,  "error bar color.", null));
-        rst.put("gradientVisible", new PyArg(14, "gradient_visible", taBool,  "bar gradient visibility.", null));
-        rst.put("namingFunction", new PyArg(15, "naming_function", taCallable,  "series naming function", null));
+        rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
+        rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
+        rst.put("yToolTipPattern", new PyArg(12, "y_tool_tip_pattern", taStr, "y tool tip format pattern", null));
+        rst.put("errorBarColor", new PyArg(13, "error_bar_color", taColor, "error bar color.", null));
+        rst.put("gradientVisible", new PyArg(14, "gradient_visible", taBool, "bar gradient visibility.", null));
+        rst.put("namingFunction", new PyArg(15, "naming_function", taCallable, "series naming function", null));
 
-        rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs,  "names of series to remove", null));
+        rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs, "names of series to remove", null));
 
-        rst.put("removeChartIndex", new PyArg(10, "remove_chart_index", taInt,  "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
-        rst.put("removeChartRowNum", new PyArg(11, "remove_chart_row", taInt,  "row index in this Figure's grid. The row index starts at 0.", null));
-        rst.put("removeChartColNum", new PyArg(12, "remove_chart_col", taInt,  "column index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("removeChartIndex", new PyArg(10, "remove_chart_index", taInt, "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
+        rst.put("removeChartRowNum", new PyArg(11, "remove_chart_row", taInt, "row index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("removeChartColNum", new PyArg(12, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
 
         //
 
@@ -1044,9 +1080,9 @@ public class GeneratePyV2FigureAPI {
         final int nSig1 = signatures.size();
         String pyCode = generatePy(signatures);
         final int nSig2 = signatures.size();
-        final int nSigGenerated = nSig1-nSig2;
+        final int nSigGenerated = nSig1 - nSig2;
 
-        System.out.println("GENSTATS: " + nSigGenerated + " of " + nSig1 + "(" + (nSigGenerated/(double)nSig1) + ")");
+        System.out.println("GENSTATS: " + nSigGenerated + " of " + nSig1 + "(" + (nSigGenerated / (double) nSig1) + ")");
 
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
@@ -1058,8 +1094,8 @@ public class GeneratePyV2FigureAPI {
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
         }
-        
-        if(!signatures.isEmpty()){
+
+        if (!signatures.isEmpty()) {
             printMethodSignatures(signatures);
             throw new RuntimeException("Not all methods were generated.");
         }
