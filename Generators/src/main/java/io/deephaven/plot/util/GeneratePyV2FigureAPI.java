@@ -1052,7 +1052,7 @@ public class GeneratePyV2FigureAPI {
 
         ////////////////////////////////////////////////////////////////
 
-        // I'm not sure that pointColorInteger gets used, so python code is not generated
+        // Don't think that pointColorInteger gets used, so python code is not generated
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc", false));
 
         Collections.sort(rst);
