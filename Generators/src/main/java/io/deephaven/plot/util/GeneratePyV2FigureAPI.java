@@ -617,6 +617,24 @@ public class GeneratePyV2FigureAPI {
         }
 
         /**
+         * Validate argument names.  Make sure that code for a set of argument names has not yet been generated.
+         *
+         * @param argNames argument names
+         * @param alreadyGenerated Set of argument names that have already been generated.
+         * @param signatures java function signatures
+         * @param pyArgMap possible python function arguments
+         */
+        private void validateArgNames(String[] argNames, Set<Set<String>> alreadyGenerated, Map<Key, ArrayList<JavaFunction>> signatures, Map<String, PyArg> pyArgMap) {
+            final Set<String> argSet = new HashSet<>(Arrays.asList(argNames));
+
+            if(alreadyGenerated.contains(argSet)) {
+                throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(argNames) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
+            } else {
+                alreadyGenerated.add(argSet);
+            }
+        }
+
+        /**
          * Generates code for calling a single java function from python.
          *
          * @param sb string builder
@@ -634,14 +652,7 @@ public class GeneratePyV2FigureAPI {
                 boolean isFirst = true;
 
                 for (final String[] an : argNames) {
-                    final Set<String> argSet = new HashSet<>(Arrays.asList(an));
-
-                    if(alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
-                    } else {
-                        alreadyGenerated.add(argSet);
-                    }
-
+                    validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
                     final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
 
                     sb.append(INDENT)
@@ -697,14 +708,7 @@ public class GeneratePyV2FigureAPI {
                 final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
 
                 for (final String[] an : argNames) {
-                    final Set<String> argSet = new HashSet<>(Arrays.asList(an));
-
-                    if (alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
-                    } else {
-                        alreadyGenerated.add(argSet);
-                    }
-
+                    validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
                     final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
 
                     sb.append(INDENT)
