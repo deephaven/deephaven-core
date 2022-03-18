@@ -917,6 +917,13 @@ public class GeneratePyV2FigureAPI {
         rst.put("removeChartColNum", new PyArg(13, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
         rst.put("updateIntervalMillis", new PyArg(14, "update_millis", taInt, "update interval in milliseconds.", null));
 
+        rst.put("title", new PyArg(10, "title", taStr, "title", null));
+        rst.put("color", new PyArg(11, "color", taColor, "color", null));
+        rst.put("font", new PyArg(12, "font", taFont, "font", null));
+        rst.put("family", new PyArg(13, "font_family", taStr, "font family", null));
+        rst.put("size", new PyArg(14, "font_size", taInt, "font size", null));
+        rst.put("style", new PyArg(15, "font_style", taStr, "font style", null));
+
         rst.put("gridVisible", new PyArg(10, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
         rst.put("xGridVisible", new PyArg(11, "x_grid_visible", taBool, "x-grid is visible.", null));
         rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taBool, "y-grid is visible.", null));
@@ -942,23 +949,17 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("name", new PyArg(10, "name", taStr, "name", null));
 //        rst.put("names", new PyArg(10, "names", taStrs, "series names", null));
 //        rst.put("dim", new PyArg(10, "dim", taInt, "dimension of the axis", null));
-//        rst.put("color", new PyArg(10, "color", taColor, "color", null));
 //        rst.put("colors", new PyArg(10, "colors", taColors, "colors", null));
 //        rst.put("format", new PyArg(10, "format", taAxisFormat, "axis format", null));
 //        rst.put("pattern", new PyArg(10, "pattern", taStr, "axis format pattern", null));
 //        rst.put("label", new PyArg(10, "label", taStr, "label", null));
 //        rst.put("labels", new PyArg(10, "labels", taStrs, "labels", null));
-//        rst.put("family", new PyArg(10, "family", taStr, "font family; if null, set to Arial", null));
-//        rst.put("font", new PyArg(10, "font", taFont, "font", null));
-//        rst.put("size", new PyArg(10, "size", taInt, "size", null));
-//        rst.put("style", new PyArg(10, "style", taStr, "style", null));
 //        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar, "business calendar", null));
 //        rst.put("valueColumn", new PyArg(10, "values", taStr, "column name", null));
 //        rst.put("rowNum", new PyArg(10, "row", taInt, "row index in the Figure's grid. The row index starts at 0.", null));
 //        rst.put("colNum", new PyArg(10, "col", taInt, "column index in this Figure's grid. The column index starts at 0.", null));
 //        rst.put("index", new PyArg(10, "index", taInt, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
 //        rst.put("showColumnNamesInTitle", new PyArg(10, "show_column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-//        rst.put("title", new PyArg(10, "title", taStr, "title", null));
 //        rst.put("titleColumns", new PyArg(11, "title_columns", taStrs, "columns to include in the chart title", null));
 //        rst.put("titleFormat", new PyArg(12, "title_format", taStr, "a java.text.MessageFormat format string for the chart title", null));
 //        rst.put("n", new PyArg(10, "width", taInt, "how many columns wide", null));
@@ -1023,7 +1024,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("save", SINGLETON, new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
 
         rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
