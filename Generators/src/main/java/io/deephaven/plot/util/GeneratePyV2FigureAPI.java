@@ -1050,7 +1050,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("x_axis", SEQUENTIAL, new String[]{"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel", "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("x_ticks", SEQUENTIAL, new String[]{"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null, "TODO pydoc"));
