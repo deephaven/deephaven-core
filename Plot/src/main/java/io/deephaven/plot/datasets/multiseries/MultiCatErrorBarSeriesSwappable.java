@@ -421,12 +421,12 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.LineStyle> lineStyleSeriesNameToLineStyleMap() {
         return lineStyleSeriesNameToLineStyleMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle style, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            lineStyleSeriesNameToLineStyleMap.setDefault(style);
+            lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
             lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                style);
+                lineStyle);
         }
 
         return this;

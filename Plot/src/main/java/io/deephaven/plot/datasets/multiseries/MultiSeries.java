@@ -89,7 +89,7 @@ public interface MultiSeries extends Series {
     MultiSeries lineColor(final io.deephaven.gui.color.Paint color, final Object... keys);
 
 
-    MultiSeries lineStyle(final io.deephaven.plot.LineStyle style, final Object... keys);
+    MultiSeries lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys);
 
 
     MultiSeries linesVisible(final java.lang.Boolean visible, final Object... keys);

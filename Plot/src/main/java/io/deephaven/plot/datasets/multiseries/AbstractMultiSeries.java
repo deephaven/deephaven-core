@@ -390,7 +390,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
 
 
-    @Override public AbstractMultiSeries<SERIES> lineStyle(final io.deephaven.plot.LineStyle style, final Object... keys) {
+    @Override public AbstractMultiSeries<SERIES> lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method lineStyle for arguments [class io.deephaven.plot.LineStyle]. If you think this method should work, try placing your keys into an Object array", this);
     }
 

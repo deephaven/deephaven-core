@@ -884,6 +884,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taFactor = new String[]{"str", "int", "float"};
         final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
         final String[] taPlotStyle = new String[]{ "str", "PlotStyle" }; //todo support io.deephaven.plot.PlotStyle
+        final String[] taLineStyle = new String[]{ "str", "LineStyle" }; //todo support io.deephaven.plot.LineStyle
 
         ////////////////////////////////////////////////////////////////
 
@@ -969,6 +970,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("errorBarColor", new PyArg(38, "error_bar_color", taColor, "error bar color.", null));
         rst.put("gradientVisible", new PyArg(39, "gradient_visible", taBool, "bar gradient visibility.", null));
         rst.put("namingFunction", new PyArg(40, "naming_function", taCallable, "series naming function", null));
+        rst.put("lineStyle", new PyArg(23, "style", taLineStyle, "line style", null));
 
         rst.put("visible", new PyArg(100, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
@@ -1046,7 +1048,7 @@ public class GeneratePyV2FigureAPI {
 
         rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
-//
+
         rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
@@ -1064,7 +1066,7 @@ public class GeneratePyV2FigureAPI {
 
         rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
 //
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[]{"plot", "plotBy", "errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));

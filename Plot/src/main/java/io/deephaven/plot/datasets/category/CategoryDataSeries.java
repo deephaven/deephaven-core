@@ -130,10 +130,10 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the {@link LineStyle} for this dataset
      *
-     * @param style line style
+     * @param lineStyle line style
      * @return this dat
      */
-    CategoryDataSeries lineStyle(final LineStyle style);
+    CategoryDataSeries lineStyle(final LineStyle lineStyle);
 
 
     ////////////////////////// point colors //////////////////////////

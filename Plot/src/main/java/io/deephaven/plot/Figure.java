@@ -998,9 +998,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure lineColor( java.lang.String color, java.lang.Object... keys );
 
-    @Override  Figure lineStyle( io.deephaven.plot.LineStyle style );
+    @Override  Figure lineStyle( io.deephaven.plot.LineStyle lineStyle );
 
-    @Override  Figure lineStyle( io.deephaven.plot.LineStyle style, java.lang.Object... keys );
+    @Override  Figure lineStyle( io.deephaven.plot.LineStyle lineStyle, java.lang.Object... keys );
 
     @Override  Figure linesVisible( java.lang.Boolean visible );
 

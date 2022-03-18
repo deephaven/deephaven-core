@@ -275,8 +275,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
 
 
     @Override
-    public AbstractCategoryDataSeries lineStyle(final LineStyle style) {
-        setLineStyle(style);
+    public AbstractCategoryDataSeries lineStyle(final LineStyle lineStyle) {
+        setLineStyle(lineStyle);
         return this;
     }
 

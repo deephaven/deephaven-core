@@ -3393,28 +3393,28 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style ) {
+    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).lineStyle( style);
+            DataSeries result = ((DataSeries) series).lineStyle( lineStyle);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).lineStyle(style, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).lineStyle(lineStyle, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle )'", figure);
         }
     }
 
-    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style, java.lang.Object... keys ) {
+    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle, java.lang.Object... keys ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).lineStyle( style, keys);
+            MultiSeries result = ((MultiSeries) series).lineStyle( lineStyle, keys);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle, java.lang.Object... keys )'", figure);
         }
     }
 

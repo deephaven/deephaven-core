@@ -193,8 +193,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
     @Override
-    public AbstractXYDataSeries lineStyle(final LineStyle style) {
-        setLineStyle(style);
+    public AbstractXYDataSeries lineStyle(final LineStyle lineStyle) {
+        setLineStyle(lineStyle);
         return this;
     }
 

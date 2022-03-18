@@ -251,10 +251,10 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the line style.
      *
-     * @param style style
+     * @param lineStyle style
      * @return this data series.
      */
-    DataSeries lineStyle(final LineStyle style);
+    DataSeries lineStyle(final LineStyle lineStyle);
 
 
     ////////////////////////// tool tips //////////////////////////

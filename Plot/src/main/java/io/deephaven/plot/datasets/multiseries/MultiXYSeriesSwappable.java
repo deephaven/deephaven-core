@@ -200,12 +200,12 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, io.deephaven.plot.LineStyle> lineStyleSeriesNameToLineStyleMap() {
         return lineStyleSeriesNameToLineStyleMap;
     }
-    @Override public MultiXYSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle style, final Object... keys) {
+    @Override public MultiXYSeriesSwappable lineStyle(final io.deephaven.plot.LineStyle lineStyle, final Object... keys) {
         if(keys == null || keys.length == 0) {
-            lineStyleSeriesNameToLineStyleMap.setDefault(style);
+            lineStyleSeriesNameToLineStyleMap.setDefault(lineStyle);
         } else {
             lineStyleSeriesNameToLineStyleMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                style);
+                lineStyle);
         }
 
         return this;
