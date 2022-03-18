@@ -1743,9 +1743,8 @@ int JType_MatchVarArgPyArgAsJPyObjectParam(JNIEnv* jenv, JPy_ParamDescriptor* pa
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
         int matchValue = JType_MatchPyArgAsJPyObjectParam(jenv, paramDescriptor, unpack);
         if (matchValue == 0) {
             return 0;
@@ -1861,7 +1860,6 @@ int JType_MatchVarArgPyArgAsFPType(const JPy_ParamDescriptor *paramDescriptor, P
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
