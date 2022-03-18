@@ -458,309 +458,309 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] values, T2[] yLow, T3[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] y, T2[] yLow, T3[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] values, double[] yLow, double[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] values, float[] yLow, float[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] values, int[] yLow, int[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] values, long[] yLow, long[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values, java.util.Date[] yLow, java.util.Date[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] values, short[] yLow, short[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values, T2[] yLow, T3[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y, T2[] yLow, T3[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values, double[] yLow, double[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values, float[] yLow, float[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values, int[] yLow, int[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values, long[] yLow, long[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values, short[] yLow, short[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
+    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, t, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, t, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
+    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, sds, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, sds, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, t, categories, values, yLow, yHigh, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, t, categories, y, yLow, yHigh, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, sds, categories, values, yLow, yHigh, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, sds, categories, y, yLow, yHigh, byColumns);
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] values ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> values ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String values ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, categories);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
+    @Override public <T1 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, t, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, t, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, sds, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, sds, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, t, categories, values, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, t, categories, y, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, sds, categories, values, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, sds, categories, y, byColumns);
         return make(series);
     }
 
@@ -2000,105 +2000,105 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
+    @Override public <T1 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, t, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, t, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, sds, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, sds, categories, y);
         return make(series);
     }
 

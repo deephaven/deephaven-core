@@ -1138,51 +1138,51 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public CategoryDataSeries catErrorBar(final Comparable seriesName, final Table t, final String categories,
-            final String values, final String yLow, final String yHigh) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values, yLow, yHigh);
+                                          final String y, final String yLow, final String yHigh) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, y, yLow, yHigh);
 
-        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
         return catPlot(new CategoryErrorBarDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories,
-                values, yLow, yHigh), new TableHandle[] {h}, null);
+                y, yLow, yHigh), new TableHandle[] {h}, null);
     }
 
     @Override
     public CategoryDataSeries catErrorBar(final Comparable seriesName, final SelectableDataSet sds,
-            final String categories, final String values, final String yLow, final String yHigh) {
+                                          final String categories, final String y, final String yLow, final String yHigh) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryAggs(AggLast(values, yLow, yHigh)),
+                () -> PlotUtils.createCategoryAggs(AggLast(y, yLow, yHigh)),
                 Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, yLow,
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, y, yLow,
                 yHigh, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
-        if (ArgumentValidations.isTime(lastBySelectableDataSet, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(lastBySelectableDataSet, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
         return catPlot(new CategoryErrorBarDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t,
-                categories, values, yLow, yHigh), null, new SwappableTable[] {t});
+                categories, y, yLow, yHigh), null, new SwappableTable[] {t});
     }
 
     @Override
     public MultiSeries catErrorBarBy(final Comparable seriesName, final Table t, final String categories,
-            final String values, final String yLow, final String yHigh, final String... byColumns) {
+                                     final String y, final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(y, "values", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(yLow, "yLow", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(yHigh, "yHigh", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
         final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories,
-                new String[] {values, yLow, yHigh}, byColumns, new PlotInfo(this, seriesName));
+                new String[] {y, yLow, yHigh}, byColumns, new PlotInfo(this, seriesName));
         final MultiCatErrorBarSeries series = new MultiCatErrorBarSeries(this, dataSeries.nextId(), seriesName, h,
-                categories, values, yLow, yHigh, byColumns);
+                categories, y, yLow, yHigh, byColumns);
 
-        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1193,10 +1193,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public MultiSeries catErrorBarBy(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values, final String yLow, final String yHigh, final String... byColumns) {
+                                     final String y, final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(y, "values", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(yLow, "yLow", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(yHigh, "yHigh", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
@@ -1205,13 +1205,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         allOfTheByColumns.add(categories);
         allOfTheByColumns.addAll(Arrays.asList(byColumns));
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryAggs(AggLast(values, yLow, yHigh)),
+                () -> PlotUtils.createCategoryAggs(AggLast(y, yLow, yHigh)),
                 allOfTheByColumns);
 
 
         final String[] columns = new String[byColumns.length + 5];
         columns[0] = categories;
-        columns[1] = values;
+        columns[1] = y;
         columns[2] = yLow;
         columns[3] = yHigh;
         columns[4] = CategoryDataSeries.CAT_SERIES_ORDER_COLUMN;
@@ -1221,9 +1221,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         configureCategoryPlot();
 
         final MultiCatErrorBarSeriesSwappable series = new MultiCatErrorBarSeriesSwappable(this, dataSeries.nextId(),
-                seriesName, t, categories, values, yLow, yHigh, byColumns);
+                seriesName, t, categories, y, yLow, yHigh, byColumns);
 
-        if (ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t.getTableDefinition(), y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1598,19 +1598,19 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     // region Category Histogram Plot
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String values) {
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String categories) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t, categories, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        final Table counts = PlotUtils.createCategoryHistogramTable(t, values);
-        final TableHandle h = new TableHandle(counts, values, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        final Table counts = PlotUtils.createCategoryHistogramTable(t, categories);
+        final TableHandle h = new TableHandle(counts, categories, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
         final CategoryDataSeriesTableMap ds =
-                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, values, COUNT);
+                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, COUNT);
         ds.addTableHandle(h);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
@@ -1618,59 +1618,59 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public CategoryDataSeriesSwappableTableMap catHistPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String values) {
+            final String categories) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        if (ArgumentValidations.isTime(sds, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(sds, categories, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
         final List<String> cols = new ArrayList<>();
-        cols.add(values);
+        cols.add(categories);
         if (sds instanceof SelectableDataSetOneClick) {
             cols.addAll(Arrays.asList(((SelectableDataSetOneClick) sds).getByColumns()));
         }
 
         final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> PlotUtils
                 .createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, values,
+        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, categories,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         final CategoryDataSeriesSwappableTableMap ds = new CategoryDataSeriesSwappableTableMap(this,
-                dataSeries.nextId(), seriesName, counts, values, COUNT);
+                dataSeries.nextId(), seriesName, counts, categories, COUNT);
         ds.addSwappableTable(counts);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final T[] values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final T[] categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final int[] values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final int[] categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final long[] values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final long[] categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final float[] values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final float[] categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final double[] values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final double[] categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> values) {
-        return catHistPlot(seriesName, PlotUtils.table(values, "Category"), "Category");
+    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> categories) {
+        return catHistPlot(seriesName, PlotUtils.table(categories, "Category"), "Category");
     }
 
     // endregion
@@ -1708,8 +1708,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
-            final IndexableData<T1> categories, final IndexableNumericData values) {
-        return catPlot(seriesName, categories, values, false);
+            final IndexableData<T1> categories, final IndexableNumericData y) {
+        return catPlot(seriesName, categories, y, false);
     }
 
     private <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
@@ -1724,40 +1724,40 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final Table t, final String categories,
-            final String values) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values);
-        return catPlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values),
-                new TableHandle[] {h}, null, ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)));
+            final String y) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, y);
+        return catPlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, y),
+                new TableHandle[] {h}, null, ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName)));
     }
 
     @Override
     public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String categories, final String values) {
+            final String categories, final String y) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryAggs(AggLast(values)), Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
+                () -> PlotUtils.createCategoryAggs(AggLast(y)), Collections.singletonList(categories));
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, y,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return catPlot(
-                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values),
+                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t},
-                ArgumentValidations.isTime(sds, values, new PlotInfo(this, seriesName)));
+                ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName)));
     }
 
     @Override
     public MultiCatSeries catPlotBy(final Comparable seriesName, final Table t, final String categories,
-            final String values, final String... byColumns) {
+                                    final String y, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(y, "values", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
-        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories, new String[] {values},
+        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories, new String[] {y},
                 byColumns, new PlotInfo(this, seriesName));
         final MultiCatSeries series =
-                new MultiCatSeries(this, dataSeries.nextId(), seriesName, h, categories, values, byColumns);
+                new MultiCatSeries(this, dataSeries.nextId(), seriesName, h, categories, y, byColumns);
 
-        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1769,15 +1769,15 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public MultiCatSeriesSwappable catPlotBy(final Comparable seriesName, final SelectableDataSet sds,
-            final String categories, final String values, final String... byColumns) {
+                                             final String categories, final String y, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
-        ArgumentValidations.assertNotNull(values, "timeCol", new PlotInfo(this, seriesName));
+        ArgumentValidations.assertNotNull(y, "timeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
 
         final String[] columns = new String[byColumns.length + 3];
         columns[0] = categories;
-        columns[1] = values;
+        columns[1] = y;
         columns[2] = CategoryDataSeries.CAT_SERIES_ORDER_COLUMN;
         System.arraycopy(byColumns, 0, columns, 3, byColumns.length);
 
@@ -1786,15 +1786,15 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         allOfTheByColumns.add(categories);
         allOfTheByColumns.addAll(Arrays.asList(byColumns));
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryAggs(AggLast(values)),
+                () -> PlotUtils.createCategoryAggs(AggLast(y)),
                 allOfTheByColumns);
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, columns);
         configureCategoryPlot();
         final MultiCatSeriesSwappable series =
-                new MultiCatSeriesSwappable(this, dataSeries.nextId(), seriesName, t, categories, values, byColumns);
+                new MultiCatSeriesSwappable(this, dataSeries.nextId(), seriesName, t, categories, y, byColumns);
 
 
-        if (ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName))) {
+        if (ArgumentValidations.isTime(t.getTableDefinition(), y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1829,28 +1829,28 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public <T1 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
-            final IndexableData<T1> categories, final IndexableNumericData values) {
-        return piePlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, values), null,
+            final IndexableData<T1> categories, final IndexableNumericData y) {
+        return piePlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, y), null,
                 null);
     }
 
     @Override
     public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final Table t, final String categories,
-            final String values) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values);
-        return piePlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values),
+            final String y) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, y);
+        return piePlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, y),
                 new TableHandle[] {h}, null);
     }
 
     @Override
     public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final SelectableDataSet sds,
-            final String categories, final String values) {
+            final String categories, final String y) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryAggs(AggLast(values)), Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
+                () -> PlotUtils.createCategoryAggs(AggLast(y)), Collections.singletonList(categories));
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, y,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return piePlot(
-                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values),
+                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, y),
                 null, new SwappableTable[] {t});
     }
     // endregion
@@ -2741,196 +2741,196 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final short[] values, final short[] yLow, final short[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final short[] y, final short[] yLow, final short[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final int[] values, final int[] yLow, final int[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final int[] y, final int[] yLow, final int[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final long[] values, final long[] yLow, final long[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final long[] y, final long[] yLow, final long[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final float[] values, final float[] yLow, final float[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final float[] y, final float[] yLow, final float[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final double[] values, final double[] yLow, final double[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final double[] y, final double[] yLow, final double[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] y, final T2[] yLow, final T3[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] values, final short[] yLow, final short[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] y, final short[] yLow, final short[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] values, final int[] yLow, final int[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] y, final int[] yLow, final int[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] values, final long[] yLow, final long[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] y, final long[] yLow, final long[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] values, final float[] yLow, final float[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] y, final float[] yLow, final float[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] values, final double[] yLow, final double[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] y, final double[] yLow, final double[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow, final T3[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] y, final T2[] yLow, final T3[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] values, final Date[] yLow, final Date[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName))), null, null, true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName))), null, null, true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName))), null, null, true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName))), null, null, true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final Date[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final Date[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final short[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final short[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final int[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final int[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final long[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final long[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final float[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final float[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final double[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final double[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final T1[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final T1[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final List<T1> values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final List<T1> y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final Date[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final Date[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final short[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final short[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final int[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final int[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final long[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final long[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final float[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final float[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final double[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final double[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final T1[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final T1[] y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> y) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false);
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final short[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final short[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final int[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final int[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final long[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final long[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final float[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final float[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final double[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final double[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final T1[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final T1[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final List<T1> values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final List<T1> y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final short[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final short[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final int[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final int[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final long[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final long[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final float[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final float[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final double[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final double[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final T1[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final T1[] y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
+    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> y) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)));
     }
 
 }

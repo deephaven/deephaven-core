@@ -865,7 +865,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taFloats = new String[]{"List[float]"};
         final String[] taCallable = new String[]{"Callable"};
         final String[] taTable = new String[]{"Table", "SelectableDataSet"};
-        final String[] taDataCategory = new String[]{"str", "List[str]"};
+        final String[] taDataCategory = new String[]{"str", "List[str]", "List[int]", "List[float]"};
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
         final String[] taDataTime = new String[]{"str", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
 
@@ -885,6 +885,7 @@ public class GeneratePyV2FigureAPI {
 
         rst.put("seriesName", new PyArg(1, "series_name", taStr, "name of the data series", null));
         rst.put("t", new PyArg(2, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
         rst.put("x", new PyArg(3, "x", taDataNumeric, "x-values or column name", null));
         rst.put("xLow", new PyArg(4, "x_low", taDataNumeric, "lower x error bar", null));
         rst.put("xHigh", new PyArg(5, "x_high", taDataNumeric, "upper x error bar", null));
@@ -926,9 +927,10 @@ public class GeneratePyV2FigureAPI {
         ////////////////////////////////////////////////////////////////
 
 
-//
-//        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
+        //        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
 //        rst.put("values", new PyArg(4, "values", taDataNumeric, "numeric data or column name", null));
+
+//
 //
 //        rst.put("id", new PyArg(10, "axes", taInt, "identifier", null));
 //        rst.put("name", new PyArg(10, "name", taStr, "name", null));
@@ -1054,10 +1056,10 @@ public class GeneratePyV2FigureAPI {
 //
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[]{"plot", "plotBy", "errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
 //        rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
 //        rst.add(new PyFunc("plot_pie", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
-//        rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
-//        rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
 
         ////////////////////////////////////////////////////////////////
 

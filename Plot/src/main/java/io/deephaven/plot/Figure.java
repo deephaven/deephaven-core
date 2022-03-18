@@ -60,107 +60,107 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] values, T2[] yLow, T3[] yHigh );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] y, T2[] yLow, T3[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] values, double[] yLow, double[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] y, double[] yLow, double[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] values, float[] yLow, float[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] y, float[] yLow, float[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] values, int[] yLow, int[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] y, int[] yLow, int[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] values, long[] yLow, long[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] y, long[] yLow, long[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values, java.util.Date[] yLow, java.util.Date[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] values, short[] yLow, short[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values, T2[] yLow, T3[] yHigh );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y, T2[] yLow, T3[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values, double[] yLow, double[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y, double[] yLow, double[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values, float[] yLow, float[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y, float[] yLow, float[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values, int[] yLow, int[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y, int[] yLow, int[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values, long[] yLow, long[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y, long[] yLow, long[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values, short[] yLow, short[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh );
 
-    @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh );
+    @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
-    @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh );
+    @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
-    @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
+    @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
+    @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, T[] values );
+    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, T[] categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, double[] values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, double[] categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, float[] values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, float[] categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, int[] values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, int[] categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, long[] values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, long[] categories );
 
-    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> values );
+    @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String values );
+    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, double[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, double[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, float[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, float[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, int[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, int[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, long[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, long[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, short[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, short[] y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y );
 
-    @Override <T1 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values );
+    @Override <T1 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y );
 
-    @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values );
+    @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y );
 
-    @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values );
+    @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y );
 
-    @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns );
+    @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String... byColumns );
 
-    @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String... byColumns );
+    @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String... byColumns );
 
     @Override  Figure chart( int index );
 
@@ -574,39 +574,39 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, double[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, double[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, float[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, float[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, int[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, int[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, long[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, long[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, short[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, short[] y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y );
 
-    @Override <T1 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values );
+    @Override <T1 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y );
 
-    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values );
+    @Override <T0 extends java.lang.Comparable> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y );
 
-    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values );
+    @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y );
 
-    @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values );
+    @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y );
 
-    @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values );
+    @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y );
 
     @Override <T extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, groovy.lang.Closure<T> function );
 

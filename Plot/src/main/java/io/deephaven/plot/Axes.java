@@ -892,13 +892,13 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param t table
      * @param categories column in {@code t} that holds the discrete data
-     * @param values column in {@code t} that holds the numeric data
+     * @param y column in {@code t} that holds the numeric data
      * @param yLow column in {@code t} that holds the low value in the y dimension
      * @param yHigh column in {@code t} that holds the high value in the y dimension
      * @return dataset created for plot
      */
     CategoryDataSeries catErrorBar(final Comparable seriesName, final Table t, final String categories,
-            final String values, final String yLow, final String yHigh);
+            final String y, final String yLow, final String yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -906,13 +906,13 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param sds selectable dataset (e.g. OneClick filterable table).
      * @param categories column in {@code sds} that holds the discrete data
-     * @param values column in {@code sds} that holds the numeric data
+     * @param y column in {@code sds} that holds the numeric data
      * @param yLow column in {@code sds} that holds the low value in the y dimension
      * @param yHigh column in {@code sds} that holds the high value in the y dimension
      * @return dataset created for plot
      */
     CategoryDataSeries catErrorBar(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values, final String yLow, final String yHigh);
+            final String y, final String yLow, final String yHigh);
 
     /**
      * Creates a catErrorBar plot for each distinct grouping value specified in {@code byColumns}.
@@ -920,13 +920,13 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param t table
      * @param categories column in {@code t} that holds the discrete data
-     * @param values column in {@code t} that holds the numeric data
+     * @param y column in {@code t} that holds the numeric data
      * @param yLow column in {@code t} that holds the low value in the y dimension
      * @param yHigh column in {@code t} that holds the high value in the y dimension
      * @param byColumns column(s) in {@code t} that holds the grouping data
      * @return dataset created for plot
      */
-    MultiSeries catErrorBarBy(final Comparable seriesName, final Table t, final String categories, final String values,
+    MultiSeries catErrorBarBy(final Comparable seriesName, final Table t, final String categories, final String y,
             final String yLow, final String yHigh, final String... byColumns);
 
     /**
@@ -935,14 +935,14 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param sds selectable dataset (e.g. OneClick filterable table).
      * @param categories column in {@code sds} that holds the discrete data
-     * @param values column in {@code sds} that holds the numeric data
+     * @param y column in {@code sds} that holds the numeric data
      * @param yLow column in {@code sds} that holds the low value in the y dimension
      * @param yHigh column in {@code sds} that holds the high value in the y dimension
      * @param byColumns column(s) in {@code sds} that holds the grouping data
      * @return dataset created for plot
      */
     MultiSeries catErrorBarBy(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values, final String yLow, final String yHigh, final String... byColumns);
+            final String y, final String yLow, final String yHigh, final String... byColumns);
 
 
     ////////////////////////// xy function plot //////////////////////////
@@ -1189,76 +1189,76 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param t table
-     * @param values column in {@code t}
+     * @param categories column in {@code t}
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final Table t, final String values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final Table t, final String categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
-     * @param values column in {@code sds}
+     * @param categories column in {@code sds}
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final SelectableDataSet sds, final String values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final SelectableDataSet sds, final String categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @param <T> data type of the categorical data
      * @return dataset created for plot
      */
-    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final T[] values);
+    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final T[] categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final int[] values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final int[] categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final long[] values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final long[] categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final float[] values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final float[] categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @return dataset created for plot
      */
-    CategoryDataSeries catHistPlot(final Comparable seriesName, final double[] values);
+    CategoryDataSeries catHistPlot(final Comparable seriesName, final double[] categories);
 
     /**
      * Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
      *
      * @param seriesName name of the created dataset
-     * @param values data
+     * @param categories data
      * @param <T> data type of the categorical data
      * @return dataset created for plot
      */
-    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final List<T> values);
+    <T extends Comparable> CategoryDataSeries catHistPlot(final Comparable seriesName, final List<T> categories);
 
     ////////////////////////// category plot //////////////////////////
 
@@ -1268,12 +1268,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y numeric data
      * @param <T1> data type of the categorical data
      * @return dataset created for plot
      */
     <T1 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final IndexableData<T1> categories,
-            final IndexableNumericData values);
+            final IndexableNumericData y);
 
     /**
      * Creates a plot with discrete axis. Discrete data must not have duplicates.
@@ -1281,11 +1281,11 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param t table
      * @param categories column in {@code t} holding discrete data
-     * @param values column in {@code t} holding numeric data
+     * @param y column in {@code t} holding numeric data
      * @return dataset created for plot
      */
     CategoryDataSeries catPlot(final Comparable seriesName, final Table t, final String categories,
-            final String values);
+            final String y);
 
     /**
      * Creates a plot with discrete axis. Discrete data must not have duplicates.
@@ -1293,11 +1293,11 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
      * @param categories column in {@code sds} holding discrete data
-     * @param values column in {@code sds} holding numeric data
+     * @param y column in {@code sds} holding numeric data
      * @return dataset created for plot
      */
     CategoryDataSeries catPlot(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values);
+            final String y);
 
     /**
      * Creates a category plot per distinct grouping value specified in {@code byColumns}.
@@ -1305,11 +1305,11 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param t table
      * @param categories column in {@code t} holding discrete data
-     * @param values column in {@code t} holding numeric data
+     * @param y column in {@code t} holding numeric data
      * @param byColumns column(s) in {@code t} that holds the grouping data
      * @return dataset created for plot
      */
-    MultiSeries catPlotBy(final Comparable seriesName, final Table t, final String categories, final String values,
+    MultiSeries catPlotBy(final Comparable seriesName, final Table t, final String categories, final String y,
             final String... byColumns);
 
     /**
@@ -1318,12 +1318,12 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
      * @param categories column in {@code sds} holding discrete data
-     * @param values column in {@code sds} holding numeric data
+     * @param y column in {@code sds} holding numeric data
      * @param byColumns column(s) in {@code sds} that holds the grouping data
      * @return dataset created for plot
      */
     MultiSeries catPlotBy(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values, final String... byColumns);
+            final String y, final String... byColumns);
 
     ////////////////////////// pie plot //////////////////////////
 
@@ -1333,12 +1333,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y data values
      * @param <T1> data type of the categorical data
      * @return dataset created for plot
      */
     <T1 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final IndexableData<T1> categories,
-            final IndexableNumericData values);
+            final IndexableNumericData y);
 
     /**
      * Creates a pie plot. Categorical data must not have duplicates.
@@ -1346,11 +1346,11 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param t table
      * @param categories column in {@code t} with categorical data
-     * @param values column in {@code t} with numerical data
+     * @param y column in {@code t} with numerical data
      * @return dataset created for plot
      */
     CategoryDataSeries piePlot(final Comparable seriesName, final Table t, final String categories,
-            final String values);
+            final String y);
 
     /**
      * Creates a pie plot. Categorical data must not have duplicates.
@@ -1358,11 +1358,11 @@ public interface Axes extends Serializable {
      * @param seriesName name of the created dataset
      * @param sds selectable data set (e.g. OneClick filterable table)
      * @param categories column in {@code sds} with categorical data
-     * @param values column in {@code sds} with numerical data
+     * @param y column in {@code sds} with numerical data
      * @return dataset created for plot
      */
     CategoryDataSeries piePlot(final Comparable seriesName, final SelectableDataSet sds, final String categories,
-            final String values);
+            final String y);
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateAxesPlotMethods //////////////////////////////
@@ -4067,72 +4067,72 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final short[] values, final short[] yLow, final short[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final int[] values, final int[] yLow, final int[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final long[] values, final long[] yLow, final long[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final float[] values, final float[] yLow, final float[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final double[] values, final double[] yLow, final double[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
@@ -4141,14 +4141,14 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] y, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
@@ -4157,95 +4157,79 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] values, final short[] yLow, final short[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] values, final int[] yLow, final int[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] values, final long[] yLow, final long[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] values, final float[] yLow, final float[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] values, final double[] yLow, final double[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
-     * @param yLow low value in y dimension
-     * @param yHigh high value in y dimension
-     * @param <T0> type of the categorical data
-     * @param <T1> type of the numeric data
-     * @param <T2> type of the numeric data
-     * @param <T3> type of the numeric data
-     * @return dataset created by the plot
-     */
-    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow, final T3[] yHigh);
-
-    /**
-     * Creates a category error bar plot with whiskers in the y direction.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
@@ -4254,33 +4238,49 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] y, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
+     * @param <T1> type of the numeric data
+     * @param <T2> type of the numeric data
+     * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] values, final Date[] yLow, final Date[] yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param yLow low value in y dimension
      * @param yHigh high value in y dimension
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] y, final Date[] yLow, final Date[] yHigh);
+
+    /**
+     * Creates a category error bar plot with whiskers in the y direction.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param y y-values
+     * @param yLow low value in y dimension
+     * @param yHigh high value in y dimension
+     * @param <T0> type of the categorical data
+     * @return dataset created by the plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates a plot with discrete axis.
@@ -4288,11 +4288,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final Date[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final Date[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4300,11 +4300,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4312,11 +4312,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final short[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final short[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4324,11 +4324,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final int[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final int[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4336,11 +4336,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final long[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final long[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4348,11 +4348,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final float[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final float[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4360,11 +4360,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final double[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final double[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4372,12 +4372,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final T1[] values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final T1[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4385,12 +4385,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final List<T1> y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4398,11 +4398,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final Date[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final Date[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4410,11 +4410,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4422,11 +4422,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final short[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final short[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4434,11 +4434,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final int[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final int[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4446,11 +4446,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final long[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final long[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4458,11 +4458,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final float[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final float[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4470,11 +4470,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final double[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final double[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4482,12 +4482,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final T1[] values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final T1[] y);
 
     /**
      * Creates a plot with discrete axis.
@@ -4495,12 +4495,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
-     * @param values numeric data
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> y);
 
     /**
      * Creates a pie plot.
@@ -4508,11 +4508,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final short[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final short[] y);
 
     /**
      * Creates a pie plot.
@@ -4520,11 +4520,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final int[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final int[] y);
 
     /**
      * Creates a pie plot.
@@ -4532,11 +4532,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final long[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final long[] y);
 
     /**
      * Creates a pie plot.
@@ -4544,11 +4544,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final float[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final float[] y);
 
     /**
      * Creates a pie plot.
@@ -4556,11 +4556,11 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final double[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final double[] y);
 
     /**
      * Creates a pie plot.
@@ -4568,25 +4568,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @param <T1> type of the numeric data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final T1[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final T1[] y);
 
     /**
      * Creates a pie plot.
@@ -4594,72 +4581,12 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final short[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final int[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final long[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final float[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final double[] values);
-
-    /**
-     * Creates a pie plot.
-     * Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final T1[] values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final List<T1> y);
 
     /**
      * Creates a pie plot.
@@ -4667,11 +4594,84 @@ public interface Axes extends Serializable {
      *
      * @param seriesName name of the created dataset
      * @param categories categories
-     * @param values data values
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final short[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final int[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final long[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final float[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final double[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
      * @param <T0> type of the categorical data
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final T1[] y);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param y y-values
+     * @param <T0> type of the categorical data
+     * @param <T1> type of the numeric data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> y);
 
 }

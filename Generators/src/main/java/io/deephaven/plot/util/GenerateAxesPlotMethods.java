@@ -776,14 +776,14 @@ public class GenerateAxesPlotMethods {
 
 
         code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface,
-                new String[] {"categories", "values", "yLow", "yHigh"}, new String[] {"Comparable", "List<Comparable>"},
+                new String[] {"categories", "y", "yLow", "yHigh"}, new String[] {"Comparable", "List<Comparable>"},
                 1,
                 "    /**\n" +
                         "     * Creates a category error bar plot with whiskers in the y direction.\n" +
                         "     *\n" +
                         "     * @param seriesName name of the created dataset\n" +
                         "     * @param categories discrete data\n" +
-                        "     * @param values numeric data\n" +
+                        "     * @param y y-values\n" +
                         "     * @param yLow low value in y dimension\n" +
                         "     * @param yHigh high value in y dimension\n" +
                         "$JAVADOCS$" +
@@ -801,7 +801,7 @@ public class GenerateAxesPlotMethods {
                         "     * @param $GENERIC$ type of the numeric data\n"
                 }, "CategoryDataSeries", "CategoryDataSeriesInternal"));
 
-        code.append(codeFunction(isInterface, new String[] {"categories", "values"},
+        code.append(codeFunction(isInterface, new String[] {"categories", "y"},
                 new String[][] {{"Comparable", "List<Comparable>"}, numberTimeTypes},
                 "    /**\n" +
                         "     * Creates a plot with discrete axis.\n" +
@@ -809,7 +809,7 @@ public class GenerateAxesPlotMethods {
                         "     *\n" +
                         "     * @param seriesName name of the created dataset\n" +
                         "     * @param categories discrete data\n" +
-                        "     * @param values numeric data\n" +
+                        "     * @param y y-values\n" +
                         "$JAVADOCS$" +
                         "     * @return dataset created for plot\n" +
                         "     */\n" +
@@ -822,7 +822,7 @@ public class GenerateAxesPlotMethods {
                 }, "CategoryDataSeries", "CategoryDataSeriesInternal"));
 
 
-        code.append(codeFunction(isInterface, new String[] {"categories", "values"},
+        code.append(codeFunction(isInterface, new String[] {"categories", "y"},
                 new String[][] {{"Comparable", "List<Comparable>"}, numberTypes},
                 "    /**\n" +
                         "     * Creates a pie plot.\n" +
@@ -830,7 +830,7 @@ public class GenerateAxesPlotMethods {
                         "     *\n" +
                         "     * @param seriesName name of the created dataset\n" +
                         "     * @param categories categories\n" +
-                        "     * @param values data values\n" +
+                        "     * @param y y-values\n" +
                         "$JAVADOCS$" +
                         "     * @return dataset created for plot\n" +
                         "     */\n" +
