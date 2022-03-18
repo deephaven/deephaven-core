@@ -955,6 +955,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("plotStyle", new PyArg(23, "plot_style", taPlotStyle, "plot style", null));
         rst.put("min", new PyArg(24, "min", taFloatStr, "minimum value to display", null));
         rst.put("max", new PyArg(25, "max", taFloatStr, "maximum value to display", null));
+        rst.put("npoints", new PyArg(26, "npoints", taInt, "number of points", null));
         rst.put("invert", new PyArg(26, "invert", taBool, "invert the axis.", null));
         rst.put("useLog", new PyArg(27, "log", taBool, "log axis", null));
         rst.put("useBusinessTime", new PyArg(28, "business_time", taBool, "business time axis using the default calendar", null));
@@ -1067,8 +1068,8 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
-//
+        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
+
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[]{"plot", "plotBy", "errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
