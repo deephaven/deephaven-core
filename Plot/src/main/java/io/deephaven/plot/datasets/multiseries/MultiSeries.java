@@ -38,12 +38,6 @@ public interface MultiSeries extends Series {
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
 
-    <T extends io.deephaven.gui.color.Paint> MultiSeries pointColorByY(final groovy.lang.Closure<T> colors, final Object... keys);
-
-
-    <T extends io.deephaven.gui.color.Paint> MultiSeries pointColorByY(final java.util.function.Function<java.lang.Double, T> colors, final Object... keys);
-
-
     <COLOR extends io.deephaven.gui.color.Paint> MultiSeries pointColor(final groovy.lang.Closure<COLOR> colors, final Object... keys);
 
 
@@ -168,9 +162,6 @@ public interface MultiSeries extends Series {
 
 
     MultiSeries pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String key, final java.lang.String color, final Object... keys);
-
-
-    <T extends io.deephaven.gui.color.Paint> MultiSeries pointColorByY(final java.util.Map<java.lang.Double, T> colors, final Object... keys);
 
 
     <CATEGORY extends java.lang.Comparable, COLOR extends java.lang.Integer> MultiSeries pointColorInteger(final java.util.Map<CATEGORY, COLOR> colors, final Object... keys);

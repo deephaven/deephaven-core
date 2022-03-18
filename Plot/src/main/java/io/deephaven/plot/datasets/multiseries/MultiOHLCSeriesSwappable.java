@@ -94,21 +94,6 @@ public class MultiOHLCSeriesSwappable extends AbstractSwappableMultiSeries<OHLCD
         $$initializeSeries$$(series);
     }
 
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiOHLCSeriesSwappable pointColorByY(final groovy.lang.Closure<T> colors, final Object... keys) {
-        return pointColorByY(new io.deephaven.plot.util.functions.ClosureFunction<>(colors), keys);
-    }
-
-
-
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiOHLCSeriesSwappable pointColorByY(final java.util.function.Function<java.lang.Double, T> colors, final Object... keys) {
-        final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
-        applyFunction(colors, newColumn, getY(), io.deephaven.gui.color.Paint.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(new SelectableDataSetSwappableTable(getSwappableTable()), newColumn, keys), this));
-        return this;
-    }
-
-
-
     private io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> errorBarColorSeriesNameToStringMap = new io.deephaven.plot.util.PlotUtils.HashMapWithDefault<>();
     public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.String> errorBarColorSeriesNameToStringMap() {
         return errorBarColorSeriesNameToStringMap;

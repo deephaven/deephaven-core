@@ -275,13 +275,6 @@ public interface CategoryDataSeries extends DataSeries {
      */
     CategoryDataSeries pointColor(SelectableDataSet sds, String key, String color);
 
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors map from the y-value of data points to {@link Paint}
-     * @return this CategoryDataSeries
-     */
-    <T extends Paint> CategoryDataSeries pointColorByY(Map<Double, T> colors);
 
     ////////////////////////// point labels //////////////////////////
 

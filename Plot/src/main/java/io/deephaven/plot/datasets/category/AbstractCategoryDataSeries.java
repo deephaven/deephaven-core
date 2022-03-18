@@ -575,17 +575,6 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         return this;
     }
 
-    @Override
-    public <T extends Paint> AbstractCategoryDataSeries pointColorByY(Map<Double, T> colors) {
-        ArgumentValidations.assertNotNull(colors, "colors", getPlotInfo());
-        this.colors.setSpecific(new AssociativeDataPaintByYMap<>(colors, this));
-        return this;
-    }
-
-    public <T extends Paint> CategoryDataSeries pointColorByY(final Closure<T> colors) {
-        return (CategoryDataSeries) pointColorByY(new ClosureFunction<>(colors));
-    }
-
 
     ////////////////////////// point labels //////////////////////////
 

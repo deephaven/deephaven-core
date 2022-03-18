@@ -71,16 +71,6 @@ public abstract class AbstractTableBasedCategoryDataSeries extends AbstractCateg
     }
 
     @Override
-    public <T extends Paint> CategoryDataSeries pointColorByY(Function<Double, T> colors) {
-        final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableFunction(getTable(),
-                t -> constructTableFromFunctionOnNumericalCol(t, colors, Paint.class, colName));
-        chart().figure().registerFigureFunction(
-                new FigureImplFunction(f -> f.pointColor(getTable(), getCategoryCol(), colName), this));
-        return this;
-    }
-
-    @Override
     public <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels) {
         final String colName = ColumnNameConstants.POINT_LABEL + this.hashCode();
         chart().figure().registerTableFunction(getTable(),

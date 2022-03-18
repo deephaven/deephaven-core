@@ -153,22 +153,6 @@ public interface DataSeries extends Series, Serializable {
      */
     DataSeries pointColor(String color);
 
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors function from the y-value of data points to {@link Paint}
-     * @return this DataSeries
-     */
-    <T extends Paint> DataSeries pointColorByY(Function<Double, T> colors);
-
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors function from the y-value of data points to {@link Paint}
-     * @return this DataSeries
-     */
-    <T extends Paint> DataSeries pointColorByY(final Closure<T> colors);
-
 
     ////////////////////////// error bar color //////////////////////////
 

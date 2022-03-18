@@ -997,7 +997,6 @@ public class GenerateFigureAPI2 {
 
         //todo how to combine these into better composite functions?
 
-        rst.add(new PyFunc("point_color_by_y", SINGLETON, new String[]{"pointColorByY"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
         rst.add(new PyFunc("point_color_integer", SINGLETON, new String[]{"pointColorInteger"}, new String[]{"colors"}, "TODO pydoc")); //todo req?
 
         Collections.sort(rst);

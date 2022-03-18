@@ -288,18 +288,6 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     ////////////////////////////// TO REGENERATE RUN GenerateMultiSeries //////////////////////////////
     ////////////////////////////// AND THEN RUN GenerateFigureImmutable //////////////////////////////
 
-    @Override public <T extends io.deephaven.gui.color.Paint> AbstractMultiSeries<SERIES> pointColorByY(final groovy.lang.Closure<T> colors, final Object... keys) {
-        throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColorByY for arguments [groovy.lang.Closure<T>]. If you think this method should work, try placing your keys into an Object array", this);
-    }
-
-
-
-    @Override public <T extends io.deephaven.gui.color.Paint> AbstractMultiSeries<SERIES> pointColorByY(final java.util.function.Function<java.lang.Double, T> colors, final Object... keys) {
-        throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColorByY for arguments [java.util.function.Function<java.lang.Double, T>]. If you think this method should work, try placing your keys into an Object array", this);
-    }
-
-
-
     @Override public <COLOR extends io.deephaven.gui.color.Paint> AbstractMultiSeries<SERIES> pointColor(final groovy.lang.Closure<COLOR> colors, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColor for arguments [groovy.lang.Closure<COLOR>]. If you think this method should work, try placing your keys into an Object array", this);
     }
@@ -548,12 +536,6 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
 
     @Override public AbstractMultiSeries<SERIES> pointColor(final io.deephaven.plot.filters.SelectableDataSet sds, final java.lang.String key, final java.lang.String color, final Object... keys) {
         throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColor for arguments [interface io.deephaven.plot.filters.SelectableDataSet, class java.lang.String, class java.lang.String]. If you think this method should work, try placing your keys into an Object array", this);
-    }
-
-
-
-    @Override public <T extends io.deephaven.gui.color.Paint> AbstractMultiSeries<SERIES> pointColorByY(final java.util.Map<java.lang.Double, T> colors, final Object... keys) {
-        throw new PlotUnsupportedOperationException("DataSeries " + this.getClass() + " does not support method pointColorByY for arguments [java.util.Map<java.lang.Double, T>]. If you think this method should work, try placing your keys into an Object array", this);
     }
 
 

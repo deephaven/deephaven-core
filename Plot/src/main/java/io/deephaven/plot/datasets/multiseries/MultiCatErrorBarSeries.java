@@ -225,21 +225,6 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
 
 
 
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeries pointColorByY(final groovy.lang.Closure<T> colors, final Object... keys) {
-        return pointColorByY(new io.deephaven.plot.util.functions.ClosureFunction<>(colors), keys);
-    }
-
-
-
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeries pointColorByY(final java.util.function.Function<java.lang.Double, T> colors, final Object... keys) {
-        final String newColumn = io.deephaven.plot.datasets.ColumnNameConstants.POINT_COLOR + this.hashCode();
-        applyFunction(colors, newColumn, getY(), io.deephaven.gui.color.Paint.class);
-        chart().figure().registerFigureFunction(new io.deephaven.plot.util.functions.FigureImplFunction(f -> f.pointColor(getTableMapHandle().getTable(), getX(), newColumn, keys), this));
-        return this;
-    }
-
-
-
     @Override public <COLOR extends java.lang.Integer> MultiCatErrorBarSeries pointColorInteger(final groovy.lang.Closure<COLOR> colors, final Object... keys) {
         return pointColorInteger(new io.deephaven.plot.util.functions.ClosureFunction<>(colors), keys);
     }
@@ -635,23 +620,6 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
         } else {
             pointColorSeriesNameToSelectableDataSetStringStringMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
                 new Object[]{ sds, key, color});
-        }
-
-        return this;
-    }
-
-
-
-    private io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointColorByYSeriesNameToMapMap = new io.deephaven.plot.util.PlotUtils.HashMapWithDefault<>();
-    public io.deephaven.plot.util.PlotUtils.HashMapWithDefault<String, java.util.Map> pointColorByYSeriesNameToMapMap() {
-        return pointColorByYSeriesNameToMapMap;
-    }
-    @Override public <T extends io.deephaven.gui.color.Paint> MultiCatErrorBarSeries pointColorByY(final java.util.Map<java.lang.Double, T> colors, final Object... keys) {
-        if(keys == null || keys.length == 0) {
-            pointColorByYSeriesNameToMapMap.setDefault(colors);
-        } else {
-            pointColorByYSeriesNameToMapMap.put(namingFunction.apply(keys.length == 1 ? keys[0] : new io.deephaven.datastructures.util.SmartKey(keys)), 
-                colors);
         }
 
         return this;
@@ -1227,135 +1195,133 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
 
 
     @SuppressWarnings("unchecked") 
-    private <CATEGORY extends java.lang.Comparable, COLOR extends io.deephaven.gui.color.Paint, T extends io.deephaven.gui.color.Paint, LABEL, NUMBER extends java.lang.Number, COLOR0 extends java.lang.Integer> void $$initializeSeries$$(CategoryErrorBarDataSeriesInternal series) {
+    private <CATEGORY extends java.lang.Comparable, COLOR extends io.deephaven.gui.color.Paint, LABEL, NUMBER extends java.lang.Number, COLOR0 extends java.lang.Integer> void $$initializeSeries$$(CategoryErrorBarDataSeriesInternal series) {
         String name = series.name().toString();
         java.util.function.Consumer<java.util.Map> consumer0 = series::pointColor;
         pointColorSeriesNameToMapMap.runIfKeyExistsCast(consumer0, name);
-        java.util.function.Consumer<java.util.Map> consumer1 = series::pointColorByY;
-        pointColorByYSeriesNameToMapMap.runIfKeyExistsCast(consumer1, name);
         java.lang.Object[]         objectArray = pointSizeSeriesNameToComparableNumberMap.get(name);
         if(objectArray != null) {series.pointSize((java.lang.Comparable) objectArray[0], (java.lang.Number) objectArray[1]);}
 
         objectArray = pointColorSeriesNameToTableStringStringMap.get(name);
         if(objectArray != null) {series.pointColor(((io.deephaven.plot.util.tables.TableHandle) objectArray[0]).getTable(), (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.lang.Boolean> consumer2 = series::pointsVisible;
-        pointsVisibleSeriesNameToBooleanMap.runIfKeyExistsCast(consumer2, name);
-        java.util.function.Consumer<io.deephaven.gui.shape.Shape> consumer3 = series::pointShape;
-        pointShapeSeriesNameToShapeMap.runIfKeyExistsCast(consumer3, name);
-        java.util.function.Consumer<java.lang.Integer> consumer4 = series::lineColor;
-        lineColorSeriesNameTointMap.runIfKeyExistsCast(consumer4, name);
+        java.util.function.Consumer<java.lang.Boolean> consumer1 = series::pointsVisible;
+        pointsVisibleSeriesNameToBooleanMap.runIfKeyExistsCast(consumer1, name);
+        java.util.function.Consumer<io.deephaven.gui.shape.Shape> consumer2 = series::pointShape;
+        pointShapeSeriesNameToShapeMap.runIfKeyExistsCast(consumer2, name);
+        java.util.function.Consumer<java.lang.Integer> consumer3 = series::lineColor;
+        lineColorSeriesNameTointMap.runIfKeyExistsCast(consumer3, name);
         objectArray = pointShapeSeriesNameToComparableShapeMap.get(name);
         if(objectArray != null) {series.pointShape((java.lang.Comparable) objectArray[0], (io.deephaven.gui.shape.Shape) objectArray[1]);}
 
-        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer5 = series::seriesColor;
-        seriesColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer5, name);
+        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer4 = series::seriesColor;
+        seriesColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer4, name);
         objectArray = pointColorSeriesNameToComparableStringMap.get(name);
         if(objectArray != null) {series.pointColor((java.lang.Comparable) objectArray[0], (java.lang.String) objectArray[1]);}
 
         objectArray = pointColorSeriesNameToComparablePaintMap.get(name);
         if(objectArray != null) {series.pointColor((java.lang.Comparable) objectArray[0], (io.deephaven.gui.color.Paint) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.String> consumer6 = series::yToolTipPattern;
-        yToolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer6, name);
-        java.util.function.Consumer<java.lang.Integer> consumer7 = series::seriesColor;
-        seriesColorSeriesNameTointMap.runIfKeyExistsCast(consumer7, name);
+        java.util.function.Consumer<java.lang.String> consumer5 = series::yToolTipPattern;
+        yToolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer5, name);
+        java.util.function.Consumer<java.lang.Integer> consumer6 = series::seriesColor;
+        seriesColorSeriesNameTointMap.runIfKeyExistsCast(consumer6, name);
         objectArray = pointSizeSeriesNameToComparabledoubleMap.get(name);
         if(objectArray != null) {series.pointSize((java.lang.Comparable) objectArray[0], (double) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.Object> consumer8 = series::pointLabel;
-        pointLabelSeriesNameToObjectMap.runIfKeyExistsCast(consumer8, name);
-        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer9 = series::errorBarColor;
-        errorBarColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer9, name);
+        java.util.function.Consumer<java.lang.Object> consumer7 = series::pointLabel;
+        pointLabelSeriesNameToObjectMap.runIfKeyExistsCast(consumer7, name);
+        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer8 = series::errorBarColor;
+        errorBarColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer8, name);
         objectArray = pointSizeSeriesNameToComparablelongMap.get(name);
         if(objectArray != null) {series.pointSize((java.lang.Comparable) objectArray[0], (long) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.String> consumer10 = series::seriesColor;
-        seriesColorSeriesNameToStringMap.runIfKeyExistsCast(consumer10, name);
+        java.util.function.Consumer<java.lang.String> consumer9 = series::seriesColor;
+        seriesColorSeriesNameToStringMap.runIfKeyExistsCast(consumer9, name);
         objectArray = pointShapeSeriesNameToComparableStringMap.get(name);
         if(objectArray != null) {series.pointShape((java.lang.Comparable) objectArray[0], (java.lang.String) objectArray[1]);}
 
         objectArray = pointLabelSeriesNameToTableStringStringMap.get(name);
         if(objectArray != null) {series.pointLabel(((io.deephaven.plot.util.tables.TableHandle) objectArray[0]).getTable(), (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.util.Map> consumer11 = series::pointShape;
-        pointShapeSeriesNameToMapMap.runIfKeyExistsCast(consumer11, name);
-        java.util.function.Consumer<java.lang.Boolean> consumer12 = series::gradientVisible;
-        gradientVisibleSeriesNameTobooleanMap.runIfKeyExistsCast(consumer12, name);
-        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer13 = series::pointColor;
-        pointColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer13, name);
+        java.util.function.Consumer<java.util.Map> consumer10 = series::pointShape;
+        pointShapeSeriesNameToMapMap.runIfKeyExistsCast(consumer10, name);
+        java.util.function.Consumer<java.lang.Boolean> consumer11 = series::gradientVisible;
+        gradientVisibleSeriesNameTobooleanMap.runIfKeyExistsCast(consumer11, name);
+        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer12 = series::pointColor;
+        pointColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer12, name);
         objectArray = pointShapeSeriesNameToTableStringStringMap.get(name);
         if(objectArray != null) {series.pointShape(((io.deephaven.plot.util.tables.TableHandle) objectArray[0]).getTable(), (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.lang.String> consumer14 = series::piePercentLabelFormat;
-        piePercentLabelFormatSeriesNameToStringMap.runIfKeyExistsCast(consumer14, name);
+        java.util.function.Consumer<java.lang.String> consumer13 = series::piePercentLabelFormat;
+        piePercentLabelFormatSeriesNameToStringMap.runIfKeyExistsCast(consumer13, name);
         objectArray = pointLabelSeriesNameToSelectableDataSetStringStringMap.get(name);
         if(objectArray != null) {series.pointLabel((io.deephaven.plot.filters.SelectableDataSet) objectArray[0], (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.lang.String> consumer15 = series::errorBarColor;
-        errorBarColorSeriesNameToStringMap.runIfKeyExistsCast(consumer15, name);
+        java.util.function.Consumer<java.lang.String> consumer14 = series::errorBarColor;
+        errorBarColorSeriesNameToStringMap.runIfKeyExistsCast(consumer14, name);
         objectArray = pointColorSeriesNameToSelectableDataSetStringStringMap.get(name);
         if(objectArray != null) {series.pointColor((io.deephaven.plot.filters.SelectableDataSet) objectArray[0], (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.lang.String> consumer16 = series::xToolTipPattern;
-        xToolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer16, name);
-        java.util.function.Consumer<java.lang.Integer> consumer17 = series::errorBarColor;
-        errorBarColorSeriesNameTointMap.runIfKeyExistsCast(consumer17, name);
+        java.util.function.Consumer<java.lang.String> consumer15 = series::xToolTipPattern;
+        xToolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer15, name);
+        java.util.function.Consumer<java.lang.Integer> consumer16 = series::errorBarColor;
+        errorBarColorSeriesNameTointMap.runIfKeyExistsCast(consumer16, name);
         objectArray = pointLabelSeriesNameToComparableObjectMap.get(name);
         if(objectArray != null) {series.pointLabel((java.lang.Comparable) objectArray[0], objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.String> consumer18 = series::toolTipPattern;
-        toolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer18, name);
-        java.util.function.Consumer<java.lang.String> consumer19 = series::pointLabelFormat;
-        pointLabelFormatSeriesNameToStringMap.runIfKeyExistsCast(consumer19, name);
+        java.util.function.Consumer<java.lang.String> consumer17 = series::toolTipPattern;
+        toolTipPatternSeriesNameToStringMap.runIfKeyExistsCast(consumer17, name);
+        java.util.function.Consumer<java.lang.String> consumer18 = series::pointLabelFormat;
+        pointLabelFormatSeriesNameToStringMap.runIfKeyExistsCast(consumer18, name);
         objectArray = pointShapeSeriesNameToSelectableDataSetStringStringMap.get(name);
         if(objectArray != null) {series.pointShape((io.deephaven.plot.filters.SelectableDataSet) objectArray[0], (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.lang.String> consumer20 = series::pointColor;
-        pointColorSeriesNameToStringMap.runIfKeyExistsCast(consumer20, name);
-        java.util.function.Consumer<java.lang.Boolean> consumer21 = series::linesVisible;
-        linesVisibleSeriesNameToBooleanMap.runIfKeyExistsCast(consumer21, name);
-        java.util.function.Consumer<java.lang.String> consumer22 = series::lineColor;
-        lineColorSeriesNameToStringMap.runIfKeyExistsCast(consumer22, name);
+        java.util.function.Consumer<java.lang.String> consumer19 = series::pointColor;
+        pointColorSeriesNameToStringMap.runIfKeyExistsCast(consumer19, name);
+        java.util.function.Consumer<java.lang.Boolean> consumer20 = series::linesVisible;
+        linesVisibleSeriesNameToBooleanMap.runIfKeyExistsCast(consumer20, name);
+        java.util.function.Consumer<java.lang.String> consumer21 = series::lineColor;
+        lineColorSeriesNameToStringMap.runIfKeyExistsCast(consumer21, name);
         objectArray = pointSizeSeriesNameToCATEGORYArraydoubleArrayMap.get(name);
         if(objectArray != null) {series.pointSize((CATEGORY[]) objectArray[0], (double[]) objectArray[1]);}
 
         objectArray = pointSizeSeriesNameToTableStringStringMap.get(name);
         if(objectArray != null) {series.pointSize(((io.deephaven.plot.util.tables.TableHandle) objectArray[0]).getTable(), (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
-        java.util.function.Consumer<java.util.Map> consumer23 = series::pointLabel;
-        pointLabelSeriesNameToMapMap.runIfKeyExistsCast(consumer23, name);
-        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer24 = series::lineColor;
-        lineColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer24, name);
+        java.util.function.Consumer<java.util.Map> consumer22 = series::pointLabel;
+        pointLabelSeriesNameToMapMap.runIfKeyExistsCast(consumer22, name);
+        java.util.function.Consumer<io.deephaven.gui.color.Paint> consumer23 = series::lineColor;
+        lineColorSeriesNameToPaintMap.runIfKeyExistsCast(consumer23, name);
         objectArray = pointSizeSeriesNameToComparableintMap.get(name);
         if(objectArray != null) {series.pointSize((java.lang.Comparable) objectArray[0], (int) objectArray[1]);}
 
         objectArray = pointSizeSeriesNameToCATEGORYArraylongArrayMap.get(name);
         if(objectArray != null) {series.pointSize((CATEGORY[]) objectArray[0], (long[]) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.Integer> consumer25 = series::group;
-        groupSeriesNameTointMap.runIfKeyExistsCast(consumer25, name);
-        java.util.function.Consumer<io.deephaven.plot.LineStyle> consumer26 = series::lineStyle;
-        lineStyleSeriesNameToLineStyleMap.runIfKeyExistsCast(consumer26, name);
-        java.util.function.Consumer<java.util.Map> consumer27 = series::pointSize;
-        pointSizeSeriesNameToMapMap.runIfKeyExistsCast(consumer27, name);
+        java.util.function.Consumer<java.lang.Integer> consumer24 = series::group;
+        groupSeriesNameTointMap.runIfKeyExistsCast(consumer24, name);
+        java.util.function.Consumer<io.deephaven.plot.LineStyle> consumer25 = series::lineStyle;
+        lineStyleSeriesNameToLineStyleMap.runIfKeyExistsCast(consumer25, name);
+        java.util.function.Consumer<java.util.Map> consumer26 = series::pointSize;
+        pointSizeSeriesNameToMapMap.runIfKeyExistsCast(consumer26, name);
         objectArray = pointSizeSeriesNameToCATEGORYArrayintArrayMap.get(name);
         if(objectArray != null) {series.pointSize((CATEGORY[]) objectArray[0], (int[]) objectArray[1]);}
 
-        java.util.function.Consumer<java.util.Map<CATEGORY, COLOR0>> consumer28 = series::pointColorInteger;
-        pointColorIntegerSeriesNameToMapMap.runIfKeyExistsCast(consumer28, name);
-        java.util.function.Consumer<java.lang.Number> consumer29 = series::pointSize;
-        pointSizeSeriesNameToNumberMap.runIfKeyExistsCast(consumer29, name);
+        java.util.function.Consumer<java.util.Map<CATEGORY, COLOR0>> consumer27 = series::pointColorInteger;
+        pointColorIntegerSeriesNameToMapMap.runIfKeyExistsCast(consumer27, name);
+        java.util.function.Consumer<java.lang.Number> consumer28 = series::pointSize;
+        pointSizeSeriesNameToNumberMap.runIfKeyExistsCast(consumer28, name);
         objectArray = pointSizeSeriesNameToCATEGORYArrayNUMBERArrayMap.get(name);
         if(objectArray != null) {series.pointSize((CATEGORY[]) objectArray[0], (NUMBER[]) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.Integer> consumer30 = series::pointColor;
-        pointColorSeriesNameTointMap.runIfKeyExistsCast(consumer30, name);
+        java.util.function.Consumer<java.lang.Integer> consumer29 = series::pointColor;
+        pointColorSeriesNameTointMap.runIfKeyExistsCast(consumer29, name);
         objectArray = pointColorSeriesNameToComparableintMap.get(name);
         if(objectArray != null) {series.pointColor((java.lang.Comparable) objectArray[0], (int) objectArray[1]);}
 
-        java.util.function.Consumer<java.lang.String> consumer31 = series::pointShape;
-        pointShapeSeriesNameToStringMap.runIfKeyExistsCast(consumer31, name);
+        java.util.function.Consumer<java.lang.String> consumer30 = series::pointShape;
+        pointShapeSeriesNameToStringMap.runIfKeyExistsCast(consumer30, name);
         objectArray = pointSizeSeriesNameToSelectableDataSetStringStringMap.get(name);
         if(objectArray != null) {series.pointSize((io.deephaven.plot.filters.SelectableDataSet) objectArray[0], (java.lang.String) objectArray[1], (java.lang.String) objectArray[2]);}
 
@@ -1365,7 +1331,6 @@ public class MultiCatErrorBarSeries extends AbstractTableMapHandleMultiSeries<Ca
     public MultiCatErrorBarSeries copy(AxesImpl axes) {
         final MultiCatErrorBarSeries __s__ = new MultiCatErrorBarSeries(this, axes);
                 __s__.pointColorSeriesNameToMapMap = pointColorSeriesNameToMapMap.copy();
-        __s__.pointColorByYSeriesNameToMapMap = pointColorByYSeriesNameToMapMap.copy();
         __s__.pointSizeSeriesNameToComparableNumberMap = pointSizeSeriesNameToComparableNumberMap.copy();
         __s__.pointColorSeriesNameToTableStringStringMap = pointColorSeriesNameToTableStringStringMap.copy();
         __s__.pointsVisibleSeriesNameToBooleanMap = pointsVisibleSeriesNameToBooleanMap.copy();

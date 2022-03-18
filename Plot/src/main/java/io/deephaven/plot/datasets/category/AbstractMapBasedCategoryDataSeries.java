@@ -48,11 +48,6 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
     }
 
     @Override
-    public <T extends Paint> AbstractCategoryDataSeries pointColorByY(Function<Double, T> colors) {
-        return super.pointColorByY(constructMapFromNumericalData(colors));
-    }
-
-    @Override
     public <LABEL> AbstractCategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels) {
         return super.pointLabel(constructMapFromData(labels));
     }

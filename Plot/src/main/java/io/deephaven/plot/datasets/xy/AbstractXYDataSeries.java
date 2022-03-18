@@ -410,22 +410,6 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
-        ArgumentValidations.assertNotNull(colors, "colors", getPlotInfo());
-        final Paint[] paints = new Paint[size()];
-
-        for (int i = 0; i < size(); i++) {
-            paints[i] = colors.apply(getY(i));
-        }
-
-        return pointColor(paints);
-    }
-
-    @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(final Closure<T> colors) {
-        return pointColorByY(new ClosureFunction<>(colors));
-    }
 
     ////////////////////////// point labels //////////////////////////
 

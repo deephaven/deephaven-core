@@ -114,22 +114,6 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     }
 
     @Override
-    public <T extends Paint> CategoryDataSeries pointColorByY(Function<Double, T> colors) {
-        final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(colors, Paint.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
-        chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
-            ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
-                    .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .colorsSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(),
-                                    getCategoryCol(), colName, Comparable.class, Paint.class, getPlotInfo()));
-            return figImpl;
-        }, this));
-        return this;
-    }
-
-    @Override
     public <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels) {
         final String colName = ColumnNameConstants.POINT_LABEL + this.hashCode();
         chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),

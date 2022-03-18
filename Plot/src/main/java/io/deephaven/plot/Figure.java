@@ -1320,18 +1320,6 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override <T extends io.deephaven.gui.color.Paint> Figure pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors, java.lang.Object... keys );
 
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( groovy.lang.Closure<T> colors );
-
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( groovy.lang.Closure<T> colors, java.lang.Object... keys );
-
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( java.util.Map<java.lang.Double, T> colors );
-
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( java.util.Map<java.lang.Double, T> colors, java.lang.Object... keys );
-
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( java.util.function.Function<java.lang.Double, T> colors );
-
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColorByY( java.util.function.Function<java.lang.Double, T> colors, java.lang.Object... keys );
-
     @Override <T extends java.lang.Number> Figure pointSize( T[] factors );
 
     @Override <T extends java.lang.Number> Figure pointSize( T[] factors, java.lang.Object... keys );
