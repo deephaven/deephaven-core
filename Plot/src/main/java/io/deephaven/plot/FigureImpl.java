@@ -2636,15 +2636,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl plotStyle( io.deephaven.plot.PlotStyle style ) {
+    @Override public  FigureImpl plotStyle( io.deephaven.plot.PlotStyle plotStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( style);
+        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( plotStyle);
         return make(axes);
     }
 
-    @Override public  FigureImpl plotStyle( java.lang.String style ) {
+    @Override public  FigureImpl plotStyle( java.lang.String plotStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( style);
+        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( plotStyle);
         return make(axes);
     }
 

@@ -880,34 +880,36 @@ public class GeneratePyV2FigureAPI {
         final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
         final String[] taFactor = new String[]{"str", "int", "float"};
         final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
+        final String[] taPlotStyle = new String[]{ "str", "PlotStyle" }; //todo support io.deephaven.plot.PlotStyle
 
         ////////////////////////////////////////////////////////////////
 
         rst.put("name", new PyArg(1, "name", taStr, "name", null));
         rst.put("dim", new PyArg(2, "dim", taInt, "dimension of the axis", null));
-        rst.put("seriesName", new PyArg(3, "series_name", taStr, "name of the data series", null));
-        rst.put("t", new PyArg(4, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("categories", new PyArg(5, "categories", taDataCategory, "discrete data or column name", null));
-        rst.put("x", new PyArg(6, "x", taDataNumeric, "x-values or column name", null));
-        rst.put("time", new PyArg(7, "x", taDataTime, "x-values or column name", null));
-        rst.put("xLow", new PyArg(8, "x_low", taDataNumeric, "lower x error bar", null));
-        rst.put("xHigh", new PyArg(9, "x_high", taDataNumeric, "upper x error bar", null));
-        rst.put("y", new PyArg(10, "y", taDataNumeric, "y-values or column name", null));
-        rst.put("yLow", new PyArg(11, "y_low", taDataNumeric, "lower y error bar", null));
-        rst.put("yHigh", new PyArg(12, "y_high", taDataNumeric, "upper y error bar", null));
-        rst.put("open", new PyArg(13, "open", taDataNumeric, "bar open y-values.", null));
-        rst.put("high", new PyArg(14, "high", taDataNumeric, "bar high y-values.", null));
-        rst.put("low", new PyArg(15, "low", taDataNumeric, "bar low y-values.", null));
-        rst.put("close", new PyArg(16, "close", taDataNumeric, "bar close y-values.", null));
-        rst.put("function", new PyArg(17, "function", taCallable, "function", null));
-        rst.put("xmin", new PyArg(18, "xmin", taFloat, "minimum x value to display", null));
-        rst.put("xmax", new PyArg(19, "xmax", taFloat, "maximum x value to display", null));
-        rst.put("nbins", new PyArg(20, "nbins", taInt, "number of bins", null));
+        rst.put("id", new PyArg(3, "axes", taInt, "identifier", null));
+        rst.put("seriesName", new PyArg(4, "series_name", taStr, "name of the data series", null));
+        rst.put("t", new PyArg(5, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("categories", new PyArg(6, "categories", taDataCategory, "discrete data or column name", null));
+        rst.put("x", new PyArg(7, "x", taDataNumeric, "x-values or column name", null));
+        rst.put("time", new PyArg(8, "x", taDataTime, "x-values or column name", null));
+        rst.put("xLow", new PyArg(9, "x_low", taDataNumeric, "lower x error bar", null));
+        rst.put("xHigh", new PyArg(10, "x_high", taDataNumeric, "upper x error bar", null));
+        rst.put("y", new PyArg(11, "y", taDataNumeric, "y-values or column name", null));
+        rst.put("yLow", new PyArg(12, "y_low", taDataNumeric, "lower y error bar", null));
+        rst.put("yHigh", new PyArg(13, "y_high", taDataNumeric, "upper y error bar", null));
+        rst.put("open", new PyArg(14, "open", taDataNumeric, "bar open y-values.", null));
+        rst.put("high", new PyArg(15, "high", taDataNumeric, "bar high y-values.", null));
+        rst.put("low", new PyArg(16, "low", taDataNumeric, "bar low y-values.", null));
+        rst.put("close", new PyArg(17, "close", taDataNumeric, "bar close y-values.", null));
+        rst.put("function", new PyArg(18, "function", taCallable, "function", null));
+        rst.put("xmin", new PyArg(19, "xmin", taFloat, "minimum x value to display", null));
+        rst.put("xmax", new PyArg(20, "xmax", taFloat, "maximum x value to display", null));
+        rst.put("nbins", new PyArg(21, "nbins", taInt, "number of bins", null));
         //todo keys are weird -- should look at what they are doing
-        rst.put("keys", new PyArg(21, "keys", taKey, "multi-series keys or a column name containing keys.", null));
-        rst.put("byColumns", new PyArg(22, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("hasXTimeAxis", new PyArg(23, "x_time_axis", taBool, "whether to treat the x-values as times", null));
-        rst.put("hasYTimeAxis", new PyArg(24, "y_time_axis", taBool, "whether to treat the y-values as times", null));
+        rst.put("keys", new PyArg(22, "keys", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("byColumns", new PyArg(23, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("hasXTimeAxis", new PyArg(24, "x_time_axis", taBool, "whether to treat the x-values as times", null));
+        rst.put("hasYTimeAxis", new PyArg(25, "y_time_axis", taBool, "whether to treat the y-values as times", null));
 
         rst.put("path", new PyArg(1, "path", taStr, "output path.", null));
         rst.put("height", new PyArg(2, "height", taInt, "figure height.", null));
@@ -943,7 +945,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("size", new PyArg(18, "font_size", taInt, "font size", null));
         rst.put("style", new PyArg(19, "font_style", taStr, "font style", null));
         rst.put("visible", new PyArg(20, "visible", taInt, "true to draw the design element; false otherwise.", null));
-
+        rst.put("plotStyle", new PyArg(21, "plot_style", taPlotStyle, "plot style", null));
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
@@ -961,7 +963,6 @@ public class GeneratePyV2FigureAPI {
 
 //
 //
-//        rst.put("id", new PyArg(10, "axes", taInt, "identifier", null));
 //        rst.put("names", new PyArg(10, "names", taStrs, "series names", null));
 //        rst.put("colors", new PyArg(10, "colors", taColors, "colors", null));
 //        rst.put("format", new PyArg(10, "format", taAxisFormat, "axis format", null));
@@ -1035,7 +1036,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));

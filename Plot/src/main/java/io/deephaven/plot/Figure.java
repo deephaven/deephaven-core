@@ -786,9 +786,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure plotOrientation( java.lang.String orientation );
 
-    @Override  Figure plotStyle( io.deephaven.plot.PlotStyle style );
+    @Override  Figure plotStyle( io.deephaven.plot.PlotStyle plotStyle );
 
-    @Override  Figure plotStyle( java.lang.String style );
+    @Override  Figure plotStyle( java.lang.String plotStyle );
 
     @Override  Figure range( double min, double max );
 

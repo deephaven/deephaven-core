@@ -352,26 +352,26 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     /**
      * Sets the {@link PlotStyle} of this Axes.
      *
-     * @param style style
+     * @param plotStyle style
      * @return this Axes
      */
     @Override
-    public AxesImpl plotStyle(final PlotStyle style) {
-        ArgumentValidations.assertNotNull(style, "style", getPlotInfo());
-        this.plotStyle = style;
+    public AxesImpl plotStyle(final PlotStyle plotStyle) {
+        ArgumentValidations.assertNotNull(plotStyle, "style", getPlotInfo());
+        this.plotStyle = plotStyle;
         return this;
     }
 
     /**
      * Sets the {@link PlotStyle} of this Axes.
      *
-     * @param style style
+     * @param plotStyle style
      * @return this Axes
      */
     @Override
-    public AxesImpl plotStyle(final String style) {
-        ArgumentValidations.assertNotNull(style, "style", getPlotInfo());
-        this.plotStyle = PlotStyle.plotStyle(style);
+    public AxesImpl plotStyle(final String plotStyle) {
+        ArgumentValidations.assertNotNull(plotStyle, "style", getPlotInfo());
+        this.plotStyle = PlotStyle.plotStyle(plotStyle);
         return this;
     }
     // endregion

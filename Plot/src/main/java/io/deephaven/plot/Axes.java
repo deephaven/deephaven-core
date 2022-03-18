@@ -68,18 +68,18 @@ public interface Axes extends Serializable {
     /**
      * Sets the {@link PlotStyle} of this Axes.
      *
-     * @param style style
+     * @param plotStyle style
      * @return this Axes
      */
-    Axes plotStyle(final PlotStyle style);
+    Axes plotStyle(final PlotStyle plotStyle);
 
     /**
      * Sets the {@link PlotStyle} of this Axes.
      *
-     * @param style style
+     * @param plotStyle style
      * @return this Axes
      */
-    Axes plotStyle(final String style);
+    Axes plotStyle(final String plotStyle);
 
 
     ////////////////////////// axis creation //////////////////////////
