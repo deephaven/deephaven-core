@@ -854,35 +854,26 @@ public class GeneratePyV2FigureAPI {
     private static Map<String, PyArg> getPyArgs() {
         final Map<String, PyArg> rst = new TreeMap<>();
 
-        //todo check type annotations
-
-        //todo reorder annotations
-
         final String[] taStr = new String[]{"str"};
         final String[] taStrs = new String[]{"List[str]"};
         final String[] taBool = new String[]{"bool"};
         final String[] taInt = new String[]{"int"};
-        final String[] taInts = new String[]{"List[int]"};
         final String[] taFloat = new String[]{"float"};
         final String[] taFloats = new String[]{"List[float]"};
         final String[] taFloatStr = new String[]{"str", "float"};
         final String[] taCallable = new String[]{"Callable"};
         final String[] taTable = new String[]{"Table", "SelectableDataSet"};
+
         final String[] taDataCategory = new String[]{"str", "List[str]", "List[int]", "List[float]"};
         final String[] taDataNumeric = new String[]{"str", "List[int]", "List[float]", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
         final String[] taDataTime = new String[]{"str", "List[DateTime]"}; //todo support numpy, //todo support other datetimes
 
         final String[] taKey = new String[]{"List[Any]"}; //todo keys are technically Object[].  How to support?
         final String[] taColor = new String[]{"str", "int", "Color"}; //todo support Color (io.deephaven.gui.color.Paint)
-        final String[] taColors = new String[]{"str", "List[str]", "List[Color]", "List[int]", "Dict[str,Color]", "Callable"}; //todo support Color (io.deephaven.gui.color.Paint)
-        final String[] taShape = new String[]{"str", "Shape"}; //todo support Shape (io.deephaven.gui.shape.Shape)
-        final String[] taShapes = new String[]{"List[str]", "List[Shape]", "Dict[str,String]", "Callable"}; //todo support Shape (io.deephaven.gui.shape.Shape)
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
         final String[] taAxisTransform = new String[]{"AxisTransform"}; //todo support io.deephaven.plot.axistransformations.AxisTransform
         final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
         final String[] taBusinessCalendar = new String[]{"str", "BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
-        final String[] taFactor = new String[]{"str", "int", "float"};
-        final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
         final String[] taPlotStyle = new String[]{ "str", "PlotStyle" }; //todo support io.deephaven.plot.PlotStyle
         final String[] taLineStyle = new String[]{ "str", "LineStyle" }; //todo support io.deephaven.plot.LineStyle
         final String[] taPointColors = new String[]{"str", "int", "Color", "List[str]", "List[int]", "List[Color]", "Callable", "Dict[Any,str]", "Dict[Any,int]", "Dict[Any,Color]"}; //todo support Color (io.deephaven.gui.color.Paint)
@@ -896,145 +887,96 @@ public class GeneratePyV2FigureAPI {
         rst.put("dim", new PyArg(2, "dim", taInt, "dimension of the axis", null));
         rst.put("id", new PyArg(3, "axes", taInt, "identifier", null));
         rst.put("group", new PyArg(4, "group", taInt, "group for the data series.", null));
-        rst.put("seriesName", new PyArg(4, "series_name", taStr, "name of the data series", null));
-        rst.put("t", new PyArg(5, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
+        rst.put("seriesName", new PyArg(5, "series_name", taStr, "name of the data series", null));
+        rst.put("t", new PyArg(6, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
         rst.put("sds", rst.get("t"));
-        rst.put("categories", new PyArg(6, "category", taDataCategory, "discrete data or column name", null));
+        rst.put("categories", new PyArg(7, "category", taDataCategory, "discrete data or column name", null));
         rst.put("category", rst.get("categories"));
-        rst.put("x", new PyArg(7, "x", taDataNumeric, "x-values or column name", null));
-        rst.put("time", new PyArg(8, "x", taDataTime, "x-values or column name", null));
-        rst.put("xLow", new PyArg(9, "x_low", taDataNumeric, "lower x error bar", null));
-        rst.put("xHigh", new PyArg(10, "x_high", taDataNumeric, "upper x error bar", null));
-        rst.put("y", new PyArg(11, "y", taDataNumeric, "y-values or column name", null));
-        rst.put("yLow", new PyArg(12, "y_low", taDataNumeric, "lower y error bar", null));
-        rst.put("yHigh", new PyArg(13, "y_high", taDataNumeric, "upper y error bar", null));
-        rst.put("open", new PyArg(14, "open", taDataNumeric, "bar open y-values.", null));
-        rst.put("high", new PyArg(15, "high", taDataNumeric, "bar high y-values.", null));
-        rst.put("low", new PyArg(16, "low", taDataNumeric, "bar low y-values.", null));
-        rst.put("close", new PyArg(17, "close", taDataNumeric, "bar close y-values.", null));
-        rst.put("function", new PyArg(18, "function", taCallable, "function", null));
-        rst.put("xmin", new PyArg(19, "xmin", taFloat, "minimum x value to display", null));
-        rst.put("xmax", new PyArg(20, "xmax", taFloat, "maximum x value to display", null));
-        rst.put("nbins", new PyArg(21, "nbins", taInt, "number of bins", null));
+        rst.put("x", new PyArg(8, "x", taDataNumeric, "x-values or column name", null));
+        rst.put("time", new PyArg(9, "x", taDataTime, "x-values or column name", null));
+        rst.put("xLow", new PyArg(10, "x_low", taDataNumeric, "lower x error bar", null));
+        rst.put("xHigh", new PyArg(11, "x_high", taDataNumeric, "upper x error bar", null));
+        rst.put("y", new PyArg(12, "y", taDataNumeric, "y-values or column name", null));
+        rst.put("yLow", new PyArg(13, "y_low", taDataNumeric, "lower y error bar", null));
+        rst.put("yHigh", new PyArg(14, "y_high", taDataNumeric, "upper y error bar", null));
+        rst.put("open", new PyArg(15, "open", taDataNumeric, "bar open y-values.", null));
+        rst.put("high", new PyArg(16, "high", taDataNumeric, "bar high y-values.", null));
+        rst.put("low", new PyArg(17, "low", taDataNumeric, "bar low y-values.", null));
+        rst.put("close", new PyArg(18, "close", taDataNumeric, "bar close y-values.", null));
+        rst.put("function", new PyArg(19, "function", taCallable, "function", null));
+        rst.put("xmin", new PyArg(20, "xmin", taFloat, "minimum x value to display", null));
+        rst.put("xmax", new PyArg(21, "xmax", taFloat, "maximum x value to display", null));
+        rst.put("nbins", new PyArg(22, "nbins", taInt, "number of bins", null));
         //todo keys are weird -- should look at what they are doing
-        rst.put("keys", new PyArg(22, "keys", taKey, "multi-series keys or a column name containing keys.", null));
-        rst.put("byColumns", new PyArg(23, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("hasXTimeAxis", new PyArg(24, "x_time_axis", taBool, "whether to treat the x-values as times", null));
-        rst.put("hasYTimeAxis", new PyArg(25, "y_time_axis", taBool, "whether to treat the y-values as times", null));
-
-        rst.put("path", new PyArg(1, "path", taStr, "output path.", null));
-        rst.put("height", new PyArg(2, "height", taInt, "figure height.", null));
-        rst.put("width", new PyArg(3, "width", taInt, "figure width.", null));
-        rst.put("wait", new PyArg(4, "wait", taBool, "whether to hold the calling thread until the file is written.", null));
-        rst.put("timeoutSeconds", new PyArg(5, "timeout_seconds", taInt, "timeout in seconds to wait for the file to be written.", null));
-
-        rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs, "names of series to remove", null));
-        rst.put("removeChartIndex", new PyArg(11, "remove_chart_index", taInt, "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
-        rst.put("removeChartRowNum", new PyArg(12, "remove_chart_row", taInt, "row index in this Figure's grid. The row index starts at 0.", null));
-        rst.put("removeChartColNum", new PyArg(13, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
-        rst.put("updateIntervalMillis", new PyArg(14, "update_millis", taInt, "update interval in milliseconds.", null));
-
-        rst.put("index", new PyArg(10, "index", taInt, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
-        rst.put("rowNum", new PyArg(11, "row", taInt, "row index in the Figure's grid. The row index starts at 0.", null));
-        rst.put("colNum", new PyArg(12, "col", taInt, "column index in this Figure's grid. The column index starts at 0.", null));
-        rst.put("rowSpan", new PyArg(13, "row_span", taInt, "how many rows high.", null));
-        rst.put("colSpan", new PyArg(14, "col_span", taInt, "how many rows wide.", null));
-        rst.put("orientation", new PyArg(15, "orientation", taStr, "plot orientation.", null));
-        rst.put("gridVisible", new PyArg(16, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
-        rst.put("xGridVisible", new PyArg(17, "x_grid_visible", taBool, "x-grid is visible.", null));
-        rst.put("yGridVisible", new PyArg(18, "y_grid_visible", taBool, "y-grid is visible.", null));
-        rst.put("pieLabelFormat", new PyArg(19, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
-
-        rst.put("title", new PyArg(10, "title", taStr, "title", null));
-        rst.put("titleColumns", new PyArg(11, "columns", taStrs, "columns to include in the title", null));
-        rst.put("titleFormat", new PyArg(12, "format", taStr, "a java.text.MessageFormat format string for formatting column values in the title", null));
-        rst.put("maxTitleRows", new PyArg(13, "max_rows", taInt, "maximum number of row values to show in title", null));
-        rst.put("showColumnNamesInTitle", new PyArg(14, "column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-        rst.put("label", new PyArg(15, "label", taStr, "label", null));
-        rst.put("color", new PyArg(16, "color", taColor, "color", null));
-        rst.put("font", new PyArg(17, "font", taFont, "font", null));
-        rst.put("family", new PyArg(18, "font_family", taStr, "font family", null));
-        rst.put("size", new PyArg(19, "font_size", taInt, "font size", null));
-        rst.put("style", new PyArg(20, "font_style", taStr, "font style", null));
-        rst.put("axisFormat", new PyArg(21, "format", taAxisFormat, "label format", null));
-        rst.put("axisFormatPattern", new PyArg(21, "format_pattern", taStr, "label format pattern", null));
-        rst.put("plotStyle", new PyArg(23, "plot_style", taPlotStyle, "plot style", null));
-        rst.put("min", new PyArg(24, "min", taFloatStr, "minimum value to display", null));
-        rst.put("max", new PyArg(25, "max", taFloatStr, "maximum value to display", null));
-        rst.put("npoints", new PyArg(26, "npoints", taInt, "number of points", null));
-        rst.put("invert", new PyArg(26, "invert", taBool, "invert the axis.", null));
-        rst.put("useLog", new PyArg(27, "log", taBool, "log axis", null));
-        rst.put("useBusinessTime", new PyArg(28, "business_time", taBool, "business time axis using the default calendar", null));
-        rst.put("calendar", new PyArg(29, "calendar", taBusinessCalendar, "business time axis using the specified calendar", null));
-        rst.put("transform", new PyArg(30, "transform", taAxisTransform, "axis transform.", null));
-        rst.put("gapBetweenTicks", new PyArg(31, "gap", taFloat, "distance between ticks.", null));
-        rst.put("tickLocations", new PyArg(32, "loc", taFloats, "coordinates of the tick locations.", null));
-        rst.put("nminor", new PyArg(33, "nminor", taInt, "number of minor ticks between consecutive major ticks.", null));
-        rst.put("angle", new PyArg(34, "angle", taInt, "angle in degrees.", null));
-        rst.put("toolTipPattern", new PyArg(35, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
-        rst.put("xToolTipPattern", new PyArg(36, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
-        rst.put("yToolTipPattern", new PyArg(37, "y_tool_tip_pattern", taStr, "y tool tip format pattern", null));
-        rst.put("errorBarColor", new PyArg(38, "error_bar_color", taColor, "error bar color.", null));
-        rst.put("gradientVisible", new PyArg(39, "gradient_visible", taBool, "bar gradient visibility.", null));
-        rst.put("namingFunction", new PyArg(40, "naming_function", taCallable, "series naming function", null));
-        rst.put("lineStyle", new PyArg(41, "style", taLineStyle, "line style", null));
-        rst.put("pointColor", new PyArg(42, "color", taPointColors, "colors or a column name containing colors", null));
+        rst.put("keys", new PyArg(23, "keys", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("byColumns", new PyArg(24, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("hasXTimeAxis", new PyArg(25, "x_time_axis", taBool, "whether to treat the x-values as times", null));
+        rst.put("hasYTimeAxis", new PyArg(26, "y_time_axis", taBool, "whether to treat the y-values as times", null));
+        rst.put("path", new PyArg(27, "path", taStr, "output path.", null));
+        rst.put("height", new PyArg(28, "height", taInt, "figure height.", null));
+        rst.put("width", new PyArg(29, "width", taInt, "figure width.", null));
+        rst.put("wait", new PyArg(30, "wait", taBool, "whether to hold the calling thread until the file is written.", null));
+        rst.put("timeoutSeconds", new PyArg(31, "timeout_seconds", taInt, "timeout in seconds to wait for the file to be written.", null));
+        rst.put("removeSeriesNames", new PyArg(32, "remove_series", taStrs, "names of series to remove", null));
+        rst.put("removeChartIndex", new PyArg(33, "remove_chart_index", taInt, "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
+        rst.put("removeChartRowNum", new PyArg(34, "remove_chart_row", taInt, "row index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("removeChartColNum", new PyArg(35, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("updateIntervalMillis", new PyArg(36, "update_millis", taInt, "update interval in milliseconds.", null));
+        rst.put("index", new PyArg(37, "index", taInt, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
+        rst.put("rowNum", new PyArg(38, "row", taInt, "row index in the Figure's grid. The row index starts at 0.", null));
+        rst.put("colNum", new PyArg(39, "col", taInt, "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("rowSpan", new PyArg(40, "row_span", taInt, "how many rows high.", null));
+        rst.put("colSpan", new PyArg(41, "col_span", taInt, "how many rows wide.", null));
+        rst.put("orientation", new PyArg(42, "orientation", taStr, "plot orientation.", null));
+        rst.put("gridVisible", new PyArg(43, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
+        rst.put("xGridVisible", new PyArg(44, "x_grid_visible", taBool, "x-grid is visible.", null));
+        rst.put("yGridVisible", new PyArg(45, "y_grid_visible", taBool, "y-grid is visible.", null));
+        rst.put("pieLabelFormat", new PyArg(46, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
+        rst.put("title", new PyArg(47, "title", taStr, "title", null));
+        rst.put("titleColumns", new PyArg(48, "columns", taStrs, "columns to include in the title", null));
+        rst.put("titleFormat", new PyArg(49, "format", taStr, "a java.text.MessageFormat format string for formatting column values in the title", null));
+        rst.put("maxTitleRows", new PyArg(50, "max_rows", taInt, "maximum number of row values to show in title", null));
+        rst.put("showColumnNamesInTitle", new PyArg(51, "column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("label", new PyArg(52, "label", taStr, "label", null));
+        rst.put("color", new PyArg(53, "color", taColor, "color", null));
+        rst.put("font", new PyArg(54, "font", taFont, "font", null));
+        rst.put("family", new PyArg(55, "font_family", taStr, "font family", null));
+        rst.put("size", new PyArg(56, "font_size", taInt, "font size", null));
+        rst.put("style", new PyArg(57, "font_style", taStr, "font style", null));
+        rst.put("axisFormat", new PyArg(58, "format", taAxisFormat, "label format", null));
+        rst.put("axisFormatPattern", new PyArg(59, "format_pattern", taStr, "label format pattern", null));
+        rst.put("plotStyle", new PyArg(60, "plot_style", taPlotStyle, "plot style", null));
+        rst.put("min", new PyArg(61, "min", taFloatStr, "minimum value to display", null));
+        rst.put("max", new PyArg(62, "max", taFloatStr, "maximum value to display", null));
+        rst.put("npoints", new PyArg(63, "npoints", taInt, "number of points", null));
+        rst.put("invert", new PyArg(64, "invert", taBool, "invert the axis.", null));
+        rst.put("useLog", new PyArg(65, "log", taBool, "log axis", null));
+        rst.put("useBusinessTime", new PyArg(66, "business_time", taBool, "business time axis using the default calendar", null));
+        rst.put("calendar", new PyArg(67, "calendar", taBusinessCalendar, "business time axis using the specified calendar", null));
+        rst.put("transform", new PyArg(68, "transform", taAxisTransform, "axis transform.", null));
+        rst.put("gapBetweenTicks", new PyArg(69, "gap", taFloat, "distance between ticks.", null));
+        rst.put("tickLocations", new PyArg(70, "loc", taFloats, "coordinates of the tick locations.", null));
+        rst.put("nminor", new PyArg(71, "nminor", taInt, "number of minor ticks between consecutive major ticks.", null));
+        rst.put("angle", new PyArg(72, "angle", taInt, "angle in degrees.", null));
+        rst.put("toolTipPattern", new PyArg(73, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
+        rst.put("xToolTipPattern", new PyArg(74, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
+        rst.put("yToolTipPattern", new PyArg(75, "y_tool_tip_pattern", taStr, "y tool tip format pattern", null));
+        rst.put("errorBarColor", new PyArg(76, "error_bar_color", taColor, "error bar color.", null));
+        rst.put("gradientVisible", new PyArg(77, "gradient_visible", taBool, "bar gradient visibility.", null));
+        rst.put("namingFunction", new PyArg(78, "naming_function", taCallable, "series naming function", null));
+        rst.put("lineStyle", new PyArg(79, "style", taLineStyle, "line style", null));
+        rst.put("pointColor", new PyArg(80, "color", taPointColors, "colors or a column name containing colors", null));
         rst.put("pointColors", rst.get("pointColor"));
-        rst.put("pointLabel", new PyArg(43, "label", taPointLabels, "labels or a column name containing labels", null));
+        rst.put("pointLabel", new PyArg(81, "label", taPointLabels, "labels or a column name containing labels", null));
         rst.put("pointLabels", rst.get("pointLabel"));
-        rst.put("pointShape", new PyArg(44, "shape", taPointShapes, "shapes or a column name containing shapes", null));
+        rst.put("pointShape", new PyArg(82, "shape", taPointShapes, "shapes or a column name containing shapes", null));
         rst.put("pointShapes", rst.get("pointShape"));
-        rst.put("pointSize", new PyArg(45, "size", taPointSizes, "sizes or a column name containing sizes", null));
+        rst.put("pointSize", new PyArg(83, "size", taPointSizes, "sizes or a column name containing sizes", null));
         rst.put("pointSizes", rst.get("pointSize"));
-        rst.put("pointLabelFormat", new PyArg(46, "label_format", taStr, "point label format.", null));
-
-        rst.put("visible", new PyArg(100, "visible", taInt, "true to draw the design element; false otherwise.", null));
-
-
+        rst.put("pointLabelFormat", new PyArg(84, "label_format", taStr, "point label format.", null));
+        rst.put("visible", new PyArg(85, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
         ////////////////////////////////////////////////////////////////
-
-        //todo move these ...
-
-
-
-
-        //        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
-//        rst.put("values", new PyArg(4, "values", taDataNumeric, "numeric data or column name", null));
-
-//
-//
-//        rst.put("names", new PyArg(10, "names", taStrs, "series names", null));
-//        rst.put("colors", new PyArg(10, "colors", taColors, "colors", null));
-//        rst.put("format", new PyArg(10, "format", taAxisFormat, "axis format", null));
-//        rst.put("pattern", new PyArg(10, "pattern", taStr, "axis format pattern", null));
-//        rst.put("labels", new PyArg(10, "labels", taStrs, "labels", null));
-//        rst.put("valueColumn", new PyArg(10, "values", taStr, "column name", null));
-//        rst.put("n", new PyArg(10, "width", taInt, "how many columns wide", null));
-//        rst.put("npoints", new PyArg(10, "npoints", taInt, "number of points", null));
-//        rst.put("visible", new PyArg(10, "visible", taInt, "true to draw the design element; false otherwise.", null));
-//        rst.put("min", new PyArg(10, "min", taFloat, "range minimum", null));
-//        rst.put("max", new PyArg(11, "max", taFloat, "range maximum", null));
-//        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
-//
-//
-//
-//
-//
-//
-//        rst.put("key", new PyArg(20, "key", taKey, "multi-series keys or a column name containing keys.", null));
-//        rst.put("keyColumn", new PyArg(20, "key_col", taStr, "colum name specifying category values.", null));
-//
-//        rst.put("category", new PyArg(1, "category", taStr, "category.", null));
-//        rst.put("shape", new PyArg(2, "shape", taShape, "shape.", null));
-//        rst.put("shapes", new PyArg(2, "shapes", taShapes, "shapes.", null));
-//
-//        rst.put("factor", new PyArg(3, "size", taFactor, "size.", null));
-//        rst.put("factors", new PyArg(3, "sizes", taFactors, "sizes.", null));
-
-
-        //
-
 
         return rst;
     }
