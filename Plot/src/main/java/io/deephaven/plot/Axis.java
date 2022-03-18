@@ -273,10 +273,10 @@ public interface Axis extends Serializable {
     /**
      * Sets the number of minor ticks between consecutive major ticks. These minor ticks are equally spaced.
      *
-     * @param count number of minor ticks between consecutive major ticks.
+     * @param nminor number of minor ticks between consecutive major ticks.
      * @return this Axis
      */
-    Axis minorTicks(int count);
+    Axis minorTicks(int nminor);
 
     /**
      * Sets the angle the tick labels of this Axis are drawn at.

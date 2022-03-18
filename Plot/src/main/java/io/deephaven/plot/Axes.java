@@ -665,19 +665,19 @@ public interface Axes extends Serializable {
      * Sets the number of minor ticks between consecutive major ticks in the x-{@link Axis}. These minor ticks are
      * equally spaced.
      *
-     * @param count number of minor ticks between consecutive major ticks.
+     * @param nminor number of minor ticks between consecutive major ticks.
      * @return this Axes
      */
-    Axes xMinorTicks(final int count);
+    Axes xMinorTicks(final int nminor);
 
     /**
      * Sets the number of minor ticks between consecutive major ticks in the y-{@link Axis}. These minor ticks are
      * equally spaced.
      *
-     * @param count number of minor ticks between consecutive major ticks.
+     * @param nminor number of minor ticks between consecutive major ticks.
      * @return this Axes
      */
-    Axes yMinorTicks(final int count);
+    Axes yMinorTicks(final int nminor);
 
     /**
      * Sets the angle the tick labels the x-{@link Axis} are drawn at.

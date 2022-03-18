@@ -546,8 +546,8 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     }
 
     @Override
-    public AxisImpl minorTicks(int count) {
-        this.minorTickCount = count;
+    public AxisImpl minorTicks(int nminor) {
+        this.minorTickCount = nminor;
         this.minorTicksVisible = true;
         return this;
     }

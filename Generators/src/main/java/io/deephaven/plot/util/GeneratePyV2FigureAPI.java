@@ -960,9 +960,10 @@ public class GeneratePyV2FigureAPI {
         rst.put("transform", new PyArg(30, "transform", taAxisTransform, "axis transform.", null));
         rst.put("gapBetweenTicks", new PyArg(31, "gap", taFloat, "distance between ticks.", null));
         rst.put("tickLocations", new PyArg(32, "loc", taFloats, "coordinates of the tick locations.", null));
-        rst.put("angle", new PyArg(33, "angle", taInt, "angle in degrees.", null));
+        rst.put("nminor", new PyArg(33, "nminor", taInt, "number of minor ticks between consecutive major ticks.", null));
+        rst.put("angle", new PyArg(34, "angle", taInt, "angle in degrees.", null));
 
-        rst.put("visible", new PyArg(34, "visible", taInt, "true to draw the design element; false otherwise.", null));
+        rst.put("visible", new PyArg(100, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
@@ -1048,7 +1049,7 @@ public class GeneratePyV2FigureAPI {
 //
         rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("x_axis", SEQUENTIAL, new String[]{"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel", "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"}, null, "TODO pydoc"));

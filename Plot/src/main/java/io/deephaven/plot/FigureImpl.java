@@ -410,9 +410,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl axisFormatPattern( java.lang.String axisFormatPattern) {
+    @Override public  FigureImpl axisFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern(axisFormatPattern);
+        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern( axisFormatPattern);
         return make(null, axis);
     }
 
@@ -1832,9 +1832,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl minorTicks( int count ) {
+    @Override public  FigureImpl minorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).minorTicks( count);
+        final AxisImpl axis = (AxisImpl) axis(fc).minorTicks( nminor);
         return make(null, axis);
     }
 
@@ -2913,9 +2913,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xMinorTicks( int count ) {
+    @Override public  FigureImpl xMinorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMinorTicks( count);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMinorTicks( nminor);
         return make(axes);
     }
 
@@ -3100,9 +3100,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yMinorTicks( int count ) {
+    @Override public  FigureImpl yMinorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMinorTicks( count);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMinorTicks( nminor);
         return make(axes);
     }
 

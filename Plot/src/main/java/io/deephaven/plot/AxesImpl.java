@@ -795,14 +795,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xMinorTicks(final int count) {
-        xAxis().minorTicks(count);
+    public AxesImpl xMinorTicks(final int nminor) {
+        xAxis().minorTicks(nminor);
         return this;
     }
 
     @Override
-    public AxesImpl yMinorTicks(final int count) {
-        yAxis().minorTicks(count);
+    public AxesImpl yMinorTicks(final int nminor) {
+        yAxis().minorTicks(nminor);
         return this;
     }
 

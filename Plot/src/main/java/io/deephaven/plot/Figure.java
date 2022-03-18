@@ -44,7 +44,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure axisFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat );
 
-    @Override  Figure axisFormatPattern( java.lang.String axisFormatPattern);
+    @Override  Figure axisFormatPattern( java.lang.String axisFormatPattern );
 
     @Override  Figure axisLabel( java.lang.String label );
 
@@ -518,7 +518,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure min( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
-    @Override  Figure minorTicks( int count );
+    @Override  Figure minorTicks( int nminor );
 
     @Override  Figure minorTicksVisible( boolean visible );
 
@@ -878,7 +878,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
-    @Override  Figure xMinorTicks( int count );
+    @Override  Figure xMinorTicks( int nminor );
 
     @Override  Figure xMinorTicksVisible( boolean visible );
 
@@ -940,7 +940,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min );
 
-    @Override  Figure yMinorTicks( int count );
+    @Override  Figure yMinorTicks( int nminor );
 
     @Override  Figure yMinorTicksVisible( boolean visible );
 
