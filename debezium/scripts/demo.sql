@@ -146,10 +146,13 @@ CREATE MATERIALIZED VIEW pageviews_summary AS
     FROM pageview_stg;
 
 /*
+--
+-- Query to use in a shell via `watch -n1 "psql -c $QUERY"`
+-- to monitor latency. 
+--
 SELECT
     total,
     to_timestamp(max_received_at) max_received_ts,
-    mz_logical_timestamp()/1000.0 AS logical_ts_ms,
-    mz_logical_timestamp()/1000.0 - max_received_at AS dt_ms
-FROM pageviews_summary;
+    mz_logical_timestamp() - 1000*max_received_at AS dt_ms
+  FROM pageviews_summary;
 */
