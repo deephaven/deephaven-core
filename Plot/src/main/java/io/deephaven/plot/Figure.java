@@ -42,9 +42,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure axisColor( io.deephaven.gui.color.Paint color );
 
-    @Override  Figure axisFormat( io.deephaven.plot.axisformatters.AxisFormat format );
+    @Override  Figure axisFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat );
 
-    @Override  Figure axisFormatPattern( java.lang.String pattern );
+    @Override  Figure axisFormatPattern( java.lang.String axisFormatPattern);
 
     @Override  Figure axisLabel( java.lang.String label );
 

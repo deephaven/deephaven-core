@@ -404,15 +404,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl axisFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl axisFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).axisFormat( format);
+        final AxisImpl axis = (AxisImpl) axis(fc).axisFormat( axisFormat);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl axisFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl axisFormatPattern( java.lang.String axisFormatPattern) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern( pattern);
+        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern(axisFormatPattern);
         return make(null, axis);
     }
 

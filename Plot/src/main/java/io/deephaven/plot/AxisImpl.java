@@ -365,14 +365,14 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
 
     @Override
-    public AxisImpl axisFormat(final AxisFormat format) {
-        this.format = format;
+    public AxisImpl axisFormat(final AxisFormat axisFormat) {
+        this.format = axisFormat;
         return this;
     }
 
     @Override
-    public AxisImpl axisFormatPattern(final String pattern) {
-        this.formatPattern = pattern;
+    public AxisImpl axisFormatPattern(final String axisFormatPattern) {
+        this.formatPattern = axisFormatPattern;
         return this;
     }
 

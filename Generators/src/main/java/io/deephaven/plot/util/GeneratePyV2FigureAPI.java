@@ -856,6 +856,8 @@ public class GeneratePyV2FigureAPI {
 
         //todo check type annotations
 
+        //todo reorder annotations
+
         final String[] taStr = new String[]{"str"};
         final String[] taStrs = new String[]{"List[str]"};
         final String[] taBool = new String[]{"bool"};
@@ -863,6 +865,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taInts = new String[]{"List[int]"};
         final String[] taFloat = new String[]{"float"};
         final String[] taFloats = new String[]{"List[float]"};
+        final String[] taFloatStr = new String[]{"str", "float"};
         final String[] taCallable = new String[]{"Callable"};
         final String[] taTable = new String[]{"Table", "SelectableDataSet"};
         final String[] taDataCategory = new String[]{"str", "List[str]", "List[int]", "List[float]"};
@@ -877,7 +880,7 @@ public class GeneratePyV2FigureAPI {
         final String[] taAxisFormat = new String[]{"AxisFormat"}; //todo support io.deephaven.plot.axisformatters.AxisFormat
         final String[] taAxisTransform = new String[]{"AxisTransform"}; //todo support io.deephaven.plot.axistransformations.AxisTransform
         final String[] taFont = new String[]{"Font"}; //todo support io.deephaven.plot.Font
-        final String[] taBusinessCalendar = new String[]{"BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
+        final String[] taBusinessCalendar = new String[]{"str", "BusinessCalendar"}; //todo support io.deephaven.time.calendar.BusinessCalendar
         final String[] taFactor = new String[]{"str", "int", "float"};
         final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
         final String[] taPlotStyle = new String[]{ "str", "PlotStyle" }; //todo support io.deephaven.plot.PlotStyle
@@ -939,13 +942,23 @@ public class GeneratePyV2FigureAPI {
         rst.put("titleFormat", new PyArg(12, "format", taStr, "a java.text.MessageFormat format string for formatting column values in the title", null));
         rst.put("maxTitleRows", new PyArg(13, "max_rows", taInt, "maximum number of row values to show in title", null));
         rst.put("showColumnNamesInTitle", new PyArg(14, "column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-        rst.put("color", new PyArg(15, "color", taColor, "color", null));
-        rst.put("font", new PyArg(16, "font", taFont, "font", null));
-        rst.put("family", new PyArg(17, "font_family", taStr, "font family", null));
-        rst.put("size", new PyArg(18, "font_size", taInt, "font size", null));
-        rst.put("style", new PyArg(19, "font_style", taStr, "font style", null));
-        rst.put("visible", new PyArg(20, "visible", taInt, "true to draw the design element; false otherwise.", null));
-        rst.put("plotStyle", new PyArg(21, "plot_style", taPlotStyle, "plot style", null));
+        rst.put("label", new PyArg(15, "label", taStr, "label", null));
+        rst.put("color", new PyArg(16, "color", taColor, "color", null));
+        rst.put("font", new PyArg(17, "font", taFont, "font", null));
+        rst.put("family", new PyArg(18, "font_family", taStr, "font family", null));
+        rst.put("size", new PyArg(19, "font_size", taInt, "font size", null));
+        rst.put("style", new PyArg(20, "font_style", taStr, "font style", null));
+        rst.put("axisFormat", new PyArg(21, "format", taAxisFormat, "label format", null));
+        rst.put("axisFormatPattern", new PyArg(21, "format_pattern", taStr, "label format pattern", null));
+        rst.put("visible", new PyArg(22, "visible", taInt, "true to draw the design element; false otherwise.", null));
+        rst.put("plotStyle", new PyArg(23, "plot_style", taPlotStyle, "plot style", null));
+        rst.put("min", new PyArg(24, "min", taFloatStr, "minimum value to display", null));
+        rst.put("max", new PyArg(25, "max", taFloatStr, "maximum value to display", null));
+        rst.put("invert", new PyArg(26, "invert", taBool, "invert the axis.", null));
+        rst.put("useLog", new PyArg(27, "log", taBool, "log axis", null));
+        rst.put("useBusinessTime", new PyArg(28, "business_time", taBool, "business time axis using the default calendar", null));
+        rst.put("calendar", new PyArg(29, "calendar", taBusinessCalendar, "business time axis using the specified calendar", null));
+        rst.put("transform", new PyArg(30, "transform", taAxisTransform, "axis transform.", null));
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
@@ -967,16 +980,11 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("colors", new PyArg(10, "colors", taColors, "colors", null));
 //        rst.put("format", new PyArg(10, "format", taAxisFormat, "axis format", null));
 //        rst.put("pattern", new PyArg(10, "pattern", taStr, "axis format pattern", null));
-//        rst.put("label", new PyArg(10, "label", taStr, "label", null));
 //        rst.put("labels", new PyArg(10, "labels", taStrs, "labels", null));
-//        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar, "business calendar", null));
 //        rst.put("valueColumn", new PyArg(10, "values", taStr, "column name", null));
 //        rst.put("n", new PyArg(10, "width", taInt, "how many columns wide", null));
 //        rst.put("npoints", new PyArg(10, "npoints", taInt, "number of points", null));
 //        rst.put("visible", new PyArg(10, "visible", taInt, "true to draw the design element; false otherwise.", null));
-//        rst.put("invert", new PyArg(10, "invert", taBool, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
-//        rst.put("useLog", new PyArg(10, "use_log", taBool, "true to use a log axis transform; false to use a linear axis transform.", null));
-//        rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool, "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
 //        rst.put("min", new PyArg(10, "min", taFloat, "range minimum", null));
 //        rst.put("max", new PyArg(11, "max", taFloat, "range maximum", null));
 //        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
@@ -1038,7 +1046,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
 //
-//        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));

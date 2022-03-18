@@ -26,18 +26,18 @@ public interface Axis extends Serializable {
     /**
      * Sets the {@link AxisFormat} for this Axis.
      *
-     * @param format axis format
+     * @param axisFormat axis format
      * @return this Axis
      */
-    Axis axisFormat(final AxisFormat format);
+    Axis axisFormat(final AxisFormat axisFormat);
 
     /**
      * Sets the format pattern for this Axis's labels.
      *
-     * @param pattern axis format pattern
+     * @param axisFormatPattern axis format pattern
      * @return this Axis
      */
-    Axis axisFormatPattern(final String pattern);
+    Axis axisFormatPattern(final String axisFormatPattern);
 
 
     ////////////////////////// axis colors //////////////////////////
