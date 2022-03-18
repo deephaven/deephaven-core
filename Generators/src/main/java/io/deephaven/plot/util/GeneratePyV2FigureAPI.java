@@ -940,6 +940,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("family", new PyArg(17, "font_family", taStr, "font family", null));
         rst.put("size", new PyArg(18, "font_size", taInt, "font size", null));
         rst.put("style", new PyArg(19, "font_style", taStr, "font style", null));
+        rst.put("visible", new PyArg(20, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
@@ -1027,12 +1028,12 @@ public class GeneratePyV2FigureAPI {
 
         rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
         rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
-//
+
         rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
-//
+        rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
+
 //        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
 //
