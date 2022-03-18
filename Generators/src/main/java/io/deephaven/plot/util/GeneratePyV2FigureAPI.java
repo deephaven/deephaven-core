@@ -931,11 +931,15 @@ public class GeneratePyV2FigureAPI {
         rst.put("pieLabelFormat", new PyArg(19, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
 
         rst.put("title", new PyArg(10, "title", taStr, "title", null));
-        rst.put("color", new PyArg(11, "color", taColor, "color", null));
-        rst.put("font", new PyArg(12, "font", taFont, "font", null));
-        rst.put("family", new PyArg(13, "font_family", taStr, "font family", null));
-        rst.put("size", new PyArg(14, "font_size", taInt, "font size", null));
-        rst.put("style", new PyArg(15, "font_style", taStr, "font style", null));
+        rst.put("titleColumns", new PyArg(11, "columns", taStrs, "columns to include in the title", null));
+        rst.put("titleFormat", new PyArg(12, "format", taStr, "a java.text.MessageFormat format string for formatting column values in the title", null));
+        rst.put("maxTitleRows", new PyArg(13, "max_rows", taInt, "maximum number of row values to show in title", null));
+        rst.put("showColumnNamesInTitle", new PyArg(14, "column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
+        rst.put("color", new PyArg(15, "color", taColor, "color", null));
+        rst.put("font", new PyArg(16, "font", taFont, "font", null));
+        rst.put("family", new PyArg(17, "font_family", taStr, "font family", null));
+        rst.put("size", new PyArg(18, "font_size", taInt, "font size", null));
+        rst.put("style", new PyArg(19, "font_style", taStr, "font style", null));
 
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
@@ -965,16 +969,12 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("labels", new PyArg(10, "labels", taStrs, "labels", null));
 //        rst.put("calendar", new PyArg(10, "calendar", taBusinessCalendar, "business calendar", null));
 //        rst.put("valueColumn", new PyArg(10, "values", taStr, "column name", null));
-//        rst.put("showColumnNamesInTitle", new PyArg(10, "show_column_names_in_title", taBool, "whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.", null));
-//        rst.put("titleColumns", new PyArg(11, "title_columns", taStrs, "columns to include in the chart title", null));
-//        rst.put("titleFormat", new PyArg(12, "title_format", taStr, "a java.text.MessageFormat format string for the chart title", null));
 //        rst.put("n", new PyArg(10, "width", taInt, "how many columns wide", null));
 //        rst.put("npoints", new PyArg(10, "npoints", taInt, "number of points", null));
 //        rst.put("visible", new PyArg(10, "visible", taInt, "true to draw the design element; false otherwise.", null));
 //        rst.put("invert", new PyArg(10, "invert", taBool, "if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.", null));
 //        rst.put("useLog", new PyArg(10, "use_log", taBool, "true to use a log axis transform; false to use a linear axis transform.", null));
 //        rst.put("useBusinessTime", new PyArg(11, "use_business_time", taBool, "true to use a business time transform with the default calendar; false to use a linear axis transform.", null));
-//        rst.put("maxTitleRows", new PyArg(10, "max_rows", taInt, "maximum number of row values to show in title", null));
 //        rst.put("min", new PyArg(10, "min", taFloat, "range minimum", null));
 //        rst.put("max", new PyArg(11, "max", taFloat, "range maximum", null));
 //        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
@@ -1030,7 +1030,7 @@ public class GeneratePyV2FigureAPI {
 //
         rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
         rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
