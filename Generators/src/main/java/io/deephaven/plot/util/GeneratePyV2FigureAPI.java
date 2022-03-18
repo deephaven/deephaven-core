@@ -901,9 +901,11 @@ public class GeneratePyV2FigureAPI {
         rst.put("xmin", new PyArg(14, "xmin", taFloat, "minimum x value to display", null));
         rst.put("xmax", new PyArg(15, "xmax", taFloat, "maximum x value to display", null));
         rst.put("nbins", new PyArg(16, "nbins", taInt, "number of bins", null));
-        rst.put("byColumns", new PyArg(17, "by", taStrs, "columns that hold grouping data", null));
-        rst.put("hasXTimeAxis", new PyArg(18, "x_time_axis", taBool, "whether to treat the x-values as times", null));
-        rst.put("hasYTimeAxis", new PyArg(19, "y_time_axis", taBool, "whether to treat the y-values as times", null));
+        //todo keys are weird -- should look at what they are doing
+        rst.put("keys", new PyArg(17, "keys", taKey, "multi-series keys or a column name containing keys.", null));
+        rst.put("byColumns", new PyArg(18, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("hasXTimeAxis", new PyArg(19, "x_time_axis", taBool, "whether to treat the x-values as times", null));
+        rst.put("hasYTimeAxis", new PyArg(20, "y_time_axis", taBool, "whether to treat the y-values as times", null));
 
         rst.put("path", new PyArg(1, "path", taStr, "output path.", null));
         rst.put("height", new PyArg(2, "height", taInt, "figure height.", null));
@@ -920,6 +922,13 @@ public class GeneratePyV2FigureAPI {
         rst.put("index", new PyArg(10, "index", taInt, "index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].", null));
         rst.put("rowNum", new PyArg(11, "row", taInt, "row index in the Figure's grid. The row index starts at 0.", null));
         rst.put("colNum", new PyArg(12, "col", taInt, "column index in this Figure's grid. The column index starts at 0.", null));
+        rst.put("rowSpan", new PyArg(13, "row_span", taInt, "how many rows high.", null));
+        rst.put("colSpan", new PyArg(14, "col_span", taInt, "how many rows wide.", null));
+        rst.put("orientation", new PyArg(15, "orientation", taStr, "plot orientation.", null));
+        rst.put("gridVisible", new PyArg(16, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
+        rst.put("xGridVisible", new PyArg(17, "x_grid_visible", taBool, "x-grid is visible.", null));
+        rst.put("yGridVisible", new PyArg(18, "y_grid_visible", taBool, "y-grid is visible.", null));
+        rst.put("pieLabelFormat", new PyArg(19, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
 
         rst.put("title", new PyArg(10, "title", taStr, "title", null));
         rst.put("color", new PyArg(11, "color", taColor, "color", null));
@@ -928,10 +937,6 @@ public class GeneratePyV2FigureAPI {
         rst.put("size", new PyArg(14, "font_size", taInt, "font size", null));
         rst.put("style", new PyArg(15, "font_style", taStr, "font style", null));
 
-        rst.put("gridVisible", new PyArg(10, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
-        rst.put("xGridVisible", new PyArg(11, "x_grid_visible", taBool, "x-grid is visible.", null));
-        rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taBool, "y-grid is visible.", null));
-        rst.put("pieLabelFormat", new PyArg(13, "pie_label_format", taStr, "pie chart format of the percentage point label.", null));
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
@@ -975,18 +980,14 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("count", new PyArg(10, "count", taInt, "number of minor ticks between consecutive major ticks.", null));
 //
 //
-//        rst.put("orientation", new PyArg(10, "orientation", taStr, "plot orientation.", null));
 //
 //
-//        rst.put("rowSpan", new PyArg(10, "row_span", taInt, "how many rows high.", null));
-//        rst.put("colSpan", new PyArg(11, "col_span", taInt, "how many rows wide.", null));
 //        rst.put("angle", new PyArg(10, "angle", taInt, "angle in degrees.", null));
 //
 //        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat, "distance between ticks.", null));
 //        rst.put("tickLocations", new PyArg(10, "loc", taFloats, "coordinates of the major tick locations.", null));
 //        rst.put("transform", new PyArg(10, "transform", taAxisTransform, "transform.", null));
 //
-//        rst.put("keys", new PyArg(20, "keys", taKey, "multi-series keys or a column name containing keys.", null));
 //        rst.put("key", new PyArg(20, "key", taKey, "multi-series keys or a column name containing keys.", null));
 //        rst.put("keyColumn", new PyArg(20, "key_col", taStr, "colum name specifying category values.", null));
 //
@@ -1028,7 +1029,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
 //
         rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
 //
