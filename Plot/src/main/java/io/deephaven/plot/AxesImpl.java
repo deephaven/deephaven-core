@@ -457,26 +457,26 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     // region Axis Configuration
 
     @Override
-    public AxesImpl xFormat(final AxisFormat format) {
-        xAxis().axisFormat(format);
+    public AxesImpl xFormat(final AxisFormat axisFormat) {
+        xAxis().axisFormat(axisFormat);
         return this;
     }
 
     @Override
-    public AxesImpl yFormat(final AxisFormat format) {
-        yAxis().axisFormat(format);
+    public AxesImpl yFormat(final AxisFormat axisFormat) {
+        yAxis().axisFormat(axisFormat);
         return this;
     }
 
     @Override
-    public AxesImpl xFormatPattern(final String pattern) {
-        xAxis().axisFormatPattern(pattern);
+    public AxesImpl xFormatPattern(final String axisFormatPattern) {
+        xAxis().axisFormatPattern(axisFormatPattern);
         return this;
     }
 
     @Override
-    public AxesImpl yFormatPattern(final String pattern) {
-        yAxis().axisFormatPattern(pattern);
+    public AxesImpl yFormatPattern(final String axisFormatPattern) {
+        yAxis().axisFormatPattern(axisFormatPattern);
         return this;
     }
 

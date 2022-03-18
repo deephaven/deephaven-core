@@ -2829,15 +2829,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl xFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xFormat( format);
+        final AxesImpl axes = (AxesImpl) axes(fc).xFormat( axisFormat);
         return make(axes);
     }
 
-    @Override public  FigureImpl xFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl xFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xFormatPattern( pattern);
+        final AxesImpl axes = (AxesImpl) axes(fc).xFormatPattern( axisFormatPattern);
         return make(axes);
     }
 
@@ -3016,15 +3016,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl yFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yFormat( format);
+        final AxesImpl axes = (AxesImpl) axes(fc).yFormat( axisFormat);
         return make(axes);
     }
 
-    @Override public  FigureImpl yFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl yFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yFormatPattern( pattern);
+        final AxesImpl axes = (AxesImpl) axes(fc).yFormatPattern( axisFormatPattern);
         return make(axes);
     }
 

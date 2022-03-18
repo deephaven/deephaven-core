@@ -200,34 +200,34 @@ public interface Axes extends Serializable {
     /**
      * Sets the {@link AxisFormat} of the x-{@link Axis}
      *
-     * @param format format
+     * @param axisFormat format
      * @return this Axes
      */
-    Axes xFormat(final AxisFormat format);
+    Axes xFormat(final AxisFormat axisFormat);
 
     /**
      * Sets the {@link AxisFormat} of the y-{@link Axis}
      *
-     * @param format format
+     * @param axisFormat format
      * @return this Axes
      */
-    Axes yFormat(final AxisFormat format);
+    Axes yFormat(final AxisFormat axisFormat);
 
     /**
      * Sets the format pattern of the x-{@link Axis}
      *
-     * @param pattern pattern
+     * @param axisFormatPattern pattern
      * @return this Axes
      */
-    Axes xFormatPattern(final String pattern);
+    Axes xFormatPattern(final String axisFormatPattern);
 
     /**
      * Sets the format pattern of the y-{@link Axis}
      *
-     * @param pattern pattern
+     * @param axisFormatPattern pattern
      * @return this Axes
      */
-    Axes yFormatPattern(final String pattern);
+    Axes yFormatPattern(final String axisFormatPattern);
 
 
     ////////////////////////// axis colors //////////////////////////

@@ -850,9 +850,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure xColor( io.deephaven.gui.color.Paint color );
 
-    @Override  Figure xFormat( io.deephaven.plot.axisformatters.AxisFormat format );
+    @Override  Figure xFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat );
 
-    @Override  Figure xFormatPattern( java.lang.String pattern );
+    @Override  Figure xFormatPattern( java.lang.String axisFormatPattern );
 
     @Override  Figure xGridLinesVisible( boolean xGridVisible );
 
@@ -912,9 +912,9 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yColor( io.deephaven.gui.color.Paint color );
 
-    @Override  Figure yFormat( io.deephaven.plot.axisformatters.AxisFormat format );
+    @Override  Figure yFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat );
 
-    @Override  Figure yFormatPattern( java.lang.String pattern );
+    @Override  Figure yFormatPattern( java.lang.String axisFormatPattern );
 
     @Override  Figure yGridLinesVisible( boolean yGridVisible );
 

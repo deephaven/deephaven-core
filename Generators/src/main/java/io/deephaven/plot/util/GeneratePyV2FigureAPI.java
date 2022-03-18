@@ -1051,17 +1051,17 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
-//
-//        rst.add(new PyFunc("x_axis", SEQUENTIAL, new String[]{"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel", "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("x_ticks", SEQUENTIAL, new String[]{"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("x_ticks_minor", SEQUENTIAL, new String[]{"xMinorTicks", "xMinorTicksVisible"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("x_twin", SINGLETON, new String[]{"twinX"}, null, "TODO pydoc"));
-//
-//        rst.add(new PyFunc("y_axis", SEQUENTIAL, new String[]{"yAxis", "yColor", "yFormat", "yFormatPattern", "yLabel", "yLabelFont", "yInvert", "yLog", "yMin", "yMax", "yRange", "yBusinessTime", "yTransform"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("y_ticks", SEQUENTIAL, new String[]{"yTicks", "yTicksFont", "yTicksVisible", "yTickLabelAngle"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[]{"yMinorTicks", "yMinorTicksVisible"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc"));
-//
+
+        rst.add(new PyFunc("x_axis", SEQUENTIAL, new String[]{"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel", "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks", SEQUENTIAL, new String[]{"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_ticks_minor", SEQUENTIAL, new String[]{"xMinorTicks", "xMinorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("x_twin", SINGLETON, new String[]{"twinX"}, null, "TODO pydoc"));
+
+        rst.add(new PyFunc("y_axis", SEQUENTIAL, new String[]{"yAxis", "yColor", "yFormat", "yFormatPattern", "yLabel", "yLabelFont", "yInvert", "yLog", "yMin", "yMax", "yRange", "yBusinessTime", "yTransform"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks", SEQUENTIAL, new String[]{"yTicks", "yTicksFont", "yTicksVisible", "yTickLabelAngle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[]{"yMinorTicks", "yMinorTicksVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc"));
+
 //        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
