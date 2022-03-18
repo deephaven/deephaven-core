@@ -12,10 +12,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-//todo rename
-//todo doc
 //todo format
-public class GenerateFigureAPI2 {
+
+/**
+ * Generate the plotting Figure API for Python V2.
+ */
+public class GeneratePyV2FigureAPI {
 
     private static final String INDENT = "    ";
     private static final String JCLASS = "io.deephaven.plot.Figure";
@@ -339,7 +341,7 @@ public class GenerateFigureAPI2 {
                     .boxed()
                     .collect(Collectors.toMap(i->javaFuncs[i], i->i));
 
-            final Map<Key, ArrayList<JavaFunction>> rst = new TreeMap<>((a,b)-> Integer.compare(order.get(a.name), order.get(b.name)));
+            final Map<Key, ArrayList<JavaFunction>> rst = new TreeMap<>(Comparator.comparingInt(a -> order.get(a.name)));
 
             rst.putAll(
                     signatures
@@ -917,9 +919,9 @@ public class GenerateFigureAPI2 {
 
         rst.put("keys", new PyArg(20, "keys", taKey,  "multi-series keys or a column name containing keys.", null));
         rst.put("key", new PyArg(20, "key", taKey,  "multi-series keys or a column name containing keys.", null));
-        rst.put("keyColumn", new PyArg(20, "key_col", taStr,  "colum name specifying category values.", null)); //todo doc/value?
+        rst.put("keyColumn", new PyArg(20, "key_col", taStr,  "colum name specifying category values.", null));
 
-        rst.put("category", new PyArg(1, "category", taStr,  "category.", null)); //todo doc/value?
+        rst.put("category", new PyArg(1, "category", taStr,  "category.", null));
         rst.put("shape", new PyArg(2, "shape", taShape,  "shape.", null));
         rst.put("shapes", new PyArg(2, "shapes", taShapes,  "shapes.", null));
 
