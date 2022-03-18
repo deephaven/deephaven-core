@@ -55,37 +55,37 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(int factor);
+    DataSeries pointSize(int pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(long factor);
+    DataSeries pointSize(long pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(double factor);
+    DataSeries pointSize(double pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(Number factor);
+    DataSeries pointSize(Number pointSize);
 
 
     ////////////////////////// color //////////////////////////
@@ -132,26 +132,26 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(Paint color);
+    DataSeries pointColor(Paint pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(int color);
+    DataSeries pointColor(int pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(String color);
+    DataSeries pointColor(String pointColor);
 
 
     ////////////////////////// error bar color //////////////////////////
@@ -189,10 +189,10 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param label label
+     * @param pointLabel label
      * @return this XYDataSeries
      */
-    DataSeries pointLabel(Object label);
+    DataSeries pointLabel(Object pointLabel);
 
 
     ////////////////////////// point shapes //////////////////////////
@@ -202,19 +202,19 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shape shape
+     * @param pointShape shape
      * @return this DataSeries
      */
-    DataSeries pointShape(final String shape);
+    DataSeries pointShape(final String pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shape shape
+     * @param pointShape shape
      * @return this DataSeries
      */
-    DataSeries pointShape(final Shape shape);
+    DataSeries pointShape(final Shape pointShape);
 
 
     ////////////////////////// line color //////////////////////////
@@ -266,10 +266,10 @@ public interface DataSeries extends Series, Serializable {
      * Use {0} where the data series name should be inserted, {1} for the x-value and {2} y-value e.g. "{0}: ({1}, {2})"
      * will display as Series1: (2.0, 5.5).
      *
-     * @param format format
+     * @param pointLabelFormat format
      * @return this data series.
      */
-    DataSeries pointLabelFormat(final String format);
+    DataSeries pointLabelFormat(final String pointLabelFormat);
 
     /**
      * Sets the tooltip format.

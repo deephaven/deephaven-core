@@ -51,34 +51,34 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the default point size of all plots in this ScatterPlotMatrix.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final int factor) {
-        return pointSize(factor == NULL_INT ? null : factor);
+    public ScatterPlotMatrix pointSize(final int pointSize) {
+        return pointSize(pointSize == NULL_INT ? null : pointSize);
     }
 
     /**
      * Sets the default point size of all plots in this ScatterPlotMatrix.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final long factor) {
-        return pointSize(factor == NULL_LONG ? null : factor);
+    public ScatterPlotMatrix pointSize(final long pointSize) {
+        return pointSize(pointSize == NULL_LONG ? null : pointSize);
     }
 
     /**
      * Sets the default point size of all plots in this ScatterPlotMatrix.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(double factor) {
+    public ScatterPlotMatrix pointSize(double pointSize) {
         FigureImpl result = new FigureImpl(this);
 
         for (int i = 0; i < numCols * numCols; i++) {
-            result = result.chart(i).axes(0).series(0).pointSize(factor);
+            result = result.chart(i).axes(0).series(0).pointSize(pointSize);
         }
 
         return new ScatterPlotMatrix(result, this.numCols);
@@ -87,15 +87,15 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the default point size of all plots in this ScatterPlotMatrix.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final Number factor) {
+    public ScatterPlotMatrix pointSize(final Number pointSize) {
         FigureImpl result = new FigureImpl(this);
 
         for (int i = 0; i < numCols; i++) {
             for (int j = 0; j < numCols; j++) {
-                result = result.chart(i, j).axes(0).series(0).pointSize(factor);
+                result = result.chart(i, j).axes(0).series(0).pointSize(pointSize);
             }
         }
 
@@ -252,17 +252,17 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
-     * @param factors point sizes
+     * @param pointSizes point sizes
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final IndexableData<Double> factors) {
-        Require.neqNull(factors, "factors");
-        Require.eq(factors.size(), "number of factors", this.numCols * this.numCols, "number of plots");
+    public ScatterPlotMatrix pointSize(final IndexableData<Double> pointSizes) {
+        Require.neqNull(pointSizes, "factors");
+        Require.eq(pointSizes.size(), "number of factors", this.numCols * this.numCols, "number of plots");
 
         FigureImpl result = new FigureImpl(this);
 
         for (int i = 0; i < this.numCols * this.numCols; i++) {
-            result = result.chart(i).axes(0).series(0).pointSize(factors.get(i));
+            result = result.chart(i).axes(0).series(0).pointSize(pointSizes.get(i));
         }
 
         return new ScatterPlotMatrix(result, this.numCols);
@@ -276,11 +276,11 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
-     * @param factors point sizes
+     * @param pointSizes point sizes
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final int... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public ScatterPlotMatrix pointSize(final int... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     /**
@@ -291,11 +291,11 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
-     * @param factors point sizes
+     * @param pointSizes point sizes
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final long... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public ScatterPlotMatrix pointSize(final long... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     /**
@@ -306,11 +306,11 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
-     * @param factors point sizes
+     * @param pointSizes point sizes
      * @return this ScatterPlotMatrix
      */
-    public ScatterPlotMatrix pointSize(final double... factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public ScatterPlotMatrix pointSize(final double... pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
     /**
@@ -321,11 +321,11 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
-     * @param factors point sizes
+     * @param pointSizes point sizes
      * @return this ScatterPlotMatrix
      */
-    public <T extends Number> ScatterPlotMatrix pointSize(final T[] factors) {
-        return pointSize(new IndexableDataDouble(factors, true, getPlotInfo()));
+    public <T extends Number> ScatterPlotMatrix pointSize(final T[] pointSizes) {
+        return pointSize(new IndexableDataDouble(pointSizes, true, getPlotInfo()));
     }
 
 

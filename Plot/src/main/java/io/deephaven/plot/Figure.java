@@ -1010,211 +1010,211 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... keys );
 
-    @Override  Figure pointColor( int color );
+    @Override  Figure pointColor( int pointColor );
 
-    @Override  Figure pointColor( int color, java.lang.Object... keys );
+    @Override  Figure pointColor( int pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( int... colors );
+    @Override  Figure pointColor( int... pointColors );
 
-    @Override  Figure pointColor( int[] colors, java.lang.Object... keys );
+    @Override  Figure pointColor( int[] pointColors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String colors );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String colors, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String color );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors );
 
-    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String color, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.gui.color.Paint color );
+    @Override  Figure pointColor( io.deephaven.gui.color.Paint pointColor );
 
-    @Override  Figure pointColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.gui.color.Paint pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.gui.color.Paint... colors );
+    @Override  Figure pointColor( io.deephaven.gui.color.Paint... pointColor );
 
-    @Override  Figure pointColor( io.deephaven.gui.color.Paint[] colors, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.gui.color.Paint[] pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String colors );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String colors, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String color );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors );
 
-    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String color, java.lang.Object... keys );
+    @Override  Figure pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( java.lang.Comparable category, int color );
+    @Override  Figure pointColor( java.lang.Comparable category, int pointColor );
 
-    @Override  Figure pointColor( java.lang.Comparable category, int color, java.lang.Object... keys );
+    @Override  Figure pointColor( java.lang.Comparable category, int pointColor, java.lang.Object... keys );
 
     @Override  Figure pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color );
 
     @Override  Figure pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color, java.lang.Object... keys );
 
-    @Override  Figure pointColor( java.lang.Comparable category, java.lang.String color );
+    @Override  Figure pointColor( java.lang.Comparable category, java.lang.String pointColor );
 
-    @Override  Figure pointColor( java.lang.Comparable category, java.lang.String color, java.lang.Object... keys );
+    @Override  Figure pointColor( java.lang.Comparable category, java.lang.String pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( java.lang.Integer... colors );
+    @Override  Figure pointColor( java.lang.Integer... pointColors );
 
-    @Override  Figure pointColor( java.lang.Integer[] colors, java.lang.Object... keys );
+    @Override  Figure pointColor( java.lang.Integer[] pointColors, java.lang.Object... keys );
 
-    @Override  Figure pointColor( java.lang.String color );
+    @Override  Figure pointColor( java.lang.String pointColor );
 
-    @Override  Figure pointColor( java.lang.String color, java.lang.Object... keys );
+    @Override  Figure pointColor( java.lang.String pointColor, java.lang.Object... keys );
 
-    @Override  Figure pointColor( java.lang.String... colors );
+    @Override  Figure pointColor( java.lang.String... pointColors );
 
-    @Override  Figure pointColor( java.lang.String[] colors, java.lang.Object... keys );
+    @Override  Figure pointColor( java.lang.String[] pointColors, java.lang.Object... keys );
 
     @Override  Figure pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors );
 
     @Override  Figure pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String label );
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel );
 
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String label, java.lang.Object... keys );
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String label );
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel );
 
-    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String label, java.lang.Object... keys );
+    @Override  Figure pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels );
+    @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels );
 
-    @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels, java.lang.Object... keys );
+    @Override  Figure pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String label );
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel );
 
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String label, java.lang.Object... keys );
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String label );
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel );
 
-    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String label, java.lang.Object... keys );
+    @Override  Figure pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object label );
+    @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object pointLabel );
 
-    @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object label, java.lang.Object... keys );
+    @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( java.lang.Object label );
+    @Override  Figure pointLabel( java.lang.Object pointLabel );
 
-    @Override  Figure pointLabel( java.lang.Object label, java.lang.Object... keys );
+    @Override  Figure pointLabel( java.lang.Object pointLabel, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( java.lang.Object... labels );
+    @Override  Figure pointLabel( java.lang.Object... pointLabels );
 
-    @Override  Figure pointLabel( java.lang.Object[] labels, java.lang.Object... keys );
+    @Override  Figure pointLabel( java.lang.Object[] pointLabels, java.lang.Object... keys );
 
-    @Override  Figure pointLabelFormat( java.lang.String format );
+    @Override  Figure pointLabelFormat( java.lang.String pointLabelFormat );
 
-    @Override  Figure pointLabelFormat( java.lang.String format, java.lang.Object... keys );
+    @Override  Figure pointLabelFormat( java.lang.String pointLabelFormat, java.lang.Object... keys );
 
-    @Override  Figure pointShape( groovy.lang.Closure<java.lang.String> shapes );
+    @Override  Figure pointShape( groovy.lang.Closure<java.lang.String> pointShapes );
 
-    @Override  Figure pointShape( groovy.lang.Closure<java.lang.String> shapes, java.lang.Object... keys );
+    @Override  Figure pointShape( groovy.lang.Closure<java.lang.String> pointShapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String shape );
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape );
 
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String shape );
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape );
 
-    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.gui.shape.Shape shape );
+    @Override  Figure pointShape( io.deephaven.gui.shape.Shape pointShape );
 
-    @Override  Figure pointShape( io.deephaven.gui.shape.Shape shape, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.gui.shape.Shape pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.gui.shape.Shape... shapes );
+    @Override  Figure pointShape( io.deephaven.gui.shape.Shape... pointShapes );
 
-    @Override  Figure pointShape( io.deephaven.gui.shape.Shape[] shapes, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.gui.shape.Shape[] pointShapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes );
+    @Override  Figure pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes );
 
-    @Override  Figure pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String shape );
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape );
 
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String shape );
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape );
 
-    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape );
+    @Override  Figure pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape );
 
-    @Override  Figure pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape, java.lang.Object... keys );
+    @Override  Figure pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( java.lang.Comparable category, java.lang.String shape );
+    @Override  Figure pointShape( java.lang.Comparable category, java.lang.String pointShape );
 
-    @Override  Figure pointShape( java.lang.Comparable category, java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( java.lang.Comparable category, java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( java.lang.String shape );
+    @Override  Figure pointShape( java.lang.String pointShape );
 
-    @Override  Figure pointShape( java.lang.String shape, java.lang.Object... keys );
+    @Override  Figure pointShape( java.lang.String pointShape, java.lang.Object... keys );
 
-    @Override  Figure pointShape( java.lang.String... shapes );
+    @Override  Figure pointShape( java.lang.String... pointShapes );
 
-    @Override  Figure pointShape( java.lang.String[] shapes, java.lang.Object... keys );
+    @Override  Figure pointShape( java.lang.String[] pointShapes, java.lang.Object... keys );
 
-    @Override  Figure pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes );
+    @Override  Figure pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes );
 
-    @Override  Figure pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes, java.lang.Object... keys );
+    @Override  Figure pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, java.lang.Object... keys );
 
-    @Override  Figure pointSize( double factor );
+    @Override  Figure pointSize( double pointSize );
 
-    @Override  Figure pointSize( double... factors );
+    @Override  Figure pointSize( double... pointSizes );
 
-    @Override  Figure pointSize( double[] factors, java.lang.Object... keys );
+    @Override  Figure pointSize( double[] pointSizes, java.lang.Object... keys );
 
-    @Override  Figure pointSize( int factor );
+    @Override  Figure pointSize( int pointSize );
 
-    @Override  Figure pointSize( int... factors );
+    @Override  Figure pointSize( int... pointSizes );
 
-    @Override  Figure pointSize( int[] factors, java.lang.Object... keys );
+    @Override  Figure pointSize( int[] pointSizes, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String factor );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes );
 
-    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String key, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors );
+    @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes );
 
-    @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String factor );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize );
 
-    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String key, java.lang.String factor, java.lang.Object... keys );
+    @Override  Figure pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( java.lang.Comparable category, double factor );
+    @Override  Figure pointSize( java.lang.Comparable category, double pointSize );
 
-    @Override  Figure pointSize( java.lang.Comparable category, double factor, java.lang.Object... keys );
+    @Override  Figure pointSize( java.lang.Comparable category, double pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( java.lang.Comparable category, int factor );
+    @Override  Figure pointSize( java.lang.Comparable category, int pointSize );
 
-    @Override  Figure pointSize( java.lang.Comparable category, int factor, java.lang.Object... keys );
+    @Override  Figure pointSize( java.lang.Comparable category, int pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( java.lang.Comparable category, java.lang.Number factor );
+    @Override  Figure pointSize( java.lang.Comparable category, java.lang.Number pointSize );
 
-    @Override  Figure pointSize( java.lang.Comparable category, java.lang.Number factor, java.lang.Object... keys );
+    @Override  Figure pointSize( java.lang.Comparable category, java.lang.Number pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( java.lang.Comparable category, long factor );
+    @Override  Figure pointSize( java.lang.Comparable category, long pointSize );
 
-    @Override  Figure pointSize( java.lang.Comparable category, long factor, java.lang.Object... keys );
+    @Override  Figure pointSize( java.lang.Comparable category, long pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( java.lang.Number factor );
+    @Override  Figure pointSize( java.lang.Number pointSize );
 
-    @Override  Figure pointSize( java.lang.Number factor, java.lang.Object... keys );
+    @Override  Figure pointSize( java.lang.Number pointSize, java.lang.Object... keys );
 
-    @Override  Figure pointSize( long factor );
+    @Override  Figure pointSize( long pointSize );
 
-    @Override  Figure pointSize( long... factors );
+    @Override  Figure pointSize( long... pointSizes );
 
-    @Override  Figure pointSize( long[] factors, java.lang.Object... keys );
+    @Override  Figure pointSize( long[] pointSizes, java.lang.Object... keys );
 
     @Override  Figure pointsVisible( java.lang.Boolean visible );
 
@@ -1248,49 +1248,49 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override  Figure yToolTipPattern( java.lang.String yToolTipPattern, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.Map<CATEGORY, COLOR> colors );
+    @Override <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.Map<CATEGORY, COLOR> pointColor );
 
-    @Override <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.Map<CATEGORY, COLOR> pointColor, java.lang.Object... keys );
 
     @Override <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> Figure pointColorInteger( java.util.Map<CATEGORY, COLOR> colors );
 
     @Override <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> Figure pointColorInteger( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable,LABEL> Figure pointLabel( java.util.Map<CATEGORY, LABEL> labels );
+    @Override <CATEGORY extends java.lang.Comparable,LABEL> Figure pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels );
 
-    @Override <CATEGORY extends java.lang.Comparable,LABEL> Figure pointLabel( java.util.Map<CATEGORY, LABEL> labels, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable,LABEL> Figure pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( CATEGORY[] categories, NUMBER[] factors );
+    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( CATEGORY[] categories, NUMBER[] pointSizes );
 
-    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( CATEGORY[] categories, NUMBER[] factors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( CATEGORY[] categories, NUMBER[] pointSizes, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( java.util.Map<CATEGORY, NUMBER> factors );
+    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes );
 
-    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( java.util.Map<CATEGORY, NUMBER> factors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> Figure pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointShape( java.util.Map<CATEGORY, java.lang.String> shapes );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointShape( java.util.Map<CATEGORY, java.lang.String> shapes, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, double[] factors );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, double[] pointSizes );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, double[] factors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, double[] pointSizes, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, int[] factors );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, int[] pointSizes );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, int[] factors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, int[] pointSizes, java.lang.Object... keys );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, long[] factors );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, long[] pointSizes );
 
-    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, long[] factors, java.lang.Object... keys );
+    @Override <CATEGORY extends java.lang.Comparable> Figure pointSize( CATEGORY[] categories, long[] pointSizes, java.lang.Object... keys );
 
-    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( groovy.lang.Closure<COLOR> colors );
+    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( groovy.lang.Closure<COLOR> pointColor );
 
-    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( groovy.lang.Closure<COLOR> colors, java.lang.Object... keys );
+    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( groovy.lang.Closure<COLOR> pointColor, java.lang.Object... keys );
 
-    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors );
+    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor );
 
-    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys );
+    @Override <COLOR extends io.deephaven.gui.color.Paint> Figure pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor, java.lang.Object... keys );
 
     @Override <COLOR extends java.lang.Integer> Figure pointColorInteger( groovy.lang.Closure<COLOR> colors );
 
@@ -1300,29 +1300,29 @@ public interface Figure extends java.io.Serializable, io.deephaven.plot.BaseFigu
 
     @Override <COLOR extends java.lang.Integer> Figure pointColorInteger( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys );
 
-    @Override <LABEL> Figure pointLabel( groovy.lang.Closure<LABEL> labels );
+    @Override <LABEL> Figure pointLabel( groovy.lang.Closure<LABEL> pointLabels );
 
-    @Override <LABEL> Figure pointLabel( groovy.lang.Closure<LABEL> labels, java.lang.Object... keys );
+    @Override <LABEL> Figure pointLabel( groovy.lang.Closure<LABEL> pointLabels, java.lang.Object... keys );
 
-    @Override <LABEL> Figure pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels );
+    @Override <LABEL> Figure pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels );
 
-    @Override <LABEL> Figure pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels, java.lang.Object... keys );
+    @Override <LABEL> Figure pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, java.lang.Object... keys );
 
-    @Override <NUMBER extends java.lang.Number> Figure pointSize( groovy.lang.Closure<NUMBER> factors );
+    @Override <NUMBER extends java.lang.Number> Figure pointSize( groovy.lang.Closure<NUMBER> pointSizes );
 
-    @Override <NUMBER extends java.lang.Number> Figure pointSize( groovy.lang.Closure<NUMBER> factors, java.lang.Object... keys );
+    @Override <NUMBER extends java.lang.Number> Figure pointSize( groovy.lang.Closure<NUMBER> pointSizes, java.lang.Object... keys );
 
-    @Override <NUMBER extends java.lang.Number> Figure pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors );
+    @Override <NUMBER extends java.lang.Number> Figure pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes );
 
-    @Override <NUMBER extends java.lang.Number> Figure pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors, java.lang.Object... keys );
+    @Override <NUMBER extends java.lang.Number> Figure pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, java.lang.Object... keys );
 
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors );
+    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor );
 
-    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors, java.lang.Object... keys );
+    @Override <T extends io.deephaven.gui.color.Paint> Figure pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor, java.lang.Object... keys );
 
-    @Override <T extends java.lang.Number> Figure pointSize( T[] factors );
+    @Override <T extends java.lang.Number> Figure pointSize( T[] pointSizes );
 
-    @Override <T extends java.lang.Number> Figure pointSize( T[] factors, java.lang.Object... keys );
+    @Override <T extends java.lang.Number> Figure pointSize( T[] pointSizes, java.lang.Object... keys );
 
 }
 

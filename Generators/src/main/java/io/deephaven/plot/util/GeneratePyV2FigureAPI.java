@@ -885,6 +885,10 @@ public class GeneratePyV2FigureAPI {
         final String[] taFactors = new String[]{"List[int]", "List[float]", "Dict[str,int]", "Dict[str,float]", "Callable"};
         final String[] taPlotStyle = new String[]{ "str", "PlotStyle" }; //todo support io.deephaven.plot.PlotStyle
         final String[] taLineStyle = new String[]{ "str", "LineStyle" }; //todo support io.deephaven.plot.LineStyle
+        final String[] taPointColors = new String[]{"str", "int", "Color", "List[str]", "List[int]", "List[Color]", "Callable", "Dict[Any,str]", "Dict[Any,int]", "Dict[Any,Color]"}; //todo support Color (io.deephaven.gui.color.Paint)
+        final String[] taPointLabels = new String[]{"str", "List[str]", "Callable", "Dict[Any,str]"};
+        final String[] taPointShapes = new String[]{"str", "Shape", "List[str]", "List[Shape]", "Callable", "Dict[Any,str]", "Dict[Any,Shape]"}; //todo support Shape (io.deephaven.gui.shape.Shape)
+        final String[] taPointSizes = new String[]{"int", "float", "List[int]", "List[float]", "Callable", "Dict[Any,int]", "Dict[Any,float]"};
 
         ////////////////////////////////////////////////////////////////
 
@@ -894,7 +898,9 @@ public class GeneratePyV2FigureAPI {
         rst.put("group", new PyArg(4, "group", taInt, "group for the data series.", null));
         rst.put("seriesName", new PyArg(4, "series_name", taStr, "name of the data series", null));
         rst.put("t", new PyArg(5, "t", taTable, "table or selectable data set (e.g. OneClick filterable table)", null));
-        rst.put("categories", new PyArg(6, "categories", taDataCategory, "discrete data or column name", null));
+        rst.put("sds", rst.get("t"));
+        rst.put("categories", new PyArg(6, "category", taDataCategory, "discrete data or column name", null));
+        rst.put("category", rst.get("categories"));
         rst.put("x", new PyArg(7, "x", taDataNumeric, "x-values or column name", null));
         rst.put("time", new PyArg(8, "x", taDataTime, "x-values or column name", null));
         rst.put("xLow", new PyArg(9, "x_low", taDataNumeric, "lower x error bar", null));
@@ -971,13 +977,26 @@ public class GeneratePyV2FigureAPI {
         rst.put("errorBarColor", new PyArg(38, "error_bar_color", taColor, "error bar color.", null));
         rst.put("gradientVisible", new PyArg(39, "gradient_visible", taBool, "bar gradient visibility.", null));
         rst.put("namingFunction", new PyArg(40, "naming_function", taCallable, "series naming function", null));
-        rst.put("lineStyle", new PyArg(23, "style", taLineStyle, "line style", null));
+        rst.put("lineStyle", new PyArg(41, "style", taLineStyle, "line style", null));
+        rst.put("pointColor", new PyArg(42, "color", taPointColors, "colors or a column name containing colors", null));
+        rst.put("pointColors", rst.get("pointColor"));
+        rst.put("pointLabel", new PyArg(43, "label", taPointLabels, "labels or a column name containing labels", null));
+        rst.put("pointLabels", rst.get("pointLabel"));
+        rst.put("pointShape", new PyArg(44, "shape", taPointShapes, "shapes or a column name containing shapes", null));
+        rst.put("pointShapes", rst.get("pointShape"));
+        rst.put("pointSize", new PyArg(45, "size", taPointSizes, "sizes or a column name containing sizes", null));
+        rst.put("pointSizes", rst.get("pointSize"));
+        rst.put("pointLabelFormat", new PyArg(46, "label_format", taStr, "point label format.", null));
 
         rst.put("visible", new PyArg(100, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
 
 
         ////////////////////////////////////////////////////////////////
+
+        //todo move these ...
+
+
 
 
         //        rst.put("categories", new PyArg(3, "categories", taDataCategory, "discrete data or column name", null));
@@ -1016,7 +1035,6 @@ public class GeneratePyV2FigureAPI {
 
         //
 
-        rst.put("sds", rst.get("t"));
 
         return rst;
     }
@@ -1066,7 +1084,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
 
