@@ -976,6 +976,17 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("show", SINGLETON, new String[]{"show"}, null, "TODO pydoc"));
         rst.add(new PyFunc("save", SINGLETON, new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
 
+        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
+
+        rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
+
+        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
+
         rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
@@ -991,15 +1002,10 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[]{"yMinorTicks", "yMinorTicksVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("y_twin", SINGLETON, new String[]{"twinY"}, null, "TODO pydoc"));
 
-        rst.add(new PyFunc("chart_title", SEQUENTIAL, new String[]{"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("legend", SEQUENTIAL, new String[]{"legendColor", "legendFont", "legendVisible"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
-
+        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
         rst.add(new PyFunc("line", SEQUENTIAL, new String[]{"lineColor", "lineStyle", "linesVisible"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("func", SEQUENTIAL, new String[]{"funcNPoints", "funcRange"}, null, "TODO pydoc"));
 
         rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
@@ -1007,18 +1013,6 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[]{"plot", "plotBy", "errorBarX", "errorBarXBy", "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
-
-        rst.add(new PyFunc("point", SEQUENTIAL, new String[]{"pointColor", "pointLabel", "pointLabelFormat", "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("chart", SEQUENTIAL, new String[]{"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation", "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("new_axes", SINGLETON, new String[]{"newAxes"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("series", SEQUENTIAL, new String[]{"series", "group", "seriesColor", "toolTipPattern", "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null, "TODO pydoc"));
 
         ////////////////////////////////////////////////////////////////
 
