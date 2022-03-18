@@ -911,6 +911,12 @@ public class GeneratePyV2FigureAPI {
         rst.put("wait", new PyArg(4, "wait", taBool, "whether to hold the calling thread until the file is written.", null));
         rst.put("timeoutSeconds", new PyArg(5, "timeout_seconds", taInt, "timeout in seconds to wait for the file to be written.", null));
 
+        rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs, "names of series to remove", null));
+        rst.put("removeChartIndex", new PyArg(11, "remove_chart_index", taInt, "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
+        rst.put("removeChartRowNum", new PyArg(12, "remove_chart_row", taInt, "row index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("removeChartColNum", new PyArg(13, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
+        rst.put("updateIntervalMillis", new PyArg(14, "update_millis", taInt, "update interval in milliseconds.", null));
+
         rst.put("gridVisible", new PyArg(10, "grid_visible", taBool, "x-grid and y-grid are visible.", null));
         rst.put("xGridVisible", new PyArg(11, "x_grid_visible", taBool, "x-grid is visible.", null));
         rst.put("yGridVisible", new PyArg(12, "y_grid_visible", taBool, "y-grid is visible.", null));
@@ -923,11 +929,6 @@ public class GeneratePyV2FigureAPI {
         rst.put("gradientVisible", new PyArg(14, "gradient_visible", taBool, "bar gradient visibility.", null));
         rst.put("namingFunction", new PyArg(15, "naming_function", taCallable, "series naming function", null));
 
-        rst.put("removeSeriesNames", new PyArg(10, "remove_series", taStrs, "names of series to remove", null));
-
-        rst.put("removeChartIndex", new PyArg(10, "remove_chart_index", taInt, "index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].", null));
-        rst.put("removeChartRowNum", new PyArg(11, "remove_chart_row", taInt, "row index in this Figure's grid. The row index starts at 0.", null));
-        rst.put("removeChartColNum", new PyArg(12, "remove_chart_col", taInt, "column index in this Figure's grid. The row index starts at 0.", null));
 
         ////////////////////////////////////////////////////////////////
 
@@ -982,7 +983,6 @@ public class GeneratePyV2FigureAPI {
 //        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat, "distance between ticks.", null));
 //        rst.put("tickLocations", new PyArg(10, "loc", taFloats, "coordinates of the major tick locations.", null));
 //        rst.put("transform", new PyArg(10, "transform", taAxisTransform, "transform.", null));
-//        rst.put("updateIntervalMillis", new PyArg(10, "update_millis", taInt, "update interval in milliseconds.", null));
 //
 //        rst.put("keys", new PyArg(20, "keys", taKey, "multi-series keys or a column name containing keys.", null));
 //        rst.put("key", new PyArg(20, "key", taKey, "multi-series keys or a column name containing keys.", null));
@@ -1022,7 +1022,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("show", SINGLETON, new String[]{"show"}, null, "TODO pydoc"));
         rst.add(new PyFunc("save", SINGLETON, new String[]{"save"}, new String[]{"path"}, "TODO pydoc"));
 
-//        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("figure", SEQUENTIAL, new String[]{"figureRemoveSeries", "removeChart", "updateInterval"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("figure_title", SEQUENTIAL, new String[]{"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
 //
 //        rst.add(new PyFunc("new_chart", SINGLETON, new String[]{"newChart"}, null, "TODO pydoc"));
