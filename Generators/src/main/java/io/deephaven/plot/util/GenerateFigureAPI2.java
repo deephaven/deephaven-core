@@ -23,6 +23,12 @@ public class GenerateFigureAPI2 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Java method signatures that are excluded from analysis.
+     * 
+     * Key = java function name
+     * Value = array of java function signatures to exclude.  The signatures are lists of parameter names.  The order matters.
+     */
     private static final Map<String,String[][]> javaExcludes = new HashMap<>() {{
         put("invert", new String[][]{new String[]{}});
         put("log", new String[][]{new String[]{}});
@@ -375,12 +381,12 @@ public class GenerateFigureAPI2 {
          * @param signatures java functions with the same name.
          * @return valid Java method argument name combinations.
          */
-        private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures, final Map<String, PyArg> pyParameterMap) {
+        private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures, final Map<String, PyArg> pyArgMap) {
             final Set<Set<String>> seen = new HashSet<>();
 
             return javaArgNames(signatures)
                     .stream()
-                    .map(an -> Arrays.stream(an).map(s -> pyParameterMap.get(s).name).toArray(String[]::new))
+                    .map(an -> Arrays.stream(an).map(s -> pyArgMap.get(s).name).toArray(String[]::new))
                     .filter(an -> seen.add(new HashSet<>(Arrays.asList(an))))
                     .sorted((first, second) -> {
                         final int c1 = Integer.compare(first.length, second.length);
@@ -408,7 +414,7 @@ public class GenerateFigureAPI2 {
          * @return complete set of arguments for the python function.
          */
         private List<PyArg> pyArgs(final Map<Key, ArrayList<JavaFunction>> sigs) {
-            final Map<String, PyArg> pyparams = getPyParameters();
+            final Map<String, PyArg> pyparams = getPyArgs();
             final Set<PyArg> argSet = new HashSet<>();
 
             for(final ArrayList<JavaFunction> signatures : sigs.values()) {
@@ -496,7 +502,7 @@ public class GenerateFigureAPI2 {
          * @return code for the python function body.
          */
         private String generatePyFuncBody(final List<PyArg> args, final Map<Key, ArrayList<JavaFunction>> signatures) {
-            final Map<String, PyArg> pyParameterMap = getPyParameters();
+            final Map<String, PyArg> pyArgMap = getPyArgs();
 
             final StringBuilder sb = new StringBuilder();
 
@@ -558,10 +564,10 @@ public class GenerateFigureAPI2 {
 
             switch (functionCallType) {
                 case SINGLETON:
-                    generatePyFuncCallSingleton(sb, signatures, pyParameterMap);
+                    generatePyFuncCallSingleton(sb, signatures, pyArgMap);
                     break;
                 case SEQUENTIAL:
-                    generatePyFuncCallSequential(sb, signatures, pyParameterMap);
+                    generatePyFuncCallSequential(sb, signatures, pyArgMap);
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported FunctionCallType: " + functionCallType);
@@ -574,15 +580,15 @@ public class GenerateFigureAPI2 {
          * Gets a list of functions with conflicting signatures.
          *
          * @param signatures java function signatures
-         * @param pyParameterMap possible python function arguments
+         * @param pyArgMap possible python function arguments
          * @param argSet conflicting argument set
          * @return conflicting function names
          */
-        private List<String> conflictingFuncs(final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap, final Set<String> argSet) {
+        private List<String> conflictingFuncs(final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap, final Set<String> argSet) {
             return signatures.entrySet()
                     .stream()
                     .filter(e ->
-                            pyArgNames(e.getValue(), pyParameterMap)
+                            pyArgNames(e.getValue(), pyArgMap)
                                     .stream()
                                     .map(a -> new HashSet<>(Arrays.asList(a)))
                                     .anyMatch(argSet::equals)
@@ -596,15 +602,15 @@ public class GenerateFigureAPI2 {
          *
          * @param sb string builder
          * @param signatures java function signatures
-         * @param pyParameterMap possible python function arguments
+         * @param pyArgMap possible python function arguments
          */
-        private void generatePyFuncCallSingleton(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap) {
+        private void generatePyFuncCallSingleton(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
-                final List<String[]> argNames = pyArgNames(sigs, pyParameterMap);
+                final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
 
                 boolean isFirst = true;
 
@@ -612,7 +618,7 @@ public class GenerateFigureAPI2 {
                     final Set<String> argSet = new HashSet<>(Arrays.asList(an));
 
                     if(alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyParameterMap, argSet));
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
                     } else {
                         alreadyGenerated.add(argSet);
                     }
@@ -652,9 +658,9 @@ public class GenerateFigureAPI2 {
          *
          * @param sb string builder
          * @param signatures java function signatures
-         * @param pyParameterMap possible python function arguments
+         * @param pyArgMap possible python function arguments
          */
-        private void generatePyFuncCallSequential(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyParameterMap) {
+        private void generatePyFuncCallSequential(final StringBuilder sb, final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
 
             sb.append(INDENT)
                     .append(INDENT)
@@ -669,13 +675,13 @@ public class GenerateFigureAPI2 {
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
-                final List<String[]> argNames = pyArgNames(sigs, pyParameterMap);
+                final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
 
                 for (final String[] an : argNames) {
                     final Set<String> argSet = new HashSet<>(Arrays.asList(an));
 
                     if (alreadyGenerated.contains(argSet)) {
-                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyParameterMap, argSet));
+                        throw new RuntimeException("Java functions have same signature: function=" + this + " sig=" + Arrays.toString(an) + " conflicts=" + conflictingFuncs(signatures, pyArgMap, argSet));
                     } else {
                         alreadyGenerated.add(argSet);
                     }
@@ -782,11 +788,11 @@ public class GenerateFigureAPI2 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * A map of Java parameter names to Python parameters.
+     * A map of Java parameter names to Python arguments.
      *
-     * @return map of Java parameter names to Python parameters.
+     * @return map of Java parameter names to Python arguments.
      */
-    private static Map<String, PyArg> getPyParameters() {
+    private static Map<String, PyArg> getPyArgs() {
         final Map<String, PyArg> rst = new TreeMap<>();
 
         final String[] taStr = new String[]{"str"};
@@ -922,8 +928,6 @@ public class GenerateFigureAPI2 {
         rst.put("removeChartRowNum", new PyArg(11, "remove_chart_row", taInt,  "row index in this Figure's grid. The row index starts at 0.", null));
         rst.put("removeChartColNum", new PyArg(12, "remove_chart_col", taInt,  "column index in this Figure's grid. The row index starts at 0.", null));
 
-        //todo ** min and max should be Union[str, float] and should have "values" renamed to "max"/"min"
-
         //
 
         rst.put("sds", rst.get("t"));
@@ -1016,6 +1020,9 @@ public class GenerateFigureAPI2 {
 
     public static void main(String[] args) throws ClassNotFoundException, IOException {
 
+        // generatePy removes values from signatures that it uses to generate code
+        // as a result the signatures left over after calling generatePy are cases that
+        // do not have generators or excludes and need to be handled
         final Map<Key, ArrayList<JavaFunction>> signatures = getMethodSignatures();
         final int nSig1 = signatures.size();
         String pyCode = generatePy(signatures);
@@ -1034,10 +1041,9 @@ public class GenerateFigureAPI2 {
         for (int i = 0; i < 10; i++) {
             System.out.println("===========================================================");
         }
-
-        printMethodSignatures(signatures);
-
+        
         if(!signatures.isEmpty()){
+            printMethodSignatures(signatures);
             throw new RuntimeException("Not all methods were generated.");
         }
     }
