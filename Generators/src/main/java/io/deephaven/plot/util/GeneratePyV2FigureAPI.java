@@ -950,7 +950,6 @@ public class GeneratePyV2FigureAPI {
         rst.put("style", new PyArg(20, "font_style", taStr, "font style", null));
         rst.put("axisFormat", new PyArg(21, "format", taAxisFormat, "label format", null));
         rst.put("axisFormatPattern", new PyArg(21, "format_pattern", taStr, "label format pattern", null));
-        rst.put("visible", new PyArg(22, "visible", taInt, "true to draw the design element; false otherwise.", null));
         rst.put("plotStyle", new PyArg(23, "plot_style", taPlotStyle, "plot style", null));
         rst.put("min", new PyArg(24, "min", taFloatStr, "minimum value to display", null));
         rst.put("max", new PyArg(25, "max", taFloatStr, "maximum value to display", null));
@@ -959,6 +958,11 @@ public class GeneratePyV2FigureAPI {
         rst.put("useBusinessTime", new PyArg(28, "business_time", taBool, "business time axis using the default calendar", null));
         rst.put("calendar", new PyArg(29, "calendar", taBusinessCalendar, "business time axis using the specified calendar", null));
         rst.put("transform", new PyArg(30, "transform", taAxisTransform, "axis transform.", null));
+        rst.put("gapBetweenTicks", new PyArg(31, "gap", taFloat, "distance between ticks.", null));
+        rst.put("tickLocations", new PyArg(32, "loc", taFloats, "coordinates of the tick locations.", null));
+        rst.put("angle", new PyArg(33, "angle", taInt, "angle in degrees.", null));
+
+        rst.put("visible", new PyArg(34, "visible", taInt, "true to draw the design element; false otherwise.", null));
 
         rst.put("toolTipPattern", new PyArg(10, "tool_tip_pattern", taStr, "x and y tool tip format pattern", null));
         rst.put("xToolTipPattern", new PyArg(11, "x_tool_tip_pattern", taStr, "x tool tip format pattern", null));
@@ -992,11 +996,7 @@ public class GeneratePyV2FigureAPI {
 //
 //
 //
-//        rst.put("angle", new PyArg(10, "angle", taInt, "angle in degrees.", null));
 //
-//        rst.put("gapBetweenTicks", new PyArg(10, "gap", taFloat, "distance between ticks.", null));
-//        rst.put("tickLocations", new PyArg(10, "loc", taFloats, "coordinates of the major tick locations.", null));
-//        rst.put("transform", new PyArg(10, "transform", taAxisTransform, "transform.", null));
 //
 //        rst.put("key", new PyArg(20, "key", taKey, "multi-series keys or a column name containing keys.", null));
 //        rst.put("keyColumn", new PyArg(20, "key_col", taStr, "colum name specifying category values.", null));
@@ -1047,7 +1047,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[]{"axes", "axesRemoveSeries", "plotStyle"}, null, "TODO pydoc"));
 //
         rst.add(new PyFunc("axis", SEQUENTIAL, new String[]{"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel", "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"}, null, "TODO pydoc"));
-//        rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
+        rst.add(new PyFunc("ticks", SEQUENTIAL, new String[]{"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[]{"minorTicks", "minorTicksVisible"}, null, "TODO pydoc"));
 //        rst.add(new PyFunc("twin", SINGLETON, new String[]{"twin"}, null, "TODO pydoc"));
 //
