@@ -1058,8 +1058,8 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[]{"histPlot"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[]{"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"}, new String[]{"series_name"}, "TODO pydoc"));
         rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[]{"catHistPlot"}, new String[]{"series_name"}, "TODO pydoc"));
+        rst.add(new PyFunc("plot_pie", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
 //        rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[]{"ohlcPlot", "ohlcPlotBy"}, new String[]{"series_name"}, "TODO pydoc"));
-//        rst.add(new PyFunc("plot_pie", SINGLETON, new String[]{"piePlot"}, new String[]{"series_name"}, "TODO pydoc"));
 
         ////////////////////////////////////////////////////////////////
 
