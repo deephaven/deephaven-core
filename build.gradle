@@ -77,7 +77,7 @@ tasks.register('smoke') {
     it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
     it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
-    it.dependsOn project(':web-js').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
+    it.dependsOn project(':web').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 

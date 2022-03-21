@@ -26,7 +26,7 @@ dependencies {
 
     testImplementation project(':server-test')
 
-    runtimeOnly(project(':web-js'))
+    runtimeOnly(project(':web'))
 }
 
 test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
