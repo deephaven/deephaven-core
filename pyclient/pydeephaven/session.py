@@ -68,7 +68,7 @@ class Session:
         self._tables = {}
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
-        self.session_type = session_type
+        self._session_type = session_type
 
         self._connect()
 
