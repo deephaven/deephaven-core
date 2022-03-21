@@ -48,7 +48,6 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
 
     /**
      * This call will block until all rows for the subscribed table are available.
-     *
      */
     public void waitForCompletion() throws InterruptedException;
 
