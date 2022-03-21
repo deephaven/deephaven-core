@@ -88,7 +88,8 @@ int JObj_init_internal(JNIEnv* jenv, JPy_JObj* self, PyObject* args, PyObject* k
     JPy_JType* jType;
     PyObject* constructor;
     JPy_JMethod* jMethod;
-    jobject objectRef;
+    jobject localObjectRef;
+    jobject globalObjectRef;
     jvalue* jArgs;
     JPy_ArgDisposer* jDisposers;
     int isVarArgsArray;
@@ -123,10 +124,10 @@ int JObj_init_internal(JNIEnv* jenv, JPy_JObj* self, PyObject* args, PyObject* k
 
     JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "JObj_init: calling Java constructor %s\n", jType->javaName);
 
-    objectRef = (*jenv)->NewObjectA(jenv, jType->classRef, jMethod->mid, jArgs);
+    localObjectRef = (*jenv)->NewObjectA(jenv, jType->classRef, jMethod->mid, jArgs);
     JPy_ON_JAVA_EXCEPTION_RETURN(-1);
 
-    if (objectRef == NULL) {
+    if (localObjectRef == NULL) {
         PyErr_NoMemory();
         return -1;
     }
@@ -135,18 +136,19 @@ int JObj_init_internal(JNIEnv* jenv, JPy_JObj* self, PyObject* args, PyObject* k
         JMethod_DisposeJArgs(jenv, jMethod->paramCount, jArgs, jDisposers);
     }
 
-    objectRef = (*jenv)->NewGlobalRef(jenv, objectRef);
-    if (objectRef == NULL) {
+    globalObjectRef = (*jenv)->NewGlobalRef(jenv, localObjectRef);
+    if (globalObjectRef == NULL) {
         PyErr_NoMemory();
         return -1;
     }
+    JPy_DELETE_LOCAL_REF(localObjectRef);
 
     // Note:  __init__ may be called multiple times, so we have to release the old objectRef
     if (self->objectRef != NULL) {
         (*jenv)->DeleteGlobalRef(jenv, self->objectRef);
     }
 
-    self->objectRef = objectRef;
+    self->objectRef = globalObjectRef;
 
     JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "JObj_init: self->objectRef=%p\n", self->objectRef);
 
@@ -349,7 +351,7 @@ PyObject* JObj_str(JPy_JObj* self)
     returnValue = JPy_FromJString(jenv, stringRef);
 
 error:
-    (*jenv)->DeleteLocalRef(jenv, stringRef);
+    JPy_DELETE_LOCAL_REF(stringRef);
 
     return returnValue;
 }
@@ -509,7 +511,7 @@ PyObject* JObj_getattro(JPy_JObj* self, PyObject* name)
             jobject item = (*jenv)->GetObjectField(jenv, self->objectRef, field->fid);
             JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
             returnValue = JPy_FromJObjectWithType(jenv, item, field->type);
-            (*jenv)->DeleteLocalRef(jenv, item);
+            JPy_DELETE_LOCAL_REF(item);
             return returnValue;
         }
     } else {
@@ -608,7 +610,7 @@ PyObject* JObj_sq_item(JPy_JObj* self, Py_ssize_t index)
         jobject item = (*jenv)->GetObjectArrayElement(jenv, self->objectRef, (jsize) index);
         JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
         returnValue = JPy_FromJObjectWithType(jenv, item, type->componentType);
-        (*jenv)->DeleteLocalRef(jenv, item);
+        JPy_DELETE_LOCAL_REF(item);
         return returnValue;
     }
 }

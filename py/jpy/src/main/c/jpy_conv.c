@@ -163,7 +163,7 @@ char* JPy_GetTypeName(JNIEnv* jenv, jclass classRef)
         typeNameCopy = JPy_CopyUTFString(jTypeNameChars);
         (*jenv)->ReleaseStringUTFChars(jenv, jTypeName, jTypeNameChars);
     }
-    (*jenv)->DeleteLocalRef(jenv, jTypeName);
+    JPy_DELETE_LOCAL_REF(jTypeName);
     return typeNameCopy;
 }
 
@@ -190,7 +190,7 @@ PyObject* JPy_FromTypeName(JNIEnv* jenv, jclass classRef)
         pyTypeName = Py_BuildValue("s", jTypeNameChars);
         (*jenv)->ReleaseStringUTFChars(jenv, jTypeName, jTypeNameChars);
     }
-    (*jenv)->DeleteLocalRef(jenv, jTypeName);
+    JPy_DELETE_LOCAL_REF(jTypeName);
     return pyTypeName;
 }
 
