@@ -71,7 +71,7 @@ class Session:
 
         self.session_type = session_type
         if session_type is None:
-            session_type = 'python'
+            self.session_type = 'python'
 
         self._connect()
 
