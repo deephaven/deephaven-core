@@ -451,7 +451,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         RowSet viewport; // active viewport
         BitSet subscribedColumns; // active subscription columns
-        boolean reverseViewport = false; // is the active viewport reversed (indexed from end of table)
+        boolean reverseViewport; // is the active viewport reversed (indexed from end of table)
 
         boolean isActive = false; // is this subscription in our active list?
         boolean pendingDelete = false; // is this subscription deleted as far as the client is concerned?
@@ -577,9 +577,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
-            sub.pendingViewport = newViewport.copy();
+            sub.pendingViewport = newViewport != null ? newViewport.copy() : null;
             sub.pendingReverseViewport = newReverseViewport;
-
             final BitSet cols;
             if (columnsToSubscribe == null) {
                 cols = new BitSet(sourceColumns.length);
@@ -1035,17 +1034,16 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                             // ignore races on cancellation
                         }
 
+                        // remove this deleted subscription from future consideration
                         activeSubscriptions.set(i, activeSubscriptions.get(activeSubscriptions.size() - 1));
                         activeSubscriptions.remove(activeSubscriptions.size() - 1);
-
                         updatedSubscriptions.set(i, updatedSubscriptions.get(updatedSubscriptions.size() - 1));
                         updatedSubscriptions.remove(updatedSubscriptions.size() - 1);
-
                         --i;
                     }
                 }
 
-                // rebuild the viewports, since there are pending changes. This function excludes active subscriptions
+                // rebuild the viewports since there are pending changes. This function excludes active subscriptions
                 // with pending changes because the snapshot process will add those to the active viewports
                 buildPostSnapshotViewports();
 
@@ -1092,7 +1090,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             if (pendingDeletes && !pendingChanges) {
-                // i.e. We have only removed subscriptions; we can update this state immediately.
+                // we have only removed subscriptions; we can update this state immediately.
                 promoteSnapshotToActive();
             }
         }
@@ -1102,7 +1100,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         BarrageMessage snapshot = null;
         BarrageMessage postSnapshot = null;
 
-        BitSet snapshotColumns = null;
+        BitSet snapshotColumns;
 
         // create a prioritized list for the subscriptions
         LinkedList<Subscription> growingSubscriptions = new LinkedList<>();
@@ -1122,9 +1120,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     snapshotColumns.or(subscription.targetColumns);
 
                     if (subscription.targetViewport == null) {
-                        growingSubscriptions.addLast(subscription); // full gets low priority
+                        growingSubscriptions.addLast(subscription); // full sub gets low priority
                     } else {
-                        growingSubscriptions.addFirst(subscription); // viewport gets higher priority
+                        growingSubscriptions.addFirst(subscription); // viewport sub gets higher priority
                     }
                 }
             }
@@ -1154,10 +1152,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                     // we need to determine if the `activeViewport` is valid. if the viewport direction changes or
                     // columns were added, the client viewport is invalid
-
                     BitSet addedCols = (BitSet) subscription.targetColumns.clone();
                     addedCols.andNot(subscription.subscribedColumns);
-
                     final boolean viewportValid = subscription.reverseViewport == subscription.targetReverseViewport
                             && addedCols.isEmpty();
 
@@ -1173,10 +1169,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     // get the rows that we need that are already in the snapshot
                     try (final RowSet overlap = subscription.growingRemainingViewport.extract(currentSet)) {
                         if (rowsRemaining <= 0) {
-                            // we can't request additional rows, but can use other rows in this snapshot
+                            // can't request additional rows, but can use snapshot rows that match our viewport
                             subscription.growingIncrementalViewport = overlap.copy();
                         } else {
-                            // request as many rows as we are allowed
                             try (final WritableRowSet additional = subscription.growingRemainingViewport.copy()) {
 
                                 // shrink the set of new rows to <= `rowsRemaining` size
@@ -1598,11 +1593,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             // One drawback of the ModifiedColumnSet, is that our adds must include data for all columns. However,
-            // column
-            // specific data may be updated and we only write down that single changed column. So, the computation of
-            // mapping
-            // output rows to input data may be different per Column. We can re-use calculations where the set of deltas
-            // that modify column A are the same as column B.
+            // column specific data may be updated and we only write down that single changed column. So, the
+            // computation of mapping output rows to input data may be different per Column. We can re-use calculations
+            // where the set of deltas that modify column A are the same as column B.
             final class ColumnInfo {
                 final WritableRowSet modified = RowSetFactory.empty();
                 final WritableRowSet recordedMods = RowSetFactory.empty();
@@ -1877,6 +1870,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
+        if (postSnapshotViewport != null) {
+            postSnapshotViewport.close();
+        }
+        if (postSnapshotReverseViewport != null) {
+            postSnapshotReverseViewport.close();
+        }
         postSnapshotViewport = postSnapshotViewportBuilder.build();
         postSnapshotReverseViewport = postSnapshotReverseViewportBuilder.build();
     }
