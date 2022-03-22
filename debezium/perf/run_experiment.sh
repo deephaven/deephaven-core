@@ -43,6 +43,6 @@ echo "Stopping compose."
 
 ./stop_all.sh
 
-echo "Experiemnt finished."
+echo "Experiment finished."
 
 exit 0
