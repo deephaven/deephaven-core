@@ -283,28 +283,28 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("converted"));
         }
 
-        data.pointColorByY(x -> x > 1 ? c1 : c2);
-        assertEquals(data.getPointColor(2), c1);
-        assertEquals(data.getPointColor(1), c2);
-
-
-        data.pointColorByY(new Closure<Paint>(null) {
-            @Override
-            public Paint call() {
-                return c1;
-            }
-
-            @Override
-            public Paint call(Object... args) {
-                return c1;
-            }
-
-            @Override
-            public Paint call(Object arguments) {
-                return c1;
-            }
-        });
-        assertEquals(data.getPointColor(1), c1);
+        // data.pointColorByY(x -> x > 1 ? c1 : c2);
+        // assertEquals(data.getPointColor(2), c1);
+        // assertEquals(data.getPointColor(1), c2);
+        //
+        //
+        // data.pointColorByY(new Closure<Paint>(null) {
+        // @Override
+        // public Paint call() {
+        // return c1;
+        // }
+        //
+        // @Override
+        // public Paint call(Object... args) {
+        // return c1;
+        // }
+        //
+        // @Override
+        // public Paint call(Object arguments) {
+        // return c1;
+        // }
+        //// });
+        // assertEquals(data.getPointColor(1), c1);
     }
 
     public void testPointLabel() {
