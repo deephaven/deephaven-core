@@ -12,6 +12,7 @@ services:
     # build: ../../jprofiler-server
     environment:
       - JAVA_TOOL_OPTIONS=-Xmx${DEEPHAVEN_HEAP} -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - PERF_TAG  # Used to specify a subdirectory under ./logs where to store perf samples logs
       # For jprofiler sessions (if you tweaked the jprofiler version in jprofiler-server/Dockerfile you need to tweak the path below):
       # Then use this startup options:
       # - JAVA_TOOL_OPTIONS=-agentpath:/opt/jprofiler13.0/bin/linux-x64/libjprofilerti.so=port=8849,nowait -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}

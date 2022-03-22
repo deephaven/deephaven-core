@@ -1,15 +1,20 @@
 import argparse
 import datetime as dt
 import re
+import os
 import subprocess
 import statistics as stats
+import sys
 
-now_str = dt.datetime.now().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
+now_str = dt.datetime.utcnow().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
 
 parser = argparse.ArgumentParser(description='Sample cpu utilization and memory consumption with top for given processes')
 
-parser.add_argument('tag', metavar='TAG', type=str,
-                    help='experiment tag')
+perf_tag = os.environ.get('PERF_TAG', None)
+if perf_tag is None:
+    print(f'{os.argv[0]}: PERF_TAG environment variable is not defined, aborting.', file=sys.stderr)
+    sys.exit(1)
+
 parser.add_argument('nsamples', metavar='NSAMPLES', type=int,
                     help='number of samples')
 parser.add_argument('delay_s', metavar='DELAY_MS', type=str,
@@ -35,7 +40,8 @@ top_out = subprocess.run(
     ['top', '-Eg', '-n', f'{args.nsamples}', '-b', '-c', '-d', f'{args.delay_s}'] + pids_args,
     stdout=subprocess.PIPE).stdout.decode('utf-8').splitlines()
 
-with open(f'logs/{now_str}_{args.tag}_top_details.log', 'w') as f:
+out_dir = f'./logs/{perf_tag}'
+with open(f'{out_dir}/{now_str}_top_details.log', 'w') as f:
     for line in top_out:
         f.write(line)
         f.write('\n')
@@ -78,7 +84,7 @@ def format_samples(precision : int, samples):
         first = False
     return s
 
-with open(f'logs/{now_str}_{args.tag}_top_samples.log', 'w') as f:
+with open(f'{out_dir}/{now_str}_top_samples.log', 'w') as f:
     for name, result in results.items():
         for tag, samples in result.items():
             mean = stats.mean(samples)

@@ -1,9 +1,7 @@
 from deephaven import PythonListenerAdapter
 import datetime as dt
-
-now_str = dt.datetime.now().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
-
-log = open(f'/logs/{now_str}_dh_sample_dt.log', 'w')
+import os
+import sys
 
 def onUpdate(added_unused, modified_unused, deleted_unused):
     timestamp = dt.datetime.now().astimezone().isoformat()
@@ -13,4 +11,9 @@ def onUpdate(added_unused, modified_unused, deleted_unused):
     log.write(f'timestamp={timestamp}, total={total}, max_received_at={max_received_at}, dt_ms={dt_ms}\n')
     log.flush()
 
-PythonListenerAdapter(pageviews_summary, onUpdate, replayInitialImage=False)
+now_str = dt.datetime.utcnow().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
+
+perf_tag = os.environ.get('PERF_TAG', None)
+if perf_tag is not None:
+    log = open(f'/logs/{perf_tag}/{now_str}_dh_sample_dt.log', 'w')
+    PythonListenerAdapter(pageviews_summary, onUpdate, replayInitialImage=False)
