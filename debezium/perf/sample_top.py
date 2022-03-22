@@ -4,7 +4,7 @@ import re
 import subprocess
 import statistics as stats
 
-now_str = dt.datetime.now().astimezone().strftime('%Y%m%d%H%M%S_%Z')
+now_str = dt.datetime.now().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
 
 parser = argparse.ArgumentParser(description='Sample cpu utilization and memory consumption with top for given processes')
 
@@ -40,8 +40,8 @@ with open(f'logs/{now_str}_{args.tag}_top_details.log', 'w') as f:
         f.write(line)
         f.write('\n')
 
-cputag = 'CPU_PCT'
-restag = 'RES_GiB'
+cputag = 'CPU_PCT'   # CPU utilization in percentage
+restag = 'RES_GiB'   # Resident size in GiB
 
 kib_2_gib = 1.0/(1024 * 1024)
 
@@ -65,20 +65,25 @@ for line in top_out:
                 res_kib = int(res_str)
             d[restag].append(res_kib * kib_2_gib)
 
-def format_samples(precision, samples):
+def format_samples(precision : int, samples):
     first = True
     s = ''
     for sample in samples:
         if not first:
             s += ', '
-        s += f'%.{precision}f' % sample
+        if precision != -1:
+            s += f'{sample:.{precision}}'
+        else:
+            s += f'{sample}'
         first = False
+    return s
 
 with open(f'logs/{now_str}_{args.tag}_top_samples.log', 'w') as f:
     for name, result in results.items():
         for tag, samples in result.items():
             mean = stats.mean(samples)
-            samples_str = format_samples(samples)
+            precision = 4 if tag == restag else -1
+            samples_str = format_samples(precision, samples)
             line = f'name={name}, tag={tag}, mean={mean:.2f}, samples={samples_str}'
             print(line)
             f.write(line + '\n')

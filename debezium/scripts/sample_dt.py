@@ -1,7 +1,7 @@
 from deephaven import PythonListenerAdapter
 import datetime as dt
 
-now_str = dt.datetime.now().astimezone().strftime('%Y%m%d%H%M%S_%Z')
+now_str = dt.datetime.now().astimezone().strftime('%Y.%m.%d.%H.%M.%S_%Z')
 
 log = open(f'/logs/{now_str}_dh_sample_dt.log', 'w')
 
