@@ -18,7 +18,7 @@ jobs:
       # Unfortunately, the official actions/download-artifact action is very limited in scope.
       # Can't use it yet in this context, https://github.com/actions/download-artifact/issues/60
       - name: Download artifact
-        uses: actions/github-script@v3.1.1
+        uses: actions/github-script@v6
         with:
           script: |
             var artifacts = await github.actions.listWorkflowRunArtifacts({
@@ -39,7 +39,7 @@ jobs:
             fs.writeFileSync('${{github.workspace}}/check-ci-results.zip', Buffer.from(download.data));
       - run: unzip check-ci-results.zip
       - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1.0.9
+        uses: scacap/action-surefire-report@v1
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
