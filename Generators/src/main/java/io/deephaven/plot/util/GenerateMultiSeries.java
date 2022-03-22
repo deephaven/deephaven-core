@@ -807,7 +807,8 @@ public class GenerateMultiSeries {
             final String args = createSmartKeyArgs(function, tableToTableHandleVarMap);
             final boolean oneArgument = function.getParameterNames().length == 1;
 
-            code.append(indent(2)).append("if(multiSeriesKey == null || multiSeriesKey.length == 0) {\n").append(indent(3))
+            code.append(indent(2)).append("if(multiSeriesKey == null || multiSeriesKey.length == 0) {\n")
+                    .append(indent(3))
                     .append(mapName)
                     .append(".setDefault(")
                     .append(oneArgument ? args : "new Object[]{" + args + "}")
