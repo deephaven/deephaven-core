@@ -380,7 +380,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
             return pointColor(new IndexableDataTable<>(columnHandler, getPlotInfo()));
         } else {
             throw new PlotUnsupportedOperationException(
-                    "Column can not be converted into a color: column=" + pointColors + "\ttype=" + columnHandler.type(),
+                    "Column can not be converted into a color: column=" + pointColors + "\ttype="
+                            + columnHandler.type(),
                     this);
         }
     }
@@ -495,7 +496,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     @Override
     public XYDataSeries pointShape(final Shape... pointShapes) {
         ArgumentValidations.assertNotNull(pointShapes, "shapes", getPlotInfo());
-        this.pointShapes.setSpecific(new IndexableDataPointShapeObject(new IndexableDataArray<>(pointShapes, getPlotInfo())),
+        this.pointShapes.setSpecific(
+                new IndexableDataPointShapeObject(new IndexableDataArray<>(pointShapes, getPlotInfo())),
                 true);
         return this;
     }

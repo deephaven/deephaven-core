@@ -124,8 +124,8 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
-     *        the 3rd color from the color pallette.
+     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds
+     *        to the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
     XYDataSeries pointColor(int... pointColors);
@@ -133,8 +133,8 @@ public interface XYDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
-     *        the 3rd color from the color pallette.
+     * @param pointColors color palette indices. The color for data point i comes from index i. A value of 3 corresponds
+     *        to the 3rd color from the color pallette.
      * @return this XYDataSeries
      */
     XYDataSeries pointColor(Integer... pointColors);

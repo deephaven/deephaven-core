@@ -198,7 +198,8 @@ public interface CategoryDataSeries extends DataSeries {
      * @param <COLOR> type of color for the points
      * @return this CategoryDataSeries
      */
-    <CATEGORY extends Comparable, COLOR extends Paint> CategoryDataSeries pointColor(final Map<CATEGORY, COLOR> pointColor);
+    <CATEGORY extends Comparable, COLOR extends Paint> CategoryDataSeries pointColor(
+            final Map<CATEGORY, COLOR> pointColor);
 
 
     /**

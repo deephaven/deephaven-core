@@ -122,9 +122,9 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes a chart from the Figure's grid.
      *
-     * @param removeChartIndex index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
-     *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
-     *        [2, 3].
+     * @param removeChartIndex index from the Figure's grid to remove. The index starts at 0 in the upper left hand
+     *        corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices
+     *        would be [0, 1] [2, 3].
      * @return this Figure with the chart removed.
      */
     BaseFigure removeChart(final int removeChartIndex);
@@ -142,9 +142,8 @@ public interface BaseFigure extends Serializable {
     /**
      * Returns a chart from this Figure's grid.
      *
-     * @param index index from the Figure's grid. The index starts at 0 in the upper left hand corner of the
-     *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
-     *        [2, 3].
+     * @param index index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and
+     *        increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].
      * @throws RuntimeException if the index is outside the Figure's grid
      * @return selected {@link Chart}
      */
