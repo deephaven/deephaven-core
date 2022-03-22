@@ -196,6 +196,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+
+                // wake up any active listeners and convert them to holding the exclusive lock
+                notifyAll();
             }
 
             // Send the initial subscription:
@@ -276,7 +279,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (!connected) {
             return;
         }
