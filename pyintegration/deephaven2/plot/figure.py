@@ -36,7 +36,7 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
 
     if not isinstance(obj, types_no_subscript):
         supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
-        raise DHError(f"Improper input type: name={name} type={type(obj)} supported={supported}")
+        raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
 
 
 def _convert_j(name: str, obj: Any, types: List) -> Any:
@@ -73,9 +73,9 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         return dtypes.array(dtype, np_array)
     elif isinstance(obj, Callable):
         # TODO: support callables
-        raise DHError(f"Callables {obj} are not yet supported.")
+        raise DHError(message=f"Callables {obj} are not yet supported.")
     else:
-        raise DHError(f"Unsupported input type: name={name} type={type(obj)}")
+        raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
 
 
 class Figure(JObjectWrapper):
