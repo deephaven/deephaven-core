@@ -1,9 +1,8 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+""" TODO """
 from __future__ import annotations
-
-from enum import Enum
 
 import jpy
 
@@ -73,7 +72,7 @@ class Color(JObjectWrapper):
         return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
 
     @staticmethod
-    def from_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
+    def of_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
         """ Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
          transparent the color.
 
@@ -88,6 +87,7 @@ class Color(JObjectWrapper):
             a Color
         """
         return Color(j_color=_JColor.colorHSL(h, s, l, alpha))
+
 
 ALICEBLUE = Color.of_name("#F0F8FF")
 ANTIQUEWHITE = Color.of_name("#FAEBD7")

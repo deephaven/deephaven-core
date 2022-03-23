@@ -8,11 +8,11 @@ import jpy
 from deephaven2._wrapper_abc import JObjectWrapper
 from .linestyle import LineStyle
 from .color import Color
+from .font import Font, FontStyle
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
 _JShapes = jpy.get_type("io.deephaven.gui.shape.JShapes")
 _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
-_JFont = jpy.get_type("io.deephaven.plot.Font")
 _JAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.AxisFormat")
 
 
@@ -49,10 +49,6 @@ class PlotStyle(Enum):
 
     ERROR_BAR = _JPlotStyle.ERROR_BAR
     """ An error bar plot (points are not displayed by default). """
-
-
-class Font:
-    ...
 
 
 class AxisFormat:
