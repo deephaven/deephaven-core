@@ -96,38 +96,19 @@ def _add_paths_if_exists(path_list, *paths):
     return path_list
 
 
+def _find_loadable_spec_origin(name):
+    import importlib.util
+    spec = importlib.util.find_spec(name)
+    return spec.origin if spec and spec.has_location else None
+
 def _get_module_path(name, fail=False, install_path=None):
     """ Find the path to the jpy jni modules. """
-
-    path = None
-    if sys.version_info < (3, 4):
-        import imp
-        try:
-            details = imp.find_module(name)  # this should raise an ImportError if module is not found
-            path = details[1]
-        except ImportError as e:
-            if fail:
-                raise e
-    else:
-        import importlib.util
-        try:
-            details = importlib.util.find_spec(name)  # this should raise an ImportError if module is not found
-            if hasattr(details, 'has_location') and details.has_location:
-                # we have a loadable origin - it's a package
-                path = details.origin
-            elif fail:
-                raise ImportError("No loadable module '{}' found".format(name))
-        except (ImportError, ModuleNotFoundError, AttributeError) as e:
-            if fail:
-                raise e
-
-    if not path and fail:
-        raise ImportError("module '{}' is not discovered or is missing a file path".format(name))
-
-    if path is None or not install_path:
-        return path
-    return os.path.join(install_path, os.path.split(path)[1])
-
+    spec_origin = _find_loadable_spec_origin(name)
+    if not spec_origin:
+        if fail:
+            raise ImportError("module '{}' not found, or is not loadable".format(name))
+        return None
+    return spec_origin if not install_path else os.path.join(install_path, os.path.split(spec_origin)[1])
 
 def _find_file(search_dirs, *filenames):
     for filename in filenames:
