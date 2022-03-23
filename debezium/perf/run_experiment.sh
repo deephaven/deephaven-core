@@ -1,10 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eu
 
-if [ $# -ne 5 -o \( "$1" != 'dh' -a "$1" != 'mz' \) ]; then
+usage_and_exit() {
     echo "Usage: $0 dh|mz per_second_rate wait_seconds top_samples top_delay_seconds" 1>&2
     exit 1
+}
+
+if [ "$#" -ne 5 ]; then
+    usage_and_exit
+fi
+
+if [ "$1" != 'dh' -a "$1" != 'mz' ]; then
+    usage_and_exit
 fi
 
 engine="$1"
