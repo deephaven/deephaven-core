@@ -78,7 +78,6 @@ class PlotStyle(Enum):
     """ An error bar plot (points are not displayed by default). """
 
 
-
 class SelectableDataSet(JObjectWrapper):
     def __init__(self, j_sds):
         self.j_sds = j_sds

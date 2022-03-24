@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import numbers
+from enum import Enum
 from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import jpy
