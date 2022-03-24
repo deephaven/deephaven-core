@@ -7,13 +7,40 @@ import jpy
 
 from deephaven2._wrapper_abc import JObjectWrapper
 from .linestyle import LineStyle
-from .color import Color
+from .color import Color, Colors
 from .font import Font, FontStyle
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
-_JShapes = jpy.get_type("io.deephaven.gui.shape.JShapes")
 _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
 _JAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.AxisFormat")
+
+_JShapes = jpy.get_type("io.deephaven.gui.shape.JShapes")
+_JNamedShape = jpy.get_type("io.deephaven.gui.shape.NamedShape")
+
+
+class AxisFormat:
+    ...
+
+
+class BusinessCalendar:
+    ...
+
+
+class AxisTransform:
+    ...
+
+
+class Shape(Enum):
+    SQUARE = _JShapes.shape(_JNamedShape.SQUARE)
+    CIRCLE = _JShapes.shape(_JNamedShape.CIRCLE)
+    UP_TRIANGLE = _JShapes.shape(_JNamedShape.UP_TRIANGLE)
+    DIAMOND = _JShapes.shape(_JNamedShape.DIAMOND)
+    HORIZONTAL_RECTANGLE = _JShapes.shape(_JNamedShape.HORIZONTAL_RECTANGLE)
+    ELLIPSE = _JShapes.shape(_JNamedShape.ELLIPSE)
+    RIGHT_TRIANGLE = _JShapes.shape(_JNamedShape.RIGHT_TRIANGLE)
+    DOWN_TRIANGLE = _JShapes.shape(_JNamedShape.DOWN_TRIANGLE)
+    VERTICAL_RECTANGLE = _JShapes.shape(_JNamedShape.VERTICAL_RECTANGLE)
+    LEFT_TRIANGLE = _JShapes.shape(_JNamedShape.LEFT_TRIANGLE)
 
 
 class PlotStyle(Enum):
@@ -50,21 +77,6 @@ class PlotStyle(Enum):
     ERROR_BAR = _JPlotStyle.ERROR_BAR
     """ An error bar plot (points are not displayed by default). """
 
-
-class AxisFormat:
-    ...
-
-
-class BusinessCalendar:
-    ...
-
-
-class Shape:
-    ...
-
-
-class AxisTransform:
-    ...
 
 
 class SelectableDataSet(JObjectWrapper):

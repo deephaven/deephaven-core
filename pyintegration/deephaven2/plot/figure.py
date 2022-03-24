@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import numbers
+from enum import Enum
 from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import jpy
@@ -64,9 +65,12 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         return obj
     elif isinstance(obj, JObjectWrapper):
         return obj.j_object
+    elif isinstance(obj, Enum):
+        if isinstance(obj.value, JObjectWrapper):
+            return obj.value.j_object
+        else:
+            return obj.value
     elif isinstance(obj, Sequence):
-        # TODO: support lists ... subscripts are available via types
-        # raise DHError(f"Lists are not yet supported")
         import numpy
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
