@@ -43,7 +43,7 @@ It will:
   Output from top in batch mode is sent to a log file and later post-processed.
   Aside from individual samples, the following statistics are computed:
   - median
-  - sandard deviation (`stdev` in the output).
+  - sandard deviation (`sd` in the output).
   - standard error of the mean (`sem` in the output).
 - Stop and "reset" the containers.
 
