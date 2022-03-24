@@ -24,7 +24,7 @@ top_delay="$5"
 echo "About to run an experiment for ${engine} with ${rate_per_s} pageviews/s."
 echo
 echo "Actions that will be performed in this run:"
-echo "1. Start compose services required for for ${engine}."
+echo "1. Start compose services required for for ${engine} and initialize simulation."
 echo "2. Execute demo in ${engine} and setup update delay logging."
 echo "3. Set ${rate_per_s} pageviews per second rate."
 echo "4. Wait ${wait_s} seconds."
@@ -33,7 +33,7 @@ echo "6. Stop and 'reset' (down) compose."
 echo
 echo "Running experiment."
 echo
-echo "1. Starting compose."
+echo "1. Starting compose and initializing simulation."
 export PERF_TAG=$(./start_perf_run.sh "$engine" "$rate_per_s")
 echo "PERF_TAG=${PERF_TAG}"
 echo
@@ -61,7 +61,7 @@ echo "4. Waiting for $wait_s seconds."
 sleep "$wait_s"
 echo
 
-echo "5. Sampling top."
+echo "5. Sampling top for ${top_samples} * ${top_delay} seconds."
 ./sample_top.sh "$engine" "$top_samples" "$top_delay"
 echo
 
