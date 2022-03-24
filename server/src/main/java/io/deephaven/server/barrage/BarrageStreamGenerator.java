@@ -810,25 +810,20 @@ public class BarrageStreamGenerator implements
         }
 
         int effectiveColumnSetOffset = 0;
-        if (isSnapshot && view.subscribedColumns != null) {
+        if (view.subscribedColumns != null) {
             effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
         }
 
         final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
-        final int rowsRemovedOffset = 0;
+        final int addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
 
+        // no shifts in a snapshot, but need to provide a valid structure
         final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
-
-        // Added Chunk Data:
-        int addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
-
-        final int nodesOffset = 0;
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
         BarrageUpdateMetadata.addNumAddBatches(metadata,
                 LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
-        BarrageUpdateMetadata.addNumModBatches(metadata,
-                LongSizedDataStructure.intSize("BarrageStreamGenerator", 0));
+        BarrageUpdateMetadata.addNumModBatches(metadata, 0);
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
@@ -836,10 +831,10 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
         BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
-        BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
+        BarrageUpdateMetadata.addRemovedRows(metadata, 0);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
         BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
-        BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
+        BarrageUpdateMetadata.addModColumnNodes(metadata, 0);
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
