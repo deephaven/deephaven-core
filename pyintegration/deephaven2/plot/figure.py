@@ -100,7 +100,7 @@ class Figure(JObjectWrapper):
         name: str = None,
         axes: int = None,
         remove_series: List[str] = None,
-        plot_style: Union[str,PlotStyle] = None,
+        plot_style: Union[str, PlotStyle] = None,
     ) -> Figure:
         """TODO pydoc
 
@@ -108,7 +108,7 @@ class Figure(JObjectWrapper):
             name (str): name
             axes (int): identifier
             remove_series (List[str]): names of series to remove
-            plot_style (Union[str,PlotStyle]): plot style
+            plot_style (Union[str, PlotStyle]): plot style
 
         Returns:
             a new Figure
@@ -135,22 +135,22 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"axes"}.issubset(non_null_args):
-            j_figure = self.j_figure.axes(axes)
+            j_figure = j_figure.axes(axes)
             non_null_args = non_null_args.difference({"axes"})
             f_called = True
 
         if {"name"}.issubset(non_null_args):
-            j_figure = self.j_figure.axes(name)
+            j_figure = j_figure.axes(name)
             non_null_args = non_null_args.difference({"name"})
             f_called = True
 
         if {"remove_series"}.issubset(non_null_args):
-            j_figure = self.j_figure.axesRemoveSeries(remove_series)
+            j_figure = j_figure.axesRemoveSeries(remove_series)
             non_null_args = non_null_args.difference({"remove_series"})
             f_called = True
 
         if {"plot_style"}.issubset(non_null_args):
-            j_figure = self.j_figure.plotStyle(plot_style)
+            j_figure = j_figure.plotStyle(plot_style)
             non_null_args = non_null_args.difference({"plot_style"})
             f_called = True
 
@@ -162,42 +162,42 @@ class Figure(JObjectWrapper):
     def axis(
         self,
         dim: int = None,
-        t: Union[Table,SelectableDataSet] = None,
+        t: Union[Table, SelectableDataSet] = None,
         label: str = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
         font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str,float] = None,
-        max: Union[str,float] = None,
+        min: Union[str, float] = None,
+        max: Union[str, float] = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str,BusinessCalendar] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             dim (int): dimension of the axis
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
             font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str,float]): minimum value to display
-            max (Union[str,float]): maximum value to display
+            min (Union[str, float]): minimum value to display
+            max (Union[str, float]): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str,BusinessCalendar]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -264,92 +264,92 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"dim"}.issubset(non_null_args):
-            j_figure = self.j_figure.axis(dim)
+            j_figure = j_figure.axis(dim)
             non_null_args = non_null_args.difference({"dim"})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisColor(color)
+            j_figure = j_figure.axisColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"format"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisFormat(format)
+            j_figure = j_figure.axisFormat(format)
             non_null_args = non_null_args.difference({"format"})
             f_called = True
 
         if {"format_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisFormatPattern(format_pattern)
+            j_figure = j_figure.axisFormatPattern(format_pattern)
             non_null_args = non_null_args.difference({"format_pattern"})
             f_called = True
 
         if {"label"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisLabel(label)
+            j_figure = j_figure.axisLabel(label)
             non_null_args = non_null_args.difference({"label"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisLabelFont(font)
+            j_figure = j_figure.axisLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.axisLabelFont(font_family, font_style, font_size)
+            j_figure = j_figure.axisLabelFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
-            j_figure = self.j_figure.invert(invert)
+            j_figure = j_figure.invert(invert)
             non_null_args = non_null_args.difference({"invert"})
             f_called = True
 
         if {"log"}.issubset(non_null_args):
-            j_figure = self.j_figure.log(log)
+            j_figure = j_figure.log(log)
             non_null_args = non_null_args.difference({"log"})
             f_called = True
 
         if {"min"}.issubset(non_null_args):
-            j_figure = self.j_figure.min(min)
+            j_figure = j_figure.min(min)
             non_null_args = non_null_args.difference({"min"})
             f_called = True
 
         if {"t", "min"}.issubset(non_null_args):
-            j_figure = self.j_figure.min(t, min)
+            j_figure = j_figure.min(t, min)
             non_null_args = non_null_args.difference({"t", "min"})
             f_called = True
 
         if {"max"}.issubset(non_null_args):
-            j_figure = self.j_figure.max(max)
+            j_figure = j_figure.max(max)
             non_null_args = non_null_args.difference({"max"})
             f_called = True
 
         if {"t", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.max(t, max)
+            j_figure = j_figure.max(t, max)
             non_null_args = non_null_args.difference({"t", "max"})
             f_called = True
 
         if {"min", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.range(min, max)
+            j_figure = j_figure.range(min, max)
             non_null_args = non_null_args.difference({"min", "max"})
             f_called = True
 
         if {"business_time"}.issubset(non_null_args):
-            j_figure = self.j_figure.businessTime(business_time)
+            j_figure = j_figure.businessTime(business_time)
             non_null_args = non_null_args.difference({"business_time"})
             f_called = True
 
         if {"calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.businessTime(calendar)
+            j_figure = j_figure.businessTime(calendar)
             non_null_args = non_null_args.difference({"calendar"})
             f_called = True
 
         if {"t", "calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.businessTime(t, calendar)
+            j_figure = j_figure.businessTime(t, calendar)
             non_null_args = non_null_args.difference({"t", "calendar"})
             f_called = True
 
         if {"transform"}.issubset(non_null_args):
-            j_figure = self.j_figure.transform(transform)
+            j_figure = j_figure.transform(transform)
             non_null_args = non_null_args.difference({"transform"})
             f_called = True
 
@@ -438,62 +438,62 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"index"}.issubset(non_null_args):
-            j_figure = self.j_figure.chart(index)
+            j_figure = j_figure.chart(index)
             non_null_args = non_null_args.difference({"index"})
             f_called = True
 
         if {"row", "col"}.issubset(non_null_args):
-            j_figure = self.j_figure.chart(row, col)
+            j_figure = j_figure.chart(row, col)
             non_null_args = non_null_args.difference({"row", "col"})
             f_called = True
 
         if {"remove_series"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartRemoveSeries(remove_series)
+            j_figure = j_figure.chartRemoveSeries(remove_series)
             non_null_args = non_null_args.difference({"remove_series"})
             f_called = True
 
         if {"row_span", "col_span"}.issubset(non_null_args):
-            j_figure = self.j_figure.span(row_span, col_span)
+            j_figure = j_figure.span(row_span, col_span)
             non_null_args = non_null_args.difference({"row_span", "col_span"})
             f_called = True
 
         if {"row_span"}.issubset(non_null_args):
-            j_figure = self.j_figure.rowSpan(row_span)
+            j_figure = j_figure.rowSpan(row_span)
             non_null_args = non_null_args.difference({"row_span"})
             f_called = True
 
         if {"col_span"}.issubset(non_null_args):
-            j_figure = self.j_figure.colSpan(col_span)
+            j_figure = j_figure.colSpan(col_span)
             non_null_args = non_null_args.difference({"col_span"})
             f_called = True
 
         if {"orientation"}.issubset(non_null_args):
-            j_figure = self.j_figure.plotOrientation(orientation)
+            j_figure = j_figure.plotOrientation(orientation)
             non_null_args = non_null_args.difference({"orientation"})
             f_called = True
 
         if {"grid_visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.gridLinesVisible(grid_visible)
+            j_figure = j_figure.gridLinesVisible(grid_visible)
             non_null_args = non_null_args.difference({"grid_visible"})
             f_called = True
 
         if {"x_grid_visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.xGridLinesVisible(x_grid_visible)
+            j_figure = j_figure.xGridLinesVisible(x_grid_visible)
             non_null_args = non_null_args.difference({"x_grid_visible"})
             f_called = True
 
         if {"y_grid_visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.yGridLinesVisible(y_grid_visible)
+            j_figure = j_figure.yGridLinesVisible(y_grid_visible)
             non_null_args = non_null_args.difference({"y_grid_visible"})
             f_called = True
 
         if {"pie_label_format"}.issubset(non_null_args):
-            j_figure = self.j_figure.piePercentLabelFormat(pie_label_format)
+            j_figure = j_figure.piePercentLabelFormat(pie_label_format)
             non_null_args = non_null_args.difference({"pie_label_format"})
             f_called = True
 
         if {"pie_label_format", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.piePercentLabelFormat(pie_label_format, multi_series_key)
+            j_figure = j_figure.piePercentLabelFormat(pie_label_format, multi_series_key)
             non_null_args = non_null_args.difference({"pie_label_format", "multi_series_key"})
             f_called = True
 
@@ -504,7 +504,7 @@ class Figure(JObjectWrapper):
 
     def chart_legend(
         self,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
@@ -514,7 +514,7 @@ class Figure(JObjectWrapper):
         """TODO pydoc
 
         Args:
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
@@ -552,22 +552,22 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.legendColor(color)
+            j_figure = j_figure.legendColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.legendFont(font)
+            j_figure = j_figure.legendFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.legendFont(font_family, font_style, font_size)
+            j_figure = j_figure.legendFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.legendVisible(visible)
+            j_figure = j_figure.legendVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
@@ -578,13 +578,13 @@ class Figure(JObjectWrapper):
 
     def chart_title(
         self,
-        t: Union[Table,SelectableDataSet] = None,
+        t: Union[Table, SelectableDataSet] = None,
         title: str = None,
         columns: List[str] = None,
         format: str = None,
         max_rows: int = None,
         column_names_in_title: bool = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
@@ -593,13 +593,13 @@ class Figure(JObjectWrapper):
         """TODO pydoc
 
         Args:
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             title (str): title
             columns (List[str]): columns to include in the title
             format (str): a java.text.MessageFormat format string for formatting column values in the title
             max_rows (int): maximum number of row values to show in title
             column_names_in_title (bool): whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
@@ -651,42 +651,42 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"title"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitle(title)
+            j_figure = j_figure.chartTitle(title)
             non_null_args = non_null_args.difference({"title"})
             f_called = True
 
         if {"t", "columns"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitle(t, columns)
+            j_figure = j_figure.chartTitle(t, columns)
             non_null_args = non_null_args.difference({"t", "columns"})
             f_called = True
 
         if {"column_names_in_title", "t", "columns"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitle(column_names_in_title, t, columns)
+            j_figure = j_figure.chartTitle(column_names_in_title, t, columns)
             non_null_args = non_null_args.difference({"column_names_in_title", "t", "columns"})
             f_called = True
 
         if {"format", "t", "columns"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitle(format, t, columns)
+            j_figure = j_figure.chartTitle(format, t, columns)
             non_null_args = non_null_args.difference({"format", "t", "columns"})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitleColor(color)
+            j_figure = j_figure.chartTitleColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitleFont(font)
+            j_figure = j_figure.chartTitleFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.chartTitleFont(font_family, font_style, font_size)
+            j_figure = j_figure.chartTitleFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"max_rows"}.issubset(non_null_args):
-            j_figure = self.j_figure.maxRowsInTitle(max_rows)
+            j_figure = j_figure.maxRowsInTitle(max_rows)
             non_null_args = non_null_args.difference({"max_rows"})
             f_called = True
 
@@ -740,22 +740,22 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"remove_series"}.issubset(non_null_args):
-            j_figure = self.j_figure.figureRemoveSeries(remove_series)
+            j_figure = j_figure.figureRemoveSeries(remove_series)
             non_null_args = non_null_args.difference({"remove_series"})
             f_called = True
 
         if {"remove_chart_index"}.issubset(non_null_args):
-            j_figure = self.j_figure.removeChart(remove_chart_index)
+            j_figure = j_figure.removeChart(remove_chart_index)
             non_null_args = non_null_args.difference({"remove_chart_index"})
             f_called = True
 
         if {"remove_chart_row", "remove_chart_col"}.issubset(non_null_args):
-            j_figure = self.j_figure.removeChart(remove_chart_row, remove_chart_col)
+            j_figure = j_figure.removeChart(remove_chart_row, remove_chart_col)
             non_null_args = non_null_args.difference({"remove_chart_row", "remove_chart_col"})
             f_called = True
 
         if {"update_millis"}.issubset(non_null_args):
-            j_figure = self.j_figure.updateInterval(update_millis)
+            j_figure = j_figure.updateInterval(update_millis)
             non_null_args = non_null_args.difference({"update_millis"})
             f_called = True
 
@@ -767,7 +767,7 @@ class Figure(JObjectWrapper):
     def figure_title(
         self,
         title: str = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
@@ -777,7 +777,7 @@ class Figure(JObjectWrapper):
 
         Args:
             title (str): title
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
@@ -814,22 +814,22 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"title"}.issubset(non_null_args):
-            j_figure = self.j_figure.figureTitle(title)
+            j_figure = j_figure.figureTitle(title)
             non_null_args = non_null_args.difference({"title"})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.figureTitleColor(color)
+            j_figure = j_figure.figureTitleColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.figureTitleFont(font)
+            j_figure = j_figure.figureTitleFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.figureTitleFont(font_family, font_style, font_size)
+            j_figure = j_figure.figureTitleFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
@@ -873,17 +873,17 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"npoints"}.issubset(non_null_args):
-            j_figure = self.j_figure.funcNPoints(npoints)
+            j_figure = j_figure.funcNPoints(npoints)
             non_null_args = non_null_args.difference({"npoints"})
             f_called = True
 
         if {"xmin", "xmax"}.issubset(non_null_args):
-            j_figure = self.j_figure.funcRange(xmin, xmax)
+            j_figure = j_figure.funcRange(xmin, xmax)
             non_null_args = non_null_args.difference({"xmin", "xmax"})
             f_called = True
 
         if {"xmin", "xmax", "npoints"}.issubset(non_null_args):
-            j_figure = self.j_figure.funcRange(xmin, xmax, npoints)
+            j_figure = j_figure.funcRange(xmin, xmax, npoints)
             non_null_args = non_null_args.difference({"xmin", "xmax", "npoints"})
             f_called = True
 
@@ -895,16 +895,16 @@ class Figure(JObjectWrapper):
     def line(
         self,
         multi_series_key: List[Any] = None,
-        color: Union[str,int,Color] = None,
-        style: Union[str,LineStyle] = None,
+        color: Union[str, int, Color] = None,
+        style: Union[str, LineStyle] = None,
         visible: int = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str,int,Color]): color
-            style (Union[str,LineStyle]): line style
+            color (Union[str, int, Color]): color
+            style (Union[str, LineStyle]): line style
             visible (int): true to draw the design element; false otherwise.
 
         Returns:
@@ -932,32 +932,32 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.lineColor(color)
+            j_figure = j_figure.lineColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.lineColor(color, multi_series_key)
+            j_figure = j_figure.lineColor(color, multi_series_key)
             non_null_args = non_null_args.difference({"color", "multi_series_key"})
             f_called = True
 
         if {"style"}.issubset(non_null_args):
-            j_figure = self.j_figure.lineStyle(style)
+            j_figure = j_figure.lineStyle(style)
             non_null_args = non_null_args.difference({"style"})
             f_called = True
 
         if {"style", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.lineStyle(style, multi_series_key)
+            j_figure = j_figure.lineStyle(style, multi_series_key)
             non_null_args = non_null_args.difference({"style", "multi_series_key"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.linesVisible(visible)
+            j_figure = j_figure.linesVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
         if {"visible", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.linesVisible(visible, multi_series_key)
+            j_figure = j_figure.linesVisible(visible, multi_series_key)
             non_null_args = non_null_args.difference({"visible", "multi_series_key"})
             f_called = True
 
@@ -1046,22 +1046,22 @@ class Figure(JObjectWrapper):
     def plot_cat(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        category: Union[str,List[str],List[int],List[float]] = None,
-        y: Union[str,List[int],List[float],List[DateTime]] = None,
-        y_low: Union[str,List[int],List[float],List[DateTime]] = None,
-        y_high: Union[str,List[int],List[float],List[DateTime]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        category: Union[str, List[str], List[int], List[float]] = None,
+        y: Union[str, List[int], List[float], List[DateTime]] = None,
+        y_low: Union[str, List[int], List[float], List[DateTime]] = None,
+        y_high: Union[str, List[int], List[float], List[DateTime]] = None,
         by: List[str] = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str,List[str],List[int],List[float]]): discrete data or column name
-            y (Union[str,List[int],List[float],List[DateTime]]): y-values or column name
-            y_low (Union[str,List[int],List[float],List[DateTime]]): lower y error bar
-            y_high (Union[str,List[int],List[float],List[DateTime]]): upper y error bar
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
+            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
+            y_low (Union[str, List[int], List[float], List[DateTime]]): lower y error bar
+            y_high (Union[str, List[int], List[float], List[DateTime]]): upper y error bar
             by (List[str]): columns that hold grouping data
 
         Returns:
@@ -1114,15 +1114,15 @@ class Figure(JObjectWrapper):
     def plot_cat_hist(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        category: Union[str,List[str],List[int],List[float]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        category: Union[str, List[str], List[int], List[float]] = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str,List[str],List[int],List[float]]): discrete data or column name
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
 
         Returns:
             a new Figure
@@ -1154,24 +1154,24 @@ class Figure(JObjectWrapper):
     def plot_ohlc(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        x: Union[str,List[DateTime]] = None,
-        open: Union[str,List[int],List[float],List[DateTime]] = None,
-        high: Union[str,List[int],List[float],List[DateTime]] = None,
-        low: Union[str,List[int],List[float],List[DateTime]] = None,
-        close: Union[str,List[int],List[float],List[DateTime]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        x: Union[str, List[DateTime]] = None,
+        open: Union[str, List[int], List[float], List[DateTime]] = None,
+        high: Union[str, List[int], List[float], List[DateTime]] = None,
+        low: Union[str, List[int], List[float], List[DateTime]] = None,
+        close: Union[str, List[int], List[float], List[DateTime]] = None,
         by: List[str] = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str,List[DateTime]]): x-values or column name
-            open (Union[str,List[int],List[float],List[DateTime]]): bar open y-values.
-            high (Union[str,List[int],List[float],List[DateTime]]): bar high y-values.
-            low (Union[str,List[int],List[float],List[DateTime]]): bar low y-values.
-            close (Union[str,List[int],List[float],List[DateTime]]): bar close y-values.
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            x (Union[str, List[DateTime]]): x-values or column name
+            open (Union[str, List[int], List[float], List[DateTime]]): bar open y-values.
+            high (Union[str, List[int], List[float], List[DateTime]]): bar high y-values.
+            low (Union[str, List[int], List[float], List[DateTime]]): bar low y-values.
+            close (Union[str, List[int], List[float], List[DateTime]]): bar close y-values.
             by (List[str]): columns that hold grouping data
 
         Returns:
@@ -1221,17 +1221,17 @@ class Figure(JObjectWrapper):
     def plot_pie(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        category: Union[str,List[str],List[int],List[float]] = None,
-        y: Union[str,List[int],List[float],List[DateTime]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        category: Union[str, List[str], List[int], List[float]] = None,
+        y: Union[str, List[int], List[float], List[DateTime]] = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str,List[str],List[int],List[float]]): discrete data or column name
-            y (Union[str,List[int],List[float],List[DateTime]]): y-values or column name
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
+            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
 
         Returns:
             a new Figure
@@ -1266,13 +1266,13 @@ class Figure(JObjectWrapper):
     def plot_xy(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        x: Union[str,List[int],List[float],List[DateTime]] = None,
-        x_low: Union[str,List[int],List[float],List[DateTime]] = None,
-        x_high: Union[str,List[int],List[float],List[DateTime]] = None,
-        y: Union[str,List[int],List[float],List[DateTime]] = None,
-        y_low: Union[str,List[int],List[float],List[DateTime]] = None,
-        y_high: Union[str,List[int],List[float],List[DateTime]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        x: Union[str, List[int], List[float], List[DateTime]] = None,
+        x_low: Union[str, List[int], List[float], List[DateTime]] = None,
+        x_high: Union[str, List[int], List[float], List[DateTime]] = None,
+        y: Union[str, List[int], List[float], List[DateTime]] = None,
+        y_low: Union[str, List[int], List[float], List[DateTime]] = None,
+        y_high: Union[str, List[int], List[float], List[DateTime]] = None,
         function: Callable = None,
         by: List[str] = None,
         x_time_axis: bool = None,
@@ -1282,13 +1282,13 @@ class Figure(JObjectWrapper):
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str,List[int],List[float],List[DateTime]]): x-values or column name
-            x_low (Union[str,List[int],List[float],List[DateTime]]): lower x error bar
-            x_high (Union[str,List[int],List[float],List[DateTime]]): upper x error bar
-            y (Union[str,List[int],List[float],List[DateTime]]): y-values or column name
-            y_low (Union[str,List[int],List[float],List[DateTime]]): lower y error bar
-            y_high (Union[str,List[int],List[float],List[DateTime]]): upper y error bar
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            x (Union[str, List[int], List[float], List[DateTime]]): x-values or column name
+            x_low (Union[str, List[int], List[float], List[DateTime]]): lower x error bar
+            x_high (Union[str, List[int], List[float], List[DateTime]]): upper x error bar
+            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
+            y_low (Union[str, List[int], List[float], List[DateTime]]): lower y error bar
+            y_high (Union[str, List[int], List[float], List[DateTime]]): upper y error bar
             function (Callable): function
             by (List[str]): columns that hold grouping data
             x_time_axis (bool): whether to treat the x-values as times
@@ -1375,8 +1375,8 @@ class Figure(JObjectWrapper):
     def plot_xy_hist(
         self,
         series_name: str,
-        t: Union[Table,SelectableDataSet] = None,
-        x: Union[str,List[int],List[float],List[DateTime]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        x: Union[str, List[int], List[float], List[DateTime]] = None,
         xmin: float = None,
         xmax: float = None,
         nbins: int = None,
@@ -1385,8 +1385,8 @@ class Figure(JObjectWrapper):
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str,List[int],List[float],List[DateTime]]): x-values or column name
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            x (Union[str, List[int], List[float], List[DateTime]]): x-values or column name
             xmin (float): minimum x value to display
             xmax (float): maximum x value to display
             nbins (int): number of bins
@@ -1435,26 +1435,26 @@ class Figure(JObjectWrapper):
 
     def point(
         self,
-        t: Union[Table,SelectableDataSet] = None,
-        category: Union[str,List[str],List[int],List[float]] = None,
+        t: Union[Table, SelectableDataSet] = None,
+        category: Union[str, List[str], List[int], List[float]] = None,
         multi_series_key: List[Any] = None,
-        color: Union[str,int,Color,List[str],List[int],List[Color],Callable,Dict[Any,str],Dict[Any,int],Dict[Any,Color]] = None,
-        label: Union[str,List[str],Callable,Dict[Any,str]] = None,
-        shape: Union[str,Shape,List[str],List[Shape],Callable,Dict[Any,str],Dict[Any,Shape]] = None,
-        size: Union[int,float,List[int],List[float],Callable,Dict[Any,int],Dict[Any,float]] = None,
+        color: Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]] = None,
+        label: Union[str, List[str], Callable, Dict[Any,str]] = None,
+        shape: Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]] = None,
+        size: Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]] = None,
         label_format: str = None,
         visible: int = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str,List[str],List[int],List[float]]): discrete data or column name
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str,int,Color,List[str],List[int],List[Color],Callable,Dict[Any,str],Dict[Any,int],Dict[Any,Color]]): colors or a column name containing colors
-            label (Union[str,List[str],Callable,Dict[Any,str]]): labels or a column name containing labels
-            shape (Union[str,Shape,List[str],List[Shape],Callable,Dict[Any,str],Dict[Any,Shape]]): shapes or a column name containing shapes
-            size (Union[int,float,List[int],List[float],Callable,Dict[Any,int],Dict[Any,float]]): sizes or a column name containing sizes
+            color (Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]]): colors or a column name containing colors
+            label (Union[str, List[str], Callable, Dict[Any,str]]): labels or a column name containing labels
+            shape (Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]]): shapes or a column name containing shapes
+            size (Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]]): sizes or a column name containing sizes
             label_format (str): point label format.
             visible (int): true to draw the design element; false otherwise.
 
@@ -1498,182 +1498,182 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(color)
+            j_figure = j_figure.pointColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"category", "color"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(category, color)
+            j_figure = j_figure.pointColor(category, color)
             non_null_args = non_null_args.difference({"category", "color"})
             f_called = True
 
         if {"color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(color, multi_series_key)
+            j_figure = j_figure.pointColor(color, multi_series_key)
             non_null_args = non_null_args.difference({"color", "multi_series_key"})
             f_called = True
 
         if {"t", "color"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(t, color)
+            j_figure = j_figure.pointColor(t, color)
             non_null_args = non_null_args.difference({"t", "color"})
             f_called = True
 
         if {"category", "color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(category, color, multi_series_key)
+            j_figure = j_figure.pointColor(category, color, multi_series_key)
             non_null_args = non_null_args.difference({"category", "color", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "color"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(t, category, color)
+            j_figure = j_figure.pointColor(t, category, color)
             non_null_args = non_null_args.difference({"t", "category", "color"})
             f_called = True
 
         if {"t", "color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(t, color, multi_series_key)
+            j_figure = j_figure.pointColor(t, color, multi_series_key)
             non_null_args = non_null_args.difference({"t", "color", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointColor(t, category, color, multi_series_key)
+            j_figure = j_figure.pointColor(t, category, color, multi_series_key)
             non_null_args = non_null_args.difference({"t", "category", "color", "multi_series_key"})
             f_called = True
 
         if {"label"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(label)
+            j_figure = j_figure.pointLabel(label)
             non_null_args = non_null_args.difference({"label"})
             f_called = True
 
         if {"category", "label"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(category, label)
+            j_figure = j_figure.pointLabel(category, label)
             non_null_args = non_null_args.difference({"category", "label"})
             f_called = True
 
         if {"label", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(label, multi_series_key)
+            j_figure = j_figure.pointLabel(label, multi_series_key)
             non_null_args = non_null_args.difference({"label", "multi_series_key"})
             f_called = True
 
         if {"t", "label"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(t, label)
+            j_figure = j_figure.pointLabel(t, label)
             non_null_args = non_null_args.difference({"t", "label"})
             f_called = True
 
         if {"category", "label", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(category, label, multi_series_key)
+            j_figure = j_figure.pointLabel(category, label, multi_series_key)
             non_null_args = non_null_args.difference({"category", "label", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "label"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(t, category, label)
+            j_figure = j_figure.pointLabel(t, category, label)
             non_null_args = non_null_args.difference({"t", "category", "label"})
             f_called = True
 
         if {"t", "label", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(t, label, multi_series_key)
+            j_figure = j_figure.pointLabel(t, label, multi_series_key)
             non_null_args = non_null_args.difference({"t", "label", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "label", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabel(t, category, label, multi_series_key)
+            j_figure = j_figure.pointLabel(t, category, label, multi_series_key)
             non_null_args = non_null_args.difference({"t", "category", "label", "multi_series_key"})
             f_called = True
 
         if {"label_format"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabelFormat(label_format)
+            j_figure = j_figure.pointLabelFormat(label_format)
             non_null_args = non_null_args.difference({"label_format"})
             f_called = True
 
         if {"label_format", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointLabelFormat(label_format, multi_series_key)
+            j_figure = j_figure.pointLabelFormat(label_format, multi_series_key)
             non_null_args = non_null_args.difference({"label_format", "multi_series_key"})
             f_called = True
 
         if {"shape"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(shape)
+            j_figure = j_figure.pointShape(shape)
             non_null_args = non_null_args.difference({"shape"})
             f_called = True
 
         if {"category", "shape"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(category, shape)
+            j_figure = j_figure.pointShape(category, shape)
             non_null_args = non_null_args.difference({"category", "shape"})
             f_called = True
 
         if {"shape", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(shape, multi_series_key)
+            j_figure = j_figure.pointShape(shape, multi_series_key)
             non_null_args = non_null_args.difference({"shape", "multi_series_key"})
             f_called = True
 
         if {"t", "shape"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(t, shape)
+            j_figure = j_figure.pointShape(t, shape)
             non_null_args = non_null_args.difference({"t", "shape"})
             f_called = True
 
         if {"category", "shape", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(category, shape, multi_series_key)
+            j_figure = j_figure.pointShape(category, shape, multi_series_key)
             non_null_args = non_null_args.difference({"category", "shape", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "shape"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(t, category, shape)
+            j_figure = j_figure.pointShape(t, category, shape)
             non_null_args = non_null_args.difference({"t", "category", "shape"})
             f_called = True
 
         if {"t", "shape", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(t, shape, multi_series_key)
+            j_figure = j_figure.pointShape(t, shape, multi_series_key)
             non_null_args = non_null_args.difference({"t", "shape", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "shape", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointShape(t, category, shape, multi_series_key)
+            j_figure = j_figure.pointShape(t, category, shape, multi_series_key)
             non_null_args = non_null_args.difference({"t", "category", "shape", "multi_series_key"})
             f_called = True
 
         if {"size"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(size)
+            j_figure = j_figure.pointSize(size)
             non_null_args = non_null_args.difference({"size"})
             f_called = True
 
         if {"category", "size"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(category, size)
+            j_figure = j_figure.pointSize(category, size)
             non_null_args = non_null_args.difference({"category", "size"})
             f_called = True
 
         if {"size", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(size, multi_series_key)
+            j_figure = j_figure.pointSize(size, multi_series_key)
             non_null_args = non_null_args.difference({"size", "multi_series_key"})
             f_called = True
 
         if {"t", "size"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(t, size)
+            j_figure = j_figure.pointSize(t, size)
             non_null_args = non_null_args.difference({"t", "size"})
             f_called = True
 
         if {"category", "size", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(category, size, multi_series_key)
+            j_figure = j_figure.pointSize(category, size, multi_series_key)
             non_null_args = non_null_args.difference({"category", "size", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "size"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(t, category, size)
+            j_figure = j_figure.pointSize(t, category, size)
             non_null_args = non_null_args.difference({"t", "category", "size"})
             f_called = True
 
         if {"t", "size", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(t, size, multi_series_key)
+            j_figure = j_figure.pointSize(t, size, multi_series_key)
             non_null_args = non_null_args.difference({"t", "size", "multi_series_key"})
             f_called = True
 
         if {"t", "category", "size", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointSize(t, category, size, multi_series_key)
+            j_figure = j_figure.pointSize(t, category, size, multi_series_key)
             non_null_args = non_null_args.difference({"t", "category", "size", "multi_series_key"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointsVisible(visible)
+            j_figure = j_figure.pointsVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
         if {"visible", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.pointsVisible(visible, multi_series_key)
+            j_figure = j_figure.pointsVisible(visible, multi_series_key)
             non_null_args = non_null_args.difference({"visible", "multi_series_key"})
             f_called = True
 
@@ -1743,11 +1743,11 @@ class Figure(JObjectWrapper):
         axes: int = None,
         group: int = None,
         multi_series_key: List[Any] = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         tool_tip_pattern: str = None,
         x_tool_tip_pattern: str = None,
         y_tool_tip_pattern: str = None,
-        error_bar_color: Union[str,int,Color] = None,
+        error_bar_color: Union[str, int, Color] = None,
         gradient_visible: bool = None,
         naming_function: Callable = None,
     ) -> Figure:
@@ -1758,11 +1758,11 @@ class Figure(JObjectWrapper):
             axes (int): identifier
             group (int): group for the data series.
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             tool_tip_pattern (str): x and y tool tip format pattern
             x_tool_tip_pattern (str): x tool tip format pattern
             y_tool_tip_pattern (str): y tool tip format pattern
-            error_bar_color (Union[str,int,Color]): error bar color.
+            error_bar_color (Union[str, int, Color]): error bar color.
             gradient_visible (bool): bar gradient visibility.
             naming_function (Callable): series naming function
 
@@ -1812,87 +1812,87 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"axes"}.issubset(non_null_args):
-            j_figure = self.j_figure.series(axes)
+            j_figure = j_figure.series(axes)
             non_null_args = non_null_args.difference({"axes"})
             f_called = True
 
         if {"name"}.issubset(non_null_args):
-            j_figure = self.j_figure.series(name)
+            j_figure = j_figure.series(name)
             non_null_args = non_null_args.difference({"name"})
             f_called = True
 
         if {"group"}.issubset(non_null_args):
-            j_figure = self.j_figure.group(group)
+            j_figure = j_figure.group(group)
             non_null_args = non_null_args.difference({"group"})
             f_called = True
 
         if {"group", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.group(group, multi_series_key)
+            j_figure = j_figure.group(group, multi_series_key)
             non_null_args = non_null_args.difference({"group", "multi_series_key"})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.seriesColor(color)
+            j_figure = j_figure.seriesColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.seriesColor(color, multi_series_key)
+            j_figure = j_figure.seriesColor(color, multi_series_key)
             non_null_args = non_null_args.difference({"color", "multi_series_key"})
             f_called = True
 
         if {"tool_tip_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.toolTipPattern(tool_tip_pattern)
+            j_figure = j_figure.toolTipPattern(tool_tip_pattern)
             non_null_args = non_null_args.difference({"tool_tip_pattern"})
             f_called = True
 
         if {"tool_tip_pattern", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.toolTipPattern(tool_tip_pattern, multi_series_key)
+            j_figure = j_figure.toolTipPattern(tool_tip_pattern, multi_series_key)
             non_null_args = non_null_args.difference({"tool_tip_pattern", "multi_series_key"})
             f_called = True
 
         if {"x_tool_tip_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.xToolTipPattern(x_tool_tip_pattern)
+            j_figure = j_figure.xToolTipPattern(x_tool_tip_pattern)
             non_null_args = non_null_args.difference({"x_tool_tip_pattern"})
             f_called = True
 
         if {"x_tool_tip_pattern", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.xToolTipPattern(x_tool_tip_pattern, multi_series_key)
+            j_figure = j_figure.xToolTipPattern(x_tool_tip_pattern, multi_series_key)
             non_null_args = non_null_args.difference({"x_tool_tip_pattern", "multi_series_key"})
             f_called = True
 
         if {"y_tool_tip_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.yToolTipPattern(y_tool_tip_pattern)
+            j_figure = j_figure.yToolTipPattern(y_tool_tip_pattern)
             non_null_args = non_null_args.difference({"y_tool_tip_pattern"})
             f_called = True
 
         if {"y_tool_tip_pattern", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.yToolTipPattern(y_tool_tip_pattern, multi_series_key)
+            j_figure = j_figure.yToolTipPattern(y_tool_tip_pattern, multi_series_key)
             non_null_args = non_null_args.difference({"y_tool_tip_pattern", "multi_series_key"})
             f_called = True
 
         if {"error_bar_color"}.issubset(non_null_args):
-            j_figure = self.j_figure.errorBarColor(error_bar_color)
+            j_figure = j_figure.errorBarColor(error_bar_color)
             non_null_args = non_null_args.difference({"error_bar_color"})
             f_called = True
 
         if {"error_bar_color", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.errorBarColor(error_bar_color, multi_series_key)
+            j_figure = j_figure.errorBarColor(error_bar_color, multi_series_key)
             non_null_args = non_null_args.difference({"error_bar_color", "multi_series_key"})
             f_called = True
 
         if {"gradient_visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.gradientVisible(gradient_visible)
+            j_figure = j_figure.gradientVisible(gradient_visible)
             non_null_args = non_null_args.difference({"gradient_visible"})
             f_called = True
 
         if {"gradient_visible", "multi_series_key"}.issubset(non_null_args):
-            j_figure = self.j_figure.gradientVisible(gradient_visible, multi_series_key)
+            j_figure = j_figure.gradientVisible(gradient_visible, multi_series_key)
             non_null_args = non_null_args.difference({"gradient_visible", "multi_series_key"})
             f_called = True
 
         if {"naming_function"}.issubset(non_null_args):
-            j_figure = self.j_figure.seriesNamingFunction(naming_function)
+            j_figure = j_figure.seriesNamingFunction(naming_function)
             non_null_args = non_null_args.difference({"naming_function"})
             f_called = True
 
@@ -1981,32 +1981,32 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"gap"}.issubset(non_null_args):
-            j_figure = self.j_figure.ticks(gap)
+            j_figure = j_figure.ticks(gap)
             non_null_args = non_null_args.difference({"gap"})
             f_called = True
 
         if {"loc"}.issubset(non_null_args):
-            j_figure = self.j_figure.ticks(loc)
+            j_figure = j_figure.ticks(loc)
             non_null_args = non_null_args.difference({"loc"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.ticksFont(font)
+            j_figure = j_figure.ticksFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.ticksFont(font_family, font_style, font_size)
+            j_figure = j_figure.ticksFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.ticksVisible(visible)
+            j_figure = j_figure.ticksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
         if {"angle"}.issubset(non_null_args):
-            j_figure = self.j_figure.tickLabelAngle(angle)
+            j_figure = j_figure.tickLabelAngle(angle)
             non_null_args = non_null_args.difference({"angle"})
             f_called = True
 
@@ -2045,12 +2045,12 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"nminor"}.issubset(non_null_args):
-            j_figure = self.j_figure.minorTicks(nminor)
+            j_figure = j_figure.minorTicks(nminor)
             non_null_args = non_null_args.difference({"nminor"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.minorTicksVisible(visible)
+            j_figure = j_figure.minorTicksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
@@ -2098,41 +2098,41 @@ class Figure(JObjectWrapper):
 
     def x_axis(
         self,
-        t: Union[Table,SelectableDataSet] = None,
+        t: Union[Table, SelectableDataSet] = None,
         label: str = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
         font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str,float] = None,
-        max: Union[str,float] = None,
+        min: Union[str, float] = None,
+        max: Union[str, float] = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str,BusinessCalendar] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
             font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str,float]): minimum value to display
-            max (Union[str,float]): maximum value to display
+            min (Union[str, float]): minimum value to display
+            max (Union[str, float]): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str,BusinessCalendar]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2195,93 +2195,93 @@ class Figure(JObjectWrapper):
         f_called = False
         j_figure = self.j_figure
 
-        if {}.issubset(non_null_args):
-            j_figure = self.j_figure.xAxis()
+        if set().issubset(non_null_args):
+            j_figure = j_figure.xAxis()
             non_null_args = non_null_args.difference({})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.xColor(color)
+            j_figure = j_figure.xColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"format"}.issubset(non_null_args):
-            j_figure = self.j_figure.xFormat(format)
+            j_figure = j_figure.xFormat(format)
             non_null_args = non_null_args.difference({"format"})
             f_called = True
 
         if {"format_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.xFormatPattern(format_pattern)
+            j_figure = j_figure.xFormatPattern(format_pattern)
             non_null_args = non_null_args.difference({"format_pattern"})
             f_called = True
 
         if {"label"}.issubset(non_null_args):
-            j_figure = self.j_figure.xLabel(label)
+            j_figure = j_figure.xLabel(label)
             non_null_args = non_null_args.difference({"label"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.xLabelFont(font)
+            j_figure = j_figure.xLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.xLabelFont(font_family, font_style, font_size)
+            j_figure = j_figure.xLabelFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
-            j_figure = self.j_figure.xInvert(invert)
+            j_figure = j_figure.xInvert(invert)
             non_null_args = non_null_args.difference({"invert"})
             f_called = True
 
         if {"log"}.issubset(non_null_args):
-            j_figure = self.j_figure.xLog(log)
+            j_figure = j_figure.xLog(log)
             non_null_args = non_null_args.difference({"log"})
             f_called = True
 
         if {"min"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMin(min)
+            j_figure = j_figure.xMin(min)
             non_null_args = non_null_args.difference({"min"})
             f_called = True
 
         if {"t", "min"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMin(t, min)
+            j_figure = j_figure.xMin(t, min)
             non_null_args = non_null_args.difference({"t", "min"})
             f_called = True
 
         if {"max"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMax(max)
+            j_figure = j_figure.xMax(max)
             non_null_args = non_null_args.difference({"max"})
             f_called = True
 
         if {"t", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMax(t, max)
+            j_figure = j_figure.xMax(t, max)
             non_null_args = non_null_args.difference({"t", "max"})
             f_called = True
 
         if {"min", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.xRange(min, max)
+            j_figure = j_figure.xRange(min, max)
             non_null_args = non_null_args.difference({"min", "max"})
             f_called = True
 
         if {"business_time"}.issubset(non_null_args):
-            j_figure = self.j_figure.xBusinessTime(business_time)
+            j_figure = j_figure.xBusinessTime(business_time)
             non_null_args = non_null_args.difference({"business_time"})
             f_called = True
 
         if {"calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.xBusinessTime(calendar)
+            j_figure = j_figure.xBusinessTime(calendar)
             non_null_args = non_null_args.difference({"calendar"})
             f_called = True
 
         if {"t", "calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.xBusinessTime(t, calendar)
+            j_figure = j_figure.xBusinessTime(t, calendar)
             non_null_args = non_null_args.difference({"t", "calendar"})
             f_called = True
 
         if {"transform"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTransform(transform)
+            j_figure = j_figure.xTransform(transform)
             non_null_args = non_null_args.difference({"transform"})
             f_called = True
 
@@ -2350,32 +2350,32 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"gap"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTicks(gap)
+            j_figure = j_figure.xTicks(gap)
             non_null_args = non_null_args.difference({"gap"})
             f_called = True
 
         if {"loc"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTicks(loc)
+            j_figure = j_figure.xTicks(loc)
             non_null_args = non_null_args.difference({"loc"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTicksFont(font)
+            j_figure = j_figure.xTicksFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTicksFont(font_family, font_style, font_size)
+            j_figure = j_figure.xTicksFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTicksVisible(visible)
+            j_figure = j_figure.xTicksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
         if {"angle"}.issubset(non_null_args):
-            j_figure = self.j_figure.xTickLabelAngle(angle)
+            j_figure = j_figure.xTickLabelAngle(angle)
             non_null_args = non_null_args.difference({"angle"})
             f_called = True
 
@@ -2414,12 +2414,12 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"nminor"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMinorTicks(nminor)
+            j_figure = j_figure.xMinorTicks(nminor)
             non_null_args = non_null_args.difference({"nminor"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.xMinorTicksVisible(visible)
+            j_figure = j_figure.xMinorTicksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
@@ -2458,41 +2458,41 @@ class Figure(JObjectWrapper):
 
     def y_axis(
         self,
-        t: Union[Table,SelectableDataSet] = None,
+        t: Union[Table, SelectableDataSet] = None,
         label: str = None,
-        color: Union[str,int,Color] = None,
+        color: Union[str, int, Color] = None,
         font: Font = None,
         font_family: str = None,
         font_size: int = None,
         font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str,float] = None,
-        max: Union[str,float] = None,
+        min: Union[str, float] = None,
+        max: Union[str, float] = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str,BusinessCalendar] = None,
+        calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """TODO pydoc
 
         Args:
-            t (Union[Table,SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str,int,Color]): color
+            color (Union[str, int, Color]): color
             font (Font): font
             font_family (str): font family
             font_size (int): font size
             font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str,float]): minimum value to display
-            max (Union[str,float]): maximum value to display
+            min (Union[str, float]): minimum value to display
+            max (Union[str, float]): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str,BusinessCalendar]): business time axis using the specified calendar
+            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2555,93 +2555,93 @@ class Figure(JObjectWrapper):
         f_called = False
         j_figure = self.j_figure
 
-        if {}.issubset(non_null_args):
-            j_figure = self.j_figure.yAxis()
+        if set().issubset(non_null_args):
+            j_figure = j_figure.yAxis()
             non_null_args = non_null_args.difference({})
             f_called = True
 
         if {"color"}.issubset(non_null_args):
-            j_figure = self.j_figure.yColor(color)
+            j_figure = j_figure.yColor(color)
             non_null_args = non_null_args.difference({"color"})
             f_called = True
 
         if {"format"}.issubset(non_null_args):
-            j_figure = self.j_figure.yFormat(format)
+            j_figure = j_figure.yFormat(format)
             non_null_args = non_null_args.difference({"format"})
             f_called = True
 
         if {"format_pattern"}.issubset(non_null_args):
-            j_figure = self.j_figure.yFormatPattern(format_pattern)
+            j_figure = j_figure.yFormatPattern(format_pattern)
             non_null_args = non_null_args.difference({"format_pattern"})
             f_called = True
 
         if {"label"}.issubset(non_null_args):
-            j_figure = self.j_figure.yLabel(label)
+            j_figure = j_figure.yLabel(label)
             non_null_args = non_null_args.difference({"label"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.yLabelFont(font)
+            j_figure = j_figure.yLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.yLabelFont(font_family, font_style, font_size)
+            j_figure = j_figure.yLabelFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
-            j_figure = self.j_figure.yInvert(invert)
+            j_figure = j_figure.yInvert(invert)
             non_null_args = non_null_args.difference({"invert"})
             f_called = True
 
         if {"log"}.issubset(non_null_args):
-            j_figure = self.j_figure.yLog(log)
+            j_figure = j_figure.yLog(log)
             non_null_args = non_null_args.difference({"log"})
             f_called = True
 
         if {"min"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMin(min)
+            j_figure = j_figure.yMin(min)
             non_null_args = non_null_args.difference({"min"})
             f_called = True
 
         if {"t", "min"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMin(t, min)
+            j_figure = j_figure.yMin(t, min)
             non_null_args = non_null_args.difference({"t", "min"})
             f_called = True
 
         if {"max"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMax(max)
+            j_figure = j_figure.yMax(max)
             non_null_args = non_null_args.difference({"max"})
             f_called = True
 
         if {"t", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMax(t, max)
+            j_figure = j_figure.yMax(t, max)
             non_null_args = non_null_args.difference({"t", "max"})
             f_called = True
 
         if {"min", "max"}.issubset(non_null_args):
-            j_figure = self.j_figure.yRange(min, max)
+            j_figure = j_figure.yRange(min, max)
             non_null_args = non_null_args.difference({"min", "max"})
             f_called = True
 
         if {"business_time"}.issubset(non_null_args):
-            j_figure = self.j_figure.yBusinessTime(business_time)
+            j_figure = j_figure.yBusinessTime(business_time)
             non_null_args = non_null_args.difference({"business_time"})
             f_called = True
 
         if {"calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.yBusinessTime(calendar)
+            j_figure = j_figure.yBusinessTime(calendar)
             non_null_args = non_null_args.difference({"calendar"})
             f_called = True
 
         if {"t", "calendar"}.issubset(non_null_args):
-            j_figure = self.j_figure.yBusinessTime(t, calendar)
+            j_figure = j_figure.yBusinessTime(t, calendar)
             non_null_args = non_null_args.difference({"t", "calendar"})
             f_called = True
 
         if {"transform"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTransform(transform)
+            j_figure = j_figure.yTransform(transform)
             non_null_args = non_null_args.difference({"transform"})
             f_called = True
 
@@ -2710,32 +2710,32 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"gap"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTicks(gap)
+            j_figure = j_figure.yTicks(gap)
             non_null_args = non_null_args.difference({"gap"})
             f_called = True
 
         if {"loc"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTicks(loc)
+            j_figure = j_figure.yTicks(loc)
             non_null_args = non_null_args.difference({"loc"})
             f_called = True
 
         if {"font"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTicksFont(font)
+            j_figure = j_figure.yTicksFont(font)
             non_null_args = non_null_args.difference({"font"})
             f_called = True
 
         if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTicksFont(font_family, font_style, font_size)
+            j_figure = j_figure.yTicksFont(font_family, font_style, font_size)
             non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTicksVisible(visible)
+            j_figure = j_figure.yTicksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 
         if {"angle"}.issubset(non_null_args):
-            j_figure = self.j_figure.yTickLabelAngle(angle)
+            j_figure = j_figure.yTickLabelAngle(angle)
             non_null_args = non_null_args.difference({"angle"})
             f_called = True
 
@@ -2774,12 +2774,12 @@ class Figure(JObjectWrapper):
         j_figure = self.j_figure
 
         if {"nminor"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMinorTicks(nminor)
+            j_figure = j_figure.yMinorTicks(nminor)
             non_null_args = non_null_args.difference({"nminor"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
-            j_figure = self.j_figure.yMinorTicksVisible(visible)
+            j_figure = j_figure.yMinorTicksVisible(visible)
             non_null_args = non_null_args.difference({"visible"})
             f_called = True
 

@@ -333,7 +333,7 @@ public class GeneratePyV2FigureAPI {
          */
         public String typeAnnotation() {
             return typeAnnotations.length == 1 ? typeAnnotations[0]
-                    : "Union[" + String.join(",", typeAnnotations) + "]";
+                    : "Union[" + String.join(", ", typeAnnotations) + "]";
         }
 
         /**
@@ -827,15 +827,22 @@ public class GeneratePyV2FigureAPI {
                     validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
                     final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
 
+                    if (quoted_an.length == 0) {
+                        sb.append(INDENT)
+                                .append(INDENT)
+                                .append("if set()")
+                                .append(".issubset(non_null_args):\n");
+                    } else {
+                        sb.append(INDENT)
+                                .append(INDENT)
+                                .append("if {")
+                                .append(String.join(", ", quoted_an))
+                                .append("}.issubset(non_null_args):\n");
+                    }
                     sb.append(INDENT)
                             .append(INDENT)
-                            .append("if {")
-                            .append(String.join(", ", quoted_an))
-                            .append("}.issubset(non_null_args):\n")
                             .append(INDENT)
-                            .append(INDENT)
-                            .append(INDENT)
-                            .append("j_figure = self.j_figure.")
+                            .append("j_figure = j_figure.")
                             .append(key.name)
                             .append("(")
                             .append(String.join(", ", an))
