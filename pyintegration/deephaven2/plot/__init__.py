@@ -6,28 +6,89 @@ from enum import Enum
 import jpy
 
 from deephaven2._wrapper_abc import JObjectWrapper
-from .linestyle import LineStyle
+from deephaven2.time import TimeZone
 from .color import Color, Colors
 from .font import Font, FontStyle
+from .linestyle import LineStyle
+from .. import DHError
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
 _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
 _JAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.AxisFormat")
-
+_JDecimalAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.DecimalAxisFormat")
+_JNanosAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.NanosAxisFormat")
 _JShapes = jpy.get_type("io.deephaven.gui.shape.JShapes")
 _JNamedShape = jpy.get_type("io.deephaven.gui.shape.NamedShape")
+_JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
-
-class AxisFormat:
-    ...
+AxisTransformNames = list(_JPlottingConvenience.axisTransformNames())
 
 
 class BusinessCalendar:
     ...
 
 
-class AxisTransform:
-    ...
+class AxisFormat(JObjectWrapper):
+    """ TODO """
+
+    j_object_type = _JAxisTransform
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_axis_format
+
+    def __init__(self, j_axis_format):
+        self.j_axis_format = j_axis_format
+
+    def set_pattern(self, pattern: str) -> None:
+        self.j_axis_format.setPattern(pattern)
+
+
+class DecimalAxisFormat(AxisFormat):
+    """ TODO """
+
+    def __init__(self):
+        self.j_axis_format = _JDecimalAxisFormat()
+
+
+class NanosAxisFormat(AxisFormat):
+    """ TODO """
+
+    def __init__(self, tz: TimeZone = None):
+        if not tz:
+            self.j_axis_format = _JNanosAxisFormat()
+        else:
+            self.j_axis_format = _JNanosAxisFormat(tz.value)
+
+
+class AxisTransform(JObjectWrapper):
+    """ TODO """
+    j_object_type = _JAxisTransform
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_axis_transform
+
+    def __init__(self, j_axis_transform):
+        self.j_axis_transform = j_axis_transform
+
+
+def get_axis_transform_by_name(name: str) -> AxisTransform:
+    """ Returns an AxisTransform object by its name.
+
+    Args:
+        name (str): the predefined AxisTransform name
+
+    Returns:
+        a AxisTransform
+
+    Raises:
+        DHError
+    """
+    try:
+        return AxisTransform(j_axis_transform=_JPlottingConvenience.axisTransform(name))
+    except Exception as e:
+        raise DHError(e, "failed to retrieve the named AxisTransform.") from e
 
 
 class Shape(Enum):
