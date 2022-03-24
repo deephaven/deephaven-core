@@ -4,9 +4,6 @@ plugins {
 
 configurations {
     js
-    jsJar {
-        transitive = false
-    }
 }
 
 dependencies {
@@ -15,13 +12,12 @@ dependencies {
 }
 
 /**
- * Provides a jar full of static js/html/css that can be served from jetty
+ * Attach the static js/html/css to the main jar so that can be served from jetty
  */
-def ideClientJsJar = tasks.register('ideClientJsJar', Jar) {
-    from configurations.js
-}
+tasks.named(JavaPlugin.JAR_TASK_NAME, Jar, { jar ->
+    jar.from(configurations.js)
+})
 
 artifacts {
-    jsJar ideClientJsJar
     js layout.buildDirectory.dir('empty')
 }
