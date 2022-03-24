@@ -35,7 +35,7 @@ public class ConnectOptions {
     String userAgent;
 
     @Option(names = {"--max-inbound-message-size"}, description = "The maximum inbound message size, " +
-            "defaults to Integer.MAX_VALUE")
+            "defaults to 100MB")
     int maxInboundMessageSize;
 
     public ManagedChannel open() {
@@ -44,7 +44,7 @@ public class ConnectOptions {
             builder.userAgent(userAgent);
         }
         if (maxInboundMessageSize == 0) {
-            builder.maxInboundMessageSize(Integer.MAX_VALUE);
+            builder.maxInboundMessageSize(100 * 1024 * 1024); // 100MB default message size
         } else {
             builder.maxInboundMessageSize(maxInboundMessageSize);
         }

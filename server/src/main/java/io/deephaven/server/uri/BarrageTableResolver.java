@@ -42,7 +42,7 @@ public final class BarrageTableResolver implements UriResolver {
     public static final Integer MAX_INBOUND_MESSAGE_SIZE =
             Configuration.getInstance().getIntegerWithDefault(
                     "BarrageTableResolver.maxInboundMessageSize",
-                    Integer.MAX_VALUE);
+                    100 * 1024 * 1024); // 100MB default limit
 
     /**
      * The default options, which uses {@link BarrageSubscriptionOptions#useDeephavenNulls()}.
