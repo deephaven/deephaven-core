@@ -14,7 +14,7 @@ google-pasta==0.2.0
 grpcio==1.44.0
 h5py==3.1.0
 idna==3.3
-importlib-metadata==4.11.2
+importlib-metadata==4.11.3
 keras==2.6.0
 Keras-Preprocessing==1.1.2
 llvmlite==0.38.0
@@ -40,7 +40,7 @@ tensorflow==2.6.3
 tensorflow-estimator==2.6.0
 termcolor==1.1.0
 typing-extensions==3.10.0.2
-urllib3==1.26.8
+urllib3==1.26.9
 Werkzeug==2.0.3
 wrapt==1.12.1
 zipp==3.7.0
