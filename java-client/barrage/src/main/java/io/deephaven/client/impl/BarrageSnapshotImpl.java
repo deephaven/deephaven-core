@@ -101,6 +101,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     private class DoExchangeObserver implements ClientResponseObserver<FlightData, BarrageMessage> {
+        private int rowsAdded = 0;
+
         @Override
         public void beforeStart(final ClientCallStreamObserver<FlightData> requestStream) {
             requestStream.disableAutoInboundFlowControl();
@@ -118,7 +120,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 }
 
                 // override server-supplied data and regenerate local rowsets
-                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.length);
+                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.rowsIncluded.size());
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
 
                 listener.handleBarrageMessage(barrageMessage);

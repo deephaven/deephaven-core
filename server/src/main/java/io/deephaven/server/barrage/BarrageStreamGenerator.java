@@ -434,12 +434,14 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            ByteBuffer metadata = generator.getSnapshotMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
                 visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, null, generator::appendAddColumns));
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
                 offset += batchSize;
+                metadata = null;
             }
 
             addRowOffsets.close();
@@ -773,6 +775,60 @@ public class BarrageStreamGenerator implements
                 LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
         BarrageUpdateMetadata.addNumModBatches(metadata,
                 LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numModBatches));
+        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
+        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
+        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
+        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
+        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
+        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
+        BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
+        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
+        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
+        BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
+        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
+
+        final FlatBufferBuilder header = new FlatBufferBuilder();
+        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+        BarrageMessageWrapper.startBarrageMessageWrapper(header);
+        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
+        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
+        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
+        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
+
+        return header.dataBuffer().slice();
+    }
+
+    private ByteBuffer getSnapshotMetadata(final SnapshotView view) throws IOException {
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int effectiveViewportOffset = 0;
+        if (view.isViewport()) {
+            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
+                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
+            }
+        }
+
+        int effectiveColumnSetOffset = 0;
+        if (isSnapshot && view.subscribedColumns != null) {
+            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
+        }
+
+        final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
+        final int rowsRemovedOffset = 0;
+
+        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
+        // Added Chunk Data:
+        int addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
+
+        final int nodesOffset = 0;
+
+        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
+        BarrageUpdateMetadata.addNumAddBatches(metadata,
+                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
+        BarrageUpdateMetadata.addNumModBatches(metadata,
+                LongSizedDataStructure.intSize("BarrageStreamGenerator", 0));
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
