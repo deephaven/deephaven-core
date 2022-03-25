@@ -9,7 +9,7 @@ from deephaven.TableTools import timeTable
 
 import random
 
-table = timeTable('00:00:02').update("Number = (int)random.randint(1,100)")
+table = timeTable('00:00:02').update("Number = (int)(byte)random.randint(1,100)")
 ```
 
 As you can see, this table updates with a new row every two seconds.
@@ -50,8 +50,8 @@ What if we had two time tables and wanted to reuse the same listener method? We 
 Let's start with our two time tables.
 
 ```python
-table_one = timeTable('00:00:02').update("Number = (int)random.randint(1,100)")
-table_two = timeTable('00:00:05').update("Number = (int)random.randint(1,100)")
+table_one = timeTable('00:00:02').update("Number = (int)(byte)random.randint(1,100)")
+table_two = timeTable('00:00:05').update("Number = (int)(byte)random.randint(1,100)")
 ```
 
 Now let's build our function.

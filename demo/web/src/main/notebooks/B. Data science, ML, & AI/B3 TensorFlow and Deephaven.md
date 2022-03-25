@@ -59,8 +59,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update("Class = (int)get_class_number(Class)")
-iris_test = iris_test_raw.update("Class = (int)get_class_number(Class)")
+iris_train = iris_train_raw.update("Class = (int)(byte)(byte)get_class_number(Class)")
+iris_test = iris_test_raw.update("Class = (int)(byte)(byte)get_class_number(Class)")
 ```
 \
 \
@@ -134,6 +134,7 @@ iris_test_predictions = learn.learn(
     inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double)],
     outputs = [learn.Output("PredictedClass", numpy_to_table_integer, "int")],
     batch_size = iris_test.intSize()
+)
 ```
 \
 \
@@ -177,7 +178,7 @@ Now we've got some faux live incoming measurements.  We can just use the model w
 ```python
 iris_classifications_live = learn.learn(
     table = live_iris,
-    model = use_trained_model,
+    model_func = use_trained_model,
     inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_numpy_double)],
     outputs = [learn.Output("PredictedClass", numpy_to_table_integer, "int")],
     batch_size = 5

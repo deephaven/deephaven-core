@@ -59,8 +59,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update("Class = (int)get_class_number(Class)")
-iris_test = iris_train_raw.update("Class = (int)get_class_number(Class)")
+iris_train = iris_train_raw.update("Class = (int)(byte)get_class_number(Class)")
+iris_test = iris_train_raw.update("Class = (int)(byte)get_class_number(Class)")
 ```
 \
 \
