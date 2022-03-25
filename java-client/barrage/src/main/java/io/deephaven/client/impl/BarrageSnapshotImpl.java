@@ -117,7 +117,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     return;
                 }
 
-                final long resultSize =  barrageMessage.rowsIncluded.size();
+                final long resultSize = barrageMessage.rowsIncluded.size();
 
                 // override server-supplied data and regenerate flattened rowsets
                 barrageMessage.rowsAdded.close();
