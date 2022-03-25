@@ -14,6 +14,7 @@ def baseMapAmd64 = [
         'pytorch-base': 'server-pytorch',
         'sklearn-base': 'server-sklearn',
         'tensorflow-base': 'server-tensorflow',
+        'all-ai-base': 'server-all-ai'
 ]
 
 // Only the server image is supported on arm64
