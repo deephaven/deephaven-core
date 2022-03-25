@@ -38,6 +38,7 @@ clean.doLast {
 
 project.tasks.register('outputVersion') {task ->
     def versionFile = project.layout.buildDirectory.file('version')
+    // the version is set in buildSrc/src/main/groovy/io.deephaven.common-conventions.gradle
     task.inputs.property('version', project.version)
     task.outputs.file(versionFile)
     task.doLast {
