@@ -14,7 +14,7 @@ public class NettyMain extends Main {
 
         // defaults to 5 minutes
         int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
-        int httpPort = config.getIntegerWithDefault("http.port", 8080);
+        int httpPort = config.getIntegerWithDefault("http.port", 8888);
         int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
         int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", 100 * 1024 * 1024);
 

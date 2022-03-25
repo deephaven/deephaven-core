@@ -23,7 +23,7 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentpath:/opt/jprofiler13.0/bin/linux-x64/libjprofilerti.so=port=8849,nowait -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
 
     expose:
-      - '8080'
+      - '8888'
 # For remote debugging (change if using different port)
 #    ports:
 #      - '5005:5005'
@@ -67,7 +67,7 @@ services:
   grpc-proxy:
     image: deephaven/grpc-proxy:local-build
     environment:
-      - BACKEND_ADDR=server:8080
+      - BACKEND_ADDR=server:8888
     expose:
       - '8008'
 #      - '8443' #unused
