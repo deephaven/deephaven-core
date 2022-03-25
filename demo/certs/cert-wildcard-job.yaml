@@ -1,0 +1,125 @@
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cert-update-role
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["patch"]
+
+---
+# kubectl create rolebinding dhcontrol-binding --clusterrole=admin --serviceaccount=default:dhcontrol --namespace=default
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sa-update-secrets
+  namespace: default
+subjects:
+  # You can specify more than one "subject"
+  - kind: ServiceAccount
+    name: dhcontrol
+    #apiGroup: rbac.authorization.k8s.io
+roleRef:
+  # "roleRef" specifies the binding to a Role / ClusterRole
+  kind: Role #this must be Role or ClusterRole
+  name: cert-update-role # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# This is a kubernetes job which will create a wildcard lets encrypt cert
+# using certbot's google dns resolver,
+# then update our kubernetes secret w/ fresh certificates.
+# To run: kubectl apply -f /path/to/this/cert-wildcard-job.yaml
+# When done and cert is updated, delete the job (so it won't fail for the next renewal):
+# To delete: kubectl delete -f /path/to/this/cert-wildcard-job.yaml
+# To view workload/logs:
+# https://console.cloud.google.com/kubernetes/workload/overview?project=deephaven-oss&authuser=0
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cert-wildcard-job
+  labels:
+    app: letsencrypt
+spec:
+  # No retries; let's encrypt throttles, so only one try per job deployment (delete job to manually retry)
+  backoffLimit: 0
+  template:
+    metadata:
+      name: letsencrypt
+      labels:
+        app: letsencrypt
+    spec:
+      # you have to use the hostNetwork to utilize the service account's permissions
+      # If your cluster is auto-pilot, you aren't allowed to hostNetwork:true in a Job...
+      # hostNetwork: true
+
+      # This service account is setup by helm, so you'll need to setup control-rolebinding.yaml and kubernetes service account in demo/README.md
+      # This account is already setup on dhce-auto cluster.
+      serviceAccountName: dhcontrol
+      restartPolicy: Never
+      containers:
+        # Bash script that starts an http server and launches certbot
+        # Forked from github.com/sjenning/kube-nginx-letsencrypt
+        - image: "us-central1-docker.pkg.dev/deephaven-oss/deephaven/cert-wildcard-job:latest"
+          imagePullPolicy: Always
+          name: cert-wildcard-job
+          env:
+            - name: DOMAINS
+              value: "demo.deephaven.app,*.demo.deephaven.app"
+            - name: EMAIL
+              value: operations@deephaven.io
+            - name: SECRET
+              value: deephaven-app-cert
+            - name: K8_NAMESPACE
+              valueFrom:
+               fieldRef:
+                 fieldPath: metadata.namespace
+            - name: K8_SVC_ACT
+              valueFrom:
+               fieldRef:
+                 fieldPath: spec.serviceAccountName
+          # It is NOT ideal to use a google service account json,
+          # BUT, we have an autopilot cluster, which means we
+          # can't use hostNetwork, and it's the hostNetwork that gets service account access.
+          # In a non-autopilot cluster, we could remove this secret file and just use hostNetwork: true
+          volumeMounts:
+            - mountPath: /svc
+              name: dh-svc-act
+
+      volumes:
+        - name: dh-svc-act
+          secret:
+            secretName: dh-svc-act
+
+  # To use the already-setup dhce-auto cluster:
+  #     CLUSTER_NAME="${CLUSTER_NAME:-dhce-auto}"
+  #     PROJECT_ID="${PROJECT_ID:-deephaven-oss}"
+  #     ZONE="${ZONE:-us-central1}"
+  #     K8S_CONTEXT="gke_${PROJECT_ID}_${ZONE}_${CLUSTER_NAME}"
+  #     DH_SSL_DIR="${DH_SSL_DIR:-/etc/ssl/dh}"
+  #
+  #     export HOME="${HOME:-/root}"
+  #     mkdir -p "$HOME/.kube"
+  #     export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
+  #
+  #
+  #     gcloud container clusters get-credentials "${CLUSTER_NAME}" \
+  #         --zone "${ZONE}" \
+  #         --project "${PROJECT_ID}" \
+  #         --verbosity debug
+  #
+  #     kubectl config use-context "${K8S_CONTEXT}"
+
+
+  # To push docker image to kubernetes:
+  #     ./gradlew :demo:tagCerts
+  #     PROJECT_ID=deephaven-oss
+  #     ZONE=us-central1
+  #     DOCKER_VERSION=latest
+  #     docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/cert-wildcard-job:$DOCKER_VERSION
+
+
+# Once pushed, you should see your image here: https://console.cloud.google.com/artifacts/docker/deephaven-oss/us-central1/deephaven/cert-wildcard-job?project=deephaven-oss&authuser=0
