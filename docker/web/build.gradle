@@ -12,7 +12,7 @@ dependencies {
     js project(path: ':web', targetConfiguration: 'js')
 }
 
-evaluationDependsOn Docker.registryProject('nginx-base')
+evaluationDependsOn Docker.registryProject('nginx-noroot-base')
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
@@ -23,7 +23,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     // make sure that dockerCreateDockerfile has the proper dependencies.
     // If we change how our build works in the future (so that gradle is responsible for pushing the
     // image), we can remove this extra dependency.
-    dependsOn Docker.registryTask(project, 'nginx-base')
+    dependsOn Docker.registryTask(project, 'nginx-noroot-base')
 
     from layout.projectDirectory.dir('src/main/docker')
     from(configurations.js) {
@@ -37,7 +37,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
 Docker.registerDockerImage(project, 'buildDocker') {
     inputDir.set syncDir
-    inputs.files Docker.registryFiles(project, 'nginx-base')
+    inputs.files Docker.registryFiles(project, 'nginx-noroot-base')
     inputs.files prepareDocker.get().outputs.files
     buildArgs.put('DEEPHAVEN_VERSION', project.version)
     images.add('deephaven/web:local-build')
