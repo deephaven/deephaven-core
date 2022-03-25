@@ -17,7 +17,7 @@ def random_character():
 def random_boolean():
     return random.choice([True, False])
 
-table = timeTable("00:00:01").update("Number = (int)random_int()")\
+table = timeTable("00:00:01").update("Number = (int)(byte)random_int()")\
     .update("Character = (String)random_character()")\
     .update("Boolean = (boolean)random_boolean()")
 ```
@@ -42,7 +42,7 @@ def create_random_table(time_interval, start_time=None):
     else:
         table = timeTable(start_time, time_interval)
 
-    return table.update("Number = (int)random_int()")\
+    return table.update("Number = (int)(byte)random_int()")\
             .update("Character = (String)random_character()")\
             .update("Boolean = (boolean)random_boolean()")
 ```

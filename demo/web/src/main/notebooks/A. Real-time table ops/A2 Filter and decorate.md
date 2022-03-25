@@ -1,6 +1,8 @@
 # Filter and decorate
 
-In this notebook, we show how to decorate and filter our data.
+In this notebook, we show how to decorate and filter our data.  
+
+Note that this is a continuation of A1 and relies on functions defined there. 
 
 Let's start by simulating measurements of our values every minute. This could represent something like stock prices, temperatures, etc.
 

@@ -100,8 +100,6 @@ print(added_data_frame)
 
 from deephaven.TableTools import col, newTable
 added_table = table.update("C = A + 5")
-
-
 ```
 
 We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop.html) in Pandas or [`dropColumns`](https://deephaven.io/core/docs/reference/table-operations/select/drop-columns/) in Deephaven.
@@ -122,7 +120,6 @@ print(data_frame)
 
 
 renamed_table = table.renameColumns("X = A")
-
 ```
 
 Deephaven offers several types of filters. See our article, [How to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
@@ -322,12 +319,12 @@ start_times = [
 deephaven_table_left = emptyTable(365).update(
       "A = plus(start_times[0], period(i))",
       "B = random.choice(ch)",
-      "C = (int)random.randint(1, 100)")
+      "C = (int)(byte)random.randint(1, 100)")
 
 deephaven_table_right = emptyTable(365).update(
       "A = plus(start_times[1], period(i))",
       "B = random.choice(ch)",
-      "C = (int)random.randint(1, 100)")
+      "C = (int)(byte)random.randint(1, 100)")
 
 
 joined_data_aj = deephaven_table_left.aj(deephaven_table_right, "A", "B_y = B, C_y = C")
