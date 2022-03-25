@@ -131,7 +131,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
                     dataToEval.add(data);
                 }
             }
-        }, (NotificationStepSource) dataManagerTable);
+        }, dataManagerTable);
 
         if (dataToEval.isEmpty()) {
             log.warn().append("ModelFarmOnDemand: dataToEval is empty!").endl();
