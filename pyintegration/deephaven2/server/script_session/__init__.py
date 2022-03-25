@@ -1,9 +1,8 @@
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
 
-from deephaven.Plot.figure_wrapper import FigureWrapper
 from jpy import JType
-
-from deephaven2._wrapper import JObjectWrapper
+from deephaven2.plot import Figure
+import deephaven2.table
 
 
 def create_change_list(from_snapshot, to_snapshot):
@@ -46,7 +45,7 @@ def unwrap_to_java_type(object):
         return object
     if isinstance(object, JObjectWrapper):
         return object.j_object
-    if isinstance(object, FigureWrapper):
+    if isinstance(object, Figure):
         return object.figure
     # add more here when/if necessary
     return None

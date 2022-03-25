@@ -140,3 +140,4 @@ class PlotStyle(Enum):
     """ An error bar plot (points are not displayed by default). """
 
 
+from .figure import Figure
