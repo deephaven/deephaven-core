@@ -222,7 +222,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                 return (queryDataRetrievalOperation, source) -> {
                     try {
                         ConstructSnapshot.callDataSnapshotFunction("ModelFarmBase.getData(SNAPSHOT)",
-                                ConstructSnapshot.makeSnapshotControl(false, source),
+                                ConstructSnapshot.makeSnapshotControl(false, true, source),
                                 (usePrev, beforeClockValue) -> {
                                     queryDataRetrievalOperation.retrieveData(usePrev);
                                     return true; // This indicates that the snapshot ran OK, not that the data is OK.

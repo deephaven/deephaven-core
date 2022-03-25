@@ -1507,7 +1507,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Future<String[]> future = pool.submit(() -> {
             final MutableObject<String[]> result = new MutableObject<>();
             ConstructSnapshot.callDataSnapshotFunction("testConstructSnapshotException",
-                    ConstructSnapshot.makeSnapshotControl(false, table), (usePrev, clock) -> {
+                    ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), table), (usePrev, clock) -> {
                         Assert.eqFalse(usePrev, "usePrev");
                         final int size = table.intSize();
                         final String[] result1 = new String[size];
