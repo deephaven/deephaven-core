@@ -314,6 +314,10 @@ project(':demo-web').projectDir = file('demo/web')
 
 include(':demo-certs')
 project(':demo-certs').projectDir = file('demo/certs')
+
+include(':demo-server')
+project(':demo-server').projectDir = file('demo/server')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
