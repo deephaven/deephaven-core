@@ -19,7 +19,7 @@ import java.util.List;
  * milliseconds to avoid repeated calls that are not likely any different./p>
  *
  * <p>
- * A dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and
+ * Additionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and
  * understand memory issues.
  * </p>
  */

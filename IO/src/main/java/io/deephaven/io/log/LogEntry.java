@@ -4,6 +4,7 @@
 
 package io.deephaven.io.log;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.text.TimestampBuffer;
@@ -87,6 +88,57 @@ public interface LogEntry extends LogOutput, LogSink.Element {
 
     default LogEntry appendDouble(Double f) {
         return f == null ? append("null") : appendDouble((double) f);
+    }
+
+    /**
+     * Append a double to the given number of decimal places, rounding up.
+     *
+     * @param f a double value to append to the logEntry
+     * @param decimalPlaces a positive integer between 0 and 9
+     * @return the resulting {@code LogEntry}
+     */
+    default LogEntry appendPositiveDouble(double f, int decimalPlaces) {
+        final int decimalPlacesAsPowerOf10 = MathUtil.pow10(decimalPlaces);
+        final long lf = (long) (0.5 + f * decimalPlacesAsPowerOf10);
+        final long integral = lf / decimalPlacesAsPowerOf10;
+        LogEntry r = append(integral);
+        if (decimalPlaces == 0) {
+            return r;
+        }
+        final int fractional = (int) (lf % decimalPlacesAsPowerOf10);
+        r = r.append(".");
+        if (fractional == 0) {
+            return r.append(0);
+        }
+        final int base10FractionalDigits = MathUtil.base10digits(fractional);
+        final int leadingZeroes = decimalPlaces - base10FractionalDigits;
+        switch (leadingZeroes) {
+            case 8:
+                r = r.append("00000000");
+                break;
+            case 7:
+                r = r.append("0000000");
+                break;
+            case 6:
+                r = r.append("000000");
+                break;
+            case 5:
+                r = r.append("00000");
+                break;
+            case 4:
+                r = r.append("0000");
+                break;
+            case 3:
+                r = r.append("000");
+                break;
+            case 2:
+                r = r.append("00");
+                break;
+            case 1:
+                r = r.append("0");
+                break;
+        }
+        return r.append(fractional);
     }
 
     LogEntry nf();

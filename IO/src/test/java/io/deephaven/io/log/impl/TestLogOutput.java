@@ -61,4 +61,27 @@ public class TestLogOutput extends TestCase {
         assertEquals("true", results[0]);
         assertEquals("false", results[1]);
     }
+
+    public void testPositiveDouble() {
+        logger.info().appendPositiveDouble(1.2345, 3).end();
+        logger.info().appendPositiveDouble(0.112255, 2).end();
+        logger.info().appendPositiveDouble(11111111.112255, 3).end();
+        logger.info().appendPositiveDouble(11111111.112255, 4).end();
+        logger.info().appendPositiveDouble(1111.4, 0).end();
+        logger.info().appendPositiveDouble(1111.5, 0).end();
+        logger.info().appendPositiveDouble(111.1234567894, 9).end();
+        logger.info().appendPositiveDouble(111.1234567895, 9).end();
+        logger.info().appendPositiveDouble(111.123456789, 9).end();
+        String[] results = logger.takeAll();
+        int c = 0;
+        assertEquals("1.235", results[c++]);
+        assertEquals("0.11", results[c++]);
+        assertEquals("11111111.112", results[c++]);
+        assertEquals("11111111.1123", results[c++]);
+        assertEquals("1111", results[c++]);
+        assertEquals("1112", results[c++]);
+        assertEquals("111.123456789", results[c++]);
+        assertEquals("111.123456790", results[c++]);
+        assertEquals("111.123456789", results[c++]);
+    }
 }
