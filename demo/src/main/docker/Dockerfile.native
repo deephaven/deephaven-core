@@ -1,0 +1,30 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
+#
+# Before building the container image run:
+#
+# ./gradlew build -Dquarkus.package.type=native
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/demo-server .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 7117:7117 quarkus/demo-server
+#
+###
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
+WORKDIR /work/
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work \
+    && microdnf update \
+    && microdnf install tar
+COPY --chown=1001:root build/*-runner /work/application
+COPY --chown=1001 build/protoSync /deployments/proto/
+
+EXPOSE 7117
+USER 1001
+RUN echo "mode=native" > /server-mode
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.http.port=7117"]

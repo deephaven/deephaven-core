@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Deephaven Demo</title>
+    <meta property="og:image" content="https://deephaven.io/img/demo-og-image.png" />
+    <meta name="twitter:image" content="https://deephaven.io/img/demo-og-image.png" />
+    <style>
+      :root {
+        --background: #1a171a;
+        --primary: #65c4d8;
+        --grey: #6e6a6e;
+        --success: #9ecd6f;
+      }
+      body {
+        color: #fff;
+        background: var(--background);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: "Fira Mono", "SF Mono", SFMono-Regular, ui-monospace,
+          "DejaVu Sans Mono", Menlo, Consolas, monospace;
+      }
+      p {
+        margin: 0;
+      }
+      #box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: auto;
+        width: 60ch;
+        max-width: 80%;
+      }
+      #box svg {
+        max-width: 100%;
+
+        width: 345px;
+        margin-bottom: 48px;
+      }
+      #progress {
+        box-sizing: border-box;
+        height: 16px;
+        width: calc(100% - 6px);
+        margin: 3px;
+        margin-bottom: 8px;
+        border: 1px solid #fff;
+      }
+      #bar {
+        box-sizing: border-box;
+        width: 0%;
+        background-color: var(--primary);
+        border: 1px solid var(--background);
+        height: 14px;
+        transition: all 0.5s ease-out;
+      }
+      #log {
+        box-sizing: border-box;
+        height: 240px;
+        width: 100%;
+        padding: 3px;
+        color: var(--grey);
+        font-size: 12px;
+        line-height: 16px;
+        white-space: pre-wrap;
+      }
+      #title {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 3px;
+        color: #fff;
+        font-size: 16px;
+      }
+      .waiting::after {
+        display: inline-block;
+        animation: dots steps(1, end) 2s infinite;
+        content: "";
+      }
+      a {
+        color: #fff;
+      }
+      a:hover {
+        color: var(--primary);
+      }
+
+      @keyframes dots {
+        0% {
+          content: "";
+        }
+        25% {
+          content: ".";
+        }
+        50% {
+          content: "..";
+        }
+        75% {
+          content: "...";
+        }
+        100% {
+          content: "";
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="box">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 115 20">
+        <defs>
+          <style>
+            .a {
+              fill: #9ecd6f;
+            }
+            .b {
+              fill: #fff;
+            }
+            .c {
+              fill: #fad45b;
+            }
+            .d {
+              fill: #65c4d8;
+            }
+            .e {
+              fill: #ee5e82;
+            }
+          </style>
+        </defs>
+        <rect class="a" x="1" y="13" width="12" height="6" />
+        <rect class="b" x="1" y="1" width="12" height="6" />
+        <path
+          class="b"
+          d="M33.21,5.15a4.7,4.7,0,0,1,2,1.87,5.63,5.63,0,0,1,.7,2.85,5.48,5.48,0,0,1-.7,2.83,4.61,4.61,0,0,1-2,1.83,6.58,6.58,0,0,1-3,.64H26.73V4.5h3.49A6.46,6.46,0,0,1,33.21,5.15Zm-.12,7.58a3.89,3.89,0,0,0,1-2.86,4,4,0,0,0-1-2.9,3.76,3.76,0,0,0-2.87-1H28.49v7.82h1.73A3.86,3.86,0,0,0,33.09,12.73Z"
+        />
+        <path
+          class="b"
+          d="M45.41,11.59H38.94a2.34,2.34,0,0,0,2.42,2.24,2,2,0,0,0,2-1.18h1.89a3.74,3.74,0,0,1-1.39,1.91,4,4,0,0,1-2.49.75,4.28,4.28,0,0,1-2.18-.55,3.81,3.81,0,0,1-1.5-1.53,4.63,4.63,0,0,1-.55-2.3,4.81,4.81,0,0,1,.53-2.29,3.66,3.66,0,0,1,1.49-1.53,4.44,4.44,0,0,1,2.21-.54,4.28,4.28,0,0,1,2.13.52A3.69,3.69,0,0,1,45,8.56a4.38,4.38,0,0,1,.52,2.17A5.52,5.52,0,0,1,45.41,11.59Zm-1.77-1.41A2,2,0,0,0,43,8.63,2.47,2.47,0,0,0,41.28,8a2.26,2.26,0,0,0-1.55.58A2.38,2.38,0,0,0,39,10.18Z"
+        />
+        <path
+          class="b"
+          d="M55,11.59H48.56a2.34,2.34,0,0,0,.75,1.63,2.36,2.36,0,0,0,1.66.61,2,2,0,0,0,2-1.18h1.89a3.74,3.74,0,0,1-1.39,1.91,4,4,0,0,1-2.49.75,4.28,4.28,0,0,1-2.18-.55,3.81,3.81,0,0,1-1.5-1.53,4.74,4.74,0,0,1-.55-2.3,4.81,4.81,0,0,1,.53-2.29,3.72,3.72,0,0,1,1.49-1.53A4.44,4.44,0,0,1,51,6.57a4.25,4.25,0,0,1,2.13.52,3.69,3.69,0,0,1,1.46,1.47,4.38,4.38,0,0,1,.52,2.17A5.52,5.52,0,0,1,55,11.59Zm-1.76-1.41a2,2,0,0,0-.69-1.55A2.5,2.5,0,0,0,50.89,8a2.28,2.28,0,0,0-1.55.58,2.38,2.38,0,0,0-.77,1.56Z"
+        />
+        <path
+          class="b"
+          d="M59.63,7a3.72,3.72,0,0,1,1.74-.4,3.83,3.83,0,0,1,3.46,2.07,4.86,4.86,0,0,1,.52,2.26,5,5,0,0,1-.52,2.28,3.91,3.91,0,0,1-1.44,1.57,3.82,3.82,0,0,1-2,.56,3.69,3.69,0,0,1-1.72-.39,3.89,3.89,0,0,1-1.23-1V19.2H56.67V6.71h1.75V8A3.5,3.5,0,0,1,59.63,7Zm3.58,2.42a2.42,2.42,0,0,0-1-1A2.52,2.52,0,0,0,61,8.09a2.51,2.51,0,0,0-2.21,1.32,3.08,3.08,0,0,0-.36,1.52,3.12,3.12,0,0,0,.36,1.53,2.46,2.46,0,0,0,.95,1,2.49,2.49,0,0,0,1.26.34,2.44,2.44,0,0,0,1.26-.35,2.5,2.5,0,0,0,1-1,3.18,3.18,0,0,0,.36-1.54A3,3,0,0,0,63.21,9.39Z"
+        />
+        <path
+          class="b"
+          d="M73.06,7a3,3,0,0,1,1.19,1.23,4,4,0,0,1,.44,2v5H73V10.44a2.43,2.43,0,0,0-.57-1.74,2.29,2.29,0,0,0-3.11,0,2.39,2.39,0,0,0-.58,1.74v4.73H67V3.8H68.7V7.69a3,3,0,0,1,1.13-.83,3.86,3.86,0,0,1,1.5-.29A3.65,3.65,0,0,1,73.06,7Z"
+        />
+        <path
+          class="b"
+          d="M76.69,8.64a3.83,3.83,0,0,1,3.46-2.07A3.69,3.69,0,0,1,81.89,7a3.43,3.43,0,0,1,1.19,1V6.71h1.77v8.46H83.08V13.91a3.46,3.46,0,0,1-1.21,1,3.7,3.7,0,0,1-1.75.4,3.77,3.77,0,0,1-2-.56,4,4,0,0,1-1.43-1.57,4.74,4.74,0,0,1-.53-2.28A4.63,4.63,0,0,1,76.69,8.64Zm6,.77a2.47,2.47,0,0,0-.94-1,2.43,2.43,0,0,0-1.26-.34,2.52,2.52,0,0,0-1.26.33,2.46,2.46,0,0,0-1,1A3,3,0,0,0,78,10.9a3.18,3.18,0,0,0,.36,1.54,2.5,2.5,0,0,0,1,1,2.46,2.46,0,0,0,3.45-1,3.12,3.12,0,0,0,.36-1.53A3.08,3.08,0,0,0,82.72,9.41Z"
+        />
+        <path
+          class="b"
+          d="M90.56,13.6,93,6.71h1.86l-3.23,8.46H89.5L86.29,6.71h1.87Z"
+        />
+        <path
+          class="b"
+          d="M103.79,11.59H97.32a2.34,2.34,0,0,0,.75,1.63,2.38,2.38,0,0,0,1.66.61,2.05,2.05,0,0,0,2-1.18h1.89a3.8,3.8,0,0,1-1.39,1.91,4.06,4.06,0,0,1-2.5.75,4.24,4.24,0,0,1-2.17-.55,3.9,3.9,0,0,1-1.51-1.53,4.74,4.74,0,0,1-.54-2.3A4.69,4.69,0,0,1,96,8.64a3.66,3.66,0,0,1,1.49-1.53,4.4,4.4,0,0,1,2.2-.54,4.32,4.32,0,0,1,2.14.52,3.75,3.75,0,0,1,1.46,1.47,4.49,4.49,0,0,1,.52,2.17A5.52,5.52,0,0,1,103.79,11.59ZM102,10.18a2,2,0,0,0-.69-1.55A2.47,2.47,0,0,0,99.66,8a2.28,2.28,0,0,0-1.56.58,2.37,2.37,0,0,0-.76,1.56Z"
+        />
+        <path
+          class="b"
+          d="M111.58,7a3,3,0,0,1,1.24,1.23,4,4,0,0,1,.45,2v5h-1.74V10.44A2.43,2.43,0,0,0,111,8.7a2,2,0,0,0-1.55-.61,2,2,0,0,0-1.56.61,2.43,2.43,0,0,0-.57,1.74v4.73h-1.76V6.71h1.76v1a2.91,2.91,0,0,1,1.09-.82,3.61,3.61,0,0,1,1.42-.29A3.84,3.84,0,0,1,111.58,7Z"
+        />
+        <rect class="c" x="1" y="7" width="6" height="12" />
+        <rect class="d" x="1" y="1" width="6" height="12" />
+        <rect class="e" x="13" y="7" width="6" height="6" />
+      </svg>
+      <div id="progress">
+        <div id="bar"></div>
+      </div>
+      <p id="title" class="waiting">Spinning up demo environment</p>
+      <div id="log"></div>
+    </div>
+    <script>
+      var uri = "__URI__"; // no trailing slash
+      var path = "__PATH__"; // /whatever/user/?requested=we&keep=here
+      var name = uri.split(".")[0].split("//")[1]; // extract machine name from uri
+      var pid;
+      var wait = 800;
+      var request = new XMLHttpRequest();
+
+      var bar = document.getElementById("bar");
+      var log = document.getElementById("log");
+      var title = document.getElementById("title");
+
+      // expects 0-100
+      function setProgress(percent) {
+        bar.style.width = percent + "%";
+      }
+      function appendLog(text) {
+        var t = document.createTextNode("> " + text + "\n");
+        log.appendChild(t);
+      }
+
+      /**
+       * Progress bar is fake, sorry. We know warm starts take <4 seconds.
+       * Cold starts about 45, we can build better progress later.
+       * Under heavy load, it may take longer, recommend users try later after 60s.
+       *
+       * progress: 0-100 bar percent done
+       * time: time of step in ms
+       * text: appended to log
+       */
+
+      var choreograph = [
+        {
+          progress: 1,
+          time: 250,
+        },
+        {
+          progress: 10,
+          time: 500,
+          text: "Requesting sandboxed demo machine",
+        },
+        {
+          progress: 30,
+          time: 500,
+          text: 'Assigned machine name "' + name + '"',
+        },
+        {
+          progress: 50,
+          time: 2500,
+          text: "Fetching warm machine from pool",
+        },
+        {
+          progress: 57,
+          time: 4000,
+          text: "Waiting for machine from pool",
+        },
+        {
+          progress: 67,
+          time: 6000,
+          text: "No machine available, expanding pool",
+        },
+        {
+          progress: 77,
+          time: 12000,
+          text: "Performing cold start",
+        },
+        {
+          progress: 89,
+          time: 20000,
+          text: "Cold start in progress, please continue to wait",
+        },
+        {
+          progress: 94,
+          time: 15000,
+          text: "Demo cluster under heavy load, please continue to wait",
+        },
+        {
+          progress: 96,
+          time: 20000,
+          text: "Waiting for available capacity, either continue waiting or try again later",
+        },
+        {
+          progress: 97,
+          time: 30000,
+          text: "Reticulating splines, either continue waiting or try again later",
+        },
+        {
+          progress: 0,
+          time: 250,
+          text: "Unable to expand pool",
+        },
+      ];
+
+      // can be called at anytime to skip to end
+      function finish() {
+        bar.style.transitionTimingFunction = "linear";
+        choreograph.push({
+          progress: 95,
+          time: 750,
+          text: "Waiting for gRPC api health check",
+        });
+        choreograph.push({
+          progress: 100,
+          time: 500,
+          text: "gRPC api ready to connect",
+        });
+        choreograph.push({
+          progress: 100,
+          time: 0,
+          text: "Attempting re-direct (or click link above when ready)",
+        });
+        play(choreograph.length - 3);
+      }
+
+      var timeout;
+      function play(step) {
+        clearTimeout(timeout);
+
+        bar.style.transitionDuration = choreograph[step].time / 1000 + "s";
+        setProgress(choreograph[step].progress);
+
+        if (choreograph[step].text !== undefined) {
+          appendLog(choreograph[step].text);
+        }
+
+        timeout = setTimeout(() => {
+          if (step < choreograph.length - 1) {
+            play(step + 1);
+            return;
+          }
+
+          // last step
+          if (choreograph[step].progress == 0) {
+            // try again later
+            title.classList.remove("waiting");
+            title.textContent = "Demo cluster at capacity, try again later.";
+          } else if (choreograph[step].progress == 100) {
+            // finished successfully
+            title.classList.remove("waiting");
+            bar.style.backgroundColor = "var(--success)";
+            title.innerHTML =
+              "Demo machine <a href='" + uri + "'>" + name + "</a> ready!";
+          }
+        }, choreograph[step].time);
+      }
+
+      play(0); // kick-off animation at step 0
+
+      request.onreadystatechange = function () {
+        if (request.readyState === 4) {
+          if (request.status >= 200 && request.status < 400) {
+            // we win! ...but wait 2s, to give server time to come online (or make /health smarter)
+            finish(); // pre-canned 1.5s ending animation
+            setTimeout(goToWorker, 2000);
+          } else {
+            pid && clearTimeout(pid);
+            pid = setTimeout(getStatus, 400);
+          }
+        }
+      };
+      request.onerror = function () {
+        pid && clearTimeout(pid);
+        pid = setTimeout(getStatus, (wait += 10));
+      };
+      function getStatus() {
+        request.open("GET", uri + "/health", true);
+        request.send(null);
+      }
+      function goToWorker() {
+        window.location.href = uri + ( path === '/' ? "/ide" : "/ide" + path );
+      }
+
+      getStatus();
+    </script>
+  </body>
+</html>
