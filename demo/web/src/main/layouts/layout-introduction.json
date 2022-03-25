@@ -1,0 +1,160 @@
+{
+  "layoutConfig": [
+    {
+      "type": "column",
+      "isClosable": true,
+      "reorderEnabled": true,
+      "title": "",
+      "isFocusOnShow": true,
+      "content": [
+        {
+          "type": "row",
+          "isClosable": true,
+          "reorderEnabled": true,
+          "title": "",
+          "height": 47.16666666666667,
+          "isFocusOnShow": true,
+          "content": [
+            {
+              "type": "stack",
+              "header": {},
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "activeItemIndex": 0,
+              "width": 78.29181494661923,
+              "isFocusOnShow": true,
+              "content": [
+                {
+                  "type": "react-component",
+                  "component": "ConsolePanel",
+                  "title": "Console",
+                  "isClosable": false,
+                  "id": "WrBNx4MFn",
+                  "props": {
+                    "metadata": {},
+                    "panelState": {
+                      "consoleSettings": {
+                        "isAutoLaunchPanelsEnabled": true,
+                        "isPrintStdOutEnabled": true,
+                        "isClosePanelsOnDisconnectEnabled": true
+                      },
+                      "itemIds": []
+                    }
+                  },
+                  "componentName": "lm-react-component",
+                  "reorderEnabled": true,
+                  "componentState": null,
+                  "isFocusOnShow": true
+                },
+                {
+                  "component": "LogPanel",
+                  "isClosable": false,
+                  "title": "Log",
+                  "type": "react-component",
+                  "props": { "metadata": {} },
+                  "id": "7oMOI3Q21J",
+                  "componentName": "lm-react-component",
+                  "reorderEnabled": true,
+                  "componentState": null,
+                  "isFocusOnShow": true
+                }
+              ]
+            },
+            {
+              "type": "stack",
+              "header": {},
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "activeItemIndex": 0,
+              "width": 21.70818505338078,
+              "height": 47.16666666666667,
+              "isFocusOnShow": true,
+              "content": [
+                {
+                  "type": "react-component",
+                  "component": "FileExplorerPanel",
+                  "title": "File Explorer",
+                  "isClosable": false,
+                  "id": "K6M6OlfTw2",
+                  "props": { "metadata": {} },
+                  "componentName": "lm-react-component",
+                  "reorderEnabled": true,
+                  "componentState": null,
+                  "isFocusOnShow": true
+                },
+                {
+                  "type": "react-component",
+                  "component": "CommandHistoryPanel",
+                  "title": "Command History",
+                  "isClosable": false,
+                  "id": "0UpaT-zNY1",
+                  "props": { "metadata": {}, "panelState": {} },
+                  "componentName": "lm-react-component",
+                  "reorderEnabled": true,
+                  "componentState": null,
+                  "isFocusOnShow": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "isClosable": true,
+          "reorderEnabled": true,
+          "title": "",
+          "height": 52.83333333333333,
+          "isFocusOnShow": true,
+          "content": [
+            {
+              "type": "stack",
+              "header": {},
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "activeItemIndex": 1,
+              "width": 51.74377224199288,
+              "isFocusOnShow": true,
+              "content": [
+                {
+                  "type": "react-component",
+                  "component": "NotebookPanel",
+                  "isFocusOnShow": false,
+                  "props": {
+                    "metadata": { "id": "s4KNaD4fR" },
+                    "panelState": {
+                      "settings": { "value": null, "language": null },
+                      "fileMetadata": {
+                        "id": "/00 The Deephaven IDE.md",
+                        "itemName": "/00 The Deephaven IDE.md"
+                      },
+                      "isPreview": false
+                    }
+                  },
+                  "title": "00 The Deephaven IDE.md",
+                  "id": "s4KNaD4fR",
+                  "componentName": "lm-react-component",
+                  "isClosable": true,
+                  "reorderEnabled": true,
+                  "componentState": null
+                }
+              ]
+            },
+            {
+              "type": "stack",
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "width": 48.25622775800712,
+              "activeItemIndex": 0,
+              "isFocusOnShow": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "version": 2
+}

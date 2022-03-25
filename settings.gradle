@@ -309,6 +309,8 @@ file("${rootDir}/docker/registry").list().each { name ->
     }
 }
 
+include(':demo-web')
+project(':demo-web').projectDir = file('demo/web')
 
 include(':demo-certs')
 project(':demo-certs').projectDir = file('demo/certs')

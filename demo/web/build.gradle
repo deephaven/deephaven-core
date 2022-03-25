@@ -1,0 +1,54 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+
+plugins {
+    id 'base'
+    id 'com.bmuschko.docker-remote-api'
+}
+
+evaluationDependsOn ':web-client-ide'
+
+def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+def imageIdFile = project.layout.buildDirectory.file('.docker/imageId.txt').get().asFile
+def imageId = imageIdFile.exists() ? imageIdFile.text : null
+def image = project.property('image') as String
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    it.from 'src/main/docker/Dockerfile'
+    it.from('src/main/layouts') {
+        into 'layouts'
+    }
+    it.from('src/main/notebooks') {
+        into 'notebooks'
+    }
+    it.into dockerfileDir
+}
+
+def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
+    def webImage = project(':docker-web').tasks.findByName('buildDocker')
+    it.dependsOn prepareDocker, webImage
+    it.outputs.files webImage.outputs.files
+    it.inputDir.set dockerfileDir
+    it.imageIdFile.set imageIdFile
+    it.images.add(image)
+}
+
+def deleteImage = project.tasks.register('deleteImage', DockerRemoveImage) {
+    it.onlyIf { imageId != null }
+    it.imageId.set imageId
+    it.force.set true
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+    it.doLast {
+        imageIdFile.delete()
+    }
+}
+
+project.tasks.register('cleanDocker') {
+    it.dependsOn deleteImage
+}
+
+assemble.dependsOn buildImage
+
