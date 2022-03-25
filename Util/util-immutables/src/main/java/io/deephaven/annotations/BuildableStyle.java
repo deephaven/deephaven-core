@@ -9,8 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A simple style is for objects that are simple to build. Not recommended for objects with more than two fields. Not
- * applicable for objects with default fields.
+ * A style for objects that should declare a builder interface to use for construction. Recommended for objects with
+ * more than two fields, or default fields.
  */
 @Target({ElementType.TYPE, ElementType.PACKAGE})
 @Retention(RetentionPolicy.CLASS)
