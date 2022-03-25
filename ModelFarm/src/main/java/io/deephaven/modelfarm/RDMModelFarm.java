@@ -6,6 +6,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -178,7 +179,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
             final ModelFarmBase.GetDataLockType lockType) {
         // Get the "doLockedConsumer", which will call the FitDataPopulator (i.e. the lambda below) using the configured
         // lock type and the appropriate value for 'usePrev'.
-        final FunctionalInterfaces.ThrowingBiConsumer<ModelFarmBase.QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> doLockedConsumer =
+        final FunctionalInterfaces.ThrowingBiConsumer<ModelFarmBase.QueryDataRetrievalOperation, Table, RuntimeException> doLockedConsumer =
                 getDoLockedConsumer(lockType);
         return (key) -> {
             final DATATYPE data = dataManager.newData();
@@ -186,7 +187,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
 
             // (This lambda is a FitDataPopulator.)
             doLockedConsumer.accept(usePrev -> isOk[0] = loadData(data, key, usePrev),
-                    (NotificationStepSource) dataManager.table());
+                    dataManager.table());
 
             if (isOk[0]) {
                 return data;

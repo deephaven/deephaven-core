@@ -582,14 +582,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     //////////////////////////////////////////////////
 
     private DeltaListener constructListener() {
-        return parent.isRefreshing() ? new DeltaListener() : null;
+        return parentIsRefreshing ? new DeltaListener() : null;
     }
 
     private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
             super("BarrageMessageProducer");
-            Assert.assertion(parent.isRefreshing(), "parent.isRefreshing()");
+            Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
             parent.listenForUpdates(this);
@@ -1722,7 +1722,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public boolean snapshotCompletedConsistently(final long afterClockValue, final boolean usedPreviousValues) {
             final boolean success;
             synchronized (BarrageMessageProducer.this) {
-                success = parentIsRefreshing ? capturedLastIndexClockStep == getLastIndexClockStep() : true;
+                success = snapshotConsistent(afterClockValue, usedPreviousValues);
 
                 if (!success) {
                     step = -1;

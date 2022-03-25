@@ -821,7 +821,7 @@ public class ConstructSnapshot {
      * Make a default {@link SnapshotControl} for a single source.
      *
      * @param notificationAware Whether the result should be concerned with not missing notifications
-     * @param refreshing Whether the parent table is refreshing (vs static)
+     * @param refreshing Whether the data source (usually a {@link Table} table) is refreshing (vs static)
      * @param source The source
      * @return An appropriate {@link SnapshotControl}
      */
@@ -838,7 +838,7 @@ public class ConstructSnapshot {
      * Make a default {@link SnapshotControl} for one or more sources.
      *
      * @param notificationAware Whether the result should be concerned with not missing notifications
-     * @param refreshing Whether the parent table is refreshing (vs static)
+     * @param refreshing Whether any of the data sources (usually {@link Table tables}) are refreshing (vs static)
      * @param sources The sources
      * @return An appropriate {@link SnapshotControl}
      */
