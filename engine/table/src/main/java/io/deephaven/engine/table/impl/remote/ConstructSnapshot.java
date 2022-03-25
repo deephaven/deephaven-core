@@ -540,7 +540,8 @@ public class ConstructSnapshot {
             @Nullable final RowSet positionsToSnapshot,
             @Nullable final RowSet reversePositionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, reversePositionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
+                positionsToSnapshot, reversePositionsToSnapshot,
+                makeSnapshotControl(false, table.isRefreshing(), table));
     }
 
     /**

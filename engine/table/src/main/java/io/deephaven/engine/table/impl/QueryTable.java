@@ -2057,7 +2057,8 @@ public class QueryTable extends BaseTable {
             if (!isRefreshing() && tableToSnapshot.isRefreshing() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
-                        ConstructSnapshot.makeSnapshotControl(false, tableToSnapshot.isRefreshing(),(NotificationStepSource) tableToSnapshot),
+                        ConstructSnapshot.makeSnapshotControl(false, tableToSnapshot.isRefreshing(),
+                                (NotificationStepSource) tableToSnapshot),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
                             result.getRowSet().writableCast().initializePreviousValue();
