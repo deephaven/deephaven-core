@@ -83,8 +83,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: grpc-proxy # assuming the name of the grpc-proxy server container
-                      port_value: 8080
+                      address: grpc-proxy # assuming the name of the grpc-api server container
+                      port_value: 8008
     - name: server
       connect_timeout: 10s
       type: LOGICAL_DNS

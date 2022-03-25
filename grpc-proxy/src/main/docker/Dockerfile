@@ -12,9 +12,9 @@ COPY contents/ .
 
 FROM deephaven/alpine:local-build
 COPY --from=install / /
-EXPOSE 8080 8443
+EXPOSE 8008 8443
+USER 1000
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
-
 ARG DEEPHAVEN_VERSION
 LABEL \
     io.deephaven.image.type="grpc-proxy" \
