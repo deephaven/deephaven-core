@@ -3,7 +3,7 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-evaluationDependsOn Docker.registryProject('nginx-base')
+evaluationDependsOn Docker.registryProject('nginx-noroot-base')
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
