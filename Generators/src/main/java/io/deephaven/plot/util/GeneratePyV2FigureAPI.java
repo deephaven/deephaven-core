@@ -954,34 +954,30 @@ public class GeneratePyV2FigureAPI {
 
         final String[] taDataCategory = new String[] {"str", "List[str]", "List[int]", "List[float]"};
         final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[DateTime]"}; // todo
-                                                                                                           // support
-                                                                                                           // numpy,
-                                                                                                           // //todo
-                                                                                                           // support
-                                                                                                           // other
-                                                                                                           // datetimes
+        // support
+        // numpy,
+        // //todo
+        // support
+        // other
+        // datetimes
         final String[] taDataTime = new String[] {"str", "List[DateTime]"}; // todo support numpy, //todo support other
-                                                                            // datetimes
+        // datetimes
 
         final String[] taMultiSeriesKey = new String[] {"List[Any]"}; // todo keys are technically Object[]. How to
-                                                                      // support?
-        final String[] taColor = new String[] {"str", "int", "Color"}; // todo support Color
-                                                                       // (io.deephaven.gui.color.Paint)
-        final String[] taAxisFormat = new String[] {"AxisFormat"}; // todo support
-                                                                   // io.deephaven.plot.axisformatters.AxisFormat
-        final String[] taAxisTransform = new String[] {"AxisTransform"}; // todo support
-                                                                         // io.deephaven.plot.axistransformations.AxisTransform
-        final String[] taFont = new String[] {"Font"}; // todo support io.deephaven.plot.Font
+        // support?
+        final String[] taColor = new String[] {"str", "int", "Color"};
+        final String[] taAxisFormat = new String[] {"AxisFormat"};
+        final String[] taAxisTransform = new String[] {"AxisTransform"};
+        final String[] taFont = new String[] {"Font"};
         final String[] taBusinessCalendar = new String[] {"str", "BusinessCalendar"}; // todo support
-                                                                                      // io.deephaven.time.calendar.BusinessCalendar
-        final String[] taPlotStyle = new String[] {"str", "PlotStyle"}; // todo support io.deephaven.plot.PlotStyle
-        final String[] taLineStyle = new String[] {"str", "LineStyle"}; // todo support io.deephaven.plot.LineStyle
+        // io.deephaven.time.calendar.BusinessCalendar
+        final String[] taPlotStyle = new String[] {"str", "PlotStyle"};
+        final String[] taLineStyle = new String[] {"str", "LineStyle"};
         final String[] taPointColors = new String[] {"str", "int", "Color", "List[str]", "List[int]", "List[Color]",
-                "Callable", "Dict[Any,str]", "Dict[Any,int]", "Dict[Any,Color]"}; // todo support Color
-                                                                                  // (io.deephaven.gui.color.Paint)
+                "Callable", "Dict[Any,str]", "Dict[Any,int]", "Dict[Any,Color]"};
         final String[] taPointLabels = new String[] {"str", "List[str]", "Callable", "Dict[Any,str]"};
         final String[] taPointShapes = new String[] {"str", "Shape", "List[str]", "List[Shape]", "Callable",
-                "Dict[Any,str]", "Dict[Any,Shape]"}; // todo support Shape (io.deephaven.gui.shape.Shape)
+                "Dict[Any,str]", "Dict[Any,Shape]"};
         final String[] taPointSizes = new String[] {"int", "float", "List[int]", "List[float]", "Callable",
                 "Dict[Any,int]", "Dict[Any,float]"};
 
@@ -1117,82 +1113,108 @@ public class GeneratePyV2FigureAPI {
 
         ////////////////////////////////////////////////////////////////
 
-        // todo pydocs
-
-        rst.add(new PyFunc("show", SINGLETON, new String[] {"show"}, null, "TODO pydoc"));
-        rst.add(new PyFunc("save", SINGLETON, new String[] {"save"}, new String[] {"path"}, "TODO pydoc"));
+        rst.add(new PyFunc("show", SINGLETON, new String[] {"show"}, null,
+                "Creates a displayable version of the figure and returns it."));
+        rst.add(new PyFunc("save", SINGLETON, new String[] {"save"}, new String[] {"path"},
+                "Saves the Figure as an image."));
 
         rst.add(new PyFunc("figure", SEQUENTIAL, new String[] {"figureRemoveSeries", "removeChart", "updateInterval"},
-                null, "TODO pydoc"));
+                null,
+                "Updates the figure by removing its elements or setting a new update intervals."));
         rst.add(new PyFunc("figure_title", SEQUENTIAL,
-                new String[] {"figureTitle", "figureTitleColor", "figureTitleFont"}, null, "TODO pydoc"));
-
-        rst.add(new PyFunc("new_chart", SINGLETON, new String[] {"newChart"}, null, "TODO pydoc"));
+                new String[] {"figureTitle", "figureTitleColor", "figureTitleFont"}, null,
+                "Sets the title of the figure."));
+        rst.add(new PyFunc("new_chart", SINGLETON, new String[] {"newChart"}, null,
+                "Adds a new chart to this figure."));
         rst.add(new PyFunc("chart", SEQUENTIAL,
                 new String[] {"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation",
                         "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"},
-                null, "TODO pydoc"));
+                null,
+                "Returns a chart from the figure's grid."));
         rst.add(new PyFunc("chart_title", SEQUENTIAL,
                 new String[] {"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null,
-                "TODO pydoc"));
+                "Sets the title of the chart."));
         rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[] {"legendColor", "legendFont", "legendVisible"},
-                null, "TODO pydoc"));
-
-        rst.add(new PyFunc("new_axes", SINGLETON, new String[] {"newAxes"}, null, "TODO pydoc"));
+                null,
+                "Sets the color, font, visibility of the lengend of the chart."));
+        rst.add(new PyFunc("new_axes", SINGLETON, new String[] {"newAxes"}, null,
+                "Creates new axes."));
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[] {"axes", "axesRemoveSeries", "plotStyle"}, null,
-                "TODO pydoc"));
-
+                "Retrieves the axes of the chart."));
         rst.add(new PyFunc(
                 "axis", SEQUENTIAL, new String[] {"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel",
                         "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"},
-                null, "TODO pydoc"));
+                null,
+                "Gets the Axis at the dimension dim and/or sets its properties. The x-axis is dimension 0, y-axis dimension 1."));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[] {"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"},
-                null, "TODO pydoc"));
+                null,
+                "Sets the tick location, font, angle, visibility etc. for the axis."));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[] {"minorTicks", "minorTicksVisible"}, null,
-                "TODO pydoc"));
-        rst.add(new PyFunc("twin", SINGLETON, new String[] {"twin"}, null, "TODO pydoc"));
-
+                "Sets whether the minor ticks are drawn and the number of thme between major ticks on this axis."));
+        rst.add(new PyFunc("twin", SINGLETON, new String[] {"twin"}, null,
+                "Creates a new Axes instance which shares the same Axis objects as this Axes. The resultant Axes has the\n"
+                        +
+                        "         same range, ticks, etc. as this Axes (as these are fields of the Axis) but may have, for example, a\n"
+                        +
+                        "         different PlotStyle."));
         rst.add(new PyFunc(
                 "x_axis", SEQUENTIAL, new String[] {"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel",
                         "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"},
-                null, "TODO pydoc"));
+                null,
+                "Gets the Axis representing the x-axis and sets its various properties."));
         rst.add(new PyFunc("x_ticks", SEQUENTIAL,
-                new String[] {"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null, "TODO pydoc"));
+                new String[] {"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null,
+                "Sets the x-Axis ticks."));
         rst.add(new PyFunc("x_ticks_minor", SEQUENTIAL, new String[] {"xMinorTicks", "xMinorTicksVisible"}, null,
-                "TODO pydoc"));
-        rst.add(new PyFunc("x_twin", SINGLETON, new String[] {"twinX"}, null, "TODO pydoc"));
+                "Sets the x-Axis minor ticks."));
+        rst.add(new PyFunc("x_twin", SINGLETON, new String[] {"twinX"}, null,
+                "Creates a new Axes instance which shares the same x-Axis as this Axes.\n" +
+                        "         \n" +
+                        "        The resultant Axes has the same x-axis range, ticks, etc. as this Axes (as these are properties of the\n"
+                        +
+                        "        Axis) but may have, for example, a different PlotStyle."));
 
         rst.add(new PyFunc(
                 "y_axis", SEQUENTIAL, new String[] {"yAxis", "yColor", "yFormat", "yFormatPattern", "yLabel",
                         "yLabelFont", "yInvert", "yLog", "yMin", "yMax", "yRange", "yBusinessTime", "yTransform"},
-                null, "TODO pydoc"));
+                null,
+                "Gets the Axis representing the y-axis and sets its various properties."));
         rst.add(new PyFunc("y_ticks", SEQUENTIAL,
-                new String[] {"yTicks", "yTicksFont", "yTicksVisible", "yTickLabelAngle"}, null, "TODO pydoc"));
+                new String[] {"yTicks", "yTicksFont", "yTicksVisible", "yTickLabelAngle"}, null,
+                "Sets the y-Axis ticks."));
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[] {"yMinorTicks", "yMinorTicksVisible"}, null,
-                "TODO pydoc"));
-        rst.add(new PyFunc("y_twin", SINGLETON, new String[] {"twinY"}, null, "TODO pydoc"));
-
+                "Sets the y-Axis minor ticks."));
+        rst.add(new PyFunc("y_twin", SINGLETON, new String[] {"twinY"}, null,
+                "        Creates a new Axes instance which shares the same y-Axis as this Axes.\n" +
+                        "         \n" +
+                        "        The resultant Axes has the same y-axis range, ticks, etc. as this Axes (as these are properties of the\n"
+                        +
+                        "        Axis) but may have, for example, a different PlotStyle."));
         rst.add(new PyFunc("series", SEQUENTIAL, new String[] {"series", "group", "seriesColor", "toolTipPattern",
                 "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null,
-                "TODO pydoc"));
+                "Gets a data series and sets its various properties."));
         rst.add(new PyFunc("point", SEQUENTIAL, new String[] {"pointColor", "pointLabel", "pointLabelFormat",
-                "pointShape", "pointSize", "pointsVisible"}, null, "TODO pydoc"));
+                "pointShape", "pointSize", "pointsVisible"}, null,
+                "Sets the point color, label, size, visibility, etc."));
         rst.add(new PyFunc("line", SEQUENTIAL, new String[] {"lineColor", "lineStyle", "linesVisible"}, null,
-                "TODO pydoc"));
-        rst.add(new PyFunc("func", SEQUENTIAL, new String[] {"funcNPoints", "funcRange"}, null, "TODO pydoc"));
-
+                "Sets the line color, style, visibility."));
+        rst.add(new PyFunc("func", SEQUENTIAL, new String[] {"funcNPoints", "funcRange"}, null,
+                "Sets the number of data points and the data range for the data series."));
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[] {"plot", "plotBy", "errorBarX", "errorBarXBy",
-                "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[] {"series_name"}, "TODO pydoc"));
+                "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[] {"series_name"},
+                "Creates an XY plot."));
         rst.add(new PyFunc("plot_xy_hist", SINGLETON, new String[] {"histPlot"}, new String[] {"series_name"},
-                "TODO pydoc"));
+                "Creates an XY histogram."));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[] {"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"},
-                new String[] {"series_name"}, "TODO pydoc"));
+                new String[] {"series_name"},
+                "Creates a plot with discrete axis. Discrete data must not have duplicates."));
         rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[] {"catHistPlot"}, new String[] {"series_name"},
-                "TODO pydoc"));
+                "Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data."));
         rst.add(new PyFunc("plot_pie", SINGLETON, new String[] {"piePlot"}, new String[] {"series_name"},
-                "TODO pydoc"));
+                "Creates a pie plot. Categorical data must not have duplicates."));
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},
-                new String[] {"series_name"}, "TODO pydoc"));
+                new String[] {"series_name"},
+                "Creates an open-high-low-close plot."));
 
         ////////////////////////////////////////////////////////////////
 

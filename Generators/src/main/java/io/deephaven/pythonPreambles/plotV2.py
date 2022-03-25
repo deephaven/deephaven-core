@@ -1,8 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
-# TODO: document
+""" This module implements the Figure class for creating plots. """
 
 from __future__ import annotations
 
@@ -83,6 +82,9 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
 
 class Figure(JObjectWrapper):
+    """ A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
+    and all function calls return a new immutable Figure instance. """
+
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
     def __init__(self, j_figure: jpy.JType = None):

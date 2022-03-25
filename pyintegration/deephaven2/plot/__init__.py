@@ -10,6 +10,7 @@ from deephaven2.time import TimeZone
 from .color import Color, Colors
 from .font import Font, FontStyle
 from .linestyle import LineStyle
+from .selectable_dataset import SelectableDataSet
 from .. import DHError
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
@@ -139,10 +140,3 @@ class PlotStyle(Enum):
     """ An error bar plot (points are not displayed by default). """
 
 
-class SelectableDataSet(JObjectWrapper):
-    def __init__(self, j_sds):
-        self.j_sds = j_sds
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_sds

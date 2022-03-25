@@ -1,8 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
-# TODO: document
+""" This module implements the Figure class for creating plots. """
 
 from __future__ import annotations
 
@@ -83,6 +82,9 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
 
 class Figure(JObjectWrapper):
+    """ A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
+    and all function calls return a new immutable Figure instance. """
+
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
     def __init__(self, j_figure: jpy.JType = None):
@@ -102,7 +104,7 @@ class Figure(JObjectWrapper):
         remove_series: List[str] = None,
         plot_style: Union[str, PlotStyle] = None,
     ) -> Figure:
-        """TODO pydoc
+        """Retrieves the axes of the chart.
 
         Args:
             name (str): name
@@ -179,7 +181,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """TODO pydoc
+        """Gets the Axis at the dimension dim and/or sets its properties. The x-axis is dimension 0, y-axis dimension 1.
 
         Args:
             dim (int): dimension of the axis
@@ -373,7 +375,7 @@ class Figure(JObjectWrapper):
         y_grid_visible: bool = None,
         pie_label_format: str = None,
     ) -> Figure:
-        """TODO pydoc
+        """Returns a chart from the figure's grid.
 
         Args:
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
@@ -511,7 +513,7 @@ class Figure(JObjectWrapper):
         font_style: str = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the color, font, visibility of the lengend of the chart.
 
         Args:
             color (Union[str, int, Color]): color
@@ -590,7 +592,7 @@ class Figure(JObjectWrapper):
         font_size: int = None,
         font_style: str = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the title of the chart.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -703,7 +705,7 @@ class Figure(JObjectWrapper):
         remove_chart_col: int = None,
         update_millis: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Updates the figure by removing its elements or setting a new update intervals.
 
         Args:
             remove_series (List[str]): names of series to remove
@@ -773,7 +775,7 @@ class Figure(JObjectWrapper):
         font_size: int = None,
         font_style: str = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the title of the figure.
 
         Args:
             title (str): title
@@ -844,7 +846,7 @@ class Figure(JObjectWrapper):
         xmax: float = None,
         npoints: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the number of data points and the data range for the data series.
 
         Args:
             xmin (float): minimum x value to display
@@ -899,7 +901,7 @@ class Figure(JObjectWrapper):
         style: Union[str, LineStyle] = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the line color, style, visibility.
 
         Args:
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
@@ -971,7 +973,7 @@ class Figure(JObjectWrapper):
         name: str = None,
         dim: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates new axes.
 
         Args:
             name (str): name
@@ -1009,7 +1011,7 @@ class Figure(JObjectWrapper):
         row: int = None,
         col: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Adds a new chart to this figure.
 
         Args:
             index (int): index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].
@@ -1053,7 +1055,7 @@ class Figure(JObjectWrapper):
         y_high: Union[str, List[int], List[float], List[DateTime]] = None,
         by: List[str] = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a plot with discrete axis. Discrete data must not have duplicates.
 
         Args:
             series_name (str): name of the data series
@@ -1117,7 +1119,7 @@ class Figure(JObjectWrapper):
         t: Union[Table, SelectableDataSet] = None,
         category: Union[str, List[str], List[int], List[float]] = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
 
         Args:
             series_name (str): name of the data series
@@ -1162,7 +1164,7 @@ class Figure(JObjectWrapper):
         close: Union[str, List[int], List[float], List[DateTime]] = None,
         by: List[str] = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates an open-high-low-close plot.
 
         Args:
             series_name (str): name of the data series
@@ -1225,7 +1227,7 @@ class Figure(JObjectWrapper):
         category: Union[str, List[str], List[int], List[float]] = None,
         y: Union[str, List[int], List[float], List[DateTime]] = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a pie plot. Categorical data must not have duplicates.
 
         Args:
             series_name (str): name of the data series
@@ -1278,7 +1280,7 @@ class Figure(JObjectWrapper):
         x_time_axis: bool = None,
         y_time_axis: bool = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates an XY plot.
 
         Args:
             series_name (str): name of the data series
@@ -1381,7 +1383,7 @@ class Figure(JObjectWrapper):
         xmax: float = None,
         nbins: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates an XY histogram.
 
         Args:
             series_name (str): name of the data series
@@ -1445,7 +1447,7 @@ class Figure(JObjectWrapper):
         label_format: str = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the point color, label, size, visibility, etc.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -1691,7 +1693,7 @@ class Figure(JObjectWrapper):
         wait: bool = None,
         timeout_seconds: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Saves the Figure as an image.
 
         Args:
             path (str): output path.
@@ -1751,7 +1753,7 @@ class Figure(JObjectWrapper):
         gradient_visible: bool = None,
         naming_function: Callable = None,
     ) -> Figure:
-        """TODO pydoc
+        """Gets a data series and sets its various properties.
 
         Args:
             name (str): name
@@ -1904,7 +1906,7 @@ class Figure(JObjectWrapper):
     def show(
         self,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a displayable version of the figure and returns it.
 
         Args:
 
@@ -1932,7 +1934,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the tick location, font, angle, visibility etc. for the axis.
 
         Args:
             font (Font): font
@@ -2020,7 +2022,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets whether the minor ticks are drawn and the number of thme between major ticks on this axis.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2064,7 +2066,9 @@ class Figure(JObjectWrapper):
         name: str = None,
         dim: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a new Axes instance which shares the same Axis objects as this Axes. The resultant Axes has the
+         same range, ticks, etc. as this Axes (as these are fields of the Axis) but may have, for example, a
+         different PlotStyle.
 
         Args:
             name (str): name
@@ -2115,7 +2119,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """TODO pydoc
+        """Gets the Axis representing the x-axis and sets its various properties.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -2301,7 +2305,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the x-Axis ticks.
 
         Args:
             font (Font): font
@@ -2389,7 +2393,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the x-Axis minor ticks.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2432,7 +2436,10 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
     ) -> Figure:
-        """TODO pydoc
+        """Creates a new Axes instance which shares the same x-Axis as this Axes.
+         
+        The resultant Axes has the same x-axis range, ticks, etc. as this Axes (as these are properties of the
+        Axis) but may have, for example, a different PlotStyle.
 
         Args:
             name (str): name
@@ -2475,7 +2482,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """TODO pydoc
+        """Gets the Axis representing the y-axis and sets its various properties.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -2661,7 +2668,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the y-Axis ticks.
 
         Args:
             font (Font): font
@@ -2749,7 +2756,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """TODO pydoc
+        """Sets the y-Axis minor ticks.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2792,7 +2799,10 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
     ) -> Figure:
-        """TODO pydoc
+        """        Creates a new Axes instance which shares the same y-Axis as this Axes.
+         
+        The resultant Axes has the same y-axis range, ticks, etc. as this Axes (as these are properties of the
+        Axis) but may have, for example, a different PlotStyle.
 
         Args:
             name (str): name
