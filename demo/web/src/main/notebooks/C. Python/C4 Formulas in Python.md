@@ -29,7 +29,7 @@ source = newTable(
         intCol("Z", 2, 3, 1, 2, 3, 1, 2)
 )
 
-result = source.where("(int)f(Y, Z) > 9")
+result = source.where("(int)(byte)f(Y, Z) > 9")
 ```
 
 Boolean formulas in filter methods are also known as conditional filters.
@@ -59,7 +59,7 @@ result = emptyTable(10).update(
         "B = A * A",
         "C = A / 2",
         "D = A % 3",
-        "E = (int) C",
+        "E = (int)(byte) C",
         "F = A_[i-2]",
         "G = obj.a",
         "H = obj.compute(A)",
