@@ -56,9 +56,9 @@ services:
   web:
     image: deephaven/web:local-build
     expose:
+      - "8080"
     volumes:
       - ./data:/data
-      - "8080"
     deploy:
       resources:
         limits:
