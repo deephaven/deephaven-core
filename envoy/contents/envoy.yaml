@@ -102,7 +102,7 @@ static_resources:
                   address:
                     socket_address:
                       address: server # here we assume the name of the server
-                      port_value: 8080
+                      port_value: 8888
     - name: web
       connect_timeout: 10s
       type: LOGICAL_DNS
