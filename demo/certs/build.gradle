@@ -1,0 +1,133 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
+
+plugins {
+    id 'base'
+    id 'com.bmuschko.docker-remote-api'
+}
+
+def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
+def imageIdFile = project.layout.buildDirectory.file('.docker/imageId.txt').get().asFile
+def imageId = imageIdFile.exists() ? imageIdFile.text : null
+def image = project.property('image') as String
+
+
+String certsRepository = project.property('certsRepository')
+String certsTag = 'latest'
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    it.from 'src/main/docker/Dockerfile'
+    it.from('src/main/scripts') {
+        into 'rx'
+    }
+    it.into dockerfileDir
+}
+
+def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
+    it.dependsOn prepareDocker
+    it.inputDir.set dockerfileDir
+    it.imageIdFile.set imageIdFile
+    it.images.add(image)
+}
+
+def deleteImage = project.tasks.register('deleteImage', DockerRemoveImage) {
+    it.onlyIf { imageId != null }
+    it.imageId.set imageId
+    it.force.set true
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+    it.doLast {
+        imageIdFile.delete()
+    }
+}
+
+project.tasks.register('cleanDocker') {
+    it.dependsOn deleteImage
+}
+
+assemble.dependsOn buildImage
+
+
+def tagCerts = tasks.register('tagCerts', DockerTagImage) {
+    DockerTagImage t ->
+        t.imageId.set project.property('image') as String
+        t.repository.set certsRepository
+        t.tag.set certsTag
+        t.force.set true
+        t.dependsOn buildImage
+}
+
+def untagCerts = tasks.register('untagCerts', DockerRemoveImage) {
+    it.imageId.set "${certsRepository}:${certsTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+def pushCertsTask = tasks.register('pushAll', DockerPushImage) {
+    DockerPushImage p ->
+        p.images.set([
+                "${certsRepository}:${certsTag}",
+        ] as Set)
+        p.dependsOn tagCerts
+}
+
+tasks.register('updateCerts') {
+    Task t ->
+        t.dependsOn(pushCertsTask)
+        t.doLast {
+            logger.quiet("Updating certs")
+            String success = 'cert-update job complete!'
+            List<String> cmd = ['bash', '-c', """function update_cert() {
+set -x
+set -e
+exec > >(tee $buildDir/cert-update.log) 2>&1
+CLUSTER_NAME="dhce-auto"
+PROJECT_ID="deephaven-oss"
+ZONE="us-central1"
+K8S_CONTEXT="gke_\${PROJECT_ID}_\${ZONE}_\${CLUSTER_NAME}"
+DH_SSL_DIR="/etc/ssl/dh"
+
+gcloud container clusters get-credentials "\${CLUSTER_NAME}" \
+    --zone "\${ZONE}" \
+    --project "\${PROJECT_ID}" \
+    --verbosity debug
+
+kubectl delete -v=2 --context "\${K8S_CONTEXT}" -f "${file('cert-wildcard-job.yaml').absolutePath}"
+kubectl apply -v=2 --context "\${K8S_CONTEXT}" -f "${file('cert-wildcard-job.yaml').absolutePath}"
+pod_name="\$(kubectl get pods -v=2 --context "\${K8S_CONTEXT}" | grep cert-wildcard | awk '{print \$1}')"
+set +x
+echo
+echo
+echo cert-wildcard-job started, you should view logs with:
+echo kubectl logs --context "\${K8S_CONTEXT}" \$pod_name -f
+echo
+echo
+echo Once your cert is updated, you will need to either update the demo base gcloud image, or do a minor version bump.
+echo Example, changing versions from 0.8.10 to 0.9.10 will create and use a new base image, base-0-9 with new certs.
+echo If you do not want to do a major version bump, then you will need to delete the current base image:
+echo gcloud compute images delete base-${currentBaseVersion} --project \${PROJECT_ID} -q
+echo Note: a new base image will be automatically created the next time you run ./gradlew deployDemo
+echo
+echo
+echo $success
+} ; update_cert"""]
+            String result = cmd.execute(null, projectDir).text
+            logger.quiet(result)
+            if (result.contains("'NoneType' object has no attribute 'split'")) {
+                logger.error("You need to run `gcloud components update`")
+                throw new GradleException("Failed to update certs; run gcloud components update")
+            }
+            // now, lets get the logs too!
+        }
+}
+
+def getCurrentBaseVersion() {
+    String version = property('version')
+    return version.substring(0, version.lastIndexOf('.')).replace('.', '-')
+}

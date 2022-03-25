@@ -309,6 +309,9 @@ file("${rootDir}/docker/registry").list().each { name ->
     }
 }
 
+
+include(':demo-certs')
+project(':demo-certs').projectDir = file('demo/certs')
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
