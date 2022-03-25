@@ -1467,7 +1467,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
     }
 
-
+    private static LogEntry appendAsMillisFromNanos(final LogEntry entry, final long nanos) {
+        if (nanos > 0) {
+            return entry.appendPositiveDouble(nanos / 1_000_000.0, 3);
+        }
+        return entry.append(0);
+    }
 
     /**
      * Iterate over all monitored tables and run them. This method also ensures that the loop runs no faster than
@@ -1506,31 +1511,21 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
                 LogEntry entry = log.info()
                         .append("Update Graph Processor cycleTime=").appendPositiveDouble(cycleTimeMillis, 3)
-                        .append("ms, gcTimeMs=").append(gcIntrospectionContext.deltaCollectionTimeMs())
-                        .append("ms, gcTimePct=")
-                        ;
-                if (cycleTimeMillis > 0.0) {
-                    /*
-                    final int gcTimePctAsMills = (int) (0.5 + 1000 * gcTimeMillis / cycleTimeMillis);
-                    final int gcTimePctIntegral = gcTimePctAsMills / 100;
-                    final int gcTimePctFractional = gcTimePctAsMills % 100;
-                    entry = entry
-                            .append(gcTimePctIntegral)
-                            .append(".")
-                            .append((gcTimePctFractional < 10) ? "0" : "")
-                            .append(gcTimePctFractional)
-                            ;
-
-                     */
+                        .append("ms, gcTime=").append(gcTimeMillis)
+                        .append("ms, gcTimePct=");
+                if (gcTimeMillis > 0 && cycleTimeMillis > 0.0) {
                     final double gcTimePct = 100.0 * gcTimeMillis / cycleTimeMillis;
                     entry = entry.appendPositiveDouble(gcTimePct, 2);
                 } else {
-                    entry = entry.append("0.00");
+                    entry = entry.append("0");
                 }
-                entry.append("%, lockWaitTime=").appendPositiveDouble(currentCycleLockWaitTotalNanos / 1_000_000.0, 3)
-                        .append("ms, yieldTime=").appendPositiveDouble(currentCycleYieldTotalNanos / 1_000_000.0, 3)
-                        .append("ms, sleepTime=").appendPositiveDouble(currentCycleSleepTotalNanos / 1_000_000.0, 3)
-                        .append("ms").endl();
+                entry = entry.append("%, lockWaitTime=");
+                entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
+                entry = entry.append("ms, yieldTime=");
+                entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+                entry = entry.append("ms, sleepTime=");
+                entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+                entry.append("ms").endl();
             } else if (cycleTimeNanos > 0) {
                 ++suppressedCycles;
                 suppressedCyclesTotalNanos += cycleTimeNanos;
@@ -1553,7 +1548,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 .appendPositiveDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
                 .appendPositiveDouble((double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
-                .append("ms/cycle average, gcTimeMs=").append(suppressedCyclesTotalGcMillis)
+                .append("ms/cycle average, gcTime=").append(suppressedCyclesTotalGcMillis)
                 .append("ms").endl();
         suppressedCycles = suppressedCyclesTotalNanos = 0;
         suppressedCyclesTotalGcMillis = 0;

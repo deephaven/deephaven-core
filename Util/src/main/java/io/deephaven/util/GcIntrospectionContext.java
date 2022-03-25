@@ -5,8 +5,8 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 
 /**
- * Utility class to facilitate obtaining the number of garbage collections and the time in garbage collection
- * between two points in code.
+ * Utility class to facilitate obtaining the number of garbage collections and the time in garbage collection between
+ * two points in code.
  */
 public class GcIntrospectionContext {
     public final List<GarbageCollectorMXBean> gcBeans;
@@ -30,6 +30,7 @@ public class GcIntrospectionContext {
         lastStartTotalCollections = collections;
         lastStartTotalCollectionsTimeMs = collectionsMs;
     }
+
     /**
      * Sample garbage collection count and times at the point of call.
      */
@@ -46,6 +47,7 @@ public class GcIntrospectionContext {
 
     /**
      * Number of collections between the last two calls to {@code sample()}
+     * 
      * @return Number of collections
      */
     public long deltaCollections() {
@@ -54,6 +56,7 @@ public class GcIntrospectionContext {
 
     /**
      * Time in milliseconds in collections between the last two calls to {@code sample()}
+     * 
      * @return Time in milliseconds
      */
     public long deltaCollectionTimeMs() {

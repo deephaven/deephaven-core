@@ -107,12 +107,11 @@ public interface LogEntry extends LogOutput, LogSink.Element {
         }
         final int fractional = (int) (lf % decimalPlacesAsPowerOf10);
         r = r.append(".");
-        if (fractional == 0) {
-            return r.append(0);
-        }
         final int base10FractionalDigits = MathUtil.base10digits(fractional);
         final int leadingZeroes = decimalPlaces - base10FractionalDigits;
         switch (leadingZeroes) {
+            case 9:
+                r = r.append("000000000");
             case 8:
                 r = r.append("00000000");
                 break;
@@ -137,6 +136,9 @@ public interface LogEntry extends LogOutput, LogSink.Element {
             case 1:
                 r = r.append("0");
                 break;
+        }
+        if (fractional == 0) {
+            return r;
         }
         return r.append(fractional);
     }
