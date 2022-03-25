@@ -1,3 +1,14 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id "${quarkusPluginId}" version "${quarkusPluginVersion}"
+    }
+}
+
 plugins {
     id 'com.gradle.enterprise' version '3.5.2'
 }
@@ -20,7 +31,8 @@ String[] mods = [
         'python-engine-test',
         'server',
         'table-api',
-        'qst'
+        'qst',
+        'demo'
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
