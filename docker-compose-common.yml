@@ -69,7 +69,7 @@ services:
     environment:
       - BACKEND_ADDR=server:8080
     expose:
-      - '8080'
+      - '8008'
 #      - '8443' #unused
     deploy:
       resources:
