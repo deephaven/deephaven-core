@@ -285,6 +285,9 @@ project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-pack
 include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')
 
+include(':hotspot')
+project(':hotspot').projectDir = file('hotspot')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")

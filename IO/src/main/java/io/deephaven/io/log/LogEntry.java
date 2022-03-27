@@ -93,54 +93,90 @@ public interface LogEntry extends LogOutput, LogSink.Element {
     /**
      * Append a double to the given number of decimal places, rounding up.
      *
-     * @param f a double value to append to the logEntry
+     * @param doubleValue a double value to append to the logEntry
      * @param decimalPlaces a positive integer between 0 and 9
      * @return the resulting {@code LogEntry}
      */
-    default LogEntry appendPositiveDouble(double f, int decimalPlaces) {
+    default LogEntry appendDoubleToDecimalPlaces(final double doubleValue, final int decimalPlaces) {
+        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, true);
+    }
+
+    /**
+     * Append a double with decimal places up to the given number.
+     *
+     * @param doubleValue a double value to append to the logEntry
+     * @param decimalPlaces a positive integer between 0 and 9
+     * @return the resulting {@code LogEntry}
+     */
+    default LogEntry appendDoubleToMaxDecimalPlaces(final double doubleValue, final int decimalPlaces) {
+        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, false);
+    }
+
+    private static LogEntry appendDoubleDecimalPlacesImpl(
+            LogEntry entry, final double doubleValue, final int decimalPlaces, final boolean exact) {
         final int decimalPlacesAsPowerOf10 = MathUtil.pow10(decimalPlaces);
-        final long lf = (long) (0.5 + f * decimalPlacesAsPowerOf10);
-        final long integral = lf / decimalPlacesAsPowerOf10;
-        LogEntry r = append(integral);
-        if (decimalPlaces == 0) {
-            return r;
+        final boolean negative = doubleValue < 0.0;
+        final long longWeightedValue;
+        if (negative) {
+            longWeightedValue = -(long) (-0.5 + doubleValue * decimalPlacesAsPowerOf10);
+        } else {
+            longWeightedValue = (long) (0.5 + doubleValue * decimalPlacesAsPowerOf10);
         }
-        final int fractional = (int) (lf % decimalPlacesAsPowerOf10);
-        r = r.append(".");
+        final long integral = longWeightedValue / decimalPlacesAsPowerOf10;
+        if (negative) {
+            entry = entry.append(-integral);
+        } else {
+            entry = entry.append(integral);
+        }
+        if (decimalPlaces == 0) {
+            return entry;
+        }
+        int fractional = (int) (longWeightedValue % decimalPlacesAsPowerOf10);
+        int actualDecimalPlaces = decimalPlaces;
+        if (!exact) {
+            while (fractional > 0 && (fractional % 10 == 0)) {
+                fractional /= 10;
+                --actualDecimalPlaces;
+            }
+            if (fractional == 0) {
+                return entry;
+            }
+        }
+        entry = entry.append(".");
         final int base10FractionalDigits = MathUtil.base10digits(fractional);
-        final int leadingZeroes = decimalPlaces - base10FractionalDigits;
+        final int leadingZeroes = actualDecimalPlaces - base10FractionalDigits;
         switch (leadingZeroes) {
             case 9:
-                r = r.append("000000000");
+                entry = entry.append("000000000");
             case 8:
-                r = r.append("00000000");
+                entry = entry.append("00000000");
                 break;
             case 7:
-                r = r.append("0000000");
+                entry = entry.append("0000000");
                 break;
             case 6:
-                r = r.append("000000");
+                entry = entry.append("000000");
                 break;
             case 5:
-                r = r.append("00000");
+                entry = entry.append("00000");
                 break;
             case 4:
-                r = r.append("0000");
+                entry = entry.append("0000");
                 break;
             case 3:
-                r = r.append("000");
+                entry = entry.append("000");
                 break;
             case 2:
-                r = r.append("00");
+                entry = entry.append("00");
                 break;
             case 1:
-                r = r.append("0");
+                entry = entry.append("0");
                 break;
         }
         if (fractional == 0) {
-            return r;
+            return entry;
         }
-        return r.append(fractional);
+        return entry.append(fractional);
     }
 
     LogEntry nf();

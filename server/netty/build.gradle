@@ -43,6 +43,12 @@ def extraJvmArgs = [
 if (hasProperty('groovy')) {
     extraJvmArgs += ['-Ddeephaven.console.type=groovy']
 }
+if (hasProperty('hotspot')) {
+    dependencies {
+        runtimeOnly project(':engine-hotspot')
+    }
+    extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
+}
 tasks.withType(JavaExec) {
     // This appends to the existing jvm args, so that java-open-nio still takes effect
     jvmArgs extraJvmArgs

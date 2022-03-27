@@ -1,0 +1,19 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+description 'Implementation for the HotSpot service to obtain JVM instrospection data.'
+
+dependencies {
+    implementation project(':Util')
+    Classpaths.inheritAutoService(project)
+}
+
+// We can't combine `release` and `add-exports`, so we need to set the languageLevel here
+// overriding buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle.
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
+
+tasks.withType(JavaCompile).configureEach {
+    sourceCompatibility = languageLevel
+    options.compilerArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+}
