@@ -1555,9 +1555,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 .append("Minimal Update Graph Processor cycle times: ")
                 .appendDoubleToDecimalPlaces((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
-                .appendDoubleToDecimalPlaces((double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
-                .append("ms/cycle average)")
-                ;
+                .appendDoubleToDecimalPlaces(
+                        (double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
+                .append("ms/cycle average)");
         if (JvmIntrospectionContext.hasSafePointData()) {
             entry = entry
                     .append(", safePointTime=")

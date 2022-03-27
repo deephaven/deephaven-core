@@ -6,6 +6,7 @@ import java.util.ServiceLoader;
 
 public interface HotSpot {
     Optional<HotSpot> instance = loadImpl();
+
     private static Optional<HotSpot> loadImpl() {
         final Iterator<HotSpot> it = ServiceLoader.load(HotSpot.class).iterator();
         if (!it.hasNext()) {
@@ -19,5 +20,6 @@ public interface HotSpot {
     }
 
     long getSafepointCount();
+
     long getTotalSafepointTimeMillis();
 }

@@ -3,20 +3,15 @@ package io.deephaven.util;
 import io.deephaven.util.hotspot.HotSpot;
 
 /**
- * Utility class to facilitate obtaining data for safepoint pauses count and time between two points in code.
- * A safepoint pause is a "stop the world, pause all threads" event in the HotSpot JVM.
- * Note full Garbage Collection pauses are a dominant cause of safepoint pauses, but there are other triggers
- * like:
- * <il>
- * <li> Deoptimization </li>
- * <li> Biased lock revocation </li>
- * <li> Thread dump </li>
- * <li> Heap inspection< /li>
- * <li> Class redefinition </li>
- * </il>
- * And others; you can see a full list
- * <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/fc3cd1db10e2/src/share/vm/runtime/vm_operations.hpp#l39">
- * here
+ * Utility class to facilitate obtaining data for safepoint pauses count and time between two points in code. A
+ * safepoint pause is a "stop the world, pause all threads" event in the HotSpot JVM. Note full Garbage Collection
+ * pauses are a dominant cause of safepoint pauses, but there are other triggers like: <il>
+ * <li>Deoptimization</li>
+ * <li>Biased lock revocation</li>
+ * <li>Thread dump</li>
+ * <li>Heap inspection< /li>
+ * <li>Class redefinition</li> </il> And others; you can see a full list <a href=
+ * "http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/fc3cd1db10e2/src/share/vm/runtime/vm_operations.hpp#l39"> here
  * </a>.
  *
  */
