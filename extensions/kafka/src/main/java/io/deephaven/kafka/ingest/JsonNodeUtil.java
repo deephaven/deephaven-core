@@ -88,7 +88,7 @@ public class JsonNodeUtil {
      * @return A Deephaven int (primitive int with reserved values for null)
      */
     public static int getInt(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                             final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getInt(tmpNode);
     }
@@ -149,7 +149,7 @@ public class JsonNodeUtil {
      * @return A Deephaven short (primitive short with reserved values for Null)
      */
     public static short getShort(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                                 final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getShort(tmpNode);
     }
@@ -204,7 +204,7 @@ public class JsonNodeUtil {
      * @return A Deephaven long (primitive long with reserved values for Null)
      */
     public static long getLong(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                               final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getLong(tmpNode);
     }
@@ -265,7 +265,7 @@ public class JsonNodeUtil {
      * @return A Deephaven double (primitive double with reserved values for null)
      */
     public static double getDouble(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                                   final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getDouble(tmpNode);
     }
@@ -326,7 +326,7 @@ public class JsonNodeUtil {
      * @return A Deephaven float (primitive float with reserved values for Null)
      */
     public static float getFloat(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                                 final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getFloat(tmpNode);
     }
@@ -387,7 +387,7 @@ public class JsonNodeUtil {
      * @return A Deephaven byte (primitive byte with a reserved value for Null)
      */
     public static byte getByte(@NotNull final JsonNode node, @NotNull JsonPointer ptr,
-                               final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getByte(tmpNode);
     }
@@ -462,7 +462,7 @@ public class JsonNodeUtil {
      * @return A Deephaven char (primitive char with a reserved value for Null)
      */
     public static char getChar(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                               final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getChar(tmpNode);
     }
@@ -533,7 +533,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static String getString(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                                   final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getString(tmpNode);
     }
@@ -570,7 +570,7 @@ public class JsonNodeUtil {
      * @return A Boolean
      */
     public static Boolean getBoolean(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                                     final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getBoolean(tmpNode);
     }
@@ -607,7 +607,7 @@ public class JsonNodeUtil {
      * @return A BigInteger
      */
     public static BigInteger getBigInteger(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                                           final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getBigInteger(tmpNode);
     }
@@ -646,7 +646,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static BigDecimal getBigDecimal(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                                           final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getBigDecimal(tmpNode);
     }
@@ -714,7 +714,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
-                                       final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
         return getDateTime(tmpNode);
     }

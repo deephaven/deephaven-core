@@ -636,15 +636,15 @@ public class KafkaTools {
         }
 
         /**
-         * A JSON spec from a set of column definitions, with an specific mapping of JSON nodes to columns.
-         * JSON nodes can be specified as a string field name, or as a JSON Pointer string (see RFC 6901,
-         * ISSN: 2070-1721).
+         * A JSON spec from a set of column definitions, with an specific mapping of JSON nodes to columns. JSON nodes
+         * can be specified as a string field name, or as a JSON Pointer string (see RFC 6901, ISSN: 2070-1721).
          *
-         * @param columnDefinitions An array of column definitions for specifying the table to be created.
-         * @param fieldToColumnName A mapping from JSON field names or JSON Pointer strings to column names provided in the definition.
-         *        For each field key, if it starts with '/' it is assumed to be a JSON Pointer.
-         *        Fields not included will be ignored.
-         * @return A JSON spec for the given inputs.
+         * @param columnDefinitions An array of column definitions for specifying the table to be created
+         * @param fieldToColumnName A mapping from JSON field names or JSON Pointer strings to column names provided in
+         *        the definition. For each field key, if it starts with '/' it is assumed to be a JSON Pointer (e.g.,
+         *        {@code "/parent/nested"} represents a pointer to the nested field {@code "nested"} inside the toplevel
+         *        field {@code "parent"}). Fields not included will be ignored
+         * @return A JSON spec for the given inputs
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
@@ -1673,7 +1673,8 @@ public class KafkaTools {
                 for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
                     final String colName = colDef.getName();
                     if (!coveredColumns.contains(colName)) {
-                        final String jsonPtrStr = Consume.KeyOrValueSpec.Json.mapTopLevelFieldNameToJsonPointerStr(colName);
+                        final String jsonPtrStr =
+                                Consume.KeyOrValueSpec.Json.mapTopLevelFieldNameToJsonPointerStr(colName);
                         data.fieldPathToColumnName.put(jsonPtrStr, colName);
                     }
                 }
