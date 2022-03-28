@@ -2,6 +2,7 @@
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ Tools for resolving Uniform Resource Identifiers (URIs) into objects. """
+
 import importlib
 import pkgutil
 import sys
@@ -41,8 +42,8 @@ _recursive_import(__package__.partition(".")[0])
 
 
 def resolve(uri: str) -> Union[jpy.JType, JObjectWrapper]:
-    """Resolves a URI string into an object. Objects with custom Python wrappers, like Table, return an instance of
-    the wrapper class; otherwise, the raw Java object is returned.
+    """Resolves a Uniform Resource Identifier (URI) string into an object. Objects with custom Python wrappers,
+    like Table, return an instance of the wrapper class; otherwise, the raw Java object is returned.
 
 
     Args:

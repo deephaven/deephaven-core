@@ -23,7 +23,7 @@ class JObjectWrapper(ABC):
     def __init_subclass__(cls, *args, **kwargs):
         required_cls_attr = "j_object_type"
         if not hasattr(cls, required_cls_attr):
-            raise NotImplementedError("Class {cls} lacks required `{required_cls_attr}` class attribute")
+            raise NotImplementedError(f"Class {cls} lacks required `{required_cls_attr}` class attribute")
         if not isinstance(getattr(cls, required_cls_attr), type):
             raise TypeError(f"{required_cls_attr!r} of Class {cls} is not a Class")
 
@@ -62,7 +62,8 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
 
 
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
-    """ Wraps the specified Java object as an instance of a custom wrapper class if one is available. """
+    """ Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
+    the raw Java object. """
     if j_obj is None:
         return None
 
