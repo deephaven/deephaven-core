@@ -1372,7 +1372,6 @@ public abstract class BaseTable extends LivenessArtifact
     public <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
             String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
-            Assert.eqFalse(isRefreshing(), "isRefreshing");
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
             return;
         }

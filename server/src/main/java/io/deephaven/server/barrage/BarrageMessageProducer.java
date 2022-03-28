@@ -226,6 +226,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
+
+        @Override
+        public boolean snapshotNeeded() {
+            return false;
+        }
     }
 
     private static class MyMemoKey extends MemoizedOperationKey {
@@ -338,6 +343,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private final Runnable onGetSnapshot;
 
+    private final boolean parentIsRefreshing;
+
     public BarrageMessageProducer(final Scheduler scheduler,
             final StreamGenerator.Factory<MessageView> streamGeneratorFactory,
             final BaseTable parent,
@@ -353,6 +360,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.parent = parent;
         this.updateIntervalMs = updateIntervalMs;
         this.onGetSnapshot = onGetSnapshot;
+
+        this.parentIsRefreshing = parent.isRefreshing();
 
         if (DEBUG) {
             log.info().append(logPrefix).append("Creating new BarrageMessageProducer for ")
@@ -573,17 +582,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     //////////////////////////////////////////////////
 
     private DeltaListener constructListener() {
-        return new DeltaListener();
+        return parentIsRefreshing ? new DeltaListener() : null;
     }
 
     private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
             super("BarrageMessageProducer");
-            if (parent.isRefreshing()) {
-                manage(parent);
-                addParentReference(this);
-            }
+            Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
+            manage(parent);
+            addParentReference(this);
+            parent.listenForUpdates(this);
         }
 
         @Override
@@ -1674,6 +1683,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @SuppressWarnings("AutoBoxing")
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
+            if (!parentIsRefreshing) {
+                return false;
+            }
+
             capturedLastIndexClockStep = getLastIndexClockStep();
 
             final LogicalClock.State state = LogicalClock.getState(beforeClockValue);
@@ -1699,6 +1712,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         @Override
         public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+            if (!parentIsRefreshing) {
+                return true;
+            }
             return capturedLastIndexClockStep == getLastIndexClockStep();
         }
 
@@ -1706,7 +1722,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public boolean snapshotCompletedConsistently(final long afterClockValue, final boolean usedPreviousValues) {
             final boolean success;
             synchronized (BarrageMessageProducer.this) {
-                success = capturedLastIndexClockStep == getLastIndexClockStep();
+                success = snapshotConsistent(afterClockValue, usedPreviousValues);
 
                 if (!success) {
                     step = -1;

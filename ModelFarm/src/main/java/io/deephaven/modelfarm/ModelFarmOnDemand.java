@@ -34,7 +34,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     private static final boolean LOG_PERF =
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
     private static final Logger log = LoggerFactory.getLogger(ModelFarmOnDemand.class);
-    private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION =
+    private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> DO_LOCKED_FUNCTION =
             getDoLockedConsumer(GetDataLockType.UGP_READ_LOCK);
 
     private static class QueueAndCallback<DATATYPE> {
@@ -131,7 +131,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
                     dataToEval.add(data);
                 }
             }
-        }, (NotificationStepSource) dataManagerTable);
+        }, dataManagerTable);
 
         if (dataToEval.isEmpty()) {
             log.warn().append("ModelFarmOnDemand: dataToEval is empty!").endl();

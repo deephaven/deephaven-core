@@ -326,7 +326,8 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         // NB: Our snapshot control must be notification-aware, because if source ticks we cannot guarantee that we
         // won't observe some newly created components on their instantiation step.
         final ConstructSnapshot.SnapshotControl control =
-                ConstructSnapshot.makeSnapshotControl(true, ((NotificationStepSource) baseTable.getSourceTable()));
+                ConstructSnapshot.makeSnapshotControl(true, baseTable.isRefreshing(),
+                        ((NotificationStepSource) baseTable.getSourceTable()));
         final MutableObject<SnapshotState> finalState = new MutableObject<>();
         ConstructSnapshot.callDataSnapshotFunction(getClass().getSimpleName(), control,
                 (final boolean usePrev, final long beforeClockValue) -> {
