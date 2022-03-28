@@ -101,9 +101,10 @@ public class KafkaTools {
     public static final String BYTE_BUFFER_SERIALIZER = ByteBufferSerializer.class.getName();
     public static final String AVRO_SERIALIZER = KafkaAvroSerializer.class.getName();
     public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
-    public static final String NESTED_FIELD_NAME_SEPARATOR = "__";
+    public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
     private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
             Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
+    public static final String NESTED_FIELD_COLUMN_NAME_SEPARATOR = "__";
     public static final String AVRO_LATEST_VERSION = "latest";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools.class);
@@ -575,18 +576,49 @@ public class KafkaTools {
              */
             static final class Json extends KeyOrValueSpec {
                 final ColumnDefinition<?>[] columnDefinitions;
-                final Map<String, String> fieldNameToColumnName;
+                final Map<String, String> fieldToColumnName;
 
                 private Json(
                         final ColumnDefinition<?>[] columnDefinitions,
                         final Map<String, String> fieldNameToColumnName) {
                     this.columnDefinitions = columnDefinitions;
-                    this.fieldNameToColumnName = fieldNameToColumnName;
+                    this.fieldToColumnName = mapNonPointers(fieldNameToColumnName);
                 }
 
                 @Override
                 DataFormat dataFormat() {
                     return DataFormat.JSON;
+                }
+
+                private static Map<String, String> mapNonPointers(final Map<String, String> fieldNameToColumnName) {
+                    if (fieldNameToColumnName == null) {
+                        return null;
+                    }
+                    boolean needsMapping = false;
+                    for (Map.Entry<String, String> entry : fieldNameToColumnName.entrySet()) {
+                        final String key = entry.getKey();
+                        if (!key.startsWith("/")) {
+                            needsMapping = true;
+                            break;
+                        }
+                    }
+                    if (!needsMapping) {
+                        return fieldNameToColumnName;
+                    }
+                    final Map<String, String> ans = new HashMap<>(fieldNameToColumnName.size());
+                    for (Map.Entry<String, String> entry : fieldNameToColumnName.entrySet()) {
+                        final String key = entry.getKey();
+                        if (key.startsWith("/")) {
+                            ans.put(key, entry.getValue());
+                        } else {
+                            ans.put(mapTopLevelFieldNameToJsonPointerStr(key), entry.getValue());
+                        }
+                    }
+                    return ans;
+                }
+
+                public static String mapTopLevelFieldNameToJsonPointerStr(final String key) {
+                    return "/" + key.replace("~", "~0").replace("/", "~1");
                 }
             }
         }
@@ -604,18 +636,21 @@ public class KafkaTools {
         }
 
         /**
-         * A JSON spec from a set of column definitions.
+         * A JSON spec from a set of column definitions, with an specific mapping of JSON nodes to columns.
+         * JSON nodes can be specified as a string field name, or as a JSON Pointer string (see RFC 6901,
+         * ISSN: 2070-1721).
          *
          * @param columnDefinitions An array of column definitions for specifying the table to be created.
-         * @param fieldNameToColumnName A mapping from JSON field names to column names provided in the definition.
+         * @param fieldToColumnName A mapping from JSON field names or JSON Pointer strings to column names provided in the definition.
+         *        For each field key, if it starts with '/' it is assumed to be a JSON Pointer.
          *        Fields not included will be ignored.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
                 final ColumnDefinition<?>[] columnDefinitions,
-                final Map<String, String> fieldNameToColumnName) {
-            return new KeyOrValueSpec.Json(columnDefinitions, fieldNameToColumnName);
+                final Map<String, String> fieldToColumnName) {
+            return new KeyOrValueSpec.Json(columnDefinitions, fieldToColumnName);
         }
 
         /**
@@ -1628,8 +1663,8 @@ public class KafkaTools {
                 // Populate out field to column name mapping from two potential sources.
                 data.fieldPathToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
                 final Set<String> coveredColumns = new HashSet<>(jsonSpec.columnDefinitions.length);
-                if (jsonSpec.fieldNameToColumnName != null) {
-                    for (final Map.Entry<String, String> entry : jsonSpec.fieldNameToColumnName.entrySet()) {
+                if (jsonSpec.fieldToColumnName != null) {
+                    for (final Map.Entry<String, String> entry : jsonSpec.fieldToColumnName.entrySet()) {
                         final String colName = entry.getValue();
                         data.fieldPathToColumnName.put(entry.getKey(), colName);
                         coveredColumns.add(colName);
@@ -1638,7 +1673,8 @@ public class KafkaTools {
                 for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
                     final String colName = colDef.getName();
                     if (!coveredColumns.contains(colName)) {
-                        data.fieldPathToColumnName.put(colName, colName);
+                        final String jsonPtrStr = Consume.KeyOrValueSpec.Json.mapTopLevelFieldNameToJsonPointerStr(colName);
+                        data.fieldPathToColumnName.put(jsonPtrStr, colName);
                     }
                 }
                 break;
@@ -1860,7 +1896,8 @@ public class KafkaTools {
     @SuppressWarnings("unused")
     public static final IntToLongFunction ALL_PARTITIONS_SEEK_TO_END = KafkaIngester.ALL_PARTITIONS_SEEK_TO_END;
     @SuppressWarnings("unused")
-    public static final Function<String, String> DIRECT_MAPPING = Function.identity();
+    public static final Function<String, String> DIRECT_MAPPING =
+            fieldName -> fieldName.replace(NESTED_FIELD_NAME_SEPARATOR, NESTED_FIELD_COLUMN_NAME_SEPARATOR);
     @SuppressWarnings("unused")
     public static final Consume.KeyOrValueSpec FROM_PROPERTIES = Consume.KeyOrValueSpec.FROM_PROPERTIES;
 
