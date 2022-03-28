@@ -37,11 +37,11 @@ public class GoogleDnsManager {
         dnsThread = new AtomicReference<>();
     }
 
-    interface DnsChange {
+    public interface DnsChange {
         void addRecord(DomainMapping domain, final String ip) throws IOException, InterruptedException;
         void removeRecord(DomainMapping domain, final String resolved) throws IOException, InterruptedException;
     }
-    interface DnsTransaction {
+    public interface DnsTransaction {
         void mutate(DnsChange dns) throws Exception;
     }
 

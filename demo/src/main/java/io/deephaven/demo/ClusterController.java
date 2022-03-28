@@ -51,7 +51,7 @@ public class ClusterController {
     private final CountDownLatch latch;
     private final OkHttpClient client;
     private Lazy<Boolean> leader;
-    private static ZoneId TZ_NY = ZoneOffset.of("-6");
+    private static ZoneId TZ_NY = ZoneId.of("America/New_York");
     private static LocalTime BIZ_START = LocalTime.of(6, 0);
     // We are using NY timezone, but want to cover all N.A. business hours, so our end is 9pm NY
     private static LocalTime BIZ_END = LocalTime.of(21, 0);
@@ -488,7 +488,15 @@ public class ClusterController {
     }
 
     private boolean allowedToDelete(final Machine machine) {
-        final String version = machine.getVersion();
+        return allowedToDelete(machine.getVersion(), machine.toString(), machine.getExpiry());
+    }
+
+    private boolean allowedToDelete(final String version, String machine, Long expiry) {
+        if (expiry != null && System.currentTimeMillis() < expiry) {
+            LOG.infof("Not shutting down machine with expiry (%s); Full machine: %s",
+                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(expiry), TZ_NY), machine);
+            return false;
+        }
         if (VERSION_MANGLE.contains("_")) {
             if (version.equals(VERSION_MANGLE)) {
                 return true;
@@ -506,9 +514,15 @@ public class ClusterController {
                 LOG.errorf("Not shutting down machine with invalid version format (%s). Full machine: %s", version, machine);
                 return false;
             }
-            if (Integer.parseInt(ourV[i]) < Integer.parseInt(yourV[i])) {
+            final int ourN = Integer.parseInt(ourV[i]);
+            final int yourN = Integer.parseInt(yourV[i]);
+            if (ourN < yourN) {
                 LOG.infof("Not shutting down machine with newer version (%s) than us (%s). Full machine: %s", version, VERSION_MANGLE, machine);
                 return false;
+            }
+            if (ourN > yourN) {
+                // if major/minor version is higher, we don't want to check minor/patch
+                return true;
             }
         }
         return true;
@@ -708,16 +722,25 @@ public class ClusterController {
             LOG.error("UNEXPECTED MACHINE METADATA FORMAT: " + line);
             return null;
         }
-        // exit asap if version is not valid.
-        if (!isValidVersion(bits[getIndexVersion()])) {
-            LOG.debugf("Skipping invalid version; our version %s, machine version: %s, all data: %s", VERSION_MANGLE, bits[getIndexVersion()], line);
-            return null;
+        boolean online = false;
+        if (bits[getIndexStatus()].length() > 0) {
+            online =
+                    "RUNNING".equals(bits[getIndexStatus()]) ||
+                    "STAGING".equals(bits[getIndexStatus()]) ||
+                    "PROVISIONING".equals(bits[getIndexStatus()]);
         }
         final String ipAddr, ipName;
         if (bits[getIndexIp()].length() > 0) {
             ipAddr = bits[getIndexIp()].trim();
         } else {
             ipAddr = null;
+        }
+        // skip any "expensive" operations for invalid versions (we may want to shut this machine down)
+        String version = bits[getIndexVersion()];
+        if (!isValidVersion(version)) {
+            LOG.debugf("Found invalid version; our version %s, machine version: %s, all data: %s", VERSION_MANGLE, bits[getIndexVersion()], line);
+            maybeRemove(name, version, ipAddr, bits[getIndexHostname()], bits[getIndexLease()], line);
+            return null;
         }
         boolean needsIpLabel = false;
         if (bits[getIndexIpName()].length() > 0) {
@@ -739,16 +762,9 @@ public class ClusterController {
             String domain = mach.domain() == null ? DOMAIN : mach.domain().getDomainRoot();
             mach.setDomainName(bits[getIndexHostname()].trim() + "." + domain);
         }
-        if (bits[getIndexStatus()].length() > 0) {
-            mach.setOnline(
-                    "RUNNING".equals(bits[getIndexStatus()]) ||
-                    "STAGING".equals(bits[getIndexStatus()]) ||
-                    "PROVISIONING".equals(bits[getIndexStatus()])
-            );
-        }
-        if (bits[getIndexVersion()].length() > 0) {
-            mach.setVersion(bits[getIndexVersion()]);
-        }
+
+        mach.setOnline(online);
+        mach.setVersion(version);
         if (isValidVersion(mach)) {
             machines.addMachine(mach);
         } else if (!mach.isInUse()){
@@ -782,8 +798,8 @@ public class ClusterController {
         }
         if (bits[getIndexLease()].length() > 0) {
             if (!bits[getIndexLease()].startsWith("2")) {
-                    // this lease is broken. fix it.
-                   fixLease(mach);
+                // this lease is broken. fix it.
+                fixLease(mach);
             }
             machines.expireInTimeString(mach, bits[getIndexLease()]);
         } else {
@@ -794,6 +810,30 @@ public class ClusterController {
             }
         }
         return mach;
+    }
+
+    private void maybeRemove(final String name, final String version, final String ip, final String hostname, final String lease, String debugString) {
+        if (!leader.get()) {
+            // only the leader gets to delete things
+            return;
+        }
+        final Long expiry = lease == null || lease.isEmpty() ? null : parseTime(lease, debugString);
+        if (allowedToDelete(version, debugString, expiry)) {
+            setTimer("Delete " + name + "@" + version, ()->{
+                try {
+                    LOG.infof("Deleting old machine %s; debug info: %s", name, debugString);
+                    manager.deleteMachine(name);
+                } catch (Exception e) {
+                    LOG.warnf(e, "Unable to delete machine %s; debug info: %s", name, debugString);
+                }
+                if (hostname != null && hostname.length() > 0) {
+                    DomainMapping mapping = new DomainMapping(hostname, DOMAIN);
+                    // final Execute.ExecutionResult dnsResult = manager.checkDns(mapping.getDomainQualified(), DNS_QUAD9);
+                    LOG.infof("Purging old DNS record %s for machine %s (%s)", mapping, name, debugString);
+                    manager.dns().tx(change-> change.removeRecord(mapping, ip));
+                }
+            });
+        }
     }
 
     private void fixLease(final Machine mach) {

@@ -55,6 +55,8 @@ dependencies {
    // implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-web-client'
 
+    implementation 'io.quarkus:quarkus-container-image-docker'
+
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
@@ -236,7 +238,6 @@ tasks.register('deployMachine', JavaExec) {
         exe.systemProperty('useImages', 'false')
         logger.quiet "Setting machine {} to use version {}", machineName, machineVersion
 }
-
 Task quark = tasks.getByName('quarkusBuild')
 quark.finalizedBy {
     // check for error state,
