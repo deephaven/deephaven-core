@@ -1,7 +1,8 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" TODO """
+""" This module implements the Font class. """
+
 from enum import Enum
 
 import jpy
@@ -13,7 +14,7 @@ _JFontStyle = jpy.get_type("io.deephaven.plot.Font$FontStyle")
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 FontFamilyNames = list(_JPlottingConvenience.fontFamilyNames())
-""" a list of supported font family names. """
+""" A list of supported font family names. """
 
 
 class FontStyle(Enum):
@@ -33,7 +34,7 @@ class FontStyle(Enum):
 
 
 class Font(JObjectWrapper):
-    """ TODO """
+    """ A Font object defines a font in terms of family, style, size. """
     j_object_type = _JFont
 
     @property

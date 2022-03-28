@@ -1,7 +1,8 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" TODO """
+""" The module implements the LineStyle class. """
+
 from enum import Enum
 from numbers import Number
 from typing import List

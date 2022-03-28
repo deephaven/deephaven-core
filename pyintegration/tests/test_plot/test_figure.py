@@ -4,7 +4,7 @@
 import unittest
 
 from deephaven2 import read_csv
-from deephaven2.plot.figure import Figure
+from deephaven2.plot import Figure
 from tests.testbase import BaseTestCase
 
 

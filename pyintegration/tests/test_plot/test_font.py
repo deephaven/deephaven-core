@@ -5,8 +5,8 @@ import unittest
 
 from deephaven2 import read_csv
 from deephaven2.plot import Color
-from deephaven2.plot.figure import Figure
-from deephaven2.plot.font import FontFamilyNames, Font, FontStyle
+from deephaven2.plot import Figure
+from deephaven2.plot import FontFamilyNames, Font, FontStyle
 from tests.testbase import BaseTestCase
 
 

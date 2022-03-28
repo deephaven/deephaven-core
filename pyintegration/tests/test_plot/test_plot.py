@@ -4,9 +4,11 @@
 import unittest
 
 from deephaven2 import read_csv
-from deephaven2.plot import PlotStyle, Shape, AxisTransformNames, get_axis_transform_by_name, DecimalAxisFormat, \
+from deephaven2.plot import AxisTransformNames, get_axis_transform_by_name, DecimalAxisFormat, \
     NanosAxisFormat
-from deephaven2.plot.figure import Figure
+from deephaven2.plot import Shape
+from deephaven2.plot import PlotStyle
+from deephaven2.plot import Figure
 from deephaven2.time import TimeZone
 from tests.testbase import BaseTestCase
 

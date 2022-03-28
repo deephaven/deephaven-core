@@ -1,10 +1,9 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" TODO """
-from __future__ import annotations
+""" This module implements the Color class and provides a list of predefined colors. """
 
-from enum import Enum
+from __future__ import annotations
 
 import jpy
 

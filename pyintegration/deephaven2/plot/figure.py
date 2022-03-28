@@ -13,8 +13,10 @@ import jpy
 from deephaven2 import DHError, dtypes
 from deephaven2._wrapper_abc import JObjectWrapper
 from deephaven2.dtypes import DateTime
-from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, BusinessCalendar, AxisTransform, \
+from deephaven2.plot import LineStyle, Color, Font, AxisFormat, BusinessCalendar, AxisTransform, \
     SelectableDataSet
+from deephaven2.plot.shape import Shape
+from deephaven2.plot.plotstyle import PlotStyle
 from deephaven2.table import Table
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
