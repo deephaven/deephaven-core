@@ -594,14 +594,8 @@ public class KafkaTools {
                     if (fieldNameToColumnName == null) {
                         return null;
                     }
-                    boolean needsMapping = false;
-                    for (Map.Entry<String, String> entry : fieldNameToColumnName.entrySet()) {
-                        final String key = entry.getKey();
-                        if (!key.startsWith("/")) {
-                            needsMapping = true;
-                            break;
-                        }
-                    }
+                    final boolean needsMapping =
+                            fieldNameToColumnName.keySet().stream().anyMatch(key -> key.startsWith("/"));
                     if (!needsMapping) {
                         return fieldNameToColumnName;
                     }
@@ -611,13 +605,23 @@ public class KafkaTools {
                         if (key.startsWith("/")) {
                             ans.put(key, entry.getValue());
                         } else {
-                            ans.put(mapTopLevelFieldNameToJsonPointerStr(key), entry.getValue());
+                            ans.put(mapFieldNameToJsonPointerStr(key), entry.getValue());
                         }
                     }
                     return ans;
                 }
 
-                public static String mapTopLevelFieldNameToJsonPointerStr(final String key) {
+                /***
+                 * JSON field names (or "key") can be any string, so in principle they can contain the '/' character.
+                 * JSON Pointers assign special meaning to the '/' character, so actual '/' in the key they need to be
+                 * encoded differently. The spec for JSON Pointers (see RFC 6901) tells us to encode '/' using "~1". If
+                 * we need the '~' character we have to encode that as "~0". This method does this simple JSON Pointer
+                 * encoding.
+                 *
+                 * @param key an arbitrary JSON field name, that can potentially contain the '/' or '~' characters.
+                 * @return a JSON Pointer encoded as a string for the provided key.
+                 */
+                public static String mapFieldNameToJsonPointerStr(final String key) {
                     return "/" + key.replace("~", "~0").replace("/", "~1");
                 }
             }
@@ -1674,7 +1678,7 @@ public class KafkaTools {
                     final String colName = colDef.getName();
                     if (!coveredColumns.contains(colName)) {
                         final String jsonPtrStr =
-                                Consume.KeyOrValueSpec.Json.mapTopLevelFieldNameToJsonPointerStr(colName);
+                                Consume.KeyOrValueSpec.Json.mapFieldNameToJsonPointerStr(colName);
                         data.fieldPathToColumnName.put(jsonPtrStr, colName);
                     }
                 }
