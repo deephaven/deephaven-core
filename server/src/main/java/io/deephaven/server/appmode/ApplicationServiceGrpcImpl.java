@@ -187,7 +187,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         // We only unmanage when we can no longer send it to a new observer.
         removedFields.forEach(id -> {
-            final Field<?> oldField = knownFieldMap.get(id);
+            final Field<?> oldField = knownFieldMap.remove(id);
             if (oldField == null) {
                 log.error().append("Removing old field but field not known; fieldId = ").append(id.toString()).endl();
             } else {
