@@ -37,7 +37,8 @@ import java.util.Map;
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
  */
-public class StreamToTableAdapter extends ReferenceCountedLivenessNode implements SafeCloseable, StreamConsumer, Runnable {
+public class StreamToTableAdapter extends ReferenceCountedLivenessNode
+        implements SafeCloseable, StreamConsumer, Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToTableAdapter.class);
 
@@ -324,12 +325,12 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode implement
         if (capturedBufferSources == null) {
             // null out our current values
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                //noinspection unchecked
+                // noinspection unchecked
                 switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
             }
         } else {
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                //noinspection unchecked
+                // noinspection unchecked
                 switchSources[ii].setNewCurrent((ColumnSource) capturedBufferSources[ii]);
             }
         }
@@ -347,7 +348,8 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode implement
         if (localTable != null) {
             localTable.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
                     RowSetFactory.flat(oldSize), RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));        }
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        }
     }
 
     @SafeVarargs

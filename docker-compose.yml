@@ -16,6 +16,8 @@ services:
     extends:
       file: docker-compose-common.yml
       service: server
+    extra_hosts:
+      - "redpanda:host-gateway"
 
   web:
     extends:
