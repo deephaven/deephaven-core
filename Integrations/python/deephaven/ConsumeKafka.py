@@ -279,8 +279,12 @@ def json(col_defs, mapping:dict = None):
     :param col_defs:  A sequence of tuples specifying names and types for columns to be
        created on the resulting Deephaven table.  Tuples contain two elements, a
        string for column name and a Deephaven type for column data type.
-    :param mapping:   A dict mapping JSON field names to column names defined in the col_defs
-       argument.  If not present or None, a 1:1 mapping between JSON fields and Deephaven
+    :param mapping:   A dict mapping JSON fields to column names defined in the col_defs
+       argument.
+       Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901, 
+       ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
+       Fields not starting with a '/' character are interpreted as toplevel field names.
+       If the mapping argument is not present or None, a 1:1 mapping between JSON fields and Deephaven
        table column names is assumed.
     :return:  A Kafka Key or Value spec object to use in a call to consumeToTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
