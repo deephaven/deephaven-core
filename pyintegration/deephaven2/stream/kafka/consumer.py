@@ -198,8 +198,12 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
         col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
             created on the resulting Deephaven table.  Tuples contain two elements, a string for column name
             and a Deephaven type for column data type.
-        mapping (Dict): a map from JSON field names to column names defined in the col_defs argument, default is None,
-            meaning a 1:1 mapping between JSON fields and Deephaven table column names
+        mapping (Dict):  a dict mapping JSON fields to column names defined in the col_defs
+            argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
+            ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
+            Fields not starting with a '/' character are interpreted as toplevel field names.
+            If the mapping argument is not present or None, a 1:1 mapping between JSON fields and Deephaven
+           table column names is assumed.
 
     Returns:
         a KeyValueSpec
