@@ -208,7 +208,7 @@ class Calendar(JObjectWrapper):
         try:
             return self.j_calendar.nextDay(date)
         except Exception as e:
-            raise DHError(e, "failed in next_ay.") from e
+            raise DHError(e, "failed in next_day.") from e
 
     def day_of_week(self, date: str) -> DayOfWeek:
         """ The day of week for the given date.
@@ -313,7 +313,7 @@ class BusinessCalendar(Calendar):
         """ The length of a standard business day in nanoseconds. """
         return self.j_calendar.standardBusinessDayLengthNanos()
 
-    def get_business_schedule(self, date: str) -> BusinessSchedule:
+    def business_schedule(self, date: str) -> BusinessSchedule:
         """ Returns the specified day's business schedule.
 
         Args:
@@ -474,7 +474,7 @@ class BusinessCalendar(Calendar):
         except Exception as e:
             raise DHError(e, "failed in number_of_non_business_days.") from e
 
-    def is_last_business_day_of_month(self, date: str):
+    def is_last_business_day_of_month(self, date: str) -> bool:
         """ Returns if the specified date is the last business day of the month.
 
         Args:
@@ -491,7 +491,7 @@ class BusinessCalendar(Calendar):
         except Exception as e:
             raise DHError(e, "failed in is_last_business_day_of_month.") from e
 
-    def is_last_business_day_of_week(self, date: str) -> object:
+    def is_last_business_day_of_week(self, date: str) -> bool:
         """ Returns if the specified date is the last business day of the week.
 
         Args:

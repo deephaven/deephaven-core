@@ -59,7 +59,7 @@ class CalendarTestCase(BaseTestCase):
             self.assertFalse(self.test_calendar.is_last_business_day_of_month(bad_date))
 
     def test_business_period(self):
-        b_periods = self.test_calendar.get_business_schedule(self.b_day1).business_periods
+        b_periods = self.test_calendar.business_schedule(self.b_day1).business_periods
         self.assertEqual(len(b_periods), 1)
         p = b_periods[0]
         s = time.format_datetime(p.start_time, time.TimeZone.NY)
@@ -69,10 +69,10 @@ class CalendarTestCase(BaseTestCase):
         self.assertEqual(p.length, 6.5 * 60 * 60 * 10 ** 9)
 
     def test_business_schedule_business_day(self):
-        b_schedule = self.test_calendar.get_business_schedule(self.prev_nb_day)
+        b_schedule = self.test_calendar.business_schedule(self.prev_nb_day)
         self.assertFalse(b_schedule.is_business_day())
 
-        b_schedule = self.test_calendar.get_business_schedule(self.b_day)
+        b_schedule = self.test_calendar.business_schedule(self.b_day)
         self.assertTrue(b_schedule.is_business_day())
 
         b_period = b_schedule.business_periods[0]
@@ -127,7 +127,7 @@ class CalendarTestCase(BaseTestCase):
 
     def test_business_schedule_non_business_day(self):
         default_calendar = BusinessCalendar()
-        business_schedule = default_calendar.get_business_schedule(self.next_nb_day)
+        business_schedule = default_calendar.business_schedule(self.next_nb_day)
         self.assertEqual(business_schedule.business_periods, [])
         self.assertFalse(business_schedule.is_business_day())
 
