@@ -595,7 +595,7 @@ public class KafkaTools {
                         return null;
                     }
                     final boolean needsMapping =
-                            fieldNameToColumnName.keySet().stream().anyMatch(key -> key.startsWith("/"));
+                            fieldNameToColumnName.keySet().stream().anyMatch(key -> !key.startsWith("/"));
                     if (!needsMapping) {
                         return fieldNameToColumnName;
                     }
