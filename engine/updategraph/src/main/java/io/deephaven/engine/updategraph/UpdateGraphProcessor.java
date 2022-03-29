@@ -17,6 +17,7 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.hotspot.JvmIntrospectionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -25,7 +26,6 @@ import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.net.CommBase;
 import io.deephaven.util.FunctionalInterfaces;
-import io.deephaven.util.JvmIntrospectionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
@@ -1511,14 +1511,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
                 LogEntry entry = log.info()
                         .append("Update Graph Processor cycleTime=").appendDoubleToDecimalPlaces(cycleTimeMillis, 3);
-                if (JvmIntrospectionContext.hasSafePointData()) {
+                if (jvmIntrospectionContext.hasSafePointData()) {
                     entry = entry
                             .append("ms, safePointTime=")
                             .append(safePointPauseTimeMillis)
                             .append("ms, safePointTimePct=");
                     if (safePointPauseTimeMillis > 0 && cycleTimeMillis > 0.0) {
-                        final double gcTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
-                        entry = entry.appendDoubleToDecimalPlaces(gcTimePct, 2);
+                        final double safePointTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
+                        entry = entry.appendDoubleToDecimalPlaces(safePointTimePct, 2);
                     } else {
                         entry = entry.append("0");
                     }
@@ -1558,7 +1558,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 .appendDoubleToDecimalPlaces(
                         (double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
                 .append("ms/cycle average)");
-        if (JvmIntrospectionContext.hasSafePointData()) {
+        if (jvmIntrospectionContext.hasSafePointData()) {
             entry = entry
                     .append(", safePointTime=")
                     .append(suppressedCyclesTotalSafePontTimeMillis)

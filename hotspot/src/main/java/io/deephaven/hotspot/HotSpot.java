@@ -1,13 +1,11 @@
-package io.deephaven.util.hotspot;
+package io.deephaven.hotspot;
 
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.ServiceLoader;
 
 public interface HotSpot {
-    Optional<HotSpot> instance = loadImpl();
-
-    private static Optional<HotSpot> loadImpl() {
+    static Optional<HotSpot> loadImpl() {
         final Iterator<HotSpot> it = ServiceLoader.load(HotSpot.class).iterator();
         if (!it.hasNext()) {
             return Optional.empty();

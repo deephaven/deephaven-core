@@ -10,6 +10,8 @@ dependencies {
     Classpaths.inheritDagger(project, /* test */ true)
 
     Classpaths.inheritGrpcPlatform(project)
+    runtimeOnly project(':hotspot-impl')
+
     implementation('org.eclipse.jetty:jetty-servlet:11.0.8')
     implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
     implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'

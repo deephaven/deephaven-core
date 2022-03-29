@@ -288,6 +288,9 @@ project(':docker-server-slim').projectDir = file('docker/server-slim')
 include(':hotspot')
 project(':hotspot').projectDir = file('hotspot')
 
+include(':hotspot-impl')
+project(':hotspot-impl').projectDir = file('hotspot-impl')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")

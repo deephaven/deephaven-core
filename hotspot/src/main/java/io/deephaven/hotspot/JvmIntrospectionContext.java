@@ -1,6 +1,4 @@
-package io.deephaven.util;
-
-import io.deephaven.util.hotspot.HotSpot;
+package io.deephaven.hotspot;
 
 /**
  * Utility class to facilitate obtaining data for safepoint pauses count and time between two points in code. A
@@ -18,17 +16,19 @@ import io.deephaven.util.hotspot.HotSpot;
 
 @SuppressWarnings("restriction")
 public class JvmIntrospectionContext {
-    private static final HotSpot hotspot = HotSpot.instance.orElse(null);
+    private final HotSpot hotspot;
     private long lastStartPausesCount = -1;
     private long lastStartPausesTimeMillis = -1;
     private long lastEndPausesCount;
     private long lastEndPausesTimeMillis;
 
-    public static boolean hasSafePointData() {
+    public boolean hasSafePointData() {
         return hotspot != null;
     }
 
-    public JvmIntrospectionContext() {}
+    public JvmIntrospectionContext() {
+        hotspot = HotSpot.loadImpl().orElse(null);
+    }
 
     public void startSample() {
         if (hotspot == null) {

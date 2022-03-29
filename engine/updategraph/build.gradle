@@ -9,9 +9,9 @@ dependencies {
     api project(':qst')
 
     implementation project(':engine-chunk')
+    implementation project(':hotspot')
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    runtimeOnly project(':hotspot')
 
     testImplementation 'junit:junit:4.13.2'
 

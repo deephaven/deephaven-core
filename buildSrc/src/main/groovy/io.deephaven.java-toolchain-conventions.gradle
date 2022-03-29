@@ -12,6 +12,8 @@ def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersi
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
 def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
 
+def excludeReleaseFlag = project.hasProperty('excludeReleaseFlag')
+
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
 }
@@ -61,14 +63,15 @@ tasks.withType(JavaCompile).configureEach {
   options.incremental = true
   options.compilerArgs << '-parameters'
 
-  def isTestCompile = name == 'compileTestJava'
-  if (isTestCompile) {
-    if (compilerVersion != testLanguageLevel) {
-      options.release.set testLanguageLevel
-    }
-  } else {
-    if (compilerVersion != languageLevel) {
-      options.release.set languageLevel
+  if (!excludeReleaseFlag) {
+    if (name == 'compileTestJava') {
+      if (compilerVersion != testLanguageLevel) {
+        options.release.set testLanguageLevel
+      }
+    } else {
+      if (compilerVersion != languageLevel) {
+        options.release.set languageLevel
+      }
     }
   }
 }

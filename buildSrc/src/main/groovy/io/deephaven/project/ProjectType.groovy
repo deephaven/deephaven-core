@@ -14,7 +14,6 @@ enum ProjectType {
     JAVA_EXTERNAL(true, 'io.deephaven.project.java-external'),
     JAVA_LOCAL(false, 'io.deephaven.project.java-local'),
     JAVA_PUBLIC(true, 'io.deephaven.project.java-public'),
-    JAVA_OPTIONAL_IMPL(true, 'io.deephaven.project.java-public'),
     BOM_PUBLIC(true, 'io.deephaven.project.bom-public'),
     ROOT(false, 'io.deephaven.project.root');
 

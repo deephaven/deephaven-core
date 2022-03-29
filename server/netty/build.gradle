@@ -17,6 +17,7 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
 
+    runtimeOnly project(':hotspot-impl')
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
