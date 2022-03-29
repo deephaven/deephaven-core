@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module provides access to a collection of business calendars and convenient calendar functions. """
+""" This module provides a collection of business calendars and convenient calendar functions. """
 
 from enum import Enum
 from typing import List
@@ -159,13 +159,120 @@ class BusinessSchedule(JObjectWrapper):
         return self.j_business_schedule.businessTimeElapsed(time)
 
 
-class BusinessCalendar(JObjectWrapper):
+class Calendar(JObjectWrapper):
+    j_object_type = _JCalendar
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_calendar
+
+    @property
+    def current_day(self) -> str:
+        """ The current day. """
+        return self.j_calendar.currentDay()
+
+    @property
+    def time_zone(self) -> TimeZone:
+        """ Returns the timezone of the calendar. """
+        return TimeZone(self.j_calendar.timeZone())
+
+    def previous_day(self, date: str) -> str:
+        """ Gets the day prior to the given date.
+
+        Args:
+            date (str): the date of interest
+
+        Returns:
+            str
+
+        Raises:
+            DHError
+        """
+        try:
+            return self.j_calendar.previousDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in previous_day.") from e
+
+    def next_day(self, date: str) -> str:
+        """ Gets the day after the given date.
+
+        Args:
+            date (str): the date of interest
+
+        Returns:
+            str
+
+        Raises:
+            DHError
+        """
+        try:
+            return self.j_calendar.nextDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in next_ay.") from e
+
+    def day_of_week(self, date: str) -> DayOfWeek:
+        """ The day of week for the given date.
+
+        Args:
+            date (str): the date of interest
+
+        Returns:
+            str
+
+        Raises:
+            DHError
+        """
+        try:
+            return DayOfWeek(self.j_calendar.dayOfWeek(date))
+        except Exception as e:
+            raise DHError(e, "failed in day_of_week.") from e
+
+    def days_in_range(self, start: str, end: str) -> List[str]:
+        """ Returns the days between the specified start and end dates.
+
+        Args:
+            start (str): the start day of the range
+            end (str): the end day of the range
+
+        Returns:
+            List[str]: a list of dates
+
+        Raises:
+            DHError
+        """
+        try:
+            j_days = self.j_calendar.daysInRange(start, end)
+            return list(j_days)
+        except Exception as e:
+            raise DHError(e, "failed in days_in_range.") from e
+
+    def number_of_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
+        """ Returns the number of days between the start and end dates.
+
+        Args:
+            start (str): the start day of the range
+            end (str): the end day of the range
+            end_inclusive (bool): whether to include the end date, default is False
+
+        Returns:
+            int
+
+        Raises:
+            DHError
+        """
+        try:
+            return self.j_calendar.numberOfDays(start, end, end_inclusive)
+        except Exception as e:
+            raise DHError(e, "failed in number_of_days.") from e
+
+
+class BusinessCalendar(Calendar):
     """ A business calendar. """
 
     j_object_type = _JBusinessCalendar
 
     def __init__(self, name: str = None):
-        """ Creates a business calendar.
+        """ Loads a business calendar.
 
         Args:
             name (str) : name of the calendar, default is None, which means to use the default Deephaven calendar
@@ -181,36 +288,7 @@ class BusinessCalendar(JObjectWrapper):
                 self.name = default_calendar_name()
                 self.j_calendar = _JCalendars.calendar()
         except Exception as e:
-            raise DHError(e, "failed to create a business calendar.") from e
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_calendar
-
-    @property
-    def current_day(self) -> str:
-        """ The current day. """
-        return self.j_calendar.currentDay()
-
-    @property
-    def previous_day(self) -> str:
-        """ The previous day. """
-        return self.j_calendar.previousDay()
-
-    @property
-    def next_day(self) -> str:
-        """ The next day. """
-        return self.j_calendar.nextDay()
-
-    @property
-    def day_of_week(self) -> DayOfWeek:
-        """ The day of week for today. """
-        return DayOfWeek(self.j_calendar.dayOfWeek())
-
-    @property
-    def time_zone(self) -> TimeZone:
-        """ Returns the timezone of th e calendar. """
-        return TimeZone(self.j_calendar.timeZone())
+            raise DHError(e, "failed to load a business calendar.") from e
 
     @property
     def is_business_day(self) -> bool:
@@ -221,6 +299,7 @@ class BusinessCalendar(JObjectWrapper):
     def default_business_periods(self) -> List[str]:
         """ The default business periods for the business days. Returns a list of strings with a comma separating
         open and close times. """
+
         default_business_periods = self.j_calendar.getDefaultBusinessPeriods()
         b_periods = []
         for i in range(default_business_periods.size()):
@@ -242,52 +321,82 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             a BusinessSchedule instance
+
+        Raises:
+            DHError
         """
-        return BusinessSchedule(j_business_schedule=self.j_calendar.getBusinessSchedule(date))
+        try:
+            return BusinessSchedule(j_business_schedule=self.j_calendar.getBusinessSchedule(date))
+        except Exception as e:
+            raise DHError(e, "failed in get_business_schedule.") from e
 
     def previous_business_day(self, date: str) -> str:
-        """ Gets the previous business day of the given date.
+        """ Gets the business day prior to the given date.
 
         Args:
             date (str): the date of interest
 
         Returns:
             str
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.previousBusinessDay(date)
+        try:
+            return self.j_calendar.previousBusinessDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in previous_business_day.") from e
 
     def previous_non_business_day(self, date: str) -> str:
-        """ Gets the previous non-business day of the given date.
+        """ Gets the non-business day prior to the given date.
 
         Args:
             date (str): the date of interest
 
         Returns:
             str
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.previousNonBusinessDay(date)
+        try:
+            return self.j_calendar.previousNonBusinessDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in previous_non_business_day.") from e
 
     def next_business_day(self, date: str) -> str:
-        """ Gets the next business day of the given date.
+        """ Gets the business day after the given date.
 
         Args:
             date (str): the date of interest
 
         Returns:
             str
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.nextBusinessDay(date)
+        try:
+            return self.j_calendar.nextBusinessDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in next_business_day.") from e
 
     def next_non_business_day(self, date: str) -> str:
-        """ Gets the next non-business day of the given date.
+        """ Gets the non-business day after the given date.
 
         Args:
             date (str): the date of interest
 
         Returns:
             str
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.nextNonBusinessDay(date)
+        try:
+            return self.j_calendar.nextNonBusinessDay(date)
+        except Exception as e:
+            raise DHError(e, "failed in next_non_business_day.") from e
 
     def business_days_in_range(self, start: str, end: str) -> List[str]:
         """ Returns the business days between the specified start and end dates.
@@ -298,13 +407,15 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             List[str]: a list of dates
-        """
-        j_days = self.j_calendar.businessDaysInRange(start, end)
-        days = []
-        for day in j_days:
-            days.append(day)
 
-        return days
+        Raises:
+            DHError
+        """
+        try:
+            j_days = self.j_calendar.businessDaysInRange(start, end)
+            return list(j_days)
+        except Exception as e:
+            raise DHError(e, "failed in business_days_in_range.") from e
 
     def non_business_days_in_range(self, start: str, end: str) -> List[str]:
         """ Returns the non-business days between the specified start and end dates.
@@ -315,13 +426,15 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             List[str]: a list of dates
-        """
-        j_days = self.j_calendar.nonBusinessDaysInRange(start, end)
-        days = []
-        for day in j_days:
-            days.append(day)
 
-        return days
+        Raises:
+            DHError
+        """
+        try:
+            j_days = self.j_calendar.nonBusinessDaysInRange(start, end)
+            return list(j_days)
+        except Exception as e:
+            raise DHError(e, "failed in non_business_days_in_range.") from e
 
     def number_of_business_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
         """ Returns the number of business days between the start and end dates.
@@ -333,8 +446,14 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             int
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.numberOfBusinessDays(start, end, end_inclusive)
+        try:
+            return self.j_calendar.numberOfBusinessDays(start, end, end_inclusive)
+        except Exception as e:
+            raise DHError(e, "failed in number_of_business_days.") from e
 
     def number_of_non_business_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
         """ Returns the number of non-business days between the start and end dates.
@@ -346,8 +465,14 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             int
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.numberOfNonBusinessDays(start, end, end_inclusive)
+        try:
+            return self.j_calendar.numberOfNonBusinessDays(start, end, end_inclusive)
+        except Exception as e:
+            raise DHError(e, "failed in number_of_non_business_days.") from e
 
     def is_last_business_day_of_month(self, date: str):
         """ Returns if the specified date is the last business day of the month.
@@ -357,10 +482,16 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             bool
-        """
-        return self.j_calendar.isLastBusinessDayOfMonth(date)
 
-    def is_last_business_day_of_week(self, date: str):
+        Raises:
+            DHError
+        """
+        try:
+            return self.j_calendar.isLastBusinessDayOfMonth(date)
+        except Exception as e:
+            raise DHError(e, "failed in is_last_business_day_of_month.") from e
+
+    def is_last_business_day_of_week(self, date: str) -> object:
         """ Returns if the specified date is the last business day of the week.
 
         Args:
@@ -368,5 +499,11 @@ class BusinessCalendar(JObjectWrapper):
 
         Returns:
             bool
+
+        Raises:
+            DHError
         """
-        return self.j_calendar.isLastBusinessDayOfWeek(date)
+        try:
+            return self.j_calendar.isLastBusinessDayOfWeek(date)
+        except Exception as e:
+            raise DHError(e, "failed in is_last_business_day_of_week.") from e

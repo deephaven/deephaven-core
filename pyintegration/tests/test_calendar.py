@@ -5,12 +5,12 @@
 import unittest
 
 from deephaven2 import DHError, time
-from deephaven2.calendars import calendar_names, default_calendar_name, BusinessCalendar
+from deephaven2.calendar import calendar_names, default_calendar_name, BusinessCalendar, DayOfWeek
 from deephaven2.config import get_server_timezone
 from tests.testbase import BaseTestCase
 
 
-class CalendarsTestCase(BaseTestCase):
+class CalendarTestCase(BaseTestCase):
     def setUp(self) -> None:
         self.test_calendar = BusinessCalendar("USNYSE")
         self.b_day1 = "2022-01-03"
@@ -22,7 +22,7 @@ class CalendarsTestCase(BaseTestCase):
         self.last_b_day_month = "2022-03-31"
         self.last_b_day_week = "2022-03-11"
 
-    def test_calendars(self):
+    def test_calendar(self):
         with self.subTest(msg="calendarNames() test"):
             cal_names = calendar_names()
             self.assertTrue(isinstance(cal_names, list) and len(cal_names) > 0)
@@ -39,6 +39,24 @@ class CalendarsTestCase(BaseTestCase):
 
         with self.subTest(msg="calendar(valid name) construction"):
             self.assertIsNotNone(BusinessCalendar(cal_names[0]))
+
+        default_calendar = BusinessCalendar()
+        current_date = default_calendar.current_day
+        self.assertIsNotNone(default_calendar.previous_day(current_date))
+        self.assertIsNotNone(default_calendar.next_day(current_date))
+        self.assertIsNotNone(default_calendar.day_of_week(current_date).name)
+        self.assertEqual(default_calendar.time_zone, get_server_timezone())
+
+        self.assertEqual(self.test_calendar.previous_day(self.b_day), self.prev_b_day)
+        self.assertEqual(self.test_calendar.next_day(self.b_day), self.next_b_day)
+        self.assertEqual(self.test_calendar.days_in_range(self.prev_nb_day, self.b_day),
+                         [self.prev_nb_day, self.test_calendar.next_day(self.prev_nb_day), self.b_day])
+        self.assertEqual(self.test_calendar.number_of_days(self.prev_nb_day, self.next_b_day), 3)
+        self.assertEqual(self.test_calendar.day_of_week(self.b_day), DayOfWeek.TUESDAY)
+
+        bad_date = "2022-A1-03"
+        with self.assertRaises(DHError) as cm:
+            self.assertFalse(self.test_calendar.is_last_business_day_of_month(bad_date))
 
     def test_business_period(self):
         b_periods = self.test_calendar.get_business_schedule(self.b_day1).business_periods
@@ -75,14 +93,8 @@ class CalendarsTestCase(BaseTestCase):
 
     def test_business_calendar(self):
         default_calendar = BusinessCalendar()
-        self.assertIsNotNone(default_calendar.name)
-        self.assertIsNotNone(default_calendar.current_day)
-        self.assertIsNotNone(default_calendar.previous_day)
-        self.assertIsNotNone(default_calendar.next_day)
-        self.assertIsNotNone(default_calendar.day_of_week.name)
-        self.assertEqual(default_calendar.time_zone, get_server_timezone())
-        self.assertIn(default_calendar.is_business_day, {True, False})
 
+        self.assertIn(default_calendar.is_business_day, {True, False})
         self.assertEqual(self.test_calendar.default_business_periods, ["09:30,16:00"])
         self.assertEqual(self.test_calendar.standard_business_day_length, 6.5 * 60 * 60 * 10 ** 9)
         self.assertEqual(self.test_calendar.previous_business_day(self.b_day), self.prev_b_day)
@@ -106,6 +118,12 @@ class CalendarsTestCase(BaseTestCase):
         self.assertFalse(self.test_calendar.is_last_business_day_of_week(self.b_day))
         self.assertTrue(self.test_calendar.is_last_business_day_of_month(self.last_b_day_month))
         self.assertTrue(self.test_calendar.is_last_business_day_of_week(self.last_b_day_week))
+
+        bad_date = "2022-A1-03"
+        with self.assertRaises(DHError) as cm:
+            self.assertFalse(self.test_calendar.is_last_business_day_of_month(bad_date))
+
+        self.assertIn("RuntimeError", cm.exception.root_cause)
 
     def test_business_schedule_non_business_day(self):
         default_calendar = BusinessCalendar()
