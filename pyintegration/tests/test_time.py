@@ -273,12 +273,14 @@ class TimeTestCase(unittest.TestCase):
         self.assertEqual(NULL_INT, year_of_century(None, TimeZone.JP))
 
     def test_timezone(self):
+        default_tz = TimeZone.get_default_timezone()
         TimeZone.set_default_timezone(TimeZone.UTC)
         tz1 = TimeZone.get_default_timezone()
         self.assertEqual(TimeZone.UTC, tz1)
         TimeZone.set_default_timezone(TimeZone.JP)
         tz2 = TimeZone.get_default_timezone()
         self.assertEqual(TimeZone.JP, tz2)
+        TimeZone.set_default_timezone(default_tz)
 
 
 if __name__ == "__main__":
