@@ -10,7 +10,9 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,6 +75,19 @@ public class TestGroovyDeephavenSession {
         Assert.neqNull(fetch("obj", Object.class), "fetchObject");
         final Table result = fetchTable("result");
         Assert.eqFalse(result.isFailed(), "result.isFailed()");
+    }
+
+    @Test
+    public void testScriptResultOrder() {
+        final ScriptSession.Changes changes = session.evaluateScript("x=emptyTable(10)\n" +
+                "z=emptyTable(10)\n" +
+                "y=emptyTable(10)\n" +
+                "u=emptyTable(10)");
+        final String[] names = new String[] {"x", "z", "y", "u"};
+        final MutableInt offset = new MutableInt();
+        changes.created.forEach((name, type) -> {
+            Assert.eq(name, "name", names[offset.getAndIncrement()], "names[offset.getAndIncrement()]");
+        });
     }
 }
 
