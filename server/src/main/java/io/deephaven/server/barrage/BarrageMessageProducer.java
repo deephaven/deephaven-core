@@ -1160,7 +1160,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         // handle the first snapshot of a growing subscription differently
                         if (subscription.isFirstSnapshot) {
                             // identify rows in the both the current viewport and the remaining viewport
-                            subscription.snapshotViewport = subscription.growingRemainingViewport.extract(subscription.viewport);
+                            subscription.snapshotViewport =
+                                    subscription.growingRemainingViewport.extract(subscription.viewport);
 
                             // add these to the global viewports (for scoping)
                             if (subscription.targetReverseViewport) {
@@ -1390,7 +1391,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 final boolean isReversed =
                         isPreSnapshot ? subscription.snapshotReverseViewport : subscription.reverseViewport;
 
-                try (final RowSet clientView = vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
+                try (final RowSet clientView =
+                        vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     subscription.listener
                             .onNext(generator.getSubView(subscription.options, false, vp, subscription.reverseViewport,
                                     clientView, cols));
