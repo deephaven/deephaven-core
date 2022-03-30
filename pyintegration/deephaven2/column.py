@@ -5,7 +5,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Sequence
+from typing import Sequence, Any
 
 import jpy
 
@@ -52,7 +52,7 @@ class Column:
 @dataclass
 class InputColumn(Column):
     """ An InputColumn represents a user defined column with some input data. """
-    input_data: any = field(default=None)
+    input_data: Any = field(default=None)
 
     def __post_init__(self):
         try:

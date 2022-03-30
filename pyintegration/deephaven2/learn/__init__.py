@@ -139,7 +139,7 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
         # and remove from globals at the end of function
         (jpy.get_type("io.deephaven.engine.table.lang.QueryScope")
-         .addParam("__computer", _JLearnComputer(table, model_func,
+         .addParam("__computer", _JLearnComputer(table.j_table, model_func,
                                                  [input_.input for input_ in inputs],
                                                  batch_size)))
 

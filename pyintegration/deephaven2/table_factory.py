@@ -6,21 +6,19 @@ from typing import List, Dict, Any
 
 import jpy
 
-from deephaven2._wrapper_abc import JObjectWrapper
-from deephaven2.dtypes import DType
-
 from deephaven2 import DHError
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.column import InputColumn
+from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JDynamicTableWriter = jpy.get_type('io.deephaven.engine.table.impl.util.DynamicTableWriter')
-_JReplayer = jpy.get_type('io.deephaven.engine.table.impl.replay.Replayer')
+_JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
 
 
 def empty_table(size: int) -> Table:
-    """ Creates a table with rows but no columns.
+    """Creates a table with rows but no columns.
 
     Args:
         size (int): the number of rows
@@ -38,7 +36,7 @@ def empty_table(size: int) -> Table:
 
 
 def time_table(period: str, start_time: str = None) -> Table:
-    """ Creates a table that adds a new row on a regular interval.
+    """Creates a table that adds a new row on a regular interval.
 
     Args:
         period (str): time interval between new row additions
@@ -61,7 +59,7 @@ def time_table(period: str, start_time: str = None) -> Table:
 
 
 def new_table(cols: List[InputColumn]) -> Table:
-    """ Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
+    """Creates an in-memory table from a list of input columns. Each column must have an equal number of elements.
 
     Args:
         cols (List[InputColumn]): a list of InputColumn
@@ -79,7 +77,7 @@ def new_table(cols: List[InputColumn]) -> Table:
 
 
 def merge(tables: List[Table]):
-    """ Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
+    """Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
     other. Null tables are ignored.
 
     Args:
@@ -98,7 +96,7 @@ def merge(tables: List[Table]):
 
 
 def merge_sorted(tables: List[Table], order_by: str) -> Table:
-    """ Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
+    """Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
     of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
     followed by sort.
 
@@ -119,13 +117,15 @@ def merge_sorted(tables: List[Table], order_by: str) -> Table:
 
 
 class DynamicTableWriter(JObjectWrapper):
-    """ The DynamicTableWriter creates a new in-memory table and supports writing data to it.
+    """The DynamicTableWriter creates a new in-memory table and supports writing data to it.
 
     This class implements the context manager protocol and thus can be used in with statements.
     """
 
+    j_object_type = _JDynamicTableWriter
+
     def __init__(self, col_defs: Dict[str, DType]):
-        """ Initializes the writer and creates a new in-memory table.
+        """Initializes the writer and creates a new in-memory table.
 
         Args:
             col_defs(Dict[str, DTypes]): a map of column names and types of the new table
@@ -152,7 +152,7 @@ class DynamicTableWriter(JObjectWrapper):
         self.close()
 
     def close(self) -> None:
-        """ Closes the writer.
+        """Closes the writer.
 
         Raises:
             DHError
@@ -163,7 +163,7 @@ class DynamicTableWriter(JObjectWrapper):
             raise DHError(e, "failed to close the writer.") from e
 
     def write_row(self, *values: Any) -> None:
-        """ Writes a row to the newly created table.
+        """Writes a row to the newly created table.
 
         The type of a value must be convertible (safely or unsafely, e.g. lose precision, overflow, etc.) to the type
         of the corresponding column.
@@ -179,5 +179,3 @@ class DynamicTableWriter(JObjectWrapper):
             self._j_table_writer.logRowPermissive(*values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e
-
-

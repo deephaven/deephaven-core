@@ -2,6 +2,8 @@
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 """ This module defines functions for handling Deephaven date/time data. """
+
+from __future__ import annotations
 from enum import Enum
 
 import jpy
@@ -72,6 +74,20 @@ class TimeZone(Enum):
     """ Australia/Sydney """
     UTC = _JTimeZone.TZ_UTC
     """ UTC """
+
+    @classmethod
+    def get_default_timezone(cls) -> TimeZone:
+        """ Gets the default time zone. """
+        return TimeZone(_JTimeZone.getTzDefault())
+
+    @classmethod
+    def set_default_timezone(cls, tz: TimeZone) -> None:
+        """ Sets the default time zone.
+
+        Args:
+             tz (TimeZone): the TimeZone to use as default
+        """
+        _JTimeZone.setTzDefault(tz.value)
 
 
 def to_datetime(s: str, quiet: bool = False) -> DateTime:
@@ -162,8 +178,8 @@ def datetime_at_midnight(dt: DateTime, tz: TimeZone) -> DateTime:
     """ Returns a DateTime for the requested DateTime at midnight in the specified time zone.
 
     Args:
-        dt (DateTime) - DateTime for which the new value at midnight should be calculated
-        tz: (TimeZone) - TimeZone for which the new value at midnight should be calculated
+        dt (DateTime): the DateTime for which the new value at midnight should be calculated
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
         DateTime

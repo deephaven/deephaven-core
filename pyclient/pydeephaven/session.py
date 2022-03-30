@@ -33,13 +33,14 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True):
+    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python'):
         """ Initialize a Session object that connects to the Deephaven server
 
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
             port (int): the port number that Deephaven server is listening on, default is 10000
             never_timeout (bool, optional): never allow the session to timeout, default is True
+            session_type (str, optional): the Deephaven session type. Defaults to 'python'
 
         Raises:
             DHError
@@ -67,6 +68,7 @@ class Session:
         self._tables = {}
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
+        self._session_type = session_type
 
         self._connect()
 

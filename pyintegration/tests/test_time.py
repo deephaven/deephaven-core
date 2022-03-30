@@ -9,7 +9,7 @@ from deephaven2.constants import NULL_LONG, NULL_INT
 from deephaven2.time import *
 
 
-class DateTimeUtilsTestCase(unittest.TestCase):
+class TimeTestCase(unittest.TestCase):
     def test_to_datetime(self):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "NY"
@@ -68,7 +68,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
         mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
         self.assertEqual(
-            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10**9, -21 * 60 * 60
+            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -21 * 60 * 60
         )
 
         # DST ended in NY but not in PT
@@ -78,7 +78,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
         mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
         self.assertEqual(
-            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10**9, -22 * 60 * 60
+            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -22 * 60 * 60
         )
 
     def test_day_of_month(self):
@@ -140,7 +140,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
 
     def test_millis(self):
         dt = now()
-        self.assertGreaterEqual(nanos(dt), millis(dt) * 10**6)
+        self.assertGreaterEqual(nanos(dt), millis(dt) * 10 ** 6)
         self.assertEqual(millis(None), NULL_LONG)
 
     def test_millis_of_second(self):
@@ -151,7 +151,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
     def test_millis_to_nanos(self):
         dt = now()
         ms = millis(dt)
-        self.assertEqual(ms * 10**6, millis_to_nanos(ms))
+        self.assertEqual(ms * 10 ** 6, millis_to_nanos(ms))
         self.assertEqual(NULL_LONG, millis_to_nanos(NULL_LONG))
 
     def test_minus(self):
@@ -171,7 +171,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
 
         dt = now()
         dt1 = minus_period(dt, period)
-        self.assertEqual(diff_nanos(dt1, dt), 60 * 60 * 10**9)
+        self.assertEqual(diff_nanos(dt1, dt), 60 * 60 * 10 ** 9)
 
     def test_minute_of_day(self):
         datetime_str = "2021-12-10T00:59:59"
@@ -198,7 +198,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         datetime_str = "2021-12-10T00:00:01"
         timezone_str = "CT"
         dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(10**9, nanos_of_day(dt, TimeZone.CT))
+        self.assertEqual(10 ** 9, nanos_of_day(dt, TimeZone.CT))
         self.assertEqual(NULL_LONG, nanos_of_day(None, TimeZone.CT))
 
     def test_nanos_of_second(self):
@@ -211,7 +211,7 @@ class DateTimeUtilsTestCase(unittest.TestCase):
     def test_nanos_to_millis(self):
         dt = now()
         ns = nanos(dt)
-        self.assertEqual(ns // 10**6, nanos_to_millis(ns))
+        self.assertEqual(ns // 10 ** 6, nanos_to_millis(ns))
         self.assertEqual(NULL_LONG, nanos_to_millis(NULL_LONG))
 
     def test_nanos_to_time(self):
@@ -227,12 +227,12 @@ class DateTimeUtilsTestCase(unittest.TestCase):
 
         dt = now()
         dt1 = plus_period(dt, period)
-        self.assertEqual(diff_nanos(dt, dt1), 60 * 60 * 10**9)
+        self.assertEqual(diff_nanos(dt, dt1), 60 * 60 * 10 ** 9)
 
         period_str = "1WT1H"
         period = to_period(period_str)
         dt2 = plus_period(dt, period)
-        self.assertEqual(diff_nanos(dt, dt2), (7 * 24 + 1) * 60 * 60 * 10**9)
+        self.assertEqual(diff_nanos(dt, dt2), (7 * 24 + 1) * 60 * 60 * 10 ** 9)
 
     def test_plus_nanos(self):
         dt = now()
@@ -271,6 +271,16 @@ class DateTimeUtilsTestCase(unittest.TestCase):
         dt = to_datetime(f"{datetime_str} {timezone_str}")
         self.assertEqual(21, year_of_century(dt, TimeZone.JP))
         self.assertEqual(NULL_INT, year_of_century(None, TimeZone.JP))
+
+    def test_timezone(self):
+        default_tz = TimeZone.get_default_timezone()
+        TimeZone.set_default_timezone(TimeZone.UTC)
+        tz1 = TimeZone.get_default_timezone()
+        self.assertEqual(TimeZone.UTC, tz1)
+        TimeZone.set_default_timezone(TimeZone.JP)
+        tz2 = TimeZone.get_default_timezone()
+        self.assertEqual(TimeZone.JP, tz2)
+        TimeZone.set_default_timezone(default_tz)
 
 
 if __name__ == "__main__":

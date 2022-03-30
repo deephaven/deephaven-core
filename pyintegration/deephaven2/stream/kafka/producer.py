@@ -6,9 +6,9 @@ from typing import Dict, Callable, List
 
 import jpy
 
-from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
 from deephaven2 import DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._jcompat import j_hashmap, j_hashset, j_properties
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.table import Table
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
@@ -17,9 +17,9 @@ _JKafkaTools_Produce = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce")
 
 
 class KeyValueSpec(JObjectWrapper):
-    _j_spec: jpy.JType
+    j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce$KeyOrValueSpec")
 
-    def __init__(self, j_spec):
+    def __init__(self, j_spec: jpy.JType):
         self._j_spec = j_spec
 
     @property
@@ -30,9 +30,15 @@ class KeyValueSpec(JObjectWrapper):
 KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 
 
-def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec, value_spec: KeyValueSpec,
-            last_by_key_columns: bool = False) -> Callable[[], None]:
-    """ Produce to Kafka from a Deephaven table.
+def produce(
+    table: Table,
+    kafka_config: Dict,
+    topic: str,
+    key_spec: KeyValueSpec,
+    value_spec: KeyValueSpec,
+    last_by_key_columns: bool = False,
+) -> Callable[[], None]:
+    """Produce to Kafka from a Deephaven table.
 
     Args:
         table (Table): the source table to publish to Kafka
@@ -59,12 +65,18 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
     try:
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
             raise ValueError(
-                "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE")
+                "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
+            )
 
         kafka_config = j_properties(kafka_config)
-        runnable = _JKafkaTools.produceFromTable(table.j_table, kafka_config, topic, key_spec.j_object,
-                                                 value_spec.j_object,
-                                                 last_by_key_columns)
+        runnable = _JKafkaTools.produceFromTable(
+            table.j_table,
+            kafka_config,
+            topic,
+            key_spec.j_object,
+            value_spec.j_object,
+            last_by_key_columns,
+        )
 
         def cleanup():
             try:
@@ -77,11 +89,18 @@ def produce(table: Table, kafka_config: Dict, topic: str, key_spec: KeyValueSpec
         raise DHError(e, "failed to start producing Kafka messages.") from e
 
 
-def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping: Dict[str, str] = None,
-              timestamp_field: str = None, include_only_columns: List[str] = None, exclude_columns: List[str] = None,
-              publish_schema: bool = False, schema_namespace: str = None,
-              column_properties: Dict[str, str] = None) -> KeyValueSpec:
-    """ Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
+def avro_spec(
+    schema: str,
+    schema_version: str = "latest",
+    field_to_col_mapping: Dict[str, str] = None,
+    timestamp_field: str = None,
+    include_only_columns: List[str] = None,
+    exclude_columns: List[str] = None,
+    publish_schema: bool = False,
+    schema_namespace: str = None,
+    column_properties: Dict[str, str] = None,
+) -> KeyValueSpec:
+    """Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
 
     Args:
         schema (str):  the name for a schema registered in a Confluent compatible Schema Server. The associated
@@ -121,16 +140,32 @@ def avro_spec(schema: str, schema_version: str = "latest", field_to_col_mapping:
         exclude_columns = j_hashset(exclude_columns)
         exclude_columns = _JKafkaTools.predicateFromSet(exclude_columns)
 
-        return KeyValueSpec(_JKafkaTools_Produce.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field,
-                                                          include_only_columns, exclude_columns, publish_schema,
-                                                          schema_namespace, column_properties))
+        return KeyValueSpec(
+            _JKafkaTools_Produce.avroSpec(
+                schema,
+                schema_version,
+                field_to_col_mapping,
+                timestamp_field,
+                include_only_columns,
+                exclude_columns,
+                publish_schema,
+                schema_namespace,
+                column_properties,
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 
 
-def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = None, mapping: Dict[str, str] = None,
-              nested_delim: str = None, output_nulls: bool = False, timestamp_field: str = None) -> KeyValueSpec:
-    """ Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
+def json_spec(
+    include_columns: List[str] = None,
+    exclude_columns: List[str] = None,
+    mapping: Dict[str, str] = None,
+    nested_delim: str = None,
+    output_nulls: bool = False,
+    timestamp_field: str = None,
+) -> KeyValueSpec:
+    """Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 
     Because JSON is a nested structure, a Deephaven column can be specified to map to a top level JSON field or
     a field nested inside another JSON object many levels deep, e.g. X.Y.Z.field. The parameter 'nested_delim' controls
@@ -165,14 +200,21 @@ def json_spec(include_columns: List[str] = None, exclude_columns: List[str] = No
         exclude_columns = j_hashset(exclude_columns)
         mapping = j_hashmap(mapping)
         return KeyValueSpec(
-            _JKafkaTools_Produce.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls,
-                                          timestamp_field))
+            _JKafkaTools_Produce.jsonSpec(
+                include_columns,
+                exclude_columns,
+                mapping,
+                nested_delim,
+                output_nulls,
+                timestamp_field,
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
 
 
 def simple_spec(col_name: str) -> KeyValueSpec:
-    """  Creates a spec that defines a single column to be published as either the key or value of a Kafka message when
+    """Creates a spec that defines a single column to be published as either the key or value of a Kafka message when
     producing a Kafka stream from a Deephaven table.
 
     Args:
