@@ -18,7 +18,7 @@ class SelectableDatasetTestCase(BaseTestCase):
     def test_one_click(self):
         sds = one_click(self.test_table, by=['a', 'b'])
         self.assertIsNotNone(sds)
-        sds = one_click(self.test_table, by=['a', 'b'], require_all_filters_to_display=True)
+        sds = one_click(self.test_table, by=['a', 'b'], require_all_filters=True)
         self.assertIsNotNone(sds)
 
         with self.assertRaises(DHError):
@@ -31,7 +31,7 @@ class SelectableDatasetTestCase(BaseTestCase):
         tm = self.test_table.j_table.partitionBy("c")
         sds = one_click_table_map(tm, self.test_table, by=['a', 'b'])
         self.assertIsNotNone(sds)
-        sds = one_click_table_map(tm, self.test_table, by=['a', 'b'], require_all_filters_to_display=True)
+        sds = one_click_table_map(tm, self.test_table, by=['a', 'b'], require_all_filters=True)
         self.assertIsNotNone(sds)
 
         with self.assertRaises(DHError):

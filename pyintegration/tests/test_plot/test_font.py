@@ -3,7 +3,7 @@
 #
 import unittest
 
-from deephaven2 import read_csv
+from deephaven2 import read_csv, DHError
 from deephaven2.plot import Color
 from deephaven2.plot import Figure
 from deephaven2.plot import font_family_names, Font, FontStyle
@@ -27,6 +27,8 @@ class FontTestCase(BaseTestCase):
         self.assertIsNotNone(custom_font)
         custom_font = Font(style=FontStyle.BOLD_ITALIC)
         self.assertIsNotNone(custom_font)
+        with self.assertRaises(DHError):
+            custom_font = Font(family="SansSerif", style=88, size=18)
 
     def test_chart_tile_with_font(self):
         figure = Figure()

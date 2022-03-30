@@ -7,6 +7,7 @@ from enum import Enum
 
 import jpy
 
+from deephaven2 import DHError
 from deephaven2._wrapper import JObjectWrapper
 
 _JFont = jpy.get_type("io.deephaven.plot.Font")
@@ -52,4 +53,7 @@ class Font(JObjectWrapper):
             style (FontStyle): the font style, defaults to FontStyle.PLAIN
             size (int): the point size of the Font, defaults to 8
         """
-        self.j_font = _JFont.font(family, style.value, size)
+        try:
+            self.j_font = _JFont.font(family, style.value, size)
+        except Exception as e:
+            raise DHError(e, "failed to create a font.") from e

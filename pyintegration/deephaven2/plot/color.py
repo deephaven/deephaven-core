@@ -1,7 +1,8 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the Color class and provides a list of predefined colors that can be used to pain a plot. """
+""" This module implements the Color class and provides a list of predefined colors that can be used to paint a plot.
+"""
 
 from __future__ import annotations
 
@@ -266,7 +267,7 @@ class Colors:
     YELLOW = Color.of_name("#FFFF00")
     YELLOWGREEN = Color.of_name("#9ACD32")
 
-    # Legacy non-html-standard colors. Duplicates removed. Conflicts resolved with a DB_ prefix.
+    # Legacy non-html-standard colors.
     VIVID_RED = Color.of_rgb(231, 47, 39)
     VIVID_YELLOWRED = Color.of_rgb(238, 113, 25)
     VIVID_YELLOW = Color.of_rgb(255, 200, 8)

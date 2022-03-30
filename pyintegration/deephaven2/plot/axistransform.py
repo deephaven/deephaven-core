@@ -33,7 +33,7 @@ def axis_transform_names() -> List[str]:
     return list(_JPlottingConvenience.axisTransformNames())
 
 
-def axis_transform_by_name(name: str) -> AxisTransform:
+def axis_transform(name: str) -> AxisTransform:
     """ Returns a predefined AxisTransform object by its name.
 
     Args:

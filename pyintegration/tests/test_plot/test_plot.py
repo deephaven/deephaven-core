@@ -4,7 +4,7 @@
 import unittest
 
 from deephaven2 import read_csv
-from deephaven2.plot import axis_transform_names, axis_transform_by_name, DecimalAxisFormat, \
+from deephaven2.plot import axis_transform_names, axis_transform, DecimalAxisFormat, \
     NanosAxisFormat
 from deephaven2.plot import Shape
 from deephaven2.plot import PlotStyle
@@ -36,7 +36,7 @@ class PlotTestCase(BaseTestCase):
         figure = Figure()
         new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b")
         for name in axis_transform_names():
-            axis = new_f.axis(transform=axis_transform_by_name(name))
+            axis = new_f.axis(transform=axis_transform(name))
             self.assertIsNotNone(axis)
 
     def test_axis_format(self):

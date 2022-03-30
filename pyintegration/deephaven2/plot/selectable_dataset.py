@@ -31,13 +31,13 @@ class SelectableDataSet(JObjectWrapper):
         return self.j_sds
 
 
-def one_click(t: Table, by: List[str] = None, require_all_filters_to_display: bool = False) -> SelectableDataSet:
+def one_click(t: Table, by: List[str] = None, require_all_filters: bool = False) -> SelectableDataSet:
     """ Creates a SelectableDataSet with the specified columns from a table.
 
     Args:
         t (Table): the source table
         by (List[str]): the selected columns
-        require_all_filters_to_display (bool): false to display data when not all oneclicks are selected; true to only
+        require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 
     Returns:
@@ -49,20 +49,20 @@ def one_click(t: Table, by: List[str] = None, require_all_filters_to_display: bo
     if not by:
         by = []
     try:
-        return SelectableDataSet(j_sds=_JSelectables.oneClick(t.j_table, require_all_filters_to_display, *by))
+        return SelectableDataSet(j_sds=_JSelectables.oneClick(t.j_table, require_all_filters, *by))
     except Exception as e:
         raise DHError(e, "failed in one_click.") from e
 
 
 def one_click_table_map(tm: jpy.JType, t: Table, by: List[str] = None,
-                        require_all_filters_to_display: bool = False) -> SelectableDataSet:
+                        require_all_filters: bool = False) -> SelectableDataSet:
     """ Creates a SelectableDataSet with the specified columns from the table map.
 
     Args:
         tm (jpy.JType): the source table map
         t (Table): the source table
         by (List[str]): the selected columns
-        require_all_filters_to_display (bool): false to display data when not all oneclicks are selected; true to only
+        require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 
     Returns:
@@ -74,6 +74,6 @@ def one_click_table_map(tm: jpy.JType, t: Table, by: List[str] = None,
     if not by:
         by = []
     try:
-        return SelectableDataSet(j_sds=_JSelectables.oneClick(tm, t.j_table, require_all_filters_to_display, *by))
+        return SelectableDataSet(j_sds=_JSelectables.oneClick(tm, t.j_table, require_all_filters, *by))
     except Exception as e:
         raise DHError(e, "failed in one_click.") from e
