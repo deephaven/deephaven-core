@@ -22,4 +22,9 @@ public class HotSpotImpl implements HotSpot {
     public long getTotalSafepointTimeMillis() {
         return hotspotRuntimeMBean.getTotalSafepointTime();
     }
+
+    @Override
+    public long getSafepointSyncTimeMillis() {
+        return hotspotRuntimeMBean.getSafepointSyncTime();
+    }
 }

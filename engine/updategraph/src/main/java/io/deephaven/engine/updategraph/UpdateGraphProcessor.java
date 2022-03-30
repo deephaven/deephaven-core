@@ -1519,6 +1519,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 logSuppressedCycles();
             }
             final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+            final long safePointSyncTimeMillis = jvmIntrospectionContext.deltaSafePointSyncTimeMillis();
             final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
             LogEntry entry = log.info()
                     .append("Update Graph Processor cycleTime=").appendDouble(cycleTimeMillis, 3);
@@ -1533,11 +1534,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 } else {
                     entry = entry.append("0");
                 }
-                entry = entry.append("%");
-            } else {
-                entry = entry.append("ms");
+                entry = entry.append("%, safePointSyncTime=").append(safePointSyncTimeMillis);
             }
-            entry = entry.append(", lockWaitTime=");
+            entry = entry.append("ms, lockWaitTime=");
             entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
             entry = entry.append("ms, yieldTime=");
             entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);

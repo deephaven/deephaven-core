@@ -9,8 +9,8 @@ package io.deephaven.hotspot;
  * <li>Thread dump</li>
  * <li>Heap inspection< /li>
  * <li>Class redefinition</li> </il> And others; you can see a full list <a href=
- * "http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/fc3cd1db10e2/src/share/vm/runtime/vm_operations.hpp#l39"> here
- * </a>.
+ * "https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/19fb8f93c59dfd791f62d41f332db9e306bc1422/src/hotspot/share/runtime/vm_operations.hpp#L40">
+ * here </a>.
  *
  */
 
@@ -19,8 +19,10 @@ public class JvmIntrospectionContext {
     private final HotSpot hotspot;
     private long lastStartPausesCount = -1;
     private long lastStartPausesTimeMillis = -1;
+    private long lastStartSyncTimeMillis = -1;
     private long lastEndPausesCount;
     private long lastEndPausesTimeMillis;
+    private long lastEndSyncTimeMillis;
 
     public boolean hasSafePointData() {
         return hotspot != null;
@@ -36,6 +38,7 @@ public class JvmIntrospectionContext {
         }
         lastStartPausesCount = hotspot.getSafepointCount();
         lastStartPausesTimeMillis = hotspot.getTotalSafepointTimeMillis();
+        lastStartSyncTimeMillis = hotspot.getSafepointSyncTimeMillis();
     }
 
     /**
@@ -47,23 +50,35 @@ public class JvmIntrospectionContext {
         }
         lastEndPausesCount = hotspot.getSafepointCount();
         lastEndPausesTimeMillis = hotspot.getTotalSafepointTimeMillis();
+        lastEndSyncTimeMillis = hotspot.getSafepointSyncTimeMillis();
     }
 
     /**
-     * Number of collections between the last two calls to {@code sample()}
+     * Number of safepoint pauses between the last two calls to {@code sample()}
      * 
-     * @return Number of collections
+     * @return Number of safepoint pauses.
      */
     public long deltaSafePointPausesCount() {
         return lastEndPausesCount - lastStartPausesCount;
     }
 
     /**
-     * Time in milliseconds in collections between the last two calls to {@code sample()}
+     * Time in milliseconds fully paused in safepoints between the last two calls to {@code sample()}
      * 
-     * @return Time in milliseconds
+     * @return Time in milliseconds.
      */
     public long deltaSafePointPausesTimeMillis() {
         return lastEndPausesTimeMillis - lastStartPausesTimeMillis;
     }
+
+    /**
+     * Time in milliseconds getting to a full safepoint stop (safepoint sync time) between the last two calls to
+     * {@code sample()}
+     *
+     * @return Time in milliseconds
+     */
+    public long deltaSafePointSyncTimeMillis() {
+        return lastEndSyncTimeMillis - lastStartSyncTimeMillis;
+    }
+
 }

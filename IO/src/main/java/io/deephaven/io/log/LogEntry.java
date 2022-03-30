@@ -102,19 +102,20 @@ public interface LogEntry extends LogOutput, LogSink.Element {
     }
 
     /**
-     * Append a double rounded to the given number of decimal places, rounding half up.
-     * If to the given decimal places of precision
+     * Append a double rounded to the given number of decimal places, rounding half up. If to the given decimal places
+     * of precision
      *
      * @param doubleValue a double value to append to the logEntry
      * @param decimalPlaces a positive integer between 0 and 9 for the target number of decimal places to round to
-     * @param maxTrailingZeroesToDiscard a positive integer between 0 and 9 for the maximum trailing zeroes (if any)
-     *        to discard from the fractional part of the result.
-     *        The fractional part of the result will have always at least
-     *        {@code (decimalPlaces - maxTrailingZeroesToDiscard)} places.
+     * @param maxTrailingZeroesToDiscard a positive integer between 0 and 9 for the maximum trailing zeroes (if any) to
+     *        discard from the fractional part of the result. The fractional part of the result will have always at
+     *        least {@code (decimalPlaces - maxTrailingZeroesToDiscard)} places.
      * @return the resulting {@code LogEntry}
      */
-    default LogEntry appendDouble(final double doubleValue, final int decimalPlaces, final int maxTrailingZeroesToDiscard) {
-        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, decimalPlaces - maxTrailingZeroesToDiscard);
+    default LogEntry appendDouble(final double doubleValue, final int decimalPlaces,
+            final int maxTrailingZeroesToDiscard) {
+        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces,
+                decimalPlaces - maxTrailingZeroesToDiscard);
     }
 
     private static LogEntry appendDoubleDecimalPlacesImpl(
