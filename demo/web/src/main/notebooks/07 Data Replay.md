@@ -34,7 +34,7 @@ for i in range(100):
 
 After running this code, we can see that the `result` table contains 100 entries of random numbers with each number having a historical timestamp.
 
-So how do we replay this data? Using the [`Replayer`](https://deephaven.io/core/docs/reference/table-operations/create/Replayer/) object, we can specify a start and end time, and apply this to our table.
+So how do we replay this data? Using the [`replayer`](https://deephaven.io/core/docs/reference/table-operations/create/Replayer/) object, we can specify a start and end time, and apply this to our table.
 
 ```python
 from deephaven2.replay import TableReplayer
