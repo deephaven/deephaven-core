@@ -3,17 +3,23 @@ package io.deephaven.hotspot.impl;
 import com.google.auto.service.AutoService;
 import io.deephaven.hotspot.HotSpot;
 import sun.management.ManagementFactoryHelper;
+import sun.management.HotspotRuntimeMBean;
 
 @AutoService(HotSpot.class)
 public class HotSpotImpl implements HotSpot {
+    private HotspotRuntimeMBean hotspotRuntimeMBean;
+
+    public HotSpotImpl() {
+        hotspotRuntimeMBean = ManagementFactoryHelper.getHotspotRuntimeMBean();
+    }
 
     @Override
     public long getSafepointCount() {
-        return ManagementFactoryHelper.getHotspotRuntimeMBean().getSafepointCount();
+        return hotspotRuntimeMBean.getSafepointCount();
     }
 
     @Override
     public long getTotalSafepointTimeMillis() {
-        return ManagementFactoryHelper.getHotspotRuntimeMBean().getTotalSafepointTime();
+        return hotspotRuntimeMBean.getTotalSafepointTime();
     }
 }

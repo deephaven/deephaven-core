@@ -91,7 +91,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
     }
 
     /**
-     * Append a double to the given number of decimal places, rounding up.
+     * Append a double to the exact given number of decimal places, rounding half up.
      *
      * @param doubleValue a double value to append to the logEntry
      * @param decimalPlaces a positive integer between 0 and 9
@@ -102,7 +102,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
     }
 
     /**
-     * Append a double with decimal places up to the given number.
+     * Append a double with decimal places up to the given number, rounding half up.
      *
      * @param doubleValue a double value to append to the logEntry
      * @param decimalPlaces a positive integer between 0 and 9
@@ -114,6 +114,9 @@ public interface LogEntry extends LogOutput, LogSink.Element {
 
     private static LogEntry appendDoubleDecimalPlacesImpl(
             LogEntry entry, final double doubleValue, final int decimalPlaces, final boolean exact) {
+        if (decimalPlaces < 0 || decimalPlaces > 9) {
+            throw new IllegalArgumentException("Invalid value for decimalPlaces = " + decimalPlaces);
+        }
         final int decimalPlacesAsPowerOf10 = MathUtil.pow10(decimalPlaces);
         final boolean negative = doubleValue < 0.0;
         final long longWeightedValue;

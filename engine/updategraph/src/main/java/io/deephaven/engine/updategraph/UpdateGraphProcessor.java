@@ -1503,44 +1503,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             }
             jvmIntrospectionContext.endSample();
             final long cycleTimeNanos = System.nanoTime() - startTimeNanos;
-            if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
-                if (suppressedCycles > 0) {
-                    logSuppressedCycles();
-                }
-                final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
-                final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
-                LogEntry entry = log.info()
-                        .append("Update Graph Processor cycleTime=").appendDoubleToDecimalPlaces(cycleTimeMillis, 3);
-                if (jvmIntrospectionContext.hasSafePointData()) {
-                    entry = entry
-                            .append("ms, safePointTime=")
-                            .append(safePointPauseTimeMillis)
-                            .append("ms, safePointTimePct=");
-                    if (safePointPauseTimeMillis > 0 && cycleTimeMillis > 0.0) {
-                        final double safePointTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
-                        entry = entry.appendDoubleToDecimalPlaces(safePointTimePct, 2);
-                    } else {
-                        entry = entry.append("0");
-                    }
-                    entry = entry.append("%");
-                } else {
-                    entry = entry.append("ms");
-                }
-                entry = entry.append(", lockWaitTime=");
-                entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
-                entry = entry.append("ms, yieldTime=");
-                entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
-                entry = entry.append("ms, sleepTime=");
-                entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
-                entry.append("ms").endl();
-            } else if (cycleTimeNanos > 0) {
-                ++suppressedCycles;
-                suppressedCyclesTotalNanos += cycleTimeNanos;
-                suppressedCyclesTotalSafePontTimeMillis += jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
-                if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
-                    logSuppressedCycles();
-                }
-            }
+            logCycle(cycleTimeNanos);
         }
 
         if (interCycleYield) {
@@ -1548,6 +1511,49 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
 
         waitForNextCycle(startTime, sched);
+    }
+
+    private void logCycle(final long cycleTimeNanos) {
+        if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
+            if (suppressedCycles > 0) {
+                logSuppressedCycles();
+            }
+            final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+            final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
+            LogEntry entry = log.info()
+                    .append("Update Graph Processor cycleTime=").appendDoubleToDecimalPlaces(cycleTimeMillis, 3);
+            if (jvmIntrospectionContext.hasSafePointData()) {
+                entry = entry
+                        .append("ms, safePointTime=")
+                        .append(safePointPauseTimeMillis)
+                        .append("ms, safePointTimePct=");
+                if (safePointPauseTimeMillis > 0 && cycleTimeMillis > 0.0) {
+                    final double safePointTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
+                    entry = entry.appendDoubleToDecimalPlaces(safePointTimePct, 2);
+                } else {
+                    entry = entry.append("0");
+                }
+                entry = entry.append("%");
+            } else {
+                entry = entry.append("ms");
+            }
+            entry = entry.append(", lockWaitTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
+            entry = entry.append("ms, yieldTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+            entry = entry.append("ms, sleepTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+            entry.append("ms").endl();
+            return;
+        }
+        if (cycleTimeNanos > 0) {
+            ++suppressedCycles;
+            suppressedCyclesTotalNanos += cycleTimeNanos;
+            suppressedCyclesTotalSafePontTimeMillis += jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+            if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
+                logSuppressedCycles();
+            }
+        }
     }
 
     private void logSuppressedCycles() {

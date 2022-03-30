@@ -64,15 +64,12 @@ tasks.withType(JavaCompile).configureEach {
   options.compilerArgs << '-parameters'
 
   if (!excludeReleaseFlag) {
-    if (name == 'compileTestJava') {
-      if (compilerVersion != testLanguageLevel) {
+    def checkLevel = (name == 'compileTestJava') ? testLanguageLevel : languageLevel
+    if (compilerVersion != checkLevel) {
         options.release.set testLanguageLevel
-      }
-    } else {
-      if (compilerVersion != languageLevel) {
-        options.release.set languageLevel
-      }
     }
+  } else {
+    sourceCompatibility = languageLevel
   }
 }
 
