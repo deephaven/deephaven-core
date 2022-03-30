@@ -780,12 +780,12 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
         BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
         BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
         BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
         BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
@@ -815,7 +815,12 @@ public class BarrageStreamGenerator implements
         }
 
         final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
-        final int addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(metadata);
+
+        // Added Chunk Data:
+        int addedRowsIncludedOffset = 0;
+        if (view.isViewport()) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        }
 
         // no shifts in a snapshot, but need to provide a valid structure
         final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
@@ -829,12 +834,12 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
         BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
         BarrageUpdateMetadata.addRemovedRows(metadata, 0);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
         BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
         BarrageUpdateMetadata.addModColumnNodes(metadata, 0);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
