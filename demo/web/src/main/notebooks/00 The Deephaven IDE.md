@@ -29,7 +29,8 @@ print(type(x))
 ```
 \
 \
-It is also used for interacting with both static tables.....
+It is also used for interacting with both static tables...
+
 ```python
 from deephaven2 import new_table
 from deephaven2.column import string_col, int_col
@@ -52,6 +53,7 @@ updating_table = time_table('00:00:00.400').updateView("Row = i", "Some_Int = (i
 
 
 ## These notebooks demonstrate Deephaven differentiators and workflows
+
 (You can find the notebooks also listed at top-right under "File Explorer".)
 
 
@@ -60,7 +62,7 @@ updating_table = time_table('00:00:00.400').updateView("Row = i", "Some_Int = (i
 3. [Kafka Stream vs Append](03%20Kafka%20Stream%20vs%20Append.md)
 
 
-Go to [quick start](https://deephaven.io/core/docs/tutorials/quickstart/) to install Deephaven from our pre-built images.
+Go to our [Quick start](https://deephaven.io/core/docs/tutorials/quickstart/) to install Deephaven from our pre-built images.
 
 Or simply [open the first notebook.](01%20Tables,%20Updates,%20and%20the%20Engine.md)
 
