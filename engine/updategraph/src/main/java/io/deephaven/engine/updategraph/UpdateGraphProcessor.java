@@ -1469,7 +1469,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     private static LogEntry appendAsMillisFromNanos(final LogEntry entry, final long nanos) {
         if (nanos > 0) {
-            return entry.appendDoubleToDecimalPlaces(nanos / 1_000_000.0, 3);
+            return entry.appendDouble(nanos / 1_000_000.0, 3);
         }
         return entry.append(0);
     }
@@ -1521,7 +1521,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
             final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
             LogEntry entry = log.info()
-                    .append("Update Graph Processor cycleTime=").appendDoubleToDecimalPlaces(cycleTimeMillis, 3);
+                    .append("Update Graph Processor cycleTime=").appendDouble(cycleTimeMillis, 3);
             if (jvmIntrospectionContext.hasSafePointData()) {
                 entry = entry
                         .append("ms, safePointTime=")
@@ -1529,7 +1529,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                         .append("ms, safePointTimePct=");
                 if (safePointPauseTimeMillis > 0 && cycleTimeMillis > 0.0) {
                     final double safePointTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
-                    entry = entry.appendDoubleToDecimalPlaces(safePointTimePct, 2);
+                    entry = entry.appendDouble(safePointTimePct, 2);
                 } else {
                     entry = entry.append("0");
                 }
@@ -1559,9 +1559,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private void logSuppressedCycles() {
         LogEntry entry = log.info()
                 .append("Minimal Update Graph Processor cycle times: ")
-                .appendDoubleToDecimalPlaces((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
+                .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
-                .appendDoubleToDecimalPlaces(
+                .appendDouble(
                         (double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
                 .append("ms/cycle average)");
         if (jvmIntrospectionContext.hasSafePointData()) {

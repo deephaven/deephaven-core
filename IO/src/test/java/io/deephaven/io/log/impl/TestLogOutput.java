@@ -63,24 +63,28 @@ public class TestLogOutput extends TestCase {
     }
 
     public void testPositiveDoubleToDecimalPlaces() {
-        logger.info().appendDoubleToDecimalPlaces(1.2345, 3).end();
-        logger.info().appendDoubleToDecimalPlaces(0.112255, 2).end();
-        logger.info().appendDoubleToDecimalPlaces(11111111.112255, 3).end();
-        logger.info().appendDoubleToDecimalPlaces(11111111.112255, 4).end();
-        logger.info().appendDoubleToDecimalPlaces(1111.4, 0).end();
-        logger.info().appendDoubleToDecimalPlaces(1111.5, 0).end();
-        logger.info().appendDoubleToDecimalPlaces(111.1234567894, 9).end();
-        logger.info().appendDoubleToDecimalPlaces(111.1234567895, 9).end();
-        logger.info().appendDoubleToMaxDecimalPlaces(111.1234567895, 9).end();
-        logger.info().appendDoubleToDecimalPlaces(111.123456789, 9).end();
-        logger.info().appendDoubleToMaxDecimalPlaces(111.123456789, 9).end();
-        logger.info().appendDoubleToDecimalPlaces(111.12, 4).end();
-        logger.info().appendDoubleToMaxDecimalPlaces(111.12, 4).end();
-        logger.info().appendDoubleToDecimalPlaces(111.14, 2).end();
-        logger.info().appendDoubleToDecimalPlaces(111.15, 2).end();
-        logger.info().appendDoubleToDecimalPlaces(111.15, 0).end();
-        logger.info().appendDoubleToDecimalPlaces(0, 0).end();
-        logger.info().appendDoubleToDecimalPlaces(0, 3).end();
+        logger.info().appendDouble(1.2345, 3).end();
+        logger.info().appendDouble(0.112255, 2).end();
+        logger.info().appendDouble(11111111.112255, 3).end();
+        logger.info().appendDouble(11111111.112255, 4).end();
+        logger.info().appendDouble(1111.4, 0).end();
+        logger.info().appendDouble(1111.5, 0).end();
+        logger.info().appendDouble(111.1234567894, 9).end();
+        logger.info().appendDouble(111.1234567895, 9).end();
+        logger.info().appendDouble(111.1234567895, 9, 9).end();
+        logger.info().appendDouble(111.123456789, 9).end();
+        logger.info().appendDouble(111.123456789, 9, 9).end();
+        logger.info().appendDouble(111.12, 4).end();
+        logger.info().appendDouble(111.12, 4, 4).end();
+        logger.info().appendDouble(111.14, 2).end();
+        logger.info().appendDouble(111.15, 2).end();
+        logger.info().appendDouble(111.15, 0).end();
+        logger.info().appendDouble(0, 0).end();
+        logger.info().appendDouble(0, 3).end();
+        logger.info().appendDouble(111.1995, 3).end();
+        logger.info().appendDouble(111.1995, 3, 1).end();
+        logger.info().appendDouble(111.1995, 3, 2).end();
+        logger.info().appendDouble(111.1995, 3, 3).end();
         String[] results = logger.takeAll();
         int c = 0;
         assertEquals("1.235", results[c++]);
@@ -101,11 +105,15 @@ public class TestLogOutput extends TestCase {
         assertEquals("111", results[c++]);
         assertEquals("0", results[c++]);
         assertEquals("0.000", results[c++]);
+        assertEquals("111.200", results[c++]);
+        assertEquals("111.20", results[c++]);
+        assertEquals("111.2", results[c++]);
+        assertEquals("111.2", results[c++]);
     }
 
     public void testNegativeDoubleToDecimalPlaces() {
-        logger.info().appendDoubleToDecimalPlaces(-1.235, 2).end();
-        logger.info().appendDoubleToDecimalPlaces(-1.234, 2).end();
+        logger.info().appendDouble(-1.235, 2).end();
+        logger.info().appendDouble(-1.234, 2).end();
         String[] results = logger.takeAll();
         int c = 0;
         assertEquals("-1.24", results[c++]);

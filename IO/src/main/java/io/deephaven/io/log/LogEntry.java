@@ -97,53 +97,56 @@ public interface LogEntry extends LogOutput, LogSink.Element {
      * @param decimalPlaces a positive integer between 0 and 9
      * @return the resulting {@code LogEntry}
      */
-    default LogEntry appendDoubleToDecimalPlaces(final double doubleValue, final int decimalPlaces) {
-        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, true);
+    default LogEntry appendDouble(final double doubleValue, final int decimalPlaces) {
+        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, decimalPlaces);
     }
 
     /**
-     * Append a double with decimal places up to the given number, rounding half up.
+     * Append a double rounded to the given number of decimal places, rounding half up.
+     * If to the given decimal places of precision
      *
      * @param doubleValue a double value to append to the logEntry
-     * @param decimalPlaces a positive integer between 0 and 9
+     * @param decimalPlaces a positive integer between 0 and 9 for the target number of decimal places to round to
+     * @param maxTrailingZeroesToDiscard a positive integer between 0 and 9 for the maximum trailing zeroes (if any)
+     *        to discard from the fractional part of the result.
+     *        The fractional part of the result will have always at least
+     *        {@code (decimalPlaces - maxTrailingZeroesToDiscard)} places.
      * @return the resulting {@code LogEntry}
      */
-    default LogEntry appendDoubleToMaxDecimalPlaces(final double doubleValue, final int decimalPlaces) {
-        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, false);
+    default LogEntry appendDouble(final double doubleValue, final int decimalPlaces, final int maxTrailingZeroesToDiscard) {
+        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, decimalPlaces - maxTrailingZeroesToDiscard);
     }
 
     private static LogEntry appendDoubleDecimalPlacesImpl(
-            LogEntry entry, final double doubleValue, final int decimalPlaces, final boolean exact) {
-        if (decimalPlaces < 0 || decimalPlaces > 9) {
-            throw new IllegalArgumentException("Invalid value for decimalPlaces = " + decimalPlaces);
+            LogEntry entry, final double doubleValue, final int roundToDecimalPlaces, final int minDecimalPlaces) {
+        if (roundToDecimalPlaces < 0 || roundToDecimalPlaces > 9) {
+            throw new IllegalArgumentException("Invalid value for decimalPlaces = " + roundToDecimalPlaces);
         }
-        final int decimalPlacesAsPowerOf10 = MathUtil.pow10(decimalPlaces);
+        final int roundToAsPowerOf10 = MathUtil.pow10(roundToDecimalPlaces);
         final boolean negative = doubleValue < 0.0;
         final long longWeightedValue;
         if (negative) {
-            longWeightedValue = -(long) (-0.5 + doubleValue * decimalPlacesAsPowerOf10);
+            longWeightedValue = -(long) (-0.5 + doubleValue * roundToAsPowerOf10);
         } else {
-            longWeightedValue = (long) (0.5 + doubleValue * decimalPlacesAsPowerOf10);
+            longWeightedValue = (long) (0.5 + doubleValue * roundToAsPowerOf10);
         }
-        final long integral = longWeightedValue / decimalPlacesAsPowerOf10;
+        final long integral = longWeightedValue / roundToAsPowerOf10;
         if (negative) {
             entry = entry.append(-integral);
         } else {
             entry = entry.append(integral);
         }
-        if (decimalPlaces == 0) {
+        if (roundToDecimalPlaces == 0) {
             return entry;
         }
-        int fractional = (int) (longWeightedValue % decimalPlacesAsPowerOf10);
-        int actualDecimalPlaces = decimalPlaces;
-        if (!exact) {
-            while (fractional > 0 && (fractional % 10 == 0)) {
-                fractional /= 10;
-                --actualDecimalPlaces;
-            }
-            if (fractional == 0) {
-                return entry;
-            }
+        int fractional = (int) (longWeightedValue % roundToAsPowerOf10);
+        int actualDecimalPlaces = roundToDecimalPlaces;
+        while (minDecimalPlaces < actualDecimalPlaces && fractional > 0 && (fractional % 10 == 0)) {
+            fractional /= 10;
+            --actualDecimalPlaces;
+        }
+        if (minDecimalPlaces == 0 && fractional == 0) {
+            return entry;
         }
         entry = entry.append(".");
         final int base10FractionalDigits = MathUtil.base10digits(fractional);
