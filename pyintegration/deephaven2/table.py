@@ -10,7 +10,7 @@ import jpy
 
 from deephaven2 import DHError, dtypes
 from deephaven2._jcompat import j_array_list
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
@@ -30,7 +30,9 @@ class Table(JObjectWrapper):
 
     """
 
-    def __init__(self, j_table):
+    j_object_type = jpy.get_type("io.deephaven.engine.table.Table")
+
+    def __init__(self, j_table: jpy.JType):
         self.j_table = j_table
         self._definition = self.j_table.getDefinition()
         self._schema = None

@@ -2,12 +2,14 @@
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ This module provides support for replaying historical data. """
+
 import jpy
 
 from deephaven2 import dtypes, DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.table import Table
-from deephaven2.table_factory import _JReplayer
+
+_JReplayer = jpy.get_type("io.deephaven.engine.table.impl.replay.Replayer")
 
 
 class TableReplayer(JObjectWrapper):
@@ -16,6 +18,8 @@ class TableReplayer(JObjectWrapper):
     Tables to be replayed are registered with the replayer.  The resulting dynamic replay tables all update in sync,
     using the same simulated clock.  Each registered table must contain a timestamp column.
     """
+
+    j_object_type = _JReplayer
 
     def __init__(self, start_time: dtypes.DateTime, end_time: dtypes.DateTime):
         """Initializes the replayer.
