@@ -69,6 +69,8 @@ tasks.withType(JavaCompile).configureEach {
         options.release.set checkLevel
     }
   } else {
+    // This is a special case; without this we still get a failure about
+    // --add-opens together with --release for the hotspot-impl module.
     sourceCompatibility = languageLevel
   }
 }
