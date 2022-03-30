@@ -58,6 +58,7 @@ kib_2_gib = 1.0/(1024 * 1024)
 
 results={}
 for line in top_out:
+    line = line.strip()
     for name, regex in name_pidre.items():
         if re.search(regex, line) is not None:
             cols = line.split(maxsplit=12)
