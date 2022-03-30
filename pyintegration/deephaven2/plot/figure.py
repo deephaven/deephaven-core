@@ -13,14 +13,17 @@ import numbers
 from enum import Enum
 from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
+import numpy
 import jpy
+
 from deephaven2 import DHError, dtypes
 from deephaven2._wrapper import JObjectWrapper
-from deephaven2.dtypes import DateTime
+from deephaven2.dtypes import DateTime, PyObject
 from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven2.table import Table
 from deephaven2.calendar import BusinessCalendar
+from deephaven2._jcompat import j_function
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
@@ -75,13 +78,11 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         else:
             return obj.value
     elif isinstance(obj, Sequence):
-        import numpy
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
     elif isinstance(obj, Callable):
-        # TODO: support callables
-        raise DHError(message=f"Callables {obj} are not yet supported.")
+        return j_function(obj, dtypes.PyObject)
     else:
         raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
 
@@ -173,9 +174,6 @@ class Figure(JObjectWrapper):
         label: str = None,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
         min: Union[str, float] = None,
@@ -194,9 +192,6 @@ class Figure(JObjectWrapper):
             label (str): label
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
             min (Union[str, float]): minimum value to display
@@ -230,15 +225,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if format is not None:
             non_null_args.add("format")
             format = _convert_j("format", format, [AxisFormat])
@@ -298,11 +284,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.axisLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.axisLabelFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
@@ -513,9 +494,6 @@ class Figure(JObjectWrapper):
         self,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         visible: int = None,
     ) -> Figure:
         """Updates a chart's legend's configuration.
@@ -523,9 +501,6 @@ class Figure(JObjectWrapper):
         Args:
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             visible (int): true to draw the design element; false otherwise.
 
         Returns:
@@ -542,15 +517,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if visible is not None:
             non_null_args.add("visible")
             visible = _convert_j("visible", visible, [int])
@@ -566,11 +532,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.legendFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.legendFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
@@ -593,9 +554,6 @@ class Figure(JObjectWrapper):
         column_names_in_title: bool = None,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
     ) -> Figure:
         """Sets the title of the chart.
 
@@ -608,9 +566,6 @@ class Figure(JObjectWrapper):
             column_names_in_title (bool): whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
 
         Returns:
             a new Figure
@@ -644,15 +599,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
 
         f_called = False
         j_figure = self.j_figure
@@ -685,11 +631,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.chartTitleFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.chartTitleFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"max_rows"}.issubset(non_null_args):
@@ -776,9 +717,6 @@ class Figure(JObjectWrapper):
         title: str = None,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
     ) -> Figure:
         """Sets the title of the figure.
 
@@ -786,9 +724,6 @@ class Figure(JObjectWrapper):
             title (str): title
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
 
         Returns:
             a new Figure
@@ -807,15 +742,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
 
         f_called = False
         j_figure = self.j_figure
@@ -833,11 +759,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.figureTitleFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.figureTitleFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if not f_called or non_null_args:
@@ -1931,9 +1852,6 @@ class Figure(JObjectWrapper):
     def ticks(
         self,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         gap: float = None,
         loc: List[float] = None,
         angle: int = None,
@@ -1943,9 +1861,6 @@ class Figure(JObjectWrapper):
 
         Args:
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             gap (float): distance between ticks.
             loc (List[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
@@ -1962,15 +1877,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if gap is not None:
             non_null_args.add("gap")
             gap = _convert_j("gap", gap, [float])
@@ -2000,11 +1906,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.ticksFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.ticksFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
@@ -2109,9 +2010,6 @@ class Figure(JObjectWrapper):
         label: str = None,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
         min: Union[str, float] = None,
@@ -2129,9 +2027,6 @@ class Figure(JObjectWrapper):
             label (str): label
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
             min (Union[str, float]): minimum value to display
@@ -2162,15 +2057,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if format is not None:
             non_null_args.add("format")
             format = _convert_j("format", format, [AxisFormat])
@@ -2230,11 +2116,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.xLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.xLabelFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
@@ -2300,9 +2181,6 @@ class Figure(JObjectWrapper):
     def x_ticks(
         self,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         gap: float = None,
         loc: List[float] = None,
         angle: int = None,
@@ -2312,9 +2190,6 @@ class Figure(JObjectWrapper):
 
         Args:
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             gap (float): distance between ticks.
             loc (List[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
@@ -2331,15 +2206,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if gap is not None:
             non_null_args.add("gap")
             gap = _convert_j("gap", gap, [float])
@@ -2369,11 +2235,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.xTicksFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.xTicksFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):
@@ -2469,9 +2330,6 @@ class Figure(JObjectWrapper):
         label: str = None,
         color: Union[str, int, Color] = None,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         format: AxisFormat = None,
         format_pattern: str = None,
         min: Union[str, float] = None,
@@ -2489,9 +2347,6 @@ class Figure(JObjectWrapper):
             label (str): label
             color (Union[str, int, Color]): color
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             format (AxisFormat): label format
             format_pattern (str): label format pattern
             min (Union[str, float]): minimum value to display
@@ -2522,15 +2377,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if format is not None:
             non_null_args.add("format")
             format = _convert_j("format", format, [AxisFormat])
@@ -2590,11 +2436,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.yLabelFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.yLabelFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"invert"}.issubset(non_null_args):
@@ -2660,9 +2501,6 @@ class Figure(JObjectWrapper):
     def y_ticks(
         self,
         font: Font = None,
-        font_family: str = None,
-        font_size: int = None,
-        font_style: str = None,
         gap: float = None,
         loc: List[float] = None,
         angle: int = None,
@@ -2672,9 +2510,6 @@ class Figure(JObjectWrapper):
 
         Args:
             font (Font): font
-            font_family (str): font family
-            font_size (int): font size
-            font_style (str): font style
             gap (float): distance between ticks.
             loc (List[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
@@ -2691,15 +2526,6 @@ class Figure(JObjectWrapper):
         if font is not None:
             non_null_args.add("font")
             font = _convert_j("font", font, [Font])
-        if font_family is not None:
-            non_null_args.add("font_family")
-            font_family = _convert_j("font_family", font_family, [str])
-        if font_size is not None:
-            non_null_args.add("font_size")
-            font_size = _convert_j("font_size", font_size, [int])
-        if font_style is not None:
-            non_null_args.add("font_style")
-            font_style = _convert_j("font_style", font_style, [str])
         if gap is not None:
             non_null_args.add("gap")
             gap = _convert_j("gap", gap, [float])
@@ -2729,11 +2555,6 @@ class Figure(JObjectWrapper):
         if {"font"}.issubset(non_null_args):
             j_figure = j_figure.yTicksFont(font)
             non_null_args = non_null_args.difference({"font"})
-            f_called = True
-
-        if {"font_family", "font_style", "font_size"}.issubset(non_null_args):
-            j_figure = j_figure.yTicksFont(font_family, font_style, font_size)
-            non_null_args = non_null_args.difference({"font_family", "font_style", "font_size"})
             f_called = True
 
         if {"visible"}.issubset(non_null_args):

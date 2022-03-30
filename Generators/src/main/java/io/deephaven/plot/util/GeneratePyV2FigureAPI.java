@@ -97,6 +97,18 @@ public class GeneratePyV2FigureAPI {
             put("yInvert", new String[][] {new String[] {}});
             put("yLog", new String[][] {new String[] {}});
             put("yBusinessTime", new String[][] {new String[] {}});
+            put("axisLabelFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("figureTitleFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("chartTitleFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("legendFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("ticksFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("xLabelFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("xTicksFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("yLabelFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("yTicksFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("xTicksFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("xTicksFont", new String[][] {new String[] {"family", "style", "size"}});
+            put("xTicksFont", new String[][] {new String[] {"family", "style", "size"}});
         }
     };
 
@@ -1048,9 +1060,6 @@ public class GeneratePyV2FigureAPI {
         rst.put("label", new PyArg(52, "label", taStr, "label", null));
         rst.put("color", new PyArg(53, "color", taColor, "color", null));
         rst.put("font", new PyArg(54, "font", taFont, "font", null));
-        rst.put("family", new PyArg(55, "font_family", taStr, "font family", null));
-        rst.put("size", new PyArg(56, "font_size", taInt, "font size", null));
-        rst.put("style", new PyArg(57, "font_style", taStr, "font style", null));
         rst.put("axisFormat", new PyArg(58, "format", taAxisFormat, "label format", null));
         rst.put("axisFormatPattern", new PyArg(59, "format_pattern", taStr, "label format pattern", null));
         rst.put("plotStyle", new PyArg(60, "plot_style", taPlotStyle, "plot style", null));
