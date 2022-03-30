@@ -1,13 +1,14 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the AxisTransform class and related utilites. """
+""" This module implements the AxisTransform class for performing axis transformation on plots before rendering. """
+
 from typing import List
 
 import jpy
 
 from deephaven2 import DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")

@@ -4,7 +4,7 @@
 import random
 import unittest
 
-from deephaven2 import read_csv
+from deephaven2 import read_csv, DHError
 from deephaven2.plot import Colors
 from deephaven2.plot import Figure
 from deephaven2.plot import LineEndStyle, LineJoinStyle, LineStyle
@@ -45,6 +45,10 @@ class LineStyleTestCase(BaseTestCase):
         new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b")
         line = new_f.line(color=Colors.ANTIQUEWHITE, style=LineStyle(width=1.0, end_style=LineEndStyle.ROUND))
         self.assertIsNotNone(line)
+
+        with self.assertRaises(DHError):
+            line = new_f.line(color=Colors.ANTIQUEWHITE,
+                              style=LineStyle(width=1.0, end_style=LineEndStyle.ROUND, dash_pattern=[-1]))
 
 
 if __name__ == '__main__':

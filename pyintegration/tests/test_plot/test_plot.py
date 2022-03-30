@@ -23,9 +23,7 @@ class PlotTestCase(BaseTestCase):
     def test_plot_style(self):
         figure = Figure()
         new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b")
-        # TODO got an exception, potentially an autogen issue
-        # axes = new_f.axes(name="X", axes=0, plot_style=PlotStyle.PIE)
-        axes = new_f.axes(plot_style=PlotStyle.PIE)
+        axes = new_f.axes(axes=0, plot_style=PlotStyle.PIE)
         self.assertIsNotNone(axes)
 
     def test_shape(self):

@@ -1,14 +1,14 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the Color class and provides a list of predefined colors. """
+""" This module implements the Color class and provides a list of predefined colors that can be used to pain a plot. """
 
 from __future__ import annotations
 
 import jpy
 
 from deephaven2 import DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 
 _JColor = jpy.get_type("io.deephaven.gui.color.Color")
 

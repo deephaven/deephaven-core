@@ -746,12 +746,11 @@ public class GeneratePyV2FigureAPI {
                 final Map<Key, ArrayList<JavaFunction>> signatures, final Map<String, PyArg> pyArgMap) {
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
+            boolean isFirst = true;
             for (final Map.Entry<Key, ArrayList<JavaFunction>> entry : signatures.entrySet()) {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
                 final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
-
-                boolean isFirst = true;
 
                 for (final String[] an : argNames) {
                     validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
@@ -760,7 +759,8 @@ public class GeneratePyV2FigureAPI {
                     if (quoted_an.length == 0) {
                         sb.append(INDENT)
                                 .append(INDENT)
-                                .append("if not non_null_args:\n")
+                                .append(isFirst ? "if" : "elif")
+                                .append(" not non_null_args:\n")
                                 .append(INDENT)
                                 .append(INDENT)
                                 .append(INDENT)
@@ -785,8 +785,8 @@ public class GeneratePyV2FigureAPI {
                                 .append(String.join(", ", an))
                                 .append("))\n");
 
-                        isFirst = false;
                     }
+                    isFirst = false;
                 }
             }
 
@@ -954,24 +954,15 @@ public class GeneratePyV2FigureAPI {
         final String[] taTable = new String[] {"Table", "SelectableDataSet"};
 
         final String[] taDataCategory = new String[] {"str", "List[str]", "List[int]", "List[float]"};
-        final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[DateTime]"}; // todo
-        // support
-        // numpy,
-        // //todo
-        // support
-        // other
-        // datetimes
-        final String[] taDataTime = new String[] {"str", "List[DateTime]"}; // todo support numpy, //todo support other
-        // datetimes
-
+        final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[DateTime]"};
+        final String[] taDataTime = new String[] {"str", "List[DateTime]"};
         final String[] taMultiSeriesKey = new String[] {"List[Any]"}; // todo keys are technically Object[]. How to
         // support?
         final String[] taColor = new String[] {"str", "int", "Color"};
         final String[] taAxisFormat = new String[] {"AxisFormat"};
         final String[] taAxisTransform = new String[] {"AxisTransform"};
         final String[] taFont = new String[] {"Font"};
-        final String[] taBusinessCalendar = new String[] {"str", "BusinessCalendar"}; // todo support
-        // io.deephaven.time.calendar.BusinessCalendar
+        final String[] taBusinessCalendar = new String[] {"str", "BusinessCalendar"};
         final String[] taPlotStyle = new String[] {"str", "PlotStyle"};
         final String[] taLineStyle = new String[] {"str", "LineStyle"};
         final String[] taPointColors = new String[] {"str", "int", "Color", "List[str]", "List[int]", "List[Color]",

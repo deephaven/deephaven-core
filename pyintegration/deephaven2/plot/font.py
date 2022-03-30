@@ -1,13 +1,13 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the Font class. """
+""" This module implements the Font class that can be used to set the fonts on a plot. """
 
 from enum import Enum
 
 import jpy
 
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 
 _JFont = jpy.get_type("io.deephaven.plot.Font")
 _JFontStyle = jpy.get_type("io.deephaven.plot.Font$FontStyle")

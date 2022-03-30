@@ -18,7 +18,7 @@ class FontTestCase(BaseTestCase):
         self.test_table = None
 
     def test_font_family_names(self):
-        self.assertIn("Serif", font_family_names)
+        self.assertIn("Serif", font_family_names())
 
     def test_font(self):
         custom_font = Font()

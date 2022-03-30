@@ -13,7 +13,6 @@ from deephaven2.time import TimeZone, DateTime
 
 from deephaven2 import DHError
 
-
 _JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
 _JCalendar = jpy.get_type("io.deephaven.time.calendar.Calendar")
 _JDayOfWeek = jpy.get_type("java.time.DayOfWeek")

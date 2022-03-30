@@ -38,8 +38,10 @@ class PlotStyle(Enum):
     """ An open-high-low-close chart. """
 
     SCATTER = _JPlotStyle.SCATTER
-    STEP = _JPlotStyle.STEP
     """ A scatter plot (lines are not displayed by default). """
+
+    STEP = _JPlotStyle.STEP
+    """ A step plot. """
 
     ERROR_BAR = _JPlotStyle.ERROR_BAR
     """ An error bar plot (points are not displayed by default). """

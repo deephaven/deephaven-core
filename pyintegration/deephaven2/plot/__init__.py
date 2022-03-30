@@ -9,12 +9,6 @@ from .color import Color, Colors
 from .font import Font, FontStyle, font_family_names
 from .linestyle import LineStyle, LineEndStyle, LineJoinStyle
 from .plotstyle import PlotStyle
-from .selectable_dataset import SelectableDataSet, SelectableDataSetSwappableTable, SelectableDataSetOneClick
+from .selectable_dataset import SelectableDataSet
 from .shape import Shape
-
-
-class BusinessCalendar:
-    """ TODO to be removed after the Calendar PR is merged. """
-
-
 from .figure import Figure

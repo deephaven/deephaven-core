@@ -1,7 +1,11 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the Figure class for creating plots. """
+######################################################################################################################
+#               This code is auto generated. DO NOT EDIT FILE!
+# Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
+######################################################################################################################
+""" This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
 
 from __future__ import annotations
 
@@ -11,11 +15,12 @@ from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import jpy
 from deephaven2 import DHError, dtypes
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.dtypes import DateTime
-from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, BusinessCalendar, AxisTransform, \
+from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven2.table import Table
+from deephaven2.calendar import BusinessCalendar
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 

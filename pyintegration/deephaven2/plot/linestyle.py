@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" The module implements the LineStyle class. """
+""" The module implements the LineStyle class that can be used to define the line style of a plot. """
 
 from enum import Enum
 from numbers import Number
@@ -9,7 +9,8 @@ from typing import List
 
 import jpy
 
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2 import DHError
+from deephaven2._wrapper import JObjectWrapper
 
 _JLineStyle = jpy.get_type("io.deephaven.plot.LineStyle")
 _JLineEndStyle = jpy.get_type("io.deephaven.plot.LineStyle$LineEndStyle")
@@ -68,16 +69,22 @@ class LineStyle(JObjectWrapper):
             end_style (LineEndStyle): the end style of the line, default is LineEndStyle.ROUND
             join_style (LineJoinStyle: the join style of the line, default is LineJoinStyle.ROUND
             dash_pattern (List[Number]): a list of number specifying the dash pattern of the line
-        """
-        if dash_pattern:
-            self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, *dash_pattern)
-        else:
-            self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, None)
 
-        self.width = width
-        self.end_style = end_style
-        self.join_style = join_style
-        self.dash_pattern = dash_pattern
+        Raises:
+            DHError
+        """
+        try:
+            if dash_pattern:
+                self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, *dash_pattern)
+            else:
+                self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, None)
+
+            self.width = width
+            self.end_style = end_style
+            self.join_style = join_style
+            self.dash_pattern = dash_pattern
+        except Exception as e:
+            raise DHError(e, "failed to create a LineStyle.") from e
 
     @property
     def j_object(self) -> jpy.JType:

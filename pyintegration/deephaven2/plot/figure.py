@@ -1,7 +1,11 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module implements the Figure class for creating plots. """
+######################################################################################################################
+#               This code is auto generated. DO NOT EDIT FILE!
+# Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper2" to generate
+######################################################################################################################
+""" This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
 
 from __future__ import annotations
 
@@ -11,13 +15,12 @@ from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import jpy
 from deephaven2 import DHError, dtypes
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.dtypes import DateTime
-from deephaven2.plot import LineStyle, Color, Font, AxisFormat, BusinessCalendar, AxisTransform, \
+from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
-from deephaven2.plot.shape import Shape
-from deephaven2.plot.plotstyle import PlotStyle
 from deephaven2.table import Table
+from deephaven2.calendar import BusinessCalendar
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
@@ -106,7 +109,7 @@ class Figure(JObjectWrapper):
         remove_series: List[str] = None,
         plot_style: Union[str, PlotStyle] = None,
     ) -> Figure:
-        """Retrieves the axes of the chart.
+        """Gets specific axes from the chart and updates the chart's axes's configurations.
 
         Args:
             name (str): name
@@ -183,7 +186,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """Gets the Axis at the dimension dim and/or sets its properties. The x-axis is dimension 0, y-axis dimension 1.
+        """Gets a specific axis from a chart's axes and updates the axis's configurations.
 
         Args:
             dim (int): dimension of the axis
@@ -377,7 +380,7 @@ class Figure(JObjectWrapper):
         y_grid_visible: bool = None,
         pie_label_format: str = None,
     ) -> Figure:
-        """Returns a chart from the figure's grid.
+        """Gets a chart from the figure's grid and updates a chart's configuration.
 
         Args:
             multi_series_key (List[Any]): multi-series keys or a column name containing keys.
@@ -515,7 +518,7 @@ class Figure(JObjectWrapper):
         font_style: str = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the color, font, visibility of the lengend of the chart.
+        """Updates a chart's legend's configuration.
 
         Args:
             color (Union[str, int, Color]): color
@@ -707,7 +710,7 @@ class Figure(JObjectWrapper):
         remove_chart_col: int = None,
         update_millis: int = None,
     ) -> Figure:
-        """Updates the figure by removing its elements or setting a new update intervals.
+        """Updates the figure's configuration.
 
         Args:
             remove_series (List[str]): names of series to remove
@@ -848,7 +851,7 @@ class Figure(JObjectWrapper):
         xmax: float = None,
         npoints: int = None,
     ) -> Figure:
-        """Sets the number of data points and the data range for the data series.
+        """Updates the configuration for plotting a function.
 
         Args:
             xmin (float): minimum x value to display
@@ -998,7 +1001,7 @@ class Figure(JObjectWrapper):
 
         if not non_null_args:
             return Figure(self.j_figure.newAxes())
-        if non_null_args == {"dim"}:
+        elif non_null_args == {"dim"}:
             return Figure(self.j_figure.newAxes(dim))
         elif non_null_args == {"name"}:
             return Figure(self.j_figure.newAxes(name))
@@ -1040,7 +1043,7 @@ class Figure(JObjectWrapper):
 
         if not non_null_args:
             return Figure(self.j_figure.newChart())
-        if non_null_args == {"index"}:
+        elif non_null_args == {"index"}:
             return Figure(self.j_figure.newChart(index))
         elif non_null_args == {"row", "col"}:
             return Figure(self.j_figure.newChart(row, col))
@@ -1057,7 +1060,7 @@ class Figure(JObjectWrapper):
         y_high: Union[str, List[int], List[float], List[DateTime]] = None,
         by: List[str] = None,
     ) -> Figure:
-        """Creates a plot with discrete axis. Discrete data must not have duplicates.
+        """Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates.
 
         Args:
             series_name (str): name of the data series
@@ -1104,13 +1107,13 @@ class Figure(JObjectWrapper):
             return Figure(self.j_figure.catPlot(series_name, category, y))
         elif non_null_args == {"series_name", "t", "category", "y"}:
             return Figure(self.j_figure.catPlot(series_name, t, category, y))
-        if non_null_args == {"series_name", "t", "category", "y", "by"}:
+        elif non_null_args == {"series_name", "t", "category", "y", "by"}:
             return Figure(self.j_figure.catPlotBy(series_name, t, category, y, by))
-        if non_null_args == {"series_name", "category", "y", "y_low", "y_high"}:
+        elif non_null_args == {"series_name", "category", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.catErrorBar(series_name, category, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.catErrorBar(series_name, t, category, y, y_low, y_high))
-        if non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high", "by"}:
+        elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high", "by"}:
             return Figure(self.j_figure.catErrorBarBy(series_name, t, category, y, y_low, y_high, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
@@ -1121,7 +1124,7 @@ class Figure(JObjectWrapper):
         t: Union[Table, SelectableDataSet] = None,
         category: Union[str, List[str], List[int], List[float]] = None,
     ) -> Figure:
-        """Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
+        """Creates a histogram with a discrete axis. Charts the frequency of each unique element in the input data.
 
         Args:
             series_name (str): name of the data series
@@ -1217,7 +1220,7 @@ class Figure(JObjectWrapper):
             return Figure(self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
         elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close"}:
             return Figure(self.j_figure.ohlcPlot(series_name, t, x, open, high, low, close))
-        if non_null_args == {"series_name", "t", "x", "open", "high", "low", "close", "by"}:
+        elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close", "by"}:
             return Figure(self.j_figure.ohlcPlotBy(series_name, t, x, open, high, low, close, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
@@ -1353,25 +1356,25 @@ class Figure(JObjectWrapper):
             return Figure(self.j_figure.plot(series_name, t, x, y))
         elif non_null_args == {"series_name", "x", "y", "x_time_axis", "y_time_axis"}:
             return Figure(self.j_figure.plot(series_name, x, y, x_time_axis, y_time_axis))
-        if non_null_args == {"series_name", "t", "x", "y", "by"}:
+        elif non_null_args == {"series_name", "t", "x", "y", "by"}:
             return Figure(self.j_figure.plotBy(series_name, t, x, y, by))
-        if non_null_args == {"series_name", "x", "x_low", "x_high", "y"}:
+        elif non_null_args == {"series_name", "x", "x_low", "x_high", "y"}:
             return Figure(self.j_figure.errorBarX(series_name, x, x_low, x_high, y))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y"}:
             return Figure(self.j_figure.errorBarX(series_name, t, x, x_low, x_high, y))
-        if non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "by"}:
+        elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "by"}:
             return Figure(self.j_figure.errorBarXBy(series_name, t, x, x_low, x_high, y, by))
-        if non_null_args == {"series_name", "x", "y", "y_low", "y_high"}:
+        elif non_null_args == {"series_name", "x", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.errorBarY(series_name, x, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.errorBarY(series_name, t, x, y, y_low, y_high))
-        if non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high", "by"}:
+        elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high", "by"}:
             return Figure(self.j_figure.errorBarYBy(series_name, t, x, y, y_low, y_high, by))
-        if non_null_args == {"series_name", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
+        elif non_null_args == {"series_name", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.errorBarXY(series_name, x, x_low, x_high, y, y_low, y_high))
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
             return Figure(self.j_figure.errorBarXY(series_name, t, x, x_low, x_high, y, y_low, y_high))
-        if non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high", "by"}:
+        elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high", "by"}:
             return Figure(self.j_figure.errorBarXYBy(series_name, t, x, x_low, x_high, y, y_low, y_high, by))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
@@ -1755,7 +1758,7 @@ class Figure(JObjectWrapper):
         gradient_visible: bool = None,
         naming_function: Callable = None,
     ) -> Figure:
-        """Gets a data series and sets its various properties.
+        """Gets a specific data series and updates the data series's configurations.
 
         Args:
             name (str): name
@@ -1936,7 +1939,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the tick location, font, angle, visibility etc. for the axis.
+        """Updates the configuration for major ticks of an axis.
 
         Args:
             font (Font): font
@@ -2024,7 +2027,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets whether the minor ticks are drawn and the number of thme between major ticks on this axis.
+        """Updates the configuration for minor ticks of an axis.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2068,9 +2071,7 @@ class Figure(JObjectWrapper):
         name: str = None,
         dim: int = None,
     ) -> Figure:
-        """Creates a new Axes instance which shares the same Axis objects as this Axes. The resultant Axes has the
-         same range, ticks, etc. as this Axes (as these are fields of the Axis) but may have, for example, a
-         different PlotStyle.
+        """Creates a new Axes which shares one Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
         Args:
             name (str): name
@@ -2093,7 +2094,7 @@ class Figure(JObjectWrapper):
 
         if not non_null_args:
             return Figure(self.j_figure.twin())
-        if non_null_args == {"dim"}:
+        elif non_null_args == {"dim"}:
             return Figure(self.j_figure.twin(dim))
         elif non_null_args == {"name"}:
             return Figure(self.j_figure.twin(name))
@@ -2121,7 +2122,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """Gets the Axis representing the x-axis and sets its various properties.
+        """Gets the x-Axis from a chart's axes and updates the x-Axis's configurations.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -2307,7 +2308,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the x-Axis ticks.
+        """Updates the configuration for major ticks of the x-Axis.
 
         Args:
             font (Font): font
@@ -2395,7 +2396,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the x-Axis minor ticks.
+        """Updates the configuration for minor ticks of the x-Axis.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2438,10 +2439,7 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
     ) -> Figure:
-        """Creates a new Axes instance which shares the same x-Axis as this Axes.
-         
-        The resultant Axes has the same x-axis range, ticks, etc. as this Axes (as these are properties of the
-        Axis) but may have, for example, a different PlotStyle.
+        """Creates a new Axes which shares the x-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
         Args:
             name (str): name
@@ -2460,7 +2458,7 @@ class Figure(JObjectWrapper):
 
         if not non_null_args:
             return Figure(self.j_figure.twinX())
-        if non_null_args == {"name"}:
+        elif non_null_args == {"name"}:
             return Figure(self.j_figure.twinX(name))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
@@ -2484,7 +2482,7 @@ class Figure(JObjectWrapper):
         calendar: Union[str, BusinessCalendar] = None,
         transform: AxisTransform = None,
     ) -> Figure:
-        """Gets the Axis representing the y-axis and sets its various properties.
+        """Gets the y-Axis from a chart's axes and updates the y-Axis's configurations.
 
         Args:
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
@@ -2670,7 +2668,7 @@ class Figure(JObjectWrapper):
         angle: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the y-Axis ticks.
+        """Updates the configuration for major ticks of the y-Axis.
 
         Args:
             font (Font): font
@@ -2758,7 +2756,7 @@ class Figure(JObjectWrapper):
         nminor: int = None,
         visible: int = None,
     ) -> Figure:
-        """Sets the y-Axis minor ticks.
+        """Updates the configuration for minor ticks of the y-Axis.
 
         Args:
             nminor (int): number of minor ticks between consecutive major ticks.
@@ -2801,10 +2799,7 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
     ) -> Figure:
-        """        Creates a new Axes instance which shares the same y-Axis as this Axes.
-         
-        The resultant Axes has the same y-axis range, ticks, etc. as this Axes (as these are properties of the
-        Axis) but may have, for example, a different PlotStyle.
+        """Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
         Args:
             name (str): name
@@ -2823,7 +2818,7 @@ class Figure(JObjectWrapper):
 
         if not non_null_args:
             return Figure(self.j_figure.twinY())
-        if non_null_args == {"name"}:
+        elif non_null_args == {"name"}:
             return Figure(self.j_figure.twinY(name))
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
