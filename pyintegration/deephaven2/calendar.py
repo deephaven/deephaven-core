@@ -7,10 +7,12 @@ from enum import Enum
 from typing import List
 
 import jpy
+
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.time import TimeZone, DateTime
 
 from deephaven2 import DHError
-from deephaven2._wrapper_abc import JObjectWrapper
+
 
 _JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
 _JCalendar = jpy.get_type("io.deephaven.time.calendar.Calendar")
