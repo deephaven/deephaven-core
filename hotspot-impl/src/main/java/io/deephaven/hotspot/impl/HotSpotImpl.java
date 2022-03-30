@@ -7,7 +7,7 @@ import sun.management.HotspotRuntimeMBean;
 
 @AutoService(HotSpot.class)
 public class HotSpotImpl implements HotSpot {
-    private HotspotRuntimeMBean hotspotRuntimeMBean;
+    private final HotspotRuntimeMBean hotspotRuntimeMBean;
 
     public HotSpotImpl() {
         hotspotRuntimeMBean = ManagementFactoryHelper.getHotspotRuntimeMBean();

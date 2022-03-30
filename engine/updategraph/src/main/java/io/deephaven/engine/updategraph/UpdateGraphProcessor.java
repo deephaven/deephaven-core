@@ -1518,12 +1518,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             if (suppressedCycles > 0) {
                 logSuppressedCycles();
             }
-            final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
-            final long safePointSyncTimeMillis = jvmIntrospectionContext.deltaSafePointSyncTimeMillis();
             final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
             LogEntry entry = log.info()
                     .append("Update Graph Processor cycleTime=").appendDouble(cycleTimeMillis, 3);
             if (jvmIntrospectionContext.hasSafePointData()) {
+                final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+                final long safePointSyncTimeMillis = jvmIntrospectionContext.deltaSafePointSyncTimeMillis();
                 entry = entry
                         .append("ms, safePointTime=")
                         .append(safePointPauseTimeMillis)
