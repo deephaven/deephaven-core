@@ -308,7 +308,7 @@ task generatePythonFigureWrapper2(type: JavaExec, dependsOn: 'classes') {
 
 task generatePythonFigureWrapper2Assert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonFigureWrapper'
-    dependsOn generatePlottingConvenience
+    dependsOn generatePlottingConvenienceAssert
 
     main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
     args devRoot, 'true'
@@ -317,7 +317,6 @@ task generatePythonFigureWrapper2Assert(type: JavaExec, dependsOn: 'classes') {
     systemProperty 'workspace', workspace
     systemProperty 'devroot', devRoot
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
-    dependsOn generatePyDoc, ':Generators:generateFigureImmutable'
 }
 
 tasks.register 'generateAllPython', {
