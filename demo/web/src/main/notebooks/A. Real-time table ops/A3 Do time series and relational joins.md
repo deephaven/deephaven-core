@@ -26,7 +26,7 @@ Let's join these tables using an `aj` to get a single table with all of our info
 joined_data_aj = daily_data_0.aj(table=daily_data_1, on=["Timestamp"], joins=["Number1 = Number", "Character1 = Character", "Boolean1 = Boolean"])
 ```
 
-Deephaven supports another type of as of join, an `raj`. For a `raj`, the values in the right table are matched to the closest values in the left table without going under the left value. For example, if the right table contains a value `5` and the left table contains values `4` and `6`, the right table's `5` will be matched on the left table's `4`.
+Deephaven supports another type of as-of join, a `raj`. For a `raj`, the values in the right table are matched to the closest values in the left table without going under the left value. For example, if the right table contains a value `5` and the left table contains values `4` and `6`, the right table's `5` will be matched on the left table's `4`.
 
 Let's also join these tables using a `raj`.
 
