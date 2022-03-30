@@ -1,0 +1,60 @@
+plugins {
+    id 'application'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    applicationDist
+}
+
+dependencies {
+    implementation project(':server-jetty')
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+}
+
+distributions {
+    main {
+        distributionBaseName = 'server-jetty'
+    }
+}
+
+def extraJvmArgs = [
+        '-server',
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=100',
+        '-XX:+UseStringDeduplication',
+        '-XshowSettings:vm',
+]
+
+if (hasProperty('groovy')) {
+    extraJvmArgs += ['-Ddeephaven.console.type=groovy']
+}
+
+if (property('includeHotspotImpl') == 'true') {
+    dependencies {
+        runtimeOnly project(':hotspot-impl')
+    }
+    extraJvmArgs += ['--add-opens', 'java.management/sun.management=ALL-UNNAMED']
+}
+
+tasks.withType(JavaExec).configureEach {
+    // This appends to the existing jvm args, so that java-open-nio still takes effect
+    jvmArgs extraJvmArgs
+}
+
+tasks.withType(CreateStartScripts).configureEach {
+    defaultJvmOpts += extraJvmArgs
+}
+
+applicationName = 'start'
+mainClassName = 'io.deephaven.server.jetty.JettyAppMain'
+
+artifacts {
+    applicationDist project.tasks.findByName('distTar')
+}
+
+apply plugin: 'io.deephaven.java-open-nio'

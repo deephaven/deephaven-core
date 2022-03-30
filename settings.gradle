@@ -120,8 +120,14 @@ project(':server-test').projectDir = file('server/test')
 include(':server-netty')
 project(':server-netty').projectDir = file('server/netty')
 
+include(':server-netty-app')
+project(':server-netty-app').projectDir = file('server/netty-app')
+
 include(':server-jetty')
 project(':server-jetty').projectDir = file('server/jetty')
+
+include(':server-jetty-app')
+project(':server-jetty-app').projectDir = file('server/jetty-app')
 
 include(':Base')
 
