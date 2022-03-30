@@ -178,8 +178,8 @@ def datetime_at_midnight(dt: DateTime, tz: TimeZone) -> DateTime:
     """ Returns a DateTime for the requested DateTime at midnight in the specified time zone.
 
     Args:
-        dt (DateTime) - DateTime for which the new value at midnight should be calculated
-        tz: (TimeZone) - TimeZone for which the new value at midnight should be calculated
+        dt (DateTime): the DateTime for which the new value at midnight should be calculated
+        tz (TimeZone): the TimeZone to use when interpreting the DateTime
 
     Returns:
         DateTime
