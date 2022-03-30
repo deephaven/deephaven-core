@@ -816,14 +816,14 @@ public class BarrageStreamGenerator implements
 
         final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
 
+        // no shifts in a snapshot, but need to provide a valid structure
+        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
         if (view.isViewport()) {
             addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
         }
-
-        // no shifts in a snapshot, but need to provide a valid structure
-        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
         BarrageUpdateMetadata.addNumAddBatches(metadata,
