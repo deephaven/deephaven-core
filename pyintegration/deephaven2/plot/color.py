@@ -7,21 +7,22 @@ from __future__ import annotations
 
 import jpy
 
+from deephaven2 import DHError
 from deephaven2._wrapper_abc import JObjectWrapper
 
 _JColor = jpy.get_type("io.deephaven.gui.color.Color")
 
 
 class Color(JObjectWrapper):
-    """ A Color object represents a color. """
+    """ A color. """
+
+    j_object_type = _JColor
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_color
 
-    j_object_type = _JColor
-
-    def __init__(self, j_color):
+    def __init__(self, j_color: jpy.JType):
         self.j_color = j_color
 
     @staticmethod
@@ -33,12 +34,18 @@ class Color(JObjectWrapper):
         Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122"
 
         Args:
-            name:
+            name (str): the name of the color
 
         Returns:
              a Color
+
+        Raises:
+            DHError
         """
-        return Color(j_color=_JColor.color(name))
+        try:
+            return Color(j_color=_JColor.color(name))
+        except Exception as e:
+            raise DHError(e, "failed to get a color by its name.") from e
 
     @staticmethod
     def of_rgb(r: int, g: int, b: int, alpha: int = 255) -> Color:
@@ -53,8 +60,14 @@ class Color(JObjectWrapper):
 
         Returns:
             a Color
+
+        Raises:
+            DHError
         """
-        return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
+        try:
+            return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
+        except Exception as e:
+            raise DHError(e, "failed to create a color from rgb values.")
 
     @staticmethod
     def of_rgb_f(r: float, g: float, b: float, alpha: float = 1.0) -> Color:
@@ -69,8 +82,14 @@ class Color(JObjectWrapper):
 
         Returns:
             a color
+
+        Raises:
+            DHError
         """
-        return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
+        try:
+            return Color(j_color=_JColor.colorRGB(r, g, b, alpha))
+        except Exception as e:
+            raise DHError(e, "failed to create a color from rgb values.") from e
 
     @staticmethod
     def of_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
@@ -86,8 +105,14 @@ class Color(JObjectWrapper):
 
         Returns:
             a Color
+
+        Raises:
+            DHError
         """
-        return Color(j_color=_JColor.colorHSL(h, s, l, alpha))
+        try:
+            return Color(j_color=_JColor.colorHSL(h, s, l, alpha))
+        except Exception as e:
+            raise DHError(e, "failed to create a color from hue, saturation, lightness values.") from e
 
 
 class Colors:

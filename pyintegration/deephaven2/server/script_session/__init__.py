@@ -45,7 +45,5 @@ def unwrap_to_java_type(object):
         return object
     if isinstance(object, JObjectWrapper):
         return object.j_object
-    if isinstance(object, Figure):
-        return object.figure
     # add more here when/if necessary
     return None

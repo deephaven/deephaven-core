@@ -6,7 +6,7 @@ import unittest
 from deephaven2 import read_csv
 from deephaven2.plot import Color
 from deephaven2.plot import Figure
-from deephaven2.plot import FontFamilyNames, Font, FontStyle
+from deephaven2.plot import font_family_names, Font, FontStyle
 from tests.testbase import BaseTestCase
 
 
@@ -18,7 +18,7 @@ class FontTestCase(BaseTestCase):
         self.test_table = None
 
     def test_font_family_names(self):
-        self.assertIn("Serif", FontFamilyNames)
+        self.assertIn("Serif", font_family_names)
 
     def test_font(self):
         custom_font = Font()

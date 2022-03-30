@@ -28,6 +28,10 @@ class AxisFormat(JObjectWrapper):
 
     def set_pattern(self, pattern: str) -> None:
         """ Set the pattern used for formatting values.
+
+        For details on the supported patterns see the javadoc for DateTimeFormatter
+        "https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html"
+
         Args:
             pattern (str): pattern string indicating how values should be formatted.
         """
@@ -35,7 +39,11 @@ class AxisFormat(JObjectWrapper):
 
 
 class DecimalAxisFormat(AxisFormat):
-    """ A formatter for converting decimals into formatted strings. """
+    """ A formatter for converting decimals into formatted strings.
+
+    For details on the supported patterns see the javadoc for DecimalFormat
+    "https://docs.oracle.com/javase/7/docs/api/java/text/DecimalFormat.html"
+    """
 
     def __init__(self):
         self.j_axis_format = _JDecimalAxisFormat()

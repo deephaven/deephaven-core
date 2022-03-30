@@ -61,7 +61,7 @@ class LineStyle(JObjectWrapper):
 
     def __init__(self, width: float = 1.0, end_style: LineEndStyle = LineEndStyle.ROUND,
                  join_style: LineJoinStyle = LineJoinStyle.ROUND, dash_pattern: List[Number] = None):
-        """ Inits a LineStyle object.
+        """ Creates a LineStyle object.
 
         Args:
             width (float): the width of the line, default is 1.0

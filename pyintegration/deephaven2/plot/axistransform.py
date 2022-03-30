@@ -2,6 +2,7 @@
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ This module implements the AxisTransform class and related utilites. """
+from typing import List
 
 import jpy
 
@@ -9,15 +10,13 @@ from deephaven2 import DHError
 from deephaven2._wrapper_abc import JObjectWrapper
 
 _JAxisTransform = jpy.get_type("io.deephaven.plot.axistransformations.AxisTransform")
-
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
-
-AxisTransformNames = list(_JPlottingConvenience.axisTransformNames())
-""" The names of available axis transforms. """
 
 
 class AxisTransform(JObjectWrapper):
-    """ The AxisTransform represents an axis transform that needs to be applied to an axis. """
+    """ An axis transformation that is applied before rendering a plot. Axis transforms include logarithms,
+    business time, etc. """
+
     j_object_type = _JAxisTransform
 
     @property
@@ -28,8 +27,13 @@ class AxisTransform(JObjectWrapper):
         self.j_axis_transform = j_axis_transform
 
 
-def get_axis_transform_by_name(name: str) -> AxisTransform:
-    """ Returns an AxisTransform object by its name.
+def axis_transform_names() -> List[str]:
+    """ Returns the names of available axis transforms. """
+    return list(_JPlottingConvenience.axisTransformNames())
+
+
+def axis_transform_by_name(name: str) -> AxisTransform:
+    """ Returns a predefined AxisTransform object by its name.
 
     Args:
         name (str): the predefined AxisTransform name
@@ -44,5 +48,3 @@ def get_axis_transform_by_name(name: str) -> AxisTransform:
         return AxisTransform(j_axis_transform=_JPlottingConvenience.axisTransform(name))
     except Exception as e:
         raise DHError(e, "failed to retrieve the named AxisTransform.") from e
-
-

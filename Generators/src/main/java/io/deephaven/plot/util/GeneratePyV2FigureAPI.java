@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,6 +23,8 @@ public class GeneratePyV2FigureAPI {
 
     private static final String INDENT = "    ";
     private static final String JCLASS = "io.deephaven.plot.Figure";
+    private static final String PYPREAMBLE = "/Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
+    private static final String PYMODUlE = "/pyintegration/deephaven2/plot/figure.py";
     private static String figureWrapperPreamble;
     private static String devroot;
     private static boolean assertNoChange;
@@ -37,8 +40,8 @@ public class GeneratePyV2FigureAPI {
 
         devroot = args[0];
         assertNoChange = Boolean.parseBoolean(args[1]);
-        figureWrapperPreamble = devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
-        figureWrapperOutput = devroot + "/pyintegration/deephaven2/plot/figure.py";
+        figureWrapperPreamble = devroot + PYPREAMBLE;
+        figureWrapperOutput = devroot + PYMODUlE;
 
         final Map<Key, ArrayList<JavaFunction>> signatures = getMethodSignatures();
         final int nSig1 = signatures.size();
@@ -53,17 +56,6 @@ public class GeneratePyV2FigureAPI {
         System.out
                 .println("GENSTATS: " + nSigGenerated + " of " + nSig1 + "(" + (nSigGenerated / (double) nSig1) + ")");
 
-        // for (int i = 0; i < 10; i++) {
-        // System.out.println("===========================================================");
-        // }
-        //
-        // //todo output pyCode
-        // System.out.println(pyCode);
-        //
-        // for (int i = 0; i < 10; i++) {
-        // System.out.println("===========================================================");
-        // }
-
         if (!signatures.isEmpty()) {
             printMethodSignatures(signatures);
             throw new RuntimeException("Not all methods were generated.");
@@ -75,8 +67,16 @@ public class GeneratePyV2FigureAPI {
             throw new RuntimeException("File: " + figureWrapperOutput + " does not exist.");
         }
 
-        try (final PrintWriter out = new PrintWriter(pythonFile)) {
-            out.print(pyCode);
+        if (assertNoChange) {
+            String oldCode = new String(Files.readAllBytes(Paths.get(figureWrapperOutput)));
+            if (!pyCode.equals(oldCode)) {
+                throw new RuntimeException(
+                        "Change in generated code.  Run GeneratePyV2FigureAPI or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
+            }
+        } else {
+            try (final PrintWriter out = new PrintWriter(pythonFile)) {
+                out.print(pyCode);
+            }
         }
     }
 
@@ -645,6 +645,7 @@ public class GeneratePyV2FigureAPI {
                         .append(arg.name)
                         .append("\")\n");
             }
+
             // non-null params
 
             sb.append(INDENT).append(INDENT).append("non_null_args = set()\n\n");
@@ -1120,7 +1121,7 @@ public class GeneratePyV2FigureAPI {
 
         rst.add(new PyFunc("figure", SEQUENTIAL, new String[] {"figureRemoveSeries", "removeChart", "updateInterval"},
                 null,
-                "Updates the figure by removing its elements or setting a new update intervals."));
+                "Updates the figure's configuration."));
         rst.add(new PyFunc("figure_title", SEQUENTIAL,
                 new String[] {"figureTitle", "figureTitleColor", "figureTitleFont"}, null,
                 "Sets the title of the figure."));
@@ -1130,76 +1131,63 @@ public class GeneratePyV2FigureAPI {
                 new String[] {"chart", "chartRemoveSeries", "span", "rowSpan", "colSpan", "plotOrientation",
                         "gridLinesVisible", "xGridLinesVisible", "yGridLinesVisible", "piePercentLabelFormat"},
                 null,
-                "Returns a chart from the figure's grid."));
+                "Gets a chart from the figure's grid and updates a chart's configuration."));
         rst.add(new PyFunc("chart_title", SEQUENTIAL,
                 new String[] {"chartTitle", "chartTitleColor", "chartTitleFont", "maxRowsInTitle"}, null,
                 "Sets the title of the chart."));
         rst.add(new PyFunc("chart_legend", SEQUENTIAL, new String[] {"legendColor", "legendFont", "legendVisible"},
                 null,
-                "Sets the color, font, visibility of the lengend of the chart."));
+                "Updates a chart's legend's configuration."));
         rst.add(new PyFunc("new_axes", SINGLETON, new String[] {"newAxes"}, null,
                 "Creates new axes."));
         rst.add(new PyFunc("axes", SEQUENTIAL, new String[] {"axes", "axesRemoveSeries", "plotStyle"}, null,
-                "Retrieves the axes of the chart."));
+                "Gets specific axes from the chart and updates the chart's axes's configurations."));
         rst.add(new PyFunc(
                 "axis", SEQUENTIAL, new String[] {"axis", "axisColor", "axisFormat", "axisFormatPattern", "axisLabel",
                         "axisLabelFont", "invert", "log", "min", "max", "range", "businessTime", "transform"},
                 null,
-                "Gets the Axis at the dimension dim and/or sets its properties. The x-axis is dimension 0, y-axis dimension 1."));
+                "Gets a specific axis from a chart's axes and updates the axis's configurations."));
         rst.add(new PyFunc("ticks", SEQUENTIAL, new String[] {"ticks", "ticksFont", "ticksVisible", "tickLabelAngle"},
                 null,
-                "Sets the tick location, font, angle, visibility etc. for the axis."));
+                "Updates the configuration for major ticks of an axis."));
         rst.add(new PyFunc("ticks_minor", SEQUENTIAL, new String[] {"minorTicks", "minorTicksVisible"}, null,
-                "Sets whether the minor ticks are drawn and the number of thme between major ticks on this axis."));
+                "Updates the configuration for minor ticks of an axis."));
         rst.add(new PyFunc("twin", SINGLETON, new String[] {"twin"}, null,
-                "Creates a new Axes instance which shares the same Axis objects as this Axes. The resultant Axes has the\n"
-                        +
-                        "         same range, ticks, etc. as this Axes (as these are fields of the Axis) but may have, for example, a\n"
-                        +
-                        "         different PlotStyle."));
+                "Creates a new Axes which shares one Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes."));
         rst.add(new PyFunc(
                 "x_axis", SEQUENTIAL, new String[] {"xAxis", "xColor", "xFormat", "xFormatPattern", "xLabel",
                         "xLabelFont", "xInvert", "xLog", "xMin", "xMax", "xRange", "xBusinessTime", "xTransform"},
                 null,
-                "Gets the Axis representing the x-axis and sets its various properties."));
+                "Gets the x-Axis from a chart's axes and updates the x-Axis's configurations."));
         rst.add(new PyFunc("x_ticks", SEQUENTIAL,
                 new String[] {"xTicks", "xTicksFont", "xTicksVisible", "xTickLabelAngle"}, null,
-                "Sets the x-Axis ticks."));
+                "Updates the configuration for major ticks of the x-Axis."));
         rst.add(new PyFunc("x_ticks_minor", SEQUENTIAL, new String[] {"xMinorTicks", "xMinorTicksVisible"}, null,
-                "Sets the x-Axis minor ticks."));
+                "Updates the configuration for minor ticks of the x-Axis."));
         rst.add(new PyFunc("x_twin", SINGLETON, new String[] {"twinX"}, null,
-                "Creates a new Axes instance which shares the same x-Axis as this Axes.\n" +
-                        "         \n" +
-                        "        The resultant Axes has the same x-axis range, ticks, etc. as this Axes (as these are properties of the\n"
-                        +
-                        "        Axis) but may have, for example, a different PlotStyle."));
-
+                "Creates a new Axes which shares the x-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes."));
         rst.add(new PyFunc(
                 "y_axis", SEQUENTIAL, new String[] {"yAxis", "yColor", "yFormat", "yFormatPattern", "yLabel",
                         "yLabelFont", "yInvert", "yLog", "yMin", "yMax", "yRange", "yBusinessTime", "yTransform"},
                 null,
-                "Gets the Axis representing the y-axis and sets its various properties."));
+                "Gets the y-Axis from a chart's axes and updates the y-Axis's configurations."));
         rst.add(new PyFunc("y_ticks", SEQUENTIAL,
                 new String[] {"yTicks", "yTicksFont", "yTicksVisible", "yTickLabelAngle"}, null,
-                "Sets the y-Axis ticks."));
+                "Updates the configuration for major ticks of the y-Axis."));
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[] {"yMinorTicks", "yMinorTicksVisible"}, null,
-                "Sets the y-Axis minor ticks."));
+                "Updates the configuration for minor ticks of the y-Axis."));
         rst.add(new PyFunc("y_twin", SINGLETON, new String[] {"twinY"}, null,
-                "        Creates a new Axes instance which shares the same y-Axis as this Axes.\n" +
-                        "         \n" +
-                        "        The resultant Axes has the same y-axis range, ticks, etc. as this Axes (as these are properties of the\n"
-                        +
-                        "        Axis) but may have, for example, a different PlotStyle."));
+                "Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes."));
         rst.add(new PyFunc("series", SEQUENTIAL, new String[] {"series", "group", "seriesColor", "toolTipPattern",
                 "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null,
-                "Gets a data series and sets its various properties."));
+                "Gets a specific data series and updates the data series's configurations."));
         rst.add(new PyFunc("point", SEQUENTIAL, new String[] {"pointColor", "pointLabel", "pointLabelFormat",
                 "pointShape", "pointSize", "pointsVisible"}, null,
                 "Sets the point color, label, size, visibility, etc."));
         rst.add(new PyFunc("line", SEQUENTIAL, new String[] {"lineColor", "lineStyle", "linesVisible"}, null,
                 "Sets the line color, style, visibility."));
         rst.add(new PyFunc("func", SEQUENTIAL, new String[] {"funcNPoints", "funcRange"}, null,
-                "Sets the number of data points and the data range for the data series."));
+                "Updates the configuration for plotting a function."));
         rst.add(new PyFunc("plot_xy", SINGLETON, new String[] {"plot", "plotBy", "errorBarX", "errorBarXBy",
                 "errorBarY", "errorBarYBy", "errorBarXY", "errorBarXYBy"}, new String[] {"series_name"},
                 "Creates an XY plot."));
@@ -1207,9 +1195,9 @@ public class GeneratePyV2FigureAPI {
                 "Creates an XY histogram."));
         rst.add(new PyFunc("plot_cat", SINGLETON, new String[] {"catPlot", "catPlotBy", "catErrorBar", "catErrorBarBy"},
                 new String[] {"series_name"},
-                "Creates a plot with discrete axis. Discrete data must not have duplicates."));
+                "Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates."));
         rst.add(new PyFunc("plot_cat_hist", SINGLETON, new String[] {"catHistPlot"}, new String[] {"series_name"},
-                "Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data."));
+                "Creates a histogram with a discrete axis. Charts the frequency of each unique element in the input data."));
         rst.add(new PyFunc("plot_pie", SINGLETON, new String[] {"piePlot"}, new String[] {"series_name"},
                 "Creates a pie plot. Categorical data must not have duplicates."));
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},

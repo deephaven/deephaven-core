@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-""" This module provides the PlotStyle enum for predefined plot styles. """
+""" This module provides support for different plot styles (e.g. line, bar, area, etc.). """
 
 from enum import Enum
 

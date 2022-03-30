@@ -12,10 +12,12 @@ _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 class SelectableDataSet(JObjectWrapper):
-    """ A SelectableDataSet object provides a view of a table on a selectable subset. """
+    """ A SelectableDataSet provides a view of a selectable subset of a table.  For example, in some selectable data
+    sets, a GUI click can be used to select a portion of a table. """
+
     j_object_type = _JSelectableDataSet
 
-    def __init__(self, j_sds):
+    def __init__(self, j_sds: jpy.JType):
         self.j_sds = j_sds
 
     @property

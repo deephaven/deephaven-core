@@ -3,14 +3,14 @@
 #
 """ The plot package includes all the modules for creating plots. """
 
+from .axisformat import AxisFormat, DecimalAxisFormat, NanosAxisFormat
+from .axistransform import AxisTransform, axis_transform_names, axis_transform_by_name
 from .color import Color, Colors
-from .font import Font, FontStyle, FontFamilyNames
+from .font import Font, FontStyle, font_family_names
 from .linestyle import LineStyle, LineEndStyle, LineJoinStyle
 from .plotstyle import PlotStyle
-from .selectable_dataset import SelectableDataSet,SelectableDataSetSwappableTable, SelectableDataSetOneClick
+from .selectable_dataset import SelectableDataSet, SelectableDataSetSwappableTable, SelectableDataSetOneClick
 from .shape import Shape
-from .axisformat import AxisFormat, DecimalAxisFormat, NanosAxisFormat
-from .axistransform import AxisTransform, AxisTransformNames, get_axis_transform_by_name
 
 
 class BusinessCalendar:
