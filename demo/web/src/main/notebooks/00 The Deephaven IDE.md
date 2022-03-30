@@ -31,10 +31,12 @@ print(type(x))
 \
 It is also used for interacting with both static tables.....
 ```python
-from deephaven.TableTools import newTable, stringCol, intCol
-static_table = newTable(
-   stringCol("Name_String_Col", "Data String 1", 'Data String 2', "Data String 3"),
-   intCol("Name_Int_Col", 44, 55, 66)
+from deephaven2 import new_table
+from deephaven2.column import string_col, int_col
+
+static_table = new_table([
+   string_col("Name_String_Col", ["Data String 1", 'Data String 2', "Data String 3"]),
+   int_col("Name_Int_Col", [44, 55, 66])
 )
 ```
 \
@@ -42,9 +44,10 @@ static_table = newTable(
 ... and dynamically updating ones.
 
 ```python
-from deephaven.TableTools import timeTable
+from deephaven2 import time_table
+
 import random
-updating_table = timeTable('00:00:00.400').updateView("Row = i", "Some_Int = (int)random.randint(0,100)").reverse()
+updating_table = time_table('00:00:00.400').updateView("Row = i", "Some_Int = (int)(byte)random.randint(0,100)").reverse()
 ```
 
 
