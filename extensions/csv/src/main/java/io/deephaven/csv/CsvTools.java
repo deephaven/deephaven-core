@@ -23,6 +23,7 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.csv.CsvSpecs.Builder;
 import io.deephaven.csv.reading.CsvReader;
+import io.deephaven.csv.reading.CsvReader.ResultColumn;
 import io.deephaven.csv.sinks.Sink;
 import io.deephaven.csv.sinks.SinkFactory;
 import io.deephaven.csv.sinks.Source;
@@ -219,18 +220,12 @@ public class CsvTools {
     @ScriptApi
     public static Table readCsv(InputStream stream, CsvSpecs specs) throws CsvReaderException {
         final CsvReader.Result result = CsvReader.read(specs, stream, makeMySinkFactory());
-        final String[] columnNames = result.columnNames();
-        final Sink<?>[] sinks = result.columns();
-        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-        long maxSize = 0;
-        for (int ii = 0; ii < columnNames.length; ++ii) {
-            final String columnName = columnNames[ii];
-            final MySinkBase<?, ?> sink = (MySinkBase<?, ?>) sinks[ii];
-            maxSize = Math.max(maxSize, sink.resultSize());
-            columns.put(columnName, sink.result());
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>(result.numCols());
+        for (ResultColumn column : result) {
+            columns.put(column.name(), (ColumnSource<?>) column.data());
         }
         final TableDefinition tableDef = TableDefinition.inferFrom(columns);
-        final TrackingRowSet rowSet = RowSetFactory.flat(maxSize).toTracking();
+        final TrackingRowSet rowSet = RowSetFactory.flat(result.numRows()).toTracking();
         return InMemoryTable.from(tableDef, rowSet, columns);
     }
 
@@ -1013,6 +1008,11 @@ public class CsvTools {
         protected abstract void nullFlagsToValues(final TARRAY values, final boolean[] isNull, final int size);
 
         public ArrayBackedColumnSource<TYPE> result() {
+            return result;
+        }
+
+        @Override
+        public Object getUnderlying() {
             return result;
         }
 
