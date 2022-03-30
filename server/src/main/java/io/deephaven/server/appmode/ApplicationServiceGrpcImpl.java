@@ -25,10 +25,12 @@ import javax.inject.Singleton;
 import java.io.Closeable;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Singleton
 public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.ApplicationServiceImplBase
@@ -120,9 +122,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         accumulated.clear();
         if (!updater.isEmpty() && !subscriptions.isEmpty()) {
             final FieldsChangeUpdate update = updater.build();
-            for (Subscription subscription : subscriptions) {
-                subscription.send(update);
-            }
+            List<Subscription> subscriptionsToCancel = subscriptions.stream().filter(sub -> !sub.send(update)).collect(Collectors.toList());
+            subscriptionsToCancel.forEach(Subscription::onCancel);
         }
     }
 
@@ -233,12 +234,17 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             remove(this);
         }
 
-        // must be sync wrt parent
+        /**
+         * Sends an update to the subscribed client. Returns true if successful - if false, the client is no longer
+         * listening and this subscription should be canceled after iteration.
+         *
+         * @param changes the updates to inform the client of
+         * @return true if the message was sent, false if an error occurred and the subscription should be canceled
+         */
         private boolean send(FieldsChangeUpdate changes) {
             try {
                 observer.onNext(changes);
             } catch (RuntimeException ignored) {
-                onCancel();
                 return false;
             }
             return true;
