@@ -241,6 +241,7 @@ public class BarrageStreamGenerator implements
         public final long numAddBatches;
         public final long numModBatches;
         public final RowSet addRowOffsets;
+        public final RowSet addRowKeys;
         public final RowSet[] modRowOffsets;
 
         public SubView(final BarrageStreamGenerator generator,
@@ -283,13 +284,14 @@ public class BarrageStreamGenerator implements
             numModBatches = (numModRows + batchSize - 1) / batchSize;
 
             if (keyspaceViewport != null) {
-                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
-                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
-                }
+                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
+                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
             } else {
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
@@ -319,6 +321,7 @@ public class BarrageStreamGenerator implements
 
             // clean up the helper indexes
             addRowOffsets.close();
+            addRowKeys.close();
             if (modRowOffsets != null) {
                 for (final RowSet modViewport : modRowOffsets) {
                     modViewport.close();
@@ -727,9 +730,10 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
+
         // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-        if (view.keyspaceViewport != null && !rowsIncluded.original.equals(rowsAdded.original)) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
         }
 
         // now add mod-column streams, and write the mod column indexes
