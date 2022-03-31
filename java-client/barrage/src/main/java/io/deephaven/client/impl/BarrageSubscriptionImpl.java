@@ -147,18 +147,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public synchronized void waitForCompletion() throws InterruptedException {
-        while (!completed && exceptionWhileCompleting == null) {
-            // handle the condition where this function may have the exclusive lock
-            if (completedCondition != null) {
-                completedCondition.await();
-            } else {
-                wait(); // barragesnapshotimpl lock
-            }
-        }
-    }
-
-    @Override
     public BarrageTable entireTable() throws InterruptedException {
         return entireTable(true);
     }
@@ -186,8 +174,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
         }
-        if (!subscribed) {
-
+        if (subscribed) {
+            throw new UncheckedDeephavenException(
+                    "BarrageSubscription objects cannot be reused.");
+        } else {
             // test lock conditions
             if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
                 throw new UnsupportedOperationException(
@@ -196,9 +186,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
-
-                // wake up any active listeners and convert them to holding the exclusive lock
-                notifyAll();
             }
 
             // Send the initial subscription:
@@ -253,7 +240,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             resultTable.listenForUpdates(listener);
 
             if (blockUntilComplete) {
-                waitForCompletion();
+                while (!completed && exceptionWhileCompleting == null) {
+                    // handle the condition where this function may have the exclusive lock
+                    if (completedCondition != null) {
+                        completedCondition.await();
+                    } else {
+                        wait(); // barragesubscriptionimpl lock
+                    }
+                }
             }
         }
 
