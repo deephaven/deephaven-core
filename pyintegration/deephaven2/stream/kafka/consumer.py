@@ -9,7 +9,7 @@ import jpy
 
 from deephaven2 import dtypes
 from deephaven2._jcompat import j_hashmap, j_properties
-from deephaven2._wrapper_abc import JObjectWrapper
+from deephaven2._wrapper import JObjectWrapper
 from deephaven2.column import Column
 from deephaven2.dherror import DHError
 from deephaven2.dtypes import DType
@@ -23,7 +23,8 @@ _ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
 
 class TableType(Enum):
-    """ A Enum that defines the supported Table Type for consuming Kafka. """
+    """An Enum that defines the supported Table Type for consuming Kafka."""
+
     Stream = _JTableType.Stream
     """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
      to downstream operations and visualizations."""
@@ -55,9 +56,9 @@ _ALL_PARTITIONS_SEEK_TO_END = _JKafkaTools.ALL_PARTITIONS_SEEK_TO_END
 
 
 class KeyValueSpec(JObjectWrapper):
-    _j_spec: jpy.JType
+    j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume$KeyOrValueSpec")
 
-    def __init__(self, j_spec):
+    def __init__(self, j_spec: jpy.JType):
         self._j_spec = j_spec
 
     @property
@@ -82,17 +83,23 @@ def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], st
 
 
 def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
-    """ Converts a list of two-element tuples in the form of (name, DType) to a list of Columns. """
+    """Converts a list of two-element tuples in the form of (name, DType) to a list of Columns."""
     cols = []
     for t in ts:
         cols.append(Column(*t))
     return cols
 
 
-def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offsets: Dict[int, int] = None,
-            key_spec: KeyValueSpec = None, value_spec: KeyValueSpec = None,
-            table_type: TableType = TableType.Stream) -> Table:
-    """ Consume from Kafka to a Deephaven table.
+def consume(
+    kafka_config: Dict,
+    topic: str,
+    partitions: List[int] = None,
+    offsets: Dict[int, int] = None,
+    key_spec: KeyValueSpec = None,
+    value_spec: KeyValueSpec = None,
+    table_type: TableType = TableType.Stream,
+) -> Table:
+    """Consume from Kafka to a Deephaven table.
 
     Args:
         kafka_config (Dict): configuration for the associated Kafka consumer and also the resulting table.
@@ -139,28 +146,41 @@ def consume(kafka_config: Dict, topic: str, partitions: List[int] = None, offset
         elif offsets == ALL_PARTITIONS_SEEK_TO_END:
             offsets = _ALL_PARTITIONS_SEEK_TO_END
         else:
-            partitions_array = jpy.array('int', list(offsets.keys()))
-            offsets_array = jpy.array('long', list(offsets.values()))
-            offsets = _JKafkaTools.partitionToOffsetFromParallelArrays(partitions_array, offsets_array)
+            partitions_array = jpy.array("int", list(offsets.keys()))
+            offsets_array = jpy.array("long", list(offsets.values()))
+            offsets = _JKafkaTools.partitionToOffsetFromParallelArrays(
+                partitions_array, offsets_array
+            )
 
         key_spec = KeyValueSpec.FROM_PROPERTIES if key_spec is None else key_spec
         value_spec = KeyValueSpec.FROM_PROPERTIES if value_spec is None else value_spec
 
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
-            raise ValueError(
-                "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
+            raise ValueError("at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
 
         kafka_config = j_properties(kafka_config)
-        return Table(j_table=_JKafkaTools.consumeToTable(kafka_config, topic, partitions, offsets, key_spec.j_object,
-                                                         value_spec.j_object,
-                                                         table_type.value))
+        return Table(
+            j_table=_JKafkaTools.consumeToTable(
+                kafka_config,
+                topic,
+                partitions,
+                offsets,
+                key_spec.j_object,
+                value_spec.j_object,
+                table_type.value,
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
 
-def avro_spec(schema: str, schema_version: str = "latest", mapping: Dict[str, str] = None,
-              mapped_only: bool = False) -> KeyValueSpec:
-    """ Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
+def avro_spec(
+    schema: str,
+    schema_version: str = "latest",
+    mapping: Dict[str, str] = None,
+    mapped_only: bool = False,
+) -> KeyValueSpec:
+    """Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
     Args:
         schema (str): the name for a schema registered in a Confluent compatible Schema Server. The associated
@@ -184,22 +204,30 @@ def avro_spec(schema: str, schema_version: str = "latest", mapping: Dict[str, st
             mapping = _dict_to_j_func(mapping, mapped_only)
 
         if mapping:
-            return KeyValueSpec(j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version, mapping))
+            return KeyValueSpec(
+                j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version, mapping)
+            )
         else:
-            return KeyValueSpec(j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version))
+            return KeyValueSpec(
+                j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version)
+            )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
 def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyValueSpec:
-    """ Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
+    """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
         col_defs (List[Tuple[str, DType]]):  a list of tuples specifying names and types for columns to be
             created on the resulting Deephaven table.  Tuples contain two elements, a string for column name
             and a Deephaven type for column data type.
-        mapping (Dict): a map from JSON field names to column names defined in the col_defs argument, default is None,
-            meaning a 1:1 mapping between JSON fields and Deephaven table column names
+        mapping (Dict):  a dict mapping JSON fields to column names defined in the col_defs
+            argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
+            ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
+            Fields not starting with a '/' character are interpreted as toplevel field names.
+            If the mapping argument is not present or None, a 1:1 mapping between JSON fields and Deephaven
+           table column names is assumed.
 
     Returns:
         a KeyValueSpec
@@ -218,7 +246,7 @@ def json_spec(col_defs: List[Tuple[str, DType]], mapping: Dict = None) -> KeyVal
 
 
 def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
-    """ Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a
+    """Creates a spec that defines a single column to receive the key or value of a Kafka message when consuming a
     Kafka stream to a Deephaven table.
 
     Args:
@@ -234,6 +262,8 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
     try:
         if data_type is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.simpleSpec(col_name))
-        return KeyValueSpec(j_spec=_JKafkaTools_Consume.simpleSpec(col_name, data_type.qst_type.clazz()))
+        return KeyValueSpec(
+            j_spec=_JKafkaTools_Consume.simpleSpec(col_name, data_type.qst_type.clazz())
+        )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e

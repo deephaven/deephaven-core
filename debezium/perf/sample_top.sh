@@ -2,8 +2,17 @@
 
 set -eu
 
-if [ $# -ne 3 -o \( "$1" != 'dh' -a "$1" != 'mz' \) ]; then
+usage_and_exit() {
     echo "Usage: $0 mz|dh rate nsamples delay_sec"
+    exit 1
+}
+
+if [ "$#" -ne 3 ]; then
+    usage_and_exit
+fi
+
+if [ "$1" != 'dh' -a "$1" != 'mz' ]; then
+    usage_and_exit
 fi
 
 engine=$1

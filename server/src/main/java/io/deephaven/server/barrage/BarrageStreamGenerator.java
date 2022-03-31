@@ -727,7 +727,8 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.keyspaceViewport != null) {
+        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+        if (view.keyspaceViewport != null && !rowsIncluded.original.equals(rowsAdded.original)) {
             addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
         }
 

@@ -3,10 +3,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    js
-}
-
 dependencies {
     implementation project(':server')
 
@@ -30,7 +26,7 @@ dependencies {
 
     testImplementation project(':server-test')
 
-    runtimeOnly(project(path: ':web', targetConfiguration: 'jsJar'))
+    runtimeOnly(project(':web'))
 }
 
 test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false

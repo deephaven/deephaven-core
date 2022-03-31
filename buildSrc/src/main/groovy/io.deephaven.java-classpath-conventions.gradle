@@ -6,7 +6,6 @@ plugins {
 // TODO(deephaven-core#1162): Adopt java-platform to manage versions
 ext {
     depAnnotations = 'com.intellij:annotations:5.1'
-    depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
     depCommonsCodec = 'commons-codec:commons-codec:1.9'
     depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
@@ -82,8 +81,7 @@ dependencies {
     fishUtil project(':FishUtil')
 
     fishStats project(':Net'),
-            project(':Stats'),
-            'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
+            project(':Stats')
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
 

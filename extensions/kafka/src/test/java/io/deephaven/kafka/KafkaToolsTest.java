@@ -65,10 +65,10 @@ public class KafkaToolsTest {
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
-        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "Symbol",
+        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Symbol",
                 colDefs.get(0).getName());
         assertEquals(String.class, colDefs.get(0).getDataType());
-        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "Price",
+        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Price",
                 colDefs.get(1).getName());
         assertEquals(double.class, colDefs.get(1).getDataType());
     }
@@ -155,29 +155,32 @@ public class KafkaToolsTest {
     public void testAvroSchemaWithMoreNesting() {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithMoreNesting);
         Function<String, String> mapping = (final String fieldName) -> {
-            if ("NestedFields2.NestedFields3.field4".equals(fieldName)) {
+            if (("NestedFields2" +
+                    KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                    "NestedFields3" +
+                    KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                    "field4").equals(fieldName)) {
                 return "field4";
             }
-            return fieldName;
+            return KafkaTools.DIRECT_MAPPING.apply(fieldName);
         };
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema, mapping);
         final int nCols = 4;
         assertEquals(nCols, colDefs.size());
         int c = 0;
-        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "field1",
+        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field1",
                 colDefs.get(c).getName());
         assertEquals(int.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "field2",
+        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field2",
                 colDefs.get(c).getName());
         assertEquals(float.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
-                "NestedFields3" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR +
+                "NestedFields3" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR +
                 "field3",
                 colDefs.get(c).getName());
         assertEquals(long.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
-                "NestedFields3" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+        assertEquals(
                 "field4",
                 colDefs.get(c).getName());
         assertEquals(double.class, colDefs.get(c++).getDataType());

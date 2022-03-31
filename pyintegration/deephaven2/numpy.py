@@ -2,15 +2,14 @@
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """ This module supports the conversion between Deephaven tables and numpy arrays. """
+import re
 from typing import List
 
 import jpy
 import numpy as np
-import re
 
 from deephaven2 import DHError, dtypes, empty_table, new_table
 from deephaven2.column import Column, InputColumn
-from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -30,8 +29,8 @@ def freeze_table(table: Table) -> Table:
 
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
-    tmp_name = re.sub("\W+", " ", str(name)).strip()
-    return re.sub("\s+", "_", tmp_name)
+    tmp_name = re.sub(r"\W+", " ", str(name)).strip()
+    return re.sub(r"\s+", "_", tmp_name)
 
 
 def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:

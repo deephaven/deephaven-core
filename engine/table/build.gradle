@@ -52,6 +52,8 @@ dependencies {
 
     runtimeOnly project(':engine-tuplesource')
 
+    implementation 'com.google.guava:guava:19.0'
+
     testImplementation TestTools.projectDependency(project, 'Base'),
             TestTools.projectDependency(project, 'Util'),
             TestTools.projectDependency(project, 'engine-chunk'),

@@ -1,5 +1,6 @@
 package io.deephaven.kafka.ingest;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.ObjectChunk;
@@ -9,18 +10,23 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 
 public class JsonNodeBooleanFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final JsonPointer fieldPointer;
 
-    public JsonNodeBooleanFieldCopier(String fieldName) {
-        this.fieldName = fieldName;
+    public JsonNodeBooleanFieldCopier(final String fieldPointerStr) {
+        this.fieldPointer = JsonPointer.compile(fieldPointerStr);
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+    public void copyField(
+            final ObjectChunk<Object, Values> inputChunk,
+            final WritableChunk<Values> publisherChunk,
+            final int sourceOffset,
+            final int destOffset,
+            final int length) {
         final WritableByteChunk<Values> output = publisherChunk.asWritableByteChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
-            final String valueAsString = JsonNodeUtil.getString(node, fieldName, true, true);
+            final String valueAsString = JsonNodeUtil.getString(node, fieldPointer, true, true);
             final Boolean valueAsBoolean;
             if (valueAsString == null) {
                 valueAsBoolean = null;
@@ -45,7 +51,7 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
                         valueAsBoolean = null;
                         break;
                     default:
-                        throw new UncheckedDeephavenException("value " + valueAsString + " not recognized as Boolean for field " + fieldName);
+                        throw new UncheckedDeephavenException("value " + valueAsString + " not recognized as Boolean for field " + fieldPointer);
                 }
             }
             output.set(ii + destOffset, BooleanUtils.booleanAsByte(valueAsBoolean));

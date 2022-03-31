@@ -1,15 +1,16 @@
 package io.deephaven.kafka.ingest;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.time.DateTimeUtils;
 
 public class JsonNodeDateTimeFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final JsonPointer fieldPointer;
 
-    public JsonNodeDateTimeFieldCopier(String fieldName) {
-        this.fieldName = fieldName;
+    public JsonNodeDateTimeFieldCopier(final String fieldPointerStr) {
+        this.fieldPointer = JsonPointer.compile(fieldPointerStr);
     }
 
     @Override
@@ -22,7 +23,7 @@ public class JsonNodeDateTimeFieldCopier implements FieldCopier {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
-            final long valueAsLong = JsonNodeUtil.getLong(node, fieldName, true, true);
+            final long valueAsLong = JsonNodeUtil.getLong(node, fieldPointer, true, true);
             output.set(ii + destOffset, DateTimeUtils.autoEpochToNanos(valueAsLong));
         }
     }

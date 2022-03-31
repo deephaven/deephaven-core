@@ -54,11 +54,11 @@
 # From web UI do:
 #
 #    > import deephaven.Types as dh
-#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_) ]), table_type='append')
+#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_), ('UserName', dh.string), ('UserId', dh.int_) ], mapping = { '/User/Name' : 'UserName', '/User/Id' : 'UserId'}), table_type='append')
 #
 # Run this script on the host (not on a docker image) to produce one row:
 #
-#    $ python3 kafka-produce.py orders 0 '' 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
+#    $ python3 kafka-produce.py orders 0 '' str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200", "User" : { "Name" : "Pepo", "Id" : 1234 } }'
 #
 # You should see one row of data as per above showing up in the UI.
 #

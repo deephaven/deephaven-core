@@ -448,7 +448,7 @@ public class ConstructSnapshot {
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot) {
         return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot,
-                makeSnapshotControl(false, table));
+                makeSnapshotControl(false, table.isRefreshing(), table));
     }
 
     static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
@@ -482,7 +482,7 @@ public class ConstructSnapshot {
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet positionsToSnapshot) {
         return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, makeSnapshotControl(false, table));
+                positionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
     }
 
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
@@ -540,7 +540,8 @@ public class ConstructSnapshot {
             @Nullable final RowSet positionsToSnapshot,
             @Nullable final RowSet reversePositionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, reversePositionsToSnapshot, makeSnapshotControl(false, table));
+                positionsToSnapshot, reversePositionsToSnapshot,
+                makeSnapshotControl(false, table.isRefreshing(), table));
     }
 
     /**
@@ -820,31 +821,37 @@ public class ConstructSnapshot {
      * Make a default {@link SnapshotControl} for a single source.
      *
      * @param notificationAware Whether the result should be concerned with not missing notifications
+     * @param refreshing Whether the data source (usually a {@link Table} table) is refreshing (vs static)
      * @param source The source
      * @return An appropriate {@link SnapshotControl}
      */
-    public static SnapshotControl makeSnapshotControl(final boolean notificationAware,
+    public static SnapshotControl makeSnapshotControl(final boolean notificationAware, final boolean refreshing,
             @NotNull final NotificationStepSource source) {
-        return notificationAware
-                ? new NotificationAwareSingleSourceSnapshotControl(source)
-                : new NotificationObliviousSingleSourceSnapshotControl(source);
+        return refreshing
+                ? notificationAware
+                        ? new NotificationAwareSingleSourceSnapshotControl(source)
+                        : new NotificationObliviousSingleSourceSnapshotControl(source)
+                : StaticSnapshotControl.INSTANCE;
     }
 
     /**
      * Make a default {@link SnapshotControl} for one or more sources.
      *
      * @param notificationAware Whether the result should be concerned with not missing notifications
+     * @param refreshing Whether any of the data sources (usually {@link Table tables}) are refreshing (vs static)
      * @param sources The sources
      * @return An appropriate {@link SnapshotControl}
      */
-    public static SnapshotControl makeSnapshotControl(final boolean notificationAware,
+    public static SnapshotControl makeSnapshotControl(final boolean notificationAware, final boolean refreshing,
             @NotNull final NotificationStepSource... sources) {
         if (sources.length == 1) {
-            return makeSnapshotControl(notificationAware, sources[0]);
+            return makeSnapshotControl(notificationAware, refreshing, sources[0]);
         }
-        return notificationAware
-                ? new NotificationAwareMultipleSourceSnapshotControl(sources)
-                : new NotificationObliviousMultipleSourceSnapshotControl(sources);
+        return refreshing
+                ? notificationAware
+                        ? new NotificationAwareMultipleSourceSnapshotControl(sources)
+                        : new NotificationObliviousMultipleSourceSnapshotControl(sources)
+                : StaticSnapshotControl.INSTANCE;
     }
 
     /**
