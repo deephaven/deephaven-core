@@ -10,11 +10,12 @@ Let's start by importing everything we need.  We split up the imports into three
 
 ```python
 # Deephaven imports
-from deephaven import dataFrameToTable, tableToDataFrame
-from deephaven import DynamicTableWriter
-from deephaven import learn, read_csv
-from deephaven.learn import gather
-import deephaven.Types as dht
+from deephaven2.pandas import to_pandas, to_table
+from deephaven2 import DynamicTableWriter
+from deephaven2 import dtypes as dht
+from deephaven2.learn import gather
+from deephaven2.csv import read
+from deephaven2 import learn
 
 # PyTorch imports
 import torch.nn.functional as F
@@ -31,8 +32,8 @@ import numpy as np
 We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
 
 ```python
-iris_raw = read_csv("/data/examples/Iris/csv/iris.csv")
-raw_iris = tableToDataFrame(iris_raw)
+iris_raw = read("/data/examples/Iris/csv/iris.csv")
+raw_iris = to_pandas(table = iris_raw)
 ```
 \
 \
@@ -42,8 +43,8 @@ We now have the data in memory.  We need to split it into training and testing s
 raw_iris_train = raw_iris.sample(frac = 0.8)
 raw_iris_test = raw_iris.drop(raw_iris_train.index)
 
-iris_train_raw = dataFrameToTable(raw_iris_train)
-iris_test_raw = dataFrameToTable(raw_iris_test)
+iris_train_raw = to_table(df = raw_iris_train)
+iris_test_raw = to_table(df = raw_iris_test)
 ```
 \
 \
@@ -59,8 +60,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update("Class = (int)get_class_number(Class)")
-iris_test = iris_train_raw.update("Class = (int)get_class_number(Class)")
+iris_train = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris_test = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
 ```
 \
 \
@@ -132,11 +133,11 @@ There's one last step we need to take before we do the machine learning.  We nee
 ```python
 # A function to gather double values from a table into a torch tensor
 def table_to_tensor_double(rows, columns):
-    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, dtype = np.double)))
+    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, np_type = np.double)))
 
 # A function to gather integer values from a table into a torch tensor
 def table_to_tensor_integer(rows, columns):
-    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, dtype = int)))
+    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, np_type = int)))
 
 # A function to scatter integer model predictions back into a table
 def tensor_to_table_integer(predictions, index):
@@ -185,11 +186,10 @@ With these quantities now calculated and stored in memory, we need to set up a l
 
 ```python
 table_writer = DynamicTableWriter(
-    ["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"],
-    [dht.double] * 4
+    {"SepalLengthCM": dht.double, "SepalWidthCM": dht.double, "PetalLengthCM": dht.double, "PetalWidthCM": dht.double}
 )
 
-live_iris = table_writer.getTable()
+live_iris = table_writer.table
 
 def write_faux_iris_measurements():
     for i in range(60):
@@ -198,7 +198,7 @@ def write_faux_iris_measurements():
         petal_length = np.round(random.uniform(min_petal_length, max_petal_length), 1)
         petal_width = np.round(random.uniform(min_petal_width, max_petal_width), 1)
 
-        table_writer.logRow(sepal_length, sepal_width, petal_length, petal_width)
+        table_writer.write_row(sepal_length, sepal_width, petal_length, petal_width)
         time.sleep(1)
 
 thread = threading.Thread(target = write_faux_iris_measurements)

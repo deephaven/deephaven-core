@@ -10,11 +10,12 @@ Let's start by importing everything we need.  We split up the imports into three
 
 ```python
 # Deephaven imports
-from deephaven import dataFrameToTable, tableToDataFrame
-from deephaven import DynamicTableWriter
-from deephaven import learn, read_csv
-from deephaven.learn import gather
-import deephaven.Types as dht
+from deephaven2.pandas import to_pandas, to_table
+from deephaven2 import DynamicTableWriter
+from deephaven2 import dtypes as dht
+from deephaven2.learn import gather
+from deephaven2.csv import read
+from deephaven2 import learn
 
 # SciKit-Learn imports
 from sklearn.neighbors import KNeighborsClassifier as knn
@@ -30,7 +31,7 @@ We will now import our data into Deephaven as a Pandas dataframe and as a table.
 
 ```python
 iris_raw = read_csv("/data/examples/Iris/csv/iris.csv")
-raw_iris = tableToDataFrame(iris_raw)
+raw_iris = to_pandas(table = iris_raw)
 ```
 \
 \
@@ -40,8 +41,8 @@ We now have the data in memory.  We need to split it into training and testing s
 raw_iris_train = raw_iris.sample(frac = 0.8)
 raw_iris_test = raw_iris.drop(raw_iris_train.index)
 
-iris_train_raw = dataFrameToTable(raw_iris_train)
-iris_test_raw = dataFrameToTable(raw_iris_test)
+iris_train_raw = to_table(df = raw_iris_train)
+iris_test_raw = to_table(df = raw_iris_test)
 ```
 \
 \
@@ -57,8 +58,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update("Class = (int)get_class_number(Class)")
-iris_test = iris_test_raw.update("Class = (int)get_class_number(Class)")
+iris_train = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris_test = iris_test_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
 ```
 \
 \
@@ -91,11 +92,11 @@ There's one more step we need to take before we use these functions.  We have to
 ```python
 # A function to gather data from columns into a NumPy array of doubles
 def table_to_array_double(rows, cols):
-    return gather.table_to_numpy_2d(rows, cols, dtype = np.double)
+    return gather.table_to_numpy_2d(rows, cols, np_type = np.double)
 
 # A function to gather data from columns into a NumPy array of integers
 def table_to_array_int(rows, cols):
-    return np.squeeze(gather.table_to_numpy_2d(rows, cols, dtype = np.intc))
+    return np.squeeze(gather.table_to_numpy_2d(rows, cols, np_type = np.intc))
 
 # A function to extract a list element and cast to an integer
 def get_predicted_class(data, idx):
@@ -145,12 +146,11 @@ With these quantities now calculated and stored in memory, we need to set up ali
 ```python
 # Create the table writer
 table_writer = DynamicTableWriter(
-    ["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"],
-    [dht.double, dht.double, dht.double, dht.double]
+    {"SepalLengthCM": dht.double, "SepalWidthCM": dht.double, "PetalLengthCM": dht.double, "PetalWidthCM": dht.double}
 )
 
 # Get the live, ticking table
-live_iris = table_writer.getTable()
+live_iris = table_writer.table
 
 # This function creates faux Iris measurements once per second for a minute
 def write_to_iris():
@@ -160,7 +160,7 @@ def write_to_iris():
         sepal_length = random.randint(43, 79) / 10
         sepal_width = random.randint(20, 44) / 10
 
-        table_writer.logRow(sepal_length, sepal_width, petal_length, petal_width)
+        table_writer.write_row(sepal_length, sepal_width, petal_length, petal_width)
         time.sleep(1)
 
 # Use a thread to write data to the table
