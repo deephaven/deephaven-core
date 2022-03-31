@@ -75,13 +75,13 @@ class TimeZone(Enum):
     UTC = _JTimeZone.TZ_UTC
     """ UTC """
 
-    @classmethod
-    def get_default_timezone(cls) -> TimeZone:
+    @staticmethod
+    def get_default_timezone() -> TimeZone:
         """ Gets the default time zone. """
         return TimeZone(_JTimeZone.getTzDefault())
 
-    @classmethod
-    def set_default_timezone(cls, tz: TimeZone) -> None:
+    @staticmethod
+    def set_default_timezone(tz: TimeZone) -> None:
         """ Sets the default time zone.
 
         Args:
