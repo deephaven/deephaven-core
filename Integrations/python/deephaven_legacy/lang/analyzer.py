@@ -12,9 +12,9 @@ from ast import NodeVisitor, fix_missing_locations, dump
 from collections import OrderedDict
 from numpy.core.multiarray import dtype
 
-from deephaven.lang.ListBasedSet import ListBasedSet
-from deephaven.lang.constants import debugMode, timingMode, default_globals
-from deephaven.lang.tools import new_func, assign, read, method_call, field_read, merge_two_dicts, to_numba_type, \
+from deephaven_legacy.lang.ListBasedSet import ListBasedSet
+from deephaven_legacy.lang.constants import debugMode, timingMode, default_globals
+from deephaven_legacy.lang.tools import new_func, assign, read, method_call, field_read, merge_two_dicts, to_numba_type, \
     arg_or_name, values
 
 

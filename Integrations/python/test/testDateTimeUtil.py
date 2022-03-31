@@ -11,7 +11,7 @@ import sys
 import jpy
 import time
 
-from deephaven import DateTimeUtils
+from deephaven_legacy import DateTimeUtils
 
 if sys.version_info[0] < 3:
     int = long  # cheap python2/3 compliance - probably only required on a 32 bit system

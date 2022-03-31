@@ -13,7 +13,7 @@ import re
 import logging
 import warnings
 
-from deephaven import initialize
+from deephaven_legacy import initialize
 from .conversion_utils import _isStr
 
 

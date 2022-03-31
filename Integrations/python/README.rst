@@ -1,5 +1,5 @@
-Deephaven Python Package
-========================
+Deephaven Python Package (legacy)
+================================
 
 This project is for the deephaven python package on PyPI.
 
@@ -11,5 +11,5 @@ This package provides provide Python integrations for Deephaven.
 Usage
 -----
 
-    >>> import deephaven
+    >>> import deephaven_legacy
     >>> ...

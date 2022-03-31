@@ -13,10 +13,10 @@ import numba
 import numpy
 from numba.types import Type
 
-from deephaven.lang.constants import primitive_types, VecMode
-from deephaven.lang.tools import param, method_call, field_read, read, write, decorate, new_func, assign, array_access, \
+from deephaven_legacy.lang.constants import primitive_types, VecMode
+from deephaven_legacy.lang.tools import param, method_call, field_read, read, write, decorate, new_func, assign, array_access, \
     write_array, new_list, check_if_none, keyword_arg, num_size, int_or_float, itr, values, read_none, arg_or_name
-from deephaven.lang.analyzer import Analyzer
+from deephaven_legacy.lang.analyzer import Analyzer
 
 
 # The methods we are overriding have non-standard uppercase in their names.

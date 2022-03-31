@@ -1,5 +1,5 @@
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
-from deephaven.Plot import FigureWrapper
+from deephaven_legacy.Plot import FigureWrapper
 from jpy import JType
 
 from deephaven2._wrapper import JObjectWrapper

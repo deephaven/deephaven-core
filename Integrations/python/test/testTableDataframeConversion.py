@@ -12,8 +12,8 @@ import numpy
 import pandas
 from datetime import datetime
 
-from deephaven import TableTools, tableToDataFrame, dataFrameToTable, createTableFromData
-from deephaven.conversion_utils import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, \
+from deephaven_legacy import TableTools, tableToDataFrame, dataFrameToTable, createTableFromData
+from deephaven_legacy.conversion_utils import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, \
     convertToJavaArray, convertToJavaList, convertToJavaArrayList, convertToJavaHashSet, \
     convertToJavaHashMap
 

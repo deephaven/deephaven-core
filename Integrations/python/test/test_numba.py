@@ -8,7 +8,7 @@ from unittest import TestCase
 import numpy as np
 from numba import jit, vectorize, guvectorize
 
-from deephaven.lang.tools import int32_, int64_
+from deephaven_legacy.lang.tools import int32_, int64_
 
 
 @jit(['int32[::1](int32[::1],int32[::1])', 'int64[::1](int64[::1],int64[::1])'], nopython=True)

@@ -8,12 +8,12 @@ import sys
 import jpy
 import wrapt
 
-import deephaven.Types as dh
+import deephaven_legacy.Types as dh
 
-from deephaven.conversion_utils import \
+from deephaven_legacy.conversion_utils import \
     _dictToFunWithIdentity, _dictToFunWithDefault, _dictToMap, _dictToProperties, _isStr
 
-from deephaven.Types import _jclassFromType
+from deephaven_legacy.Types import _jclassFromType
 
 # None until the first _defineSymbols() call
 _java_type_ = None

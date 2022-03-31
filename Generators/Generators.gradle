@@ -169,7 +169,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
 
         // TODO move these to a later sync task, so that we detect changes and minimally build images
         // Copy existing generated JSON to where the image can get it - remove if we stop checking in JSON
-        from("$devRoot/Integrations/python/deephaven") {
+        from("$devRoot/Integrations/python/deephaven_legacy") {
             // allow javadocExtraction.py to verify existing json
             include 'doc'
             // allow manualDocstrings.py to verify existing json
@@ -198,7 +198,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
     parentContainers = [ Docker.registryTask(project, 'python') ]
     imageName = 'deephaven/pydocs:local-build'
     copyOut {
-        into("$devRoot/Integrations/python/deephaven")
+        into("$devRoot/Integrations/python/deephaven_legacy")
         preserve {// only overwrite doc and docCustom directories
             include '**/*'
             exclude 'doc'
@@ -219,24 +219,24 @@ tasks.register("generatePyDocAssert") {
 }
 
 def pythonStaticMethodsArgs = ['io.deephaven.time.calendar.Calendars',
-                                    '/Integrations/python/deephaven/Calendars/__init__.py',
+                                    '/Integrations/python/deephaven_legacy/Calendars/__init__.py',
                                'io.deephaven.time.DateTimeUtils',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilsPreamble.txt',
-                                    '/Integrations/python/deephaven/DateTimeUtils/__init__.py',
+                                    '/Integrations/python/deephaven_legacy/DateTimeUtils/__init__.py',
                                'io.deephaven.parquet.table.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/ParquetTools/__init__.py',
+                                    '/Integrations/python/deephaven_legacy/ParquetTools/__init__.py',
                                'io.deephaven.engine.util.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
-                                    '/Integrations/python/deephaven/TableTools/__init__.py',
+                                    '/Integrations/python/deephaven_legacy/TableTools/__init__.py',
                                'io.deephaven.plot.colors.ColorMaps',
-                                   '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
+                                   '/Integrations/python/deephaven_legacy/Plot/ColorMaps/__init__.py',
                                'io.deephaven.engine.util.WindowCheck',
-                                    '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
+                                    '/Integrations/python/deephaven_legacy/TableManipulation/WindowCheck.py',
                                'io.deephaven.engine.table.impl.util.TableLoggers',
-                                    '/Integrations/python/deephaven/TableLoggers/__init__.py',
+                                    '/Integrations/python/deephaven_legacy/TableLoggers/__init__.py',
                                'io.deephaven.engine.table.impl.util.PerformanceQueries',
-                                    '/Integrations/python/deephaven/PerformanceQueries/__init__.py']
+                                    '/Integrations/python/deephaven_legacy/PerformanceQueries/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonIntegrationStaticMethods'
