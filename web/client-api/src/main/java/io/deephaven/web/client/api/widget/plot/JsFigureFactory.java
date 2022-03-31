@@ -84,16 +84,17 @@ public class JsFigureFactory {
                                             figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
                                         }
                                     }));
-                                    removerFns.add(tableCopies[i].addEventListener(JsTable.EVENT_RECONNECTFAILED, err -> {
-                                        for (RemoverFn removerFn : removerFns) {
-                                            removerFn.remove();
-                                        }
-                                        figure.unsubscribe();
+                                    removerFns
+                                            .add(tableCopies[i].addEventListener(JsTable.EVENT_RECONNECTFAILED, err -> {
+                                                for (RemoverFn removerFn : removerFns) {
+                                                    removerFn.remove();
+                                                }
+                                                figure.unsubscribe();
 
-                                        final CustomEventInit init = CustomEventInit.create();
-                                        init.setDetail(err);
-                                        figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
-                                    }));
+                                                final CustomEventInit init = CustomEventInit.create();
+                                                init.setDetail(err);
+                                                figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                            }));
                                 }
 
                                 return Promise.resolve(new JsFigure.FigureTableFetchData(
