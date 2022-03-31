@@ -23,6 +23,7 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Singleton
 public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.ApplicationServiceImplBase
@@ -122,8 +122,10 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         accumulated.clear();
         if (!updater.isEmpty() && !subscriptions.isEmpty()) {
             final FieldsChangeUpdate update = updater.build();
-            List<Subscription> subscriptionsToCancel = subscriptions.stream().filter(sub -> !sub.send(update)).collect(Collectors.toList());
-            subscriptionsToCancel.forEach(Subscription::onCancel);
+            // Send updates to all subscriptions, if they fail to handle the update, cancel the subscription
+            List<Subscription> toCancel = new ArrayList<>(subscriptions);
+            toCancel.removeIf(s -> s.send(update));
+            toCancel.forEach(Subscription::onCancel);
         }
     }
 
