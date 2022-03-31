@@ -70,7 +70,7 @@ autodoc_typehints = 'none'
 
 #########################################################################################################################################################################
 
-import deephaven
+import deephaven_legacy
 import deephaven2
 import jpy
 docs_title = "Deephaven python modules."
