@@ -44,7 +44,8 @@ public class JsFigureFactory {
                 tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
         return Promise.all(tableCopyPromises)
                 .then(unknownTableCopies -> {
-                    JsTable[] tableCopies = Js.uncheckedCast(unknownTableCopies);
+                    JsArray<JsTable> jsTableCopies = Js.cast(unknownTableCopies);
+                    JsTable[] tableCopies = jsTableCopies.asArray(new JsTable[0]);
                     return new JsFigure(
                             c -> c.apply(null, response),
                             (figure, descriptor1) -> {
