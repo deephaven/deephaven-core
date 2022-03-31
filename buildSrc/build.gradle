@@ -39,4 +39,3 @@ dependencies {
         because('needed by plugin java-header-conventions')
     }
 }
-

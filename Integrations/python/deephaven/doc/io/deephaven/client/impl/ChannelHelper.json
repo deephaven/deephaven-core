@@ -1,9 +1,7 @@
 {
  "className": "io.deephaven.client.impl.ChannelHelper",
  "methods": {
-  "channel": ":param target: io.deephaven.uri.DeephavenTarget\n:return: io.grpc.ManagedChannel",
-  "channelBuilder": ":param target: io.deephaven.uri.DeephavenTarget\n:return: io.grpc.ManagedChannelBuilder<?>",
-  "port": ":param target: io.deephaven.uri.DeephavenTarget\n:return: int"
+  "channelBuilder": "Creates a basic ManagedChannelBuilder by invoking\n Grpc.newChannelBuilder(String, ChannelCredentials) with DeephavenTarget.toString() and the\n appropriate CallCredentials.\n\n:param target: (io.deephaven.uri.DeephavenTarget) - the Deephaven target\n:return: (io.grpc.ManagedChannelBuilder<?>) the channel builder"
  },
  "path": "io.deephaven.client.impl.ChannelHelper",
  "typeName": "class"

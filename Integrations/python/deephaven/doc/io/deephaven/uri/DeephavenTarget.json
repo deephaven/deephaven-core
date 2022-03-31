@@ -9,7 +9,7 @@
   "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
   "of": "Parses the targetUri into a Deephaven target.\n\n \n The valid formats include dh://host, dh://host:port, dh+plain://host, and\n dh+plain://host:port.\n\n:param targetUri: (java.net.URI) - the target URI\n:return: (io.deephaven.uri.DeephavenTarget) the Deephaven target",
   "port": "The optional port.\n\n:return: (java.util.OptionalInt) the port",
-  "toString": ":return: java.lang.String",
+  "toString": "The target as a URI string.\n\n:return: (java.lang.String) the URI string",
   "toURI": "The target as a URI.\n\n:return: (java.net.URI) the URI"
  },
  "path": "io.deephaven.uri.DeephavenTarget",

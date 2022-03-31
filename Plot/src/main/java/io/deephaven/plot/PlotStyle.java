@@ -63,6 +63,9 @@ public enum PlotStyle {
      */
     SCATTER,
 
+    /**
+     * A step plot.
+     */
     STEP,
 
     /**

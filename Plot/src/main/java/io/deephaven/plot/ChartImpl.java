@@ -383,9 +383,9 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
 
     @Override
-    public ChartImpl chartRemoveSeries(final String... names) {
+    public ChartImpl chartRemoveSeries(final String... removeSeriesNames) {
         for (Axes ax : axes) {
-            ax.axesRemoveSeries(names);
+            ax.axesRemoveSeries(removeSeriesNames);
         }
 
         return this;
@@ -449,14 +449,14 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     @Override
-    public Chart maxRowsInTitle(final int maxRowsCount) {
+    public Chart maxRowsInTitle(final int maxTitleRows) {
         if (chartTitle == null) {
             chartTitle = new ChartTitle(getPlotInfo());
         }
 
         // we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any order.
-        this.maxVisibleRowsCount = maxRowsCount;
-        chartTitle.maxVisibleRowsCount = maxRowsCount;
+        this.maxVisibleRowsCount = maxTitleRows;
+        chartTitle.maxVisibleRowsCount = maxTitleRows;
         return this;
     }
 
@@ -486,21 +486,21 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     ////////////////////////// Grid Lines //////////////////////////
 
     @Override
-    public Chart gridLinesVisible(final boolean visible) {
-        xGridLinesVisible(visible);
-        yGridLinesVisible(visible);
+    public Chart gridLinesVisible(final boolean gridVisible) {
+        xGridLinesVisible(gridVisible);
+        yGridLinesVisible(gridVisible);
         return this;
     }
 
     @Override
-    public Chart xGridLinesVisible(final boolean visible) {
-        this.displayXGridLines = visible;
+    public Chart xGridLinesVisible(final boolean xGridVisible) {
+        this.displayXGridLines = xGridVisible;
         return this;
     }
 
     @Override
-    public Chart yGridLinesVisible(final boolean visible) {
-        this.displayYGridLines = visible;
+    public Chart yGridLinesVisible(final boolean yGridVisible) {
+        this.displayYGridLines = yGridVisible;
         return this;
     }
 
@@ -551,14 +551,14 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     @Override
-    public ChartImpl colSpan(final int n) {
-        resize(rowspan, n);
+    public ChartImpl colSpan(final int colSpan) {
+        resize(rowspan, colSpan);
         return this;
     }
 
     @Override
-    public ChartImpl rowSpan(final int n) {
-        resize(n, colspan);
+    public ChartImpl rowSpan(final int rowSpan) {
+        resize(rowSpan, colspan);
         return this;
     }
 
