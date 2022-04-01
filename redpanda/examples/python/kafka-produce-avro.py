@@ -23,7 +23,7 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven import ConsumeKafka as ck
+#    > from deephaven_legacy import ConsumeKafka as ck
 #
 # == Example (1)
 #
