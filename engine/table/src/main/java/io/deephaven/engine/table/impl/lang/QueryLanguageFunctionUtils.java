@@ -15,6 +15,8 @@ import java.math.RoundingMode;
 
 import static java.lang.Math.*;
 
+import java.lang.Number;
+
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
 public final class QueryLanguageFunctionUtils {
 
@@ -19276,19 +19278,19 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int intCast(Object a) {
-        return a == null ? QueryConstants.NULL_INT : (int) a;
+        return a == null ? QueryConstants.NULL_INT : ((Number)a).intValue();
     }
 
     public static double doubleCast(Object a) {
-        return a == null ? QueryConstants.NULL_DOUBLE : (double) a;
+        return a == null ? QueryConstants.NULL_DOUBLE : ((Number)a).doubleValue();
     }
 
     public static long longCast(Object a) {
-        return a == null ? QueryConstants.NULL_LONG : (long) a;
+        return a == null ? QueryConstants.NULL_LONG : ((Number)a).longValue();
     }
 
     public static float floatCast(Object a) {
-        return a == null ? QueryConstants.NULL_FLOAT : (float) a;
+        return a == null ? QueryConstants.NULL_FLOAT : ((Number)a).floatValue();
     }
 
     public static char charCast(Object a) {
@@ -19296,11 +19298,11 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static byte byteCast(Object a) {
-        return a == null ? QueryConstants.NULL_BYTE : (byte) a;
+        return a == null ? QueryConstants.NULL_BYTE : ((Number)a).byteValue();
     }
 
     public static short shortCast(Object a) {
-        return a == null ? QueryConstants.NULL_SHORT : (short) a;
+        return a == null ? QueryConstants.NULL_SHORT : ((Number)a).shortValue();
     }
 
     public static int intPyCast(Object a) {
