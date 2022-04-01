@@ -1,11 +1,12 @@
 
 # Deephaven Python Integration Package
 
-Deephaven Python Integration Package is created by Deephaven Data Labs. It allows Python developers including data
-scientists to access data, run queries, execute Python scripts directly inside the Deephaven data servers to achieve
+Deephaven Python Integration Package is created by Deephaven Data Labs. It allows Python developers, including data
+scientists, to access data, run queries, and execute Python scripts directly inside Deephaven data servers to achieve
 maximum performance. By taking advantage of the unique streaming table capability of Deephaven and its many data ingestion
-facilities (Kafka, Parquet, CSV, SQL, etc.), Python developers can quickly put together a realtime data process pipeline
-that is high performing and use to consume.
+facilities (Kafka, Parquet, CSV, SQL, etc.), Python developers can quickly put together a real-time data processing pipeline
+that is high performing and easy to consume.
+
 
 ## Install
 Because this package depends on the Deephaven server, it comes preinstalled with Deephaven Docker images and is made 
