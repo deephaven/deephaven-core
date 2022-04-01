@@ -40,7 +40,7 @@ def ticking_crypto_milliseconds(interval: int):
     return t
 
 def ticking_crypto_milliseconds_v2(interval: int):
-    from deephaven2 import time_table
+    from deephaven import time_table
     from deephaven_legacy.DateTimeUtils import currentTime, minus
     t = time_table('00:00:00.' + str(interval * 1000).zfill(6),minus(currentTime(), 1800000000000)).update(formulas = [
         'Id=(int)random.randint(12000000,1100000000)', 'B=random.randint(0,1)', 'C=random.randint(0,50)',
