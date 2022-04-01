@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven2 import dtypes, DHError
-from deephaven2 import read_csv, write_csv
+from deephaven import dtypes, DHError
+from deephaven import read_csv, write_csv
 from tests.testbase import BaseTestCase
 
 

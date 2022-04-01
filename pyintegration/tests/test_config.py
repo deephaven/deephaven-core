@@ -4,8 +4,8 @@
 import os.path
 import unittest
 
-from deephaven2.config import get_server_timezone, get_log_dir
-from deephaven2.time import TimeZone
+from deephaven.config import get_server_timezone, get_log_dir
+from deephaven.time import TimeZone
 from tests.testbase import BaseTestCase
 
 

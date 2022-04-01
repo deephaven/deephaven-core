@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven2 import DHError, read_csv, empty_table, SortDirection
-from deephaven2.agg import (
+from deephaven import DHError, read_csv, empty_table, SortDirection
+from deephaven.agg import (
     sum_,
     weighted_avg,
     avg,
@@ -21,7 +21,7 @@ from deephaven2.agg import (
     var,
     formula,
 )
-from deephaven2.table import Table
+from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 

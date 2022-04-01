@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.backplane.barrage.BarrageMessage$AddColumnData",
+ "methods": {},
+ "path": "io.deephaven.db.backplane.barrage.BarrageMessage.AddColumnData",
+ "typeName": "class"
+}

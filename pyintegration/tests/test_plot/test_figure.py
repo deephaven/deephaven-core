@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven2 import read_csv
-from deephaven2.plot import Figure
+from deephaven import read_csv
+from deephaven.plot import Figure
 from tests.testbase import BaseTestCase
 
 

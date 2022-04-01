@@ -5,8 +5,8 @@
 import unittest
 from time import sleep
 
-from deephaven2.constants import NULL_LONG, NULL_INT
-from deephaven2.time import *
+from deephaven.constants import NULL_LONG, NULL_INT
+from deephaven.time import *
 
 
 class TimeTestCase(unittest.TestCase):

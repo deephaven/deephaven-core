@@ -4,10 +4,10 @@
 import random
 import unittest
 
-from deephaven2 import read_csv, DHError
-from deephaven2.plot import Colors
-from deephaven2.plot import Figure
-from deephaven2.plot import LineEndStyle, LineJoinStyle, LineStyle
+from deephaven import read_csv, DHError
+from deephaven.plot import Colors
+from deephaven.plot import Figure
+from deephaven.plot import LineEndStyle, LineJoinStyle, LineStyle
 from tests.testbase import BaseTestCase
 
 

@@ -6,9 +6,9 @@ import unittest
 
 import jpy
 
-from deephaven2._jcompat import j_hashset
-from deephaven2.table import Table
-from deephaven2.uri import resolve
+from deephaven._jcompat import j_hashset
+from deephaven.table import Table
+from deephaven.uri import resolve
 from tests.testbase import BaseTestCase
 
 

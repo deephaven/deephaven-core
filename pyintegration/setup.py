@@ -25,7 +25,7 @@ def normalize_version(version):
 __deephaven_version__ = os.environ['DEEPHAVEN_VERSION']
 __normalized_version__ = normalize_version(__deephaven_version__)
 
-setup(name='deephaven2',
+setup(name='deephaven',
       version=__normalized_version__,
       description='Deephaven Engine Python Package',
       long_description=README,
