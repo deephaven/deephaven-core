@@ -23,7 +23,7 @@ class ConsoleTestCase(BaseTestCase):
         server_script = '''
 import time
 import math
-from deephaven import TableTools
+from deephaven_legacy import TableTools
 from numba import vectorize, int32, float64
 
 ##########################

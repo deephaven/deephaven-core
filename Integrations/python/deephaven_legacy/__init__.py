@@ -3,9 +3,9 @@
 #
 
 """
-Main Deephaven python module.
+Main Deephaven python module (legacy).
 
-For convenient usage in the python console, the main sub-packages of deephaven have been imported here with aliases:
+For convenient usage in the python console, the main sub-packages of deephaven_legacy have been imported here with aliases:
 
 * Calendars imported as cals
 
@@ -19,7 +19,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
 
-Additionally, the following methods have been imported into the main deephaven namespace:
+Additionally, the following methods have been imported into the main deephaven_legacy namespace:
 
 * from Plot import figure_wrapper as figw
 
@@ -36,9 +36,9 @@ Additionally, the following methods have been imported into the main deephaven n
 
 For ease of namespace population in a python console, consider::
 
->>> from deephaven import *  # this will import the submodules into the main namespace
+>>> from deephaven_legacy import *  # this will import the submodules into the main namespace
 >>> print(dir())  # this will display the contents of the main namespace
->>> help(plt)  # will display the help entry (doc strings) for the deephaven.plot module
+>>> help(plt)  # will display the help entry (doc strings) for the deephaven_legacy.plot module
 >>> help(columnToNumpyArray)  # will display the help entry for the columnToNumpyArray method
 """
 
@@ -117,11 +117,11 @@ def initialize():
     csv._defineSymbols()
     _filter._defineSymbols()
 
-    import deephaven.TableManipulation
-    deephaven.TableManipulation._defineSymbols()
+    import deephaven_legacy.TableManipulation
+    deephaven_legacy.TableManipulation._defineSymbols()
     global Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, Replayer, SmartKey, SortColumn, TotalsTableBuilder
-    from deephaven.TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, \
+    from deephaven_legacy.TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, \
         DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, Replayer, SmartKey, \
         SortColumn, TotalsTableBuilder
 

@@ -12,7 +12,7 @@ import javax.inject.Singleton;
 @Component(modules = {
         DeephavenApiServerModule.class,
         HealthCheckModule.class,
-        PythonPluginsRegistration.Module.class,
+        // PythonPluginsRegistration.Module.class,
         NettyServerModule.class
 })
 public interface NettyServerComponent extends DeephavenApiServerComponent {

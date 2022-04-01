@@ -6,9 +6,9 @@
 import jpy
 import wrapt
 
-import deephaven.Types as dh
+import deephaven_legacy.Types as dh
 
-from deephaven.conversion_utils import _isJavaType, _isStr, \
+from deephaven_legacy.conversion_utils import _isJavaType, _isStr, \
     _typeFromName, _dictToProperties, _dictToMap, _seqToSet
 
 # None until the first _defineSymbols() call

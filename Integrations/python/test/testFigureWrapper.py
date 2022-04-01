@@ -10,8 +10,8 @@
 import sys
 import jpy
 
-from deephaven import TableTools, Aggregation, Plot, Calendars
-from deephaven.Plot import figure_wrapper
+from deephaven_legacy import TableTools, Aggregation, Plot, Calendars
+from deephaven_legacy.Plot import figure_wrapper
 
 _JArrayList = jpy.get_type("java.util.ArrayList")
 

@@ -6,9 +6,9 @@
 import collections
 import jpy
 import wrapt
-import deephaven.ConsumeKafka as ck
+import deephaven_legacy.ConsumeKafka as ck
 
-from deephaven.conversion_utils import _dictToProperties, _isStr
+from deephaven_legacy.conversion_utils import _dictToProperties, _isStr
 
 # None until the first _defineSymbols() call
 _java_type_ = None

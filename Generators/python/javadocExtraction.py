@@ -657,12 +657,12 @@ if __name__ == '__main__':
               "  python javadocExtraction.py <devroot> <assertNoChange>[False]\n"
               "\n"
               "    - <devroot> specifies the development root, below which we expect directories\n"
-              "        `build/docs/javadoc` and `Integrations/python/deephaven/doc`\n"
+              "        `build/docs/javadoc` and `Integrations/python/deephaven_legacy/doc`\n"
               "    - <assertNoChange> [default `False`] optional argument.\n"
               "        * False indicates to extract the javadocs to .json format below\n"
-              "           `Integrations/python/deephaven/doc`\n"
+              "           `Integrations/python/deephaven_legacy/doc`\n"
               "        * True indicates to check that the .json files in the file system below\n"
-              "           `Integrations/python/deephaven/doc` match what WOULD be generated.\n"
+              "           `Integrations/python/deephaven_legacy/doc` match what WOULD be generated.\n"
               "           **NO ACTUAL GENERATION HERE**")
 
     # Parse the arguments

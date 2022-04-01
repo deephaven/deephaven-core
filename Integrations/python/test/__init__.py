@@ -1,7 +1,7 @@
 import os
 import jpy
 
-from deephaven import start_jvm
+from deephaven_legacy import start_jvm
 
 
 DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', None)

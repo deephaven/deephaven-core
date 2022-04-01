@@ -56,10 +56,10 @@ public class PythonPlottingGenerator {
         devroot = args[0];
         assertNoChange = Boolean.parseBoolean(args[1]);
         plotPreamble = devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/PlotPreamble.txt";
-        plotOutput = devroot + "/Integrations/python/deephaven/Plot/__init__.py";
+        plotOutput = devroot + "/Integrations/python/deephaven_legacy/Plot/__init__.py";
         figureWrapperPreamble =
                 devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/FigureWrapperPreamble.txt";
-        figureWrapperOutput = devroot + "/Integrations/python/deephaven/Plot/figure_wrapper.py";
+        figureWrapperOutput = devroot + "/Integrations/python/deephaven_legacy/Plot/figure_wrapper.py";
 
         docRoot = PythonGeneratorParser.getDefaultDocRoot(devroot);
 

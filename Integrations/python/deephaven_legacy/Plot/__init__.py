@@ -67,7 +67,7 @@ def colorTable():
     :return: table which visualizes all of the named colors.
     """
 
-    from deephaven.TableTools import emptyTable
+    from deephaven_legacy.TableTools import emptyTable
     return emptyTable(1) \
             .updateView("Colors = colorNames()") \
             .ungroup() \

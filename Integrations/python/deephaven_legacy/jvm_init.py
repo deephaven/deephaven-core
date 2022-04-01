@@ -10,7 +10,7 @@ import logging
 import os
 from glob import glob
 
-from deephaven import initialize
+from deephaven_legacy import initialize
 
 
 def jvm_init(devroot=None,

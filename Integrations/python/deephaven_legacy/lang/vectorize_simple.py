@@ -18,7 +18,7 @@ import numpy
 from numba.npyufunc import vectorize
 from numpy.core.multiarray import ndarray
 
-from deephaven.lang.analyzer import Analyzer
+from deephaven_legacy.lang.analyzer import Analyzer
 
 numpy_primitives = {"float64",
                     "float32",

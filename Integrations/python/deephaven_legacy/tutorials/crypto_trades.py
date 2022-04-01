@@ -11,7 +11,7 @@ ct_price_map = {'BTC/USD': 55220.00, 'ETH/USD': 3480.00, 'YFI/USD': 30200.00, 'P
 
 def ct_pricer(instrument, E):
     _aPrice = ct_price_map[instrument]
-    from deephaven.conversion_utils import NULL_DOUBLE
+    from deephaven_legacy.conversion_utils import NULL_DOUBLE
     if _aPrice == NULL_DOUBLE:
         ct_price_map[instrument] = abs(E) / 100.0
     else:
@@ -27,8 +27,8 @@ def ct_distributor(cnt):
             return int(i)
 
 def ticking_crypto_milliseconds(interval: int):
-    from deephaven.TableTools import timeTable
-    from deephaven.DateTimeUtils import currentTime, minus
+    from deephaven_legacy.TableTools import timeTable
+    from deephaven_legacy.DateTimeUtils import currentTime, minus
     t = timeTable(minus(currentTime(), 1800000000000), '00:00:00.' + str(interval * 1000).zfill(6)).update(
         'Id=(int)random.randint(12000000,1100000000)', 'B=random.randint(0,1)', 'C=random.randint(0,50)',
         'D= ((int)(byte) (random.randint(0,100))/100.0 - 0.5) * 20000.0', 'Instrument=ct_symbols[((int)(byte)ct_distributor(ct_x))-1]',
@@ -41,7 +41,7 @@ def ticking_crypto_milliseconds(interval: int):
 
 def ticking_crypto_milliseconds_v2(interval: int):
     from deephaven2 import time_table
-    from deephaven.DateTimeUtils import currentTime, minus
+    from deephaven_legacy.DateTimeUtils import currentTime, minus
     t = time_table('00:00:00.' + str(interval * 1000).zfill(6),minus(currentTime(), 1800000000000)).update(formulas = [
         'Id=(int)random.randint(12000000,1100000000)', 'B=random.randint(0,1)', 'C=random.randint(0,50)',
         'D= ((int)(byte) (random.randint(0,100))/100.0 - 0.5) * 20000.0', 'Instrument=ct_symbols[((int)(byte)ct_distributor(ct_x))-1]',

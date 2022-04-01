@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 import jpy
 import wrapt
 
-import deephaven.Types as dht
+import deephaven_legacy.Types as dht
 
 _JCsvHelpers = None
 _JTableHeader = None
