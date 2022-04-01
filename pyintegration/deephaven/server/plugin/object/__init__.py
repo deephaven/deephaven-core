@@ -2,7 +2,7 @@ import jpy
 
 from typing import Optional
 from deephaven.plugin.object import Exporter, ObjectType, Reference
-from deephaven.Plot.figure_wrapper import FigureWrapper
+from deephaven._wrapper import JObjectWrapper
 
 _JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
 _JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
@@ -14,8 +14,8 @@ def _adapt_reference(ref: _JReference) -> Reference:
 
 def _unwrap(object):
     # todo: we should have generic unwrapping code ABC
-    if isinstance(object, FigureWrapper):
-        return object.figure
+    if isinstance(object, JObjectWrapper):
+        return object.j_object
     return object
 
 
