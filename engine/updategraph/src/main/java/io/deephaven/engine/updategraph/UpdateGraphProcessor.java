@@ -17,6 +17,7 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.hotspot.JvmIntrospectionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -133,6 +134,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     private long suppressedCycles = 0;
     private long suppressedCyclesTotalNanos = 0;
+    private long suppressedCyclesTotalSafePontTimeMillis = 0;
 
     /**
      * Accumulated UGP exclusive lock waits for the current cycle (or previous, if idle).
@@ -152,6 +154,11 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * Abstracts away the processing of non-terminal notifications.
      */
     private NotificationProcessor notificationProcessor;
+
+    /**
+     * Facilitate GC Introspection during refresh cycles.
+     */
+    private final JvmIntrospectionContext jvmIntrospectionContext;
 
     /**
      * The {@link LivenessScope} that should be on top of the {@link LivenessScopeStack} for all run and notification
@@ -197,6 +204,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     UpdateGraphProcessor() {
         notificationProcessor = makeNotificationProcessor();
+        jvmIntrospectionContext = new JvmIntrospectionContext();
 
         refreshThread = new Thread("UpdateGraphProcessor." + name() + ".refreshThread") {
             @Override
@@ -1459,6 +1467,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
     }
 
+    private static LogEntry appendAsMillisFromNanos(final LogEntry entry, final long nanos) {
+        if (nanos > 0) {
+            return entry.appendDouble(nanos / 1_000_000.0, 3);
+        }
+        return entry.append(0);
+    }
+
     /**
      * Iterate over all monitored tables and run them. This method also ensures that the loop runs no faster than
      * {@link #getTargetCycleDurationMillis() minimum cycle time}.
@@ -1467,6 +1482,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         final Scheduler sched = CommBase.getScheduler();
         final long startTime = sched.currentTimeMillis();
         final long startTimeNanos = System.nanoTime();
+        jvmIntrospectionContext.startSample();
 
         if (sources.isEmpty()) {
             exclusiveLock().doLocked(this::flushTerminalNotifications);
@@ -1485,23 +1501,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             if (watchdogJob != null) {
                 sched.cancelJob(watchdogJob);
             }
-            final long cycleTime = System.nanoTime() - startTimeNanos;
-            if (cycleTime >= minimumCycleDurationToLogNanos) {
-                if (suppressedCycles > 0) {
-                    logSuppressedCycles();
-                }
-                log.info().append("Update Graph Processor cycleTime=").appendDouble(cycleTime / 1_000_000.0)
-                        .append("ms, lockWaitTime=").appendDouble(currentCycleLockWaitTotalNanos / 1_000_000.0)
-                        .append("ms, yieldTime=").appendDouble(currentCycleYieldTotalNanos / 1_000_000.0)
-                        .append("ms, sleepTime=").appendDouble(currentCycleSleepTotalNanos / 1_000_000.0)
-                        .append("ms").endl();
-            } else if (cycleTime > 0) {
-                suppressedCycles++;
-                suppressedCyclesTotalNanos += cycleTime;
-                if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
-                    logSuppressedCycles();
-                }
-            }
+            jvmIntrospectionContext.endSample();
+            final long cycleTimeNanos = System.nanoTime() - startTimeNanos;
+            logCycle(cycleTimeNanos);
         }
 
         if (interCycleYield) {
@@ -1511,13 +1513,65 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         waitForNextCycle(startTime, sched);
     }
 
+    private void logCycle(final long cycleTimeNanos) {
+        if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
+            if (suppressedCycles > 0) {
+                logSuppressedCycles();
+            }
+            final double cycleTimeMillis = cycleTimeNanos / 1_000_000.0;
+            LogEntry entry = log.info()
+                    .append("Update Graph Processor cycleTime=").appendDouble(cycleTimeMillis, 3);
+            if (jvmIntrospectionContext.hasSafePointData()) {
+                final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+                final long safePointSyncTimeMillis = jvmIntrospectionContext.deltaSafePointSyncTimeMillis();
+                entry = entry
+                        .append("ms, safePointTime=")
+                        .append(safePointPauseTimeMillis)
+                        .append("ms, safePointTimePct=");
+                if (safePointPauseTimeMillis > 0 && cycleTimeMillis > 0.0) {
+                    final double safePointTimePct = 100.0 * safePointPauseTimeMillis / cycleTimeMillis;
+                    entry = entry.appendDouble(safePointTimePct, 2);
+                } else {
+                    entry = entry.append("0");
+                }
+                entry = entry.append("%, safePointSyncTime=").append(safePointSyncTimeMillis);
+            }
+            entry = entry.append("ms, lockWaitTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleLockWaitTotalNanos);
+            entry = entry.append("ms, yieldTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+            entry = entry.append("ms, sleepTime=");
+            entry = appendAsMillisFromNanos(entry, currentCycleSleepTotalNanos);
+            entry.append("ms").endl();
+            return;
+        }
+        if (cycleTimeNanos > 0) {
+            ++suppressedCycles;
+            suppressedCyclesTotalNanos += cycleTimeNanos;
+            suppressedCyclesTotalSafePontTimeMillis += jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+            if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
+                logSuppressedCycles();
+            }
+        }
+    }
+
     private void logSuppressedCycles() {
-        log.info().append("Minimal Update Graph Processor cycle times: ")
-                .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0).append("ms / ")
+        LogEntry entry = log.info()
+                .append("Minimal Update Graph Processor cycle times: ")
+                .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
-                .appendDouble((double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0)
-                .append("ms/cycle average").endl();
+                .appendDouble(
+                        (double) suppressedCyclesTotalNanos / (double) suppressedCycles / 1_000_000.0, 3)
+                .append("ms/cycle average)");
+        if (jvmIntrospectionContext.hasSafePointData()) {
+            entry = entry
+                    .append(", safePointTime=")
+                    .append(suppressedCyclesTotalSafePontTimeMillis)
+                    .append("ms");
+        }
+        entry.endl();
         suppressedCycles = suppressedCyclesTotalNanos = 0;
+        suppressedCyclesTotalSafePontTimeMillis = 0;
     }
 
     /**
