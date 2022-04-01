@@ -19,9 +19,10 @@ from deephaven.plot import Figure, PlotStyle
 csv_table = read_csv("data1.csv")
 kafka_table = kafka_consumer.consume({'bootstrap.servers': 'redpanda:29092'}, topic='realtime_feed', table_type=TableType.Append)
 joined_table = kafka_table.join(csv_table, on=["key_col_1", "key_col_2"], joins=["data_col1"])
-plot = Figure().axes(plot_style = PlotStyle.STACKED_BAR)\
-    .plot_cat(series_name="Categories1", t=joined_table, category="Key_col_1", y = "data_col1")
-display_figure = plot.show()
+plot = Figure() \
+    .axes(plot_style = PlotStyle.STACKED_BAR )\
+    .plot_cat(series_name="Categories1", t=joined_table, category="Key_col_1", y = "data_col1") \
+    .show()
 ```
 
 ## Related documentation
