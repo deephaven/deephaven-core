@@ -252,18 +252,18 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     }
 
     private void create(AppFieldId id, String description, String type) {
-        computeIfAbsent(id).create(description, type);
+        accumulated(id).create(description, type);
     }
 
     private void update(AppFieldId id, String description, String type) {
-        computeIfAbsent(id).update(description, type);
+        accumulated(id).update(description, type);
     }
 
     private void remove(AppFieldId id) {
-        computeIfAbsent(id).remove();
+        accumulated(id).remove();
     }
 
-    private State computeIfAbsent(AppFieldId id) {
+    private State accumulated(AppFieldId id) {
         return accumulated.computeIfAbsent(id, this::newState);
     }
 
@@ -332,18 +332,18 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             this.type = null;
         }
 
-        public void append(Updater builder) {
+        public void append(Updater updater) {
             switch (out) {
                 case NOOP:
                     break;
                 case CREATED:
-                    builder.onCreated(id, fieldInfo());
+                    updater.onCreated(id, fieldInfo());
                     break;
                 case UPDATED:
-                    builder.onUpdated(id, fieldInfo());
+                    updater.onUpdated(id, fieldInfo());
                     break;
                 case REMOVED:
-                    builder.onRemoved(id, Objects.requireNonNull(existing));
+                    updater.onRemoved(id, Objects.requireNonNull(existing));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected state " + out);
@@ -375,7 +375,9 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         }
     }
 
-    // An "updater" as opposed to a "builder" - modifies state and is builder.
+    /**
+     * Modifies {@code known} state while also building {@link FieldsChangeUpdate}.
+     */
     private class Updater {
         private final FieldsChangeUpdate.Builder builder = FieldsChangeUpdate.newBuilder();
         private boolean isEmpty = true;
