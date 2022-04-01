@@ -35,7 +35,7 @@ var ide;
         // Run code that will create a static table with 10 rows and three columns, I, J, K
         await ide.runCode(`
 from deephaven import empty_table
-remoteTable = empty_table(10).update_view(formulas = ['I=i', 'J=I*I', 'K=i%2==0?"Hello":"World"'])
+remoteTable = empty_table(10).update_view(['I=i', 'J=I*I', 'K=i%2==0?"Hello":"World"'])
 `)
     } else if (types.indexOf("groovy") !== -1) {
         // Start a groovy session
