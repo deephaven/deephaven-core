@@ -4,7 +4,7 @@
 """ This module implements the Table class and functions that work with Tables. """
 from __future__ import annotations
 
-from typing import List
+from typing import Union, TypeVar, Sequence
 
 import jpy
 
@@ -20,6 +20,17 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
+
+T = TypeVar("T")
+
+
+def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
+    if not v:
+        return ()
+    if not isinstance(v, Sequence) or isinstance(v, str):
+        return (v,)
+    else:
+        return v
 
 
 class Table(JObjectWrapper):
@@ -93,12 +104,12 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
-    def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
+    def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
 
         Args:
             num_rows (int): the number of rows at the beginning of the table
-            cols (List[str]): the list of column names
+            cols (Union[str, Sequence[str]]): the column name(s), default is None
 
         Returns:
             string
@@ -107,6 +118,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return _JTableTools.string(self.j_table, num_rows, *cols)
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
@@ -139,12 +151,12 @@ class Table(JObjectWrapper):
     # Table operation category: Select
     #
     # region Select
-    def drop_columns(self, cols: List[str]) -> Table:
+    def drop_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The drop_columns method creates a new table with the same size as this table but omits any of specified
         columns.
 
         Args:
-            cols (List[str]): the list of column names
+            cols (Union[str, Sequence[str]): the column name(s)
 
         Returns:
             a new table
@@ -153,16 +165,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.dropColumns(*cols))
         except Exception as e:
             raise DHError(e, "table drop_columns operation failed.") from e
 
-    def move_columns(self, idx: int, cols: List[str]) -> Table:
+    def move_columns(self, idx: int, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns method creates a new table with specified columns moved to a specific column index value.
 
         Args:
             idx (int): the column index where the specified columns will be moved in the new table.
-            cols (List[str]) : the list of column names
+            cols (Union[str, Sequence[str]]) : the column name(s)
 
         Returns:
             a new table
@@ -171,16 +184,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.moveColumns(idx, *cols))
         except Exception as e:
             raise DHError(e, "table move_columns operation failed.") from e
 
-    def move_columns_down(self, cols: List[str]) -> Table:
+    def move_columns_down(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
         right.
 
         Args:
-            cols (List[str]) : the list of column names
+            cols (Union[str, Sequence[str]]) : the column name(s)
 
         Returns:
             a new table
@@ -189,16 +203,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
 
-    def move_columns_up(self, cols: List[str]) -> Table:
+    def move_columns_up(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
         left.
 
         Args:
-            cols (List[str]) : the list of column names
+            cols (Union[str, Sequence[str]]) : the column name(s)
 
         Returns:
             a new table
@@ -207,15 +222,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
-    def rename_columns(self, cols: List[str]) -> Table:
+    def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed.
 
         Args:
-            cols (List[str]) : the list of column rename expr as "X = Y"
+            cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -224,15 +240,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    def update(self, formulas: List[str]) -> Table:
+    def update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, Sequence[str]]): the column formula(s)
 
         Returns:
             A new table
@@ -241,15 +258,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            formulas = _to_sequence(formulas)
             return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
-    def lazy_update(self, formulas: List[str]) -> Table:
+    def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, Sequence[str]]): the column formula(s)
 
         Returns:
             a new table
@@ -258,15 +276,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            formulas = _to_sequence(formulas)
             return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
 
-    def view(self, formulas: List[str]) -> Table:
+    def view(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, Sequence[str]]): the column formula(s)
 
         Returns:
             a new table
@@ -275,15 +294,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            formulas = _to_sequence(formulas)
             return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e
 
-    def update_view(self, formulas: List[str]) -> Table:
+    def update_view(self, formulas: Union[str, Sequence[str]]) -> Table:
         """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, Sequence[str]]): the column formula(s)
 
         Returns:
             a new table
@@ -292,16 +312,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            formulas = _to_sequence(formulas)
             return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    def select(self, formulas: List[str] = []) -> Table:
+    def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
         Args:
-            formulas (List[str], optional): the column formulas, default is empty
+            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
 
         Returns:
             a new table
@@ -312,17 +333,18 @@ class Table(JObjectWrapper):
         try:
             if not formulas:
                 return Table(j_table=self.j_table.select())
+            formulas = _to_sequence(formulas)
             return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
-    def select_distinct(self, cols: List[str] = []) -> Table:
+    def select_distinct(self, cols: Union[str, Sequence[str]] = None) -> Table:
         """The select_distinct method creates a new table containing all of the unique values for a set of key
         columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
         the selected columns.
 
         Args:
-            cols (List[str], optional): the list of column names, default is empty
+            cols (Union[str, Sequence[str]], optional): the column name(s), default is None
 
         Returns:
             a new table
@@ -331,6 +353,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.selectDistinct(*cols))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
@@ -341,12 +364,12 @@ class Table(JObjectWrapper):
     # Table operation category: Filter
     #
     # region Filter
-    def where(self, filters: List[str] = []) -> Table:
+    def where(self, filters: Union[str, Sequence[str]] = None) -> Table:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
         Args:
-            filters (List[str]): a list of filter condition expressions
+            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -355,17 +378,18 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            filters = _to_sequence(filters)
             return Table(j_table=self.j_table.where(*filters))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
-    def where_in(self, filter_table: Table, cols: List[str]) -> Table:
+    def where_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (List[str]): a list of column names
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
             a new table
@@ -374,17 +398,18 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
-    def where_not_in(self, filter_table: Table, cols: List[str]) -> Table:
+    def where_not_in(self, filter_table: Table, cols: Union[str, Sequence[str]]) -> Table:
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (List[str]): a list of column names
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
             a new table
@@ -393,16 +418,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
-    def where_one_of(self, filters: List[str] = []) -> Table:
-        """The where_one_of method creates a new table containing rows from the source table, where the rows match at least
-        one filter.
+    def where_one_of(self, filters: Union[str, Sequence[str]] = None) -> Table:
+        """The where_one_of method creates a new table containing rows from the source table, where the rows match at
+        least one filter.
 
         Args:
-            filters (List[str]): a list of filter condition expressions
+            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -411,6 +437,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            filters = _to_sequence(filters)
             return Table(
                 j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
             )
@@ -491,27 +518,28 @@ class Table(JObjectWrapper):
     # Table operation category: Sort
     #
     # region Sort
-    def restrict_sort_to(self, cols: List[str]):
+    def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
         """The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
         users from accidentally performing expensive sort operations as they interact with tables in the UI.
 
         Args:
-            cols (List[str], optional): the list of column names
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Raises:
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             return self.j_table.restrictSortTo(*cols)
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
-    def sort_descending(self, order_by: List[str] = []) -> Table:
+    def sort_descending(self, order_by: Union[str, Sequence[str]] = None) -> Table:
         """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
         order based on the order_by column(s).
 
         Args:
-            order_by (List[str], optional): the list of column names
+            order_by (Union[str, Sequence[str]], optional): the column name(s), default is None
 
         Returns:
             a new table
@@ -520,6 +548,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            order_by = _to_sequence(order_by)
             return Table(j_table=self.j_table.sortDescending(*order_by))
         except Exception as e:
             raise DHError(e, "table sort_descending operation failed.") from e
@@ -538,14 +567,14 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
-    def sort(self, order_by: List[str], order: List[SortDirection] = []) -> Table:
+    def sort(self, order_by: Union[str, Sequence[str]], order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
         order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
         Args:
-            order_by (List[str]): the names of the columns to be sorted on
-            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
-                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for each sort
+                column, default is None. In the absence of explicit sort directions, data will be sorted in the ascending order.
 
         Returns:
             a new table
@@ -562,6 +591,8 @@ class Table(JObjectWrapper):
             )
 
         try:
+            order_by = _to_sequence(order_by)
+            order = _to_sequence(order)
             if order:
                 sort_columns = [
                     sort_column(col, dir_) for col, dir_ in zip(order_by, order)
@@ -579,7 +610,7 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
-    def natural_join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
+    def natural_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
@@ -587,10 +618,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             a new table
@@ -599,6 +630,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.naturalJoin(
@@ -612,7 +645,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
-    def exact_join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
+    def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The exact_join method creates a new table containing all of the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
@@ -620,10 +653,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             a new table
@@ -632,6 +665,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.exactJoin(
@@ -645,7 +680,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
-    def join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
+    def join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
@@ -653,10 +688,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             a new table
@@ -665,6 +700,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.join(
@@ -676,7 +713,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -685,10 +722,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             a new table
@@ -697,6 +734,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.aj(
@@ -708,7 +747,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -717,10 +756,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             a new table
@@ -729,6 +768,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.raj(
@@ -745,12 +786,12 @@ class Table(JObjectWrapper):
     #
     # Table operation category: Aggregation
     # region Aggregation
-    def head_by(self, num_rows: int, by: List[str]) -> Table:
+    def head_by(self, num_rows: int, by: Union[str, Sequence[str]]) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (List[str]): the group-by column names
+            by (Union[str, Sequence[str]]): the group-by column name(s)
 
         Returns:
             a new table
@@ -759,16 +800,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             return Table(j_table=self.j_table.headBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
-    def tail_by(self, num_rows: int, by: List[str]) -> Table:
+    def tail_by(self, num_rows: int, by: Union[str, Sequence[str]]) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (List[str]): the group-by column names
+            by (Union[str, Sequence[str]]): the group-by column name(s)
 
         Returns:
             a new table
@@ -777,16 +819,17 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             return Table(j_table=self.j_table.tailBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
 
-    def group_by(self, by: List[str] = []) -> Table:
+    def group_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
         grouped into arrays.
 
         Args:
-            by (List[str], optional): the group-by column names
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -795,6 +838,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.groupBy(*by))
             else:
@@ -802,13 +846,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table group operation failed.") from e
 
-    def ungroup(self, cols: List[str] = []) -> Table:
+    def ungroup(self, cols: Union[str, Sequence[str]] = None) -> Table:
         """The ungroup method creates a new table in which array columns from the source table are unwrapped into
         separate rows.
 
         Args:
-            cols (List[str], optional): the names of the array columns, if empty, all array columns will be
-                ungrouped, default is empty
+            cols (Union[str, Sequence[str]], optional): the name(s) of the array column(s), if None, all array columns 
+                will be ungrouped, default is None
 
         Returns:
             a new table
@@ -817,6 +861,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            cols = _to_sequence(cols)
             if cols:
                 return Table(j_table=self.j_table.ungroup(*cols))
             else:
@@ -824,11 +869,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table ungroup operation failed.") from e
 
-    def first_by(self, by: List[str] = []) -> Table:
+    def first_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The first_by method creates a new table containing the first row for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -837,6 +882,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.firstBy(*by))
             else:
@@ -844,11 +890,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table first_by operation failed.") from e
 
-    def last_by(self, by: List[str] = []) -> Table:
+    def last_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The last_by method creates a new table containing the last row for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -857,6 +903,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.lastBy(*by))
             else:
@@ -864,11 +911,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table last_by operation failed.") from e
 
-    def sum_by(self, by: List[str] = []) -> Table:
+    def sum_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The sum_by method creates a new table containing the sum for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -877,6 +924,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.sumBy(*by))
             else:
@@ -884,11 +932,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table sum_by operation failed.") from e
 
-    def avg_by(self, by: List[str] = []) -> Table:
+    def avg_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The avg_by method creates a new table containing the average for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -897,6 +945,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.avgBy(*by))
             else:
@@ -904,11 +953,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table avg_by operation failed.") from e
 
-    def std_by(self, by: List[str] = []) -> Table:
+    def std_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The std_by method creates a new table containing the standard deviation for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -917,6 +966,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.stdBy(*by))
             else:
@@ -924,11 +974,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table std_by operation failed.") from e
 
-    def var_by(self, by: List[str] = []) -> Table:
+    def var_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The var_by method creates a new table containing the variance for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -937,6 +987,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.varBy(*by))
             else:
@@ -944,11 +995,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table var_by operation failed.") from e
 
-    def median_by(self, by: List[str] = []) -> Table:
+    def median_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The median_by method creates a new table containing the median for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -957,6 +1008,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.medianBy(*by))
             else:
@@ -964,11 +1016,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table median_by operation failed.") from e
 
-    def min_by(self, by: List[str] = []) -> Table:
+    def min_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The min_by method creates a new table containing the minimum value for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -977,6 +1029,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.minBy(*by))
             else:
@@ -984,11 +1037,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table min_by operation failed.") from e
 
-    def max_by(self, by: List[str] = []) -> Table:
+    def max_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The max_by method creates a new table containing the maximum value for each group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -997,6 +1050,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.maxBy(*by))
             else:
@@ -1004,12 +1058,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table max_by operation failed.") from e
 
-    def count_by(self, col: str, by: List[str] = []) -> Table:
+    def count_by(self, col: str, by: Union[str, Sequence[str]] = None) -> Table:
         """The count_by method creates a new table containing the number of rows for each group.
 
         Args:
             col (str): the name of the column to store the counts
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -1018,6 +1072,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.countBy(col, *by))
             else:
@@ -1025,13 +1080,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def agg_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]]) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
-            aggs (List[Aggregation]): the list of aggregations
-            by (List[str]): the group-by column names
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s)
 
         Returns:
             a new table
@@ -1040,12 +1095,14 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            aggs = _to_sequence(aggs)
+            by = _to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
-    def agg_all_by(self, agg: Aggregation, by: List[str]) -> Table:
+    def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]]) -> Table:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregation specified.
 
@@ -1054,7 +1111,7 @@ class Table(JObjectWrapper):
 
         Args:
             agg (Aggregation): the aggregation
-            by (List[str]): the group-by column names
+            by (Union[str, Sequence[str]]): the group-by column name(s)
 
         Returns:
             a new table
@@ -1063,17 +1120,18 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "table agg_all_by operation failed.") from e
 
     # endregion
 
-    def partition_by(self, by: List[str]) -> jpy.JType:
+    def partition_by(self, by: Union[str, Sequence[str]]) -> jpy.JType:
         """ Creates a TableMap (opaque) by dividing this table into sub-tables.
 
         Args:
-            by (List[str]): the column(s) by which to group data
+            by (Union[str, Sequence[str]]): the column(s) by which to group data
 
         Returns:
             A TableMap containing a sub-table for each group
@@ -1082,6 +1140,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            by = _to_sequence(by)
             return self.j_table.partitionBy(*by)
         except Exception as e:
             raise DHError(e, "failed to create a TableMap.") from e
