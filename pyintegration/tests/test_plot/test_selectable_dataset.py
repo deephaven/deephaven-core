@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven2 import read_csv, DHError
-from deephaven2.plot.selectable_dataset import one_click, one_click_table_map
+from deephaven import read_csv, DHError
+from deephaven.plot.selectable_dataset import one_click, one_click_table_map
 from tests.testbase import BaseTestCase
 
 
@@ -28,7 +28,7 @@ class SelectableDatasetTestCase(BaseTestCase):
             sds = one_click(self.test_table)
 
     def test_one_click_tm(self):
-        tm = self.test_table.j_table.partitionBy("c")
+        tm = self.test_table.partition_by(["c", "e"])
         sds = one_click_table_map(tm, self.test_table, by=['a', 'b'])
         self.assertIsNotNone(sds)
         sds = one_click_table_map(tm, self.test_table, by=['a', 'b'], require_all_filters=True)

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.util.pools.ChunkPoolConstants",
+ "methods": {},
+ "path": "io.deephaven.chunk.util.pools.ChunkPoolConstants",
+ "text": "Repository for constants used by ChunkPool implementations.",
+ "typeName": "class"
+}

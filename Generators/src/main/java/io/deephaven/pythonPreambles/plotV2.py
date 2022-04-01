@@ -16,14 +16,14 @@ from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 import numpy
 import jpy
 
-from deephaven2 import DHError, dtypes
-from deephaven2._wrapper import JObjectWrapper
-from deephaven2.dtypes import DateTime, PyObject
-from deephaven2.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
+from deephaven import DHError, dtypes
+from deephaven._wrapper import JObjectWrapper
+from deephaven.dtypes import DateTime, PyObject
+from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
-from deephaven2.table import Table
-from deephaven2.calendar import BusinessCalendar
-from deephaven2._jcompat import j_function
+from deephaven.table import Table
+from deephaven.calendar import BusinessCalendar
+from deephaven._jcompat import j_function
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 

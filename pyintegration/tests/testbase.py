@@ -7,7 +7,7 @@ import unittest
 
 import jpy
 
-from deephaven2.table import Table
+from deephaven.table import Table
 
 
 class BaseTestCase(unittest.TestCase):

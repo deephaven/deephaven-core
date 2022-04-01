@@ -3,13 +3,13 @@
 #
 import unittest
 
-from deephaven2 import read_csv
-from deephaven2.plot import axis_transform_names, axis_transform, DecimalAxisFormat, \
+from deephaven import read_csv
+from deephaven.plot import axis_transform_names, axis_transform, DecimalAxisFormat, \
     NanosAxisFormat
-from deephaven2.plot import Shape
-from deephaven2.plot import PlotStyle
-from deephaven2.plot import Figure
-from deephaven2.time import TimeZone
+from deephaven.plot import Shape
+from deephaven.plot import PlotStyle
+from deephaven.plot import Figure
+from deephaven.time import TimeZone
 from tests.testbase import BaseTestCase
 
 
