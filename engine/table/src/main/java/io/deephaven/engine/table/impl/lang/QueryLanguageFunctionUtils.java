@@ -19278,19 +19278,19 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int intCast(Object a) {
-        return a == null ? QueryConstants.NULL_INT : ((Number)a).intValue();
+        return a == null ? QueryConstants.NULL_INT : ((Number) a).intValue();
     }
 
     public static double doubleCast(Object a) {
-        return a == null ? QueryConstants.NULL_DOUBLE : ((Number)a).doubleValue();
+        return a == null ? QueryConstants.NULL_DOUBLE : ((Number) a).doubleValue();
     }
 
     public static long longCast(Object a) {
-        return a == null ? QueryConstants.NULL_LONG : ((Number)a).longValue();
+        return a == null ? QueryConstants.NULL_LONG : ((Number) a).longValue();
     }
 
     public static float floatCast(Object a) {
-        return a == null ? QueryConstants.NULL_FLOAT : ((Number)a).floatValue();
+        return a == null ? QueryConstants.NULL_FLOAT : ((Number) a).floatValue();
     }
 
     public static char charCast(Object a) {
@@ -19298,11 +19298,11 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static byte byteCast(Object a) {
-        return a == null ? QueryConstants.NULL_BYTE : ((Number)a).byteValue();
+        return a == null ? QueryConstants.NULL_BYTE : ((Number) a).byteValue();
     }
 
     public static short shortCast(Object a) {
-        return a == null ? QueryConstants.NULL_SHORT : ((Number)a).shortValue();
+        return a == null ? QueryConstants.NULL_SHORT : ((Number) a).shortValue();
     }
 
     public static int intPyCast(Object a) {
