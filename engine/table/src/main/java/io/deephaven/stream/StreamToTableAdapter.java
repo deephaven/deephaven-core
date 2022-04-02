@@ -288,6 +288,8 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             final QueryTable localTable = tableRef.get();
             if (localTable != null) {
                 localTable.notifyListenersOnError(e, null);
+            } else {
+                close();
             }
         }
     }
@@ -349,6 +351,8 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             localTable.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
                     RowSetFactory.flat(oldSize), RowSetFactory.empty(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        } else {
+            close();
         }
     }
 
