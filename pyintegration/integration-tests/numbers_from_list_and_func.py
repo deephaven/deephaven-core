@@ -15,7 +15,7 @@ def get_x(i):
 
 t_list = empty_table(n).update(["X = x[i]"])
 t_func = empty_table(n).update(["X = get_x(i)"])
-# Verify that py list and py func call returns different object types
+# We want to test that casting on both PyObject and JObject works as expected.
 assert t_list.columns[0].data_type == dtypes.PyObject
 assert t_func.columns[0].data_type == dtypes.JObject
 

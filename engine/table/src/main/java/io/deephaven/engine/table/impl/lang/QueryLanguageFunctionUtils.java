@@ -15,7 +15,6 @@ import java.math.RoundingMode;
 
 import static java.lang.Math.*;
 
-
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
 public final class QueryLanguageFunctionUtils {
 
