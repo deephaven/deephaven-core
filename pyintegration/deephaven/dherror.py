@@ -69,6 +69,6 @@ class DHError(Exception):
         return "\n".join(self._compact_tb)
 
     def __str__(self):
-        causes = [line for line in self._compact_tb if "caused by" in line][:-1]
+        causes = [line.replace("caused by ", "") for line in self._compact_tb if line.startswith("caused by")]
         causes = "\n       ".join(causes)
         return f"{self._message} : {self._root_cause} \n       {causes}"
