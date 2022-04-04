@@ -5,7 +5,7 @@ In this notebook, we show how to perform groupings and aggregations with our tim
 Let's start again by simulating some real-time data. Here, we'll use a shorter time interval.
 
 ```python
-from deephaven2.time import now, to_nanos, minus
+from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("00:00:01")
 offset = to_nanos("00:01:00")
@@ -27,7 +27,7 @@ Just like all other real-time operations in Deephaven, these groupings update in
 Aggregations allow you to perform operations on grouped data. The query below computes statistics on our data.
 
 ```python
-from deephaven2 import agg
+from deephaven import agg
 
 average_agg = [
     agg.avg(["Number"])

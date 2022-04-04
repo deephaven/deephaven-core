@@ -5,7 +5,7 @@ In this notebook, we show how to use if-then statements and conditionals in Deep
 Let's start again by simulating some real-time data.
 
 ```python
-from deephaven2.time import now, to_nanos, minus
+from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("24:00:00")
 offset = to_nanos("24000:00:00")

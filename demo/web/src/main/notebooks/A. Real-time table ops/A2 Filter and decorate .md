@@ -5,7 +5,7 @@ In this notebook, we show how to decorate and filter our data.
 Let's start by simulating measurements of our values every minute. This could represent something like stock prices, temperatures, etc.
 
 ```python
-from deephaven2.time import now, to_nanos, minus
+from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("00:01:00")
 offset = to_nanos("240:00:00")
@@ -47,8 +47,8 @@ odds_or_falses = daily_data.where_one_of(filters=["!(Number % 2 == 0)", "!Boolea
 Some filtering methods can apply a filter to one table based on another.
 
 ```python
-from deephaven2 import new_table
-from deephaven2.column import string_col
+from deephaven import new_table
+from deephaven.column import string_col
 
 
 vowels_table = new_table([

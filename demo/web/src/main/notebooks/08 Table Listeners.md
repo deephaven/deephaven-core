@@ -5,7 +5,7 @@ One of Deephaven's defining features is its ability to handle real-time data wit
 To start, let's make a table that updates every two seconds with a random number.
 
 ```python
-from deephaven2 import time_table
+from deephaven import time_table
 
 import random
 
@@ -17,7 +17,7 @@ As you can see, this table updates with a new row every two seconds.
 Now let's add a listener. This listener will simply log every update to the table.
 
 ```python
-from deephaven2.table_listener import listen
+from deephaven.table_listener import listen
 
 def log_table_update(update):
     print(f"FUNCTION LISTENER: update={update}")

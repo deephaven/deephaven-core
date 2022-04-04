@@ -7,9 +7,9 @@ Here, we show how to take historical data and play it back as real-time data bas
 To start, let's make a sample table containing random numbers generated at certain historical timestamps.
 
 ```python
-from deephaven2 import DynamicTableWriter
-from deephaven2.time import to_period, to_datetime, plus_period
-from deephaven2.dtypes import DateTime, int_
+from deephaven import DynamicTableWriter
+from deephaven.time import to_period, to_datetime, plus_period
+from deephaven.dtypes import DateTime, int_
 
 import random
 
@@ -37,7 +37,7 @@ After running this code, we can see that the `result` table contains 100 entries
 So how do we replay this data? Using the [`replayer`](https://deephaven.io/core/docs/reference/table-operations/create/Replayer/) object, we can specify a start and end time, and apply this to our table.
 
 ```python
-from deephaven2.replay import TableReplayer
+from deephaven.replay import TableReplayer
 
 start_time = to_datetime("2000-01-01T00:00:00 NY")
 end_time = to_datetime("2000-01-01T00:01:40 NY")
@@ -53,8 +53,8 @@ After running this code, the `replayed_result` table begins updating in "real-ti
 Deephaven table operations do not discriminate between dynamic or static data; we can apply the same table operations to this table as we would any table.
 
 ```
-from deephaven2.replay import TableReplayer
-from deephaven2 import agg
+from deephaven.replay import TableReplayer
+from deephaven import agg
 
 start_time = to_datetime("2000-01-01T00:00:00 NY")
 end_time = to_datetime("2000-01-01T00:01:40 NY")

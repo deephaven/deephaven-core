@@ -5,7 +5,7 @@ In this notebook, we show how to perform joins with our time series data.
 Let's start again by simulating measurements of our values every minute, but this time using two tables with slightly different timestamps. This is great for a simulation because there's no guarantee that a real example will collect data with exact timestamp matches.
 
 ```python
-from deephaven2.time import now, to_nanos, minus
+from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("00:01:00")
 offset_0 = to_nanos("240:00:02")

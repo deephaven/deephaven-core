@@ -5,7 +5,7 @@ In this notebook, we show how to use Deephaven's time methods on time series dat
 Let's start again by simulating some real-time data, but this time with a shorter time interval.
 
 ```python
-from deephaven2.time import now, to_nanos, minus
+from deephaven.time import now, to_nanos, minus
 
 time_interval = to_nanos("00:00:01")
 offset = to_nanos("00:16:40")
@@ -21,7 +21,7 @@ Deephaven supports DateTime arithmetic through methods such as [plus](https://de
 This example shows how to subtract 2 hours from a timestamp:
 
 ```python
-from deephaven2.time import to_period
+from deephaven.time import to_period
 
 two_hours = to_period("T2H")
 
@@ -37,8 +37,8 @@ With time series data, binning methods like [lowerBin](https://deephaven.io/core
 This example shows how to group timestamps by the minute, and then store the sum of the `Number` column for each minute.
 
 ```python
-from deephaven2.time import to_nanos
-from deephaven2 import agg
+from deephaven.time import to_nanos
+from deephaven import agg
 
 agg_list = [
     agg.sum_(["Number"])

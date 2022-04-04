@@ -5,7 +5,7 @@ Throughout this demo notebook series, we show many of the ways to interact with 
 `time_table` is a great tool to simulate real-time data. We can use this and Python's `random` library to generate some fake data.
 
 ```python
-from deephaven2 import time_table
+from deephaven import time_table
 
 import random
 import string
