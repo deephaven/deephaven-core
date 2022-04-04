@@ -23,8 +23,10 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -120,9 +122,10 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         accumulated.clear();
         if (!updater.isEmpty() && !subscriptions.isEmpty()) {
             final FieldsChangeUpdate update = updater.build();
-            for (Subscription subscription : subscriptions) {
-                subscription.send(update);
-            }
+            // Send updates to all subscriptions, if they fail to handle the update, cancel the subscription
+            List<Subscription> toCancel = new ArrayList<>(subscriptions);
+            toCancel.removeIf(s -> s.send(update));
+            toCancel.forEach(Subscription::onCancel);
         }
     }
 
@@ -139,6 +142,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             }
             if (subscription.send(responseBuilder.build())) {
                 subscriptions.add(subscription);
+            } else {
+                subscription.onCancel();
             }
         });
     }
@@ -233,12 +238,17 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             remove(this);
         }
 
-        // must be sync wrt parent
+        /**
+         * Sends an update to the subscribed client. Returns true if successful - if false, the client is no longer
+         * listening and this subscription should be canceled after iteration.
+         *
+         * @param changes the updates to inform the client of
+         * @return true if the message was sent, false if an error occurred and the subscription should be canceled
+         */
         private boolean send(FieldsChangeUpdate changes) {
             try {
                 observer.onNext(changes);
             } catch (RuntimeException ignored) {
-                onCancel();
                 return false;
             }
             return true;
