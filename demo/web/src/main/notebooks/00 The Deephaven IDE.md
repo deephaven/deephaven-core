@@ -62,7 +62,7 @@ updating_table = time_table('00:00:00.400').update_view(["Row = i", "Some_Int = 
 3. [Kafka Stream vs Append](03%20Kafka%20Stream%20vs%20Append.md)
 
 
-Go to our [Quick start](https://deephaven.io/core/docs/tutorials/quickstart/) to install Deephaven from our pre-built images.
+Go to our [Quick start](https://deephaven.io/core/docs/tutorials/quickstart/) guide to install Deephaven from our pre-built images.
 
 Or simply [open the first notebook.](01%20Tables,%20Updates,%20and%20the%20Engine.md)
 
