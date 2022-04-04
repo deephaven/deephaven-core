@@ -58,7 +58,7 @@
 #
 # Run this script on the host (not on a docker image) to produce one row:
 #
-#    $ python3 kafka-produce.py orders 0 '' str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200", "User" : { "Name" : "Pepo", "Id" : 1234 } }'
+#    $ python3 kafka-produce.py orders 0 '' 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200", "User" : { "Name" : "Pepo", "Id" : 1234 } }'
 #
 # You should see one row of data as per above showing up in the UI.
 #
