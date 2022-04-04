@@ -16,9 +16,9 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
     private JsonNodeChunkAdapter(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> fieldNamesToColumnNames,
+            final Map<String, String> jsonPointerStrToColumnNames,
             final boolean allowNulls) {
-        super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls,
+        super(definition, chunkTypeForIndex, jsonPointerStrToColumnNames, allowNulls,
                 JsonNodeChunkAdapter::makeFieldCopier);
     }
 
@@ -27,17 +27,17 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
      *
      * @param definition the definition of the output table
      * @param chunkTypeForIndex a function from column index to chunk type
-     * @param fieldNamesToColumnNames a map from JSON field names to Deephaven column names
+     * @param jsonPointerStrToColumnNames a map from JSON pointer strings to Deephaven column names
      * @param allowNulls true if null records should be allowed, if false then an ISE is thrown
      * @return a JsonRecordChunkAdapter for the given definition and column mapping
      */
     public static JsonNodeChunkAdapter make(
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
-            final Map<String, String> fieldNamesToColumnNames,
+            final Map<String, String> jsonPointerStrToColumnNames,
             final boolean allowNulls) {
         return new JsonNodeChunkAdapter(
-                definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls);
+                definition, chunkTypeForIndex, jsonPointerStrToColumnNames, allowNulls);
     }
 
     private static FieldCopier makeFieldCopier(

@@ -5,9 +5,9 @@ import numba as nb
 import ast
 
 from numba import jit, typeof, vectorize, guvectorize
-from deephaven.lang.tools import int32_, int64_, float32_, float64_
+from deephaven_legacy.lang.tools import int32_, int64_, float32_, float64_
 
-from deephaven.lang.vectorize_simple import new_vec_function
+from deephaven_legacy.lang.vectorize_simple import new_vec_function
 
 # you may want to do something like this if you don't have your IDE setup correctly
 # import sys

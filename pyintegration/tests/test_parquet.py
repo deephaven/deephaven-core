@@ -6,9 +6,9 @@ import shutil
 import unittest
 import tempfile
 
-from deephaven2 import empty_table, dtypes, new_table
-from deephaven2.column import InputColumn
-from deephaven2.parquet import write_table, write_tables, read_table, delete_table, ColumnInstruction
+from deephaven import empty_table, dtypes, new_table
+from deephaven.column import InputColumn
+from deephaven.parquet import write_table, write_tables, read_table, delete_table, ColumnInstruction
 
 from tests.testbase import BaseTestCase
 

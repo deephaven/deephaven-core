@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.jetty.JettyServerComponent$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.server.jetty.JettyServerComponent"
+ },
+ "path": "io.deephaven.server.jetty.JettyServerComponent.Builder",
+ "typeName": "interface"
+}

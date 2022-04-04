@@ -6,8 +6,8 @@
 
 import unittest
 from unittest import TestCase
-from deephaven import as_list, SortColumn, ColumnName
-from deephaven.TableTools import newTable, intCol, diff
+from deephaven_legacy import as_list, SortColumn, ColumnName
+from deephaven_legacy.TableTools import newTable, intCol, diff
 
 class SortTestCase(TestCase):
     def test_sort_syntax(self):

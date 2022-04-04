@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.extensions.barrage.chunk.vector.ObjectVectorExpansionKernel",
- "methods": {
-  "contract": "This contracts the source from a pair of LongChunk and Chunk<T> and produces a\n Chunk<T[]>. The returned chunk is owned by the caller.\n\nNote: Java generics information - <A extends io.deephaven.chunk.attributes.Any>\n\n:param source: (io.deephaven.chunk.Chunk<A>) - the source chunk of T to contract\n:param perElementLengthDest: (io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>) - the source IntChunk for which dest.get(i + 1) - dest.get(i) is equivalent to\n        source.get(i).length\n:return: (io.deephaven.chunk.WritableObjectChunk<io.deephaven.vector.Vector<?>,A>) a result chunk of T[]",
-  "expand": "This expands the source from a TVector per element to a flat T per element. The kernel records\n the number of consecutive elements that belong to a row in perElementLengthDest. The returned chunk is\n owned by the caller.\n\nNote: Java generics information - <A extends io.deephaven.chunk.attributes.Any>\n\n:param source: (io.deephaven.chunk.ObjectChunk<io.deephaven.vector.Vector<?>,A>) - the source chunk of TVector to expand\n:param perElementLengthDest: (io.deephaven.chunk.WritableIntChunk<io.deephaven.chunk.attributes.ChunkPositions>) - the destination IntChunk for which dest.get(i + 1) - dest.get(i) is\n        equivalent to source.get(i).length\n:return: (io.deephaven.chunk.WritableChunk<A>) an unrolled/flattened chunk of T"
- },
- "path": "io.deephaven.extensions.barrage.chunk.vector.ObjectVectorExpansionKernel",
- "typeName": "class"
-}

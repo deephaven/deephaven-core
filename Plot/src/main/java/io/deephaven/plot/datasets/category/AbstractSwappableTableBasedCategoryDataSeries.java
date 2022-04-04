@@ -38,10 +38,10 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     }
 
     @Override
-    public CategoryDataSeries pointShape(final Function<Comparable, String> shapes) {
+    public CategoryDataSeries pointShape(final Function<Comparable, String> pointShapes) {
         final String colName = ColumnNameConstants.POINT_SHAPE + this.hashCode();
         chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(shapes, String.class, colName));
+                constructTableMapFromFunctionOnCategoryCol(pointShapes, String.class, colName));
         getSwappableTable().getTableMapHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
@@ -60,10 +60,10 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     }
 
     @Override
-    public <NUMBER extends Number> CategoryDataSeries pointSize(final Function<Comparable, NUMBER> factors) {
+    public <NUMBER extends Number> CategoryDataSeries pointSize(final Function<Comparable, NUMBER> pointSizes) {
         final String colName = ColumnNameConstants.POINT_SIZE + this.hashCode();
         chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(factors, Number.class, colName));
+                constructTableMapFromFunctionOnCategoryCol(pointSizes, Number.class, colName));
         getSwappableTable().getTableMapHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
@@ -76,10 +76,10 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     }
 
     @Override
-    public <COLOR extends Paint> CategoryDataSeries pointColor(final Function<Comparable, COLOR> colors) {
+    public <COLOR extends Paint> CategoryDataSeries pointColor(final Function<Comparable, COLOR> pointColor) {
         final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
         chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(colors, Paint.class, colName));
+                constructTableMapFromFunctionOnCategoryCol(pointColor, Paint.class, colName));
         getSwappableTable().getTableMapHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
@@ -114,26 +114,10 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
     }
 
     @Override
-    public <T extends Paint> CategoryDataSeries pointColorByY(Function<Double, T> colors) {
-        final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(colors, Paint.class, colName));
-        getSwappableTable().getTableMapHandle().addColumn(colName);
-        chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
-            ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
-                    .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .colorsSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(),
-                                    getCategoryCol(), colName, Comparable.class, Paint.class, getPlotInfo()));
-            return figImpl;
-        }, this));
-        return this;
-    }
-
-    @Override
-    public <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels) {
+    public <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> pointLabels) {
         final String colName = ColumnNameConstants.POINT_LABEL + this.hashCode();
         chart().figure().registerTableMapFunction(getSwappableTable().getTableMapHandle(),
-                constructTableMapFromFunctionOnCategoryCol(labels, Object.class, colName));
+                constructTableMapFromFunctionOnCategoryCol(pointLabels, Object.class, colName));
         getSwappableTable().getTableMapHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()

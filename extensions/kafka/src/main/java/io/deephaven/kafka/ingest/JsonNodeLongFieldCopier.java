@@ -5,6 +5,7 @@
  */
 package io.deephaven.kafka.ingest;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -12,10 +13,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.attributes.Values;
 
 public class JsonNodeLongFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final JsonPointer fieldPointer;
 
-    public JsonNodeLongFieldCopier(String fieldName) {
-        this.fieldName = fieldName;
+    public JsonNodeLongFieldCopier(final String fieldPointerStr) {
+        this.fieldPointer = JsonPointer.compile(fieldPointerStr);
     }
 
     @Override
@@ -26,7 +27,7 @@ public class JsonNodeLongFieldCopier implements FieldCopier {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
-            output.set(ii + destOffset, JsonNodeUtil.getLong(node, fieldName, true, true));
+            output.set(ii + destOffset, JsonNodeUtil.getLong(node, fieldPointer, true, true));
         }
     }
 }

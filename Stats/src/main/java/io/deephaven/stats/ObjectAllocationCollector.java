@@ -12,13 +12,14 @@ import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 
+import java.util.Objects;
+
 /**
- * Use the allocation instrumenter from http://code.google.com/p/java-allocation-instrumenter/ to produce stats
+ * Use the allocation instrumenter from https://github.com/google/allocation-instrumenter to produce stats
  *
  * To use make sure you set
  *
- * -j -Dallocation.stats.enabled=true -j -Xbootclasspath/a:java_lib/allocation-2.0.jar -j
- * -javaagent:java_lib/allocation-2.0.jar (maybe even use -j -noverify)
+ * -Dallocation.stats.enabled=true -javaagent:/opt/deephaven/server/lib/java-allocation-instrumenter-3.3.0.jar
  */
 public class ObjectAllocationCollector {
 
@@ -86,7 +87,7 @@ public class ObjectAllocationCollector {
             if (null == dumpStack) {
                 if (null != CLASS_NAMES) {
                     for (String sClassName : CLASS_NAMES) {
-                        if (sClassName == clazz.getName()) {
+                        if (Objects.equals(sClassName, clazz.getName())) {
                             dumpStack = Boolean.TRUE;
                             return;
                         }

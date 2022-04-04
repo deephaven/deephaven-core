@@ -5,9 +5,9 @@ import time
 import unittest
 from dataclasses import dataclass
 
-from deephaven2 import DHError, dtypes, new_table
-from deephaven2._jcompat import j_array_list
-from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
+from deephaven import DHError, dtypes, new_table
+from deephaven._jcompat import j_array_list
+from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, jobj_col, ColumnType
 from tests.testbase import BaseTestCase
 

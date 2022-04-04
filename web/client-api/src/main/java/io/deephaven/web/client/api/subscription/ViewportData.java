@@ -87,7 +87,7 @@ public class ViewportData implements TableData {
             data[rowFormatColumn] = dataColumns[rowFormatColumn];
         }
 
-        // Grow all columns to match the size of the viewport, if necesssary
+        // Grow all columns to match the size of the viewport, if necessary
         if (length < maxLength) {
             for (int i = 0; i < data.length; i++) {
                 if (data[i] != null) {
@@ -456,14 +456,14 @@ public class ViewportData implements TableData {
             int i = 0;
             while (it.hasNext()) {
                 long modifiedOffset = it.nextLong();
-                long internalOffset = (modifiedOffset - offset);
+                int internalOffset = (int) (modifiedOffset - offset);
                 if (internalOffset < 0 || internalOffset >= maxLength) {
                     i++;
                     continue;// data we don't need to see, either meant for another table, or we just sent a viewport
                              // update
                 }
-                existingColumnData.setAt((int) internalOffset, updatedColumnData.getAtAsAny(i));
-                updated.modified.add((int) internalOffset);
+                existingColumnData.setAt(internalOffset, updatedColumnData.getAtAsAny(i));
+                updated.modified.add(internalOffset);
                 i++;
             }
         }
@@ -492,8 +492,16 @@ public class ViewportData implements TableData {
                                  // viewport update
                     }
                     assert internalOffset < existingColumnData.length;
+
+                    Any existing = existingColumnData.getAt(internalOffset);
+                    if (existing == NULL_SENTINEL || internalOffset >= length) {
+                        // space was set aside or was left at the end of the array for this value, it is a new addition
+                        updated.added.add(internalOffset);
+                    } else {
+                        // we're overwriting some existing value
+                        updated.modified.add(internalOffset);
+                    }
                     existingColumnData.setAt(internalOffset, addedColumnData.getAtAsAny(i));
-                    updated.added.add(internalOffset);
                     i++;
                 }
             }

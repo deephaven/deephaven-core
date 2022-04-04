@@ -4,9 +4,9 @@
 
 import unittest
 
-from deephaven2 import DHError, new_table, TableReplayer
-from deephaven2.column import int_col, datetime_col
-from deephaven2.time import to_datetime
+from deephaven import DHError, new_table, TableReplayer
+from deephaven.column import int_col, datetime_col
+from deephaven.time import to_datetime
 from tests.testbase import BaseTestCase
 
 

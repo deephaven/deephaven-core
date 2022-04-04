@@ -34,7 +34,7 @@ if (hasProperty('groovy')) {
     extraJvmArgs += ['-Ddeephaven.console.type=groovy']
 }
 
-if (property('includeHotspotImpl') == 'true') {
+if (!hasProperty('excludeHotspotImpl')) {
     dependencies {
         runtimeOnly project(':hotspot-impl')
     }

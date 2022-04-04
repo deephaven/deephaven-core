@@ -22,7 +22,7 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven import ConsumeKafka as ck
+#    > from deephaven_legacy import ConsumeKafka as ck
 #
 # == Example (1)  Simple String Key and simple double Value
 #
@@ -53,12 +53,12 @@
 #
 # From web UI do:
 #
-#    > import deephaven.Types as dh
-#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_) ]), table_type='append')
+#    > import deephaven_legacy.Types as dh
+#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_), ('UserName', dh.string), ('UserId', dh.int_) ], mapping = { '/User/Name' : 'UserName', '/User/Id' : 'UserId'}), table_type='append')
 #
 # Run this script on the host (not on a docker image) to produce one row:
 #
-#    $ python3 kafka-produce.py orders 0 '' 'str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200" }'
+#    $ python3 kafka-produce.py orders 0 '' str:{ "Symbol" : "MSFT", "Side" : "BUY", "Price" : "278.85", "Qty" : "200", "User" : { "Name" : "Pepo", "Id" : 1234 } }'
 #
 # You should see one row of data as per above showing up in the UI.
 #

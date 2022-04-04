@@ -105,9 +105,9 @@ public abstract class BiDiStream<Req, Resp> {
 
             native void end();
 
-            native WebsocketBiDiStream<ReqT, ResT> on(String type, Function handler);
+            native BidirectionalStreamWrapper<ReqT, ResT> on(String type, Function handler);
 
-            native WebsocketBiDiStream<ReqT, ResT> write(ReqT message);
+            native BidirectionalStreamWrapper<ReqT, ResT> write(ReqT message);
         }
 
         private final BidirectionalStreamWrapper<T, U> wrapped;

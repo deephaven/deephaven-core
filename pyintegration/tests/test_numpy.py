@@ -7,12 +7,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from deephaven2 import DHError, new_table, dtypes
-from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
+from deephaven import DHError, new_table, dtypes
+from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
-from deephaven2.constants import NULL_LONG, MAX_LONG
-from deephaven2.numpy import to_numpy, to_table
-from deephaven2._jcompat import j_array_list
+from deephaven.constants import NULL_LONG, MAX_LONG
+from deephaven.numpy import to_numpy, to_table
+from deephaven._jcompat import j_array_list
 
 
 @dataclass

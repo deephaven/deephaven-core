@@ -1,5 +1,5 @@
 import os
-from deephaven import start_jvm, jpy
+from deephaven_legacy import start_jvm, jpy
 
 
 def build_py_session():

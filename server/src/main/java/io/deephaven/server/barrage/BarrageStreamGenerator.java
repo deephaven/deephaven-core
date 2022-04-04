@@ -434,12 +434,14 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            ByteBuffer metadata = generator.getSnapshotMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
                 visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, null, generator::appendAddColumns));
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
                 offset += batchSize;
+                metadata = null;
             }
 
             addRowOffsets.close();
@@ -778,12 +780,66 @@ public class BarrageStreamGenerator implements
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
         BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
         BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
         BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
         BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
         BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
         BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
+        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
+
+        final FlatBufferBuilder header = new FlatBufferBuilder();
+        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+        BarrageMessageWrapper.startBarrageMessageWrapper(header);
+        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
+        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
+        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
+        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
+
+        return header.dataBuffer().slice();
+    }
+
+    private ByteBuffer getSnapshotMetadata(final SnapshotView view) throws IOException {
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int effectiveViewportOffset = 0;
+        if (view.isViewport()) {
+            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
+                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
+            }
+        }
+
+        int effectiveColumnSetOffset = 0;
+        if (view.subscribedColumns != null) {
+            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
+        }
+
+        final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
+
+        // no shifts in a snapshot, but need to provide a valid structure
+        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
+        // Added Chunk Data:
+        int addedRowsIncludedOffset = 0;
+        if (view.isViewport()) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        }
+
+        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
+        BarrageUpdateMetadata.addNumAddBatches(metadata,
+                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
+        BarrageUpdateMetadata.addNumModBatches(metadata, 0);
+        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
+        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
+        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
+        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
+        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
+        BarrageUpdateMetadata.addRemovedRows(metadata, 0);
+        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
+        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
+        BarrageUpdateMetadata.addModColumnNodes(metadata, 0);
+        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();

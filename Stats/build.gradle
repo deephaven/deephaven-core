@@ -3,9 +3,9 @@ plugins {
 }
 
 dependencies {
-    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':FishUtil'),
+    implementation project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':FishUtil'),
             project(':Net')
-    compile depAllocation
+    compileOnly 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:3.3.0'
 
     testCompile project(path: ':Base', configuration: 'tests')
 

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.stats.ObjectAllocationCollector",
- "methods": {},
- "path": "io.deephaven.stats.ObjectAllocationCollector",
- "text": "Use the allocation instrumenter from http://code.google.com/p/java-allocation-instrumenter/ to produce stats\n\n To use make sure you set\n\n -j -Dallocation.stats.enabled=true -j -Xbootclasspath/a:java_lib/allocation-2.0.jar -j\n -javaagent:java_lib/allocation-2.0.jar (maybe even use -j -noverify)",
- "typeName": "class"
-}
