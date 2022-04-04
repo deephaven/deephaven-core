@@ -142,6 +142,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             }
             if (subscription.send(responseBuilder.build())) {
                 subscriptions.add(subscription);
+            } else {
+                subscription.onCancel();
             }
         });
     }
