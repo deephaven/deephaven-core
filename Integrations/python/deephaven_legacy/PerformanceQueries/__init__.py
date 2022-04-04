@@ -83,14 +83,15 @@ def processInfo(processInfoId, type, key):
 
 
 @_passThrough
-def processMemory():
+def serverState():
     """
-    A user friendly view with basic memory and GC data samples for the current engine process.
+    A user friendly view with basic memory, update graph processor and GC data stats for the current engine process,
+    sampled on a periodic basis.
     
-    :return: (io.deephaven.engine.table.Table) a view on ProcessMemoryLog.
+    :return: (io.deephaven.engine.table.Table) a view on ServerStateLog.
     """
     
-    return _java_type_.processMemory()
+    return _java_type_.serverState()
 
 
 @_passThrough

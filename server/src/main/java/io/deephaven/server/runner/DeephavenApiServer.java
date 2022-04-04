@@ -3,7 +3,7 @@ package io.deephaven.server.runner;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
-import io.deephaven.engine.table.impl.util.ProcessMemoryTracker;
+import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -118,7 +118,7 @@ public class DeephavenApiServer {
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
         UpdatePerformanceTracker.start();
-        ProcessMemoryTracker.start();
+        ServerStateTracker.start();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();

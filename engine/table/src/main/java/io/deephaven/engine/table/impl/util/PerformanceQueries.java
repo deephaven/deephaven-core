@@ -266,16 +266,17 @@ public class PerformanceQueries {
     }
 
     /**
-     * A user friendly view with basic memory and GC data samples for the current engine process.
+     * A user friendly view with basic memory, UGP and GC stats samples for the current engine process,
+     * collected on a periodic basis.
      *
      * @return a view on ProcessMemoryLog.
      */
     @ScriptApi
-    public static Table processMemory() {
+    public static Table serverState() {
         final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
         final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
-        final Table pml = TableLoggers.processMemoryLog().naturalJoin(maxMem, "");
+        final Table pml = TableLoggers.serverStateLog().naturalJoin(maxMem, "");
         Table pm = pml.updateView(
                 "TotalMemMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
                 "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
@@ -286,16 +287,24 @@ public class PerformanceQueries {
                 "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
-                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)",
+                "UGPCyclesFinished = IntervalUGPCyclesFinished",
+                "UGPCyclesFinishedTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTimeNanos, IntervalDurationNanos)",
+                "UGPCyclesFinishedSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedSafePointTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
                 "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
                         "((AvailMemRatio < 0.10) ? PALE_REDPURPLE : " +
                         "((AvailMemRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPCyclesFinishedTimeRatio=Decimal(`#0.0%`)",
+                "UGPCyclesFinishedSafePointTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=(GcTimeRatio >= 0.75) ? PALE_RED : " +
                         "((GcTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
                         "((GcTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPCyclesFinishedTimeRatio=(UGPCyclesFinishedTimeRatio >= 0.99) ? PALE_RED : " +
+                        "((UGPCyclesFinishedTimeRatio >= 0.95) ? PALE_REDPURPLE : " +
+                        "((UGPCyclesFinishedTimeRatio > 0.90) ? PALE_PURPLE : NO_FORMATTING))",
                 "IntervalSeconds=Decimal(`#0.000`)");
         return pm;
     }

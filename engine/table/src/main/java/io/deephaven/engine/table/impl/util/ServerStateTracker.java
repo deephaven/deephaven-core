@@ -1,26 +1,27 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tablelogger.ProcessMemoryLogLogger;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.tablelogger.ServerStateLog;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
 
-public class ProcessMemoryTracker {
+public class ServerStateTracker {
     private static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
-            ProcessMemoryTracker.class, "reportIntervalMillis", 15 * 1000L);
+            ServerStateTracker.class, "reportIntervalMillis", 15 * 1000L);
 
-    private static volatile ProcessMemoryTracker INSTANCE;
+    private static volatile ServerStateTracker INSTANCE;
     private static boolean started = false;
 
-    public static ProcessMemoryTracker getInstance() {
+    public static ServerStateTracker getInstance() {
         if (INSTANCE == null) {
-            synchronized (ProcessMemoryTracker.class) {
+            synchronized (ServerStateTracker.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new ProcessMemoryTracker();
+                    INSTANCE = new ServerStateTracker();
                 }
             }
         }
@@ -29,16 +30,20 @@ public class ProcessMemoryTracker {
 
     private final Logger logger;
 
-    private final MemoryTableLogger<ProcessMemoryLogLogger> processMemLogger;
+    private final MemoryTableLogger<ServerStateLog> processMemLogger;
+    private final UpdateGraphProcessor.AccumulatedCycleStats upgAccumCycleStats;
 
-    private ProcessMemoryTracker() {
-        logger = LoggerFactory.getLogger(ProcessMemoryTracker.class);
+    private ServerStateTracker() {
+        logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = new MemoryTableLogger<>(
-                logger, new ProcessMemoryLogLogger(), ProcessMemoryLogLogger.getTableDefinition());
+                logger, new ServerStateLog(), ServerStateLog.getTableDefinition());
+        upgAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
     }
 
     private void startThread() {
-        Thread driverThread = new Thread(new ProcessMemoryTracker.Driver(), "ProcessMemoryTracker.Driver");
+        Thread driverThread = new Thread(
+                new ServerStateTracker.Driver(),
+                ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
     }
@@ -67,13 +72,20 @@ public class ProcessMemoryTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
+                final long prevUgpCycles = upgAccumCycleStats.getTotalCycles();
+                final long prevUgpCyclesTimeNanos = upgAccumCycleStats.getTotalCyclesTimeNanos();
+                final long prevUgpSafePOintPauseTimeMillis = upgAccumCycleStats.getTotalSafePointPauseTimeMillis();
+                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.copyTo(upgAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(
                         intervalStartTimeMillis,
                         endTimeMillis,
                         memSample,
                         prevTotalCollections,
-                        prevTotalCollectionTimeMs);
+                        prevTotalCollectionTimeMs,
+                         upgAccumCycleStats.getTotalCycles() - prevUgpCycles,
+                        upgAccumCycleStats.getTotalCyclesTimeNanos() - prevUgpCyclesTimeNanos,
+                        upgAccumCycleStats.getTotalSafePointPauseTimeMillis() - prevUgpSafePOintPauseTimeMillis);
             }
         }
     }
@@ -81,7 +93,10 @@ public class ProcessMemoryTracker {
     private void logProcessMem(
             final long startMillis, final long endMillis,
             final RuntimeMemory.Sample sample,
-            final long prevTotalCollections, final long prevTotalCollectionTimeMs) {
+            final long prevTotalCollections, final long prevTotalCollectionTimeMs,
+            final long ugpCycles,
+            final long ugpCyclesNanos,
+            final long ugpSafePointTimeMillis) {
         try {
             processMemLogger.getTableLogger().log(
                     startMillis,
@@ -89,7 +104,10 @@ public class ProcessMemoryTracker {
                     sample.totalMemory,
                     sample.freeMemory,
                     sample.totalCollections - prevTotalCollections,
-                    DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs));
+                    DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
+                    ugpCycles,
+                    ugpCyclesNanos,
+                    DateTimeUtils.millisToNanos(ugpSafePointTimeMillis));
         } catch (IOException e) {
             // Don't want to log this more than once in a report
             logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();
