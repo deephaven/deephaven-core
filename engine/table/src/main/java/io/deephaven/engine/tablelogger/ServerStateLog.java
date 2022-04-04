@@ -37,8 +37,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 long intervalCollectionTimeNanos,
                 long intervalUGPCyclesFinished,
                 long intervalUGPCyclesFinishedTimeNanos,
-                long intervalUGPCyclesFinishedSafePointTimeNanos
-        ) throws IOException;
+                long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException;
     }
 
     class DirectSetter extends TableLoggerImpl2.BaseSetter implements ISetter {
@@ -61,7 +60,8 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             IntervalCollectionTimeNanos = row.getSetter("IntervalCollectionTimeNanos", long.class);
             IntervalUGPCyclesFinished = row.getSetter("IntervalUGPCyclesFinished", long.class);
             IntervalUGPCyclesFinishedTimeNanos = row.getSetter("IntervalUGPCyclesFinishedTimeNanos", long.class);
-            IntervalUGPCyclesFinishedSafePointTimeNanos = row.getSetter("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
+            IntervalUGPCyclesFinishedSafePointTimeNanos =
+                    row.getSetter("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
         }
 
         @Override
@@ -107,8 +107,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 .add("IntervalCollectionTimeNanos", long.class)
                 .add("IntervalUGPCyclesFinished", long.class)
                 .add("IntervalUGPCyclesFinishedTimeNanos", long.class)
-                .add("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class)
-                ;
+                .add("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getTypes();
     }
@@ -128,8 +127,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             final long intervalCollectionTimeNanos,
             final long intervalUGPCycles,
             final long intervalUGPCyclesFinishedTimeNanos,
-            final long intervalUGPCyclesFinishedSafePointTimeNanos
-            ) throws IOException {
+            final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS,
                 intervalStartTime,
                 intervalDurationNanos,
@@ -152,8 +150,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             final long intervalCollectionTimeNanos,
             final long intervalUGPCycles,
             final long intervalUGPCyclesFinishedTimeNanos,
-            final long intervalUGPCyclesFinishedSafePointTimeNanos
-    ) throws IOException {
+            final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");

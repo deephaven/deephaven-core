@@ -83,7 +83,7 @@ public class ServerStateTracker {
                         memSample,
                         prevTotalCollections,
                         prevTotalCollectionTimeMs,
-                         upgAccumCycleStats.getTotalCycles() - prevUgpCycles,
+                        upgAccumCycleStats.getTotalCycles() - prevUgpCycles,
                         upgAccumCycleStats.getTotalCyclesTimeNanos() - prevUgpCyclesTimeNanos,
                         upgAccumCycleStats.getTotalSafePointPauseTimeMillis() - prevUgpSafePOintPauseTimeMillis);
             }

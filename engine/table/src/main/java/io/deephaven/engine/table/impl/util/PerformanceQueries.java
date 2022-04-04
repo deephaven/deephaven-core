@@ -266,8 +266,8 @@ public class PerformanceQueries {
     }
 
     /**
-     * A user friendly view with basic memory, UGP and GC stats samples for the current engine process,
-     * collected on a periodic basis.
+     * A user friendly view with basic memory, UGP and GC stats samples for the current engine process, collected on a
+     * periodic basis.
      *
      * @return a view on ProcessMemoryLog.
      */
