@@ -4,7 +4,7 @@
 """ This module implements the Table class and functions that work with Tables. """
 from __future__ import annotations
 
-from typing import Union, TypeVar, Sequence
+from typing import Union, TypeVar, Sequence, List
 
 import jpy
 
@@ -66,10 +66,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table equality test failed.") from e
 
-    # to make the table visible to DH script session, internal use only
-    def get_dh_table(self):
-        return self.j_table
-
     @property
     def size(self) -> int:
         """The current number of rows in the table."""
@@ -81,7 +77,7 @@ class Table(JObjectWrapper):
         return self.j_table.isRefreshing()
 
     @property
-    def columns(self):
+    def columns(self) -> List[Column]:
         """The column definitions of the table."""
         if self._schema:
             return self._schema
