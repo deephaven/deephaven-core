@@ -14,8 +14,8 @@ First, let's create a Deephaven table.
 
 
 ```python
-from deephaven2 import new_table
-from deephaven2.column import double_col, float_col, int_col, string_col
+from deephaven import new_table
+from deephaven.column import double_col, float_col, int_col, string_col
 
 source = new_table([
     string_col("Strings", ["String 1", "String 2", "String 3"]),
@@ -26,24 +26,24 @@ source = new_table([
 ```
 
 
-To convert the Deephaven table to a DataFrame, import the [`to_pandas`](https://deephaven.io/core/pydoc/code/deephaven2.pandas.html?highlight=to_pandas#deephaven2.pandas.to_pandas) method and then perform the conversion. To see the DataFrame, we print it.
+To convert the Deephaven table to a DataFrame, import the [`to_pandas`](https://deephaven.io/core/pydoc/code/deephaven.pandas.html?highlight=to_pandas#deephaven.pandas.to_pandas) method and then perform the conversion. To see the DataFrame, we print it.
 
 ```python
-from deephaven2.pandas import to_pandas
+from deephaven.pandas import to_pandas
 
 data_frame = to_pandas(source)
 ```
 
 ## DataFrame to Table
 
-Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`to_table`](https://deephaven.io/core/pydoc/code/deephaven2.pandas.html?highlight=to_table#deephaven2.pandas.to_table) method.
+Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`to_table`](https://deephaven.io/core/pydoc/code/deephaven.pandas.html?highlight=to_table#deephaven.pandas.to_table) method.
 
 ```python
-from deephaven2.pandas import to_table
+from deephaven.pandas import to_table
 
 new_table = to_table(data_frame)
 ```
-The new Deephaven table will display in the IDE and the data will match the original data. To check that the data type conversions are accurate, we can look at the [column metadata](https://deephaven.io/core/pydoc/code/deephaven2.table.html?highlight=columns#deephaven2.table.Table.columns).
+The new Deephaven table will display in the IDE and the data will match the original data. To check that the data type conversions are accurate, we can look at the [column metadata](https://deephaven.io/core/pydoc/code/deephaven.table.html?highlight=columns#deephaven.table.Table.columns).
 
 For the DataFrame, we print the data types in the Console. For the Deephaven table, we create a new table containing the metadata information.
 
@@ -79,8 +79,8 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import int_col, string_col
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
 table = new_table([
     int_col("A", [1, 2, 3]),
@@ -189,15 +189,14 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import int_col, string_col
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
 table = new_table([
    int_col('A', [1, 2, 3, 4, 5, 6]),
    string_col('B', ['Z', 'Y', 'X', 'X', 'Y', 'Z']),
    int_col('C', [7, 2, 1, 5, 3, 4])
 ])
-
 ```
 
 
@@ -236,9 +235,9 @@ data_frame = pd.concat([data_frame1, data_frame2])
 print(data_frame)
 
 
-from deephaven2 import new_table
-from deephaven2.column import int_col
-from deephaven2.table_factory import merge
+from deephaven import new_table
+from deephaven.column import int_col
+from deephaven.table_factory import merge
 
 table1 = new_table([
     int_col("A", [1, 2])
@@ -266,8 +265,8 @@ data_frame = pd.merge(data_frameLeft, data_frameRight, on = 'A')
 
 print(data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import int_col, string_col
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
 table_left = new_table([
     int_col("A", [1, 2, 3]),
@@ -314,8 +313,8 @@ data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on = 'A')
 
 print(data_frame_aj)
 
-from deephaven2 import empty_table
-from deephaven2.time import to_datetime, to_period, plus_period
+from deephaven import empty_table
+from deephaven.time import to_datetime, to_period, plus_period
 
 def period(i):
     return to_period(f"{i}D")
@@ -354,8 +353,8 @@ data_frame = pd.DataFrame(
 avg_data_frame = data_frame.mean()
 print(avg_data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import int_col
+from deephaven import new_table
+from deephaven.column import int_col
 
 table = new_table([
     int_col("A", [1, 3, 5]),
@@ -389,9 +388,9 @@ def agg_list(data):
 grouped_data_frame = data_frame.groupby('A').apply(agg_list)
 print(grouped_data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import int_col, string_col
-from deephaven2 import agg
+from deephaven import new_table
+from deephaven.column import int_col, string_col
+from deephaven import agg
 
 table = new_table([
     string_col("A", ["X", "Y", "X", "Z", "Z", "X"]),
@@ -426,9 +425,9 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
-from deephaven2 import new_table
-from deephaven2.column import double_col
-from deephaven2.constants import NULL_DOUBLE
+from deephaven import new_table
+from deephaven.column import double_col
+from deephaven.constants import NULL_DOUBLE
 
 table = new_table([
     double_col("A", [1., 2., 3.]),

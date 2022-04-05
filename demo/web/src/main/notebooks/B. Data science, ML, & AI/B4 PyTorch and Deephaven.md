@@ -6,49 +6,32 @@ PyTorch is an open source machine learning library for Python.  It is a popular 
 In this notebook, we will use PyTorch to classify the Iris flower dataset.  This dataset contains 150 measurements of the petal length, petal width, sepal length, and sepal width of three different Iris flower subspecies: Iris-setosa, Iris-virginica, and Iris-versicolor.  The Iris flower dataset is commonly used in introductory AI/ML applications.  It is a classification problem: determine the class of Iris subspecies based off the four measurements given.
 \
 \
-Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, PyTorch imports, and additional required imports.
+Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, PyTorch imports, and standard Python imports.
 
 ```python
-# Deephaven imports
-from deephaven2.pandas import to_pandas, to_table
-from deephaven2 import DynamicTableWriter
-from deephaven2 import dtypes as dht
-from deephaven2.learn import gather
-from deephaven2.csv import read
-from deephaven2 import learn
+from deephaven.pandas import to_pandas, to_table
+from deephaven import DynamicTableWriter
+from deephaven import dtypes as dht
+from deephaven.learn import gather
+from deephaven.csv import read
+from deephaven import learn
 
-# PyTorch imports
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
-# Additional required imports
-import random, threading, time
-import pandas as pd
-import numpy as np
+import random, threading, time, pandas as pd, numpy as np
 ```
 \
 \
-We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file at a URL in our Examples repository.
+We will now import our data into Deephaven as a Pandas DataFrame and as a table.  The Iris dataset is available in many different places.  We'll grab it from a CSV file contained in the Examples repository.
 
 ```python
 iris_raw = read("/data/examples/Iris/csv/iris.csv")
-raw_iris = to_pandas(table = iris_raw)
 ```
 \
 \
-We now have the data in memory.  We need to split it into training and testing sets.  We'll use 120 random rows as our training set, and the other 30 as the testing set.
-
-```python
-raw_iris_train = raw_iris.sample(frac = 0.8)
-raw_iris_test = raw_iris.drop(raw_iris_train.index)
-
-iris_train_raw = to_table(df = raw_iris_train)
-iris_test_raw = to_table(df = raw_iris_test)
-```
-\
-\
-In order to classify Iris subspecies, they need to be quantized.  Let's quantize the `Class` column in our train and test tables using a simple function.
+With the data in memory, we need to convert the `Class` column to numeric values so that we can use them to train a neural network.
 
 ```python
 classes = {}
@@ -60,12 +43,24 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
-iris_test = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris = iris_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
 ```
 \
 \
-With our data quantized and split into training and testing sets, we can get to work doing the classification.  Let's start by defining and creating a neural network to do it.
+With the `Class` column quantized, we can now split this data into training and testing sets.  We'll do this with Pandas, where we'll split the data 80%/20% for train/test sets respectively.
+
+```
+df_iris = to_pandas(table = iris)
+
+df_iris_train = df_iris.sample(frac = 0.8)
+df_iris_test = df_iris.drop(df_iris_train.index)
+
+iris_train = to_table(df = df_iris_train)
+iris_test = to_table(df = df_iris_test)
+```
+\
+\
+With our data quantized and split into training/testing sets, we can get to work doing the classification.  Let's start by defining and constructing a neural network to do it.
 
 ```python
 class IrisANN(nn.Module):
@@ -80,8 +75,7 @@ class IrisANN(nn.Module):
         x = F.relu(self.input_layer(x))
         x = F.relu(self.hidden_layer(x))
         return self.output_layer(x)
-        
-# Create the IrisANN model
+
 model = IrisANN()
 ```
 \
@@ -102,87 +96,93 @@ def train_model(x_train, y_train):
         loss_arr.append(loss)
 
         if epoch % 10 == 0:
-            print(f"Epoch: {epoch} Loss: {loss}")
-
+            print(f"Epoch: {epoch} loss: {loss}")
+        
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 ```
 \
 \
-When our model is trained, we then need to use the trained network on the test dataset.  Let's construct a function to do just that.
+Before we can train the model on the training table, we have to define some helper functions.  In this case, we need two functions to gather table data into Torch tensors: one for double values, and a second for integers.
 
 ```python
-def predict_with_model(x_test):
-    if x_test.dim() == 1:
-        x_test = torch.unsqueeze(x_test, 0)
+def table_to_tensor_double(rows, cols):
+    return torch.from_numpy(gather.table_to_numpy_2d(rows, cols, np_type = np.double))
 
-    predictions = []
-
-    with torch.no_grad():
-        for val in x_test():
-            y_hat = model.forward(val)
-            predictions.append(y_hat.argmax().item())
-
-    return predictions
+def table_to_tensor_int(rows, cols):
+    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, cols, np_type = np.intc)))
 ```
 \
 \
-There's one last step we need to take before we do the machine learning.  We need to define how our model and the two functions will interact with data in our tables.  There will be two functions that gather data from a table, and one that scatters data back into an output table.
+It's time to train the model.  We do this with the learn function, which takes five inputs.  It takes a table, model function, list of inputs, list of outputs, and a batch size.  To make things easy, we'll set two variable: `x_cols` and `y_cols`, which contain the features and targets, respectively.
 
 ```python
-# A function to gather double values from a table into a torch tensor
-def table_to_tensor_double(rows, columns):
-    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, np_type = np.double)))
+x_cols = ["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"]
+y_cols = ["Class"]
 
-# A function to gather integer values from a table into a torch tensor
-def table_to_tensor_integer(rows, columns):
-    return torch.from_numpy(np.squeeze(gather.table_to_numpy_2d(rows, columns, np_type = int)))
-
-# A function to scatter integer model predictions back into a table
-def tensor_to_table_integer(predictions, index):
-    return int(predictions[index])
-```
-\
-\
-With that done, it's time to put everything together.  Let's start by training the neural network on our training table.
-
-```python
 learn.learn(
     table = iris_train,
     model_func = train_model,
-    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_tensor_double), 
-              learn.Input(["Class"], table_to_tensor_integer)],
+    inputs = [learn.Input(x_cols, table_to_tensor_double), learn.Input(y_cols, table_to_tensor_int)],
     outputs = None,
-    batch_size = iris_train.intSize()
+    batch_size = iris_train.size
 )
 ```
 \
 \
-Lastly, it's time to test how well our model works on the testing table.
+We now have a fully trained neural network in memory.  We need a way to use this trained model to make predictions, so let's define a function to do just that.
 
 ```python
-iris_test_predictions = learn.learn(
+def predict_with_model(features):
+    if features.dim() == 1:
+        features = torch.unsqueeze(features, 0)
+    preds = []
+
+    with torch.no_grad():
+        for val in features:
+            Y_hat = model.forward(val)
+            preds.append(Y_hat.argmax().item())
+
+    return preds
+```
+\
+\
+We lastly need to define a function to transfer the predictions from our model from Torch back into Deephaven tables.  This function is called a scatter function, and is simple.  We'll call it `get_predicted_class`.
+
+```python
+def get_predicted_class(data, idx):
+    return data[idx]
+```
+\
+\
+Let's see how well the trained model performs on the training data.
+
+```python
+iris_training_results = learn.learn(
+    table = iris_train,
+    model_func = predict_with_model,
+    inputs = [learn.Input(x_cols, table_to_tensor_double)],
+    outputs = [learn.Output("Prediction", get_predicted_class, "int")],
+    batch_size = iris_train.size
+)
+```
+\
+\
+We can do the same thing on the testing table.
+
+```python
+iris_testing_results = learn.learn(
     table = iris_test,
     model_func = predict_with_model,
-    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_tensor_double)],
-    outputs = [learn.Output("PredictedClass", tensor_to_table_integer, "int")],
-    batch_size = iris_test.intSize()
+    inputs = [learn.Input(x_cols, table_to_tensor_double)],
+    outputs = [learn.Output("Prediction", get_predicted_class, "int")],
+    batch_size = iris_test.size
 )
 ```
 \
 \
 Our model worked great!  So, we classified a static table of Iris flowers.  That's kind of cool, but let's take this to the next level by doing the classification in real-time.  We'll be able to use the work we've already done to make the live classifications.  We do, however, have to set up a live stream of fake Iris measurements.  Let's get the minimum and maximum values of each observation so that we can keep these faux measurements realistic.
-
-```python
-min_petal_length, max_petal_length = raw_iris["PetalLengthCM"].min(), raw_iris["PetalLengthCM"].max()
-min_petal_width, max_petal_width = raw_iris["PetalWidthCM"].min(), raw_iris["PetalWidthCM"].max()
-min_sepal_length, max_sepal_length = raw_iris["SepalLengthCM"].min(), raw_iris["SepalLengthCM"].max()
-min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["SepalWidthCM"].max()
-```
-\
-\
-With these quantities now calculated and stored in memory, we need to set up a live table that we can write faux measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
 table_writer = DynamicTableWriter(
@@ -191,17 +191,17 @@ table_writer = DynamicTableWriter(
 
 live_iris = table_writer.table
 
-def write_faux_iris_measurements():
+def write_to_iris():
     for i in range(60):
-        sepal_length = np.round(random.uniform(min_sepal_length, max_sepal_length), 1)
-        sepal_width = np.round(random.uniform(min_sepal_width, max_sepal_width), 1)
-        petal_length = np.round(random.uniform(min_petal_length, max_petal_length), 1)
-        petal_width = np.round(random.uniform(min_petal_width, max_petal_width), 1)
+        petal_length = random.randint(10, 69) / 10
+        petal_width = random.randint(1, 25) / 10
+        sepal_length = random.randint(43, 79) / 10
+        sepal_width = random.randint(20, 44) / 10
 
         table_writer.write_row(sepal_length, sepal_width, petal_length, petal_width)
         time.sleep(1)
 
-thread = threading.Thread(target = write_faux_iris_measurements)
+thread = threading.Thread(target = write_to_iris)
 thread.start()
 ```
 \
@@ -212,11 +212,11 @@ Now we've got some faux live incoming measurements.  We can just use the model w
 iris_predictions_live = learn.learn(
     table = live_iris,
     model_func = predict_with_model,
-    inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_tensor_double)],
-    outputs = [learn.Output("PredictedClass", tensor_to_table_integer, "int")],
-    batch_size = 5
+    inputs = [learn.Input(x_cols, table_to_tensor_double)],
+    outputs = [learn.Output("Prediction", get_predicted_class, "int")],
+    batch_size = 10
 )
 ```
 \
 \
-And there we have it.  Our model is working on live data.  The only extra work we needed to make that happen was to set up the real-time data stream.  Pretty simple!  This may be a toy problem, but the steps hold true to more complex ones.
+And there we have it.  Our model is working on live data.  The only extra work we needed to make that happen was to set up the real-time data stream.  Pretty simple!  This may be a simple problem, but the approach to solving it holds true to more complex ones.
