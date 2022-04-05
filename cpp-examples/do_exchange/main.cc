@@ -41,7 +41,7 @@ class Callback final : public TickingCallback {
 public:
   void onFailure(std::exception_ptr ep) final;
   void onTick(const std::shared_ptr<SadTable> &table) final;
-  bool failed() { return failed_; }
+  bool failed() const { return failed_; }
 
 private:
     std::atomic<bool> failed_ = false;
@@ -156,7 +156,7 @@ void doit(const TableHandleManager &manager) {
   //      .head(10);
 
   auto myCallback = std::make_shared<Callback>();
-  tt1.subscribeToAppendOnlyTable(myCallback);
+  tt1.subscribe(myCallback);
   uint32_t tens_of_seconds_to_run = 50000;
   while (tens_of_seconds_to_run-- > 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds (100));
@@ -166,7 +166,7 @@ void doit(const TableHandleManager &manager) {
       }
   }
   std::cerr << "I unsubscribed here.\n";
-  tt1.unsubscribeFromAppendOnlyTable(std::move(myCallback));
+  tt1.unsubscribe(std::move(myCallback));
   std::this_thread::sleep_for(std::chrono::seconds(5));
   std::cerr << "exiting.\n";
 }
@@ -206,13 +206,37 @@ void doit(const TableHandleManager &manager) {
 //      .head(10);
 
 
+void makeModifiesHappen(const TableHandleManager &manager) {
+  auto start = std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count();
+
+  auto tLeft = manager
+      .emptyTable(10)
+      .select("II = ii", "Zamboni = ii");
+  auto tRight = manager
+      .timeTable(start, 1 * 1'000'000'000L)
+      .select("II = 0L", "TS = (long)(Timestamp.getNanos()/1000000000)")
+      .tail(1);
+  auto tt1 = tLeft.naturalJoin(tRight, {"II"}, {}).select("II", "Zamboni", "TS");
+
+  tt1.bindToVariable("showme");
+
+  auto myCallback = std::make_shared<Callback>();
+  tt1.subscribe(myCallback);
+  std::this_thread::sleep_for(std::chrono::seconds(5'000));
+  std::cerr << "I unsubscribed here\n";
+  tt1.unsubscribe(std::move(myCallback));
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  std::cerr << "exiting\n";
+}
+
 int main() {
   const char *server = "localhost:10000";
 
   try {
     auto client = Client::connect(server);
     auto manager = client.getManager();
-    doit(manager);
+    makeModifiesHappen(manager);
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }

@@ -59,6 +59,7 @@ using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
 
 using io::deephaven::barrage::flatbuf::BarrageMessageType;
+using io::deephaven::barrage::flatbuf::BarrageModColumnMetadata;
 using io::deephaven::barrage::flatbuf::BarrageUpdateMetadata;
 using io::deephaven::barrage::flatbuf::ColumnConversionMode;
 using io::deephaven::barrage::flatbuf::CreateBarrageMessageWrapper;
@@ -514,83 +515,6 @@ void ThreadNubbin::runForever(const std::shared_ptr<ThreadNubbin> &self) {
   std::cerr << "ThreadNubbin is exiting. Bye.\n";
 }
 
-namespace {
-void dumpyIndex(std::string_view what, const SadRowSequence &index) {
-  streamf(std::cerr, "%o: %o items: {%o}\n", what, index.size(), index);
-}
-
-std::shared_ptr<SadRowSequence> dumpyRawIndex(std::string_view what, const flatbuffers::Vector<int8_t> &vec) {
-  DataInput di(vec.data(), vec.size());
-  auto index = readExternalCompressedDelta(&di);
-  dumpyIndex(what, *index);
-  return index;
-}
-
-//void dumpyVec(std::string_view what, const flatbuffers::Vector<int8_t> &vec) {
-//  auto printme = [](std::ostream &s, int64_t item) {
-//    s << (int)item;
-//  };
-//  streamf(std::cerr, "%o: %o items: %o\n", what, vec.size(),
-//      separatedList(vec.begin(), vec.end(), ", ", printme));
-//}
-
-
-void dumpyModColumnNodes(const flatbuffers::Vector<flatbuffers::Offset<io::deephaven::barrage::flatbuf::BarrageModColumnMetadata>> &mcmd) {
-  for (size_t i = 0; i < mcmd.size(); ++i) {
-    const auto &elt = mcmd.Get(i);
-    auto index = dumpyRawIndex(stringf("mod for col %o", i), *elt->modified_rows());
-    if (!index->empty()) {
-      std::cerr << "ZAMBONI TIME\n";
-    }
-  }
-}
-
-
-#if 0
-void addedSetShifter(int64_t start, int64_t endInclusive, int64_t delta, std::set<int64_t> *set) {
-  if (delta < 0) {
-    auto currentp = set->lower_bound(start);
-    while (true) {
-      if (currentp == set->end() || *currentp > endInclusive) {
-        return;
-      }
-      auto nextp = std::next(currentp);
-      auto node = set->extract(currentp);
-      node.value() += delta;
-      set->insert(std::move(node));
-      currentp = nextp;
-    }
-    return;
-  }
-
-  // delta >=0 so move in the reverse direction
-  auto currentp = set->upper_bound(endInclusive);
-  if (currentp == set->begin()) {
-    return;
-  }
-  --currentp;
-  while (true) {
-    if (*currentp < start) {
-      return;
-    }
-    std::optional<std::set<int64_t>::iterator> nextp;
-    if (currentp != set->begin()) {
-      nextp = std::prev(currentp);
-    }
-    auto node = set->extract(currentp);
-    auto newValue = node.value() + delta;
-    streamf(std::cerr, "Moving value from %o to %o\n", node.value(), newValue);
-    node.value() = newValue;
-    set->insert(std::move(node));
-    if (!nextp.has_value()) {
-      return;
-    }
-    currentp = *nextp;
-  }
-}
-#endif
-}  // namespace
-
 void ThreadNubbin::runForeverHelper() {
     std::exception_ptr eptr;
     try {
@@ -665,11 +589,16 @@ void ThreadNubbin::runForeverHelperImpl() {
     // modifies
 
     if (!addedRows->empty()) {
-      std::cerr << "There was some new data:\n";
-      const auto &foo = flightStreamChunk.data->columns()[0];
-      for (uint32_t ii = 0; ii < addedRows->size(); ++ii) {
-        const auto &res = foo->GetScalar(ii);
-        streamf(std::cerr, "new key %o, value %o\n", ii, res.ValueOrDie()->ToString());
+      streamf(std::cerr, "There was some new data: %o rows, %o columns:\n",
+          flightStreamChunk.data->num_rows(), flightStreamChunk.data->num_columns());
+      const auto &srcCols = flightStreamChunk.data->columns();
+      for (size_t colNum = 0; colNum < srcCols.size(); ++colNum) {
+        streamf(std::cerr, "Column %o\n", colNum);
+        const auto &srcCol = srcCols[colNum];
+        for (uint32_t ii = 0; ii < addedRows->size(); ++ii) {
+          const auto &res = srcCol->GetScalar(ii);
+          streamf(std::cerr, "%o: %o\n", ii, res.ValueOrDie()->ToString());
+        }
       }
     }
 
@@ -682,35 +611,57 @@ void ThreadNubbin::runForeverHelperImpl() {
     }
 
     // 3. Adds
-    auto unwrappedTable = sadTable->add(*addedRows);
-    auto rowKeys = unwrappedTable->getUnorderedRowKeys();
+    {
+      auto unwrappedTable = sadTable->add(*addedRows);
+      auto rowKeys = unwrappedTable->getUnorderedRowKeys();
 
-    const auto &srcCols = flightStreamChunk.data->columns();
-    auto ncols = srcCols.size();
-    if (ncols != sadTable->numColumns()) {
-      auto message = stringf("Received %o columns, but my table has %o columns", ncols,
-          sadTable->numColumns());
-      throw std::runtime_error(message);
+      const auto &srcCols = flightStreamChunk.data->columns();
+      auto ncols = srcCols.size();
+      if (ncols != sadTable->numColumns()) {
+        auto message = stringf("Received %o columns, but my table has %o columns", ncols,
+            sadTable->numColumns());
+        throw std::runtime_error(message);
+      }
+
+      auto numRows = unwrappedTable->numRows();
+      auto sequentialRows = SadRowSequence::createSequential(0, (int64_t)numRows);
+
+      for (size_t i = 0; i < ncols; ++i) {
+        const auto &srcColArrow = *srcCols[i];
+
+        auto &destColDh = mutableColumns[i];
+        auto context = destColDh->createContext(numRows);
+        auto chunk = ChunkMaker::createChunkFor(*destColDh, numRows);
+
+        ChunkFiller::fillChunk(srcColArrow, *sequentialRows, chunk.get());
+        destColDh->fillFromChunkUnordered(context.get(), *chunk, *rowKeys, numRows);
+      }
     }
 
-    auto numRows = unwrappedTable->numRows();
-    auto sequentialRows = SadRowSequence::createSequential(0, (int64_t)numRows);
+    // 4, Modifies
+    const auto &mcms = *nubbinp->mod_column_nodes();
+    for (size_t i = 0; i < mcms.size(); ++i) {
+      const auto &elt = mcms.Get(i);
+      DataInput diModified(elt->modified_rows()->data(), elt->modified_rows()->size());
+      auto modIndex = readExternalCompressedDelta(&diModified);
 
-    for (size_t i = 0; i < ncols; ++i) {
+      if (modIndex->empty()) {
+        continue;
+      }
+
+      auto zamboniRows = modIndex->size();
+
+      const auto &srcCols = flightStreamChunk.data->columns();
       const auto &srcColArrow = *srcCols[i];
 
-      // auto destColDh = unwrappedTable->getColumn(i);
       auto &destColDh = mutableColumns[i];
-      auto context = destColDh->createContext(numRows);
-      auto chunk = ChunkMaker::createChunkFor(*destColDh, numRows);
+      auto context = destColDh->createContext(zamboniRows);
+      auto chunk = ChunkMaker::createChunkFor(*destColDh, zamboniRows);
+
+      auto sequentialRows = SadRowSequence::createSequential(0, (int64_t)zamboniRows);
 
       ChunkFiller::fillChunk(srcColArrow, *sequentialRows, chunk.get());
-      destColDh->fillFromChunkUnordered(context.get(), *chunk, *rowKeys, unwrappedTable->numRows());
-    }
-
-    // 4, Modifies (not implemented)
-    if (nubbinp->mod_column_nodes()->size() != 0) {
-      dumpyModColumnNodes(*nubbinp->mod_column_nodes());
+      destColDh->fillFromChunk(context.get(), *chunk, *modIndex);
     }
 
     rowSequence = sadTable->getRowSequence();
@@ -720,7 +671,6 @@ void ThreadNubbin::runForeverHelperImpl() {
     callback_->onTick(sadTable);
   }
 }
-
 }  // namespace
 
 namespace {
@@ -865,7 +815,7 @@ int64_t DataInput::readLong() {
 }
 } // namespace
 
-void TableHandleImpl::subscribeToAppendOnlyTable(std::shared_ptr<TickingCallback> callback) {
+void TableHandleImpl::subscribe(std::shared_ptr<TickingCallback> callback) {
   // On the flight executor thread, we invoke DoExchange (waiting for a successful response).
   // We wait for that response here. That makes the first part of this call synchronous. If there
   // is an error in the DoExchange invocation, the caller will get an exception here. The
@@ -883,8 +833,8 @@ void TableHandleImpl::subscribeToAppendOnlyTable(std::shared_ptr<TickingCallback
   future.wait();
 }
 
-void TableHandleImpl::unsubscribeFromAppendOnlyTable(std::shared_ptr<TickingCallback> callback) {
-  std::cerr << "TODO(kosak) -- unsubscribeFromAppendOnlyTable\n";
+void TableHandleImpl::unsubscribe(std::shared_ptr<TickingCallback> callback) {
+  std::cerr << "TODO(kosak) -- unsubscribe\n";
   std::cerr << "I'm kind of worried about this\n";
   SubscribeNubbin::sadClown_->fsr_->Cancel();
 }

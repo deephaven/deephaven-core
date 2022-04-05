@@ -1070,11 +1070,11 @@ public:
    * append-only tables and will call back with an error if the table changes in a way that is not
    * append-only.
    */
-  void subscribeToAppendOnlyTable(std::shared_ptr<TickingCallback> callback);
+  void subscribe(std::shared_ptr<TickingCallback> callback);
   /**
    * Unsubscribe from the table.
    */
-  void unsubscribeFromAppendOnlyTable(std::shared_ptr<TickingCallback> callback);
+  void unsubscribe(std::shared_ptr<TickingCallback> callback);
 
   /**
    * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the

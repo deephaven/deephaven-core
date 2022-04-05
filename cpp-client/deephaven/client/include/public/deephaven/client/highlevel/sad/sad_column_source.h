@@ -26,6 +26,7 @@ public:
 class SadMutableColumnSource : public SadColumnSource {
 public:
   virtual ~SadMutableColumnSource() override;
+  virtual void fillFromChunk(SadContext *context, const SadChunk &src, const SadRowSequence &rows) = 0;
   virtual void fillFromChunkUnordered(SadContext *context, const SadChunk &src, const SadLongChunk &rowKeys, size_t size) = 0;
 };
 
@@ -56,6 +57,7 @@ public:
     std::shared_ptr<SadColumnSourceContext> createContext(size_t chunkSize) const final;
     void fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const final;
     void fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys, size_t size, SadChunk *dest) const final;
+    void fillFromChunk(SadContext *context, const SadChunk &src, const SadRowSequence &rows) final;
     void fillFromChunkUnordered(SadContext *context, const SadChunk &src, const SadLongChunk &rowKeys, size_t size) final;
 
     void acceptVisitor(SadColumnSourceVisitor *visitor) const final;
@@ -75,6 +77,7 @@ public:
   std::shared_ptr<SadColumnSourceContext> createContext(size_t chunkSize) const final;
   void fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const final;
   void fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys, size_t size, SadChunk *dest) const final;
+  void fillFromChunk(SadContext *context, const SadChunk &src, const SadRowSequence &rows) final;
   void fillFromChunkUnordered(SadContext *context, const SadChunk &src, const SadLongChunk &rowKeys, size_t size) final;
 
   void acceptVisitor(SadColumnSourceVisitor *visitor) const final;
@@ -94,6 +97,7 @@ public:
   std::shared_ptr<SadColumnSourceContext> createContext(size_t chunkSize) const final;
   void fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const final;
   void fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys, size_t size, SadChunk *dest) const final;
+  void fillFromChunk(SadContext *context, const SadChunk &src, const SadRowSequence &rows) final;
   void fillFromChunkUnordered(SadContext *context, const SadChunk &src, const SadLongChunk &rowKeys, size_t size) final;
 
   void acceptVisitor(SadColumnSourceVisitor *visitor) const final;

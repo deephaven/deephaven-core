@@ -4,6 +4,7 @@
 
 #include "deephaven/client/utility/utility.h"
 
+using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::highlevel::impl::verboseCast;
 
@@ -61,6 +62,21 @@ void SadIntArrayColumnSource::fillChunk(SadContext *context, const SadRowSequenc
     assertInRange(srcIndex, data_.size());
     typedDest->data()[destIndex] = data_[srcIndex];
     ++destIndex;
+  }
+}
+
+void SadIntArrayColumnSource::fillFromChunk(SadContext *context, const SadChunk &src,
+    const SadRowSequence &rows) {
+  auto *typedSrc = verboseCast<const SadIntChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
+  assertFits(rows.size(), src.capacity());
+
+  size_t srcIndex = 0;
+  int64_t destIndex;
+  auto iter = rows.getRowSequenceIterator();
+  while (iter->tryGetNext(&destIndex)) {
+    ensureSize(destIndex + 1);
+    data_[destIndex] = typedSrc->data()[srcIndex];
+    ++srcIndex;
   }
 }
 
@@ -124,6 +140,21 @@ void SadLongArrayColumnSource::fillChunk(SadContext *context, const SadRowSequen
   }
 }
 
+void SadLongArrayColumnSource::fillFromChunk(SadContext *context, const SadChunk &src,
+    const SadRowSequence &rows) {
+  auto *typedSrc = verboseCast<const SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
+  assertFits(rows.size(), src.capacity());
+
+  size_t srcIndex = 0;
+  int64_t destIndex;
+  auto iter = rows.getRowSequenceIterator();
+  while (iter->tryGetNext(&destIndex)) {
+    ensureSize(destIndex + 1);
+    data_[destIndex] = typedSrc->data()[srcIndex];
+    ++srcIndex;
+  }
+}
+
 void SadLongArrayColumnSource::fillFromChunkUnordered(SadContext *context, const SadChunk &src,
     const SadLongChunk &rowKeys, size_t size) {
   auto *typedSrc = verboseCast<const SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
@@ -181,6 +212,21 @@ void SadDoubleArrayColumnSource::fillChunk(SadContext *context, const SadRowSequ
     assertInRange(srcIndex, data_.size());
     typedDest->data()[destIndex] = data_[srcIndex];
     ++destIndex;
+  }
+}
+
+void SadDoubleArrayColumnSource::fillFromChunk(SadContext *context, const SadChunk &src,
+    const SadRowSequence &rows) {
+  auto *typedSrc = verboseCast<const SadDoubleChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
+  assertFits(rows.size(), src.capacity());
+
+  size_t srcIndex = 0;
+  int64_t destIndex;
+  auto iter = rows.getRowSequenceIterator();
+  while (iter->tryGetNext(&destIndex)) {
+    ensureSize(destIndex + 1);
+    data_[destIndex] = typedSrc->data()[srcIndex];
+    ++srcIndex;
   }
 }
 

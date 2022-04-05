@@ -174,8 +174,8 @@ public:
 
   void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
 
-  void subscribeToAppendOnlyTable(std::shared_ptr<TickingCallback> callback);
-  void unsubscribeFromAppendOnlyTable(std::shared_ptr<TickingCallback> callback);
+  void subscribe(std::shared_ptr<TickingCallback> callback);
+  void unsubscribe(std::shared_ptr<TickingCallback> callback);
 
   // For debugging
   void observe();

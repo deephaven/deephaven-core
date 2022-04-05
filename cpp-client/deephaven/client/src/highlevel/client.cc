@@ -518,12 +518,12 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamR
   return getManager().createFlightWrapper().getFlightStreamReader(*this);
 }
 
-void TableHandle::subscribeToAppendOnlyTable(std::shared_ptr<TickingCallback> callback) {
-  impl_->subscribeToAppendOnlyTable(std::move(callback));
+void TableHandle::subscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->subscribe(std::move(callback));
 }
 
-void TableHandle::unsubscribeFromAppendOnlyTable(std::shared_ptr<TickingCallback> callback) {
-  impl_->unsubscribeFromAppendOnlyTable(std::move(callback));
+void TableHandle::unsubscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->unsubscribe(std::move(callback));
 }
 
 const std::string &TableHandle::getTicketAsString() const {
