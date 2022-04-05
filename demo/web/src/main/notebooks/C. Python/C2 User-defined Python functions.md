@@ -7,8 +7,8 @@ In this example, a custom, user-defined function is used inside a query string t
 In Python, you need to import all the tools your query will require. In this example, we are going to make a new table with integer columns by using [`newTable`](https://deephaven.io/core/docs/reference/table-operations/create/newTable/) and [`intCol`](https://deephaven.io/core/docs/reference/table-operations/create/intCol/).
 
 ```python
-from deephaven2 import new_table
-from deephaven2.column import int_col
+from deephaven import new_table
+from deephaven.column import int_col
 
 numbers = new_table([
     int_col("X", [2, 4, 6]),
@@ -34,8 +34,8 @@ result_numbers = numbers.update(formulas = ["Sum = f(X, Y)"])
 The complete code block is shown below. We define a function `f` and use it to create a new table. The new table contains the `X` and `Y` columns from `numbers`, plus a new `Sum` column, which is the summation of columns `X` and `Y`.
 
 ```python
-from deephaven2 import new_table
-from deephaven2.column import int_col
+from deephaven import new_table
+from deephaven.column import int_col
 
 numbers = new_table([
     int_col("X", [2, 4, 6]),
@@ -51,9 +51,9 @@ result_numbers = numbers.update(formulas = ["Sum = f(X, Y)"])
 Once a Python function is created, it can be reused. For example, `f` can be used, without redefinition, to add columns from a new `words` table. Here, we make this table with string columns using [`new_table`](https://deephaven.io/core/docs/reference/table-operations/create/newTable/) and [`string_col`](https://deephaven.io/core/docs/reference/table-operations/create/stringCol/).
 
 ```python
-from deephaven2.column import string_col
+from deephaven.column import string_col
 
-words = new_table([]
+words = new_table([
     string_col("Welcome", ["Hello ", "Hola ", "Bonjour "]),
     string_col("Day", ["Monday", "Tuesday", "Wednesday"])
 ])

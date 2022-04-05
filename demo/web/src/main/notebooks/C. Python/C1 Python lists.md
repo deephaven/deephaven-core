@@ -11,7 +11,7 @@ my_list = [1, 2, 3]
 Lists can be used just like other objects within a query. When using a list within a query, Deephaven will automatically assign its column to the `org.jpy.PyListWrapper` type.
 
 ```python
-from deephaven2 import empty_table
+from deephaven import empty_table
 
 list_table = empty_table(size = 1).update(formulas = ["List = my_list"])
 ```

@@ -149,7 +149,7 @@ If you are considering using Numba in your Deephaven queries, `@vectorize` is pr
 Let's see how queries in Deephaven can be sped up with the `@vectorize` decorator:
 
 ```python
-from deephaven2 import empty_table
+from deephaven import empty_table
 from numba import jit, vectorize, double, int64
 import time
 
