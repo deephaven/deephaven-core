@@ -2,6 +2,7 @@
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 """ Utility module for the stream subpackage. """
+
 import jpy
 
 from deephaven import DHError
