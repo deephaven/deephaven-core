@@ -245,11 +245,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
-
-        @Override
-        public boolean snapshotNeeded() {
-            return false;
-        }
     }
 
     private static class MyMemoKey extends MemoizedOperationKey {
@@ -437,10 +432,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      *   3) The BMP's update propagation job runs. All pendingSubscriptions (new or updated) will have their pending
      *      viewport / columns requests accepted. All pendingSubscriptions move to the activeSubscription list if they
      *      were brand new. The pendingSubscription list is cleared. At this stage, the `pending` variables are nulled
-     *      and their contents move to the variables prefixed with `snapshot`. If a viewport's subscribedColumns change
-     *      when the viewport remains the same, we copy the reference from `viewport` to `snapshotViewport`. The
-     *      propagation job is responsible for building the snapshot and sending it to the client. Finally, the
-     *      `snapshot` variables are nulled and promoted to `viewport` and `subscribedColumns`.
+     *      and their contents move to the variables prefixed with `target`. The propagation job is responsible for
+     *      building the snapshot and sending it to the client. When the snapshot is complete, the `target` variables
+     *      are nulled and promoted to `viewport` and `subscribedColumns`.
      *   4) If a subscription is updated during or after stage 3, it will be added back to the pendingSubscription list,
      *      and the updated requests will sit in the `pending` variables until the next time the update propagation job
      *      executes. It will NOT be removed from the activeSubscription list. A given subscription will exist no more
@@ -470,18 +464,18 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean pendingReverseViewport; // is the pending viewport reversed (indexed from end of table)
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
 
-        WritableRowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
-        BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
-        boolean snapshotReverseViewport = false; // captured setting during snapshot portion of propagation job
+        WritableRowSet snapshotViewport = null; // promoted to `active` viewport by the snapshot process
+        BitSet snapshotColumns = null; // promoted to `active` columns by the snapshot process
+        boolean snapshotReverseViewport = false; // promoted to `active` viewport direction by the snapshot process
 
-        RowSet targetViewport = null; // target viewport for a growing subscription
-        boolean targetReverseViewport; // is the target viewport reversed (indexed from end of table)
-        BitSet targetColumns; // target column subscription set
+        RowSet targetViewport = null; // the final viewport for a changed (new or updated) subscription
+        BitSet targetColumns; // the final set of columns for a changed subscription
+        boolean targetReverseViewport; // the final viewport direction for a changed subscription
 
-        boolean isGrowingViewport; // does this have a growing viewport?
-        WritableRowSet growingRemainingViewport = null; // remaining viewport rows for a growing subscription
-        WritableRowSet growingIncrementalViewport = null; // incremental viewport rows for a growing subscription
-        boolean isFirstSnapshot; // is this the first snapshot in a growing snapshot?
+        boolean isGrowingViewport; // is this subscription actively growing
+        WritableRowSet growingRemainingViewport = null; // rows still needed to satisfy this subscription viewport
+        WritableRowSet growingIncrementalViewport = null; // rows to be sent to the client from the current snapshot
+        boolean isFirstSnapshot; // is this the first snapshot after a change to a subscriptions
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -625,7 +619,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
-            parent.listenForUpdates(this);
         }
 
         @Override
@@ -1004,6 +997,41 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
+    /**
+     * @formatter:off
+     * Here is how a subscription viewport `grows` over multiple snapshots:
+     *   1) When a subscription is updated (on creation or after a change to columns or viewport), a new snapshot must
+     *      be created and transmitted to the client. The `growing` snapshot algorithm attempts to keep the UGP
+     *      responsive by creating snapshots that consume no more than a certain percentage of the UGP cycle time.  In
+     *      addition, GUI responsiveness is improved by prioritizing viewport subscription client requests over full
+     *      subscription clients.
+     *    NOTE: All updated subscriptions are considered to be `growing` subscriptions even if they can be satisfied in
+     *    a single snapshot.
+     *    2) When the `BarrageMessageProducer` is ready to provide a new snapshot to an updated subscription, it will
+     *       transfer the `pending` values (viewport rowset and direction, columns) to `target` values which are the
+     *       final goals toward which the viewport grows.  In addition, the `growingRemainingViewport` is created which
+     *       will hold all the outstanding rows the client needs to receive in the upcoming snapshot(s).  If the updated
+     *       (or new) subscription is a `full` subscription, this viewport is set to range (0, Long.MAX_VALUE).
+     *    3) If a client has changed viewports, it is possible that the new viewport overlaps with the previous and some
+     *       rows may not need to be requested.  This can only happen on the first snapshot after the change, so the
+     *       `isFirstSnapshot` flag is used to add these rows to the viewport on the first snapshot.
+     *    4) To generate the full rowset for the snapshot, a maximum number of rows to snapshot is computed and the
+     *       subscriptions are processed in a prioritized order, placing viewport above full subscriptions.  For each
+     *       subscription (while not exceeding the snapshot maximum number of rows), rows are extracted from the
+     *       `growingRemainingViewport` into `growingIncrementalViewport`.  Each subscription can also leverage rows
+     *       already selected for this cycle by previous subscriptions (where the direction of the viewport matches).
+     *       Additionally, the `snapshotViewport` is expanded by the additional rows this client will receive this
+     *       cycle.  When a snapshot is successfully created, this `snapshotViewport` will be promoted to the
+     *       `activeViewport` for this subscription.
+     *    5) When the parent table is smaller than the viewport, it is possible to snapshot all rows in the table before
+     *       exhausting `growingRemainingViewport`.  During the snapshot call and while the lock is held,
+     *       `finalizeSnapshotForSubscriptions()` is called which will detect when the subscription is complete and will
+     *       perform some clean up as well as updating the subscription `activeViewport` to match the initially set
+     *       `targetViewport`.  When the final snapshot message is sent, the client will see that the `activeViewport`
+     *       matches the requested `targetViewport` and the subscription snapshotting process is complete.
+     * @formatter:on
+     */
+
     private void updateSubscriptionsSnapshotAndPropagate() {
         lastUpdateTime = scheduler.currentTime().getMillis();
         if (DEBUG) {
@@ -1027,27 +1055,29 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 // remove deleted subscriptions while we still hold the lock
                 for (int i = 0; i < activeSubscriptions.size(); ++i) {
                     final Subscription sub = activeSubscriptions.get(i);
-                    if (sub.pendingDelete) {
-                        pendingDeletes = true;
-
-                        if (!sub.isViewport()) {
-                            --numFullSubscriptions;
-                        }
-                        if (sub.isGrowingViewport) {
-                            --numGrowingSubscriptions;
-                        }
-
-                        try {
-                            sub.listener.onCompleted();
-                        } catch (final Exception ignored) {
-                            // ignore races on cancellation
-                        }
-
-                        // remove this deleted subscription from future consideration
-                        activeSubscriptions.set(i, activeSubscriptions.get(activeSubscriptions.size() - 1));
-                        activeSubscriptions.remove(activeSubscriptions.size() - 1);
-                        --i;
+                    if (!sub.pendingDelete) {
+                        continue;
                     }
+                    pendingDeletes = true;
+
+                    if (!sub.isViewport()) {
+                        --numFullSubscriptions;
+                    }
+                    if (sub.isGrowingViewport) {
+                        --numGrowingSubscriptions;
+                    }
+
+                    try {
+                        sub.listener.onCompleted();
+                    } catch (final Exception ignored) {
+                        // ignore races on cancellation
+                    }
+
+                    // remove this deleted subscription from future consideration
+                    activeSubscriptions.set(i, activeSubscriptions.get(activeSubscriptions.size() - 1));
+                    activeSubscriptions.remove(activeSubscriptions.size() - 1);
+                    --i;
+
                 }
 
                 // rebuild the viewports since there are pending changes. This function excludes active subscriptions
@@ -1055,42 +1085,45 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 buildPostSnapshotViewports(true);
 
                 for (final Subscription subscription : updatedSubscriptions) {
-                    if (!subscription.pendingDelete) {
-                        pendingChanges = true;
+                    if (subscription.pendingDelete) {
+                        continue;
+                    }
+                    pendingChanges = true;
 
-                        // add this subscription to the "growing" list to handle snapshot creation
-                        if (!subscription.isGrowingViewport) {
-                            subscription.isGrowingViewport = true;
-                            ++numGrowingSubscriptions;
-                        }
+                    // add this subscription to the "growing" list to handle snapshot creation
+                    if (!subscription.isGrowingViewport) {
+                        subscription.isGrowingViewport = true;
+                        ++numGrowingSubscriptions;
+                    }
 
-                        subscription.hasPendingUpdate = false;
-                        if (!subscription.isActive) {
-                            firstSubscription |= activeSubscriptions.isEmpty();
+                    subscription.hasPendingUpdate = false;
+                    if (!subscription.isActive) {
+                        firstSubscription |= activeSubscriptions.isEmpty();
 
-                            // Note that initial subscriptions have empty viewports and no subscribed columns.
-                            subscription.isActive = true;
-                            activeSubscriptions.add(subscription);
-                        }
+                        // Note that initial subscriptions have empty viewports and no subscribed columns.
+                        subscription.isActive = true;
+                        activeSubscriptions.add(subscription);
+                    }
 
+                    try (RowSet ignored = subscription.targetViewport) {
                         subscription.targetViewport = subscription.pendingViewport;
                         subscription.pendingViewport = null;
-
-                        subscription.targetColumns = subscription.pendingColumns;
-                        subscription.pendingColumns = null;
-
-                        subscription.targetReverseViewport = subscription.pendingReverseViewport;
-
-                        subscription.isFirstSnapshot = true;
-
-                        // get the set of remaining rows for this subscription
-                        if (subscription.growingRemainingViewport != null) {
-                            subscription.growingRemainingViewport.close();
-                        }
-                        subscription.growingRemainingViewport = subscription.targetViewport == null
-                                ? RowSetFactory.flat(Long.MAX_VALUE)
-                                : subscription.targetViewport.copy();
                     }
+
+                    subscription.targetColumns = subscription.pendingColumns;
+                    subscription.pendingColumns = null;
+
+                    subscription.targetReverseViewport = subscription.pendingReverseViewport;
+
+                    subscription.isFirstSnapshot = true;
+
+                    // get the set of remaining rows for this subscription
+                    if (subscription.growingRemainingViewport != null) {
+                        subscription.growingRemainingViewport.close();
+                    }
+                    subscription.growingRemainingViewport = subscription.targetViewport == null
+                            ? RowSetFactory.flat(Long.MAX_VALUE)
+                            : subscription.targetViewport.copy();
                 }
             }
 
@@ -1116,6 +1149,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 postSnapshotViewport = activeViewport != null ? activeViewport.copy() : RowSetFactory.empty();
                 postSnapshotReverseViewport =
                         activeReverseViewport != null ? activeReverseViewport.copy() : RowSetFactory.empty();
+                postSnapshotColumns.clear();
                 postSnapshotColumns.or(activeColumns);
             }
 
@@ -1224,17 +1258,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                             // decrement the remaining row count
                             rowsRemaining -= additional.size();
-                        }
-                    }
-
-                    // "grow" the snapshot viewport with rows from the current snapshot
-                    if (viewportValid && subscription.viewport != null) {
-                        // we can use the current viewport as a start
-                        subscription.snapshotViewport.insert(subscription.viewport);
-
-                        // the current viewport might contain rows that we don't want (from a previous viewport, e.g.)
-                        if (subscription.targetViewport != null) {
-                            subscription.snapshotViewport.retain(subscription.targetViewport);
                         }
                     }
 
@@ -1843,6 +1866,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     subscription.viewport.close();
                 }
                 subscription.viewport = subscription.targetViewport;
+                subscription.targetViewport = null;
 
                 if (subscription.viewport == null) {
                     // track active `full` subscriptions
