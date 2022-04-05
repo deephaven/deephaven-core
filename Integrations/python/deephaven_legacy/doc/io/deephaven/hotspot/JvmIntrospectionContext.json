@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.hotspot.JvmIntrospectionContext",
+ "methods": {
+  "deltaSafePointPausesCount": "Number of safepoint pauses between the last two calls to sample()\n\n:return: (long) Number of safepoint pauses.",
+  "deltaSafePointPausesTimeMillis": "Time in milliseconds fully paused in safepoints between the last two calls to sample()\n\n:return: (long) Time in milliseconds.",
+  "deltaSafePointSyncTimeMillis": "Time in milliseconds getting to a full safepoint stop (safepoint sync time) between the last two calls to\n sample()\n\n:return: (long) Time in milliseconds",
+  "endSample": "Sample garbage collection count and times at the point of call.",
+  "hasSafePointData": ":return: boolean"
+ },
+ "path": "io.deephaven.hotspot.JvmIntrospectionContext",
+ "text": "Utility class to facilitate obtaining data for safepoint pauses count and time between two points in code. A\n safepoint pause is a \"stop the world, pause all threads\" event in the HotSpot JVM. Note full Garbage Collection\n pauses are a dominant cause of safepoint pauses, but there are other triggers like: \n* Deoptimization\n* Biased lock revocation\n* Thread dump\n* Heap inspection< /li>\n * Class redefinition  And others; you can see a full list \n here .",
+ "typeName": "class"
+}

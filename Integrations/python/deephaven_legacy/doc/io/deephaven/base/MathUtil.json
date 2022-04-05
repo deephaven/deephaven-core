@@ -1,9 +1,11 @@
 {
  "className": "io.deephaven.base.MathUtil",
  "methods": {
+  "base10digits": "Compute the number of base 10 digits in n's representation, for n >= 0.\n\n:param n: (int) - an integer >= 0\n:return: (int) how many digits in n's base 10 representation.",
   "ceilLog2": "**Incompatible overloads text - text from the first overload:**\n\nCompute ceil(log2(x)). See Integer.numberOfLeadingZeros(int).\n\n*Overload 1*  \n  :param x: (int) - Input\n  :return: (int) ceil(log2(x))\n  \n*Overload 2*  \n  :param x: (long) - Input\n  :return: (int) ceil(log2(x))",
   "floorLog2": "**Incompatible overloads text - text from the first overload:**\n\nCompute floor(log2(x)). See Integer.numberOfLeadingZeros(int).\n\n*Overload 1*  \n  :param x: (int) - Input\n  :return: (int) floor(log2(x))\n  \n*Overload 2*  \n  :param x: (long) - Input\n  :return: (int) floor(log2(x))",
-  "gcd": "Compute the greatest common divisor of two integers using the Euclidean algorithm.\n\n:param a: (int) - The first input\n:param b: (int) - The second input\n:return: (int) The GCD"
+  "gcd": "Compute the greatest common divisor of two integers using the Euclidean algorithm.\n\n:param a: (int) - The first input\n:param b: (int) - The second input\n:return: (int) The GCD",
+  "pow10": "Compute 10^n as a int for 0 <= n <= 9.\n\n:param n: (int) - the exponent\n:return: (int) 10^n"
  },
  "path": "io.deephaven.base.MathUtil",
  "text": "A handful of simple mathematical utilities.",

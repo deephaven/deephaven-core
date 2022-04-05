@@ -31,13 +31,13 @@ public class ServerStateTracker {
     private final Logger logger;
 
     private final MemoryTableLogger<ServerStateLog> processMemLogger;
-    private final UpdateGraphProcessor.AccumulatedCycleStats upgAccumCycleStats;
+    private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = new MemoryTableLogger<>(
                 logger, new ServerStateLog(), ServerStateLog.getTableDefinition());
-        upgAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
+        ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
     }
 
     private void startThread() {
@@ -72,10 +72,11 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                final long prevUgpCycles = upgAccumCycleStats.getTotalCycles();
-                final long prevUgpCyclesTimeNanos = upgAccumCycleStats.getTotalCyclesTimeNanos();
-                final long prevUgpSafePOintPauseTimeMillis = upgAccumCycleStats.getTotalSafePointPauseTimeMillis();
-                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.copyTo(upgAccumCycleStats);
+                final long prevUgpCycles = ugpAccumCycleStats.getTotalCycles();
+                final long prevUgpCyclesOnBudget = ugpAccumCycleStats.getTotalCyclesOnBudget();
+                final long prevUgpCyclesTimeNanos = ugpAccumCycleStats.getTotalCyclesTimeNanos();
+                final long prevUgpSafePOintPauseTimeMillis = ugpAccumCycleStats.getTotalSafePointPauseTimeMillis();
+                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.copyTo(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(
                         intervalStartTimeMillis,
@@ -83,9 +84,10 @@ public class ServerStateTracker {
                         memSample,
                         prevTotalCollections,
                         prevTotalCollectionTimeMs,
-                        upgAccumCycleStats.getTotalCycles() - prevUgpCycles,
-                        upgAccumCycleStats.getTotalCyclesTimeNanos() - prevUgpCyclesTimeNanos,
-                        upgAccumCycleStats.getTotalSafePointPauseTimeMillis() - prevUgpSafePOintPauseTimeMillis);
+                        ugpAccumCycleStats.getTotalCycles() - prevUgpCycles,
+                        ugpAccumCycleStats.getTotalCyclesOnBudget() - prevUgpCyclesOnBudget,
+                        ugpAccumCycleStats.getTotalCyclesTimeNanos() - prevUgpCyclesTimeNanos,
+                        ugpAccumCycleStats.getTotalSafePointPauseTimeMillis() - prevUgpSafePOintPauseTimeMillis);
             }
         }
     }
@@ -93,8 +95,10 @@ public class ServerStateTracker {
     private void logProcessMem(
             final long startMillis, final long endMillis,
             final RuntimeMemory.Sample sample,
-            final long prevTotalCollections, final long prevTotalCollectionTimeMs,
+            final long prevTotalCollections,
+            final long prevTotalCollectionTimeMs,
             final long ugpCycles,
+            final long ugpCyclesOnBudget,
             final long ugpCyclesNanos,
             final long ugpSafePointTimeMillis) {
         try {
@@ -106,6 +110,7 @@ public class ServerStateTracker {
                     sample.totalCollections - prevTotalCollections,
                     DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
                     ugpCycles,
+                    ugpCyclesOnBudget,
                     ugpCyclesNanos,
                     DateTimeUtils.millisToNanos(ugpSafePointTimeMillis));
         } catch (IOException e) {

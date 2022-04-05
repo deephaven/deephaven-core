@@ -155,6 +155,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
          */
         private long totalCycles = 0L;
         /**
+         * Cycles run no exceeding their time budget.
+         */
+        private long totalCyclesOnBudget = 0L;
+        /**
          * Accumulated time over all cycles.
          */
         private long totalCyclesTimeNanos = 0L;
@@ -163,20 +167,28 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
          */
         private long totalSafePointPauseTimeMillis = 0L;
 
-        synchronized void accumulate(final long cycleTimeNanos, final long safePointPauseTimeMillis) {
+        synchronized void accumulate(final long cycleTimeNanos, final long safePointPauseTimeMillis, final boolean cycleOnBudget) {
             ++totalCycles;
+            if (cycleOnBudget) {
+                ++totalCyclesOnBudget;
+            }
             totalCyclesTimeNanos += cycleTimeNanos;
             totalSafePointPauseTimeMillis += safePointPauseTimeMillis;
         }
 
         public synchronized void copyTo(final AccumulatedCycleStats out) {
             out.totalCycles = totalCycles;
+            out.totalCyclesOnBudget = totalCyclesOnBudget;
             out.totalCyclesTimeNanos = totalCyclesTimeNanos;
             out.totalSafePointPauseTimeMillis = totalSafePointPauseTimeMillis;
         }
 
         public long getTotalCycles() {
             return totalCycles;
+        }
+
+        public long getTotalCyclesOnBudget() {
+            return totalCyclesOnBudget;
         }
 
         public long getTotalCyclesTimeNanos() {
@@ -1555,7 +1567,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     private void computeStatsAndLogCycle(final long cycleTimeNanos) {
         final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
-        accumulatedCycleStats.accumulate(cycleTimeNanos, safePointPauseTimeMillis);
+        accumulatedCycleStats.accumulate(
+                cycleTimeNanos,
+                safePointPauseTimeMillis,
+                DEFAULT_TARGET_CYCLE_DURATION_MILLIS * 1000 * 1000 >= cycleTimeNanos);
         if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
             if (suppressedCycles > 0) {
                 logSuppressedCycles();

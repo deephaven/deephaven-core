@@ -288,23 +288,30 @@ public class PerformanceQueries {
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
                 "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)",
-                "UGPCyclesFinished = IntervalUGPCyclesFinished",
-                "UGPCyclesFinishedTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTimeNanos, IntervalDurationNanos)",
-                "UGPCyclesFinishedSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedSafePointTimeNanos, IntervalDurationNanos)");
+                "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedOnBudget, IntervalUGPCyclesFinished)",
+                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTimeNanos, IntervalDurationNanos)",
+                "UGPSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedSafePointTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
                 "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
                         "((AvailMemRatio < 0.10) ? PALE_REDPURPLE : " +
                         "((AvailMemRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
-                "UGPCyclesFinishedTimeRatio=Decimal(`#0.0%`)",
-                "UGPCyclesFinishedSafePointTimeRatio=Decimal(`#0.0%`)",
+                "UGPOnBudgetRatio=Decimal(`#0.0%`)",
+                "UGPTimeRatio=Decimal(`#0.0%`)",
+                "UGPSafePointTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=(GcTimeRatio >= 0.75) ? PALE_RED : " +
                         "((GcTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
                         "((GcTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
-                "UGPCyclesFinishedTimeRatio=(UGPCyclesFinishedTimeRatio >= 0.99) ? PALE_RED : " +
-                        "((UGPCyclesFinishedTimeRatio >= 0.95) ? PALE_REDPURPLE : " +
-                        "((UGPCyclesFinishedTimeRatio > 0.90) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPOnBudgetRatio=(UGPOnBudgetRatio < 0.05) ? PALE_RED : " +
+                        "((UGPOnBudgetRatio < 0.10) ? PALE_REDPURPLE : " +
+                        "((UGPOnBudgetRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPTimeRatio=(UGPTimeRatio >= 0.99) ? PALE_RED : " +
+                        "((UGPTimeRatio >= 0.95) ? PALE_REDPURPLE : " +
+                        "((UGPTimeRatio > 0.90) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPSafePointTimeRatio=(UGPSafePointTimeRatio >= 0.75) ? PALE_RED : " +
+                        "((UGPSafePointTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
+                        "((UGPSafePointTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
                 "IntervalSeconds=Decimal(`#0.000`)");
         return pm;
     }
