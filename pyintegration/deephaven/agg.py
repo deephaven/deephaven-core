@@ -118,7 +118,7 @@ def count_distinct(cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=_JAggSpec.countDisinct(), cols=cols)
+    return Aggregation(j_agg_spec=_JAggSpec.countDistinct(), cols=cols)
 
 
 def first(cols: List[str] = None) -> Aggregation:
