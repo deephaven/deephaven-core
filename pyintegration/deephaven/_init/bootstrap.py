@@ -38,7 +38,6 @@ def build_py_session():
                             '-XX:MinRAMPercentage=70.0',
                             '-XX:MaxRAMPercentage=80.0',
 
-                            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED',
                             '--add-opens=java.base/java.nio=ALL-UNNAMED',
                             },
             # 'jvm_maxmem': '1g',

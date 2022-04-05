@@ -41,7 +41,6 @@ def start_jvm(devroot=None,
     :param workspace: the workspace parameter for Deephaven. Defaults to the ``ILLUMON_WORKSPACE`` environment variable
     :param propfile: the ``Configuration.rootFile`` parameter for Deephaven. Defaults to the ``ILLUMON_PROPFILE`` environment
       variable
-    :param keyfile: your private key file for authenticating to Deephaven
     :param skip_default_classpath: if True, do not attempt to compute default java classpath
     :param verbose: if True, print out the classpath and properties we have constructed
 
