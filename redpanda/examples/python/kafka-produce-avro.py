@@ -10,6 +10,7 @@
 # $ cd confluent-kafka
 # $ source bin/activate
 # $ pip3 install confluent-kafka
+# $ pip3 install avro
 #
 # Note: On a Mac you may need to install the librdkafka package.
 # You can use "brew install librdkafka" if the pip3 command fails
@@ -23,25 +24,26 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven_legacy import ConsumeKafka as ck
+#    > from deephaven import kafka_consumer as kc
+#    > from deephaven.stream.kafka.consumer import TableType
 #
 # == Example (1)
 #
 # Load a schema into schema registry for share_price_record.
 # From the command line in the host (not on a docker image), run:
 #
-#    $ sh ../post-share-price-schema.sh
+#    $ sh ./post-share-price-schema.sh
 #
 # The last command above should have loaded the avro schema in the file avro/share_price.json
 # to the apicurio registry. You can check it was loaded visiting on the host the URL:
-#   http://localhost:8081/ui/artifacts
+#   http://localhost:8081/subjects/share_price_record/versions/1
 # That page should now list 'share_price_record' as an available schema.
 #
 # From the web IDE, run:
 #
-#    > t = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://redpanda:8081'}, 'share_price', value=ck.avro('share_price_record'), table_type='append')
+#    > t = kc.consume({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://redpanda:8081'}, 'share_price', value_spec=kc.avro_spec('share_price_record'), table_type=TableType.Append)
 #
-# The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
+# The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Side, Qty, Price ]
 # Run this script on the host (not on a docker image) to generate one row:
 #
 #    $ python3 ./kafka-produce-avro.py share_price 0 ../avro/share_price.json str:Symbol=MSFT str:Side=BUY double:Price=274.82 int:Qty=200
