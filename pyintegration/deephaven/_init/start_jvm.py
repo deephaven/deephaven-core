@@ -7,7 +7,6 @@ import os
 import re
 import warnings
 from glob import glob
-from os import path
 
 import jpy
 import jpyutil
@@ -20,7 +19,6 @@ import jpyutil
 def start_jvm(devroot=None,
               workspace=None,
               propfile=None,
-              keyfile=None,
               verbose=False,
               skip_default_classpath=None,
               # The following are the jpyutil.init_jvm options which are passed through after attaching our options
@@ -114,8 +112,6 @@ def start_jvm(devroot=None,
     jProperties = {'devroot': expanded_devroot, 'workspace': workspace}
     if propfile is not None:
         jProperties['Configuration.rootFile'] = propfile
-    if keyfile is not None:
-        jProperties['WAuthenticationClientManager.defaultPrivateKeyFile'] = keyfile
     if jvm_properties is not None:
         jProperties.update(jvm_properties)
 
@@ -143,27 +139,6 @@ def start_jvm(devroot=None,
 
     if jvm_options is None:
         jvm_options=set()
-
-    if path.exists("/usr/deephaven/latest/etc/JAVA_VERSION"):
-        java_version_file=open("/usr/deephaven/latest/etc/JAVA_VERSION", "r")
-        java_version=java_version_file.read()
-        java_version_file.close()
-    elif path.exists("{}/props/configs/build/resources/main/JAVA_VERSION".format(devroot)):
-        java_version_file=open("{}/props/configs/build/resources/main/JAVA_VERSION".format(devroot), "r")
-        java_version=java_version_file.read()
-        java_version_file.close()
-    elif os.environ.get('JAVA_VERSION') is not None:
-        java_version=os.environ.get('JAVA_VERSION')
-    else:
-        raise ValueError('Cannot find JAVA_VERSION from environment variable or filesystem locations')
-
-
-    if not any(elem.startswith('--add-opens') for elem in jvm_options):
-        if java_version == '11':
-            jvm_options.add('--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED')
-        elif java_version == '13':
-            jvm_options.add('--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED')
-            jvm_options.add('--add-opens=java.base/jdk.internal.access=ALL-UNNAMED')
 
     if verbose:
         if len(jvm_options) > 0:

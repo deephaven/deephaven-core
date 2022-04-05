@@ -19,7 +19,6 @@ def build_py_session():
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
     if not jpy.has_jvm():
-        os.environ['JAVA_VERSION'] = '11'
 
         # we will try to initialize the jvm
         kwargs = {
@@ -27,20 +26,20 @@ def build_py_session():
             'devroot': DEFAULT_DEVROOT,
             'verbose': False,
             'propfile': DEFAULT_PROPFILE,
-            'java_home': os.environ.get('JDK_HOME', None),
             'jvm_properties': {'PyObject.cleanup_on_thread': 'false'},
             'jvm_options': {'-Djava.awt.headless=true',
                             '-DMetricsManager.enabled=true',
-                            # '-Xms1g',
-                            # '-Xmn512m',
+
                             '-XX:+UseG1GC',
                             '-XX:MaxGCPauseMillis=100',
                             '-XX:+UseStringDeduplication',
+
                             '-XX:InitialRAMPercentage=25.0',
                             '-XX:MinRAMPercentage=70.0',
                             '-XX:MaxRAMPercentage=80.0',
-                            # '-XshowSettings:vm',
-                            # '-verbose:gc', '-XX:+PrintGCDetails',
+
+                            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED',
+                            '--add-opens=java.base/java.nio=ALL-UNNAMED',
                             },
             # 'jvm_maxmem': '1g',
             'jvm_classpath': DEFAULT_CLASSPATH,

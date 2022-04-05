@@ -104,8 +104,6 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-            environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
             workingDir '/python'
