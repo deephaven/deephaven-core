@@ -4,9 +4,9 @@
 import os
 import unittest
 
-from deephaven2 import kafka_producer as pk, new_table
-from deephaven2.column import string_col, int_col, double_col
-from deephaven2.stream.kafka.producer import KeyValueSpec
+from deephaven import kafka_producer as pk, new_table
+from deephaven.column import string_col, int_col, double_col
+from deephaven.stream.kafka.producer import KeyValueSpec
 from tests.testbase import BaseTestCase
 
 

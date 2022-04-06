@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.hotspot.HotSpot",
+ "methods": {
+  "getSafepointCount": "Returns the number of safepoints taken place since the Java virtual machine started.\n\n:return: (long) the number of safepoints taken place since the Java virtual machine started.",
+  "getSafepointSyncTimeMillis": "Returns the accumulated time spent getting to safepoints in milliseconds.\n\n:return: (long) the accumulated time spent getting to safepoints in milliseconds.",
+  "getTotalSafepointTimeMillis": "Returns the accumulated time spent at safepoints in milliseconds. This is the accumulated elapsed time that the\n application has been stopped for safepoint operations.\n\n:return: (long) the accumulated time spent at safepoints in milliseconds.",
+  "loadImpl": ":return: java.util.Optional<io.deephaven.hotspot.HotSpot>"
+ },
+ "path": "io.deephaven.hotspot.HotSpot",
+ "typeName": "interface"
+}

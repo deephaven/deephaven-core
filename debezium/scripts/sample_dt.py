@@ -1,4 +1,4 @@
-from deephaven import PythonListenerAdapter
+from deephaven_legacy import PythonListenerAdapter
 import datetime as dt
 import os
 import sys

@@ -91,7 +91,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();
-        this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven2.server.script_session")
+        this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
                 .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 

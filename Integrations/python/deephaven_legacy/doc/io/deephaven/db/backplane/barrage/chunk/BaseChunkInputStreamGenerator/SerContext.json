@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.db.backplane.barrage.chunk.BaseChunkInputStreamGenerator$SerContext",
+ "methods": {},
+ "path": "io.deephaven.db.backplane.barrage.chunk.BaseChunkInputStreamGenerator.SerContext",
+ "typeName": "class"
+}

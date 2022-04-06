@@ -1,9 +1,9 @@
-import deephaven.ConsumeCdc as cc
-import deephaven.ConsumeKafka as ck
-import deephaven.ProduceKafka as pk
-import deephaven.Types as dh
-from deephaven import Aggregation as agg, as_list
-import deephaven.TableManipulation.WindowCheck as wck
+import deephaven_legacy.ConsumeCdc as cc
+import deephaven_legacy.ConsumeKafka as ck
+import deephaven_legacy.ProduceKafka as pk
+import deephaven_legacy.Types as dh
+from deephaven_legacy import Aggregation as agg, as_list
+import deephaven_legacy.TableManipulation.WindowCheck as wck
 
 server_name = 'mysql'
 db_name='shop'

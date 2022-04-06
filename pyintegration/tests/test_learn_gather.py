@@ -5,9 +5,9 @@
 import unittest
 
 import numpy as np
-from deephaven2 import empty_table
-from deephaven2.learn import gather
-from deephaven2.pandas import to_pandas
+from deephaven import empty_table
+from deephaven.learn import gather
+from deephaven.pandas import to_pandas
 from tests.testbase import BaseTestCase
 
 

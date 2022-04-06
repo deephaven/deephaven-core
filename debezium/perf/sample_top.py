@@ -91,6 +91,9 @@ def format_samples(precision : int, samples):
     return s
 
 with open(f'{out_dir}/{now_str}_top_samples.log', 'w') as f:
+    line = f'nsamples={args.nsamples}, delay_s={args.delay_s}'
+    print(line)
+    f.write(line + '\n')
     for name in names:
         result = results[name]
         for tag in tags:

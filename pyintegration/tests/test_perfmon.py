@@ -3,9 +3,9 @@
 #
 import unittest
 
-from deephaven2 import empty_table
+from deephaven import empty_table
 
-from deephaven2.perfmon import process_info_log, process_metrics_log, process_memory_log, \
+from deephaven.perfmon import process_info_log, process_metrics_log, process_memory_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
     metrics_reset_counters
 from tests.testbase import BaseTestCase

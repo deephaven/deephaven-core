@@ -3,7 +3,7 @@
 #
 import unittest
 from numba import vectorize, int64
-from deephaven import TableTools
+from deephaven_legacy import TableTools
 import bootstrap
 
 

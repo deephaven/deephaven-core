@@ -133,20 +133,26 @@ Closure composeConfig = { task ->
     task.containerDependencies.finalizedBy = dockerCompose.downTask
 }
 
-def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
-def pyFunctionalTest = runInDocker('py-functional-test', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
+def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
+def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
+def pyTest = runInDocker('test-py-deephaven', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
+def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../pyintegration/integration-tests', ['/bin/bash', 'run-tests.sh'], composeConfig)
+pyTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTestLegacy)
+
+pyFunctionalTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyFunctionalTestLegacy)
+
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
 tasks.getByName('check').dependsOn(pyTest)
 
-pyFunctionalTest.configure({
+pyTestIntegration.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('check').dependsOn(pyFunctionalTest)
-
-pyTest2.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTest2)
+tasks.getByName('check').dependsOn(pyTestIntegration)

@@ -12,10 +12,10 @@ import tempfile
 import os
 import numpy
 
-from deephaven import TableTools, Aggregation
+from deephaven_legacy import TableTools, Aggregation
 
 # NB: these two modules cannot even be imported successfully without the jvm initialized
-import deephaven.Plot as Plot
+import deephaven_legacy.Plot as Plot
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest

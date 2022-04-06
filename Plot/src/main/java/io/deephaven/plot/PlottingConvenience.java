@@ -444,358 +444,358 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] values, T2[] yLow, T3[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] y, T2[] yLow, T3[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] values, double[] yLow, double[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] y, double[] yLow, double[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] values, float[] yLow, float[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] y, float[] yLow, float[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] values, int[] yLow, int[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] y, int[] yLow, int[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] values, long[] yLow, long[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] y, long[] yLow, long[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values, java.util.Date[] yLow, java.util.Date[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] values, short[] yLow, short[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] y, short[] yLow, short[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values, T2[] yLow, T3[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y, T2[] yLow, T3[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values, double[] yLow, double[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y, double[] yLow, double[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values, float[] yLow, float[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y, float[] yLow, float[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values, int[] yLow, int[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y, int[] yLow, int[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values, long[] yLow, long[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y, long[] yLow, long[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values, short[] yLow, short[] yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y, short[] yLow, short[] yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static  io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, t, categories, values, yLow, yHigh );
+    public static  io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, t, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static  io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
-        return FigureFactory.figure().catErrorBar( seriesName, sds, categories, values, yLow, yHigh );
+    public static  io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+        return FigureFactory.figure().catErrorBar( seriesName, sds, categories, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBarBy} 
     **/
-    public static  io.deephaven.plot.Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
-        return FigureFactory.figure().catErrorBarBy( seriesName, t, categories, values, yLow, yHigh, byColumns );
+    public static  io.deephaven.plot.Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+        return FigureFactory.figure().catErrorBarBy( seriesName, t, categories, y, yLow, yHigh, byColumns );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBarBy} 
     **/
-    public static  io.deephaven.plot.Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
-        return FigureFactory.figure().catErrorBarBy( seriesName, sds, categories, values, yLow, yHigh, byColumns );
+    public static  io.deephaven.plot.Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+        return FigureFactory.figure().catErrorBarBy( seriesName, sds, categories, y, yLow, yHigh, byColumns );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static <T extends java.lang.Comparable> io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, T[] x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static <T extends java.lang.Comparable> io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, T[] categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, double[] x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, double[] categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, float[] x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, float[] categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, int[] x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, int[] categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, long[] x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, long[] categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static <T extends java.lang.Comparable> io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> x ) {
-        return FigureFactory.figure().catHistPlot( seriesName, x );
+    public static <T extends java.lang.Comparable> io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, java.util.List<T> categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName ) {
-        return FigureFactory.figure().catHistPlot( seriesName, t, columnName );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, t, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
-        return FigureFactory.figure().catHistPlot( seriesName, sds, columnName );
+    public static  io.deephaven.plot.Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories ) {
+        return FigureFactory.figure().catHistPlot( seriesName, sds, categories );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T1 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T1 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
-        return FigureFactory.figure().catPlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
+        return FigureFactory.figure().catPlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static  io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
-        return FigureFactory.figure().catPlot( seriesName, t, categories, values );
+    public static  io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
+        return FigureFactory.figure().catPlot( seriesName, t, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlot} 
     **/
-    public static  io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
-        return FigureFactory.figure().catPlot( seriesName, sds, categories, values );
+    public static  io.deephaven.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
+        return FigureFactory.figure().catPlot( seriesName, sds, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlotBy} 
     **/
-    public static  io.deephaven.plot.Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
-        return FigureFactory.figure().catPlotBy( seriesName, t, categories, values, byColumns );
+    public static  io.deephaven.plot.Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
+        return FigureFactory.figure().catPlotBy( seriesName, t, categories, y, byColumns );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#catPlotBy} 
     **/
-    public static  io.deephaven.plot.Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
-        return FigureFactory.figure().catPlotBy( seriesName, sds, categories, values, byColumns );
+    public static  io.deephaven.plot.Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
+        return FigureFactory.figure().catPlotBy( seriesName, sds, categories, y, byColumns );
     }
 
     /**
@@ -1662,8 +1662,8 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table counts ) {
-        return FigureFactory.figure().histPlot( seriesName, counts );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t ) {
+        return FigureFactory.figure().histPlot( seriesName, t );
     }
 
     /**
@@ -1718,78 +1718,78 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, t, columnName, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, t, x, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, sds, columnName, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, sds, x, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, T0[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, T0[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, double[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, double[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, float[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, float[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, int[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, int[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, long[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, long[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, short[] x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, short[] x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, x, rangeMin, rangeMax, nbins );
+    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, t, columnName, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, t, x, xmin, xmax, nbins );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
-        return FigureFactory.figure().histPlot( seriesName, sds, columnName, rangeMin, rangeMax, nbins );
+    public static  io.deephaven.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, double xmin, double xmax, int nbins ) {
+        return FigureFactory.figure().histPlot( seriesName, sds, x, xmin, xmax, nbins );
     }
 
     /**
@@ -1949,148 +1949,148 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
-        return FigureFactory.figure().ohlcPlot( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol );
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
+        return FigureFactory.figure().ohlcPlot( seriesName, t, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
-        return FigureFactory.figure().ohlcPlot( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol );
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
+        return FigureFactory.figure().ohlcPlot( seriesName, sds, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlotBy} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
-        return FigureFactory.figure().ohlcPlotBy( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol, byColumns );
+    public static  io.deephaven.plot.Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
+        return FigureFactory.figure().ohlcPlotBy( seriesName, t, time, open, high, low, close, byColumns );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlotBy} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
-        return FigureFactory.figure().ohlcPlotBy( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol, byColumns );
+    public static  io.deephaven.plot.Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
+        return FigureFactory.figure().ohlcPlotBy( seriesName, sds, time, open, high, low, close, byColumns );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T1 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T1 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
-        return FigureFactory.figure().piePlot( seriesName, categories, values );
+    public static <T0 extends java.lang.Comparable,T1 extends java.lang.Number> io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
+        return FigureFactory.figure().piePlot( seriesName, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static  io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
-        return FigureFactory.figure().piePlot( seriesName, t, categories, values );
+    public static  io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
+        return FigureFactory.figure().piePlot( seriesName, t, categories, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#piePlot} 
     **/
-    public static  io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
-        return FigureFactory.figure().piePlot( seriesName, sds, categories, values );
+    public static  io.deephaven.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
+        return FigureFactory.figure().piePlot( seriesName, sds, categories, y );
     }
 
     /**

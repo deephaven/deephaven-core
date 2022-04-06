@@ -338,21 +338,21 @@ public class KafkaTools {
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> fieldPathToColumnNameOut,
-            final String prefix,
+            final String fieldNamePrefix,
             final Schema.Field field,
             final Function<String, String> fieldPathToColumnName) {
         final Schema fieldSchema = field.schema();
         final String fieldName = field.name();
-        final String mappedName = fieldPathToColumnName.apply(prefix + fieldName);
-        if (mappedName == null) {
+        final String mappedNameForColumn = fieldPathToColumnName.apply(fieldNamePrefix + fieldName);
+        if (mappedNameForColumn == null) {
             // allow the user to specify fields to skip by providing a mapping to null.
             return;
         }
         final Schema.Type fieldType = fieldSchema.getType();
         pushColumnTypesFromAvroField(
                 columnsOut, fieldPathToColumnNameOut,
-                prefix, fieldName,
-                fieldSchema, mappedName, fieldType, fieldPathToColumnName);
+                fieldNamePrefix, fieldName,
+                fieldSchema, mappedNameForColumn, fieldType, fieldPathToColumnName);
     }
 
     private static LogicalType getEffectiveLogicalType(final String fieldName, final Schema fieldSchema) {
@@ -363,45 +363,45 @@ public class KafkaTools {
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> fieldPathToColumnNameOut,
-            final String prefix,
+            final String fieldNamePrefix,
             final String fieldName,
             final Schema fieldSchema,
-            final String mappedName,
+            final String mappedNameForColumn,
             final Schema.Type fieldType,
             final Function<String, String> fieldPathToColumnName) {
         switch (fieldType) {
             case BOOLEAN:
-                columnsOut.add(ColumnDefinition.ofBoolean(mappedName));
+                columnsOut.add(ColumnDefinition.ofBoolean(mappedNameForColumn));
                 break;
             case INT:
-                columnsOut.add(ColumnDefinition.ofInt(mappedName));
+                columnsOut.add(ColumnDefinition.ofInt(mappedNameForColumn));
                 break;
             case LONG: {
                 final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
                         LogicalTypes.timestampMillis().equals(logicalType)) {
-                    columnsOut.add(ColumnDefinition.ofTime(mappedName));
+                    columnsOut.add(ColumnDefinition.ofTime(mappedNameForColumn));
                 } else {
-                    columnsOut.add(ColumnDefinition.ofLong(mappedName));
+                    columnsOut.add(ColumnDefinition.ofLong(mappedNameForColumn));
                 }
                 break;
             }
             case FLOAT:
-                columnsOut.add(ColumnDefinition.ofFloat(mappedName));
+                columnsOut.add(ColumnDefinition.ofFloat(mappedNameForColumn));
                 break;
             case DOUBLE:
-                columnsOut.add(ColumnDefinition.ofDouble(mappedName));
+                columnsOut.add(ColumnDefinition.ofDouble(mappedNameForColumn));
                 break;
             case ENUM:
             case STRING:
-                columnsOut.add(ColumnDefinition.ofString(mappedName));
+                columnsOut.add(ColumnDefinition.ofString(mappedNameForColumn));
                 break;
             case UNION: {
                 final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
-                        prefix, fieldName,
-                        effectiveSchema, mappedName, effectiveSchema.getType(), fieldPathToColumnName);
+                        fieldNamePrefix, fieldName,
+                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
                 return;
             }
             case RECORD:
@@ -409,7 +409,7 @@ public class KafkaTools {
                 for (final Schema.Field nestedField : fieldSchema.getFields()) {
                     pushColumnTypesFromAvroField(
                             columnsOut, fieldPathToColumnNameOut,
-                            prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR, nestedField,
+                            fieldNamePrefix + fieldName + NESTED_FIELD_NAME_SEPARATOR, nestedField,
                             fieldPathToColumnName);
                 }
                 return;
@@ -417,7 +417,7 @@ public class KafkaTools {
             case FIXED: {
                 final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (logicalType instanceof LogicalTypes.Decimal) {
-                    columnsOut.add(ColumnDefinition.fromGenericType(mappedName, BigDecimal.class));
+                    columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, BigDecimal.class));
                     break;
                 }
                 // fallthrough
@@ -429,7 +429,7 @@ public class KafkaTools {
                 throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
         }
         if (fieldPathToColumnNameOut != null) {
-            fieldPathToColumnNameOut.put(prefix + fieldName, mappedName);
+            fieldPathToColumnNameOut.put(fieldNamePrefix + fieldName, mappedNameForColumn);
         }
     }
 
@@ -693,7 +693,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final Schema schema) {
-            return new KeyOrValueSpec.Avro(schema, Function.identity());
+            return new KeyOrValueSpec.Avro(schema, DIRECT_MAPPING);
         }
 
         /**
@@ -741,7 +741,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
-            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, Function.identity());
+            return new KeyOrValueSpec.Avro(schemaName, schemaVersion, DIRECT_MAPPING);
         }
 
         /**
@@ -754,7 +754,7 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, Function.identity());
+            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, DIRECT_MAPPING);
         }
 
         @SuppressWarnings("unused")
@@ -1028,8 +1028,8 @@ public class KafkaTools {
          * @param nestedObjectDelimiter if nested JSON fields are desired, the field separator that is used for the
          *        fieldNames parameter, or null for no nesting. For instance, if a particular column should be mapped to
          *        JSON field {@code X} nested inside field {@code Y}, the corresponding field name value for the column
-         *        key in the {@code columnToFieldMapping} map can be the string {@code "X.Y"}, in which case the value
-         *        for {@code nestedObjectDelimiter} should be {code "."}
+         *        key in the {@code columnToFieldMapping} map can be the string {@code "X__Y"}, in which case the value
+         *        for {@code nestedObjectDelimiter} should be {code "_"}
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.

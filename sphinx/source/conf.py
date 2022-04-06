@@ -70,11 +70,11 @@ autodoc_typehints = 'none'
 
 #########################################################################################################################################################################
 
+import deephaven_legacy
 import deephaven
-import deephaven2
 import jpy
 docs_title = "Deephaven python modules."
-package_roots = [jpy, deephaven, deephaven2]
+package_roots = [jpy, deephaven_legacy, deephaven]
 package_excludes = ['._']
 
 import dh_sphinx
