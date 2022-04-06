@@ -5,7 +5,7 @@
 # redpanda schema service does not support newlines, and needs the schema embedded in a json object as a
 # value for a "schema" key, which means the keys and values in the schema itself need to have their
 # quotes escaped... what a royal pain.
-PAYLOAD=$(echo '{ "schema" : "\c'; cat avro/share_price.json | sed 's/"/\\"/g' | tr '\n' ' '; echo '" }\c')
+PAYLOAD=$(/bin/echo -n '{ "schema" : "'; cat avro/share_price.json | sed 's/"/\\"/g' | tr '\n' ' '; /bin/echo -n '" }')
 
 echo $PAYLOAD
 
