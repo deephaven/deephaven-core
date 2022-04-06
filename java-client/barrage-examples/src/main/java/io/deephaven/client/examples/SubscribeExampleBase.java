@@ -10,15 +10,19 @@ import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
 import java.util.concurrent.CountDownLatch;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
+
+    TableUpdateListener listener;
 
     @CommandLine.Option(names = {"--tail"}, required = false, description = "Tail viewport size")
     int tailSize = 0;
@@ -64,7 +68,14 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-            InstrumentedTableUpdateListener listener = new InstrumentedTableUpdateListener("example-listener") {
+            table.listenForUpdates(listener = new InstrumentedTableUpdateListener("example-listener") {
+                @ReferentialIntegrity
+                final BarrageTable tableRef = table;
+                {
+                    // Maintain a liveness ownership relationship with table for the lifetime of the listener
+                    manage(tableRef);
+                }
+
                 @Override
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     System.out.println("exiting due to onFailureInternal:");
@@ -77,11 +88,13 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
                 }
-            };
-
-            table.listenForUpdates(listener);
+            });
 
             countDownLatch.await();
+
+            // For a "real" implementation, we would use liveness tracking for the listener, and ensure that it was
+            // destroyed and unreachable when we no longer needed it.
+            listener = null;
         }
     }
 }
