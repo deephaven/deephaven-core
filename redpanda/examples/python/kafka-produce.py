@@ -9,6 +9,7 @@
 # $ cd confluent-kafka
 # $ source bin/activate
 # $ pip3 install confluent-kafka
+# $ pip3 install avro
 #
 # Note: On a Mac you may need to install the librdkafka package.
 # You can use "brew install librdkafka" if the pip3 command fails
@@ -22,13 +23,14 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven_legacy import ConsumeKafka as ck
+#    > from deephaven import kafka_consumer as kc
+#    > from deephaven.stream.kafka.consumer import TableType
 #
 # == Example (1)  Simple String Key and simple double Value
 #
 # From web UI do:
 #
-#    > t = ck.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
+#    > t = kc.consume({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type=TableType.Append)
 #
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
