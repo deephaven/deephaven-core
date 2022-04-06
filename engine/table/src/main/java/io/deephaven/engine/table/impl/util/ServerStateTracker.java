@@ -9,6 +9,9 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ServerStateTracker {
     private static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
@@ -56,12 +59,60 @@ public class ServerStateTracker {
         getInstance().startThread();
     }
 
+    static class Stats {
+        long max;
+        long mean;
+        long median;
+        long p90;
+    }
+
+    static void calcStats(final Stats out, final long[] values, final int nValues) {
+        if (nValues == 0) {
+            out.max = out.mean = out.median = out.p90 = NULL_LONG;
+            return;
+        }
+        Arrays.sort(values, 0, nValues);
+        out.max = values[nValues - 1];
+        if ((nValues & 1) == 0) {
+            // even number of samples
+            final int midRight = nValues / 2;
+            out.median = Math.round((values[midRight - 1] + values[midRight]) / 2.0);
+        } else {
+            // odd number of samples
+            out.median = values[nValues / 2];
+        }
+        double sum = 0.0;
+        for (int i = 0; i < nValues; ++i) {
+            sum += values[i];
+        }
+        out.mean = Math.round(sum / nValues);
+        final double p90pos = nValues * 0.9 - 1.0;
+        if (p90pos < 0) {
+            out.p90 = values[0];
+        } else {
+            final int p90posTruncated = (int) p90pos;
+            final double p90posDelta = p90pos - p90posTruncated;
+            // Note we are approximating via the 'higher' method,
+            // using the next up actual sample in the array if the
+            // percentile position does not exist "exactly".
+            // see numpy's percentile documentation for alternatives
+            // we could use here (eg, linear interpolation).
+            // for our current objectives this should suffice.
+            if (p90posDelta >= 1e-2 && p90posTruncated < nValues - 1) {
+                out.p90 = values[p90posTruncated + 1];
+            } else {
+                out.p90 = values[p90posTruncated];
+            }
+        }
+    }
+
     private class Driver implements Runnable {
         @Override
         public void run() {
             final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
             // noinspection InfiniteLoopStatement
             while (true) {
+                final Stats stats = new Stats();
                 final long intervalStartTimeMillis = System.currentTimeMillis();
                 try {
                     Thread.sleep(REPORT_INTERVAL_MILLIS);
@@ -72,22 +123,27 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                final long prevUgpCycles = ugpAccumCycleStats.getTotalCycles();
-                final long prevUgpCyclesOnBudget = ugpAccumCycleStats.getTotalCyclesOnBudget();
-                final long prevUgpCyclesTimeNanos = ugpAccumCycleStats.getTotalCyclesTimeNanos();
-                final long prevUgpSafePOintPauseTimeMillis = ugpAccumCycleStats.getTotalSafePointPauseTimeMillis();
+                final long prevUgpCycles = ugpAccumCycleStats.totalCycles;
+                final long prevUgpCyclesOnBudget = ugpAccumCycleStats.totalCyclesOnBudget;
+                final long prevUgpCyclesTimeNanos = ugpAccumCycleStats.totalCyclesTimeNanos;
+                final long prevUgpSafePointPauseTimeMillis = ugpAccumCycleStats.totalSafePointPauseTimeMillis;
                 UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.copyTo(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
+                calcStats(stats, ugpAccumCycleStats.sampledCycleTimeNanos, ugpAccumCycleStats.nSampledCycles);
                 logProcessMem(
                         intervalStartTimeMillis,
                         endTimeMillis,
                         memSample,
                         prevTotalCollections,
                         prevTotalCollectionTimeMs,
-                        ugpAccumCycleStats.getTotalCycles() - prevUgpCycles,
-                        ugpAccumCycleStats.getTotalCyclesOnBudget() - prevUgpCyclesOnBudget,
-                        ugpAccumCycleStats.getTotalCyclesTimeNanos() - prevUgpCyclesTimeNanos,
-                        ugpAccumCycleStats.getTotalSafePointPauseTimeMillis() - prevUgpSafePOintPauseTimeMillis);
+                        ugpAccumCycleStats.totalCycles - prevUgpCycles,
+                        ugpAccumCycleStats.totalCyclesOnBudget - prevUgpCyclesOnBudget,
+                        stats.max,
+                        stats.median,
+                        stats.mean,
+                        stats.p90,
+                        ugpAccumCycleStats.totalCyclesTimeNanos - prevUgpCyclesTimeNanos,
+                        ugpAccumCycleStats.totalSafePointPauseTimeMillis - prevUgpSafePointPauseTimeMillis);
             }
         }
     }
@@ -99,6 +155,10 @@ public class ServerStateTracker {
             final long prevTotalCollectionTimeMs,
             final long ugpCycles,
             final long ugpCyclesOnBudget,
+            final long ugpCycleMax,
+            final long ugpCycleMedian,
+            final long ugpCycleMean,
+            final long ugpCycleP90,
             final long ugpCyclesNanos,
             final long ugpSafePointTimeMillis) {
         try {
@@ -111,6 +171,10 @@ public class ServerStateTracker {
                     DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
                     ugpCycles,
                     ugpCyclesOnBudget,
+                    ugpCycleMax,
+                    ugpCycleMedian,
+                    ugpCycleMean,
+                    ugpCycleP90,
                     ugpCyclesNanos,
                     DateTimeUtils.millisToNanos(ugpSafePointTimeMillis));
         } catch (IOException e) {

@@ -282,14 +282,19 @@ public class PerformanceQueries {
                 "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
         pm = pm.view(
                 "IntervalStart = IntervalStartTime",
-                "IntervalSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "IntervalSecs = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
                 "UsedMemMiB = TotalMemMiB - FreeMemMiB",
                 "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
                 "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)",
+                "UGPCycles = IntervalUGPCyclesFinished",
                 "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedOnBudget, IntervalUGPCyclesFinished)",
-                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTimeNanos, IntervalDurationNanos)",
+                "UPGCycleMaxSecs = IntervalUGPCycleMaxTimeNanos / (1000 * 1000 * 1000.0)",
+                "UPGCycleMedianSecs = IntervalUGPCycleMedianTimeNanos / (1000 * 1000 * 1000.0)",
+                "UPGCycleMeanSecs = IntervalUGPCycleMeanTimeNanos / (1000 * 1000 * 1000.0)",
+                "UPGCycleP90Secs = IntervalUGPCycleP90TimeNanos / (1000 * 1000 * 1000.0)",
+                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTotalTimeNanos, IntervalDurationNanos)",
                 "UGPSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedSafePointTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
@@ -312,7 +317,11 @@ public class PerformanceQueries {
                 "UGPSafePointTimeRatio=(UGPSafePointTimeRatio >= 0.75) ? PALE_RED : " +
                         "((UGPSafePointTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
                         "((UGPSafePointTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
-                "IntervalSeconds=Decimal(`#0.000`)");
+                "IntervalSecs=Decimal(`#0.000`)",
+                "UPGCycleMaxSecs=Decimal(`#0.000`)",
+                "UPGCycleMedianSecs=Decimal(`#0.000`)",
+                "UPGCycleMeanSecs=Decimal(`#0.000`)",
+                "UPGCycleP90Secs=Decimal(`#0.000`)");
         return pm;
     }
 

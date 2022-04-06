@@ -153,27 +153,42 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         /**
          * Total cycles run.
          */
-        private long totalCycles = 0L;
+        public long totalCycles = 0L;
         /**
          * Cycles run no exceeding their time budget.
          */
-        private long totalCyclesOnBudget = 0L;
+        public long totalCyclesOnBudget = 0L;
         /**
          * Accumulated time over all cycles.
          */
-        private long totalCyclesTimeNanos = 0L;
+        public long totalCyclesTimeNanos = 0L;
         /**
          * Accumulated safepoint time over all cycles.
          */
-        private long totalSafePointPauseTimeMillis = 0L;
+        public long totalSafePointPauseTimeMillis = 0L;
 
-        synchronized void accumulate(final long cycleTimeNanos, final long safePointPauseTimeMillis, final boolean cycleOnBudget) {
+        public long[] sampledCycleTimeNanos = new long[256];
+        public static final int maxSampledCycles = 2048;
+        public int nSampledCycles = 0;
+
+        synchronized void accumulate(final long targetCycleDurationMillis, final long cycleTimeNanos,
+                final long safePointPauseTimeMillis) {
             ++totalCycles;
+            final boolean cycleOnBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
             if (cycleOnBudget) {
                 ++totalCyclesOnBudget;
             }
             totalCyclesTimeNanos += cycleTimeNanos;
             totalSafePointPauseTimeMillis += safePointPauseTimeMillis;
+            if (sampledCycleTimeNanos.length <= maxSampledCycles) {
+                if (nSampledCycles + 1 > sampledCycleTimeNanos.length) {
+                    final long[] tmp = new long[sampledCycleTimeNanos.length * 2];
+                    System.arraycopy(sampledCycleTimeNanos, 0, tmp, 0, sampledCycleTimeNanos.length);
+                    sampledCycleTimeNanos = tmp;
+                }
+                sampledCycleTimeNanos[nSampledCycles] = cycleTimeNanos;
+                ++nSampledCycles;
+            }
         }
 
         public synchronized void copyTo(final AccumulatedCycleStats out) {
@@ -181,22 +196,11 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             out.totalCyclesOnBudget = totalCyclesOnBudget;
             out.totalCyclesTimeNanos = totalCyclesTimeNanos;
             out.totalSafePointPauseTimeMillis = totalSafePointPauseTimeMillis;
-        }
-
-        public long getTotalCycles() {
-            return totalCycles;
-        }
-
-        public long getTotalCyclesOnBudget() {
-            return totalCyclesOnBudget;
-        }
-
-        public long getTotalCyclesTimeNanos() {
-            return totalCyclesTimeNanos;
-        }
-
-        public long getTotalSafePointPauseTimeMillis() {
-            return totalSafePointPauseTimeMillis;
+            if (out.sampledCycleTimeNanos.length < sampledCycleTimeNanos.length) {
+                out.sampledCycleTimeNanos = new long[sampledCycleTimeNanos.length];
+            }
+            out.nSampledCycles = nSampledCycles;
+            System.arraycopy(sampledCycleTimeNanos, 0, out.sampledCycleTimeNanos, 0, nSampledCycles);
         }
     }
 
@@ -1568,9 +1572,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private void computeStatsAndLogCycle(final long cycleTimeNanos) {
         final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
         accumulatedCycleStats.accumulate(
+                DEFAULT_TARGET_CYCLE_DURATION_MILLIS,
                 cycleTimeNanos,
-                safePointPauseTimeMillis,
-                DEFAULT_TARGET_CYCLE_DURATION_MILLIS * 1000 * 1000 >= cycleTimeNanos);
+                safePointPauseTimeMillis);
         if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
             if (suppressedCycles > 0) {
                 logSuppressedCycles();

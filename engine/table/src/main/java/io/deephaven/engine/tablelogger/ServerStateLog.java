@@ -37,7 +37,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 long intervalCollectionTimeNanos,
                 long intervalUGPCyclesFinished,
                 long intervalUGPCyclesFinishedOnBudget,
-                long intervalUGPCyclesFinishedTimeNanos,
+                long intervalUGPCycleMaxTimeNanos,
+                long intervalUGPCycleMedianTimeNanos,
+                long intervalUGPCycleMeanTimeNanos,
+                long intervalUGPCycleP90TimeNanos,
+                long intervalUGPCyclesFinishedTotalTimeNanos,
                 long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException;
     }
 
@@ -50,7 +54,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
         RowSetter<Long> IntervalCollectionTimeNanos;
         RowSetter<Long> IntervalUGPCyclesFinished;
         RowSetter<Long> IntervalUGPCyclesFinishedOnBudget;
-        RowSetter<Long> IntervalUGPCyclesFinishedTimeNanos;
+        RowSetter<Long> IntervalUGPCycleMaxTimeNanos;
+        RowSetter<Long> IntervalUGPCycleMedianTimeNanos;
+        RowSetter<Long> IntervalUGPCycleMeanTimeNanos;
+        RowSetter<Long> IntervalUGPCycleP90TimeNanos;
+        RowSetter<Long> IntervalUGPCyclesFinishedTotalTimeNanos;
         RowSetter<Long> IntervalUGPCyclesFinishedSafePointTimeNanos;
 
         DirectSetter() {
@@ -62,7 +70,12 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             IntervalCollectionTimeNanos = row.getSetter("IntervalCollectionTimeNanos", long.class);
             IntervalUGPCyclesFinished = row.getSetter("IntervalUGPCyclesFinished", long.class);
             IntervalUGPCyclesFinishedOnBudget = row.getSetter("IntervalUGPCyclesFinishedOnBudget", long.class);
-            IntervalUGPCyclesFinishedTimeNanos = row.getSetter("IntervalUGPCyclesFinishedTimeNanos", long.class);
+            IntervalUGPCycleMaxTimeNanos = row.getSetter("IntervalUGPCycleMaxTimeNanos", long.class);
+            IntervalUGPCycleMedianTimeNanos = row.getSetter("IntervalUGPCycleMedianTimeNanos", long.class);
+            IntervalUGPCycleMeanTimeNanos = row.getSetter("IntervalUGPCycleMeanTimeNanos", long.class);
+            IntervalUGPCycleP90TimeNanos = row.getSetter("IntervalUGPCycleP90TimeNanos", long.class);
+            IntervalUGPCyclesFinishedTotalTimeNanos =
+                    row.getSetter("IntervalUGPCyclesFinishedTotalTimeNanos", long.class);
             IntervalUGPCyclesFinishedSafePointTimeNanos =
                     row.getSetter("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
         }
@@ -78,7 +91,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 final long intervalCollectionTimeNanos,
                 final long intervalUGPCyclesFinished,
                 final long intervalUGPCyclesFinishedOnBudget,
-                final long intervalUGPCyclesFinishedTimeNanos,
+                final long intervalUGPCycleMaxTimeNanos,
+                final long intervalUGPCycleMedianTimeNanos,
+                final long intervalUGPCycleMeanTimeNanos,
+                final long intervalUGPCycleP90TimeNanos,
+                final long intervalUGPCyclesFinishedTotalTimeNanos,
                 final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
             setRowFlags(flags);
             this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalStartTime));
@@ -89,7 +106,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             this.IntervalCollectionTimeNanos.set(intervalCollectionTimeNanos);
             this.IntervalUGPCyclesFinished.set(intervalUGPCyclesFinished);
             this.IntervalUGPCyclesFinishedOnBudget.set(intervalUGPCyclesFinishedOnBudget);
-            this.IntervalUGPCyclesFinishedTimeNanos.set(intervalUGPCyclesFinishedTimeNanos);
+            this.IntervalUGPCycleMaxTimeNanos.set(intervalUGPCycleMaxTimeNanos);
+            this.IntervalUGPCycleMedianTimeNanos.set(intervalUGPCycleMedianTimeNanos);
+            this.IntervalUGPCycleMeanTimeNanos.set(intervalUGPCycleMeanTimeNanos);
+            this.IntervalUGPCycleP90TimeNanos.set(intervalUGPCycleP90TimeNanos);
+            this.IntervalUGPCyclesFinishedTotalTimeNanos.set(intervalUGPCyclesFinishedTotalTimeNanos);
             this.IntervalUGPCyclesFinishedSafePointTimeNanos.set(intervalUGPCyclesFinishedSafePointTimeNanos);
         }
     }
@@ -112,7 +133,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 .add("IntervalCollectionTimeNanos", long.class)
                 .add("IntervalUGPCyclesFinished", long.class)
                 .add("IntervalUGPCyclesFinishedOnBudget", long.class)
-                .add("IntervalUGPCyclesFinishedTimeNanos", long.class)
+                .add("IntervalUGPCycleMaxTimeNanos", long.class)
+                .add("IntervalUGPCycleMedianTimeNanos", long.class)
+                .add("IntervalUGPCycleMeanTimeNanos", long.class)
+                .add("IntervalUGPCycleP90TimeNanos", long.class)
+                .add("IntervalUGPCyclesFinishedTotalTimeNanos", long.class)
                 .add("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getTypes();
@@ -133,7 +158,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             final long intervalCollectionTimeNanos,
             final long intervalUGPCycles,
             final long intervalUGPCyclesOnBudget,
-            final long intervalUGPCyclesFinishedTimeNanos,
+            final long intervalUGPCycleMaxTimeNanos,
+            final long intervalUGPCycleMedianTimeNanos,
+            final long intervalUGPCycleMeanTimeNanos,
+            final long intervalUGPCycleP90TimeNanos,
+            final long intervalUGPCyclesFinishedTotalTimeNanos,
             final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS,
                 intervalStartTime,
@@ -144,7 +173,11 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 intervalCollectionTimeNanos,
                 intervalUGPCycles,
                 intervalUGPCyclesOnBudget,
-                intervalUGPCyclesFinishedTimeNanos,
+                intervalUGPCycleMaxTimeNanos,
+                intervalUGPCycleMedianTimeNanos,
+                intervalUGPCycleMeanTimeNanos,
+                intervalUGPCycleP90TimeNanos,
+                intervalUGPCyclesFinishedTotalTimeNanos,
                 intervalUGPCyclesFinishedSafePointTimeNanos);
     }
 
@@ -158,6 +191,10 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
             final long intervalCollectionTimeNanos,
             final long intervalUGPCycles,
             final long intervalUGPCyclesOnBudget,
+            final long intervalUGPCycleMaxTimeNanos,
+            final long intervalUGPCycleMedianTimeNanos,
+            final long intervalUGPCycleMeanTimeNanos,
+            final long intervalUGPCycleP90TimeNanos,
             final long intervalUGPCyclesFinishedTimeNanos,
             final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
@@ -174,6 +211,10 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                     intervalCollectionTimeNanos,
                     intervalUGPCycles,
                     intervalUGPCyclesOnBudget,
+                    intervalUGPCycleMaxTimeNanos,
+                    intervalUGPCycleMedianTimeNanos,
+                    intervalUGPCycleMeanTimeNanos,
+                    intervalUGPCycleP90TimeNanos,
                     intervalUGPCyclesFinishedTimeNanos,
                     intervalUGPCyclesFinishedSafePointTimeNanos);
         } catch (Exception e) {
