@@ -63,7 +63,8 @@ def consume(
     try:
         partitions = j_partitions(partitions)
         kafka_config = j_properties(kafka_config)
-        return Table(j_table=_JCdcTools.consumeToTable(kafka_config, cdc_spec, partitions, stream_table, cols_to_drop))
+        return Table(
+            j_table=_JCdcTools.consumeToTable(kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop))
     except Exception as e:
         raise DHError(e, "failed to consume a CDC stream.") from e
 
@@ -95,7 +96,7 @@ def consume_raw(
         partitions = j_partitions(partitions)
         kafka_config = j_properties(kafka_config)
         table_type_enum = table_type.value
-        return Table(j_table=_JCdcTools.consumeRawToTable(kafka_config, cdc_spec, partitions, table_type_enum))
+        return Table(j_table=_JCdcTools.consumeRawToTable(kafka_config, cdc_spec.j_object, partitions, table_type_enum))
     except Exception as e:
         raise DHError(e, "failed to consume a raw CDC stream.") from e
 
