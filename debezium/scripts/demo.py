@@ -22,7 +22,7 @@ def make_cdc_table(table_name:str):
         kafka_base_properties,
         cc.cdc_short_spec(server_name,
                           db_name,
-                          table_name).j_object
+                          table_name)
     )
 
 users = make_cdc_table('users')
@@ -145,7 +145,7 @@ high_value_users = purchases \
             agg.sum_(['lifetime_value = purchase_total']),
             agg.count_('purchases')
         ],
-        ['user_id']
+        'user_id'
     )\
     .where(['lifetime_value > 10000']) \
     .natural_join(users, ['user_id = id'], ['email']) \
@@ -189,5 +189,5 @@ pageviews_summary = pageviews_stg \
         [
             agg.count_('total'),
             agg.max_(['max_received_at = received_at'])
-        ],[]) \
+        ]) \
     .update(['dt_ms = (DateTime.now() - max_received_at)/1_000_000.0'])
