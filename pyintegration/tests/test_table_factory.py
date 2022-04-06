@@ -7,12 +7,12 @@ from dataclasses import dataclass
 import jpy
 import numpy as np
 
+from tests.testbase import BaseTestCase
 from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
 from deephaven.table_factory import DynamicTableWriter
-from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 

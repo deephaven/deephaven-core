@@ -4,9 +4,9 @@
 import os
 import unittest
 
+from tests.testbase import BaseTestCase
 from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
-from tests.testbase import BaseTestCase
 from deephaven import dtypes
 
 

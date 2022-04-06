@@ -7,6 +7,9 @@ import unittest
 
 import jpy
 
+from test_helper import start_jvm
+start_jvm()
+
 from deephaven.table import Table
 
 

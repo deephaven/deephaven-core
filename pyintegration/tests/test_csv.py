@@ -3,9 +3,9 @@
 #
 import unittest
 
+from tests.testbase import BaseTestCase
 from deephaven import dtypes, DHError
 from deephaven import read_csv, write_csv
-from tests.testbase import BaseTestCase
 
 
 class CsvTestCase(BaseTestCase):

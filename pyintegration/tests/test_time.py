@@ -5,6 +5,9 @@
 import unittest
 from time import sleep
 
+from test_helper import start_jvm
+start_jvm()
+
 from deephaven.constants import NULL_LONG, NULL_INT
 from deephaven.time import *
 

@@ -1,7 +1,7 @@
 #
-# Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" Utilities for starting the Deephaven JVM. """
+""" This module supports bootstrapping a Deephaven Python Script session from Python."""
 
 import os
 import re
@@ -12,24 +12,46 @@ import jpy
 import jpyutil
 
 
-# from deephaven import initialize
-# from .conversion_utils import _isStr
+DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
+DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
+DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
+DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*")
 
 
-def start_jvm(devroot=None,
-              workspace=None,
-              propfile=None,
-              verbose=False,
-              skip_default_classpath=None,
-              # The following are the jpyutil.init_jvm options which are passed through after attaching our options
-              java_home=None,
-              jvm_dll=None,
-              jvm_maxmem=None,
-              jvm_classpath=None,
-              jvm_properties=None,
-              jvm_options=None,
-              config_file=None,
-              config=None):
+def start_jvm():
+    """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
+    Script session. """
+    if not jpy.has_jvm():
+
+        # we will try to initialize the jvm
+        init_jvm()
+
+        # set up a Deephaven Python session
+        py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
+        py_dh_session = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")(py_scope_jpy)
+        jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())
+
+def init_jvm(workspace= DEFAULT_WORKSPACE,
+              devroot= DEFAULT_DEVROOT,
+              verbose= False,
+              propfile= DEFAULT_PROPFILE,
+              jvm_properties= {'PyObject.cleanup_on_thread': 'false'},
+              jvm_options= {'-Djava.awt.headless=true',
+                            '-DMetricsManager.enabled=true',
+
+                            '-XX:+UseG1GC',
+                            '-XX:MaxGCPauseMillis=100',
+                            '-XX:+UseStringDeduplication',
+
+                            '-XX:InitialRAMPercentage=25.0',
+                            '-XX:MinRAMPercentage=70.0',
+                            '-XX:MaxRAMPercentage=80.0',
+
+                            '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                            },
+              # 'jvm_maxmem': '1g',
+              jvm_classpath= DEFAULT_CLASSPATH,
+              ):
     """
     Starts a JVM within this Python process to interface with Deephaven.
 
@@ -58,23 +80,6 @@ def start_jvm(devroot=None,
     :param config: An optional default configuration object providing default attributes
                    for the 'jvm_maxmem', 'jvm_classpath', 'jvm_properties', 'jvm_options' parameters.
     """
-
-    # setup defaults
-
-    for stem in ['DEEPHAVEN']:
-        if devroot is None:
-            devroot = os.environ.get("{}_DEVROOT".format(stem), None)
-        if workspace is None:
-            workspace = os.environ.get("{}_WORKSPACE".format(stem), None)
-        if propfile is None:
-            propfile = os.environ.get("{}_PROPFILE".format(stem), None)
-
-    # if we don't have a devroot and/or propfile yet, workers will have standard environment variables we can try
-    if devroot is None:
-        devroot = os.environ.get('DEVROOT', None)
-
-    if propfile is None:
-        propfile = os.environ.get('CONFIGFILE', None)
 
     # validate devroot & workspace
     if devroot is None:
@@ -106,7 +111,7 @@ def start_jvm(devroot=None,
                           RuntimeWarning)
 
     # setup environment
-    expanded_devroot = _expandLinks(devroot)
+    expanded_devroot = os.path.realpath(devroot)
 
     jProperties = {'devroot': expanded_devroot, 'workspace': workspace}
     if propfile is not None:
@@ -124,15 +129,9 @@ def start_jvm(devroot=None,
         else:
             raise ValueError("Invalid jvm_classpath type = {}. list or string accepted.".format(type(jvm_classpath)))
 
-    defaultClasspath = None
-    if not skip_default_classpath:
-        defaultClasspath = _getDefaultClasspath(expanded_devroot, workspace)
-        jClassPath.extend(defaultClasspath)
-
     jClassPath = _expandWildcardsInList(jClassPath)
 
     if verbose:
-        print("JVM default classpath... {}".format(defaultClasspath))
         print("JVM classpath... {}".format(jClassPath))
         print("JVM properties... {}".format(jProperties))
 
@@ -145,91 +144,14 @@ def start_jvm(devroot=None,
 
     jpy.VerboseExceptions.enabled = True
     jpyutil.init_jvm(
-        java_home=java_home,
-        jvm_dll=jvm_dll,
-        jvm_maxmem=jvm_maxmem,
+        java_home=None,
+        jvm_dll=None,
+        jvm_maxmem=None,
         jvm_classpath=jClassPath,
         jvm_properties=jProperties,
         jvm_options=jvm_options,
-        config_file=config_file,
-        config=config)
-    # Loads our configuration and initializes the class types
-    # TODO not sure if this is still needed.
-    # initialize()
-
-
-def _expandLinks(dirname):
-    return os.path.realpath(dirname)
-
-def _getDefaultClasspath(devroot, workspace):
-    """
-    Determines whether running as client or server, and returns default classpath elements accordingly.
-
-    :param devroot: the devroot parameter for Deephaven; will be set by the time this is called
-    :param workspace: the workspace parameter for Deephaven; will be set by the time this is called
-    :return: the default classpath as an array of strings
-    """
-
-    # first determine whether this is client or server
-    # clients have devroot/getdown.txt
-    # servers have devroot, typically the link /usr/deephaven/latest expanded to an actual directory
-    # if neither seems to apply, fail
-
-    isclient = None
-    if os.path.isfile(os.path.join(devroot, "getdown.txt")):
-        isclient = True
-    else:
-        if os.path.isdir(devroot):
-            isclient = False
-        else:
-            raise IOError("Could not decide how to create classpath. Neither {} nor "
-                          "<devroot>/getdown.txt exist".format(devroot))
-
-    if isclient:
-        # this construction should match the classpath specified in getdown.txt
-        return _flatten([os.path.join(devroot, el) for el in ["private_classes", "private_jars/*", "override",
-                                                             "resources", "hotfixes/*", "java_lib/*"]])
-    else:  # is server
-        # this construction should match the classpath specified in launch and launch_functions
-        return _flatten(["{}/etc".format(workspace),
-                        "/etc/sysconfig/deephaven.d/override",
-                        "/etc/sysconfig/deephaven.d/resources",
-                        "/etc/sysconfig/deephaven.d/java_lib/*",
-                        "/etc/sysconfig/deephaven.d/hotfixes/*",
-                         _addPluginClasspaths(),
-                        "{}/etc".format(devroot),
-                        "{}/java_lib/*".format(devroot)])
-
-
-def _addPluginClasspaths():
-    """
-    Helper method. Adds elements to classpath listing.
-
-    :return: classpath fragment
-    """
-
-    new_list = []
-    _addGlobal(new_list, "/etc/sysconfig/deephaven.d/plugins")
-    _addGlobal(new_list, "/etc/deephaven/plugins")
-    return new_list
-
-
-def _addGlobal(new_list, base):
-    """
-    Helper method. Add elements to classpath listing. Resolves links to actual directories.
-
-    :param new_list: current classpath list
-    :param base: base directory
-    """
-
-    if not os.path.isdir(base):
-        return
-    for plugin in os.listdir(base):
-        thedir = os.path.join(base, plugin, "global")
-        if os.path.isdir(thedir):
-            expanded_plugin_dir = _expandLinks(thedir)
-            new_list.extend([os.path.join(expanded_plugin_dir, dependency) for dependency in os.listdir(expanded_plugin_dir)])
-
+        config_file=None,
+        config=None)
 
 def _expandWildcardsInList(elements):
     """

@@ -1,6 +1,13 @@
 #!/bin/bash
 set -eux
-for test_file_name in  ./*test.py;
+
+#
+# Run each test py file in its own interpreter so they don't share globals
+#
+
+DIR=$(dirname "$0")
+
+for test_file_name in $DIR/*test.py;
 do
    echo $test_file_name
    python3 $test_file_name>> /out/report/scripting-test_results 2>&1
