@@ -1076,13 +1076,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]]) -> Table:
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
 
         Returns:
             a new table
