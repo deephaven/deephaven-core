@@ -226,11 +226,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     scheduler, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
-
-        @Override
-        public boolean snapshotNeeded() {
-            return false;
-        }
     }
 
     private static class MyMemoKey extends MemoizedOperationKey {
@@ -592,7 +587,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             Assert.assertion(parentIsRefreshing, "parent.isRefreshing()");
             manage(parent);
             addParentReference(this);
-            parent.listenForUpdates(this);
         }
 
         @Override
