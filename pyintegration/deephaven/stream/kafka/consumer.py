@@ -19,7 +19,7 @@ _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
 _JTableType = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
-_ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
+ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
 
 class TableType(Enum):
@@ -75,6 +75,15 @@ in the properties as "key.column.name" or "value.column.name" in the config, and
 """
 
 
+def j_partitions(partitions):
+    if partitions is None:
+        partitions = ALL_PARTITIONS
+    else:
+        j_array = dtypes.array(dtypes.int32, partitions)
+        partitions = _JKafkaTools.partitionFilterFromArray(j_array)
+    return partitions
+
+
 def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], str]:
     java_map = j_hashmap(dict_mapping)
     if not mapped_only:
@@ -91,13 +100,13 @@ def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
 
 
 def consume(
-    kafka_config: Dict,
-    topic: str,
-    partitions: List[int] = None,
-    offsets: Dict[int, int] = None,
-    key_spec: KeyValueSpec = None,
-    value_spec: KeyValueSpec = None,
-    table_type: TableType = TableType.Stream,
+        kafka_config: Dict,
+        topic: str,
+        partitions: List[int] = None,
+        offsets: Dict[int, int] = None,
+        key_spec: KeyValueSpec = None,
+        value_spec: KeyValueSpec = None,
+        table_type: TableType = TableType.Stream,
 ) -> Table:
     """Consume from Kafka to a Deephaven table.
 
@@ -133,11 +142,7 @@ def consume(
     """
 
     try:
-        if partitions is None:
-            partitions = _ALL_PARTITIONS
-        else:
-            j_array = dtypes.array(dtypes.int32, partitions)
-            partitions = _JKafkaTools.partitionFilterFromArray(j_array)
+        partitions = j_partitions(partitions)
 
         if offsets is None or offsets == ALL_PARTITIONS_DONT_SEEK:
             offsets = _ALL_PARTITIONS_DONT_SEEK
@@ -175,10 +180,10 @@ def consume(
 
 
 def avro_spec(
-    schema: str,
-    schema_version: str = "latest",
-    mapping: Dict[str, str] = None,
-    mapped_only: bool = False,
+        schema: str,
+        schema_version: str = "latest",
+        mapping: Dict[str, str] = None,
+        mapped_only: bool = False,
 ) -> KeyValueSpec:
     """Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 

@@ -55,7 +55,7 @@ public class CdcTools {
      * Users specify CDC streams via objects satisfying this interface; the objects are created with static factory
      * methods, the classes implementing this interface are opaque from a user perspective.
      */
-    private interface CdcSpec {
+    public interface CdcSpec {
         /**
          * @return CDC stream kafka topic
          */
