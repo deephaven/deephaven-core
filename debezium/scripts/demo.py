@@ -55,7 +55,7 @@ pageviews_stg = pageviews \
         'url_path = url.split(`/`)',
         'pageview_type = url_path[1]',
         'target_id = Long.parseLong(url_path[2])'
-    ]).drop_columns(['url_path'])
+    ]).drop_columns('url_path')
 
 purchases_by_item = purchases.agg_by(
     [
@@ -63,7 +63,7 @@ purchases_by_item = purchases.agg_by(
         agg.count_('orders'),
         agg.sum_(['items_sold = quantity'])
     ],
-    ['item_id']
+    'item_id'
 )
 
 pageviews_by_item = pageviews_stg \
@@ -72,20 +72,20 @@ pageviews_by_item = pageviews_stg \
 
 item_summary = items \
     .view(['item_id = id', 'name', 'category']) \
-    .natural_join(purchases_by_item, ['item_id']) \
-    .natural_join(pageviews_by_item, ['item_id']) \
-    .drop_columns(['item_id']) \
+    .natural_join(purchases_by_item, on = ['item_id']) \
+    .natural_join(pageviews_by_item, on = ['item_id']) \
+    .drop_columns('item_id') \
     .move_columns_down(['revenue', 'pageviews']) \
     .update_view(['conversion_rate = orders / (double) pageviews'])
 
 # These two 'top_*' tables match the 'Business Intelligence: Metabase' / dashboard
 # part of the original example.
 top_viewed_items = item_summary \
-    .sort_descending(['pageviews']) \
+    .sort_descending('pageviews') \
     .head(20)
 
 top_converting_items = item_summary \
-    .sort_descending(['conversion_rate']) \
+    .sort_descending('conversion_rate') \
     .head(20)
 
 minute_in_nanos = 60 * 1000 * 1000 * 1000
@@ -96,21 +96,21 @@ minute_in_nanos = 60 * 1000 * 1000 * 1000
 #        'received_at',
 #        10*minute_in_nanos,
 #        'in_last_10min'
-#    ).where(
+#    ).where([
 #        'in_last_10min = true'
-#    ).updateView(
-#        'received_at_minute = lowerBin(received_at, minute_in_nanos)'
-#    ).view(
+#    ]).update_view([
+#        'received_at_minute = lower_bin(received_at, minute_in_nanos)'
+#    ]).view([
 #        'user_id = target_id',
 #        'received_at_minute'
-#    ).countBy(
+#    ]).count_by([
 #        'pageviews',
 #        'user_id',
 #        'received_at_minute'
-#    ).sort(
+#    ]).sort([
 #        'user_id',
 #        'received_at_minute'
-#    )
+#    ])
 
 profile_views = pageviews_stg \
     .view([
@@ -122,9 +122,9 @@ profile_views = pageviews_stg \
     ]).tail_by(10, ['owner_id'])
 
 profile_views_enriched = profile_views \
-    .natural_join(users, ['owner_id = id'], ['owner_email = email']) \
-    .natural_join(users, ['viewer_id = id'], ['viewer_email = email']) \
-    .move_columns_down(['received_at'])
+    .natural_join(users, on = ['owner_id = id'], joins = ['owner_email = email']) \
+    .natural_join(users, on = ['viewer_id = id'], joins = ['viewer_email = email']) \
+    .move_columns_down('received_at')
 
 dd_flagged_profiles = ck.consume(
     consume_properties,
@@ -136,7 +136,10 @@ dd_flagged_profiles = ck.consume(
 ).view(['user_id = Long.parseLong(user_id_str.substring(1, user_id_str.length() - 1))'])  # strip quotes
 
 dd_flagged_profile_view = dd_flagged_profiles \
-    .join(pageviews_stg, ['user_id'])
+    .
+
+
+(pageviews_stg, on = ['user_id'])
 
 high_value_users = purchases \
     .update_view([
@@ -148,7 +151,8 @@ high_value_users = purchases \
         'user_id'
     )\
     .where(['lifetime_value > 10000']) \
-    .natural_join(users, ['user_id = id'], ['email']) \
+    .natural_join(users, 
+                  ['user_id = id'], ['email']) \
     .view(['id = user_id', 'email', 'lifetime_value', 'purchases'])  # column rename and reorder
 
 schema_namespace = 'io.deephaven.examples'
@@ -161,7 +165,7 @@ cancel_callback = pk.produce(
         'high_value_users_sink_key',
         publish_schema = True,
         schema_namespace = schema_namespace,
-        include_only_columns = [ 'user_id' ]
+        include_only_columns = ['user_id']
     ),
     value_spec = pk.avro_spec(
         'high_value_users_sink_value',
