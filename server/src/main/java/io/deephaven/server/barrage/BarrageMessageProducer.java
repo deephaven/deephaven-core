@@ -422,29 +422,35 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     /////////////////////////////////////
 
     /**
-     * @formatter:off
-     * Here is the typical lifecycle of a subscription:
-     *   1) The new subscription is added to pendingSubscriptions. It is not active and its viewport / subscribed
-     *      columns are empty.
-     *   2) If a subscription is updated before the initial snapshot is prepared, we overwrite the viewport / columns
+     * Here is the typical lifecycle of a subscription:</p>
+     * <ol>
+     *  <li>The new subscription is added to pendingSubscriptions. It is not active and its viewport / subscribed
+     *      columns are empty.</li>
+     *  <li>If a subscription is updated before the initial snapshot is prepared, we overwrite the viewport / columns
      *      stored in the variables prefixed with `pending`. These variables will always contain the most recently
-     *      requested viewport / columns that have not yet been acknowledged by the BMP.
-     *   3) The BMP's update propagation job runs. All pendingSubscriptions (new or updated) will have their pending
+     *      requested viewport / columns that have not yet been acknowledged by the BMP.</li>
+     *  <li>The BMP's update propagation job runs. All pendingSubscriptions (new or updated) will have their pending
      *      viewport / columns requests accepted. All pendingSubscriptions move to the activeSubscription list if they
      *      were brand new. The pendingSubscription list is cleared. At this stage, the `pending` variables are nulled
      *      and their contents move to the variables prefixed with `target`. The propagation job is responsible for
-     *      building the snapshot and sending it to the client. When the snapshot is complete, the `target` variables
-     *      are nulled and promoted to `viewport` and `subscribedColumns`.
-     *   4) If a subscription is updated during or after stage 3, it will be added back to the pendingSubscription list,
+     *      building the snapshot(s) and sending to the client. When each snapshot is complete, the `snapshot` variables
+     *      are flipped to `viewport` and `subscribedColumns`.</li>
+     *  <li>While the subscription viewport is growing, it may receive deltas on the rows that have already been
+     *      snapshotted and sent to the client.  This ensures consistency is maintained through the propagation process.
+     *      When the client has received the entire contents of the `target` viewport, the growing subscription is
+     *      complete.  The `target` variables are promoted to `viewport` and `subscribedColumns` and the subscription is
+     *      removed from the list of growing subscriptions.  Only deltas will be sent to this subscriber until a change
+     *      of viewport or columns is requested by the client.</li>
+     *  <li>If a subscription is updated during or after stage 3, it will be added back to the pendingSubscription list,
      *      and the updated requests will sit in the `pending` variables until the next time the update propagation job
      *      executes. It will NOT be removed from the activeSubscription list. A given subscription will exist no more
-     *      than once in either subscription list.
-     *   5) Finally, when a subscription is removed we mark it as having a `pendingDelete` and add it to the
+     *      than once in either subscription list.</li>
+     *  <li>Finally, when a subscription is removed we mark it as having a `pendingDelete` and add it to the
      *      pendingSubscription list. Any subscription requests/updates that re-use this handleId will ignore this
      *      instance of Subscription and be allowed to construct a new Subscription starting from step 1. When the
      *      update propagation job is run we clean up deleted subscriptions and rebuild any state that is used to filter
-     *      recorded updates.
-     * @formatter:on
+     *      recorded updates.</li>
+     * </ol>
      */
     private class Subscription {
         final BarrageSubscriptionOptions options;
@@ -473,7 +479,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean targetReverseViewport; // the final viewport direction for a changed subscription
 
         boolean isGrowingViewport; // is this subscription actively growing
-        WritableRowSet growingRemainingViewport = null; // rows still needed to satisfy this subscription viewport
+        WritableRowSet growingRemainingViewport = null; // rows still needed to satisfy this subscription target viewport
         WritableRowSet growingIncrementalViewport = null; // rows to be sent to the client from the current snapshot
         boolean isFirstSnapshot; // is this the first snapshot after a change to a subscriptions
 
@@ -998,38 +1004,43 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     /**
-     * @formatter:off
-     * Here is how a subscription viewport `grows` over multiple snapshots:
-     *   1) When a subscription is updated (on creation or after a change to columns or viewport), a new snapshot must
-     *      be created and transmitted to the client. The `growing` snapshot algorithm attempts to keep the UGP
-     *      responsive by creating snapshots that consume no more than a certain percentage of the UGP cycle time.  In
-     *      addition, GUI responsiveness is improved by prioritizing viewport subscription client requests over full
-     *      subscription clients.
-     *    NOTE: All updated subscriptions are considered to be `growing` subscriptions even if they can be satisfied in
-     *    a single snapshot.
-     *    2) When the `BarrageMessageProducer` is ready to provide a new snapshot to an updated subscription, it will
+     * Handles updates to subscriptions and propagates snapshots and deltas to subscribed clients. Manages `growing`
+     * viewports, where a subscription receives initial data in one or more snapshots that are assembled client-side
+     * into the complete dataset.
+     *
+     * <p>Here is how a subscription viewport `grows` over multiple snapshots:
+     * <ol>
+     *   <li>When a subscription is updated (on creation or after a change to columns or viewport), a new snapshot must
+     *       be created and transmitted to the client. The `growing` snapshot algorithm attempts to keep the UGP
+     *       responsive by creating snapshots that consume no more than a certain percentage of the UGP cycle time.  In
+     *       addition, GUI responsiveness is improved by prioritizing viewport subscription client requests over full
+     *       subscription clients.
+     *
+     *    <p><b>NOTE:</b> All subscriptions are initially considered to be `growing` subscriptions even if they can
+     *       be satisfied in a single snapshot.</li>
+     *    <li>When the `BarrageMessageProducer` is ready to provide a new snapshot to an updated subscription, it will
      *       transfer the `pending` values (viewport rowset and direction, columns) to `target` values which are the
      *       final goals toward which the viewport grows.  In addition, the `growingRemainingViewport` is created which
      *       will hold all the outstanding rows the client needs to receive in the upcoming snapshot(s).  If the updated
      *       (or new) subscription is a `full` subscription, this viewport is set to range (0, Long.MAX_VALUE).
-     *    3) If a client has changed viewports, it is possible that the new viewport overlaps with the previous and some
+     *    <li>If a client has changed viewports, it is possible that the new viewport overlaps with the previous and some
      *       rows may not need to be requested.  This can only happen on the first snapshot after the change, so the
-     *       `isFirstSnapshot` flag is used to add these rows to the viewport on the first snapshot.
-     *    4) To generate the full rowset for the snapshot, a maximum number of rows to snapshot is computed and the
+     *       `isFirstSnapshot` flag is used to add these rows to the viewport on the first snapshot.</li>
+     *    <li>To generate the full rowset for the snapshot, a maximum number of rows to snapshot is computed and the
      *       subscriptions are processed in a prioritized order, placing viewport above full subscriptions.  For each
      *       subscription (while not exceeding the snapshot maximum number of rows), rows are extracted from the
      *       `growingRemainingViewport` into `growingIncrementalViewport`.  Each subscription can also leverage rows
      *       already selected for this cycle by previous subscriptions (where the direction of the viewport matches).
      *       Additionally, the `snapshotViewport` is expanded by the additional rows this client will receive this
      *       cycle.  When a snapshot is successfully created, this `snapshotViewport` will be promoted to the
-     *       `activeViewport` for this subscription.
-     *    5) When the parent table is smaller than the viewport, it is possible to snapshot all rows in the table before
+     *       `activeViewport` for this subscription.</li>
+     *    <li>When the parent table is smaller than the viewport, it is possible to snapshot all rows in the table before
      *       exhausting `growingRemainingViewport`.  During the snapshot call and while the lock is held,
      *       `finalizeSnapshotForSubscriptions()` is called which will detect when the subscription is complete and will
      *       perform some clean up as well as updating the subscription `activeViewport` to match the initially set
      *       `targetViewport`.  When the final snapshot message is sent, the client will see that the `activeViewport`
-     *       matches the requested `targetViewport` and the subscription snapshotting process is complete.
-     * @formatter:on
+     *       matches the requested `targetViewport` and the subscription snapshotting process is complete.</li>
+     * </ol>
      */
 
     private void updateSubscriptionsSnapshotAndPropagate() {
