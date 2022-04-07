@@ -32,9 +32,9 @@ def ticking_crypto_milliseconds(interval: int):
     from deephaven_legacy.DateTimeUtils import currentTime, minus
     t = time_table('00:00:00.' + str(interval * 1000).zfill(6),minus(currentTime(), 1800000000000)).update(formulas = [
         'Id=(int)random.randint(12000000,1100000000)', 'B=random.randint(0,1)', 'C=random.randint(0,50)',
-        'D= ((int)(random.randint(0,100))/100.0 - 0.5) * 20000.0', 'Instrument=ct_symbols[((int)(byte)ct_distributor(ct_x))-1]',
+        'D= ((int)(random.randint(0,100))/100.0 - 0.5) * 20000.0', 'Instrument=ct_symbols[((int)ct_distributor(ct_x))-1]',
         'Size=(((int)random.randint(1, 100)) / ((int)random.randint(1, 100)))',
-        'Price=(double)ct_pricer(Instrument, D)', 'Exchange = ct_exchanges[(int)(byte)C%ct_y]',
+        'Price=(double)ct_pricer(Instrument, D)', 'Exchange = ct_exchanges[(int)C%ct_y]',
         'Date = formatDate(Timestamp, TZ_NY)']) \
         .drop_columns(cols = ['B', 'C', 'D']) \
         .move_columns_up(cols = ['Date', 'Timestamp', 'Id', 'Instrument', 'Exchange', 'Price', 'Size'])
