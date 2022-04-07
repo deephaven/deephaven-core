@@ -49,7 +49,6 @@ public class TimeTable extends QueryTable implements Runnable {
     private long lastIndex = -1;
     private final SyntheticDateTimeSource columnSource;
     private final TimeProvider timeProvider;
-    private final long binOffset;
     private final PerformanceEntry entry;
     private final boolean isStreaming;
 
@@ -74,8 +73,7 @@ public class TimeTable extends QueryTable implements Runnable {
         final String name = isStreaming ? "TimeTableStream" : "TimeTable";
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + firstTime + "," + period + ")");
         columnSource = (SyntheticDateTimeSource) getColumnSourceMap().get(TIMESTAMP);
-        columnSource.baseTime = firstTime == null ? null : new DateTime(firstTime.getNanos() - period);
-        binOffset = firstTime == null ? 0 : columnSource.baseTime.getNanos() % period;
+        columnSource.baseTime = firstTime;
         this.timeProvider = timeProvider;
         if (isStreaming) {
             setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -105,7 +103,7 @@ public class TimeTable extends QueryTable implements Runnable {
             if (columnSource.baseTime == null) {
                 lastIndex = 0;
                 columnSource.baseTime = new DateTime(
-                        LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, columnSource.period) + binOffset);
+                        LongNumericPrimitives.lowerBin(dateTime.getNanos(), columnSource.period));
                 getRowSet().writableCast().insert(lastIndex);
             } else {
                 lastIndex = Math.max(lastIndex,
