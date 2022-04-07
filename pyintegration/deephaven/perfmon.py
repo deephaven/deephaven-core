@@ -32,8 +32,9 @@ def process_info_log() -> Table:
         raise DHError(e, "failed to obtain the process info log table.") from e
 
 
-def process_memory_log() -> Table:
-    """ Returns a table with process memory utilization and garbage collection data.
+def server_state_log() -> Table:
+    """ Returns a table with memory utilization, update graph processor and garbage collection stats
+        sampled on a periodic basis.
 
     Returns:
         a Table
@@ -42,9 +43,9 @@ def process_memory_log() -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JTableLoggers.processMemoryLog())
+        return Table(j_table=_JTableLoggers.serverStateLog())
     except Exception as e:
-        raise DHError(e, "failed to obtain the process memory log table.") from e
+        raise DHError(e, "failed to obtain the server state log table.") from e
 
 
 def process_metrics_log() -> Table:
@@ -143,16 +144,17 @@ def process_info(proc_id: str, proc_type: str, key: str) -> str:
         raise DHError(e, "failed to obtain the process info.") from e
 
 
-def process_memory() -> Table:
-    """ Returns a table of basic memory and GC data samples for the current engine process.
+def server_state() -> Table:
+    """ Returns a table of basic memory, update graph processor, and GC stats for the current engine process,
+        sampled on a periodic basis.
 
     Returns:
         a table
     """
     try:
-        return Table(j_table=_JPerformanceQueries.processMemory())
+        return Table(j_table=_JPerformanceQueries.serverState())
     except Exception as e:
-        raise DHError(e, "failed to produce a table with process memory info.") from e
+        raise DHError(e, "failed to produce a table with server state info.") from e
 
 
 def query_operation_performance(eval_number: int) -> Table:
