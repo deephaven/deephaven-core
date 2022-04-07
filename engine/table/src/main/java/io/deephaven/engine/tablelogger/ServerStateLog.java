@@ -30,88 +30,67 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
         void log(
                 Row.Flags flags,
                 long intervalStartTime,
-                long intervalDurationNanos,
-                long totalMemory,
-                long freeMemory,
-                long intervalCollection,
-                long intervalCollectionTimeNanos,
-                long intervalUGPCyclesFinished,
-                long intervalUGPCyclesFinishedOnBudget,
-                long intervalUGPCycleMaxTimeNanos,
-                long intervalUGPCycleMedianTimeNanos,
-                long intervalUGPCycleMeanTimeNanos,
-                long intervalUGPCycleP90TimeNanos,
-                long intervalUGPCyclesFinishedTotalTimeNanos,
-                long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException;
+                int intervalDurationMicros,
+                int totalMemoryMiB,
+                int freeMemoryMiB,
+                short intervalCollections,
+                int intervalCollectionTimeMicros,
+                short intervalUGPCyclesOnBudget,
+                int[] intervalUGPCyclesTimeMicros,
+                short intervalUGPCyclesSafePoints,
+                int intervalUGPCyclesSafePointTimeMicros) throws IOException;
     }
 
     class DirectSetter extends TableLoggerImpl2.BaseSetter implements ISetter {
         RowSetter<DateTime> IntervalStartTime;
-        RowSetter<Long> IntervalDurationNanos;
-        RowSetter<Long> TotalMemory;
-        RowSetter<Long> FreeMemory;
-        RowSetter<Long> IntervalCollections;
-        RowSetter<Long> IntervalCollectionTimeNanos;
-        RowSetter<Long> IntervalUGPCyclesFinished;
-        RowSetter<Long> IntervalUGPCyclesFinishedOnBudget;
-        RowSetter<Long> IntervalUGPCycleMaxTimeNanos;
-        RowSetter<Long> IntervalUGPCycleMedianTimeNanos;
-        RowSetter<Long> IntervalUGPCycleMeanTimeNanos;
-        RowSetter<Long> IntervalUGPCycleP90TimeNanos;
-        RowSetter<Long> IntervalUGPCyclesFinishedTotalTimeNanos;
-        RowSetter<Long> IntervalUGPCyclesFinishedSafePointTimeNanos;
+        RowSetter<Integer> IntervalDurationMicros;
+        RowSetter<Integer> TotalMemoryMiB;
+        RowSetter<Integer> FreeMemoryMiB;
+        RowSetter<Short> IntervalCollections;
+        RowSetter<Integer> IntervalCollectionTimeMicros;
+        RowSetter<int[]> IntervalUGPCyclesTimeMicros;
+        RowSetter<Short> IntervalUGPCyclesOnBudget;
+        RowSetter<Short> IntervalUGPCyclesSafePoints;
+        RowSetter<Integer> IntervalUGPCyclesSafePointTimeMicros;
 
         DirectSetter() {
             IntervalStartTime = row.getSetter("IntervalStartTime", DateTime.class);
-            IntervalDurationNanos = row.getSetter("IntervalDurationNanos", long.class);
-            TotalMemory = row.getSetter("TotalMemory", long.class);
-            FreeMemory = row.getSetter("FreeMemory", long.class);
-            IntervalCollections = row.getSetter("IntervalCollections", long.class);
-            IntervalCollectionTimeNanos = row.getSetter("IntervalCollectionTimeNanos", long.class);
-            IntervalUGPCyclesFinished = row.getSetter("IntervalUGPCyclesFinished", long.class);
-            IntervalUGPCyclesFinishedOnBudget = row.getSetter("IntervalUGPCyclesFinishedOnBudget", long.class);
-            IntervalUGPCycleMaxTimeNanos = row.getSetter("IntervalUGPCycleMaxTimeNanos", long.class);
-            IntervalUGPCycleMedianTimeNanos = row.getSetter("IntervalUGPCycleMedianTimeNanos", long.class);
-            IntervalUGPCycleMeanTimeNanos = row.getSetter("IntervalUGPCycleMeanTimeNanos", long.class);
-            IntervalUGPCycleP90TimeNanos = row.getSetter("IntervalUGPCycleP90TimeNanos", long.class);
-            IntervalUGPCyclesFinishedTotalTimeNanos =
-                    row.getSetter("IntervalUGPCyclesFinishedTotalTimeNanos", long.class);
-            IntervalUGPCyclesFinishedSafePointTimeNanos =
-                    row.getSetter("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
+            IntervalDurationMicros = row.getSetter("IntervalDurationMicros", int.class);
+            TotalMemoryMiB = row.getSetter("TotalMemoryMiB", int.class);
+            FreeMemoryMiB = row.getSetter("FreeMemoryMiB", int.class);
+            IntervalCollections = row.getSetter("IntervalCollections", short.class);
+            IntervalCollectionTimeMicros = row.getSetter("IntervalCollectionTimeMicros", int.class);
+            IntervalUGPCyclesOnBudget = row.getSetter("IntervalUGPCyclesOnBudget", short.class);
+            IntervalUGPCyclesTimeMicros = row.getSetter("IntervalUGPCyclesTimeMicros", int[].class);
+            IntervalUGPCyclesSafePoints = row.getSetter("IntervalUGPCyclesSafePoints", short.class);
+            IntervalUGPCyclesSafePointTimeMicros =
+                    row.getSetter("IntervalUGPCyclesSafePointTimeMicros", int.class);
         }
 
         @Override
         public void log(
                 final Row.Flags flags,
                 final long intervalStartTime,
-                final long intervalDurationNanos,
-                final long totalMemory,
-                final long freeMemory,
-                final long intervalCollections,
-                final long intervalCollectionTimeNanos,
-                final long intervalUGPCyclesFinished,
-                final long intervalUGPCyclesFinishedOnBudget,
-                final long intervalUGPCycleMaxTimeNanos,
-                final long intervalUGPCycleMedianTimeNanos,
-                final long intervalUGPCycleMeanTimeNanos,
-                final long intervalUGPCycleP90TimeNanos,
-                final long intervalUGPCyclesFinishedTotalTimeNanos,
-                final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
+                final int intervalDurationMicros,
+                final int totalMemoryMiB,
+                final int freeMemoryMiB,
+                final short intervalCollections,
+                final int intervalCollectionTimeMicros,
+                final short intervalUGPCyclesOnBudget,
+                final int[] intervalUGPCyclesTimeMicros,
+                final short intervalUGPCyclesSafePoints,
+                final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
             setRowFlags(flags);
             this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalStartTime));
-            this.IntervalDurationNanos.set(intervalDurationNanos);
-            this.TotalMemory.set(totalMemory);
-            this.FreeMemory.set(freeMemory);
+            this.IntervalDurationMicros.set(intervalDurationMicros);
+            this.TotalMemoryMiB.set(totalMemoryMiB);
+            this.FreeMemoryMiB.set(freeMemoryMiB);
             this.IntervalCollections.set(intervalCollections);
-            this.IntervalCollectionTimeNanos.set(intervalCollectionTimeNanos);
-            this.IntervalUGPCyclesFinished.set(intervalUGPCyclesFinished);
-            this.IntervalUGPCyclesFinishedOnBudget.set(intervalUGPCyclesFinishedOnBudget);
-            this.IntervalUGPCycleMaxTimeNanos.set(intervalUGPCycleMaxTimeNanos);
-            this.IntervalUGPCycleMedianTimeNanos.set(intervalUGPCycleMedianTimeNanos);
-            this.IntervalUGPCycleMeanTimeNanos.set(intervalUGPCycleMeanTimeNanos);
-            this.IntervalUGPCycleP90TimeNanos.set(intervalUGPCycleP90TimeNanos);
-            this.IntervalUGPCyclesFinishedTotalTimeNanos.set(intervalUGPCyclesFinishedTotalTimeNanos);
-            this.IntervalUGPCyclesFinishedSafePointTimeNanos.set(intervalUGPCyclesFinishedSafePointTimeNanos);
+            this.IntervalCollectionTimeMicros.set(intervalCollectionTimeMicros);
+            this.IntervalUGPCyclesOnBudget.set(intervalUGPCyclesOnBudget);
+            this.IntervalUGPCyclesTimeMicros.set(intervalUGPCyclesTimeMicros);
+            this.IntervalUGPCyclesSafePoints.set(intervalUGPCyclesSafePoints);
+            this.IntervalUGPCyclesSafePointTimeMicros.set(intervalUGPCyclesSafePointTimeMicros);
         }
     }
 
@@ -126,19 +105,15 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
                 .add("IntervalStartTime", DateTime.class)
-                .add("IntervalDurationNanos", long.class)
-                .add("TotalMemory", long.class)
-                .add("FreeMemory", long.class)
-                .add("IntervalCollections", long.class)
-                .add("IntervalCollectionTimeNanos", long.class)
-                .add("IntervalUGPCyclesFinished", long.class)
-                .add("IntervalUGPCyclesFinishedOnBudget", long.class)
-                .add("IntervalUGPCycleMaxTimeNanos", long.class)
-                .add("IntervalUGPCycleMedianTimeNanos", long.class)
-                .add("IntervalUGPCycleMeanTimeNanos", long.class)
-                .add("IntervalUGPCycleP90TimeNanos", long.class)
-                .add("IntervalUGPCyclesFinishedTotalTimeNanos", long.class)
-                .add("IntervalUGPCyclesFinishedSafePointTimeNanos", long.class);
+                .add("IntervalDurationMicros", int.class)
+                .add("TotalMemoryMiB", int.class)
+                .add("FreeMemoryMiB", int.class)
+                .add("IntervalCollections", short.class)
+                .add("IntervalCollectionTimeMicros", int.class)
+                .add("IntervalUGPCyclesOnBudget", short.class)
+                .add("IntervalUGPCyclesTimeMicros", int[].class)
+                .add("IntervalUGPCyclesSafePoints", short.class)
+                .add("IntervalUGPCyclesSafePointTimeMicros", int.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getTypes();
     }
@@ -151,52 +126,40 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
 
     public void log(
             final long intervalStartTime,
-            final long intervalDurationNanos,
-            final long totalMemory,
-            final long freeMemory,
-            final long intervalCollections,
-            final long intervalCollectionTimeNanos,
-            final long intervalUGPCycles,
-            final long intervalUGPCyclesOnBudget,
-            final long intervalUGPCycleMaxTimeNanos,
-            final long intervalUGPCycleMedianTimeNanos,
-            final long intervalUGPCycleMeanTimeNanos,
-            final long intervalUGPCycleP90TimeNanos,
-            final long intervalUGPCyclesFinishedTotalTimeNanos,
-            final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
+            final int intervalDurationMicros,
+            final int totalMemoryMiB,
+            final int freeMemoryMiB,
+            final short intervalCollections,
+            final int intervalCollectionTimeMicros,
+            final short intervalUGPCyclesOnBudget,
+            final int[] intervalUGPCyclesTimeMicros,
+            final short intervalUGPCyclesSafePoints,
+            final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS,
                 intervalStartTime,
-                intervalDurationNanos,
-                totalMemory,
-                freeMemory,
+                intervalDurationMicros,
+                totalMemoryMiB,
+                freeMemoryMiB,
                 intervalCollections,
-                intervalCollectionTimeNanos,
-                intervalUGPCycles,
+                intervalCollectionTimeMicros,
                 intervalUGPCyclesOnBudget,
-                intervalUGPCycleMaxTimeNanos,
-                intervalUGPCycleMedianTimeNanos,
-                intervalUGPCycleMeanTimeNanos,
-                intervalUGPCycleP90TimeNanos,
-                intervalUGPCyclesFinishedTotalTimeNanos,
-                intervalUGPCyclesFinishedSafePointTimeNanos);
+                intervalUGPCyclesTimeMicros,
+                intervalUGPCyclesSafePoints,
+                intervalUGPCyclesSafePointTimeMicros);
     }
 
     public void log(
             final Row.Flags flags,
             final long intervalStartTime,
-            final long intervalDurationNanos,
-            final long totalMemory,
-            final long freeMemory,
-            final long intervalCollections,
-            final long intervalCollectionTimeNanos,
-            final long intervalUGPCycles,
-            final long intervalUGPCyclesOnBudget,
-            final long intervalUGPCycleMaxTimeNanos,
-            final long intervalUGPCycleMedianTimeNanos,
-            final long intervalUGPCycleMeanTimeNanos,
-            final long intervalUGPCycleP90TimeNanos,
-            final long intervalUGPCyclesFinishedTimeNanos,
-            final long intervalUGPCyclesFinishedSafePointTimeNanos) throws IOException {
+            final int intervalDurationMicros,
+            final int totalMemoryMiB,
+            final int freeMemoryMiB,
+            final short intervalCollections,
+            final int intervalCollectionTimeMicros,
+            final short intervalUGPCyclesOnBudget,
+            final int[] intervalUGPCyclesTimeMicros,
+            final short intervalUGPCyclesSafePoints,
+            final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
@@ -204,19 +167,15 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
         try {
             setter.log(flags,
                     intervalStartTime,
-                    intervalDurationNanos,
-                    totalMemory,
-                    freeMemory,
+                    intervalDurationMicros,
+                    totalMemoryMiB,
+                    freeMemoryMiB,
                     intervalCollections,
-                    intervalCollectionTimeNanos,
-                    intervalUGPCycles,
+                    intervalCollectionTimeMicros,
                     intervalUGPCyclesOnBudget,
-                    intervalUGPCycleMaxTimeNanos,
-                    intervalUGPCycleMedianTimeNanos,
-                    intervalUGPCycleMeanTimeNanos,
-                    intervalUGPCycleP90TimeNanos,
-                    intervalUGPCyclesFinishedTimeNanos,
-                    intervalUGPCyclesFinishedSafePointTimeNanos);
+                    intervalUGPCyclesTimeMicros,
+                    intervalUGPCyclesSafePoints,
+                    intervalUGPCyclesSafePointTimeMicros);
         } catch (Exception e) {
             setterPool.give(setter);
             throw e;

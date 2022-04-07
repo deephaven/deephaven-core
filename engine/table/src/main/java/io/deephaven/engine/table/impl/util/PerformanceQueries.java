@@ -277,25 +277,22 @@ public class PerformanceQueries {
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
         final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
         final Table pml = TableLoggers.serverStateLog().naturalJoin(maxMem, "");
-        Table pm = pml.updateView(
-                "TotalMemMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
-                "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
-        pm = pm.view(
+        Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
-                "IntervalSecs = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
-                "UsedMemMiB = TotalMemMiB - FreeMemMiB",
-                "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
+                "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
+                "UsedMemMiB = TotalMemoryMiB - FreeMemoryMiB",
+                "AvailMemMiB = MaxMemMiB - TotalMemoryMiB + FreeMemoryMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
-                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)",
-                "UGPCycles = IntervalUGPCyclesFinished",
-                "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedOnBudget, IntervalUGPCyclesFinished)",
-                "UPGCycleMaxSecs = IntervalUGPCycleMaxTimeNanos / (1000 * 1000 * 1000.0)",
-                "UPGCycleMedianSecs = IntervalUGPCycleMedianTimeNanos / (1000 * 1000 * 1000.0)",
-                "UPGCycleMeanSecs = IntervalUGPCycleMeanTimeNanos / (1000 * 1000 * 1000.0)",
-                "UPGCycleP90Secs = IntervalUGPCycleP90TimeNanos / (1000 * 1000 * 1000.0)",
-                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedTotalTimeNanos, IntervalDurationNanos)",
-                "UGPSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesFinishedSafePointTimeNanos, IntervalDurationNanos)");
+                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeMicros, IntervalDurationMicros)",
+                "UGPCycles = count(IntervalUGPCyclesTimeMicros)",
+                "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesOnBudget, IntervalUGPCyclesTimeMicros.length)",
+                "UGPCycleMaxSecs = max(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleMedianSecs = median(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleMeanSecs = avg(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleP90Secs = percentile(0.9, IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(sum(IntervalUGPCyclesTimeMicros), IntervalDurationMicros)",
+                "UGPSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesSafePointTimeMicros, IntervalDurationMicros)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
                 "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
@@ -317,11 +314,7 @@ public class PerformanceQueries {
                 "UGPSafePointTimeRatio=(UGPSafePointTimeRatio >= 0.75) ? PALE_RED : " +
                         "((UGPSafePointTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
                         "((UGPSafePointTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
-                "IntervalSecs=Decimal(`#0.000`)",
-                "UPGCycleMaxSecs=Decimal(`#0.000`)",
-                "UPGCycleMedianSecs=Decimal(`#0.000`)",
-                "UPGCycleMeanSecs=Decimal(`#0.000`)",
-                "UPGCycleP90Secs=Decimal(`#0.000`)");
+                "IntervalSecs=Decimal(`#0.000`)");
         return pm;
     }
 

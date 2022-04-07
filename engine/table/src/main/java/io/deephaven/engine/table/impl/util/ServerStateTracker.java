@@ -6,7 +6,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -123,29 +122,31 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                final long prevUgpCycles = ugpAccumCycleStats.totalCycles;
-                final long prevUgpCyclesOnBudget = ugpAccumCycleStats.totalCyclesOnBudget;
-                final long prevUgpCyclesTimeNanos = ugpAccumCycleStats.totalCyclesTimeNanos;
-                final long prevUgpSafePointPauseTimeMillis = ugpAccumCycleStats.totalSafePointPauseTimeMillis;
-                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.copyTo(ugpAccumCycleStats);
+                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.take(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
-                calcStats(stats, ugpAccumCycleStats.sampledCycleTimeNanos, ugpAccumCycleStats.nSampledCycles);
                 logProcessMem(
                         intervalStartTimeMillis,
                         endTimeMillis,
                         memSample,
                         prevTotalCollections,
                         prevTotalCollectionTimeMs,
-                        ugpAccumCycleStats.totalCycles - prevUgpCycles,
-                        ugpAccumCycleStats.totalCyclesOnBudget - prevUgpCyclesOnBudget,
-                        stats.max,
-                        stats.median,
-                        stats.mean,
-                        stats.p90,
-                        ugpAccumCycleStats.totalCyclesTimeNanos - prevUgpCyclesTimeNanos,
-                        ugpAccumCycleStats.totalSafePointPauseTimeMillis - prevUgpSafePointPauseTimeMillis);
+                        ugpAccumCycleStats.cycles,
+                        ugpAccumCycleStats.cyclesOnBudget,
+                        ugpAccumCycleStats.cycleTimesMicros,
+                        ugpAccumCycleStats.safePoints,
+                        ugpAccumCycleStats.safePointPauseTimeMillis);
             }
         }
+    }
+
+    private int deltaMillisToMicros(final long millis) {
+        final long result = millis * 1000;
+        return (int) result;
+    }
+
+    private int bytesToMiB(final long bytes) {
+        final long mib = (bytes + 512 * 1024) / (1024 * 1024);
+        return (int) mib;
     }
 
     private void logProcessMem(
@@ -153,30 +154,23 @@ public class ServerStateTracker {
             final RuntimeMemory.Sample sample,
             final long prevTotalCollections,
             final long prevTotalCollectionTimeMs,
-            final long ugpCycles,
-            final long ugpCyclesOnBudget,
-            final long ugpCycleMax,
-            final long ugpCycleMedian,
-            final long ugpCycleMean,
-            final long ugpCycleP90,
-            final long ugpCyclesNanos,
+            final int ugpCycles,
+            final int ugpCyclesOnBudget,
+            final int[] ugpCycleTimes,
+            final int ugpSafePoints,
             final long ugpSafePointTimeMillis) {
         try {
             processMemLogger.getTableLogger().log(
                     startMillis,
-                    DateTimeUtils.millisToNanos(endMillis - startMillis),
-                    sample.totalMemory,
-                    sample.freeMemory,
-                    sample.totalCollections - prevTotalCollections,
-                    DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
-                    ugpCycles,
-                    ugpCyclesOnBudget,
-                    ugpCycleMax,
-                    ugpCycleMedian,
-                    ugpCycleMean,
-                    ugpCycleP90,
-                    ugpCyclesNanos,
-                    DateTimeUtils.millisToNanos(ugpSafePointTimeMillis));
+                    deltaMillisToMicros(endMillis - startMillis),
+                    bytesToMiB(sample.totalMemory),
+                    bytesToMiB(sample.freeMemory),
+                    (short) (sample.totalCollections - prevTotalCollections),
+                    deltaMillisToMicros(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs),
+                    (short) ugpCyclesOnBudget,
+                    Arrays.copyOf(ugpCycleTimes, ugpCycles),
+                    (short) ugpSafePoints,
+                    deltaMillisToMicros(ugpSafePointTimeMillis));
         } catch (IOException e) {
             // Don't want to log this more than once in a report
             logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();

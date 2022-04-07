@@ -151,56 +151,62 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     public static class AccumulatedCycleStats {
         /**
-         * Total cycles run.
+         * Number of cycles run.
          */
-        public long totalCycles = 0L;
+        public int cycles = 0;
         /**
-         * Cycles run no exceeding their time budget.
+         * Number of cycles run not exceeding their time budget.
          */
-        public long totalCyclesOnBudget = 0L;
+        public int cyclesOnBudget = 0;
         /**
-         * Accumulated time over all cycles.
+         * Accumulated safepoints over all cycles.
          */
-        public long totalCyclesTimeNanos = 0L;
+        public int safePoints = 0;
         /**
          * Accumulated safepoint time over all cycles.
          */
-        public long totalSafePointPauseTimeMillis = 0L;
+        public long safePointPauseTimeMillis = 0L;
 
-        public long[] sampledCycleTimeNanos = new long[256];
-        public static final int maxSampledCycles = 2048;
-        public int nSampledCycles = 0;
+        public int[] cycleTimesMicros = new int[32];
+        public static final int MAX_DOUBLING_LEN = 1024;
 
-        synchronized void accumulate(final long targetCycleDurationMillis, final long cycleTimeNanos,
+        synchronized void accumulate(
+                final long targetCycleDurationMillis,
+                final long cycleTimeNanos,
+                final long safePoints,
                 final long safePointPauseTimeMillis) {
-            ++totalCycles;
-            final boolean cycleOnBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
-            if (cycleOnBudget) {
-                ++totalCyclesOnBudget;
+            final boolean onBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
+            if (onBudget) {
+                ++cyclesOnBudget;
             }
-            totalCyclesTimeNanos += cycleTimeNanos;
-            totalSafePointPauseTimeMillis += safePointPauseTimeMillis;
-            if (sampledCycleTimeNanos.length <= maxSampledCycles) {
-                if (nSampledCycles + 1 > sampledCycleTimeNanos.length) {
-                    final long[] tmp = new long[sampledCycleTimeNanos.length * 2];
-                    System.arraycopy(sampledCycleTimeNanos, 0, tmp, 0, sampledCycleTimeNanos.length);
-                    sampledCycleTimeNanos = tmp;
+            this.safePoints += safePoints;
+            this.safePointPauseTimeMillis += safePointPauseTimeMillis;
+            if (cycles >= cycleTimesMicros.length) {
+                final int newLen;
+                if (cycleTimesMicros.length < MAX_DOUBLING_LEN) {
+                    newLen = cycleTimesMicros.length * 2;
+                } else {
+                    newLen = cycleTimesMicros.length + MAX_DOUBLING_LEN;
                 }
-                sampledCycleTimeNanos[nSampledCycles] = cycleTimeNanos;
-                ++nSampledCycles;
+                cycleTimesMicros = Arrays.copyOf(cycleTimesMicros, newLen);
             }
+            cycleTimesMicros[cycles] = (int) ((cycleTimeNanos + 500) / 1_000);
+            ++cycles;
         }
 
-        public synchronized void copyTo(final AccumulatedCycleStats out) {
-            out.totalCycles = totalCycles;
-            out.totalCyclesOnBudget = totalCyclesOnBudget;
-            out.totalCyclesTimeNanos = totalCyclesTimeNanos;
-            out.totalSafePointPauseTimeMillis = totalSafePointPauseTimeMillis;
-            if (out.sampledCycleTimeNanos.length < sampledCycleTimeNanos.length) {
-                out.sampledCycleTimeNanos = new long[sampledCycleTimeNanos.length];
+        public synchronized void take(final AccumulatedCycleStats out) {
+            out.cycles = cycles;
+            out.cyclesOnBudget = cyclesOnBudget;
+            out.safePoints = safePoints;
+            out.safePointPauseTimeMillis = safePointPauseTimeMillis;
+            if (out.cycleTimesMicros.length < cycleTimesMicros.length) {
+                out.cycleTimesMicros = new int[cycleTimesMicros.length];
             }
-            out.nSampledCycles = nSampledCycles;
-            System.arraycopy(sampledCycleTimeNanos, 0, out.sampledCycleTimeNanos, 0, nSampledCycles);
+            System.arraycopy(cycleTimesMicros, 0, out.cycleTimesMicros, 0, cycles);
+            cycles = 0;
+            cyclesOnBudget = 0;
+            safePoints = 0;
+            safePointPauseTimeMillis = 0;
         }
     }
 
@@ -1572,8 +1578,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private void computeStatsAndLogCycle(final long cycleTimeNanos) {
         final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
         accumulatedCycleStats.accumulate(
-                DEFAULT_TARGET_CYCLE_DURATION_MILLIS,
+                getTargetCycleDurationMillis(),
                 cycleTimeNanos,
+                jvmIntrospectionContext.deltaSafePointPausesCount(),
                 safePointPauseTimeMillis);
         if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
             if (suppressedCycles > 0) {
