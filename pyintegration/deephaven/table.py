@@ -134,8 +134,8 @@ class Table(JObjectWrapper):
         Note, this table is often a time table that adds new rows at a regular, user-defined interval.
 
         Args:
-            do_init (bool): whether to snapshot when this method is initially called, default is False
             source_table (Table): the table to be snapshot
+            do_init (bool): whether to snapshot when this method is initially called, default is False
 
         Returns:
             a new table
@@ -146,7 +146,33 @@ class Table(JObjectWrapper):
         try:
             return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init))
         except Exception as e:
-            raise DHError(message="failed to take a table snapshot") from e
+            raise DHError(message="failed to create a snapshot table.") from e
+
+    def snapshot_history(self, source_table: Table) -> Table:
+        """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
+        changes.
+
+        The trigger table is often a time table that adds new rows at a regular, user-defined interval.
+
+        Columns from the trigger table appear in the result table. If the trigger and source tables have columns with
+        the same name, an error will be raised. To avoid this problem, rename conflicting columns.
+
+        Because snapshot_history stores a copy of the source table for every trigger event, large source tables or
+        rapidly changing trigger tables can result in large memory usage.
+
+        Args:
+            source_table (Table): the table to be snapshot
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+        except Exception as e:
+            raise DHError(message="failed to create a snapshot history table.") from e
 
     #
     # Table operation category: Select

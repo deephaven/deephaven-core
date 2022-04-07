@@ -424,6 +424,14 @@ class TableTestCase(BaseTestCase):
             snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
 
+    def test_snapshot_history(self):
+        t = empty_table(1).update(
+            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
+        )
+        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+        self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
+        self.assertEqual(self.test_table.size, snapshot_hist.size)
+
     def test_agg_all_by(self):
         test_table = empty_table(10)
         test_table = test_table.update(
