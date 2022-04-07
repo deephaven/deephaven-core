@@ -25,7 +25,7 @@ _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 T = TypeVar("T")
 
 
-def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
+def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
