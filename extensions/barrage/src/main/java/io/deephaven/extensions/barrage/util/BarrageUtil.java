@@ -290,6 +290,7 @@ public class BarrageUtil {
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
         // to the expected nanos value for DateTime.
         public int[] conversionFactors;
+        public Map<String, String> attributes;
 
         public ConvertedArrowSchema(final int nCols) {
             this.nCols = nCols;
@@ -320,6 +321,12 @@ public class BarrageUtil {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
                     }
+                },
+                visitor -> {
+                    for (int j = 0; j < schema.customMetadataLength(); j++) {
+                        final KeyValue keyValue = schema.customMetadata(j);
+                        visitor.accept(keyValue.key(), keyValue.value());
+                    }
                 });
     }
 
@@ -330,14 +337,16 @@ public class BarrageUtil {
                 i -> schema.getFields().get(i).getType(),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
-                });
+                },
+                visitor -> schema.getCustomMetadata().forEach(visitor));
     }
 
     private static ConvertedArrowSchema convertArrowSchema(
             final int numColumns,
             final IntFunction<String> getName,
             final IntFunction<ArrowType> getArrowType,
-            final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+            final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
+            final Consumer<BiConsumer<String, String>> metadataVisitor) {
         final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
@@ -347,7 +356,7 @@ public class BarrageUtil {
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
 
-            visitMetadata.apply(i).accept((key, value) -> {
+            columnMetadataVisitor.apply(i).accept((key, value) -> {
                 if (key.equals("deephaven:type")) {
                     try {
                         type.setValue(ClassUtil.lookupClass(value));
@@ -371,6 +380,16 @@ public class BarrageUtil {
         }
 
         result.tableDef = new TableDefinition(columns);
+
+        result.attributes = new HashMap<>();
+        metadataVisitor.accept((key, value) -> {
+            final String prefix = "deephaven:attribute.";
+            if (!key.startsWith(prefix)) {
+                return;
+            }
+            result.attributes.put(key.substring(prefix.length()), value);
+        });
+
         return result;
     }
 

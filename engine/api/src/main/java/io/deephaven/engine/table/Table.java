@@ -187,6 +187,10 @@ public interface Table extends
      * Set this attribute to load a plugin for this table in the Web Client
      */
     String PLUGIN_NAME = "PluginName";
+    /**
+     * Set this attribute to enable collection of barrage performance stats.
+     */
+    String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
 
     /**
      * Set the value of an attribute.

@@ -58,6 +58,7 @@ import java.util.BitSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
@@ -89,8 +90,8 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message) {
-            return new BarrageStreamGenerator(message);
+                final BarrageMessage message, final LongConsumer writeTmRecorder) {
+            return new BarrageStreamGenerator(message, writeTmRecorder);
         }
 
         @Override
@@ -116,6 +117,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
+    public final LongConsumer writeTmRecorder;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -135,9 +137,11 @@ public class BarrageStreamGenerator implements
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
      *
      * @param message the generator takes ownership of the message and its internal objects
+     * @param writeTmRecorder a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message) {
+    public BarrageStreamGenerator(final BarrageMessage message, final LongConsumer writeTmRecorder) {
         this.message = message;
+        this.writeTmRecorder = writeTmRecorder;
         try {
             firstSeq = message.firstSeq;
             lastSeq = message.lastSeq;
@@ -302,6 +306,7 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
@@ -327,6 +332,7 @@ public class BarrageStreamGenerator implements
                     modViewport.close();
                 }
             }
+            generator.writeTmRecorder.accept(System.nanoTime() - startTm);
         }
 
         private int batchSize() {
