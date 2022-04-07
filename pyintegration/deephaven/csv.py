@@ -11,18 +11,19 @@ import jpy
 import deephaven.dtypes as dht
 from deephaven import DHError
 from deephaven.table import Table
+from deephaven.constants import MAX_LONG
 
 _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 _JParsers = jpy.get_type("io.deephaven.csv.parsers.Parsers")
 _JArrays = jpy.get_type("java.util.Arrays")
-_JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
+
 
 def read(
     path: str,
     header: Dict[str, dht.DType] = None,
     headless: bool = False,
     skip_rows: int = 0,
-    num_rows: int = _JQueryConstants.MAX_LONG,
+    num_rows: int = MAX_LONG,
     ignore_empty_lines: bool = False,
     allow_missing_columns: bool = False,
     ignore_excess_columns: bool = False,
