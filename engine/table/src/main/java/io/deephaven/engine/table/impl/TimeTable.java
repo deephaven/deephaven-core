@@ -104,7 +104,6 @@ public class TimeTable extends QueryTable implements Runnable {
                 lastIndex = 0;
                 columnSource.baseTime = new DateTime(
                         LongNumericPrimitives.lowerBin(dateTime.getNanos(), columnSource.period));
-                getRowSet().writableCast().insert(lastIndex);
             } else {
                 lastIndex = Math.max(lastIndex,
                         DateTimeUtils.minus(dateTime, columnSource.baseTime) / columnSource.period);
