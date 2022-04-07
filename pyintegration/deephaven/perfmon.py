@@ -144,7 +144,7 @@ def process_info(proc_id: str, proc_type: str, key: str) -> str:
         raise DHError(e, "failed to obtain the process info.") from e
 
 
-def process_memory() -> Table:
+def server_state() -> Table:
     """ Returns a table of basic memory, update graph processor, and GC stats for the current engine process,
         sampled on a periodic basis.
 
