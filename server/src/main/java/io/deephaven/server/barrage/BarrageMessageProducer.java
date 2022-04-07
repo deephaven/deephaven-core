@@ -349,7 +349,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
-    private final PerformanceEntry refreshEntry;
     private final UpdatePropagationJob updatePropagationJob = new UpdatePropagationJob();
 
     /**
@@ -394,9 +393,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         } else {
             stats = null;
         }
-
-        this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
-                "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
@@ -994,14 +990,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try {
                     if (needsRun.compareAndSet(true, false)) {
-                        try {
-                            refreshEntry.onUpdateStart();
-                            final long startTm = System.nanoTime();
-                            updateSubscriptionsSnapshotAndPropagate();
-                            recordMetric(stats -> stats.updateJob, System.nanoTime() - startTm);
-                        } finally {
-                            refreshEntry.onUpdateEnd();
-                        }
+                        final long startTm = System.nanoTime();
+                        updateSubscriptionsSnapshotAndPropagate();
+                        recordMetric(stats -> stats.updateJob, System.nanoTime() - startTm);
                     }
                 } catch (final Exception exception) {
                     synchronized (BarrageMessageProducer.this) {
