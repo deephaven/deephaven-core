@@ -22,7 +22,7 @@ def read(
     header: Dict[str, dht.DType] = None,
     headless: bool = False,
     skip_rows: int = 0,
-    num_rows: int = sys.maxint,
+    num_rows: int = MAX_LONG,
     ignore_empty_lines: bool = False,
     allow_missing_columns: bool = False,
     ignore_excess_columns: bool = False,
@@ -43,8 +43,7 @@ def read(
         headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
-        ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text
-            fields, default is True
+        ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text fields, default is True
         trim (bool) : indicates whether to trim white space inside a quoted string, default is False
 
     Returns:
