@@ -36,7 +36,8 @@ def read(
         quote (str): the quote character for the CSV, default is double quote
         ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text
             fields, default is True
-        trim (bool) : indicates whether to trim white space inside a quoted string, default is False
+ 
+ trim (bool) : indicates whether to trim white space inside a quoted string, default is False
 
     Returns:
         a table
@@ -66,6 +67,11 @@ def read(
 
         csv_specs = (
             csv_specs_builder.hasHeaderRow(not headless)
+            .skipRows()
+            .numRows()
+            .ignoreEmptyLines()
+            .allowMissingColumns()
+            .ignoreExcessColumns()
             .delimiter(ord(delimiter))
             .quote(ord(quote))
             .ignoreSurroundingSpaces(ignore_surrounding_spaces)
