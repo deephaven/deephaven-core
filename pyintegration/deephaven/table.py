@@ -10,10 +10,11 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._jcompat import j_array_list
-from deephaven._wrapper import JObjectWrapper
+from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.constants import SortDirection
+from deephaven.filters import Filter
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -24,13 +25,13 @@ _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 T = TypeVar("T")
 
 
-def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
+def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (v,)
+        return (unwrap(v),)
     else:
-        return v
+        return tuple((unwrap(o) for o in v))
 
 
 class Table(JObjectWrapper):
@@ -391,12 +392,14 @@ class Table(JObjectWrapper):
     # Table operation category: Filter
     #
     # region Filter
-    def where(self, filters: Union[str, Sequence[str]] = None) -> Table:
+
+    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> Table:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
         Args:
-            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s), default is None
 
         Returns:
             a new table
@@ -594,7 +597,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
-    def sort(self, order_by: Union[str, Sequence[str]], order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
+    def sort(self, order_by: Union[str, Sequence[str]],
+             order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
         order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
@@ -637,7 +641,8 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
-    def natural_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def natural_join(self, table: Table, on: Union[str, Sequence[str]],
+                     joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import Set, Union, Optional
+from typing import Set, Union, Optional, Any
 
 import jpy
 
@@ -70,3 +70,13 @@ def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
     wc = _lookup_wrapped_class(j_obj)
 
     return wc(j_obj) if wc else j_obj
+
+
+def unwrap(obj: Any) -> Union[jpy.JType, Any]:
+    """ Returns the wrapped raw Java object if this is a wrapped Java object. Otherwise, returns the same object. """
+    if isinstance(obj, JObjectWrapper):
+        return obj.j_object
+
+    return obj
+
+
