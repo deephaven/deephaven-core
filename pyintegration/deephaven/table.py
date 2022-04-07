@@ -97,6 +97,11 @@ class Table(JObjectWrapper):
         return self._schema
 
     @property
+    def meta_table(self) -> Table:
+        """The column definitions of the table in a Table form. """
+        return Table(j_table=self.j_table.getMeta())
+
+    @property
     def j_object(self) -> jpy.JType:
         return self.j_table
 

@@ -45,6 +45,10 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
 
+    def test_meta_table(self):
+        t = self.test_table.meta_table
+        self.assertEqual(len(self.test_table.columns), t.size)
+
     def test_coalesce(self):
         t = self.test_table.update_view(["A = a * b"])
         ct = t.coalesce()
