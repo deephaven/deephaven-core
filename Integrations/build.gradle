@@ -133,7 +133,7 @@ Closure composeConfig = { task ->
 
 def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
 def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest = runInDocker('test-py-deephaven', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
+def pyTest = runInDocker('test-py-deephaven', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
 def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../pyintegration', ['/bin/bash', 'PYTHONPATH=/python', 'integration-tests/run-tests.sh'], composeConfig)
 pyTestLegacy.configure({
     onlyIf { TestTools.shouldRunTests(project) }
