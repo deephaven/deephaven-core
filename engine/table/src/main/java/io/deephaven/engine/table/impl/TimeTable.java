@@ -101,15 +101,15 @@ public class TimeTable extends QueryTable implements Runnable {
         entry.onUpdateStart();
         try {
             final DateTime dateTime = timeProvider.currentTime();
-            DateTime currentBinnedTime = new DateTime(
-                    LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, columnSource.period) + binOffset);
             long rangeStart = lastIndex + 1;
             if (columnSource.baseTime == null) {
                 lastIndex = 0;
-                columnSource.baseTime = currentBinnedTime;
+                columnSource.baseTime = new DateTime(
+                        LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, columnSource.period) + binOffset);
                 getRowSet().writableCast().insert(lastIndex);
             } else {
-                lastIndex = DateTimeUtils.minus(currentBinnedTime, columnSource.baseTime) / columnSource.period;
+                lastIndex = Math.max(lastIndex,
+                        DateTimeUtils.minus(dateTime, columnSource.baseTime) / columnSource.period);
             }
 
             if (rangeStart <= lastIndex) {
