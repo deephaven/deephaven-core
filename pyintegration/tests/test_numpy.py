@@ -7,9 +7,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from test_helper import start_jvm
-start_jvm()
-
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col

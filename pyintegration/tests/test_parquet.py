@@ -6,11 +6,11 @@ import shutil
 import unittest
 import tempfile
 
-from tests.testbase import BaseTestCase
 from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
 
+from tests.testbase import BaseTestCase
 
 
 class ParquetTestCase(BaseTestCase):

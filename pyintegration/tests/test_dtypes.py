@@ -9,11 +9,11 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from tests.testbase import BaseTestCase
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import DateTime
 from deephaven.time import now
+from tests.testbase import BaseTestCase
 
 
 def remap_double(v, null_value):

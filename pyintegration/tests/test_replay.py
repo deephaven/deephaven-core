@@ -4,10 +4,10 @@
 
 import unittest
 
-from tests.testbase import BaseTestCase
 from deephaven import DHError, new_table, TableReplayer
 from deephaven.column import int_col, datetime_col
 from deephaven.time import to_datetime
+from tests.testbase import BaseTestCase
 
 
 class ReplayTestCase(BaseTestCase):

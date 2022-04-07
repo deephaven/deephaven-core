@@ -4,10 +4,10 @@
 import os
 import unittest
 
-from tests.testbase import BaseTestCase
 from deephaven import kafka_producer as pk, new_table
 from deephaven.column import string_col, int_col, double_col
 from deephaven.stream.kafka.producer import KeyValueSpec
+from tests.testbase import BaseTestCase
 
 
 def table_helper():

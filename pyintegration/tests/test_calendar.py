@@ -4,10 +4,10 @@
 
 import unittest
 
-from tests.testbase import BaseTestCase
 from deephaven import DHError, time
 from deephaven.calendar import calendar_names, default_calendar_name, BusinessCalendar, DayOfWeek
 from deephaven.config import get_server_timezone
+from tests.testbase import BaseTestCase
 
 
 class CalendarTestCase(BaseTestCase):

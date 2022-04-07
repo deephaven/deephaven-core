@@ -4,9 +4,9 @@
 import os.path
 import unittest
 
-from tests.testbase import BaseTestCase
 from deephaven.config import get_server_timezone, get_log_dir
 from deephaven.time import TimeZone
+from tests.testbase import BaseTestCase
 
 
 class ConfigTestCase(BaseTestCase):

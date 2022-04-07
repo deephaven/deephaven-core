@@ -4,10 +4,10 @@
 import time
 import unittest
 
-from tests.testbase import BaseTestCase
 from deephaven import time_table
 from deephaven.table_listener import listen, TableListener
 
+from tests.testbase import BaseTestCase
 
 
 class TableListenerTestCase(BaseTestCase):

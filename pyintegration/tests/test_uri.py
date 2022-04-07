@@ -6,10 +6,10 @@ import unittest
 
 import jpy
 
-from tests.testbase import BaseTestCase
 from deephaven._jcompat import j_hashset
 from deephaven.table import Table
 from deephaven.uri import resolve
+from tests.testbase import BaseTestCase
 
 
 class UriTestCase(BaseTestCase):
