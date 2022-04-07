@@ -37,8 +37,8 @@ var PAGE_SIZE = 20;
     if (types.indexOf("python") !== -1) {
         ide = await connection.startSession("python");
         await ide.runCode(`
-from deephaven.TableTools import timeTable
-remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")
+from deephaven import time_table
+remoteTable = time_table("00:00:01").update_view(["I=i", "J=I*I", "K=I%100"]).last_by(by = ["K"])
 `)
     } else if (types.indexOf("groovy") !== -1) {
         ide = await connection.startSession("groovy");
