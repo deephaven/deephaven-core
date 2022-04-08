@@ -17,19 +17,20 @@ To filter data, such as with `where`, `whereIn`, etc. we use a formula that retu
 
 Formulas designed to return a boolean value are useful to narrow data sets to only desired values. In this example, operators are used with functions to limit values in result tables.
 
-```python order=source,result
-from deephaven.TableTools import newTable, stringCol, intCol
+```python
+from deephaven import new_table
+from deephaven.column import string_col, int_col
 
 def f(a, b):
     return a * b
 
-source = newTable(
-        stringCol("X", "A", "B", "C", "D", "E", "F", "G"),
-        intCol("Y", 1, 2, 3, 4, 5, 6, 7),
-        intCol("Z", 2, 3, 1, 2, 3, 1, 2)
-)
+source = new_table([
+        string_col("X", ["A", "B", "C", "D", "E", "F", "G"]),
+        int_col("Y", [1, 2, 3, 4, 5, 6, 7]),
+        int_col("Z", [2, 3, 1, 2, 3, 1, 2])
+])
 
-result = source.where("(int)(byte)f(Y, Z) > 9")
+result = source.where(filters = ["(int)f(Y, Z) > 9"])
 ```
 
 Boolean formulas in filter methods are also known as conditional filters.
@@ -41,7 +42,7 @@ To assign values, such as with `update`, `view`, etc. we use formulas to create 
 Formulas designed to return a value are useful in creating new data values. In this example, operators are used with objects to create new columns of values.
 
 ```python
-from deephaven.TableTools import emptyTable
+from deephaven import empty_table
 
 class MyObj:
     def __init__(self, a, b, c):
@@ -54,7 +55,7 @@ class MyObj:
 
 obj = MyObj(1,2,3)
 
-result = emptyTable(10).update(
+result = empty_table(10).update(formulas = [
         "A = i",
         "B = A * A",
         "C = A / 2",
@@ -64,7 +65,7 @@ result = emptyTable(10).update(
         "G = obj.a",
         "H = obj.compute(A)",
         "I = sqrt(A)"
-)
+])
 ```
 
 ## Columns 
@@ -73,16 +74,17 @@ In Deephaven we can use columns as values to create the new data.
 
 In the following example, operators are used to create new columns of values based on prior data.
 
-```python order=source,result
-from deephaven.TableTools import newTable, stringCol, intCol
+```python
+from deephaven import new_table
+from deephaven.column import string_col, int_col
 
-source = newTable(
-        stringCol("X", "A", "B", "C", "D", "E", "F", "G"),
-        intCol("Y", 1, 2, 3, 4, 5, 6, 7),
-        intCol("Z", 2, 3, 1, 2, 3, 1, 2)
-)
+source = new_table([
+        string_col("X", ["A", "B", "C", "D", "E", "F", "G"]),
+        int_col("Y", [1, 2, 3, 4, 5, 6, 7]),
+        int_col("Z", [2, 3, 1, 2, 3, 1, 2])
+])
 
-result = source.update("Sum = Y + Z")
+result = source.update(formulas = ["Sum = Y + Z"])
 ```
 
 Deephaven has a rich query language that is ready for your expansion.  
