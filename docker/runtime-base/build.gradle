@@ -6,7 +6,7 @@ plugins {
 evaluationDependsOn Docker.registryProject('server-base')
 evaluationDependsOn ':deephaven-jpy'
 evaluationDependsOn ':deephaven-wheel'
-evaluationDependsOn ':deephaven2-wheel'
+evaluationDependsOn ':py-server'
 
 def dockerContext = project.layout.buildDirectory.dir('context')
 
@@ -18,15 +18,17 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     def deephavenWheel = project(':deephaven-wheel').tasks.getByName('buildWheel')
 
     // deephaven2.whl
-    def deephaven2Wheel = project(':deephaven2-wheel').tasks.getByName('buildWheel')
+    def deephaven2Wheel = project(':py-server').tasks.getByName('buildWheel')
 
     from (deephavenJpyWheel.outputs.files) {
         into 'deephaven-jpy-wheel'
     }
     from (deephavenWheel.outputs.files) {
+        //TODO rename this dir
         into 'deephaven-wheel'
     }
     from (deephaven2Wheel.outputs.files) {
+        //TODO rename this dir
         into 'deephaven2-wheel'
     }
 
