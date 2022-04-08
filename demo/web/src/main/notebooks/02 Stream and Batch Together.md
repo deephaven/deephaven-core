@@ -13,16 +13,18 @@ First, hook up a Kafka stream. (This is the same script from the first notebook.
 
 ```python
 from deephaven import kafka_consumer as ck
+from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
+from deephaven import dtypes as dht
 
 def get_trades_stream():
     return ck.consume(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = ck.IGNORE,
-        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        key_spec = KeyValueSpec.IGNORE,
+        value_spec = ck.avro_spec('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
         offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
-        table_type='append')
+        table_type= TableType.Append)
 
 trades_stream = get_trades_stream()
 ```
@@ -99,7 +101,7 @@ add_column_streaming = trades_stream_view.updateView("Date = format_date(KafkaTi
 add_column_batch     = trades_batch_view .updateView("Date = format_date(Timestamp, TZ_NY)")
 
 # the table aggregation
-from deephaven import agg, as_list
+from deephaven import agg
 
 agg_list = [
     agg.first(["Price"]),
