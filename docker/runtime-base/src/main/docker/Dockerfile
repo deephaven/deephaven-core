@@ -9,14 +9,12 @@ RUN set -eux; \
     python -m pip install -q --no-index --no-cache-dir /deephaven-jpy-wheel/*.whl; \
     rm -r /deephaven-jpy-wheel
 
-# TODO rename this dir
+COPY deephaven-legacy-wheel/ /deephaven-legacy-wheel
+RUN set -eux; \
+    python -m pip install -q --no-index --no-cache-dir /deephaven-legacy-wheel/*.whl; \
+    rm -r /deephaven-legacy-wheel
+
 COPY deephaven-wheel/ /deephaven-wheel
 RUN set -eux; \
     python -m pip install -q --no-index --no-cache-dir /deephaven-wheel/*.whl; \
     rm -r /deephaven-wheel
-
-# TODO rename this dir
-COPY deephaven2-wheel/ /deephaven2-wheel
-RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven2-wheel/*.whl; \
-    rm -r /deephaven2-wheel

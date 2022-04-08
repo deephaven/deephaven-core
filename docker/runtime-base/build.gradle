@@ -24,12 +24,10 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
         into 'deephaven-jpy-wheel'
     }
     from (deephavenWheel.outputs.files) {
-        //TODO rename this dir
-        into 'deephaven-wheel'
+        into 'deephaven-legacy-wheel'
     }
     from (deephaven2Wheel.outputs.files) {
-        //TODO rename this dir
-        into 'deephaven2-wheel'
+        into 'deephaven-wheel'
     }
 
     from 'src/main/docker'

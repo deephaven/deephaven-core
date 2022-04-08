@@ -4,6 +4,6 @@ plugins {
 }
 
 // TODO rename this image
-def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven2-wheel', project.projectDir.toString())
+def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-wheel', project.projectDir.toString())
 
 assemble.dependsOn buildWheel
