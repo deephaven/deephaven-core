@@ -22,8 +22,6 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -63,7 +61,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.LongConsumer;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -118,6 +115,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * @param <MessageView> The sub-view type that the listener expects to receive.
      */
     public interface StreamGenerator<MessageView> extends SafeCloseable {
+        interface WriteMetricsConsumer {
+            void onWrite(long bits, long cpuTime);
+        }
+
         interface Factory<MessageView> {
             /**
              * Create a StreamGenerator that now owns the BarrageMessage.
@@ -125,7 +126,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
              * @param message the message that contains the update that we would like to propagate
              * @param writeTmRecorder a method that can be used to record write time
              */
-            StreamGenerator<MessageView> newGenerator(BarrageMessage message, LongConsumer writeTmRecorder);
+            StreamGenerator<MessageView> newGenerator(BarrageMessage message, WriteMetricsConsumer writeTmRecorder);
 
             /**
              * Create a MessageView of the Schema to send as the initial message to a new subscriber.
@@ -1409,8 +1410,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (snapshot != null) {
             try (final StreamGenerator<MessageView> snapshotGenerator =
-                         streamGeneratorFactory.newGenerator(snapshot,
-                                 writeTm -> recordMetric(stats -> stats.write, writeTm))) {
+                         streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
                         continue;
@@ -1459,8 +1459,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
-        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(message,
-                writeTm -> recordMetric(stats -> stats.write, writeTm))) {
+        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(
+                message, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
                     continue;
@@ -2114,6 +2114,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
+    private void recordWriteMetrics(final long bits, final long time) {
+        recordMetric(stats -> stats.writeBits, bits);
+        recordMetric(stats -> stats.writeTime, time);
+    }
+
     private void recordMetric(final Function<Stats, Histogram> hist, final long value) {
         if (stats == null) {
             return;
@@ -2133,7 +2138,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public final Histogram propagate = new Histogram(NUM_SIG_FIGS);
         public final Histogram snapshot = new Histogram(NUM_SIG_FIGS);
         public final Histogram updateJob = new Histogram(NUM_SIG_FIGS);
-        public final Histogram write = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeTime = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -2170,7 +2176,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     flush(now, logger, propagate, "PropagateTimeMs");
                     flush(now, logger, snapshot, "SnapshotTimeMs");
                     flush(now, logger, updateJob, "UpdateJobTimeMs");
-                    flush(now, logger, write, "WriteTimeMs");
+                    flush(now, logger, writeTime, "WriteTimeMs");
+                    flush(now, logger, writeBits, "WriteMb");
                 }
             } catch (IOException ioe) {
                 log.error().append(logPrefix).append("Unexpected exception while flushing barrage stats: ")

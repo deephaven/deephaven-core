@@ -183,7 +183,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
                         // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, ignored -> {
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, (bits, tm) -> {
                         })) {
                             listener.onNext(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }

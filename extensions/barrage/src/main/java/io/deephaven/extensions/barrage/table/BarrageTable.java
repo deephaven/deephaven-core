@@ -141,7 +141,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         this.rowRedirection = rowRedirection;
 
         final Object tableKey = getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
-        if (tableKey instanceof String) {
+        if (executorService == null) {
+            stats = null;
+        } else if (tableKey instanceof String) {
             stats = new Stats((String) tableKey);
         } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
             stats = new Stats(getDescription());

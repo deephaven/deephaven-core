@@ -90,8 +90,8 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message, final LongConsumer writeTmRecorder) {
-            return new BarrageStreamGenerator(message, writeTmRecorder);
+                final BarrageMessage message, final WriteMetricsConsumer metricsConsumer) {
+            return new BarrageStreamGenerator(message, metricsConsumer);
         }
 
         @Override
@@ -117,7 +117,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
-    public final LongConsumer writeTmRecorder;
+    public final WriteMetricsConsumer writeConsumer;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -137,11 +137,11 @@ public class BarrageStreamGenerator implements
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
      *
      * @param message the generator takes ownership of the message and its internal objects
-     * @param writeTmRecorder a method that can be used to record write time
+     * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message, final LongConsumer writeTmRecorder) {
+    public BarrageStreamGenerator(final BarrageMessage message, final WriteMetricsConsumer writeConsumer) {
         this.message = message;
-        this.writeTmRecorder = writeTmRecorder;
+        this.writeConsumer = writeConsumer;
         try {
             firstSeq = message.firstSeq;
             lastSeq = message.lastSeq;
@@ -307,19 +307,24 @@ public class BarrageStreamGenerator implements
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             final long startTm = System.nanoTime();
+            long bytesWritten = 0;
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
             offset = 0;
             for (long ii = 0; ii < numModBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendModColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendModColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
@@ -332,7 +337,7 @@ public class BarrageStreamGenerator implements
                     modViewport.close();
                 }
             }
-            generator.writeTmRecorder.accept(System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten * 8, System.nanoTime() - startTm);
         }
 
         private int batchSize() {
