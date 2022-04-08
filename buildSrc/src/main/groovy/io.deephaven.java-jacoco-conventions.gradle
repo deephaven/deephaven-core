@@ -2,17 +2,9 @@ plugins {
     id 'java'
     id 'jacoco'
 }
-// TODO (deephaven-core#2203) Upgrade Jacoco past 0.8.7 to support Java 18 and remove this check
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
-if (testRuntimeVersion > 17) {
-    // We can't just skip configuring it, we have to actually disable it to prevent ~2GB of log output
-    // as it fails to run
-    project.tasks.forEach({ task -> task.extensions.findByType(JacocoTaskExtension)?.enabled = false })
-    return;
-}
 
 jacoco {
-    toolVersion = '0.8.7'
+    toolVersion = '0.8.8'
 }
 
 jacocoTestReport {
