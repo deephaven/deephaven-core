@@ -11,147 +11,82 @@ from glob import glob
 import jpy
 import jpyutil
 
-
-DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
-DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
-DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
-DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*")
-
-
 def start_jvm():
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
     if not jpy.has_jvm():
 
         # we will try to initialize the jvm
-        init_jvm()
+        workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
+        devroot = os.environ.get('DEEPHAVEN_DEVROOT', '.')
+        propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
 
-        # set up a Deephaven Python session
+        # validate devroot & workspace
+        if devroot is None:
+            raise IOError("dh.init: devroot is not specified.")
+        if not os.path.isdir(devroot):
+            raise IOError("dh.init: devroot={} does not exist.".format(devroot))
+
+        if workspace is None:
+            raise IOError("dh.init: workspace is not specified.")
+        if not os.path.isdir(workspace):
+            raise IOError("dh.init: workspace={} does not exist.".format(workspace))
+
+        dtemp = workspace
+        for entry in ['', 'cache', 'classes']:
+            dtemp = os.path.join(dtemp, entry)
+            if os.path.exists(dtemp):
+                if not (os.path.isdir(dtemp) and os.access(dtemp, os.W_OK | os.X_OK)):
+                    # this is silly, but a directory must be both writable and executible by a user for a
+                    # file to be written there - write without executible is delete only
+                    raise IOError("dh.init: workspace directory={} does exists, but is "
+                                  "not writeable by your user.".format(dtemp))
+            else:
+                # Log potentially helpful warning - in case of failure.
+                warnings.warn("dh.init: workspace directory={} does not exist, and its absence may "
+                              "lead to an error. When required, it SHOULD get created with appropriate "
+                              "permissions by the Deephaven class DynamicCompileUtils. If strange errors arise "
+                              "from jpy about inability to find some java class, then check "
+                              "the existence/permissions of the directory.".format(dtemp),
+                              RuntimeWarning)
+
+        jvm_properties= {
+            'PyObject.cleanup_on_thread': 'false',
+
+            'java.awt.headless': 'true',
+            'MetricsManager.enabled': 'true',
+
+            'Configuration.rootFile': propfile,
+            'devroot': os.path.realpath(devroot),
+            'workspace': os.path.realpath(workspace),
+
+        }
+        jvm_options= {
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication',
+
+            '-XX:InitialRAMPercentage=25.0',
+            '-XX:MinRAMPercentage=70.0',
+            '-XX:MaxRAMPercentage=80.0',
+
+            '--add-opens=java.base/java.nio=ALL-UNNAMED',
+        }
+        jvm_classpath= os.environ.get('DEEPHAVEN_CLASSPATH', '')
+
+        # Start up the JVM
+        jpy.VerboseExceptions.enabled = True
+        jpyutil.init_jvm(
+            jvm_classpath=_expandWildcardsInList(jvm_classpath.split(os.path.pathsep)),
+            jvm_properties=jvm_properties,
+            jvm_options=jvm_options
+        )
+
+        # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         py_dh_session = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")(py_scope_jpy)
         jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())
 
-def init_jvm(workspace= DEFAULT_WORKSPACE,
-              devroot= DEFAULT_DEVROOT,
-              verbose= False,
-              propfile= DEFAULT_PROPFILE,
-              jvm_properties= {'PyObject.cleanup_on_thread': 'false'},
-              jvm_options= {'-Djava.awt.headless=true',
-                            '-DMetricsManager.enabled=true',
-
-                            '-XX:+UseG1GC',
-                            '-XX:MaxGCPauseMillis=100',
-                            '-XX:+UseStringDeduplication',
-
-                            '-XX:InitialRAMPercentage=25.0',
-                            '-XX:MinRAMPercentage=70.0',
-                            '-XX:MaxRAMPercentage=80.0',
-
-                            '--add-opens=java.base/java.nio=ALL-UNNAMED',
-                            },
-              # 'jvm_maxmem': '1g',
-              jvm_classpath= DEFAULT_CLASSPATH,
-              ):
-    """
-    Starts a JVM within this Python process to interface with Deephaven.
-
-    This is a small convenience wrapper around :func:`jpyutil.init_jvm`. Additionally, the Configuration is loaded
-    and and Deephaven classes are brought into Python.
-
-    :param devroot: the devroot parameter for Deephaven. Defaults to the ``ILLUMON_DEVROOT`` environment variable, or
-      ``/usr/deephaven/latest``
-    :param workspace: the workspace parameter for Deephaven. Defaults to the ``ILLUMON_WORKSPACE`` environment variable
-    :param propfile: the ``Configuration.rootFile`` parameter for Deephaven. Defaults to the ``ILLUMON_PROPFILE`` environment
-      variable
-    :param skip_default_classpath: if True, do not attempt to compute default java classpath
-    :param verbose: if True, print out the classpath and properties we have constructed
-
-    The rest of the parameters are passed through to :func:`jpyutil.init_jvm`. The values for `jvm_classpath` and
-    `jvm_properties` may have been modified based on the values of other arguments.
-
-    :param java_home: The Java JRE or JDK home directory used to search JVM shared library, if 'jvm_dll' is omitted.
-    :param jvm_dll: The JVM shared library file. My be inferred from 'java_home'.
-    :param jvm_maxmem: The JVM maximum heap space, e.g. '400M', '8G'. Refer to the java executable '-Xmx' option.
-    :param jvm_classpath: optional initial classpath elements. Default elements will be appended unless
-      `skip_default_classpath` is specified
-    :param jvm_properties: inserted into the dictionary generated by `devroot`, `workspace`, `propfile`, and `keyfile`.
-    :param jvm_options: A list of extra options for the JVM. Refer to the java executable options.
-    :param config_file: Extra configuration file (e.g. 'jpyconfig.py') to be loaded if 'config' parameter is omitted.
-    :param config: An optional default configuration object providing default attributes
-                   for the 'jvm_maxmem', 'jvm_classpath', 'jvm_properties', 'jvm_options' parameters.
-    """
-
-    # validate devroot & workspace
-    if devroot is None:
-        raise IOError("dh.init: devroot is not specified.")
-    if not os.path.isdir(devroot):
-        raise IOError("dh.init: devroot={} does not exist.".format(devroot))
-
-    if workspace is None:
-        raise IOError("dh.init: workspace is not specified.")
-    if not os.path.isdir(workspace):
-        raise IOError("dh.init: workspace={} does not exist.".format(workspace))
-
-    dtemp = workspace
-    for entry in ['', 'cache', 'classes']:
-        dtemp = os.path.join(dtemp, entry)
-        if os.path.exists(dtemp):
-            if not (os.path.isdir(dtemp) and os.access(dtemp, os.W_OK | os.X_OK)):
-                # this is silly, but a directory must be both writable and executible by a user for a
-                # file to be written there - write without executible is delete only
-                raise IOError("dh.init: workspace directory={} does exists, but is "
-                              "not writeable by your user.".format(dtemp))
-        else:
-            # Log potentially helpful warning - in case of failure.
-            warnings.warn("dh.init: workspace directory={} does not exist, and its absence may "
-                          "lead to an error. When required, it SHOULD get created with appropriate "
-                          "permissions by the Deephaven class DynamicCompileUtils. If strange errors arise "
-                          "from jpy about inability to find some java class, then check "
-                          "the existence/permissions of the directory.".format(dtemp),
-                          RuntimeWarning)
-
-    # setup environment
-    expanded_devroot = os.path.realpath(devroot)
-
-    jProperties = {'devroot': expanded_devroot, 'workspace': workspace}
-    if propfile is not None:
-        jProperties['Configuration.rootFile'] = propfile
-    if jvm_properties is not None:
-        jProperties.update(jvm_properties)
-
-    jClassPath = []
-    # allow for string or array, because users get confused
-    if jvm_classpath is not None:
-        if isinstance(jvm_classpath, str):
-            jClassPath.extend(jvm_classpath.split(os.path.pathsep))
-        elif isinstance(jvm_classpath, list):
-            jClassPath.extend(jvm_classpath)
-        else:
-            raise ValueError("Invalid jvm_classpath type = {}. list or string accepted.".format(type(jvm_classpath)))
-
-    jClassPath = _expandWildcardsInList(jClassPath)
-
-    if verbose:
-        print("JVM classpath... {}".format(jClassPath))
-        print("JVM properties... {}".format(jProperties))
-
-    if jvm_options is None:
-        jvm_options=set()
-
-    if verbose:
-        if len(jvm_options) > 0:
-            print("JVM options... {}".format(jvm_options))
-
-    jpy.VerboseExceptions.enabled = True
-    jpyutil.init_jvm(
-        java_home=None,
-        jvm_dll=None,
-        jvm_maxmem=None,
-        jvm_classpath=jClassPath,
-        jvm_properties=jProperties,
-        jvm_options=jvm_options,
-        config_file=None,
-        config=None)
 
 def _expandWildcardsInList(elements):
     """
