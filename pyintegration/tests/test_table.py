@@ -3,24 +3,9 @@
 #
 import unittest
 
-from deephaven import DHError, read_csv, empty_table, SortDirection
-from deephaven.agg import (
-    sum_,
-    weighted_avg,
-    avg,
-    pct,
-    group,
-    count_,
-    first,
-    last,
-    max_,
-    median,
-    min_,
-    std,
-    abs_sum,
-    var,
-    formula,
-)
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
+    var, formula
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -289,7 +274,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a")
+            result_table = left_table.aj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.LESS_THAN)
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -297,7 +282,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a")
+            result_table = left_table.raj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 

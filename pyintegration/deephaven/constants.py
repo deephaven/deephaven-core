@@ -4,19 +4,9 @@
 """ The module defines the global constants including Deephaven's special numerical values. Other constants are defined
 at the individual module level because they are only locally applicable. """
 
-from enum import Enum, auto
 import jpy
 
 _JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
-
-
-class SortDirection(Enum):
-    """An enum defining the sorting orders."""
-    DESCENDING = auto()
-    """"""
-    ASCENDING = auto()
-    """"""
-
 
 # Deephaven Special Null values for primitive types
 NULL_BOOLEAN = _JQueryConstants.NULL_BOOLEAN
@@ -93,5 +83,3 @@ MAX_FINITE_DOUBLE = _JQueryConstants.MAX_FINITE_DOUBLE
 """ Maximum finite value of type double. """
 MIN_POS_DOUBLE = _JQueryConstants.MIN_POS_DOUBLE
 """ Minimum positive value of type double. """
-
-

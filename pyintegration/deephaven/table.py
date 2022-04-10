@@ -4,6 +4,7 @@
 """ This module implements the Table class and functions that work with Tables. """
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import Union, TypeVar, Sequence, List
 
 import jpy
@@ -13,7 +14,6 @@ from deephaven._jcompat import j_array_list
 from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
-from deephaven.constants import SortDirection
 from deephaven.filters import Filter
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -21,6 +21,27 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
+_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
+_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
+_JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
+
+
+class SortDirection(Enum):
+    """An enum defining the sorting orders."""
+    DESCENDING = auto()
+    """"""
+    ASCENDING = auto()
+    """"""
+
+
+class AsOfMatchRule(Enum):
+    """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
+    operation. """
+    LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
+    LESS_THAN = _JAsOfMatchRule.LESS_THAN
+    GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
+    GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
+
 
 T = TypeVar("T")
 
@@ -745,7 +766,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
+           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -758,7 +780,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new table
 
@@ -768,18 +791,16 @@ class Table(JObjectWrapper):
         try:
             on = _to_sequence(on)
             joins = _to_sequence(joins)
+            if on:
+                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
-                return Table(
-                    j_table=self.j_table.aj(
-                        table.j_table, ",".join(on), ",".join(joins)
-                    )
-                )
-            else:
-                return Table(j_table=self.j_table.aj(table.j_table, ",".join(on)))
+                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
+            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -792,6 +813,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
 
         Returns:
             a new table
@@ -802,14 +825,13 @@ class Table(JObjectWrapper):
         try:
             on = _to_sequence(on)
             joins = _to_sequence(joins)
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
+            if on:
+                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
-                return Table(
-                    j_table=self.j_table.raj(
-                        table.j_table, ",".join(on), ",".join(joins)
-                    )
-                )
-            else:
-                return Table(j_table=self.j_table.raj(table.j_table, ",".join(on)))
+                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
