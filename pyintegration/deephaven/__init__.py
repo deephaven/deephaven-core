@@ -16,7 +16,7 @@ try:
 except Exception as e:
     raise DHError(e, "deephaven initialization failed.") from e
 else:
-    from .constants import SortDirection
+    from .table import SortDirection, AsOfMatchRule
     from .csv import read as read_csv
     from .csv import write as write_csv
     from .stream.kafka import consumer as kafka_consumer
