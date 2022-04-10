@@ -78,6 +78,10 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         else:
             return obj.value
     elif isinstance(obj, Sequence):
+        if not obj or not isinstance(obj[0], (bool, int, float)):
+            return obj
+
+        # to avoid JPY's 'too many matching overloads' error
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
