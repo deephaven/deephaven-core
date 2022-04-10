@@ -275,8 +275,7 @@ public class PerformanceQueries {
     public static Table serverState() {
         final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
-        final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
-        final Table pml = TableLoggers.serverStateLog().naturalJoin(maxMem, "");
+        final Table pml = TableLoggers.serverStateLog().updateView("MaxMemMiB = " + maxMemoryMiB);
         Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
                 "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
