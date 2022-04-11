@@ -11,7 +11,7 @@ configurations {
 
 dependencies {
     pythonWheel project(':deephaven-jpy')
-    pythonWheel project(':deephaven-wheel')
+    pythonWheel project(':deephaven-legacy-wheel')
     pythonWheel project(':py-server')
 }
 

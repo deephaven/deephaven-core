@@ -273,8 +273,8 @@ project(':py-client').projectDir = file('py/client')
 include(':py-server')
 project(':py-server').projectDir = file('py/server')
 
-include(':deephaven-wheel')
-project(':deephaven-wheel').projectDir = file('py/deephaven-wheel')
+include(':deephaven-legacy-wheel')
+project(':deephaven-legacy-wheel').projectDir = file('py/deephaven-legacy-wheel')
 
 include(':sphinx')
 

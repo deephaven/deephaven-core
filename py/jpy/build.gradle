@@ -37,7 +37,5 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') {
 }
 
 artifacts {
-    pythonWheel(buildWheel.get().outputs.files.singleFile) {
-        builtBy(buildWheel)
-    }
+    pythonWheel buildWheel
 }
