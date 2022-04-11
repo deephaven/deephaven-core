@@ -24,7 +24,7 @@ public class GeneratePyV2FigureAPI {
     private static final String INDENT = "    ";
     private static final String JCLASS = "io.deephaven.plot.Figure";
     private static final String PYPREAMBLE = "/Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
-    private static final String PYMODUlE = "/pyintegration/deephaven/plot/figure.py";
+    private static final String PYMODUlE = "/py/server/deephaven/plot/figure.py";
     private static String figureWrapperPreamble;
     private static String devroot;
     private static boolean assertNoChange;

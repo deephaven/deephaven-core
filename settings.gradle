@@ -277,6 +277,7 @@ include(':deephaven-legacy-wheel')
 project(':deephaven-legacy-wheel').projectDir = file('py/deephaven-legacy-wheel')
 
 include(':sphinx')
+project(':sphinx').buildFileName = 'sphinx.gradle'
 
 include(':docker-runtime-base')
 project(':docker-runtime-base').projectDir = file('docker/runtime-base')

@@ -8,10 +8,16 @@ plugins {
 description = 'Generates docs for the python libraries provided in Deephaven Core'
 
 evaluationDependsOn ':docker-server'
-evaluationDependsOn ':pyclient'
+
+configurations {
+    pythonWheel
+}
+dependencies {
+    pythonWheel project(':py-client')
+}
 
 def copyPyClientWhl = tasks.register('copyPyClientWhl', Sync) {
-    from project(':pyclient').tasks.named('buildPyClient').get().outputs.files
+    from configurations.pythonWheel
     into layout.buildDirectory.file('sphinx-image/wheel/')
 }
 
