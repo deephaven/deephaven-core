@@ -1198,3 +1198,61 @@ class Table(JObjectWrapper):
             return self.j_table.partitionBy(*by)
         except Exception as e:
             raise DHError(e, "failed to create a TableMap.") from e
+
+    def format_columns(self, formulas: Union[str, List[str]]) -> Table:
+        """ Applies color formatting to the columns of the table.
+
+        Args:
+            formulas (Union[str, List[str]]): formatting string(s) in the form of "column=color_expression"
+                where color_expression can be a color name or a Java ternary expression that results in a color.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = _to_sequence(formulas)
+            return Table(j_table=self.j_table.formatColumns(formulas))
+        except Exception as e:
+            raise DHError(e, "failed to color format columns.") from e
+
+    def format_column_where(self, col: str, cond: str, formula: str) -> Table:
+        """ Applies color formatting to a column of the table conditionally.
+
+        Args:
+            col (str): the column name
+            cond (str): the condition expression
+            formula (str): the formatting string in the form of assignment expression "column=color expression"
+                where color_expression can be a color name or a Java ternary expression that results in a color.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
+        except Exception as e:
+            raise DHError(e, "failed to color format column conditionally.") from e
+
+    def format_row_where(self, cond: str, formula: str) -> Table:
+        """ Applies color formatting to rows of the table conditionally.
+
+        Args:
+            cond (str): the condition expression
+            formula (str): the formatting string in the form of assignment expression "column=color expression"
+                where color_expression can be a color name or a Java ternary expression that results in a color.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.formatRowWhere(cond, formula))
+        except Exception as e:
+            raise DHError(e, "failed to color format rows conditionally.") from e

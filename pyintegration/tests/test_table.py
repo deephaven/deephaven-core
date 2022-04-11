@@ -463,6 +463,27 @@ class TableTestCase(BaseTestCase):
             test_table.agg_all_by(count_("aggCount"), "grp_id")
         self.assertIn("unsupported", cm.exception.root_cause)
 
+    def test_format_columns(self):
+        t = self.test_table.format_columns(["a = YELLOW", "b = BLUE"])
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_columns("a = b % 2 == 0? RED : GREEN")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_columns("a = heatmap(b, 1, 400, BRIGHT_GREEN, BRIGHT_RED)")
+        self.assertIsNotNone(t)
+
+    def test_format_column_where(self):
+        t = self.test_table.format_column_where("c", "c % 2 = 0", "ORANGE")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_column_where("c", "c % 2 = 0", "bg(colorRGB(255, 93, 0))")
+        self.assertIsNotNone(t)
+
+    def test_format_row_where(self):
+        t = self.test_table.format_row_where("e % 3 = 1", "TEAL")
+        self.assertIsNotNone(t)
+
 
 if __name__ == "__main__":
     unittest.main()
