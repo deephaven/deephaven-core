@@ -76,8 +76,6 @@ public class BarrageStreamGenerator implements
 
         StreamReaderOptions options();
 
-        RowSet keyspaceViewport();
-
         RowSet addRowOffsets();
 
         RowSet modRowOffsets(int col);
@@ -243,6 +241,7 @@ public class BarrageStreamGenerator implements
         public final long numAddBatches;
         public final long numModBatches;
         public final RowSet addRowOffsets;
+        public final RowSet addRowKeys;
         public final RowSet[] modRowOffsets;
 
         public SubView(final BarrageStreamGenerator generator,
@@ -284,15 +283,15 @@ public class BarrageStreamGenerator implements
             }
             numModBatches = (numModRows + batchSize - 1) / batchSize;
 
-            // precompute add row offsets
             if (keyspaceViewport != null) {
-                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
-                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
-                }
+                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
+                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
             } else {
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
@@ -322,6 +321,7 @@ public class BarrageStreamGenerator implements
 
             // clean up the helper indexes
             addRowOffsets.close();
+            addRowKeys.close();
             if (modRowOffsets != null) {
                 for (final RowSet modViewport : modRowOffsets) {
                     modViewport.close();
@@ -345,11 +345,6 @@ public class BarrageStreamGenerator implements
         @Override
         public StreamReaderOptions options() {
             return options;
-        }
-
-        @Override
-        public RowSet keyspaceViewport() {
-            return keyspaceViewport;
         }
 
         @Override
@@ -466,11 +461,6 @@ public class BarrageStreamGenerator implements
         }
 
         @Override
-        public final RowSet keyspaceViewport() {
-            return keyspaceViewport;
-        }
-
-        @Override
         public RowSet addRowOffsets() {
             return addRowOffsets;
         }
@@ -503,11 +493,6 @@ public class BarrageStreamGenerator implements
 
         @Override
         public StreamReaderOptions options() {
-            return null;
-        }
-
-        @Override
-        public RowSet keyspaceViewport() {
             return null;
         }
 
@@ -663,7 +648,7 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
 
-        // Added Chunk Data:
+
         try (final RowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
             // add the add-column streams
             for (final ChunkInputStreamGenerator col : addColumnData) {
@@ -747,15 +732,17 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.isViewport()) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+
+        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
         }
 
         // now add mod-column streams, and write the mod column indexes
         TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
         for (final ModColumnData mcd : modColumnData) {
             final int myModRowOffset;
-            if (view.isViewport()) {
+            if (view.keyspaceViewport != null) {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(view.keyspaceViewport, metadata);
             } else {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);

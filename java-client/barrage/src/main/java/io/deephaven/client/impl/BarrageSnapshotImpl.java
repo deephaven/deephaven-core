@@ -209,7 +209,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
     }
 
-
     @Override
     protected void destroy() {
         super.destroy();
