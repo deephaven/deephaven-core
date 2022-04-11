@@ -5,5 +5,14 @@ plugins {
 
 // TODO rename this image
 def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-legacy-wheel', "${project(':Integrations').projectDir}/python")
+configurations {
+    pythonWheel
+    getByName(Dependency.DEFAULT_CONFIGURATION).extendsFrom(pythonWheel)
+}
+dependencies {
+    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
+}
 
-assemble.dependsOn buildWheel
+artifacts {
+    pythonWheel buildWheel
+}

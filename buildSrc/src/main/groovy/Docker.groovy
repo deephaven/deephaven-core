@@ -530,7 +530,7 @@ class Docker {
         return registerDockerTask(project, taskName) { DockerTaskConfig config ->
             config.copyIn { Sync sync ->
                 sync.from(sourcePath) { CopySpec copySpec ->
-                    copySpec.exclude 'build'
+                    copySpec.exclude 'build', 'dist'
                     copySpec.into 'src'
                 }
             }

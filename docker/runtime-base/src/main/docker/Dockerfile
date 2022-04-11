@@ -4,17 +4,7 @@ FROM deephaven/server-base:local-build
 # already satisfied via the base image. If that is not the case, we want the install to error out, and we'll need to
 # update the base image with the extra requirements before proceeding here.
 
-COPY deephaven-jpy-wheel/ /deephaven-jpy-wheel
+COPY wheels/ /wheels
 RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven-jpy-wheel/*.whl; \
-    rm -r /deephaven-jpy-wheel
-
-COPY deephaven-legacy-wheel/ /deephaven-legacy-wheel
-RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven-legacy-wheel/*.whl; \
-    rm -r /deephaven-legacy-wheel
-
-COPY deephaven-wheel/ /deephaven-wheel
-RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven-wheel/*.whl; \
-    rm -r /deephaven-wheel
+    python -m pip install -q --no-index --no-cache-dir /wheels/*.whl; \
+    rm -r /wheels

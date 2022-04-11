@@ -1,9 +1,7 @@
 plugins {
-    id 'com.bmuschko.docker-remote-api'
-    id 'io.deephaven.project.register'
+    id 'io.deephaven.python-wheel'
 }
 
-// TODO rename this image
-def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-wheel', project.projectDir.toString())
-
-assemble.dependsOn buildWheel
+dependencies {
+    pythonWheel project(':deephaven-jpy')
+}
