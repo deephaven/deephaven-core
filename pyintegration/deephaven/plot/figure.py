@@ -78,9 +78,6 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         else:
             return obj.value
     elif isinstance(obj, Sequence):
-        if not obj or not isinstance(obj[0], (bool, int, float)):
-            return obj
-
         # to avoid JPY's 'too many matching overloads' error
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
@@ -1026,7 +1023,6 @@ class Figure(JObjectWrapper):
             y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[DateTime]])
         if by is not None:
             non_null_args.add("by")
-            by = _convert_j("by", by, [List[str]])
 
         if non_null_args == {"series_name", "category", "y"}:
             return Figure(self.j_figure.catPlot(series_name, category, y))
@@ -1139,7 +1135,6 @@ class Figure(JObjectWrapper):
             close = _convert_j("close", close, [str, List[int], List[float], List[DateTime]])
         if by is not None:
             non_null_args.add("by")
-            by = _convert_j("by", by, [List[str]])
 
         if non_null_args == {"series_name", "x", "open", "high", "low", "close"}:
             return Figure(self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
@@ -1265,7 +1260,6 @@ class Figure(JObjectWrapper):
             function = _convert_j("function", function, [Callable])
         if by is not None:
             non_null_args.add("by")
-            by = _convert_j("by", by, [List[str]])
         if x_time_axis is not None:
             non_null_args.add("x_time_axis")
             x_time_axis = _convert_j("x_time_axis", x_time_axis, [bool])
