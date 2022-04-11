@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    pythonWheel project(':deephaven-jpy')
+    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
 }
