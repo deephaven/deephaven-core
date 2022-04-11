@@ -28,7 +28,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     copyFile "./wheel", "/wheel"
     copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
 
-    environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server-${project.version}/lib/*:/opt/deephaven/server-${project.version}/lib/"
+    environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*.jar"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'
     environmentVariable 'DEEPHAVEN_DEVROOT', '/tmp/devroot'
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'

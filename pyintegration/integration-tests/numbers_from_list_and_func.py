@@ -1,6 +1,10 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
+from test_helper import start_jvm
+start_jvm()
+
 from deephaven import dtypes
 from deephaven import empty_table
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
