@@ -3,7 +3,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-// TODO rename this image
 def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-legacy-wheel', "${project(':Integrations').projectDir}/python")
 configurations {
     pythonWheel
