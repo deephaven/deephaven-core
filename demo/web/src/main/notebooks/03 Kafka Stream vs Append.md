@@ -105,11 +105,11 @@ Define a [table aggregation function](https://deephaven.io/core/docs/reference/t
 ```python
 def trades_agg(table):
     agg_list = [
-        agg.count_(col = "Trade_Count"),
-        agg.sum_(cols = ["Total_Size = Size"]),
+        agg.count_(col="Trade_Count"),
+        agg.sum_(cols=["Total_Size = Size"]),
     ]
     return table.agg_by(agg_list, by=["Exchange", "Instrument"]).\
-        sort(order_by = ["Exchange", "Instrument"])
+        sort(order_by=["Exchange", "Instrument"])
 ```
 
 \
@@ -168,8 +168,8 @@ row_count_merge = merge([row_count_append, row_count_stream])
 You can confirm the two aggregation tables are identical by [joining them](https://deephaven.io/core/docs/reference/table-operations/join/natural-join/) and taking the difference.
 
 ```python
-diff_table = agg_append.natural_join(table =agg_stream,  on = ["Exchange, Instrument"],\
-     joins = ["Trade_Count_Agg = Trade_Count, Total_Size_Agg = Total_Size"])\
+diff_table = agg_append.natural_join(table=agg_stream,  on=["Exchange, Instrument"],\
+     joins=["Trade_Count_Agg = Trade_Count, Total_Size_Agg = Total_Size"])\
     .view(["Exchange", "Instrument", "Diff_Trade_Count = Trade_Count - Trade_Count_Agg",
     "Diff_Total_Size = Total_Size - Total_Size_Agg"])
 ```

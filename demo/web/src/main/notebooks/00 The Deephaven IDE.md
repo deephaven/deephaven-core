@@ -9,7 +9,7 @@ We hope you find that to be sufficient time to take a tour and experiment a bit.
 \
 \
 \
-The IDE provides a REPL experience for exploring data, one that uniquely supports interactive interrogatino of real-time data (as well as batch).
+The IDE provides a REPL experience for exploring data, one that uniquely supports interactive interrogation of real-time data (as well as batch).
 People often use it for building server-side data-driven applications.
 \
 \
@@ -48,7 +48,7 @@ static_table = new_table([
 from deephaven import time_table
 
 import random
-updating_table = time_table('00:00:00.400').update_view(["Row = i", "Some_Int = (int)(byte)random.randint(0,100)"]).reverse()
+updating_table = time_table('00:00:00.400').update_view(["Row = i", "Some_Int = (int)random.randint(0,100)"]).reverse()
 ```
 
 

@@ -60,8 +60,8 @@ As you might expect, a named table can have multiple dependencies.\
 After you run the following command, you'll see that all three of your tables are now updating in lock-step.
 
 ```python
-row_count_by_instrument = trades_stream.count_by(col="Tot_Rows",  by = ["Instrument"])\
-    .sort_descending(order_by = ["Tot_Rows"])
+row_count_by_instrument = trades_stream.count_by(col="Tot_Rows",  by=["Instrument"])\
+    .sort_descending(order_by=["Tot_Rows"])
 ```
 \
 \
@@ -71,10 +71,10 @@ Below is one way to use a replace() method to swap one for the other.\
 To learn more about updateView (or other selection or projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
 
 ```python
-trades_stream_cleaner = trades_stream.update_view(formulas = ["Instrument = Instrument.replace(`USDT`, `USD`)"])
+trades_stream_cleaner = trades_stream.update_view(formulas=["Instrument = Instrument.replace(`USDT`, `USD`)"])
 
-row_count_by_instrument = trades_stream_cleaner.count_by(col="Tot_Rows", by = ["Instrument"])\
-    .sort_descending(order_by = ["Tot_Rows"])
+row_count_by_instrument = trades_stream_cleaner.count_by(col="Tot_Rows", by=["Instrument"])\
+    .sort_descending(order_by=["Tot_Rows"])
 ```
 \
 \
@@ -85,16 +85,16 @@ Counts are informative, but often you'll be interested in other aggregations. Th
 from deephaven import agg as agg
 
 agg_list = [
-    agg.count_(col = "Trade_Count"),
-    agg.sum_(cols = ["Total_Size = Size"]),
+    agg.count_(col="Trade_Count"),
+    agg.sum_(cols=["Total_Size = Size"]),
     agg.avg(cols=["Avg_Size = Size", "Avg_Price = Price"]),
-    agg.min_(cols = ["Low_Price = Price"]),
-    agg.max_(cols = ["High_Price = Price"])
+    agg.min_(cols=["Low_Price = Price"]),
+    agg.max_(cols=["High_Price = Price"])
 ]
 
-multi_agg = trades_stream_cleaner.update_view(formulas = ["TimeBin = upperBin(KafkaTimestamp, MINUTE)"])\
-    .agg_by(agg_list, by = ["TimeBin", "Instrument"])\
-    .sort_descending(order_by = ["TimeBin", "Trade_Count"])
+multi_agg = trades_stream_cleaner.update_view(formulas=["TimeBin = upperBin(KafkaTimestamp, MINUTE)"])\
+    .agg_by(agg_list, by=["TimeBin", "Instrument"])\
+    .sort_descending(order_by=["TimeBin", "Trade_Count"])
 ```
 \
 \
