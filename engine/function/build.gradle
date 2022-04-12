@@ -20,21 +20,27 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'Base')
 }
 
+ext {
+    //todo fix excludes
+    spotlessExcludes = [
+            '**/*Boolean*Primitives.java',
+            '**/*Byte*Primitives.java',
+            '**/*Char*Primitives.java',
+            '**/*Short*Primitives.java',
+            '**/*Int*Primitives.java',
+            '**/*Long*Primitives.java',
+            '**/*Float*Primitives.java',
+            '**/*Double*Primitives.java',
+            '**/*Object*Primitives.java',
+    ]
+}
+
 spotless {
     java {
-        targetExclude(
-                '**/*Boolean*Primitives.java',
-                '**/*Byte*Primitives.java',
-                '**/*Char*Primitives.java',
-                '**/*Short*Primitives.java',
-                '**/*Int*Primitives.java',
-                '**/*Long*Primitives.java',
-                '**/*Float*Primitives.java',
-                '**/*Double*Primitives.java',
-                '**/*Object*Primitives.java',
-        )
+        targetExclude spotlessExcludes
     }
 }
+
 
 //////////////// Code Generation ////////////////
 
@@ -42,6 +48,7 @@ spotless {
 task cleanGen(type:Delete)
 
 def gencode(name, template, output) {
+
     task(name, type: JavaExec) {
         main = 'io.deephaven.generator.primitivetemplate.CodeGenerator'
         classpath = configurations.primitiveCodegen
@@ -51,6 +58,7 @@ def gencode(name, template, output) {
     }
 
     compileJava.dependsOn(name)
+    spotlessExcludes.add output
 
     cleanGen {
         delete output

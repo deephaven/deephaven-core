@@ -4,7 +4,7 @@ package io.deephaven.generator.primitivetemplate;
  * Type of a value.
  */
 public enum ValueType {
-    BOOLEAN(true, false,false, false),
+    BOOLEAN(true, false, false, false),
     CHARACTER(false, true, false, false),
     INTEGER(false, false, true, false),
     FLOATING_POINT(false, false, false, true);

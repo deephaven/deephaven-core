@@ -28,7 +28,8 @@ public class PrimitiveType {
      * @param minValue minimum value
      * @param valueType type of value
      */
-    public PrimitiveType(final String primitive, final String boxed, final String dbArray, final String dbArrayDirect, final String nullValue, final String maxValue, final String minValue, final ValueType valueType) {
+    public PrimitiveType(final String primitive, final String boxed, final String dbArray, final String dbArrayDirect,
+            final String nullValue, final String maxValue, final String minValue, final ValueType valueType) {
         this.primitive = primitive;
         this.boxed = boxed;
         this.dbArray = dbArray;
@@ -113,8 +114,10 @@ public class PrimitiveType {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof PrimitiveType)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof PrimitiveType))
+            return false;
         PrimitiveType that = (PrimitiveType) o;
         return Objects.equals(primitive, that.primitive);
     }
@@ -128,12 +131,12 @@ public class PrimitiveType {
         return new PrimitiveType[] {
                 new PrimitiveType("Boolean", "Boolean", "BooleanVector", "BooleanVectorDirect", "NULL_BOOLEAN", null, null, ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character", "CharVector", "CharVectorDirect", "NULL_CHAR", null, null, ValueType.CHARACTER),
-                new PrimitiveType("byte", "Byte", "ByteVector", "ByteVectorDirect","NULL_BYTE", "MAX_BYTE", "MIN_BYTE", ValueType.INTEGER),
-                new PrimitiveType("short", "Short", "ShortVector","ShortVectorDirect", "NULL_SHORT", "MAX_SHORT", "MIN_SHORT", ValueType.INTEGER),
-                new PrimitiveType("int", "Integer", "IntVector", "IntVectorDirect","NULL_INT", "MAX_INT", "MIN_INT", ValueType.INTEGER),
-                new PrimitiveType("long", "Long", "LongVector", "LongVectorDirect","NULL_LONG", "MAX_LONG", "MIN_LONG", ValueType.INTEGER),
-                new PrimitiveType("float", "Float", "FloatVector", "FloatVectorDirect","NULL_FLOAT", "MAX_FLOAT", "MIN_FLOAT",ValueType.FLOATING_POINT),
-                new PrimitiveType("double", "Double", "DoubleVector", "DoubleVectorDirect","NULL_DOUBLE", "MAX_DOUBLE", "MIN_DOUBLE", ValueType.FLOATING_POINT),
+                new PrimitiveType("byte", "Byte", "ByteVector", "ByteVectorDirect", "NULL_BYTE", "MAX_BYTE", "MIN_BYTE", ValueType.INTEGER),
+                new PrimitiveType("short", "Short", "ShortVector", "ShortVectorDirect", "NULL_SHORT", "MAX_SHORT", "MIN_SHORT", ValueType.INTEGER),
+                new PrimitiveType("int", "Integer", "IntVector", "IntVectorDirect", "NULL_INT", "MAX_INT", "MIN_INT", ValueType.INTEGER),
+                new PrimitiveType("long", "Long", "LongVector", "LongVectorDirect", "NULL_LONG", "MAX_LONG", "MIN_LONG", ValueType.INTEGER),
+                new PrimitiveType("float", "Float", "FloatVector", "FloatVectorDirect", "NULL_FLOAT", "MAX_FLOAT", "MIN_FLOAT", ValueType.FLOATING_POINT),
+                new PrimitiveType("double", "Double", "DoubleVector", "DoubleVectorDirect", "NULL_DOUBLE", "MAX_DOUBLE", "MIN_DOUBLE", ValueType.FLOATING_POINT),
         };
     }
 }
