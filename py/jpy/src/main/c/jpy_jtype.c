@@ -306,7 +306,9 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
             return JPy_FROM_JDOUBLE(value);
         } else if (type == JPy_JPyObject || type == JPy_JPyModule) {
             jlong value = (*jenv)->CallLongMethod(jenv, objectRef, JPy_PyObject_GetPointer_MID);
-            return (PyObject*) value;
+            PyObject* pyObj = (PyObject*) value;
+            Py_INCREF(pyObj);
+            return pyObj;
         } else if (type == JPy_JString) {
             return JPy_FromJString(jenv, objectRef);
         } else if (type == JPy_JObject) {
@@ -331,7 +333,9 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
                 // The call to getPointer() a bit earlier in this method does *NOT* handle exceptions
 
                 (*jenv)->DeleteLocalRef(jenv, jPyObject);
-                return (PyObject*) value;
+                PyObject* pyObj = (PyObject*) value;
+                Py_INCREF(pyObj);
+                return pyObj;
             }
         }
     }

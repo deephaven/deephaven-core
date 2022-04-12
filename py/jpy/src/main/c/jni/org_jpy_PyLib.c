@@ -1804,6 +1804,8 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_eq
     */
 
     eq = PyObject_RichCompare(pyObject1, pyObject2, Py_EQ);
+    Py_DECREF(pyObject2);
+
     if (eq == NULL) {
         PyLib_HandlePythonException(jenv);
     } else if (PyBool_Check(eq)) {
@@ -2028,6 +2030,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_setAttributeValue
         goto error;
     }
 
+    // PyObject_SetAttrString will increase ref count
     if (PyObject_SetAttrString(pyObject, nameChars, pyValue) < 0) {
         JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "Java_org_jpy_PyLib_setAttributeValue: error: PyObject_SetAttrString failed on attribute '%s'\n", nameChars);
         PyLib_HandlePythonException(jenv);
@@ -2038,6 +2041,8 @@ error:
     if (nameChars != NULL) {
         (*jenv)->ReleaseStringUTFChars(jenv, jName, nameChars);
     }
+
+    Py_XDECREF(pyValue);
 
     JPy_END_GIL_STATE
 }
@@ -2279,24 +2284,6 @@ PyObject* PyLib_FromJObjectForTuple(JNIEnv *jenv, jobject jArg, jclass jParamCla
         pyReturnValue = JPy_FromJObjectWithType(jenv, jArg, explicitParamType);
     } else {
         pyReturnValue = JPy_FromJObjectWithType(jenv, jArg, implicitParamType);
-    }
-
-    // We must keep unchanged the reference counter when calling a Python method
-    // with a complex Python object as parameter.
-    // Per example:
-    // PyObject dt_X = kycProcessor.getDataFrame(inputColumns.toArray(new String[0]));
-    // for (DataFrameColumn column : values) {
-    //    kycProcessor.addColumn(dt_X, column.getName(), column.getValues());
-    // }
-
-    // Note: it would be better if we were able to get more information passed back from
-    // JPy_FromJObjectWithType about the specifics of the conversion. This is a bit hacky, but
-    // we can try to infer what happened based on the implicit/explicit types.
-    // This does not work for proxy types! (We'd need to use the better method.)
-    if (((implicitParamType == JPy_JPyObject || implicitParamType == JPy_JPyModule) && implicitParamType->componentType == NULL) ||
-        ((explicitParamType == JPy_JPyObject || explicitParamType == JPy_JPyModule) && explicitParamType->componentType == NULL)) {
-        JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "PyLib_FromJObjectForTuple: name='%s', arg-index=%d, increasing ref to account for tuple stealing\n", nameChars, index);
-        Py_INCREF(pyReturnValue);
     }
 
 error:
