@@ -22,8 +22,8 @@ public class SingleValueObjectColumnSource<DATA_TYPE> extends AbstractColumnSour
     }
 
     @Override
-    public DATA_TYPE get(long index) {
-        if(index == RowSequence.NULL_ROW_KEY) {
+    public DATA_TYPE get(long rowKey) {
+        if(rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return value;

@@ -122,93 +122,93 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        return (Boolean) get(index);
+    public Boolean getBoolean(long rowKey) {
+        return (Boolean) get(rowKey);
     }
 
     @Override
-    public byte getByte(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Byte) get(index));
+    public byte getByte(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Byte) get(rowKey));
     }
 
     @Override
-    public char getChar(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Character) get(index));
+    public char getChar(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Character) get(rowKey));
     }
 
     @Override
-    public double getDouble(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Double) get(index));
+    public double getDouble(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Double) get(rowKey));
     }
 
     @Override
-    public float getFloat(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Float) get(index));
+    public float getFloat(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Float) get(rowKey));
     }
 
     @Override
-    public int getInt(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Integer) get(index));
+    public int getInt(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Integer) get(rowKey));
     }
 
     @Override
-    public long getLong(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Long) get(index));
+    public long getLong(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Long) get(rowKey));
     }
 
     @Override
-    public short getShort(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Short) get(index));
+    public short getShort(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Short) get(rowKey));
     }
 
     @Override
-    synchronized public T getPrev(long index) {
+    synchronized public T getPrev(long rowKey) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (currentStep != lastAdditionTime) {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        return prevData.get(index);
+        return prevData.get(rowKey);
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        return (Boolean) getPrev(index);
+    public Boolean getPrevBoolean(long rowKey) {
+        return (Boolean) getPrev(rowKey);
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Byte) getPrev(index));
+    public byte getPrevByte(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Byte) getPrev(rowKey));
     }
 
     @Override
-    public char getPrevChar(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Character) getPrev(index));
+    public char getPrevChar(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Character) getPrev(rowKey));
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Double) getPrev(index));
+    public double getPrevDouble(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Double) getPrev(rowKey));
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Float) getPrev(index));
+    public float getPrevFloat(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Float) getPrev(rowKey));
     }
 
     @Override
-    public int getPrevInt(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Integer) getPrev(index));
+    public int getPrevInt(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Integer) getPrev(rowKey));
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Long) getPrev(index));
+    public long getPrevLong(long rowKey) {
+        return io.deephaven.util.type.TypeUtils.unbox((Long) getPrev(rowKey));
     }
 
     @Override
-    public short getPrevShort(long index) {
-        return TypeUtils.unbox((Short) getPrev(index));
+    public short getPrevShort(long rowKey) {
+        return TypeUtils.unbox((Short) getPrev(rowKey));
     }
 
     @Override

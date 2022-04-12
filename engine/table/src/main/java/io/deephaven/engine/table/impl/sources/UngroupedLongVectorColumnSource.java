@@ -32,12 +32,12 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
     }
 
     @Override
-    public Long get(long index) {
-        if (index < 0) {
+    public Long get(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         final Long result;
         if (isUngroupable) {
             result = (Long)((UngroupableColumnSource)innerSource).getUngrouped(segment, offset);
@@ -52,13 +52,13 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
 
 
     @Override
-    public long getLong(long index) {
-        if (index < 0) {
+    public long getLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
 
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         if (isUngroupable) {
             return ((UngroupableColumnSource)innerSource).getUngroupedLong(segment, offset);
         }
@@ -69,13 +69,13 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
 
 
     @Override
-    public Long getPrev(long index) {
-        if (index < 0) {
+    public Long getPrev(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
 
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         final Long result;
         if (isUngroupable) {
             result = (Long)((UngroupableColumnSource)innerSource).getUngroupedPrev(segment, offset);
@@ -91,13 +91,13 @@ public class UngroupedLongVectorColumnSource extends UngroupedColumnSource<Long>
     }
 
     @Override
-    public long getPrevLong(long index) {
-        if (index < 0) {
+    public long getPrevLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
 
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
 
         if (isUngroupable) {
             return ((UngroupableColumnSource)innerSource).getUngroupedPrevLong(segment, offset);

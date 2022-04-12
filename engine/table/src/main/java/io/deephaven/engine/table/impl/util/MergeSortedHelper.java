@@ -166,112 +166,112 @@ public class MergeSortedHelper {
         }
 
         @Override
-        public T get(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public T get(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).get(indexKey);
         }
 
         @Override
-        public Boolean getBoolean(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public Boolean getBoolean(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getBoolean(indexKey);
         }
 
         @Override
-        public byte getByte(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public byte getByte(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getByte(indexKey);
         }
 
         @Override
-        public char getChar(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public char getChar(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getChar(indexKey);
         }
 
         @Override
-        public double getDouble(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public double getDouble(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getDouble(indexKey);
         }
 
         @Override
-        public float getFloat(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public float getFloat(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getFloat(indexKey);
         }
 
         @Override
-        public int getInt(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public int getInt(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getInt(indexKey);
 
         }
 
         @Override
-        public long getLong(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public long getLong(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getLong(indexKey);
         }
 
         @Override
-        public short getShort(long index) {
-            int table = tableIndex.getQuick((int) index);
-            long indexKey = columnIndex.getQuick((int) index);
+        public short getShort(long rowKey) {
+            int table = tableIndex.getQuick((int) rowKey);
+            long indexKey = columnIndex.getQuick((int) rowKey);
             return innerSources.get(table).getShort(indexKey);
         }
 
         @Override
-        public T getPrev(long index) {
-            return get(index);
+        public T getPrev(long rowKey) {
+            return get(rowKey);
         }
 
         @Override
-        public Boolean getPrevBoolean(long index) {
-            return getBoolean(index);
+        public Boolean getPrevBoolean(long rowKey) {
+            return getBoolean(rowKey);
         }
 
         @Override
-        public byte getPrevByte(long index) {
-            return getByte(index);
+        public byte getPrevByte(long rowKey) {
+            return getByte(rowKey);
         }
 
         @Override
-        public char getPrevChar(long index) {
-            return getChar(index);
+        public char getPrevChar(long rowKey) {
+            return getChar(rowKey);
         }
 
         @Override
-        public double getPrevDouble(long index) {
-            return getDouble(index);
+        public double getPrevDouble(long rowKey) {
+            return getDouble(rowKey);
         }
 
         @Override
-        public float getPrevFloat(long index) {
-            return getFloat(index);
+        public float getPrevFloat(long rowKey) {
+            return getFloat(rowKey);
         }
 
         @Override
-        public int getPrevInt(long index) {
-            return getInt(index);
+        public int getPrevInt(long rowKey) {
+            return getInt(rowKey);
         }
 
         @Override
-        public long getPrevLong(long index) {
-            return getLong(index);
+        public long getPrevLong(long rowKey) {
+            return getLong(rowKey);
         }
 
         @Override
-        public short getPrevShort(long index) {
-            return getShort(index);
+        public short getPrevShort(long rowKey) {
+            return getShort(rowKey);
         }
 
         @Override

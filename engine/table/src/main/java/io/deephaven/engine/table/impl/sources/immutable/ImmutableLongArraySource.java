@@ -68,12 +68,12 @@ public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSour
     // endregion allocateArray
 
     @Override
-    public final long getLong(long index) {
-        if (index < 0 || index >= data.length) {
+    public final long getLong(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_LONG;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final long getUnsafe(long index) {

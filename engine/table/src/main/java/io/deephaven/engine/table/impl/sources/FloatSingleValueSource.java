@@ -76,12 +76,12 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     }
 
     @Override
-    public final float getFloat(long index) {
+    public final float getFloat(long rowKey) {
         return current;
     }
 
     @Override
-    public final float getPrevFloat(long index) {
+    public final float getPrevFloat(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

@@ -174,120 +174,120 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public T get(final long index) {
-        return currentSource.get(index);
+    public T get(final long rowKey) {
+        return currentSource.get(rowKey);
     }
 
     @Override
-    public Boolean getBoolean(final long index) {
-        return currentSource.getBoolean(index);
+    public Boolean getBoolean(final long rowKey) {
+        return currentSource.getBoolean(rowKey);
     }
 
     @Override
-    public byte getByte(final long index) {
-        return currentSource.getByte(index);
+    public byte getByte(final long rowKey) {
+        return currentSource.getByte(rowKey);
     }
 
     @Override
-    public char getChar(final long index) {
-        return currentSource.getChar(index);
+    public char getChar(final long rowKey) {
+        return currentSource.getChar(rowKey);
     }
 
     @Override
-    public double getDouble(final long index) {
-        return currentSource.getDouble(index);
+    public double getDouble(final long rowKey) {
+        return currentSource.getDouble(rowKey);
     }
 
     @Override
-    public float getFloat(final long index) {
-        return currentSource.getFloat(index);
+    public float getFloat(final long rowKey) {
+        return currentSource.getFloat(rowKey);
     }
 
     @Override
-    public int getInt(final long index) {
-        return currentSource.getInt(index);
+    public int getInt(final long rowKey) {
+        return currentSource.getInt(rowKey);
     }
 
     @Override
-    public long getLong(final long index) {
-        return currentSource.getLong(index);
+    public long getLong(final long rowKey) {
+        return currentSource.getLong(rowKey);
     }
 
     @Override
-    public short getShort(final long index) {
-        return currentSource.getShort(index);
+    public short getShort(final long rowKey) {
+        return currentSource.getShort(rowKey);
     }
 
     @Override
-    public T getPrev(final long index) {
+    public T getPrev(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrev(index);
+            return currentSource.getPrev(rowKey);
         }
-        return prevSource.getPrev(index);
+        return prevSource.getPrev(rowKey);
     }
 
     @Override
-    public Boolean getPrevBoolean(final long index) {
+    public Boolean getPrevBoolean(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevBoolean(index);
+            return currentSource.getPrevBoolean(rowKey);
         }
-        return prevSource.getPrevBoolean(index);
+        return prevSource.getPrevBoolean(rowKey);
     }
 
     @Override
-    public byte getPrevByte(final long index) {
+    public byte getPrevByte(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevByte(index);
+            return currentSource.getPrevByte(rowKey);
         }
-        return prevSource.getPrevByte(index);
+        return prevSource.getPrevByte(rowKey);
     }
 
     @Override
-    public char getPrevChar(final long index) {
+    public char getPrevChar(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevChar(index);
+            return currentSource.getPrevChar(rowKey);
         }
-        return prevSource.getPrevChar(index);
+        return prevSource.getPrevChar(rowKey);
     }
 
     @Override
-    public double getPrevDouble(final long index) {
+    public double getPrevDouble(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevDouble(index);
+            return currentSource.getPrevDouble(rowKey);
         }
-        return prevSource.getPrevDouble(index);
+        return prevSource.getPrevDouble(rowKey);
     }
 
     @Override
-    public float getPrevFloat(final long index) {
+    public float getPrevFloat(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevFloat(index);
+            return currentSource.getPrevFloat(rowKey);
         }
-        return prevSource.getPrevFloat(index);
+        return prevSource.getPrevFloat(rowKey);
     }
 
     @Override
-    public int getPrevInt(final long index) {
+    public int getPrevInt(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevInt(index);
+            return currentSource.getPrevInt(rowKey);
         }
-        return prevSource.getPrevInt(index);
+        return prevSource.getPrevInt(rowKey);
     }
 
     @Override
-    public long getPrevLong(final long index) {
+    public long getPrevLong(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevLong(index);
+            return currentSource.getPrevLong(rowKey);
         }
-        return prevSource.getPrevLong(index);
+        return prevSource.getPrevLong(rowKey);
     }
 
     @Override
-    public short getPrevShort(final long index) {
+    public short getPrevShort(final long rowKey) {
         if (prevInvalid()) {
-            return currentSource.getPrevShort(index);
+            return currentSource.getPrevShort(rowKey);
         }
-        return prevSource.getPrevShort(index);
+        return prevSource.getPrevShort(rowKey);
     }
 
 

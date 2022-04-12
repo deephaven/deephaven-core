@@ -80,11 +80,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
-    public final int getInt(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final int getInt(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_INT;
         }
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final int getUnsafe(long index) {
@@ -107,18 +107,18 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
-    public Integer getPrev(long index) {
-        return box(getPrevInt(index));
+    public Integer getPrev(long rowKey) {
+        return box(getPrevInt(rowKey));
     }
 
     @Override
-    public final int getPrevInt(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final int getPrevInt(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_INT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];

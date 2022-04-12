@@ -70,13 +70,13 @@ public class FloatSsmBackedSource extends AbstractColumnSource<FloatVector>
     }
 
     @Override
-    public FloatVector get(long index) {
-        return underlying.get(index);
+    public FloatVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public FloatVector getPrev(long index) {
-        final FloatSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public FloatVector getPrev(long rowKey) {
+        final FloatSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

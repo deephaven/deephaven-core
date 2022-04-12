@@ -29,8 +29,8 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     }
 
     @Override
-    public byte getByte(final long elementIndex) {
-        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getByte(elementIndex);
+    public byte getByte(final long rowKey) {
+        return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getByte(rowKey);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionByte<Values>> {
@@ -66,8 +66,8 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         }
 
         @Override
-        public byte getByte(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getByte(elementIndex);
+        public byte getByte(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getByte(rowKey);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

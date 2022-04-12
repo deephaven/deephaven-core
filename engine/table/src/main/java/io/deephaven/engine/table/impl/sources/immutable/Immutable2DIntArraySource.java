@@ -76,12 +76,12 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
     // endregion allocateArray
 
     @Override
-    public final int getInt(long index) {
-        if (index < 0 || index >= size) {
+    public final int getInt(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return NULL_INT;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {
