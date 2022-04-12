@@ -1,7 +1,14 @@
 
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Codegen: Code generation utilities'
+
 dependencies {
-    implementation 'org.freemarker:freemarker:2.3.30'
-    testImplementation 'junit:junit:3.8.2'
+    implementation 'org.freemarker:freemarker:2.3.31'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 jar {
