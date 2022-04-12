@@ -248,7 +248,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 final SwapListener swapListener =
                         sourceTable.createSwapListenerIfRefreshing(SwapListener::new);
                 final Mutable<Table> result = new MutableObject<>();
-                sourceTable.initializeWithSnapshot(description, swapListener,
+                BaseTable.initializeWithSnapshot(description, swapListener,
                         (final boolean usePrev, final long beforeClockValue) -> {
                             final QueryTable symbolTable;
                             if (swapListener == null) {

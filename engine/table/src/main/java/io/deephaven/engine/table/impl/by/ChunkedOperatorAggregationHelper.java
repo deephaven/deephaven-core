@@ -88,7 +88,7 @@ public class ChunkedOperatorAggregationHelper {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
         final SwapListener swapListener =
                 withView.createSwapListenerIfRefreshing(SwapListener::new);
-        withView.initializeWithSnapshot(
+        BaseTable.initializeWithSnapshot(
                 "by(" + aggregationContextFactory + ", " + Arrays.toString(groupByColumns) + ")", swapListener,
                 (usePrev, beforeClockValue) -> {
                     resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory, withView,
