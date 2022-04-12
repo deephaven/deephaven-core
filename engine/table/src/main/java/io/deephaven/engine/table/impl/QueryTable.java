@@ -87,6 +87,11 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SU
 public class QueryTable extends BaseTable {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
+
+        default boolean snapshotNeeded() {
+            return true;
+        }
+
         /**
          * The resulting table and listener of the operation.
          */
@@ -2052,7 +2057,8 @@ public class QueryTable extends BaseTable {
             if (!isRefreshing() && tableToSnapshot.isRefreshing() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
-                        ConstructSnapshot.makeSnapshotControl(false, (NotificationStepSource) tableToSnapshot),
+                        ConstructSnapshot.makeSnapshotControl(false, tableToSnapshot.isRefreshing(),
+                                (NotificationStepSource) tableToSnapshot),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
                             result.getRowSet().writableCast().initializePreviousValue();
@@ -3102,7 +3108,7 @@ public class QueryTable extends BaseTable {
             final Mutable<T> resultTable = new MutableObject<>();
 
             final SwapListener swapListener;
-            if (isRefreshing()) {
+            if (isRefreshing() && operation.snapshotNeeded()) {
                 swapListener = operation.newSwapListener(this);
                 swapListener.subscribeForUpdates();
             } else {

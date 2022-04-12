@@ -25,17 +25,17 @@ The type of the entries in attributes MUST be compatible with `type` and the box
 To ensure this compatibility for primitive values, provide the values for the attribute by converting
 a numpy array of appropriate type in the following way:
 
-* `type`='double', values = deephaven.convertToJavaArray(<numpy array of dtype=float64>, boxed=True)
+* `type`='double', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=float64>, boxed=True)
 
-* `type`='float', values = deephaven.convertToJavaArray(<numpy array of dtype=float32>, boxed=True)
+* `type`='float', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=float32>, boxed=True)
 
-* `type`='long', values = deephaven.convertToJavaArray(<numpy array of dtype=int64>, boxed=True)
+* `type`='long', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=int64>, boxed=True)
 
-* `type`='int', values = deephaven.convertToJavaArray(<numpy array of dtype=int32>, boxed=True)
+* `type`='int', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=int32>, boxed=True)
 
-* `type`='short', values = deephaven.convertToJavaArray(<numpy array of dtype=int16>, boxed=True)
+* `type`='short', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=int16>, boxed=True)
 
-* `type`='byte', values = deephaven.convertToJavaArray(<numpy array of dtype=int8>, boxed=True)
+* `type`='byte', values = deephaven_legacy.convertToJavaArray(<numpy array of dtype=int8>, boxed=True)
 """
 
 import jpy

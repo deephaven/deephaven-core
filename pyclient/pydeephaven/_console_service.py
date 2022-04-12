@@ -20,7 +20,7 @@ class ConsoleService:
         try:
             result_id = self.session.make_ticket()
             response = self._grpc_console_stub.StartConsole(
-                console_pb2.StartConsoleRequest(result_id=result_id, session_type='python'),
+                console_pb2.StartConsoleRequest(result_id=result_id, session_type=self.session._session_type),
                 metadata=self.session.grpc_metadata)
             self.console_id = response.result_id
         except Exception as e:

@@ -12,7 +12,7 @@ configurations {
 }
 
 dependencies {
-    serverApplicationDist project(path: ':server-netty', configuration: 'applicationDist')
+    serverApplicationDist project(path: ':server-netty-app', configuration: 'applicationDist')
 }
 
 def dockerContext = project.layout.buildDirectory.dir('context')

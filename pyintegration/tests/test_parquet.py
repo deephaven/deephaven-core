@@ -6,9 +6,9 @@ import shutil
 import unittest
 import tempfile
 
-from deephaven2 import empty_table, dtypes, new_table
-from deephaven2.column import InputColumn
-from deephaven2.parquet import write_table, write_tables, read_table, delete_table, ColumnInstruction
+from deephaven import empty_table, dtypes, new_table
+from deephaven.column import InputColumn
+from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
 
 from tests.testbase import BaseTestCase
 
@@ -42,26 +42,26 @@ class ParquetTestCase(BaseTestCase):
 
         # Writing
         with self.subTest(msg="write_table(Table, str)"):
-            write_table(table, file_location)
+            write(table, file_location)
             self.assertTrue(os.path.exists(file_location))
-            table2 = read_table(file_location)
+            table2 = read(file_location)
             self.assertEqual(table, table2)
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_tables(Table[], destinations, col_definitions"):
-            write_tables([table, table], [file_location, file_location2], definition)
+            batch_write([table, table], [file_location, file_location2], definition)
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
-            table2 = read_table(file_location)
+            table2 = read(file_location)
             self.assertEqual(table, table2)
 
         # Delete
         with self.subTest(msg="delete(str)"):
             if os.path.exists(file_location):
-                delete_table(file_location)
+                delete(file_location)
                 self.assertFalse(os.path.exists(file_location))
             if os.path.exists(file_location2):
-                delete_table(file_location2)
+                delete(file_location2)
                 self.assertFalse(os.path.exists(file_location2))
         shutil.rmtree(base_dir)
 
@@ -85,38 +85,38 @@ class ParquetTestCase(BaseTestCase):
         col_inst1 = ColumnInstruction(column_name="y", parquet_column_name="py")
 
         with self.subTest(msg="write_table(Table, str, max_dictionary_keys)"):
-            write_table(table, file_location, max_dictionary_keys=10)
+            write(table, file_location, max_dictionary_keys=10)
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_table(Table, str, col_instructions, max_dictionary_keys)"):
-            write_table(table, file_location, col_instructions=[col_inst, col_inst1], max_dictionary_keys=10)
+            write(table, file_location, col_instructions=[col_inst, col_inst1], max_dictionary_keys=10)
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_tables(Table[], destinations, col_definitions, "):
-            write_tables([table, table], [file_location, file_location2], col_definitions,
-                         col_instructions=[col_inst, col_inst1])
+            batch_write([table, table], [file_location, file_location2], col_definitions,
+                        col_instructions=[col_inst, col_inst1])
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_table(Table, destination, col_definitions, "):
-            write_table(table, file_location, col_instructions=[col_inst, col_inst1])
+            write(table, file_location, col_instructions=[col_inst, col_inst1])
             # self.assertTrue(os.path.exists(file_location))
 
         # Reading
         with self.subTest(msg="read_table(str)"):
-            table2 = read_table(path=file_location, col_instructions=[col_inst, col_inst1])
+            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1])
             self.assertEqual(table, table2)
 
         # Delete
         with self.subTest(msg="delete(str)"):
             if os.path.exists(file_location):
-                delete_table(file_location)
+                delete(file_location)
                 self.assertFalse(os.path.exists(file_location))
             if os.path.exists(file_location2):
-                delete_table(file_location2)
+                delete(file_location2)
                 self.assertFalse(os.path.exists(file_location2))
         shutil.rmtree(base_dir)
 
@@ -133,8 +133,8 @@ class ParquetTestCase(BaseTestCase):
         if os.path.exists(file_location):
             shutil.rmtree(file_location)
 
-        write_table(table, file_location)
-        table2 = read_table(file_location)
+        write(table, file_location)
+        table2 = read(file_location)
         self.assertEqual(table.size, table2.size)
         self.assertEqual(table, table2)
 

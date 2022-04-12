@@ -12,8 +12,8 @@ import os
 import time
 import shutil
 
-from deephaven import TableTools, ParquetTools
-import deephaven.Types as dh
+from deephaven_legacy import TableTools, ParquetTools
+import deephaven_legacy.Types as dh
 
 
 if sys.version_info[0] < 3:

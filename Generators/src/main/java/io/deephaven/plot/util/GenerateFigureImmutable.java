@@ -506,39 +506,39 @@ public class GenerateFigureImmutable {
                 +
                 (isInterface ? "\n" +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation );\n" +
+                        "    @Override  Figure save( java.lang.String path );\n" +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation, int width, int height );\n" +
+                        "    @Override  Figure save( java.lang.String path, int width, int height );\n" +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation, boolean wait, long timeoutSeconds );\n"
+                        "    @Override  Figure save( java.lang.String path, boolean wait, long timeoutSeconds );\n"
                         +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds );\n"
-                        : "\n" + "    @Override public  FigureImpl save( java.lang.String saveLocation ) {\n" +
+                        "    @Override  Figure save( java.lang.String path, int width, int height, boolean wait, long timeoutSeconds );\n"
+                        : "\n" + "    @Override public  FigureImpl save( java.lang.String path ) {\n" +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
-                                "        figure(fc).save( saveLocation );\n" +
+                                "        figure(fc).save( path );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height ) {\n"
+                                "    @Override public  FigureImpl save( java.lang.String path, int width, int height ) {\n"
                                 +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
-                                "        figure(fc).save( saveLocation, width, height );\n" +
+                                "        figure(fc).save( path, width, height );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, boolean wait, long timeoutSeconds ) {\n"
+                                "    @Override public  FigureImpl save( java.lang.String path, boolean wait, long timeoutSeconds ) {\n"
                                 +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
-                                "        figure(fc).save( saveLocation, wait, timeoutSeconds );\n" +
+                                "        figure(fc).save( path, wait, timeoutSeconds );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds ) {\n"
+                                "    @Override public  FigureImpl save( java.lang.String path, int width, int height, boolean wait, long timeoutSeconds ) {\n"
                                 +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
-                                "        figure(fc).save( saveLocation, width, height, wait, timeoutSeconds );\n" +
+                                "        figure(fc).save( path, width, height, wait, timeoutSeconds );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n\n")
                 + (isInterface ? ""

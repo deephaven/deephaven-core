@@ -3,9 +3,9 @@
 #
 import unittest
 
-from deephaven2 import empty_table
+from deephaven import empty_table
 
-from deephaven2.perfmon import process_info_log, process_metrics_log, process_memory_log, \
+from deephaven.perfmon import process_info_log, process_metrics_log, server_state_log, \
     query_operation_performance_log, query_performance_log, update_performance_log, metrics_get_counters, \
     metrics_reset_counters
 from tests.testbase import BaseTestCase
@@ -38,7 +38,7 @@ class PerfmonTestCase(BaseTestCase):
     def test_process_logs(self):
         log_table = process_info_log()
         self.assertTrue(log_table.to_string())
-        log_table = process_memory_log()
+        log_table = server_state_log()
         self.assertTrue(log_table.to_string())
         log_table = process_metrics_log()
         self.assertTrue(log_table.to_string())

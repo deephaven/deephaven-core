@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven.TableTools import newTable, intCol, diff
-from deephaven.filter import or_
+from deephaven_legacy.TableTools import newTable, intCol, diff
+from deephaven_legacy.filter import or_
 from unittest import TestCase
 
 

@@ -244,28 +244,28 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return new FigureWidget(make(fc));
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation ) {
+    @Override public  FigureImpl save( java.lang.String path ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation );
+        figure(fc).save( path );
         return make(fc);
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height ) {
+    @Override public  FigureImpl save( java.lang.String path, int width, int height ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, width, height );
+        figure(fc).save( path, width, height );
         return make(fc);
     }
 
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, boolean wait, long timeoutSeconds ) {
+    @Override public  FigureImpl save( java.lang.String path, boolean wait, long timeoutSeconds ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, wait, timeoutSeconds );
+        figure(fc).save( path, wait, timeoutSeconds );
         return make(fc);
     }
 
-    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds ) {
+    @Override public  FigureImpl save( java.lang.String path, int width, int height, boolean wait, long timeoutSeconds ) {
         final BaseFigureImpl fc = onDisplay();
-        figure(fc).save( saveLocation, width, height, wait, timeoutSeconds );
+        figure(fc).save( path, width, height, wait, timeoutSeconds );
         return make(fc);
     }
 
@@ -379,9 +379,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl axesRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl axesRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).axesRemoveSeries( names);
+        final AxesImpl axes = (AxesImpl) axes(fc).axesRemoveSeries( removeSeriesNames);
         return make(axes);
     }
 
@@ -404,15 +404,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl axisFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl axisFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).axisFormat( format);
+        final AxisImpl axis = (AxisImpl) axis(fc).axisFormat( axisFormat);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl axisFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl axisFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern( pattern);
+        final AxisImpl axis = (AxisImpl) axis(fc).axisFormatPattern( axisFormatPattern);
         return make(null, axis);
     }
 
@@ -440,321 +440,327 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
+    @Override public  FigureImpl businessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxisImpl axis = (AxisImpl) axis(fc).businessTime( useBusinessTime);
+        return make(null, axis);
+    }
+
     @Override public  FigureImpl businessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxisImpl axis = (AxisImpl) axis(fc).businessTime( calendar);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl businessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).businessTime( sds, valueColumn);
+        final AxisImpl axis = (AxisImpl) axis(fc).businessTime( sds, calendar);
         return make(null, axis);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] values, T2[] yLow, T3[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, T1[] y, T2[] yLow, T3[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] values, double[] yLow, double[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] values, float[] yLow, float[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] values, int[] yLow, int[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] values, long[] yLow, long[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values, java.util.Date[] yLow, java.util.Date[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] values, short[] yLow, short[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values, T2[] yLow, T3[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y, T2[] yLow, T3[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values, double[] yLow, double[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values, float[] yLow, float[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values, int[] yLow, int[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values, long[] yLow, long[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values, short[] yLow, short[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl catErrorBar( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
+    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, t, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, t, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
+    @Override public  FigureImpl catErrorBar( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, sds, categories, values, yLow, yHigh);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, sds, categories, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, t, categories, values, yLow, yHigh, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, t, categories, y, yLow, yHigh, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, sds, categories, values, yLow, yHigh, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catErrorBarBy( seriesName, sds, categories, y, yLow, yHigh, byColumns);
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] x ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, T[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, double[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, float[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, int[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] x ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, long[] categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> x ) {
+    @Override public <T extends java.lang.Comparable> FigureImpl catHistPlot( java.lang.Comparable seriesName, java.util.List<T> categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, x);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, columnName);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, t, categories);
         return make(series);
     }
 
-    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl catHistPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, columnName);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catHistPlot( seriesName, sds, categories);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
+    @Override public <T1 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.time.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, t, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, t, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl catPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, sds, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, sds, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, t, categories, values, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, t, categories, y, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
+    @Override public  FigureImpl catPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, sds, categories, values, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).catPlotBy( seriesName, sds, categories, y, byColumns);
         return make(series);
     }
 
@@ -770,9 +776,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl chartRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl chartRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).chartRemoveSeries( names);
+        final ChartImpl chart = (ChartImpl) chart(fc).chartRemoveSeries( removeSeriesNames);
         return make(chart);
     }
 
@@ -842,9 +848,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl colSpan( int n ) {
+    @Override public  FigureImpl colSpan( int colSpan ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).colSpan( n);
+        final ChartImpl chart = (ChartImpl) chart(fc).colSpan( colSpan);
         return make(chart);
     }
 
@@ -1586,9 +1592,9 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl figureRemoveSeries( java.lang.String... names ) {
+    @Override public  FigureImpl figureRemoveSeries( java.lang.String... removeSeriesNames ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).figureRemoveSeries( names);
+        figure(fc).figureRemoveSeries( removeSeriesNames);
         return make(fc);
     }
 
@@ -1622,15 +1628,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(fc);
     }
 
-    @Override public  FigureImpl gridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl gridLinesVisible( boolean gridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).gridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).gridLinesVisible( gridVisible);
         return make(chart);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table counts ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, counts);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t);
         return make(series);
     }
 
@@ -1676,69 +1682,69 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, columnName, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, x, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, columnName, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, x, nbins);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, T0[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, T0[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, double[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, double[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, float[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, float[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, int[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, int[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, long[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, long[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, short[] x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, short[] x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double rangeMin, double rangeMax, int nbins ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl histPlot( java.lang.Comparable seriesName, java.util.List<T0> x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, columnName, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, t, x, xmin, xmax, nbins);
         return make(series);
     }
 
-    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
+    @Override public  FigureImpl histPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String x, double xmin, double xmax, int nbins ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, columnName, rangeMin, rangeMax, nbins);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).histPlot( seriesName, sds, x, xmin, xmax, nbins);
         return make(series);
     }
 
@@ -1790,21 +1796,27 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
+    @Override public  FigureImpl log( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxisImpl axis = (AxisImpl) axis(fc).log( useLog);
+        return make(null, axis);
+    }
+
     @Override public  FigureImpl max( double max ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxisImpl axis = (AxisImpl) axis(fc).max( max);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl max( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl max( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).max( sds, valueColumn);
+        final AxisImpl axis = (AxisImpl) axis(fc).max( sds, max);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl maxRowsInTitle( int maxRowsCount ) {
+    @Override public  FigureImpl maxRowsInTitle( int maxTitleRows ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).maxRowsInTitle( maxRowsCount);
+        final ChartImpl chart = (ChartImpl) chart(fc).maxRowsInTitle( maxTitleRows);
         return make(chart);
     }
 
@@ -1814,15 +1826,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl min( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl min( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).min( sds, valueColumn);
+        final AxisImpl axis = (AxisImpl) axis(fc).min( sds, min);
         return make(null, axis);
     }
 
-    @Override public  FigureImpl minorTicks( int count ) {
+    @Override public  FigureImpl minorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxisImpl axis = (AxisImpl) axis(fc).minorTicks( count);
+        final AxisImpl axis = (AxisImpl) axis(fc).minorTicks( nminor);
         return make(null, axis);
     }
 
@@ -1964,129 +1976,129 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, t, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, sds, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
+    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, t, time, open, high, low, close, byColumns);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
+    @Override public  FigureImpl ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String time, java.lang.String open, java.lang.String high, java.lang.String low, java.lang.String close, java.lang.String... byColumns ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, sds, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final SeriesInternal series = (SeriesInternal) axes(fc).ohlcPlotBy( seriesName, sds, time, open, high, low, close, byColumns);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, T0[] categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData values ) {
+    @Override public <T1 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.datasets.data.IndexableData<T1> categories, io.deephaven.plot.datasets.data.IndexableNumericData y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> values ) {
+    @Override public <T0 extends java.lang.Comparable,T1 extends java.lang.Number> FigureImpl piePlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.engine.table.Table t, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, t, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, t, categories, y);
         return make(series);
     }
 
-    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values ) {
+    @Override public  FigureImpl piePlot( java.lang.Comparable seriesName, io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String y ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, sds, categories, values);
+        final DataSeriesInternal series = (DataSeriesInternal) axes(fc).piePlot( seriesName, sds, categories, y);
         return make(series);
     }
 
@@ -2624,15 +2636,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(chart);
     }
 
-    @Override public  FigureImpl plotStyle( io.deephaven.plot.PlotStyle style ) {
+    @Override public  FigureImpl plotStyle( io.deephaven.plot.PlotStyle plotStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( style);
+        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( plotStyle);
         return make(axes);
     }
 
-    @Override public  FigureImpl plotStyle( java.lang.String style ) {
+    @Override public  FigureImpl plotStyle( java.lang.String plotStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( style);
+        final AxesImpl axes = (AxesImpl) axes(fc).plotStyle( plotStyle);
         return make(axes);
     }
 
@@ -2642,21 +2654,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(null, axis);
     }
 
-    @Override public  FigureImpl removeChart( int index ) {
+    @Override public  FigureImpl removeChart( int removeChartIndex ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).removeChart( index);
+        figure(fc).removeChart( removeChartIndex);
         return make(fc);
     }
 
-    @Override public  FigureImpl removeChart( int rowNum, int colNum ) {
+    @Override public  FigureImpl removeChart( int removeChartRowNum, int removeChartColNum ) {
         final BaseFigureImpl fc = this.figure.copy();
-        figure(fc).removeChart( rowNum, colNum);
+        figure(fc).removeChart( removeChartRowNum, removeChartColNum);
         return make(fc);
     }
 
-    @Override public  FigureImpl rowSpan( int n ) {
+    @Override public  FigureImpl rowSpan( int rowSpan ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).rowSpan( n);
+        final ChartImpl chart = (ChartImpl) chart(fc).rowSpan( rowSpan);
         return make(chart);
     }
 
@@ -2787,15 +2799,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl xBusinessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( useBusinessTime);
+        return make(axes);
+    }
+
     @Override public  FigureImpl xBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( calendar);
         return make(axes);
     }
 
-    @Override public  FigureImpl xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xBusinessTime( sds, calendar);
         return make(axes);
     }
 
@@ -2811,21 +2829,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl xFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xFormat( format);
+        final AxesImpl axes = (AxesImpl) axes(fc).xFormat( axisFormat);
         return make(axes);
     }
 
-    @Override public  FigureImpl xFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl xFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xFormatPattern( pattern);
+        final AxesImpl axes = (AxesImpl) axes(fc).xFormatPattern( axisFormatPattern);
         return make(axes);
     }
 
-    @Override public  FigureImpl xGridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl xGridLinesVisible( boolean xGridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).xGridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).xGridLinesVisible( xGridVisible);
         return make(chart);
     }
 
@@ -2865,15 +2883,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl xLog( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).xLog( useLog);
+        return make(axes);
+    }
+
     @Override public  FigureImpl xMax( double max ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).xMax( max);
         return make(axes);
     }
 
-    @Override public  FigureImpl xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMax( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMax( sds, max);
         return make(axes);
     }
 
@@ -2883,15 +2907,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl xMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMin( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMin( sds, min);
         return make(axes);
     }
 
-    @Override public  FigureImpl xMinorTicks( int count ) {
+    @Override public  FigureImpl xMinorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).xMinorTicks( count);
+        final AxesImpl axes = (AxesImpl) axes(fc).xMinorTicks( nminor);
         return make(axes);
     }
 
@@ -2962,15 +2986,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl yBusinessTime( boolean useBusinessTime ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( useBusinessTime);
+        return make(axes);
+    }
+
     @Override public  FigureImpl yBusinessTime( io.deephaven.time.calendar.BusinessCalendar calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( calendar);
         return make(axes);
     }
 
-    @Override public  FigureImpl yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yBusinessTime( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String calendar ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yBusinessTime( sds, calendar);
         return make(axes);
     }
 
@@ -2986,21 +3016,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yFormat( io.deephaven.plot.axisformatters.AxisFormat format ) {
+    @Override public  FigureImpl yFormat( io.deephaven.plot.axisformatters.AxisFormat axisFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yFormat( format);
+        final AxesImpl axes = (AxesImpl) axes(fc).yFormat( axisFormat);
         return make(axes);
     }
 
-    @Override public  FigureImpl yFormatPattern( java.lang.String pattern ) {
+    @Override public  FigureImpl yFormatPattern( java.lang.String axisFormatPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yFormatPattern( pattern);
+        final AxesImpl axes = (AxesImpl) axes(fc).yFormatPattern( axisFormatPattern);
         return make(axes);
     }
 
-    @Override public  FigureImpl yGridLinesVisible( boolean visible ) {
+    @Override public  FigureImpl yGridLinesVisible( boolean yGridVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final ChartImpl chart = (ChartImpl) chart(fc).yGridLinesVisible( visible);
+        final ChartImpl chart = (ChartImpl) chart(fc).yGridLinesVisible( yGridVisible);
         return make(chart);
     }
 
@@ -3040,15 +3070,21 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
+    @Override public  FigureImpl yLog( boolean useLog ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        final AxesImpl axes = (AxesImpl) axes(fc).yLog( useLog);
+        return make(axes);
+    }
+
     @Override public  FigureImpl yMax( double max ) {
         final BaseFigureImpl fc = this.figure.copy();
         final AxesImpl axes = (AxesImpl) axes(fc).yMax( max);
         return make(axes);
     }
 
-    @Override public  FigureImpl yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yMax( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String max ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMax( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMax( sds, max);
         return make(axes);
     }
 
@@ -3058,15 +3094,15 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String valueColumn ) {
+    @Override public  FigureImpl yMin( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String min ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMin( sds, valueColumn);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMin( sds, min);
         return make(axes);
     }
 
-    @Override public  FigureImpl yMinorTicks( int count ) {
+    @Override public  FigureImpl yMinorTicks( int nminor ) {
         final BaseFigureImpl fc = this.figure.copy();
-        final AxesImpl axes = (AxesImpl) axes(fc).yMinorTicks( count);
+        final AxesImpl axes = (AxesImpl) axes(fc).yMinorTicks( nminor);
         return make(axes);
     }
 
@@ -3124,78 +3160,78 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         return make(axes);
     }
 
-    @Override public  FigureImpl errorBarColor( int color ) {
+    @Override public  FigureImpl errorBarColor( int errorBarColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).errorBarColor( color);
+            DataSeries result = ((DataSeries) series).errorBarColor( errorBarColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).errorBarColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).errorBarColor(errorBarColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( int color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( int errorBarColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl errorBarColor( int color, java.lang.Object... keys ) {
+    @Override public  FigureImpl errorBarColor( int errorBarColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).errorBarColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).errorBarColor( errorBarColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( int color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( int errorBarColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint color ) {
+    @Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint errorBarColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).errorBarColor( color);
+            DataSeries result = ((DataSeries) series).errorBarColor( errorBarColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).errorBarColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).errorBarColor(errorBarColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint errorBarColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys ) {
+    @Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint errorBarColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).errorBarColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).errorBarColor( errorBarColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( io.deephaven.gui.color.Paint errorBarColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl errorBarColor( java.lang.String color ) {
+    @Override public  FigureImpl errorBarColor( java.lang.String errorBarColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).errorBarColor( color);
+            DataSeries result = ((DataSeries) series).errorBarColor( errorBarColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).errorBarColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).errorBarColor(errorBarColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( java.lang.String color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( java.lang.String errorBarColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl errorBarColor( java.lang.String color, java.lang.Object... keys ) {
+    @Override public  FigureImpl errorBarColor( java.lang.String errorBarColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).errorBarColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).errorBarColor( errorBarColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( java.lang.String color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl errorBarColor( java.lang.String errorBarColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3232,28 +3268,28 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl gradientVisible( boolean visible ) {
+    @Override public  FigureImpl gradientVisible( boolean gradientVisible ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).gradientVisible( visible);
+            DataSeries result = ((DataSeries) series).gradientVisible( gradientVisible);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).gradientVisible(visible, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).gradientVisible(gradientVisible, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl gradientVisible( boolean visible )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl gradientVisible( boolean gradientVisible )'", figure);
         }
     }
 
-    @Override public  FigureImpl gradientVisible( boolean visible, java.lang.Object... keys ) {
+    @Override public  FigureImpl gradientVisible( boolean gradientVisible, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).gradientVisible( visible, keys);
+            MultiSeries result = ((MultiSeries) series).gradientVisible( gradientVisible, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl gradientVisible( boolean visible, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl gradientVisible( boolean gradientVisible, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3271,14 +3307,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl group( int group, java.lang.Object... keys ) {
+    @Override public  FigureImpl group( int group, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).group( group, keys);
+            MultiSeries result = ((MultiSeries) series).group( group, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl group( int group, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl group( int group, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3296,14 +3332,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl lineColor( int color, java.lang.Object... keys ) {
+    @Override public  FigureImpl lineColor( int color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).lineColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).lineColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( int color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( int color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3321,14 +3357,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl lineColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys ) {
+    @Override public  FigureImpl lineColor( io.deephaven.gui.color.Paint color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).lineColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).lineColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( io.deephaven.gui.color.Paint color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3346,39 +3382,39 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl lineColor( java.lang.String color, java.lang.Object... keys ) {
+    @Override public  FigureImpl lineColor( java.lang.String color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).lineColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).lineColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( java.lang.String color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineColor( java.lang.String color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style ) {
+    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).lineStyle( style);
+            DataSeries result = ((DataSeries) series).lineStyle( lineStyle);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).lineStyle(style, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).lineStyle(lineStyle, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle )'", figure);
         }
     }
 
-    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style, java.lang.Object... keys ) {
+    @Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).lineStyle( style, keys);
+            MultiSeries result = ((MultiSeries) series).lineStyle( lineStyle, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle style, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl lineStyle( io.deephaven.plot.LineStyle lineStyle, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3396,389 +3432,389 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl linesVisible( java.lang.Boolean visible, java.lang.Object... keys ) {
+    @Override public  FigureImpl linesVisible( java.lang.Boolean visible, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).linesVisible( visible, keys);
+            MultiSeries result = ((MultiSeries) series).linesVisible( visible, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl linesVisible( java.lang.Boolean visible, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl linesVisible( java.lang.Boolean visible, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl piePercentLabelFormat( java.lang.String format ) {
+    @Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).piePercentLabelFormat( format);
+            CategoryDataSeries result = ((CategoryDataSeries) series).piePercentLabelFormat( pieLabelFormat);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).piePercentLabelFormat(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).piePercentLabelFormat(pieLabelFormat, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat )'", figure);
         }
     }
 
-    @Override public  FigureImpl piePercentLabelFormat( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).piePercentLabelFormat( format, keys);
+            MultiSeries result = ((MultiSeries) series).piePercentLabelFormat( pieLabelFormat, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl piePercentLabelFormat( java.lang.String pieLabelFormat, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( int color ) {
+    @Override public  FigureImpl pointColor( int pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointColor( color);
+            DataSeries result = ((DataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( int color, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( int pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( int... colors ) {
+    @Override public  FigureImpl pointColor( int... pointColors ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( colors);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( pointColors);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int... colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int... pointColors )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( int[] colors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( int[] pointColors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int[] colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( int[] pointColors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( t, columnName);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(t, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( t, columnName, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( t, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( t, category, pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(t, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(t, category, pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( t, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( t, category, pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint color ) {
+    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof XYDataSeries){
+            XYDataSeries result = ((XYDataSeries) series).pointColor( t, pointColors);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointColor(t, pointColors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointColor( t, pointColors, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.engine.table.Table t, java.lang.String pointColors, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointColor( color);
+            DataSeries result = ((DataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint... colors ) {
+    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint... pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( colors);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint... colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint... pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint[] colors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint[] pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint[] colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.gui.color.Paint[] pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof CategoryDataSeries){
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( sds, category, pointColor);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointColor(sds, category, pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointColor( sds, category, pointColor, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointColor, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( sds, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( sds, pointColors);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(sds, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(sds, pointColors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( sds, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( sds, pointColors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointColors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, int pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( sds, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(sds, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(category, pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, int pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, int pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( sds, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( category, pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, int pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, int color ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, color);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(category, color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(category, pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, int color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, int color, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( category, color, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( category, pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, int color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, color);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(category, color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(category, pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( category, color, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( category, pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, io.deephaven.gui.color.Paint color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String color ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( category, color);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(category, color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String color )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String color, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( category, color, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Comparable category, java.lang.String color, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointColor( java.lang.Integer... colors ) {
+    @Override public  FigureImpl pointColor( java.lang.Integer... pointColors ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( colors);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( pointColors);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Integer... colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Integer... pointColors )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.Integer[] colors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.Integer[] pointColors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Integer[] colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.Integer[] pointColors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.String color ) {
+    @Override public  FigureImpl pointColor( java.lang.String pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointColor( color);
+            DataSeries result = ((DataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(color, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String color )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String pointColor )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.String color, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.String pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.String... colors ) {
+    @Override public  FigureImpl pointColor( java.lang.String... pointColors ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( colors);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( pointColors);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String... colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String... pointColors )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointColor( java.lang.String[] colors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColor( java.lang.String[] pointColors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String[] colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColor( java.lang.String[] pointColors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -3796,931 +3832,931 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointColorInteger( io.deephaven.plot.datasets.data.IndexableData<java.lang.Integer> colors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointLabel( t, columnName);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(t, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( t, columnName, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( t, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( t, category, pointLabel);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(t, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(t, category, pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( t, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( t, category, pointLabel, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointLabel, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointLabel( labels);
+            XYDataSeries result = ((XYDataSeries) series).pointLabel( t, pointLabel);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(labels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(t, pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( labels, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( t, pointLabel, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> labels, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.engine.table.Table t, java.lang.String pointLabel, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointLabel( sds, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointLabel( pointLabels);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(sds, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( sds, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabels, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.datasets.data.IndexableData<?> pointLabels, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( sds, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( sds, category, pointLabel);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(sds, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(sds, category, pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( sds, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( sds, category, pointLabel, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointLabel, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object label ) {
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof XYDataSeries){
+            XYDataSeries result = ((XYDataSeries) series).pointLabel( sds, pointLabel);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointLabel(sds, pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointLabel( sds, pointLabel, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointLabel, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object pointLabel ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( category, label);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( category, pointLabel);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(category, label, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(category, pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object label )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object pointLabel )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object label, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object pointLabel, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( category, label, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( category, pointLabel, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object label, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Comparable category, java.lang.Object pointLabel, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Object label ) {
+    @Override public  FigureImpl pointLabel( java.lang.Object pointLabel ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointLabel( label);
+            DataSeries result = ((DataSeries) series).pointLabel( pointLabel);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(label, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabel, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object label )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object pointLabel )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Object label, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( java.lang.Object pointLabel, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( label, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabel, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object label, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object pointLabel, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Object... labels ) {
+    @Override public  FigureImpl pointLabel( java.lang.Object... pointLabels ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointLabel( labels);
+            XYDataSeries result = ((XYDataSeries) series).pointLabel( pointLabels);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(labels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object... labels )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object... pointLabels )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabel( java.lang.Object[] labels, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabel( java.lang.Object[] pointLabels, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( labels, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabels, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object[] labels, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabel( java.lang.Object[] pointLabels, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabelFormat( java.lang.String format ) {
+    @Override public  FigureImpl pointLabelFormat( java.lang.String pointLabelFormat ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointLabelFormat( format);
+            DataSeries result = ((DataSeries) series).pointLabelFormat( pointLabelFormat);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabelFormat(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabelFormat(pointLabelFormat, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabelFormat( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabelFormat( java.lang.String pointLabelFormat )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointLabelFormat( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointLabelFormat( java.lang.String pointLabelFormat, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabelFormat( format, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabelFormat( pointLabelFormat, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabelFormat( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointLabelFormat( java.lang.String pointLabelFormat, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> shapes ) {
+    @Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( shapes);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> pointShapes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> shapes, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( groovy.lang.Closure<java.lang.String> pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName ) {
+    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof CategoryDataSeries){
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( t, category, pointShape);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointShape(t, category, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointShape( t, category, pointShape, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointShape( t, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointShape( t, pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(t, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(t, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( t, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( t, pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( t, keyColumn, valueColumn);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(t, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( t, keyColumn, valueColumn, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape shape ) {
+    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointShape( shape);
+            DataSeries result = ((DataSeries) series).pointShape( pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape shape )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape shape, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shape, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape shape, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape... shapes ) {
+    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape... pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointShape( shapes);
+            XYDataSeries result = ((XYDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape... shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape... pointShapes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape[] shapes, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape[] pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape[] shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.gui.shape.Shape[] pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes ) {
+    @Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointShape( shapes);
+            XYDataSeries result = ((XYDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.datasets.data.IndexableData<java.lang.String> pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof CategoryDataSeries){
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( sds, category, pointShape);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointShape(sds, category, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointShape( sds, category, pointShape, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointShape( sds, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointShape( sds, pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(sds, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(sds, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( sds, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( sds, pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( sds, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( category, pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(sds, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(category, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( sds, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( category, pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape ) {
+    @Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( category, shape);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( category, pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(category, shape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(category, pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( category, shape, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( category, pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, io.deephaven.gui.shape.Shape shape, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String shape ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( category, shape);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(category, shape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String shape )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String shape, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( category, shape, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.Comparable category, java.lang.String shape, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointShape( java.lang.String shape ) {
+    @Override public  FigureImpl pointShape( java.lang.String pointShape ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointShape( shape);
+            DataSeries result = ((DataSeries) series).pointShape( pointShape);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShape, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String shape )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String pointShape )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.String shape, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( java.lang.String pointShape, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shape, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShape, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String shape, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String pointShape, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.String... shapes ) {
+    @Override public  FigureImpl pointShape( java.lang.String... pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointShape( shapes);
+            XYDataSeries result = ((XYDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String... shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String... pointShapes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.lang.String[] shapes, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( java.lang.String[] pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String[] shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.lang.String[] pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes ) {
+    @Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( shapes);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointShape( java.util.function.Function<java.lang.Comparable, java.lang.String> pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( double factor ) {
+    @Override public  FigureImpl pointSize( double pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointSize( factor);
+            DataSeries result = ((DataSeries) series).pointSize( pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( double... factors ) {
+    @Override public  FigureImpl pointSize( double... pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( factors);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double... factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double... pointSizes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( double[] factors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( double[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( double[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( int factor ) {
+    @Override public  FigureImpl pointSize( int pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointSize( factor);
+            DataSeries result = ((DataSeries) series).pointSize( pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( int... factors ) {
+    @Override public  FigureImpl pointSize( int... pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( factors);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int... factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int... pointSizes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( int[] factors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( int[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( int[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName ) {
+    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof CategoryDataSeries){
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( t, category, pointSize);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointSize(t, category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointSize( t, category, pointSize, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String category, java.lang.String pointSize, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( t, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( t, pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(t, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(t, pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( t, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( t, pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( t, keyColumn, valueColumn);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(t, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( t, keyColumn, valueColumn, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.engine.table.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors ) {
+    @Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( factors);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.datasets.data.IndexableData<java.lang.Double> pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName ) {
+    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof CategoryDataSeries){
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( sds, category, pointSize);
+            return make((DataSeriesInternal)result);
+        } else if(series instanceof MultiSeries) {
+                final MultiSeries result = ((MultiSeries) series).pointSize(sds, category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                return make((SeriesInternal) result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize, java.lang.Object... multiSeriesKey ) {
+        final BaseFigureImpl fc = this.figure.copy();
+        Series series = series(fc);
+        if( series instanceof MultiSeries){
+            MultiSeries result = ((MultiSeries) series).pointSize( sds, category, pointSize, multiSeriesKey);
+            return make((SeriesInternal)result);
+        } else {
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String category, java.lang.String pointSize, java.lang.Object... multiSeriesKey )'", figure);
+        }
+    }
+
+    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( sds, columnName);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( sds, pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(sds, columnName, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(sds, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( sds, columnName, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( sds, pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String columnName, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, double pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( sds, keyColumn, valueColumn);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(sds, keyColumn, valueColumn, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, double pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, double pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( sds, keyColumn, valueColumn, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( category, pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( io.deephaven.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, double pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, double factor ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, int pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, factor);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(category, factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, double factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, int pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, double factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, int pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( category, factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( category, pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, double factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, int pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, int factor ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, factor);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(category, factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, int factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, int factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( category, factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( category, pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, int factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number factor ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, long pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, factor);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(category, factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(category, pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, long pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( java.lang.Comparable category, long pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( category, factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( category, pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, java.lang.Number factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, long pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, long factor ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( category, factor);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(category, factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, long factor )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointSize( java.lang.Comparable category, long factor, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( category, factor, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Comparable category, long factor, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public  FigureImpl pointSize( java.lang.Number factor ) {
+    @Override public  FigureImpl pointSize( java.lang.Number pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointSize( factor);
+            DataSeries result = ((DataSeries) series).pointSize( pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Number factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Number pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( java.lang.Number factor, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( java.lang.Number pointSize, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factor, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSize, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Number factor, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( java.lang.Number pointSize, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( long factor ) {
+    @Override public  FigureImpl pointSize( long pointSize ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointSize( factor);
+            DataSeries result = ((DataSeries) series).pointSize( pointSize);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSize, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long factor )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long pointSize )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( long... factors ) {
+    @Override public  FigureImpl pointSize( long... pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( factors);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long... factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long... pointSizes )'", figure);
         }
     }
 
-    @Override public  FigureImpl pointSize( long[] factors, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointSize( long[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointSize( long[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4738,14 +4774,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... keys ) {
+    @Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointsVisible( visible, keys);
+            MultiSeries result = ((MultiSeries) series).pointsVisible( visible, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4763,14 +4799,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl seriesColor( int color, java.lang.Object... keys ) {
+    @Override public  FigureImpl seriesColor( int color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).seriesColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).seriesColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( int color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( int color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4788,14 +4824,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl seriesColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys ) {
+    @Override public  FigureImpl seriesColor( io.deephaven.gui.color.Paint color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).seriesColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).seriesColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( io.deephaven.gui.color.Paint color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( io.deephaven.gui.color.Paint color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4813,14 +4849,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl seriesColor( java.lang.String color, java.lang.Object... keys ) {
+    @Override public  FigureImpl seriesColor( java.lang.String color, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).seriesColor( color, keys);
+            MultiSeries result = ((MultiSeries) series).seriesColor( color, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( java.lang.String color, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl seriesColor( java.lang.String color, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4846,103 +4882,103 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public  FigureImpl toolTipPattern( java.lang.String format ) {
+    @Override public  FigureImpl toolTipPattern( java.lang.String toolTipPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).toolTipPattern( format);
+            DataSeries result = ((DataSeries) series).toolTipPattern( toolTipPattern);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).toolTipPattern(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).toolTipPattern(toolTipPattern, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl toolTipPattern( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl toolTipPattern( java.lang.String toolTipPattern )'", figure);
         }
     }
 
-    @Override public  FigureImpl toolTipPattern( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl toolTipPattern( java.lang.String toolTipPattern, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).toolTipPattern( format, keys);
+            MultiSeries result = ((MultiSeries) series).toolTipPattern( toolTipPattern, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl toolTipPattern( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl toolTipPattern( java.lang.String toolTipPattern, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl xToolTipPattern( java.lang.String format ) {
+    @Override public  FigureImpl xToolTipPattern( java.lang.String xToolTipPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).xToolTipPattern( format);
+            DataSeries result = ((DataSeries) series).xToolTipPattern( xToolTipPattern);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).xToolTipPattern(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).xToolTipPattern(xToolTipPattern, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl xToolTipPattern( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl xToolTipPattern( java.lang.String xToolTipPattern )'", figure);
         }
     }
 
-    @Override public  FigureImpl xToolTipPattern( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl xToolTipPattern( java.lang.String xToolTipPattern, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).xToolTipPattern( format, keys);
+            MultiSeries result = ((MultiSeries) series).xToolTipPattern( xToolTipPattern, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl xToolTipPattern( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl xToolTipPattern( java.lang.String xToolTipPattern, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public  FigureImpl yToolTipPattern( java.lang.String format ) {
+    @Override public  FigureImpl yToolTipPattern( java.lang.String yToolTipPattern ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).yToolTipPattern( format);
+            DataSeries result = ((DataSeries) series).yToolTipPattern( yToolTipPattern);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).yToolTipPattern(format, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).yToolTipPattern(yToolTipPattern, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl yToolTipPattern( java.lang.String format )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl yToolTipPattern( java.lang.String yToolTipPattern )'", figure);
         }
     }
 
-    @Override public  FigureImpl yToolTipPattern( java.lang.String format, java.lang.Object... keys ) {
+    @Override public  FigureImpl yToolTipPattern( java.lang.String yToolTipPattern, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).yToolTipPattern( format, keys);
+            MultiSeries result = ((MultiSeries) series).yToolTipPattern( yToolTipPattern, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl yToolTipPattern( java.lang.String format, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public  FigureImpl yToolTipPattern( java.lang.String yToolTipPattern, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> colors ) {
+    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( colors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> pointColor )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.Map<CATEGORY, COLOR> pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -4960,239 +4996,239 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.Map<CATEGORY, COLOR> colors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> labels ) {
+    @Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( labels);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( pointLabels);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(labels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> labels )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> labels, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( labels, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabels, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> labels, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,LABEL> FigureImpl pointLabel( java.util.Map<CATEGORY, LABEL> pointLabels, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] factors ) {
+    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(categories, factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(categories, pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] pointSizes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] factors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( categories, factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( categories, pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( CATEGORY[] categories, NUMBER[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> factors ) {
+    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> factors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable,NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.Map<CATEGORY, NUMBER> pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> shapes ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( shapes);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointShape( pointShapes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointShape(shapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointShape(pointShapes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> shapes )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> shapes, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointShape( shapes, keys);
+            MultiSeries result = ((MultiSeries) series).pointShape( pointShapes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> shapes, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointShape( java.util.Map<CATEGORY, java.lang.String> pointShapes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] factors ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(categories, factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(categories, pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] pointSizes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] factors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( categories, factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( categories, pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, double[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] factors ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(categories, factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(categories, pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] pointSizes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] factors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( categories, factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( categories, pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, int[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] factors ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( categories, pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(categories, factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(categories, pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] pointSizes )'", figure);
         }
     }
 
-    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] factors, java.lang.Object... keys ) {
+    @Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( categories, factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( categories, pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <CATEGORY extends java.lang.Comparable> FigureImpl pointSize( CATEGORY[] categories, long[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> colors ) {
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( colors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> pointColor )'", figure);
         }
     }
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> colors, java.lang.Object... keys ) {
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( groovy.lang.Closure<COLOR> pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors ) {
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( colors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor )'", figure);
         }
     }
 
-    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys ) {
+    @Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends io.deephaven.gui.color.Paint> FigureImpl pointColor( java.util.function.Function<java.lang.Comparable, COLOR> pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -5210,14 +5246,14 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( groovy.lang.Closure<COLOR> colors, java.lang.Object... keys ) {
+    @Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( groovy.lang.Closure<COLOR> colors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( groovy.lang.Closure<COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( groovy.lang.Closure<COLOR> colors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
@@ -5235,239 +5271,164 @@ public class FigureImpl implements io.deephaven.plot.Figure {
         }
     }
 
-    @Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys ) {
+    @Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColorInteger( colors, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <COLOR extends java.lang.Integer> FigureImpl pointColorInteger( java.util.function.Function<java.lang.Comparable, COLOR> colors, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> labels ) {
+    @Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> pointLabels ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( labels);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( pointLabels);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(labels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> labels )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> pointLabels )'", figure);
         }
     }
 
-    @Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> labels, java.lang.Object... keys ) {
+    @Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> pointLabels, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( labels, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabels, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> labels, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( groovy.lang.Closure<LABEL> pointLabels, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels ) {
+    @Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( labels);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointLabel( pointLabels);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointLabel(labels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointLabel(pointLabels, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels )'", figure);
         }
     }
 
-    @Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels, java.lang.Object... keys ) {
+    @Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointLabel( labels, keys);
+            MultiSeries result = ((MultiSeries) series).pointLabel( pointLabels, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> labels, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <LABEL> FigureImpl pointLabel( java.util.function.Function<java.lang.Comparable, LABEL> pointLabels, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> factors ) {
+    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> pointSizes )'", figure);
         }
     }
 
-    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> factors, java.lang.Object... keys ) {
+    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( groovy.lang.Closure<NUMBER> pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors ) {
+    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( factors);
+            CategoryDataSeries result = ((CategoryDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes )'", figure);
         }
     }
 
-    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors, java.lang.Object... keys ) {
+    @Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <NUMBER extends java.lang.Number> FigureImpl pointSize( java.util.function.Function<java.lang.Comparable, NUMBER> pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors ) {
+    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointColor( colors);
+            XYDataSeries result = ((XYDataSeries) series).pointColor( pointColor);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColor(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointColor(pointColor, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor )'", figure);
         }
     }
 
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors, java.lang.Object... keys ) {
+    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColor( colors, keys);
+            MultiSeries result = ((MultiSeries) series).pointColor( pointColor, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> colors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColor( io.deephaven.plot.datasets.data.IndexableData<T> pointColor, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( groovy.lang.Closure<T> colors ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointColorByY( colors);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColorByY(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( groovy.lang.Closure<T> colors )'", figure);
-        }
-    }
-
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( groovy.lang.Closure<T> colors, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorByY( colors, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( groovy.lang.Closure<T> colors, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.Map<java.lang.Double, T> colors ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof CategoryDataSeries){
-            CategoryDataSeries result = ((CategoryDataSeries) series).pointColorByY( colors);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColorByY(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.Map<java.lang.Double, T> colors )'", figure);
-        }
-    }
-
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.Map<java.lang.Double, T> colors, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorByY( colors, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.Map<java.lang.Double, T> colors, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.function.Function<java.lang.Double, T> colors ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof DataSeries){
-            DataSeries result = ((DataSeries) series).pointColorByY( colors);
-            return make((DataSeriesInternal)result);
-        } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointColorByY(colors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                return make((SeriesInternal) result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.function.Function<java.lang.Double, T> colors )'", figure);
-        }
-    }
-
-    @Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.function.Function<java.lang.Double, T> colors, java.lang.Object... keys ) {
-        final BaseFigureImpl fc = this.figure.copy();
-        Series series = series(fc);
-        if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointColorByY( colors, keys);
-            return make((SeriesInternal)result);
-        } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends io.deephaven.gui.color.Paint> FigureImpl pointColorByY( java.util.function.Function<java.lang.Double, T> colors, java.lang.Object... keys )'", figure);
-        }
-    }
-
-    @Override public <T extends java.lang.Number> FigureImpl pointSize( T[] factors ) {
+    @Override public <T extends java.lang.Number> FigureImpl pointSize( T[] pointSizes ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof XYDataSeries){
-            XYDataSeries result = ((XYDataSeries) series).pointSize( factors);
+            XYDataSeries result = ((XYDataSeries) series).pointSize( pointSizes);
             return make((DataSeriesInternal)result);
         } else if(series instanceof MultiSeries) {
-                final MultiSeries result = ((MultiSeries) series).pointSize(factors, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                final MultiSeries result = ((MultiSeries) series).pointSize(pointSizes, io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 return make((SeriesInternal) result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends java.lang.Number> FigureImpl pointSize( T[] factors )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends java.lang.Number> FigureImpl pointSize( T[] pointSizes )'", figure);
         }
     }
 
-    @Override public <T extends java.lang.Number> FigureImpl pointSize( T[] factors, java.lang.Object... keys ) {
+    @Override public <T extends java.lang.Number> FigureImpl pointSize( T[] pointSizes, java.lang.Object... multiSeriesKey ) {
         final BaseFigureImpl fc = this.figure.copy();
         Series series = series(fc);
         if( series instanceof MultiSeries){
-            MultiSeries result = ((MultiSeries) series).pointSize( factors, keys);
+            MultiSeries result = ((MultiSeries) series).pointSize( pointSizes, multiSeriesKey);
             return make((SeriesInternal)result);
         } else {
-            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends java.lang.Number> FigureImpl pointSize( T[] factors, java.lang.Object... keys )'", figure);
+            throw new PlotUnsupportedOperationException("Series type does not support this method.  seriesType=" + series.getClass() + " method='@Override public <T extends java.lang.Number> FigureImpl pointSize( T[] pointSizes, java.lang.Object... multiSeriesKey )'", figure);
         }
     }
 

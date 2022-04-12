@@ -7,13 +7,10 @@ import io.deephaven.util.annotations.VisibleForTesting;
 /**
  * Repository for constants used by {@link ChunkPool} implementations.
  */
-final class ChunkPoolConstants {
+public final class ChunkPoolConstants {
 
     static final int SMALLEST_POOLED_CHUNK_LOG2_CAPACITY = 5;
-    // NB: It's probably best for this to allow Barrage delta chunks to be poolable. See
-    // BarrageMessageProducer.DELTA_CHUNK_SIZE.
-    @VisibleForTesting
-    static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
+    public static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
     static final int NUM_POOLED_CHUNK_CAPACITIES =
             LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
 

@@ -25,11 +25,11 @@ def normalize_version(version):
 __deephaven_version__ = os.environ['DEEPHAVEN_VERSION']
 __normalized_version__ = normalize_version(__deephaven_version__)
 
-setup(name='deephaven2',
+setup(name='deephaven',
       version=__normalized_version__,
       description='Deephaven Engine Python Package',
       long_description=README,
-      packages=find_namespace_packages(exclude=("tests",)),
+      packages=find_namespace_packages(exclude=("tests", "tests.*", "integration-tests", "test_helper")),
       url='https://deephaven.io/',
       author='Deephaven Data Labs',
       author_email='python@deephaven.io',

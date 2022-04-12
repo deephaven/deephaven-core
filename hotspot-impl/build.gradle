@@ -1,0 +1,16 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+description 'Implementation for the HotSpot service to obtain JVM instrospection data.'
+
+dependencies {
+    implementation project(':hotspot')
+    Classpaths.inheritAutoService(project)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+    // Explicitly set the source compatibility so gradle will invoke javac with `-source 11` instead of `--release`
+    sourceCompatibility = 11
+}

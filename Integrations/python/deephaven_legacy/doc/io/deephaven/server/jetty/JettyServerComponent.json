@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.jetty.JettyServerComponent",
+ "methods": {},
+ "path": "io.deephaven.server.jetty.JettyServerComponent",
+ "typeName": "interface"
+}

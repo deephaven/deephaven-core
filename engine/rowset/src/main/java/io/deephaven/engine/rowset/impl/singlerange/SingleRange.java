@@ -204,6 +204,15 @@ public abstract class SingleRange implements OrderedLongSet {
         return OrderedLongSet.twoRanges(rangeStart(), key - 1, key + 1, rangeEnd());
     }
 
+    private static long addSaturated(final long x, final long y) {
+        // we know x >= 0, y >= 0.
+        final long res = x + y;
+        if (res < 0) {
+            return Long.MAX_VALUE;
+        }
+        return res;
+    }
+
     @Override
     public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
         final long endPos = endPosExclusive - 1; // make inclusive.
@@ -219,8 +228,8 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixCowRef();
         }
         return make(
-                Math.max(rangeStart() + startPos, rangeStart()),
-                Math.min(rangeStart() + endPos, rangeEnd()));
+                rangeStart() + startPos, // cannot overflow given previous checks: startPos < cardinality
+                Math.min(addSaturated(rangeStart(), endPos), rangeEnd()));
     }
 
     @Override

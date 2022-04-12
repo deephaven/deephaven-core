@@ -9,7 +9,7 @@
 import sys
 import jpy
 
-from deephaven import TableTools, Aggregation
+from deephaven_legacy import TableTools, Aggregation
 
 _JArrayList = jpy.get_type("java.util.ArrayList")
 

@@ -40,7 +40,7 @@ public class CdcTools {
      * instance, if the parent field is called "after", and the nested field separator is ".", this constant should be
      * "after."
      */
-    public static final String CDC_AFTER_COLUMN_PREFIX = "after" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR;
+    public static final String CDC_AFTER_COLUMN_PREFIX = "after" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR;
     /**
      * The name of the sub-field in the Value field that indicates the type of operation that triggered the CDC event
      * (eg, insert, delete).
@@ -55,7 +55,7 @@ public class CdcTools {
      * Users specify CDC streams via objects satisfying this interface; the objects are created with static factory
      * methods, the classes implementing this interface are opaque from a user perspective.
      */
-    private interface CdcSpec {
+    public interface CdcSpec {
         /**
          * @return CDC stream kafka topic
          */

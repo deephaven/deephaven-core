@@ -24,9 +24,6 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plus;
-
 /**
  * <p>
  * This tool is meant to track periodic update events that take place in an {@link UpdateGraphProcessor}. This generally

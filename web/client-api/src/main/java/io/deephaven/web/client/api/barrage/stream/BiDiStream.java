@@ -47,13 +47,15 @@ public abstract class BiDiStream<Req, Resp> {
         public BiDiStream<ReqT, RespT> create(
                 BiDiStreamFactory bidirectionalStream,
                 OpenStreamFactory<ReqT> openEmulatedStream,
-                NextStreamMessageFactory<ReqT> nextEmulatedStream) {
+                NextStreamMessageFactory<ReqT> nextEmulatedStream,
+                ReqT emptyReq) {
             if (useWebsocket) {
                 return websocket(bidirectionalStream.openBiDiStream(headers.get()));
             } else {
                 return new EmulatedBiDiStream<>(
                         openEmulatedStream,
                         nextEmulatedStream,
+                        emptyReq,
                         nextIntTicket.getAsInt(),
                         headers);
             }
@@ -64,6 +66,7 @@ public abstract class BiDiStream<Req, Resp> {
             BiDiStreamFactory bidirectionalStream,
             OpenStreamFactory<Req> openEmulatedStream,
             NextStreamMessageFactory<Req> nextEmulatedStream,
+            Req emptyReq,
             Supplier<BrowserHeaders> headers,
             IntSupplier nextIntTicket,
             boolean useWebsocket) {
@@ -73,6 +76,7 @@ public abstract class BiDiStream<Req, Resp> {
             return new EmulatedBiDiStream<>(
                     openEmulatedStream,
                     nextEmulatedStream,
+                    emptyReq,
                     nextIntTicket.getAsInt(),
                     headers);
         }
@@ -101,9 +105,9 @@ public abstract class BiDiStream<Req, Resp> {
 
             native void end();
 
-            native WebsocketBiDiStream<ReqT, ResT> on(String type, Function handler);
+            native BidirectionalStreamWrapper<ReqT, ResT> on(String type, Function handler);
 
-            native WebsocketBiDiStream<ReqT, ResT> write(ReqT message);
+            native BidirectionalStreamWrapper<ReqT, ResT> write(ReqT message);
         }
 
         private final BidirectionalStreamWrapper<T, U> wrapped;
@@ -146,6 +150,7 @@ public abstract class BiDiStream<Req, Resp> {
     static class EmulatedBiDiStream<T, U> extends BiDiStream<T, U> {
         private final JsFunction<T, ResponseStreamWrapper<U>> responseStreamFactory;
         private final JsArray<JsConsumer<ResponseStreamWrapper<U>>> pending = new JsArray<>();
+        private final T emptyReq;
         private final int intTicket;
 
         private ResponseStreamWrapper<U> responseStream;
@@ -155,10 +160,12 @@ public abstract class BiDiStream<Req, Resp> {
         private int nextSeq = 0;
 
         EmulatedBiDiStream(OpenStreamFactory<T> responseStreamFactory, NextStreamMessageFactory<T> nextWrapper,
+                T emptyReq,
                 int intTicket, Supplier<BrowserHeaders> headers) {
             this.responseStreamFactory =
                     firstReq -> ResponseStreamWrapper.of(responseStreamFactory.openStream(firstReq, makeHeaders()));
             this.nextWrapper = nextWrapper;
+            this.emptyReq = emptyReq;
             this.intTicket = intTicket;
             this.headers = headers;
         }
@@ -203,7 +210,7 @@ public abstract class BiDiStream<Req, Resp> {
             BrowserHeaders nextHeaders = makeHeaders();
             nextHeaders.set("x-deephaven-stream-halfclose", "1");
             // TODO #730 handle failure of this call
-            nextWrapper.nextStreamMessage(Js.uncheckedCast(new Ticket()), nextHeaders, (failure, success) -> {
+            nextWrapper.nextStreamMessage(emptyReq, nextHeaders, (failure, success) -> {
             });
         }
 

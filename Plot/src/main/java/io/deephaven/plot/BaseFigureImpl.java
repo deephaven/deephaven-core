@@ -229,9 +229,9 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
 
     @Override
-    public BaseFigureImpl figureRemoveSeries(final String... names) {
+    public BaseFigureImpl figureRemoveSeries(final String... removeSeriesNames) {
         for (Chart chart : charts.getCharts()) {
-            chart.chartRemoveSeries(names);
+            chart.chartRemoveSeries(removeSeriesNames);
         }
 
         return this;
@@ -362,17 +362,17 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     @Override
-    public BaseFigureImpl removeChart(final int index) {
-        return removeChart(toCoordinate(index, 0), toCoordinate(index, 1));
+    public BaseFigureImpl removeChart(final int removeChartIndex) {
+        return removeChart(toCoordinate(removeChartIndex, 0), toCoordinate(removeChartIndex, 1));
     }
 
     @Override
-    public BaseFigureImpl removeChart(final int rowNum, final int colNum) {
+    public BaseFigureImpl removeChart(final int removeChartRowNum, final int removeChartColNum) {
         if (charts == null) {
             throw new PlotIllegalArgumentException("No charts created yet.", this);
         }
 
-        charts.removeChart(rowNum, colNum);
+        charts.removeChart(removeChartRowNum, removeChartColNum);
         return this;
     }
 

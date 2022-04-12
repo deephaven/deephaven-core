@@ -26,18 +26,18 @@ public interface Axis extends Serializable {
     /**
      * Sets the {@link AxisFormat} for this Axis.
      *
-     * @param format axis format
+     * @param axisFormat axis format
      * @return this Axis
      */
-    Axis axisFormat(final AxisFormat format);
+    Axis axisFormat(final AxisFormat axisFormat);
 
     /**
      * Sets the format pattern for this Axis's labels.
      *
-     * @param pattern axis format pattern
+     * @param axisFormatPattern axis format pattern
      * @return this Axis
      */
-    Axis axisFormatPattern(final String pattern);
+    Axis axisFormatPattern(final String axisFormatPattern);
 
 
     ////////////////////////// axis colors //////////////////////////
@@ -127,6 +127,14 @@ public interface Axis extends Serializable {
     Axis log();
 
     /**
+     * Sets the AxisTransform as log base 10.
+     *
+     * @param useLog true to use a log axis transform; false to use a linear axis transform.
+     * @return this Axis
+     */
+    Axis log(final boolean useLog);
+
+    /**
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param calendar business calendar of the {@link AxisTransformBusinessCalendar}
@@ -139,12 +147,12 @@ public interface Axis extends Serializable {
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
      *
      * @param sds selectable data set (e.g. OneClick filterable table) containing the business calendar.
-     * @param valueColumn name of a column containing String values, where each value is the name of a
+     * @param calendar name of a column containing String values, where each value is the name of a
      *        {@link BusinessCalendar}.
      * @return this Axis using the business calendar from row 0 of the filtered {@code sds} for the business calendar.
      *         If no value is found, no transform will be applied.
      */
-    Axis businessTime(final SelectableDataSet sds, final String valueColumn);
+    Axis businessTime(final SelectableDataSet sds, final String calendar);
 
     /**
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
@@ -152,6 +160,14 @@ public interface Axis extends Serializable {
      * @return this Axis using the default business calendar.
      */
     Axis businessTime();
+
+    /**
+     * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
+     *
+     * @param useBusinessTime true to use a business time axis transform; false to use a linear axis transform.
+     * @return this Axis using the default business calendar or this Axis using a linear axis transform.
+     */
+    Axis businessTime(boolean useBusinessTime);
 
 
     ////////////////////////// axis rescaling //////////////////////////
@@ -202,19 +218,19 @@ public interface Axis extends Serializable {
      * Sets the minimum range of this Axis.
      *
      * @param sds selectable dataset
-     * @param valueColumn column in {@code sds}, where the minimum value is stored in row 0.
+     * @param min column in {@code sds}, where the minimum value is stored in row 0.
      * @return this Axes
      */
-    Axis min(final SelectableDataSet sds, final String valueColumn);
+    Axis min(final SelectableDataSet sds, final String min);
 
     /**
      * Sets the maximum range of this Axis.
      *
      * @param sds selectable dataset
-     * @param valueColumn column in {@code sds}, where the maximum value is stored in row 0.
+     * @param max column in {@code sds}, where the maximum value is stored in row 0.
      * @return this Axes
      */
-    Axis max(final SelectableDataSet sds, final String valueColumn);
+    Axis max(final SelectableDataSet sds, final String max);
 
 
 
@@ -257,10 +273,10 @@ public interface Axis extends Serializable {
     /**
      * Sets the number of minor ticks between consecutive major ticks. These minor ticks are equally spaced.
      *
-     * @param count number of minor ticks between consecutive major ticks.
+     * @param nminor number of minor ticks between consecutive major ticks.
      * @return this Axis
      */
-    Axis minorTicks(int count);
+    Axis minorTicks(int nminor);
 
     /**
      * Sets the angle the tick labels of this Axis are drawn at.

@@ -117,8 +117,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     return;
                 }
 
-                // override server-supplied data and regenerate local rowsets
-                barrageMessage.rowsAdded = RowSetFactory.flat(barrageMessage.length);
+                final long resultSize = barrageMessage.rowsIncluded.size();
+
+                // override server-supplied data and regenerate flattened rowsets
+                barrageMessage.rowsAdded.close();
+                barrageMessage.rowsIncluded.close();
+                barrageMessage.rowsAdded = RowSetFactory.flat(resultSize);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
 
                 listener.handleBarrageMessage(barrageMessage);
@@ -204,7 +208,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileSealing);
         }
     }
-
 
     @Override
     protected void destroy() {

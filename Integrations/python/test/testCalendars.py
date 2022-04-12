@@ -8,7 +8,7 @@
 
 import sys
 
-import deephaven.Calendars as Calendars
+import deephaven_legacy.Calendars as Calendars
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest

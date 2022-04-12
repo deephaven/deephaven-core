@@ -28,7 +28,8 @@ dependencies {
             project(':engine-stringset'),
             project(':engine-base'),
             project(':deephaven-jpy'),
-            project(':deephaven-jpy-ext')
+            project(':deephaven-jpy-ext'),
+            project(':hotspot')
 
     implementation project(':CompilerTools'),
             project(':DHProcess'),
@@ -51,6 +52,8 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     runtimeOnly project(':engine-tuplesource')
+
+    implementation 'com.google.guava:guava:19.0'
 
     testImplementation TestTools.projectDependency(project, 'Base'),
             TestTools.projectDependency(project, 'Util'),
