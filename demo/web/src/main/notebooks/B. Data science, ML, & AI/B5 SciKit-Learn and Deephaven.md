@@ -55,8 +55,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
-iris_test = iris_test_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris_train = iris_train_raw.update(formulas=["Class = (int)get_class_number(Class)"])
+iris_test = iris_test_raw.update(formulas=["Class = (int)get_class_number(Class)"])
 ```
 \
 \
@@ -145,7 +145,7 @@ def write_to_iris():
         time.sleep(1)
 
 # Use a thread to write data to the table
-thread = threading.Thread(target = write_to_iris)
+thread = threading.Thread(target=write_to_iris)
 thread.start()
 ```
 \

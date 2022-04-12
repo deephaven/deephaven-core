@@ -21,8 +21,6 @@ from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from deephaven import empty_table, merge
 from deephaven import agg as agg
-
-
 ```
 
 \

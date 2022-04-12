@@ -85,8 +85,8 @@ from deephaven import empty_table
 def generate_noisy_signal(x):
     return 3.5 * np.sin(x) + 1.5 * np.sin(2.5 * x) + 0.75 * np.sin(3.5 * x) + np.random.normal()
 
-data_table = empty_table(size = 1000).update(
-    formulas = ["X = 0.01 * i", "Y = (double)generate_noisy_signal(X)"]
+data_table = empty_table(size=1000).update(
+    formulas=["X = 0.01 * i", "Y = (double)generate_noisy_signal(X)"]
 )
 ```
 \

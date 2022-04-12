@@ -94,28 +94,28 @@ You'll often want to perform operations on whole columns. Deephaven has various 
 In this case, we wish to add a column `C` that is equal to column `A` plus 5.
 
 ```python
-added_data_frame = data_frame.assign(C = data_frame['A'] + 5)
+added_data_frame = data_frame.assign(C=data_frame['A'] + 5)
 print(added_data_frame)
 
-added_table = table.update(formulas = ["C = A + 5"])
+added_table = table.update(formulas=["C = A + 5"])
 ```
 
 We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop.html) in Pandas or [`drop_columns`](https://deephaven.io/core/docs/reference/table-operations/select/drop-columns/) in Deephaven.
 
 ```python
-dropped_data_frame = data_frame.drop(columns = ['A'])
+dropped_data_frame = data_frame.drop(columns=['A'])
 print(dropped_data_frame)
 
-dropped_table = table.drop_columns(cols = ["A"])
+dropped_table = table.drop_columns(cols=["A"])
 ```
 
 [Renaming](https://deephaven.io/core/docs/reference/table-operations/select/rename-columns/) columns in a DataFrame or Deephaven table is simple:
 
 ```python
-data_frame.rename(columns={"A": "X", "B": "B"}, inplace = True)
+data_frame.rename(columns={"A": "X", "B": "B"}, inplace=True)
 print(data_frame)
 
-renamed_table = table.rename_columns(cols = ["X = A"])
+renamed_table = table.rename_columns(cols=["X = A"])
 ```
 
 Deephaven offers several types of filters. See our article, [How to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
@@ -150,7 +150,7 @@ We can limit the columns to certain values that match a formula. See our article
 filtered_data_frame = data_frame[data_frame.A < 2]
 print(filtered_data_frame)
 
-filtered_table = table.where(filters = ["A < 2"])
+filtered_table = table.where(filters=["A < 2"])
 ```
 
 
@@ -161,7 +161,7 @@ head_data_frame = data_frame.iloc[:3]
 print(head_data_frame)
 
 
-head_table = table.head(num_rows = 3)
+head_table = table.head(num_rows=3)
 ```
 
 Below, we request the last three rows:
@@ -170,7 +170,7 @@ Below, we request the last three rows:
 tail_data_frame = data_frame.iloc[-3:]
 print(tail_data_frame)
 
-tail_table = table.tail(num_rows = 3)
+tail_table = table.tail(num_rows=3)
 ```
 
 
@@ -203,22 +203,22 @@ table = new_table([
 We can [sort](https://deephaven.io/core/docs/reference/table-operations/sort/sort/) in ascending order on a dataset for a DataFrame or table:
 
 ```python
-sorted_data_frame = data_frame.sort_values(by = 'B')
+sorted_data_frame = data_frame.sort_values(by='B')
 print(sorted_data_frame)
 
 
-sorted_table = table.sort(order_by = ["B"])
+sorted_table = table.sort(order_by=["B"])
 ```
 
 
 We can [sort descending](https://deephaven.io/core/docs/reference/table-operations/sort/sort-descending/) on a dataset for a DataFrame or table:
 
 ```python
-sorted_data_frame = data_frame.sort_values(by = 'B', ascending = False)
+sorted_data_frame = data_frame.sort_values(by='B', ascending=False)
 print(sorted_data_frame)
 
 
-sorted_table = table.sort_descending(order_by = ["B"])
+sorted_table = table.sort_descending(order_by=["B"])
 ```
 
 
@@ -246,7 +246,7 @@ table2 = new_table([
     int_col("A", [3, 4])
 ])
 
-table = merge(tables = [table1, table2])
+table = merge(tables=[table1, table2])
 ```
 
 
@@ -259,9 +259,9 @@ Pandas and Deephaven provide many of the same join methods, but there is not a o
 ```python
 import pandas as pd
 
-data_frameLeft = pd.DataFrame({'A': [1, 2, 3], 'B': ['X', 'Y', 'Z']})
-data_frameRight = pd.DataFrame({'A': [3, 4, 5], 'C': ['L', 'M', 'N']})
-data_frame = pd.merge(data_frameLeft, data_frameRight, on = 'A')
+data_frame_left = pd.DataFrame({'A': [1, 2, 3], 'B': ['X', 'Y', 'Z']})
+data_frame_right = pd.DataFrame({'A': [3, 4, 5], 'C': ['L', 'M', 'N']})
+data_frame = pd.merge(data_frame_left, data_frame_right, on='A')
 
 print(data_frame)
 
@@ -277,7 +277,7 @@ table_right = new_table([
     string_col("C", ["L", "M", "N"])
 ])
 
-table = table_left.join(table = table_right, on = ["A"])
+table = table_left.join(table=table_right, on=["A"])
 ```
 
 
@@ -309,7 +309,7 @@ data_frame_right = pd.DataFrame(
      'C': [random.randint(0, 100) for j in range(0, 1) for i in range(0, 365)]
     })
 
-data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on = 'A')
+data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on='A')
 
 print(data_frame_aj)
 
@@ -324,18 +324,18 @@ start_times = [
     to_datetime("2020-01-01T00:00:02 NY")
 ]
 
-deephaven_table_left = empty_table(size = 365).update(formulas = [
+deephaven_table_left = empty_table(size = 365).update(formulas=[
     "A = plus_period(start_times[0], period(i))",
     "B = random.choice(ch)",
     "C = (int)(byte)random.randint(1, 100)"
 ])
-deephaven_table_right = empty_table(size = 365).update(formulas = [
+deephaven_table_right = empty_table(size = 365).update(formulas=[
     "A = plus_period(start_times[1], period(i))",
     "B = random.choice(ch)",
     "C = (int)(byte)random.randint(1, 100)"
 ])
 
-joined_data_aj = deephaven_table_left.aj(table = deephaven_table_right, on = ["A"], joins = ["B_y = B", "C_y = C"])
+joined_data_aj = deephaven_table_left.aj(table=deephaven_table_right, on=["A"], joins=["B_y = B", "C_y = C"])
 ```
 
 
@@ -399,13 +399,13 @@ table = new_table([
 ])
 
 agg_list = [
-    agg.sum_(cols = ["Sum = C"]),
-    agg.min_(cols = ["Min = C"]),
-    agg.std(cols = ["Std = C"]),
-    agg.weighted_avg(wcol = "B", cols = ["WAvg = C"])
+    agg.sum_(cols=["Sum = C"]),
+    agg.min_(cols=["Min = C"]),
+    agg.std(cols=["Std = C"]),
+    agg.weighted_avg(wcol="B", cols=["WAvg = C"])
 ]
 
-grouped_table = table.agg_by(aggs = agg_list, by = ["A"])
+grouped_table = table.agg_by(aggs=agg_list, by=["A"])
 ```
 
 
@@ -442,17 +442,17 @@ remove_values_data_frame = data_frame.dropna()
 print(remove_values_data_frame)
 
 
-remove_values_table = table.where(filters = ["!isNull(B)"])
+remove_values_table = table.where(filters=["!isNull(B)"])
 ```
 
 Or we can replace the missing values.
 
 ```python
-replace_values_data_frame = data_frame.fillna(value = 0.0)
+replace_values_data_frame = data_frame.fillna(value=0.0)
 print(replace_values_data_frame)
 
 
-replace_values_table = table.update(formulas = ["B = isNull(B) ? 0.0 : B"])
+replace_values_table = table.update(formulas=["B = isNull(B) ? 0.0 : B"])
 ```
 
 The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.

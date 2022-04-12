@@ -31,7 +31,7 @@ We will now import our data into Deephaven as a Pandas DataFrame and as a table.
 
 ```python
 iris_raw = read("/data/examples/Iris/csv/iris.csv")
-raw_iris = to_pandas(table = iris_raw)
+raw_iris = to_pandas(table=iris_raw)
 ```
 \
 \
@@ -58,8 +58,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
-iris_test = iris_test_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris_train = iris_train_raw.update(formulas=["Class = (int)get_class_number(Class)"])
+iris_test = iris_test_raw.update(formulas=["Class = (int)get_class_number(Class)"])
 ```
 \
 \

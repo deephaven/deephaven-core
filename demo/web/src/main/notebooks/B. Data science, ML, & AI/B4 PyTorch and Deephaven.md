@@ -43,7 +43,7 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris = iris_raw.update(formulas = ["Class = (int)get_class_number(Class)"])
+iris = iris_raw.update(formulas=["Class = (int)get_class_number(Class)"])
 ```
 \
 \

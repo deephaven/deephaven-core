@@ -52,7 +52,7 @@ After running this code, the `replayed_result` table begins updating in "real-ti
 
 Deephaven table operations do not discriminate between dynamic or static data; we can apply the same table operations to this table as we would any table.
 
-```
+```python
 from deephaven.replay import TableReplayer
 from deephaven import agg
 
