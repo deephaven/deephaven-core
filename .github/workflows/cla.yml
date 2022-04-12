@@ -30,4 +30,4 @@ jobs:
           remote-repository-name:  cla
           branch: 'main'
           path-to-signatures: 'signatures/version1/cla.json'
-          #allowlist: user1,bot*
+          allowlist: dependabot[bot]
