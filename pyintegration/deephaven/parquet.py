@@ -61,7 +61,7 @@ def _build_parquet_instructions(col_instructions: List[ColumnInstruction] = None
     return builder.build()
 
 
-def read_table(path: str, col_instructions: List[ColumnInstruction] = None, is_legacy_parquet: bool = False) -> Table:
+def read(path: str, col_instructions: List[ColumnInstruction] = None, is_legacy_parquet: bool = False) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
     Args:
@@ -93,7 +93,7 @@ def _j_file_array(paths: List[str]):
     return jpy.array("java.io.File", [_JFile(el) for el in paths])
 
 
-def delete_table(path: str) -> None:
+def delete(path: str) -> None:
     """ Deletes a Parquet table on disk.
 
     Args:
@@ -108,9 +108,9 @@ def delete_table(path: str) -> None:
         raise DHError(e, f"failed to delete a parquet table: {path} on disk.") from e
 
 
-def write_table(table: Table, destination: str, col_definitions: List[Column] = None,
-                col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
-                max_dictionary_keys: int = None) -> None:
+def write(table: Table, destination: str, col_definitions: List[Column] = None,
+          col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
+          max_dictionary_keys: int = None) -> None:
     """ Write a table to a Parquet file.
 
     Args:
@@ -150,9 +150,9 @@ def write_table(table: Table, destination: str, col_definitions: List[Column] = 
         raise DHError(e, "failed to write to parquet data.") from e
 
 
-def write_tables(tables: List[Table], destinations: List[str], col_definitions: List[Column],
-                 col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
-                 max_dictionary_keys: int = None, grouping_cols: List[str] = None):
+def batch_write(tables: List[Table], destinations: List[str], col_definitions: List[Column],
+                col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
+                max_dictionary_keys: int = None, grouping_cols: List[str] = None):
     """ Writes tables to disk in parquet format to a supplied set of destinations.
 
     If you specify grouping columns, there must already be grouping information for those columns in the sources.

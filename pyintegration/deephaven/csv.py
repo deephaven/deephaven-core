@@ -11,6 +11,7 @@ import jpy
 import deephaven.dtypes as dht
 from deephaven import DHError
 from deephaven.table import Table
+from deephaven.constants import MAX_LONG
 
 _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 _JParsers = jpy.get_type("io.deephaven.csv.parsers.Parsers")
@@ -21,6 +22,11 @@ def read(
     path: str,
     header: Dict[str, dht.DType] = None,
     headless: bool = False,
+    skip_rows: int = 0,
+    num_rows: int = MAX_LONG,
+    ignore_empty_lines: bool = False,
+    allow_missing_columns: bool = False,
+    ignore_excess_columns: bool = False,
     delimiter: str = ",",
     quote: str = '"',
     ignore_surrounding_spaces: bool = True,
@@ -31,12 +37,15 @@ def read(
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
+        skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse data in chunks. Defaults to 0
+        num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks. Defaults to {@link Long#MAX_VALUE} 
+        allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if the missing columns contained the empty string. Defaults to false.
+        ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is set, then rows that are too long (that have more columns than the header row) will have those excess columns dropped. Defaults to false.
         headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
-        ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text
-            fields, default is True
-        trim (bool) : indicates whether to trim white space inside a quoted string, default is False
+        ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted text fields, default is True
+        trim (bool): indicates whether to trim white space inside a quoted string, default is False
 
     Returns:
         a table
@@ -66,6 +75,11 @@ def read(
 
         csv_specs = (
             csv_specs_builder.hasHeaderRow(not headless)
+            .skipRows(skip_rows)
+            .numRows(num_rows)
+            .ignoreEmptyLines(ignore_empty_lines)
+            .allowMissingColumns(allow_missing_columns)
+            .ignoreExcessColumns(ignore_excess_columns)
             .delimiter(ord(delimiter))
             .quote(ord(quote))
             .ignoreSurroundingSpaces(ignore_surrounding_spaces)
@@ -95,3 +109,4 @@ def write(table: Table, path: str, cols: List[str] = []) -> None:
         _JCsvTools.writeCsv(table.j_table, False, path, *cols)
     except Exception as e:
         raise DHError(message="write csv failed.") from e
+

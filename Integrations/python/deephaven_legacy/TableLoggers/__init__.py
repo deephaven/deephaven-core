@@ -73,17 +73,6 @@ def processInfoLog():
 
 
 @_passThrough
-def processMemoryLog():
-    """
-    Return a table with process memory utilization and garbage collection data.
-    
-    :return: (io.deephaven.engine.table.impl.QueryTable) A table with memory and GC data.
-    """
-    
-    return _java_type_.processMemoryLog()
-
-
-@_passThrough
 def processMetricsLog():
     """
     Return a table with metrics collected for the current engine process.
@@ -115,6 +104,17 @@ def queryPerformanceLog():
     """
     
     return _java_type_.queryPerformanceLog()
+
+
+@_passThrough
+def serverStateLog():
+    """
+    Return a table with process memory utilization and garbage collection data.
+    
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with memory and GC data.
+    """
+    
+    return _java_type_.serverStateLog()
 
 
 @_passThrough

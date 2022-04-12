@@ -81,6 +81,13 @@ DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime
 Period = DType(j_name="io.deephaven.time.Period")
 PyObject = DType(j_name="org.jpy.PyObject")
 JObject = DType(j_name="java.lang.Object")
+byte_array = DType(j_name='[B')
+short_array = DType(j_name='[S')
+int_array = DType(j_name='[I')
+long_array = DType(j_name='[J')
+float_array = DType(j_name='[S')
+double_array = DType(j_name='[D')
+string_array = DType(j_name='[Ljava.lang.String;')
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:

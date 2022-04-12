@@ -3,6 +3,9 @@
 #
 import unittest
 
+from test_helper import start_jvm
+start_jvm()
+
 from deephaven import empty_table
 from deephaven.html import to_html
 

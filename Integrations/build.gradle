@@ -104,8 +104,6 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-            environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
             workingDir '/python'
@@ -135,8 +133,8 @@ Closure composeConfig = { task ->
 
 def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
 def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest = runInDocker('test-py-deephaven', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
-def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../pyintegration/integration-tests', ['/bin/bash', 'run-tests.sh'], composeConfig)
+def pyTest = runInDocker('test-py-deephaven', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
+def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../pyintegration', ['/bin/bash', '-c', 'PYTHONPATH=/python integration-tests/run-tests.sh'], composeConfig)
 pyTestLegacy.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })

@@ -166,6 +166,21 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return Arrays.stream(destSources).map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
     }
 
+    @VisibleForTesting
+    public RowSet getServerViewport() {
+        return serverViewport;
+    }
+
+    @VisibleForTesting
+    public boolean getServerReverseViewport() {
+        return serverReverseViewport;
+    }
+
+    @VisibleForTesting
+    public BitSet getServerColumns() {
+        return serverColumns;
+    }
+
     /**
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
      *
@@ -217,7 +232,13 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             beginLog(LogLevel.INFO).append(": Processing delta updates ")
                     .append(update.firstSeq).append("-").append(update.lastSeq)
-                    .append(" update=").append(up).endl();
+                    .append(" update=").append(up)
+                    .append(" included=").append(update.rowsIncluded)
+                    .append(" rowset=").append(this.getRowSet())
+                    .append(" isSnapshot=").append(update.isSnapshot)
+                    .append(" snapshotRowSet=").append(update.snapshotRowSet)
+                    .append(" snapshotRowSetIsReversed=").append(update.snapshotRowSetIsReversed)
+                    .endl();
             mods.close();
         }
 

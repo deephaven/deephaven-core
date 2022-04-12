@@ -137,9 +137,11 @@ public class BarrageUtils {
         } else {
             added = new CompressedRangeSetReader()
                     .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsArray()));
-            if (isViewport) {
+
+            Int8Array addedRowsIncluded = barrageUpdate.addedRowsIncludedArray();
+            if (isViewport && addedRowsIncluded != null) {
                 includedAdditions = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsIncludedArray()));
+                        .read(typedArrayToLittleEndianByteBuffer(addedRowsIncluded));
             } else {
                 // if this isn't a viewport, then a second index isn't sent, because all rows are included
                 includedAdditions = added;
@@ -184,9 +186,11 @@ public class BarrageUtils {
                     new ShiftedRangeReader().read(typedArrayToLittleEndianByteBuffer(barrageUpdate.shiftDataArray())));
 
             RangeSet includedAdditions;
-            if (isViewport) {
+
+            Int8Array addedRowsIncluded = barrageUpdate.addedRowsIncludedArray();
+            if (isViewport && addedRowsIncluded != null) {
                 includedAdditions = new CompressedRangeSetReader()
-                        .read(typedArrayToLittleEndianByteBuffer(barrageUpdate.addedRowsIncludedArray()));
+                        .read(typedArrayToLittleEndianByteBuffer(addedRowsIncluded));
             } else {
                 // if this isn't a viewport, then a second index isn't sent, because all rows are included
                 includedAdditions = deltaUpdates.getAdded();

@@ -71,6 +71,21 @@ autodoc_typehints = 'none'
 #########################################################################################################################################################################
 
 import deephaven_legacy
+
+# Turn on jpy so the modern deephaven API can reference Java types.
+# The Deephaven wheel can't be used without the JVM running and the
+# server classpath being present, so we must at least set this much
+# up.
+from glob import glob
+import os
+import jpyutil
+jpyutil.init_jvm(
+    jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
+    jvm_properties={
+        'Configuration.rootFile': os.environ.get('DEEPHAVEN_PROPFILE')
+    }
+)
+
 import deephaven
 import jpy
 docs_title = "Deephaven python modules."

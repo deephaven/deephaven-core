@@ -65,7 +65,7 @@ public class TableLoggers {
      * @return A table with memory and GC data.
      */
     @ScriptApi
-    public static QueryTable processMemoryLog() {
-        return ProcessMemoryTracker.getInstance().getQueryTable();
+    public static QueryTable serverStateLog() {
+        return ServerStateTracker.getInstance().getQueryTable();
     }
 }

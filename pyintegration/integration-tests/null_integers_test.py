@@ -1,6 +1,9 @@
 #
 #   Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+from test_helper import start_jvm
+start_jvm()
+
 from deephaven import empty_table
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE
 

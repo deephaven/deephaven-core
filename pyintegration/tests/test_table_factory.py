@@ -153,6 +153,31 @@ class TableFactoryTestCase(BaseTestCase):
                 table_writer.write_row(10, '10', 10, 10, 10, '10')
             self.assertIn("RuntimeError", cm.exception.root_cause)
 
+    def test_dtw_with_array_types(self):
+        with self.subTest("Array type columns"):
+            col_defs = {
+                "ByteArray": dtypes.byte_array,
+                "ShortArray": dtypes.short_array,
+                "IntArray": dtypes.int_array,
+                "LongArray": dtypes.long_array,
+                "FloatArray": dtypes.float_array,
+                "DoubleArray": dtypes.double_array,
+                "StringArray": dtypes.string_array,
+            }
+            with DynamicTableWriter(col_defs) as table_writer:
+                b_array = dtypes.array(dtypes.byte, [1, 1, 1])
+                s_array = dtypes.array(dtypes.short, [128, 228, 328])
+                i_array = dtypes.array(dtypes.int32, [32768, 42768, 52768])
+                l_array = dtypes.array(dtypes.long, [2**32, 2**33, 2**36])
+                f_array = dtypes.array(dtypes.float32, [1.0, 1.1, 1.2])
+                d_array = dtypes.array(dtypes.double, [1.0/2**32, 1.1/2**33, 1.2/2**36])
+                str_array = dtypes.array(dtypes.string, ["some", "not so random", "text"])
+                table_writer.write_row(b_array, s_array,i_array,l_array,f_array,d_array,str_array
+                                       )
+                t = table_writer.table
+                self.wait_ticking_table_update(t, row_count=1, timeout=5)
+                self.assertNotIn("null", t.to_string())
+
 
 if __name__ == '__main__':
     unittest.main()
