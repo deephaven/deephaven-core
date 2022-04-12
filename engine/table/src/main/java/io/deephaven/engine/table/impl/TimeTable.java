@@ -155,7 +155,8 @@ public class TimeTable extends QueryTable implements Runnable {
             if (rangeStart <= lastIndex) {
                 final RowSet addedRange = RowSetFactory.fromRange(rangeStart, lastIndex);
                 final RowSet removedRange = isStreamTable && rangeStart > 0
-                        ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1) : RowSetFactory.empty();
+                        ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1)
+                        : RowSetFactory.empty();
                 if (isStreamTable && rangeStart > 0) {
                     getRowSet().writableCast().removeRange(0, rangeStart - 1);
                 }
@@ -214,7 +215,8 @@ public class TimeTable extends QueryTable implements Runnable {
                 }
                 final DateTime key = (DateTime) o;
 
-                if (key.getNanos() % period != startTime.getNanos() % period || DateTimeUtils.isBefore(key, startTime)) {
+                if (key.getNanos() % period != startTime.getNanos() % period
+                        || DateTimeUtils.isBefore(key, startTime)) {
                     continue;
                 }
 

@@ -63,7 +63,8 @@ public interface ImmutableColumnSource<DATA_TYPE> extends ColumnSource<DATA_TYPE
     }
 
     @Override
-    default void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    default void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 }
