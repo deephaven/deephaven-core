@@ -154,7 +154,7 @@ public class TimeTable extends QueryTable implements Runnable {
             }
 
             final boolean rowsAdded = rangeStart <= lastIndex;
-            final boolean rowsRemoved = isStreamTable && getRowSet().firstRowKey() != RowSet.NULL_ROW_KEY;
+            final boolean rowsRemoved = isStreamTable && getRowSet().isNonempty();
             if (rowsAdded || rowsRemoved) {
                 final RowSet addedRange = rowsAdded
                         ? RowSetFactory.fromRange(rangeStart, lastIndex)
