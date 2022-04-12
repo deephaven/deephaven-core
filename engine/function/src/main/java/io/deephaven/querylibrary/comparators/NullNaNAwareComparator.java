@@ -20,13 +20,12 @@ public class NullNaNAwareComparator<T extends Comparable<? super T>> implements 
     /**
      * Creates a comparator.
      */
-    public NullNaNAwareComparator() {
-    }
+    public NullNaNAwareComparator() {}
 
     private static <T> boolean isNanVal(T v) {
-        if(v instanceof Float) {
+        if (v instanceof Float) {
             return isNaN((Float) v);
-        } else if(v instanceof Double){
+        } else if (v instanceof Double) {
             return isNaN((Double) v);
         } else {
             return false;

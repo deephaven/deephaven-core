@@ -20,7 +20,7 @@ public class TestParse extends TestCase {
 
         // Test with radix
         Require.eq(parseByte("20", NULL_INT), "parseByte(\"20\", NULL_INT)", NULL_BYTE);
-        Require.eq(parseByte("20", 10), "parseByte(\"20\", 10)", (short)20);
+        Require.eq(parseByte("20", 10), "parseByte(\"20\", 10)", (short) 20);
     }
 
     public void testParseShort() {
@@ -35,7 +35,7 @@ public class TestParse extends TestCase {
 
         // Test with radix
         Require.eq(parseShort("20", NULL_INT), "parseShort(\"20\", NULL_INT)", NULL_SHORT);
-        Require.eq(parseShort("20", 10), "parseShort(\"20\", 10)", (short)20);
+        Require.eq(parseShort("20", 10), "parseShort(\"20\", 10)", (short) 20);
     }
 
     public void testParseInt() {
@@ -106,7 +106,8 @@ public class TestParse extends TestCase {
         }
 
         // Test with radix
-        Require.eq(parseUnsignedLong("4000000000", NULL_INT), "parseUnsignedLong(\"4_000_000_000\", NULL_INT)", NULL_LONG);
+        Require.eq(parseUnsignedLong("4000000000", NULL_INT), "parseUnsignedLong(\"4_000_000_000\", NULL_INT)",
+                NULL_LONG);
         Require.eq(parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)", 4_000_000_000L);
     }
 
@@ -135,7 +136,7 @@ public class TestParse extends TestCase {
     public void testParseBoolean() {
         Require.eq(parseBoolean(null), "parseBoolean(null)", NULL_BOOLEAN);
         Require.eq(parseBoolean("true"), "parseBoolean(\"true\")", Boolean.TRUE);
-        Require.eq(parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE);  // Unlike numbers, no Exception for this one
+        Require.eq(parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE); // Unlike numbers, no Exception for this one
     }
 
 }

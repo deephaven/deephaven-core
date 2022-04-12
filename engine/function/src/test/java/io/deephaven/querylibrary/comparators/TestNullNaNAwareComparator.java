@@ -22,34 +22,34 @@ public class TestNullNaNAwareComparator extends BaseArrayTestCase {
         final Double v7 = Double.NaN;
 
         final Comparator<Double> cmp = new NullNaNAwareComparator<>();
-        assertEquals(0,cmp.compare(v1,v1));
-        assertEquals(0,cmp.compare(v2,v2));
-        assertEquals(0,cmp.compare(v3,v3));
-        assertEquals(0,cmp.compare(v4,v4));
-        assertEquals(0,cmp.compare(v5,v5));
-        assertEquals(0,cmp.compare(v6,v6));
-        assertEquals(0,cmp.compare(v7,v7));
+        assertEquals(0, cmp.compare(v1, v1));
+        assertEquals(0, cmp.compare(v2, v2));
+        assertEquals(0, cmp.compare(v3, v3));
+        assertEquals(0, cmp.compare(v4, v4));
+        assertEquals(0, cmp.compare(v5, v5));
+        assertEquals(0, cmp.compare(v6, v6));
+        assertEquals(0, cmp.compare(v7, v7));
 
-        assertEquals(0,cmp.compare(v3,v4));
-        assertEquals(0,cmp.compare(v4,v3));
-        assertEquals(0,cmp.compare(v3,v5));
-        assertEquals(0,cmp.compare(v5,v3));
-        assertEquals(0,cmp.compare(v4,v5));
-        assertEquals(0,cmp.compare(v5,v4));
+        assertEquals(0, cmp.compare(v3, v4));
+        assertEquals(0, cmp.compare(v4, v3));
+        assertEquals(0, cmp.compare(v3, v5));
+        assertEquals(0, cmp.compare(v5, v3));
+        assertEquals(0, cmp.compare(v4, v5));
+        assertEquals(0, cmp.compare(v5, v4));
 
-        assertEquals(0,cmp.compare(v6,v7));
-        assertEquals(0,cmp.compare(v7,v6));
+        assertEquals(0, cmp.compare(v6, v7));
+        assertEquals(0, cmp.compare(v7, v6));
 
-        assertEquals(-1,cmp.compare(v1,v2));
-        assertEquals(1,cmp.compare(v2,v1));
+        assertEquals(-1, cmp.compare(v1, v2));
+        assertEquals(1, cmp.compare(v2, v1));
 
-        assertEquals(1,cmp.compare(v1,v3));
-        assertEquals(-1,cmp.compare(v3,v1));
-        assertEquals(1,cmp.compare(v1,v5));
-        assertEquals(-1,cmp.compare(v5,v1));
+        assertEquals(1, cmp.compare(v1, v3));
+        assertEquals(-1, cmp.compare(v3, v1));
+        assertEquals(1, cmp.compare(v1, v5));
+        assertEquals(-1, cmp.compare(v5, v1));
 
-        assertEquals(-1,cmp.compare(v1,v6));
-        assertEquals(1,cmp.compare(v6,v1));
+        assertEquals(-1, cmp.compare(v1, v6));
+        assertEquals(1, cmp.compare(v6, v1));
     }
 
     public void testFloat() {
@@ -62,33 +62,33 @@ public class TestNullNaNAwareComparator extends BaseArrayTestCase {
         final Float v7 = Float.NaN;
 
         final Comparator<Float> cmp = new NullNaNAwareComparator<>();
-        assertEquals(0,cmp.compare(v1,v1));
-        assertEquals(0,cmp.compare(v2,v2));
-        assertEquals(0,cmp.compare(v3,v3));
-        assertEquals(0,cmp.compare(v4,v4));
-        assertEquals(0,cmp.compare(v5,v5));
-        assertEquals(0,cmp.compare(v6,v6));
-        assertEquals(0,cmp.compare(v7,v7));
+        assertEquals(0, cmp.compare(v1, v1));
+        assertEquals(0, cmp.compare(v2, v2));
+        assertEquals(0, cmp.compare(v3, v3));
+        assertEquals(0, cmp.compare(v4, v4));
+        assertEquals(0, cmp.compare(v5, v5));
+        assertEquals(0, cmp.compare(v6, v6));
+        assertEquals(0, cmp.compare(v7, v7));
 
-        assertEquals(0,cmp.compare(v3,v4));
-        assertEquals(0,cmp.compare(v4,v3));
-        assertEquals(0,cmp.compare(v3,v5));
-        assertEquals(0,cmp.compare(v5,v3));
-        assertEquals(0,cmp.compare(v4,v5));
-        assertEquals(0,cmp.compare(v5,v4));
+        assertEquals(0, cmp.compare(v3, v4));
+        assertEquals(0, cmp.compare(v4, v3));
+        assertEquals(0, cmp.compare(v3, v5));
+        assertEquals(0, cmp.compare(v5, v3));
+        assertEquals(0, cmp.compare(v4, v5));
+        assertEquals(0, cmp.compare(v5, v4));
 
-        assertEquals(0,cmp.compare(v6,v7));
-        assertEquals(0,cmp.compare(v7,v6));
+        assertEquals(0, cmp.compare(v6, v7));
+        assertEquals(0, cmp.compare(v7, v6));
 
-        assertEquals(-1,cmp.compare(v1,v2));
-        assertEquals(1,cmp.compare(v2,v1));
+        assertEquals(-1, cmp.compare(v1, v2));
+        assertEquals(1, cmp.compare(v2, v1));
 
-        assertEquals(1,cmp.compare(v1,v3));
-        assertEquals(-1,cmp.compare(v3,v1));
-        assertEquals(1,cmp.compare(v1,v5));
-        assertEquals(-1,cmp.compare(v5,v1));
+        assertEquals(1, cmp.compare(v1, v3));
+        assertEquals(-1, cmp.compare(v3, v1));
+        assertEquals(1, cmp.compare(v1, v5));
+        assertEquals(-1, cmp.compare(v5, v1));
 
-        assertEquals(-1,cmp.compare(v1,v6));
-        assertEquals(1,cmp.compare(v6,v1));
+        assertEquals(-1, cmp.compare(v1, v6));
+        assertEquals(1, cmp.compare(v6, v1));
     }
 }

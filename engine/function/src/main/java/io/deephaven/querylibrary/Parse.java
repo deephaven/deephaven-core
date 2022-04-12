@@ -27,7 +27,7 @@ public class Parse {
     /**
      * Parses the string argument as a {@code byte}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */
@@ -56,7 +56,7 @@ public class Parse {
     /**
      * Parses the string argument as a {@code short}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */
@@ -85,7 +85,7 @@ public class Parse {
     /**
      * Parses the string argument as an {@code int}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */
@@ -112,7 +112,7 @@ public class Parse {
     /**
      * Parses the string argument as an unsigned {@code int}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */
@@ -141,7 +141,7 @@ public class Parse {
     /**
      * Parses the string argument as a {@code long}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */
@@ -168,7 +168,7 @@ public class Parse {
     /**
      * Parses the string argument as an unsigned {@code long}.
      *
-     * @param s     string.
+     * @param s string.
      * @param radix The radix to use in parsing {@code s}
      * @return parsed value.
      */

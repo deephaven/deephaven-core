@@ -65,7 +65,7 @@ public class Logic {
      */
     static public Boolean and(Boolean[] values, Boolean nullValue) {
         for (Boolean b : values) {
-            b = b==null ? nullValue : b;
+            b = b == null ? nullValue : b;
 
             if (!b) {
                 return false;
@@ -85,7 +85,7 @@ public class Logic {
     static public Boolean and(BooleanVector values, Boolean nullValue) {
         for (int ii = 0; ii < values.size(); ++ii) {
             Boolean b = values.get(ii);
-            b = b==null ? nullValue : b;
+            b = b == null ? nullValue : b;
 
             if (!b) {
                 return false;
@@ -136,7 +136,7 @@ public class Logic {
      */
     static public Boolean or(Boolean[] values, Boolean nullValue) {
         for (Boolean b : values) {
-            b = b==null ? nullValue : b;
+            b = b == null ? nullValue : b;
 
             if (b) {
                 return true;

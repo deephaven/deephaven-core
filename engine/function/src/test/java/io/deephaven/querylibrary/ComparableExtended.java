@@ -15,8 +15,10 @@ class ComparableExtended implements Comparable<ComparableExtended> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ComparableExtended)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof ComparableExtended))
+            return false;
 
         ComparableExtended that = (ComparableExtended) o;
 
