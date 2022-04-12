@@ -5,15 +5,11 @@
 package io.deephaven.server.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -30,7 +26,6 @@ import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
@@ -38,8 +33,6 @@ import static io.deephaven.server.arrow.ArrowFlightUtil.ZERO_MOD_COLUMNS;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    static final BarrageSubscriptionOptions DEFAULT_SUB_DESER_OPTIONS =
-            BarrageSubscriptionOptions.builder().build();
     static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
             BarrageSnapshotOptions.builder().build();
 
@@ -184,9 +177,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
                         // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);) {
-                            listener.onNext(
-                                    bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
+                            listener.onNext(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }
 
                         listener.onCompleted();

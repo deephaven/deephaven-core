@@ -10,8 +10,8 @@ import sys
 import jpy
 import os
 
-from deephaven import ConsumeKafka as ck
-from deephaven import Types as dh
+from deephaven_legacy import ConsumeKafka as ck
+from deephaven_legacy import Types as dh
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest

@@ -55,26 +55,38 @@ public class LongArrayExpansionKernel implements ArrayExpansionKernel {
 
     @Override
     public <T, A extends Any> WritableObjectChunk<T, A> contract(
-            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest) {
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
+            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
         if (perElementLengthDest.size() == 0) {
-            return WritableObjectChunk.makeWritableChunk(0);
+            if (outChunk != null) {
+                return outChunk.asWritableObjectChunk();
+            }
+            return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        final int itemsInBatch = perElementLengthDest.size() - 1;
         final LongChunk<A> typedSource = source.asLongChunk();
-        final WritableObjectChunk<Object, A> result = WritableObjectChunk.makeWritableChunk(perElementLengthDest.size() - 1);
+        final WritableObjectChunk<Object, A> result;
+        if (outChunk != null) {
+            result = outChunk.asWritableObjectChunk();
+        } else {
+            final int numRows = Math.max(itemsInBatch, totalRows);
+            result = WritableObjectChunk.makeWritableChunk(numRows);
+            result.setSize(numRows);
+        }
 
         int lenRead = 0;
-        for (int i = 0; i < result.size(); ++i) {
+        for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(i, ZERO_LEN_ARRAY);
+                result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
                 final long[] row = new long[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }
                 lenRead += ROW_LEN;
-                result.set(i, row);
+                result.set(outOffset + i, row);
             }
         }
 

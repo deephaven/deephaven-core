@@ -50,10 +50,10 @@
       ide = await connection.startSession("python");
 
       await ide.runCode(`
-from deephaven.TableTools import emptyTable
+from deephaven import empty_table
 import jpy
 KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable')
-remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
+remoteTable = KeyedArrayBackedMutableTable.make(empty_table(0).update_view(['id=0', 'data=""']).j_table, 'id')
     `)
     } else if (types.indexOf("groovy") !== -1) {
       ide = await connection.startSession("groovy");

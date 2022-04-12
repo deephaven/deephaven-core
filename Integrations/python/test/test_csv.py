@@ -3,8 +3,8 @@
 #
 import unittest
 
-from deephaven import Types
-from deephaven import read_csv, write_csv
+from deephaven_legacy import Types
+from deephaven_legacy import read_csv, write_csv
 from unittest import TestCase
 
 def get_col_names(t):

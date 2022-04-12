@@ -42,10 +42,10 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets whether bar gradients are visible.
      *
-     * @param visible bar gradient visibility
+     * @param gradientVisible bar gradient visibility
      * @return this data series.
      */
-    DataSeries gradientVisible(boolean visible);
+    DataSeries gradientVisible(boolean gradientVisible);
 
 
     ////////////////////////// point sizes //////////////////////////
@@ -55,37 +55,37 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(int factor);
+    DataSeries pointSize(int pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(long factor);
+    DataSeries pointSize(long pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(double factor);
+    DataSeries pointSize(double pointSize);
 
     /**
      * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
      * Unspecified points use the default size.
      *
-     * @param factor point size
+     * @param pointSize point size
      * @return this data series.
      */
-    DataSeries pointSize(Number factor);
+    DataSeries pointSize(Number pointSize);
 
 
     ////////////////////////// color //////////////////////////
@@ -132,42 +132,26 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(Paint color);
+    DataSeries pointColor(Paint pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(int color);
+    DataSeries pointColor(int pointColor);
 
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color color
+     * @param pointColor color
      * @return this data series.
      */
-    DataSeries pointColor(String color);
-
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors function from the y-value of data points to {@link Paint}
-     * @return this DataSeries
-     */
-    <T extends Paint> DataSeries pointColorByY(Function<Double, T> colors);
-
-    /**
-     * Sets the point color for a data point based upon the y-value.
-     *
-     * @param colors function from the y-value of data points to {@link Paint}
-     * @return this DataSeries
-     */
-    <T extends Paint> DataSeries pointColorByY(final Closure<T> colors);
+    DataSeries pointColor(String pointColor);
 
 
     ////////////////////////// error bar color //////////////////////////
@@ -176,26 +160,26 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final Paint color);
+    DataSeries errorBarColor(final Paint errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color index of the color in the series color palette
+     * @param errorBarColor index of the color in the series color palette
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final int color);
+    DataSeries errorBarColor(final int errorBarColor);
 
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color color
+     * @param errorBarColor color
      * @return this DataSeries
      */
-    DataSeries errorBarColor(final String color);
+    DataSeries errorBarColor(final String errorBarColor);
 
 
     ////////////////////////// point labels //////////////////////////
@@ -205,10 +189,10 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
-     * @param label label
+     * @param pointLabel label
      * @return this XYDataSeries
      */
-    DataSeries pointLabel(Object label);
+    DataSeries pointLabel(Object pointLabel);
 
 
     ////////////////////////// point shapes //////////////////////////
@@ -218,19 +202,19 @@ public interface DataSeries extends Series, Serializable {
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shape shape
+     * @param pointShape shape
      * @return this DataSeries
      */
-    DataSeries pointShape(final String shape);
+    DataSeries pointShape(final String pointShape);
 
     /**
      * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
-     * @param shape shape
+     * @param pointShape shape
      * @return this DataSeries
      */
-    DataSeries pointShape(final Shape shape);
+    DataSeries pointShape(final Shape pointShape);
 
 
     ////////////////////////// line color //////////////////////////
@@ -267,10 +251,10 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the line style.
      *
-     * @param style style
+     * @param lineStyle style
      * @return this data series.
      */
-    DataSeries lineStyle(final LineStyle style);
+    DataSeries lineStyle(final LineStyle lineStyle);
 
 
     ////////////////////////// tool tips //////////////////////////
@@ -282,20 +266,20 @@ public interface DataSeries extends Series, Serializable {
      * Use {0} where the data series name should be inserted, {1} for the x-value and {2} y-value e.g. "{0}: ({1}, {2})"
      * will display as Series1: (2.0, 5.5).
      *
-     * @param format format
+     * @param pointLabelFormat format
      * @return this data series.
      */
-    DataSeries pointLabelFormat(final String format);
+    DataSeries pointLabelFormat(final String pointLabelFormat);
 
     /**
      * Sets the tooltip format.
      *
-     * @param format format
+     * @param toolTipPattern format
      * @return this data series.
      */
-    default DataSeries toolTipPattern(final String format) {
-        xToolTipPattern(format);
-        yToolTipPattern(format);
+    default DataSeries toolTipPattern(final String toolTipPattern) {
+        xToolTipPattern(toolTipPattern);
+        yToolTipPattern(toolTipPattern);
         return this;
     }
 
@@ -303,16 +287,16 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the x-value tooltip format.
      *
-     * @param format format
+     * @param xToolTipPattern format
      * @return this data series.
      */
-    DataSeries xToolTipPattern(final String format);
+    DataSeries xToolTipPattern(final String xToolTipPattern);
 
     /**
      * Sets the y-value tooltip format.
      *
-     * @param format format
+     * @param yToolTipPattern format
      * @return this data series.
      */
-    DataSeries yToolTipPattern(final String format);
+    DataSeries yToolTipPattern(final String yToolTipPattern);
 }

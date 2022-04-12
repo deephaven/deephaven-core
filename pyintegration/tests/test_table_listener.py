@@ -4,8 +4,8 @@
 import time
 import unittest
 
-from deephaven2 import time_table
-from deephaven2.table_listener import listen, TableListener
+from deephaven import time_table
+from deephaven.table_listener import listen, TableListener
 
 from tests.testbase import BaseTestCase
 

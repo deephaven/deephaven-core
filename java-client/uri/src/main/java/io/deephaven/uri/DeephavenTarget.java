@@ -125,6 +125,11 @@ public abstract class DeephavenTarget {
         }
     }
 
+    /**
+     * The target as a URI string.
+     *
+     * @return the URI string
+     */
     @Override
     public final String toString() {
         final String scheme = isSecure() ? DeephavenUri.SECURE_SCHEME : DeephavenUri.PLAINTEXT_SCHEME;

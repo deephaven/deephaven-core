@@ -13,8 +13,8 @@ import jpy
 import sys
 import os
 
-from deephaven import learn, tableToDataFrame, TableTools
-from deephaven.learn import gather
+from deephaven_legacy import learn, tableToDataFrame, TableTools
+from deephaven_legacy.learn import gather
 
 class TestGather(unittest.TestCase):
     """

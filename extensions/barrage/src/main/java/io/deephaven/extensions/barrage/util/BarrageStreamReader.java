@@ -13,6 +13,8 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -38,6 +40,8 @@ public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
+    private int numAddRowsRead = 0;
+    private int numModRowsRead = 0;
     private int numAddBatchesRemaining = 0;
     private int numModBatchesRemaining = 0;
     private BarrageMessage msg = null;
@@ -83,12 +87,10 @@ public class BarrageStreamReader implements StreamReader {
                         msg.isSnapshot = metadata.isSnapshot();
                         msg.snapshotRowSetIsReversed = metadata.effectiveReverseViewport();
 
+                        numAddRowsRead = 0;
+                        numModRowsRead = 0;
                         numAddBatchesRemaining = metadata.numAddBatches();
                         numModBatchesRemaining = metadata.numModBatches();
-                        if (numAddBatchesRemaining > 1 || numModBatchesRemaining > 1) {
-                            throw new UnsupportedOperationException(
-                                    "Multiple consecutive add or mod RecordBatches are not yet supported");
-                        }
                         if (numAddBatchesRemaining < 0 || numModBatchesRemaining < 0) {
                             throw new IllegalStateException(
                                     "Found negative number of record batches in barrage metadata: "
@@ -217,23 +219,24 @@ public class BarrageStreamReader implements StreamReader {
                     }
 
                     if (isAddBatch) {
+                        final int numRowsTotal = msg.rowsIncluded.intSize("BarrageStreamReader");
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci].data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
                                     columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                    bufferInfoIter, ois);
+                                    bufferInfoIter, ois, (WritableChunk<Values>) msg.addColumnData[ci].data,
+                                    numAddRowsRead, numRowsTotal);
                         }
+                        numAddRowsRead += batch.length();
                     } else {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
-                            final int numModded = mcd.rowsModified.intSize();
+                            final int numModdedRows = mcd.rowsModified.intSize("BarrageStreamReader");
                             mcd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
                                     columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                    bufferInfoIter, ois);
-                            if (mcd.data.size() != numModded) {
-                                throw new IllegalStateException(
-                                        "Mod column data does not have the expected number of rows.");
-                            }
+                                    bufferInfoIter, ois, (WritableChunk<Values>) mcd.data, numModRowsRead,
+                                    numModdedRows);
                         }
+                        numModRowsRead += batch.length();
                     }
                 }
             }

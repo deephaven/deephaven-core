@@ -2,7 +2,7 @@ CompilerTools.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=LISTENER_ONLY
 UpdatePerformanceTracker.reportIntervalMillis=60000
 measurement.per_thread_cpu=false
-allocation.stats.enabled=true
+allocation.stats.enabled=false
 statsdriver.enabled=true
 UpdateGraphProcessor.checkTableOperations=true
 

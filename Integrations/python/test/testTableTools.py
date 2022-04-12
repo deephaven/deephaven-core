@@ -11,7 +11,7 @@ import jpy
 import numpy
 from datetime import datetime, date
 
-from deephaven import TableTools
+from deephaven_legacy import TableTools
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest

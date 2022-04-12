@@ -25,10 +25,10 @@ public interface Chart extends Serializable {
     /**
      * Removes the series with the specified {@code names} from this Chart.
      *
-     * @param names series names
+     * @param removeSeriesNames series names
      * @return this Chart
      */
-    Chart chartRemoveSeries(final String... names);
+    Chart chartRemoveSeries(final String... removeSeriesNames);
 
 
     ////////////////////////// Title //////////////////////////
@@ -124,10 +124,10 @@ public interface Chart extends Serializable {
      * if {@code maxRowsCount} is 0, then just first value will be shown without ellipsis. <br/>
      * The default is 0.
      *
-     * @param maxRowsCount maximum number of row values to show in chart title
+     * @param maxTitleRows maximum number of row values to show in chart title
      * @return this Chart
      */
-    Chart maxRowsInTitle(final int maxRowsCount);
+    Chart maxRowsInTitle(final int maxTitleRows);
 
     /**
      * Sets the font of this Chart's title.
@@ -168,26 +168,26 @@ public interface Chart extends Serializable {
     /**
      * Sets whether the Chart has grid lines.
      *
-     * @param visible whether the Chart's grid lines are drawn
+     * @param gridVisible whether the Chart's grid lines are drawn
      * @return this Chart
      */
-    Chart gridLinesVisible(final boolean visible);
+    Chart gridLinesVisible(final boolean gridVisible);
 
     /**
      * Sets whether the Chart has grid lines in the x direction.
      *
-     * @param visible whether the Chart's x grid lines are drawn
+     * @param xGridVisible whether the Chart's x grid lines are drawn
      * @return this Chart
      */
-    Chart xGridLinesVisible(final boolean visible);
+    Chart xGridLinesVisible(final boolean xGridVisible);
 
     /**
      * Sets whether the Chart has grid lines in the y direction
      *
-     * @param visible whether the Chart's y grid lines are drawn
+     * @param yGridVisible whether the Chart's y grid lines are drawn
      * @return this Chart
      */
-    Chart yGridLinesVisible(final boolean visible);
+    Chart yGridLinesVisible(final boolean yGridVisible);
 
     ////////////////////////// Legend //////////////////////////
 
@@ -250,18 +250,18 @@ public interface Chart extends Serializable {
     /**
      * Sets the size of this Chart within the grid of the figure.
      *
-     * @param n how many columns wide
+     * @param colSpan how many columns wide
      * @return this Chart
      */
-    Chart colSpan(final int n);
+    Chart colSpan(final int colSpan);
 
     /**
      * Sets the size of this Chart within the grid of the figure.
      *
-     * @param n how many rows tall
+     * @param rowSpan how many rows tall
      * @return this Chart
      */
-    Chart rowSpan(final int n);
+    Chart rowSpan(final int rowSpan);
 
 
     ////////////////////////// Axes Creation //////////////////////////

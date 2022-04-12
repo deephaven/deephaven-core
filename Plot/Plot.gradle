@@ -20,6 +20,8 @@ dependencies {
 
     compileOnly 'javax.inject:javax.inject:1'
 
+    implementation 'com.google.guava:guava:19.0'
+
     testCompile TestTools.projectDependency(project, 'Util'),
                 TestTools.projectDependency(project, 'engine-table')
 

@@ -3,25 +3,10 @@
 #
 import unittest
 
-from deephaven2 import DHError, read_csv, empty_table, SortDirection
-from deephaven2.agg import (
-    sum_,
-    weighted_avg,
-    avg,
-    pct,
-    group,
-    count_,
-    first,
-    last,
-    max_,
-    median,
-    min_,
-    std,
-    abs_sum,
-    var,
-    formula,
-)
-from deephaven2.table import Table
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
+    var, formula
+from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
@@ -45,6 +30,10 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
 
+    def test_meta_table(self):
+        t = self.test_table.meta_table
+        self.assertEqual(len(self.test_table.columns), t.size)
+
     def test_coalesce(self):
         t = self.test_table.update_view(["A = a * b"])
         ct = t.coalesce()
@@ -54,6 +43,8 @@ class TableTestCase(BaseTestCase):
         column_names = [f.name for f in self.test_table.columns]
         result_table = self.test_table.drop_columns(cols=column_names[:-1])
         self.assertEqual(1, len(result_table.columns))
+        result_table = self.test_table.drop_columns(cols=column_names[-1])
+        self.assertEqual(1, len(self.test_table.columns) - len(result_table.columns))
 
     def test_move_columns(self):
         column_names = [f.name for f in self.test_table.columns]
@@ -62,7 +53,7 @@ class TableTestCase(BaseTestCase):
         with self.subTest("move-columns"):
             result_table = self.test_table.move_columns(1, cols_to_move)
             result_cols = [f.name for f in result_table.columns]
-            self.assertEqual(cols_to_move, result_cols[1 : len(cols_to_move) + 1])
+            self.assertEqual(cols_to_move, result_cols[1: len(cols_to_move) + 1])
 
         with self.subTest("move-columns-up"):
             result_table = self.test_table.move_columns_up(cols_to_move)
@@ -72,7 +63,23 @@ class TableTestCase(BaseTestCase):
         with self.subTest("move-columns-down"):
             result_table = self.test_table.move_columns_down(cols_to_move)
             result_cols = [f.name for f in result_table.columns]
-            self.assertEqual(cols_to_move, result_cols[-len(cols_to_move) :])
+            self.assertEqual(cols_to_move, result_cols[-len(cols_to_move):])
+
+        cols_to_move = column_names[-1]
+        with self.subTest("move-column"):
+            result_table = self.test_table.move_columns(1, cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual([cols_to_move], result_cols[1: len(cols_to_move) + 1])
+
+        with self.subTest("move-column-up"):
+            result_table = self.test_table.move_columns_up(cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual([cols_to_move], result_cols[: len(cols_to_move)])
+
+        with self.subTest("move-column-down"):
+            result_table = self.test_table.move_columns_down(cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual([cols_to_move], result_cols[-len(cols_to_move):])
 
     def test_rename_columns(self):
         cols_to_rename = [
@@ -82,6 +89,9 @@ class TableTestCase(BaseTestCase):
         result_table = self.test_table.rename_columns(cols_to_rename)
         result_cols = [f.name for f in result_table.columns]
         self.assertEqual(new_names, result_cols[::2])
+        result_table = self.test_table.rename_columns(cols_to_rename[0])
+        result_cols = [f.name for f in result_table.columns]
+        self.assertEqual(new_names[0], result_cols[::2][0])
 
     def test_update_error(self):
         with self.assertRaises(DHError) as cm:
@@ -108,15 +118,26 @@ class TableTestCase(BaseTestCase):
                 self.assertTrue(len(result_table.columns) >= 3)
                 self.assertLessEqual(result_table.size, self.test_table.size)
 
+        for op in ops:
+            with self.subTest(op=op):
+                result_table = op(
+                    self.test_table, formulas="Sum = a + b + c + d"
+                )
+                self.assertIsNotNone(result_table)
+                self.assertTrue(len(result_table.columns) >= 1)
+                self.assertLessEqual(result_table.size, self.test_table.size)
+
     def test_select_distinct(self):
         unique_table = self.test_table.select_distinct(cols=["a"])
+        self.assertLessEqual(unique_table.size, self.test_table.size)
+        unique_table = self.test_table.select_distinct(cols="a")
         self.assertLessEqual(unique_table.size, self.test_table.size)
         unique_table = self.test_table.select_distinct(cols=[])
         self.assertLessEqual(unique_table.size, self.test_table.size)
 
         with self.assertRaises(DHError) as cm:
             unique_table = self.test_table.select_distinct(cols=123)
-        self.assertIn("TypeError", cm.exception.root_cause)
+        self.assertIn("RuntimeError", cm.exception.root_cause)
 
     #
     # Table operation category: Filter
@@ -125,9 +146,8 @@ class TableTestCase(BaseTestCase):
         filtered_table = self.test_table.where(filters=["a > 10", "b < 100"])
         self.assertLessEqual(filtered_table.size, self.test_table.size)
 
-        with self.assertRaises(DHError) as cm:
-            filtered_table = self.test_table.where(filters="a > 10")
-        self.assertIn("RuntimeError", cm.exception.compact_traceback)
+        filtered_table = self.test_table.where(filters="a > 10")
+        self.assertLessEqual(filtered_table.size, self.test_table.size)
 
     def test_where_in(self):
         unique_table = self.test_table.head(num_rows=50).select_distinct(
@@ -139,10 +159,8 @@ class TableTestCase(BaseTestCase):
             self.assertLessEqual(unique_table.size, result_table.size)
 
         with self.subTest("where-not-in filter"):
-            result_table2 = self.test_table.where_not_in(unique_table, cols=["c"])
-            self.assertEqual(
-                result_table.size, self.test_table.size - result_table2.size
-            )
+            result_table2 = self.test_table.where_not_in(unique_table, cols="c")
+            self.assertEqual(result_table.size, self.test_table.size - result_table2.size)
 
     def test_where_one_of(self):
         result_table = self.test_table.where_one_of(filters=["a > 10", "c < 100"])
@@ -169,11 +187,17 @@ class TableTestCase(BaseTestCase):
             order_by=["a", "b"], order=[SortDirection.DESCENDING]
         )
         self.assertEqual(sorted_table.size, self.test_table.size)
+        sorted_table = self.test_table.sort(
+            order_by="a", order=SortDirection.DESCENDING
+        )
+        self.assertEqual(sorted_table.size, self.test_table.size)
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
         self.test_table.restrict_sort_to(cols)
         result_table = self.test_table.sort(order_by=cols)
+        self.test_table.restrict_sort_to("b")
+        result_table = self.test_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
             self.test_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
@@ -183,6 +207,13 @@ class TableTestCase(BaseTestCase):
             order_by=["b"], order=[SortDirection.DESCENDING]
         )
         sorted_table2 = self.test_table.sort_descending(order_by=["b"])
+        self.assertEqual(
+            sorted_table.to_string(num_rows=500), sorted_table2.to_string(num_rows=500)
+        )
+        sorted_table = self.test_table.sort(
+            order_by="b", order=SortDirection.DESCENDING
+        )
+        sorted_table2 = self.test_table.sort_descending(order_by="b")
         self.assertEqual(
             sorted_table.to_string(num_rows=500), sorted_table2.to_string(num_rows=500)
         )
@@ -224,8 +255,14 @@ class TableTestCase(BaseTestCase):
         with self.subTest("with some join keys"):
             result_table = left_table.join(right_table, on=["a"], joins=["e"])
             self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(right_table, on="a", joins="e")
+            self.assertTrue(result_table.size < left_table.size)
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, on=[], joins=["e"])
+            self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(right_table, on=[], joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
     def test_as_of_join(self):
@@ -237,9 +274,15 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
+            result_table = left_table.aj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.LESS_THAN)
+            self.assertGreater(result_table.size, 0)
+            self.assertLessEqual(result_table.size, left_table.size)
 
         with self.subTest("reverse-as-of join"):
             result_table = left_table.raj(right_table, on=["a"])
+            self.assertGreater(result_table.size, 0)
+            self.assertLessEqual(result_table.size, left_table.size)
+            result_table = left_table.raj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -252,10 +295,15 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, num_rows=1, by=["a"])
                 self.assertLessEqual(result_table.size, self.test_table.size)
+                result_table1 = op(self.test_table, num_rows=1, by="a")
+                self.assertLessEqual(result_table1.size, self.test_table.size)
 
     def test_group_by(self):
         with self.subTest("with some columns"):
             grouped_table = self.test_table.group_by(by=["a", "c"])
+            self.assertLessEqual(grouped_table.size, self.test_table.size)
+        with self.subTest("with one column"):
+            grouped_table = self.test_table.group_by(by="a")
             self.assertLessEqual(grouped_table.size, self.test_table.size)
         with self.subTest("with no columns"):
             grouped_table = self.test_table.group_by()
@@ -264,6 +312,8 @@ class TableTestCase(BaseTestCase):
     def test_ungroup(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
         ungrouped_table = grouped_table.ungroup(cols=["b"])
+        self.assertLessEqual(ungrouped_table.size, self.test_table.size)
+        ungrouped_table = grouped_table.ungroup(cols="b")
         self.assertLessEqual(ungrouped_table.size, self.test_table.size)
 
     def test_dedicated_agg(self):
@@ -284,6 +334,11 @@ class TableTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(self.test_table, by=["a", "b"])
                 self.assertEqual(result_table.size, num_distinct_a)
+
+        num_distinct_a = self.test_table.select_distinct(cols="a").size
+        with self.subTest(op=op):
+            result_table = op(self.test_table, by="a")
+            self.assertEqual(result_table.size, num_distinct_a)
 
         for op in ops:
             with self.subTest(op=op):
@@ -335,8 +390,11 @@ class TableTestCase(BaseTestCase):
         ]
 
         result_table = test_table.agg_by(aggs, ["grp_id"])
-
         self.assertGreaterEqual(result_table.size, 1)
+
+        for agg in aggs:
+            result_table = test_table.agg_by(agg, "grp_id")
+            self.assertGreaterEqual(result_table.size, 1)
 
     def test_snapshot(self):
         with self.subTest("do_init is False"):
@@ -350,6 +408,14 @@ class TableTestCase(BaseTestCase):
         with self.subTest("do_init is True"):
             snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
+
+    def test_snapshot_history(self):
+        t = empty_table(1).update(
+            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
+        )
+        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+        self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
+        self.assertEqual(self.test_table.size, snapshot_hist.size)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
@@ -394,8 +460,29 @@ class TableTestCase(BaseTestCase):
                 self.assertGreaterEqual(result_table.size, 1)
 
         with self.assertRaises(DHError) as cm:
-            test_table.agg_all_by(count_("aggCount"), ["grp_id"])
+            test_table.agg_all_by(count_("aggCount"), "grp_id")
         self.assertIn("unsupported", cm.exception.root_cause)
+
+    def test_format_columns(self):
+        t = self.test_table.format_columns(["a = YELLOW", "b = BLUE"])
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_columns("a = b % 2 == 0? RED : GREEN")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_columns("a = heatmap(b, 1, 400, BRIGHT_GREEN, BRIGHT_RED)")
+        self.assertIsNotNone(t)
+
+    def test_format_column_where(self):
+        t = self.test_table.format_column_where("c", "c % 2 = 0", "ORANGE")
+        self.assertIsNotNone(t)
+
+        t = self.test_table.format_column_where("c", "c % 2 = 0", "bg(colorRGB(255, 93, 0))")
+        self.assertIsNotNone(t)
+
+    def test_format_row_where(self):
+        t = self.test_table.format_row_where("e % 3 = 1", "TEAL")
+        self.assertIsNotNone(t)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator$BufferListener",
+ "methods": {
+  "noteLogicalBuffer": ":param offset: long\n:param length: long"
+ },
+ "path": "io.deephaven.db.backplane.barrage.chunk.ChunkInputStreamGenerator.BufferListener",
+ "typeName": "interface"
+}

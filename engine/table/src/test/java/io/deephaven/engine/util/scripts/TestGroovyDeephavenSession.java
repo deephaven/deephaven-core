@@ -7,11 +7,12 @@ package io.deephaven.engine.util.scripts;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,18 +63,31 @@ public class TestGroovyDeephavenSession {
     }
 
     @Test
-    public void testAnonymousObject() {
-        final String script = "x = new Object() {\n" +
-                "  long get(long ii) { return ii; }\n" +
+    public void testScriptDefinedClass() {
+        session.evaluateScript("class MyObj {\n" +
+                "    public int a;\n" +
+                "    MyObj(int a) {\n" +
+                "        this.a = a\n" +
+                "    }\n" +
                 "}\n" +
-                "y = emptyTable(1).update(\"X = x[ii]\")";
-        try {
-            session.evaluateScript(script);
-        } catch (FormulaCompilationException exception) {
-            Assert.eqTrue(exception.getCause().getCause().getMessage().contains(
-                    "Cannot find method get(long) in interface groovy.lang.GroovyObject"),
-                    "exception contains helpful error message");
-        }
+                "obj = new MyObj(1)\n" +
+                "result = emptyTable(1).select(\"A = obj.a\")");
+        Assert.neqNull(fetch("obj", Object.class), "fetchObject");
+        final Table result = fetchTable("result");
+        Assert.eqFalse(result.isFailed(), "result.isFailed()");
+    }
+
+    @Test
+    public void testScriptResultOrder() {
+        final ScriptSession.Changes changes = session.evaluateScript("x=emptyTable(10)\n" +
+                "z=emptyTable(10)\n" +
+                "y=emptyTable(10)\n" +
+                "u=emptyTable(10)");
+        final String[] names = new String[] {"x", "z", "y", "u"};
+        final MutableInt offset = new MutableInt();
+        changes.created.forEach((name, type) -> {
+            Assert.eq(name, "name", names[offset.getAndIncrement()], "names[offset.getAndIncrement()]");
+        });
     }
 }
 

@@ -9,10 +9,10 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from deephaven2 import dtypes
-from deephaven2.constants import *
-from deephaven2.dtypes import DateTime
-from deephaven2.time import now
+from deephaven import dtypes
+from deephaven.constants import *
+from deephaven.dtypes import DateTime
+from deephaven.time import now
 from tests.testbase import BaseTestCase
 
 

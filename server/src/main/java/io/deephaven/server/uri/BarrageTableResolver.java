@@ -2,6 +2,7 @@ package io.deephaven.server.uri;
 
 import io.deephaven.client.impl.*;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -37,6 +38,11 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 @Singleton
 public final class BarrageTableResolver implements UriResolver {
+
+    public static final Integer MAX_INBOUND_MESSAGE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault(
+                    "BarrageTableResolver.maxInboundMessageSize",
+                    100 * 1024 * 1024); // 100MB default limit
 
     /**
      * The default options, which uses {@link BarrageSubscriptionOptions#useDeephavenNulls()}.
@@ -275,7 +281,9 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ChannelHelper.channel(target));
+        return newSession(ChannelHelper.channelBuilder(target)
+                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
+                .build());
     }
 
     private BarrageSession newSession(ManagedChannel channel) {

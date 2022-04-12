@@ -466,6 +466,14 @@ public class TestConfiguration extends TestCase {
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
+        } else if ("18".equals(javaVersion)) {
+            assertEquals(
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                            +
+                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
+                            +
+                            "java.base/java.lang.reflect.Method.invoke(Method.java:577)\n",
+                    history.get(0).fileName);
         } else {
             fail("Must add specific test for java version " + javaVersion);
         }

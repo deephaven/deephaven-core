@@ -27,18 +27,18 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
     }
 
     @Override
-    public CategoryDataSeries pointShape(final Function<Comparable, String> shapes) {
-        return super.pointShape(constructMapFromData(shapes));
+    public CategoryDataSeries pointShape(final Function<Comparable, String> pointShapes) {
+        return super.pointShape(constructMapFromData(pointShapes));
     }
 
     @Override
-    public <NUMBER extends Number> AbstractCategoryDataSeries pointSize(final Function<Comparable, NUMBER> factors) {
-        return super.pointSize(constructMapFromData(factors));
+    public <NUMBER extends Number> AbstractCategoryDataSeries pointSize(final Function<Comparable, NUMBER> pointSizes) {
+        return super.pointSize(constructMapFromData(pointSizes));
     }
 
     @Override
-    public <COLOR extends Paint> AbstractCategoryDataSeries pointColor(final Function<Comparable, COLOR> colors) {
-        return super.pointColor(constructMapFromData(colors));
+    public <COLOR extends Paint> AbstractCategoryDataSeries pointColor(final Function<Comparable, COLOR> pointColor) {
+        return super.pointColor(constructMapFromData(pointColor));
     }
 
     @Override
@@ -48,13 +48,8 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
     }
 
     @Override
-    public <T extends Paint> AbstractCategoryDataSeries pointColorByY(Function<Double, T> colors) {
-        return super.pointColorByY(constructMapFromNumericalData(colors));
-    }
-
-    @Override
-    public <LABEL> AbstractCategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels) {
-        return super.pointLabel(constructMapFromData(labels));
+    public <LABEL> AbstractCategoryDataSeries pointLabel(final Function<Comparable, LABEL> pointLabels) {
+        return super.pointLabel(constructMapFromData(pointLabels));
     }
 
     private <T> Map<Double, T> constructMapFromNumericalData(final Function<Double, T> function) {

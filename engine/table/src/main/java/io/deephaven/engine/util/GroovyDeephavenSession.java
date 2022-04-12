@@ -634,7 +634,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     protected GroovySnapshot takeSnapshot() {
         // noinspection unchecked,rawtypes
-        return new GroovySnapshot(new HashMap<>(groovyShell.getContext().getVariables()));
+        return new GroovySnapshot(new LinkedHashMap<>(groovyShell.getContext().getVariables()));
     }
 
     @Override

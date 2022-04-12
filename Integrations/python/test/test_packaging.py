@@ -6,7 +6,7 @@ import pkgutil
 class TestPackaging(unittest.TestCase):
 
   def test_find_deephaven(self):
-    spec = pkgutil.find_loader("deephaven")
+    spec = pkgutil.find_loader("deephaven_legacy")
     self.assertTrue(spec is not None)
 
 if __name__ == '__main__':

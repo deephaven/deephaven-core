@@ -94,5 +94,5 @@ human-friendly names. Most docker library images follow the pattern where they p
 `<name>:<major>.<minor>`, and `<name>:<major>.<minor>.<patch>`; or some variant on `<name>:latest`. When specifying the
 full semver for example, the automatically checks may never trigger if the publisher treats them as "immutable". An
 example of this is envoy - they publish "immutable", full semver tags without providing partial semver tags. Ie, they
-publish `envoyproxy/envoy:v1.17.1` but not `envoyproxy/envoy:v1.17`, meaning it's on the developers to manually update
+publish `envoyproxy/envoy:v1.21.1` but not `envoyproxy/envoy:v1.21`, meaning it's on the developers to manually update
 the mapping details when necessary.

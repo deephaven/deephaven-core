@@ -5,6 +5,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -27,6 +28,7 @@ import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +37,8 @@ import java.util.Map;
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
  */
-public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runnable {
+public class StreamToTableAdapter extends ReferenceCountedLivenessNode
+        implements SafeCloseable, StreamConsumer, Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToTableAdapter.class);
 
@@ -44,7 +47,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     private final UpdateSourceRegistrar updateSourceRegistrar;
     private final String name;
 
-    private final QueryTable table;
+    private final WeakReference<QueryTable> tableRef;
     private final TrackingWritableRowSet rowSet;
     private final SwitchColumnSource<?>[] switchSources;
 
@@ -61,6 +64,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     /** A list of failures that have occurred. */
     private List<Exception> enqueuedFailure;
 
+    private volatile QueryTable table;
     private volatile Runnable shutdownCallback;
     private volatile boolean alive = true;
 
@@ -68,6 +72,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
+        super(false);
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
@@ -91,12 +96,8 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
                 setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
                 addParentReference(StreamToTableAdapter.this);
             }
-
-            @Override
-            public void destroy() {
-                StreamToTableAdapter.this.close();
-            }
         };
+        tableRef = new WeakReference<>(table);
     }
 
     /**
@@ -238,12 +239,16 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     }
 
     /**
-     * Return the stream table that this adapter is producing.
+     * Return the {@link Table#STREAM_TABLE_ATTRIBUTE stream} {@link Table table} that this adapter is producing, and
+     * ensure that this StreamToTableAdapter no longer enforces strong reachability of the result. May return
+     * {@code null} if invoked more than once and the initial caller does not enforce strong reachability of the result.
      *
-     * @return the resultant stream table
+     * @return The resulting stream table
      */
     public Table table() {
-        return table;
+        final QueryTable localTable = tableRef.get();
+        table = null;
+        return localTable;
     }
 
     @Override
@@ -268,14 +273,24 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     }
 
     @Override
+    public void destroy() {
+        close();
+    }
+
+    @Override
     public void run() {
         try {
             doRefresh();
         } catch (Exception e) {
             log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
                     .append(name).append(": ").append(e).endl();
-            table.notifyListenersOnError(e, null);
             updateSourceRegistrar.removeSource(this);
+            final QueryTable localTable = tableRef.get();
+            if (localTable != null) {
+                localTable.notifyListenersOnError(e, null);
+            } else {
+                close();
+            }
         }
     }
 
@@ -312,10 +327,12 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
         if (capturedBufferSources == null) {
             // null out our current values
             for (int ii = 0; ii < switchSources.length; ++ii) {
+                // noinspection unchecked
                 switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
             }
         } else {
             for (int ii = 0; ii < switchSources.length; ++ii) {
+                // noinspection unchecked
                 switchSources[ii].setNewCurrent((ColumnSource) capturedBufferSources[ii]);
             }
         }
@@ -329,9 +346,14 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
-                RowSetFactory.flat(oldSize), RowSetFactory.empty(),
-                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        final QueryTable localTable = tableRef.get();
+        if (localTable != null) {
+            localTable.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
+                    RowSetFactory.flat(oldSize), RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        } else {
+            close();
+        }
     }
 
     @SafeVarargs

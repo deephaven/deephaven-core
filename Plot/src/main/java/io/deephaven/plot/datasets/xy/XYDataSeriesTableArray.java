@@ -35,16 +35,6 @@ public class XYDataSeriesTableArray extends XYDataSeriesArray implements SeriesI
         this.y = y;
     }
 
-    @Override
-    public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
-        final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableFunction(tableHandle.getTable(),
-                t -> constructTableFromFunction(t, colors, Paint.class, y, colName));
-        chart().figure().registerFigureFunction(
-                new FigureImplFunction(f -> f.pointColor(tableHandle.getTable(), colName), this));
-        return this;
-    }
-
     private XYDataSeriesTableArray(final XYDataSeriesTableArray series, final AxesImpl axes) {
         super(series, axes);
         this.tableHandle = series.tableHandle;
