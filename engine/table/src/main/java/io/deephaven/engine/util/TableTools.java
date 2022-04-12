@@ -954,7 +954,7 @@ public class TableTools {
      *
      * @return a time table builder
      */
-    public static TimeTable.Builder newTimeTableBuilder() {
+    public static TimeTable.Builder timeTableBuilder() {
         return TimeTable.newBuilder();
     }
 

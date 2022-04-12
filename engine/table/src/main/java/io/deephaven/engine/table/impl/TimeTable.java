@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -51,47 +52,47 @@ public class TimeTable extends QueryTable implements Runnable {
         private TimeProvider timeProvider;
         private DateTime startTime;
         private long period;
-        private boolean isStreamTable;
+        private boolean streamTable;
 
-        public Builder withRegistrar(UpdateSourceRegistrar registrar) {
+        public Builder registrar(UpdateSourceRegistrar registrar) {
             this.registrar = registrar;
             return this;
         }
 
-        public Builder withTimeProvider(TimeProvider timeProvider) {
+        public Builder timeProvider(TimeProvider timeProvider) {
             this.timeProvider = timeProvider;
             return this;
         }
 
-        public Builder withStartTime(DateTime startTime) {
+        public Builder startTime(DateTime startTime) {
             this.startTime = startTime;
             return this;
         }
 
-        public Builder withStartTime(String startTime) {
+        public Builder startTime(String startTime) {
             this.startTime = DateTimeUtils.convertDateTime(startTime);
             return this;
         }
 
-        public Builder withPeriod(long period) {
+        public Builder period(long period) {
             this.period = period;
             return this;
         }
 
-        public Builder withPeriod(String period) {
+        public Builder period(String period) {
             this.period = DateTimeUtils.expressionToNanos(period);
             return this;
         }
 
-        public Builder asStreamTable() {
-            this.isStreamTable = true;
+        public Builder streamTable(boolean streamTable) {
+            this.streamTable = streamTable;
             return this;
         }
 
         public QueryTable build() {
             return new TimeTable(registrar,
                     timeProvider == null ? Replayer.getTimeProvider(null) : timeProvider,
-                    startTime, period, isStreamTable);
+                    startTime, period, streamTable);
         }
     }
 
@@ -152,15 +153,21 @@ public class TimeTable extends QueryTable implements Runnable {
                         DateTimeUtils.minus(dateTime, columnSource.startTime) / columnSource.period);
             }
 
-            if (rangeStart <= lastIndex) {
-                final RowSet addedRange = RowSetFactory.fromRange(rangeStart, lastIndex);
-                final RowSet removedRange = isStreamTable && rangeStart > 0
+            final boolean rowsAdded = rangeStart <= lastIndex;
+            final boolean rowsRemoved = isStreamTable && getRowSet().firstRowKey() != RowSet.NULL_ROW_KEY;
+            if (rowsAdded || rowsRemoved) {
+                final RowSet addedRange = rowsAdded
+                        ? RowSetFactory.fromRange(rangeStart, lastIndex)
+                        : RowSetFactory.empty();
+                final RowSet removedRange = rowsRemoved
                         ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1)
                         : RowSetFactory.empty();
-                if (isStreamTable && rangeStart > 0) {
+                if (rowsAdded) {
+                    getRowSet().writableCast().insertRange(rangeStart, lastIndex);
+                }
+                if (rowsRemoved) {
                     getRowSet().writableCast().removeRange(0, rangeStart - 1);
                 }
-                getRowSet().writableCast().insertRange(rangeStart, lastIndex);
                 if (notifyListeners) {
                     notifyListeners(addedRange, removedRange, RowSetFactory.empty());
                 }
@@ -176,7 +183,7 @@ public class TimeTable extends QueryTable implements Runnable {
         UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 
-    private static class SyntheticDateTimeSource extends AbstractColumnSource<DateTime> implements
+    private static final class SyntheticDateTimeSource extends AbstractColumnSource<DateTime> implements
             ImmutableColumnSourceGetDefaults.LongBacked<DateTime>,
             FillUnordered {
 
@@ -189,14 +196,22 @@ public class TimeTable extends QueryTable implements Runnable {
             this.period = period;
         }
 
-        @Override
-        public DateTime get(long rowKey) {
+        private DateTime computeDateTime(long rowKey) {
             return DateTimeUtils.plus(startTime, period * rowKey);
         }
 
         @Override
-        public long getLong(long rowKey) {
+        public DateTime get(long rowKey) {
+            return computeDateTime(rowKey);
+        }
+
+        private long computeNanos(long rowKey) {
             return startTime.getNanos() + period * rowKey;
+        }
+
+        @Override
+        public long getLong(long rowKey) {
+            return computeNanos(rowKey);
         }
 
         @Override
@@ -238,7 +253,7 @@ public class TimeTable extends QueryTable implements Runnable {
         public Map<DateTime, RowSet> getValuesMapping(RowSet subRange) {
             final Map<DateTime, RowSet> result = new LinkedHashMap<>();
             subRange.forAllRowKeys(
-                    ii -> result.put(get(ii), RowSetFactory.fromKeys(ii)));
+                    ii -> result.put(computeDateTime(ii), RowSetFactory.fromKeys(ii)));
             return result;
         }
 
@@ -256,13 +271,19 @@ public class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
+        public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+                                   @NotNull RowSequence rowSequence) {
+            fillChunk(context, destination, rowSequence);
+        }
+
+        @Override
         public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
                 @NotNull LongChunk<? extends RowKeys> keys) {
             final WritableObjectChunk<DateTime, ? super Values> objectDest = dest.asWritableObjectChunk();
             objectDest.setSize(keys.size());
 
             for (int ii = 0; ii < keys.size(); ++ii) {
-                objectDest.set(ii, get(keys.get(ii)));
+                objectDest.set(ii, computeDateTime(keys.get(ii)));
             }
         }
 
@@ -287,12 +308,12 @@ public class TimeTable extends QueryTable implements Runnable {
 
             @Override
             public Long get(long rowKey) {
-                return box(getLong(rowKey));
+                return box(computeNanos(rowKey));
             }
 
             @Override
             public long getLong(long rowKey) {
-                return startTime.getNanos() + period * rowKey;
+                return computeNanos(rowKey);
             }
 
             @Override
@@ -333,7 +354,7 @@ public class TimeTable extends QueryTable implements Runnable {
             public Map<Long, RowSet> getValuesMapping(RowSet subRange) {
                 final Map<Long, RowSet> result = new LinkedHashMap<>();
                 subRange.forAllRowKeys(
-                        ii -> result.put(box(startTime.getNanos() + period * ii), RowSetFactory.fromKeys(ii)));
+                        ii -> result.put(box(computeNanos(ii)), RowSetFactory.fromKeys(ii)));
                 return result;
             }
 
@@ -351,13 +372,19 @@ public class TimeTable extends QueryTable implements Runnable {
             }
 
             @Override
+            public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+                                      @NotNull RowSequence rowSequence) {
+                fillChunk(context, destination, rowSequence);
+            }
+
+            @Override
             public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
                     @NotNull LongChunk<? extends RowKeys> keys) {
                 final WritableLongChunk<? super Values> longDest = dest.asWritableLongChunk();
                 longDest.setSize(keys.size());
 
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    longDest.set(ii, get(keys.get(ii)));
+                    longDest.set(ii, computeNanos(keys.get(ii)));
                 }
             }
 

@@ -344,11 +344,6 @@ public class ColumnsToRowsTransform {
             return getLabel(rowKey);
         }
 
-        @Override
-        public String getPrev(final long rowKey) {
-            return getLabel(rowKey);
-        }
-
         private String getLabel(final long index) {
             return labels[(int) (index & mask)];
         }
