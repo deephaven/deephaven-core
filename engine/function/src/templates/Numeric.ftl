@@ -995,14 +995,14 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        ${pt.primitive} val = ${pt.negInf};
+        ${pt.primitive} val = ${pt.minValue};
         long index = NULL_LONG;
         long count = 0;
         final long n = values.size();
 
         for (long i = 0; i < n; i++) {
             ${pt.primitive} c = values.get(i);
-            if (!isNull(c) && c > val) {
+            if (!isNull(c) && (c > val || (c == val && count == 0))) {
                 val = c;
                 index = i;
                 count++;
@@ -1047,14 +1047,14 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        ${pt.primitive} val = ${pt.posInf};
+        ${pt.primitive} val = ${pt.maxValue};
         long index = NULL_LONG;
         long count = 0;
         final long n = values.size();
 
         for (int i = 0; i < n; i++) {
             ${pt.primitive} c = values.get(i);
-            if (!isNull(c) && c < val) {
+            if (!isNull(c) && (c < val || (c == val && count == 0) )) {
                 val = c;
                 index = i;
                 count++;

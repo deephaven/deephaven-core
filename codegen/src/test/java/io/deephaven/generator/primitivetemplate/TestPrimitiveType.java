@@ -12,8 +12,8 @@ public class TestPrimitiveType extends TestCase {
         assertEquals("DbArrayDEBUG",pt.getDbArray());
         assertEquals("DirectDEBUG",pt.getDbArrayDirect());
         assertEquals("NULLDEBUG",pt.getNull());
-        assertEquals("POSINFDEBUG",pt.getPosInf());
-        assertEquals("NEGINFDEBUG",pt.getNegInf());
+        assertEquals("POSINFDEBUG",pt.getMaxValue());
+        assertEquals("NEGINFDEBUG",pt.getMinValue());
         assertEquals(ValueType.CHARACTER,pt.getValueType());
     }
 }

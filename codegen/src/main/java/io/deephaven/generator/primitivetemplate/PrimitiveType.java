@@ -12,8 +12,8 @@ public class PrimitiveType {
     private final String dbArray;
     private final String dbArrayDirect;
     private final String nullValue;
-    private final String posInf;
-    private final String negInf;
+    private final String maxValue;
+    private final String minValue;
     private final ValueType valueType;
 
     /**
@@ -24,18 +24,18 @@ public class PrimitiveType {
      * @param dbArray name of the DbArray interface
      * @param dbArrayDirect name of the concrete DbArray wrapper
      * @param nullValue null value
-     * @param posInf maximum value
-     * @param negInf minimum value
+     * @param maxValue maximum value
+     * @param minValue minimum value
      * @param valueType type of value
      */
-    public PrimitiveType(final String primitive, final String boxed, final String dbArray, final String dbArrayDirect, final String nullValue, final String posInf, final String negInf, final ValueType valueType) {
+    public PrimitiveType(final String primitive, final String boxed, final String dbArray, final String dbArrayDirect, final String nullValue, final String maxValue, final String minValue, final ValueType valueType) {
         this.primitive = primitive;
         this.boxed = boxed;
         this.dbArray = dbArray;
         this.dbArrayDirect = dbArrayDirect;
         this.nullValue = nullValue;
-        this.posInf = posInf;
-        this.negInf = negInf;
+        this.maxValue = maxValue;
+        this.minValue = minValue;
         this.valueType = valueType;
     }
 
@@ -89,8 +89,8 @@ public class PrimitiveType {
      *
      * @return maximum value of the primitive.
      */
-    public String getPosInf() {
-        return posInf;
+    public String getMaxValue() {
+        return maxValue;
     }
 
     /**
@@ -98,8 +98,8 @@ public class PrimitiveType {
      *
      * @return minimum value of the primitive.
      */
-    public String getNegInf() {
-        return negInf;
+    public String getMinValue() {
+        return minValue;
     }
 
     /**
@@ -128,12 +128,12 @@ public class PrimitiveType {
         return new PrimitiveType[] {
                 new PrimitiveType("Boolean", "Boolean", "BooleanVector", "BooleanVectorDirect", "NULL_BOOLEAN", null, null, ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character", "CharVector", "CharVectorDirect", "NULL_CHAR", null, null, ValueType.CHARACTER),
-                new PrimitiveType("byte", "Byte", "ByteVector", "ByteVectorDirect","NULL_BYTE", "POS_INF_BYTE", "NEG_INF_BYTE", ValueType.INTEGER),
-                new PrimitiveType("short", "Short", "ShortVector","ShortVectorDirect", "NULL_SHORT", "POS_INF_SHORT", "NEG_INF_SHORT", ValueType.INTEGER),
-                new PrimitiveType("int", "Integer", "IntVector", "IntVectorDirect","NULL_INT", "POS_INF_INT", "NEG_INF_INT", ValueType.INTEGER),
-                new PrimitiveType("long", "Long", "LongVector", "LongVectorDirect","NULL_LONG", "POS_INF_LONG", "NEG_INF_LONG", ValueType.INTEGER),
-                new PrimitiveType("float", "Float", "FloatVector", "FloatVectorDirect","NULL_FLOAT", "POS_INF_FLOAT", "NEG_INF_FLOAT",ValueType.FLOATING_POINT),
-                new PrimitiveType("double", "Double", "DoubleVector", "DoubleVectorDirect","NULL_DOUBLE", "POS_INF_DOUBLE", "NEG_INF_DOUBLE", ValueType.FLOATING_POINT),
+                new PrimitiveType("byte", "Byte", "ByteVector", "ByteVectorDirect","NULL_BYTE", "MAX_BYTE", "MIN_BYTE", ValueType.INTEGER),
+                new PrimitiveType("short", "Short", "ShortVector","ShortVectorDirect", "NULL_SHORT", "MAX_SHORT", "MIN_SHORT", ValueType.INTEGER),
+                new PrimitiveType("int", "Integer", "IntVector", "IntVectorDirect","NULL_INT", "MAX_INT", "MIN_INT", ValueType.INTEGER),
+                new PrimitiveType("long", "Long", "LongVector", "LongVectorDirect","NULL_LONG", "MAX_LONG", "MIN_LONG", ValueType.INTEGER),
+                new PrimitiveType("float", "Float", "FloatVector", "FloatVectorDirect","NULL_FLOAT", "MAX_FLOAT", "MIN_FLOAT",ValueType.FLOATING_POINT),
+                new PrimitiveType("double", "Double", "DoubleVector", "DoubleVectorDirect","NULL_DOUBLE", "MAX_DOUBLE", "MIN_DOUBLE", ValueType.FLOATING_POINT),
         };
     }
 }

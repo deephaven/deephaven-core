@@ -5,7 +5,7 @@
 package io.deephaven.querylibrary;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.DbArrayDirect;
+import io.deephaven.vector.BooleanVectorDirect;
 
 import static io.deephaven.querylibrary.Logic.*;
 
@@ -36,19 +36,19 @@ public class TestLogic extends BaseArrayTestCase {
         assertFalse(and(new boolean[]{false, false, true}));
         assertFalse(and(new boolean[]{false, false, false}));
 
-        assertTrue(and(new DbArrayDirect<>(true, true, true)));
-        assertFalse(and(new DbArrayDirect<>(false, true, true)));
-        assertFalse(and(new DbArrayDirect<>(false, false, true)));
-        assertFalse(and(new DbArrayDirect<>(true, false, false)));
-        assertFalse(and(new DbArrayDirect<>(false, false, true)));
-        assertFalse(and(new DbArrayDirect<>(false, false, false)));
+        assertTrue(and(new BooleanVectorDirect(true, true, true)));
+        assertFalse(and(new BooleanVectorDirect(false, true, true)));
+        assertFalse(and(new BooleanVectorDirect(false, false, true)));
+        assertFalse(and(new BooleanVectorDirect(true, false, false)));
+        assertFalse(and(new BooleanVectorDirect(false, false, true)));
+        assertFalse(and(new BooleanVectorDirect(false, false, false)));
 
-        assertTrue(and(new DbArrayDirect<>(true, true, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, true, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), true));
-        assertFalse(and(new DbArrayDirect<>(true, false, null), false));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), false));
+        assertTrue(and(new BooleanVectorDirect(true, true, null), true));
+        assertFalse(and(new BooleanVectorDirect(false, true, null), true));
+        assertFalse(and(new BooleanVectorDirect(false, false, null), true));
+        assertFalse(and(new BooleanVectorDirect(true, false, null), false));
+        assertFalse(and(new BooleanVectorDirect(false, false, null), true));
+        assertFalse(and(new BooleanVectorDirect(false, false, null), false));
     }
 
     public void testOr() {

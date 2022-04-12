@@ -703,17 +703,17 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Sequence(){
-        assertEquals(new ${pt.primitive}[]{0,1,2,3,4,5}, sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})1));
-        assertEquals(new ${pt.primitive}[]{-5,-4,-3,-2,-1,0}, sequence((${pt.primitive})-5, (${pt.primitive})0, (${pt.primitive})1));
+        assertEquals(new ${pt.primitive}[]{0,1,2,3,4,5}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})1));
+        assertEquals(new ${pt.primitive}[]{-5,-4,-3,-2,-1,0}, Numeric.sequence((${pt.primitive})-5, (${pt.primitive})0, (${pt.primitive})1));
 
-        assertEquals(new ${pt.primitive}[]{0,2,4}, sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})2));
-        assertEquals(new ${pt.primitive}[]{-5,-3,-1}, sequence((${pt.primitive})-5, (${pt.primitive})0, (${pt.primitive})2));
+        assertEquals(new ${pt.primitive}[]{0,2,4}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})2));
+        assertEquals(new ${pt.primitive}[]{-5,-3,-1}, Numeric.sequence((${pt.primitive})-5, (${pt.primitive})0, (${pt.primitive})2));
 
-        assertEquals(new ${pt.primitive}[]{5,3,1}, sequence((${pt.primitive})5, (${pt.primitive})0, (${pt.primitive})-2));
-        assertEquals(new ${pt.primitive}[]{0,-2,-4}, sequence((${pt.primitive})0, (${pt.primitive})-5, (${pt.primitive})-2));
+        assertEquals(new ${pt.primitive}[]{5,3,1}, Numeric.sequence((${pt.primitive})5, (${pt.primitive})0, (${pt.primitive})-2));
+        assertEquals(new ${pt.primitive}[]{0,-2,-4}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})-5, (${pt.primitive})-2));
 
-        assertEquals(new ${pt.primitive}[]{}, sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})0));
-        assertEquals(new ${pt.primitive}[]{}, sequence((${pt.primitive})5, (${pt.primitive})0, (${pt.primitive})1));
+        assertEquals(new ${pt.primitive}[]{}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})0));
+        assertEquals(new ${pt.primitive}[]{}, Numeric.sequence((${pt.primitive})5, (${pt.primitive})0, (${pt.primitive})1));
     }
 
     public void test${pt.boxed}Median() {
