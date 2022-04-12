@@ -25,21 +25,13 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
-        DefaultChunkSource.WithPrev<Values>,
-        Serializable {
-
-    private static final long serialVersionUID = 8003280177657671273L;
+        DefaultChunkSource.WithPrev<Values> {
 
     /**
      * Minimum average run length in an {@link RowSequence} that should trigger {@link Chunk}-filling by key ranges
@@ -218,38 +210,6 @@ public abstract class AbstractColumnSource<T> implements
             }
         }
         return result;
-    }
-
-    /**
-     * We have a fair bit of internal state that must be serialized, but not all of our descendants in the class
-     * hierarchy should actually be sent over the wire. If you are implementing a class that should allow this to be
-     * serialized, then you must annotate it with an IsSerializable annotation, containing a value of true.
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface IsSerializable {
-        boolean value() default false;
-    }
-
-    private void writeObject(ObjectOutputStream oos) throws IOException {
-        if (isSerializable())
-            oos.defaultWriteObject();
-        else
-            throw new UnsupportedOperationException(
-                    "AbstractColumnSources are not all serializable, you may be missing a select() call.");
-    }
-
-    /**
-     * Finds the most derived class that has an IsSerializable annotation, and returns its value. If no annotation is
-     * found, then returns false.
-     */
-    private boolean isSerializable() {
-        for (Class<?> clazz = getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-            IsSerializable isSerializable = clazz.getAnnotation(IsSerializable.class);
-            if (isSerializable != null) {
-                return isSerializable.value();
-            }
-        }
-        return false;
     }
 
     @Override

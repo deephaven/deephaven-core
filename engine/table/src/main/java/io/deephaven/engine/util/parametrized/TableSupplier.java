@@ -6,9 +6,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -75,7 +75,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         return method.getName().startsWith(FILTER_OPERATION_PREFIX);
     }
 
-    private final Logger log = ProcessEnvironment.getDefaultLog(TableSupplier.class);
+    private static final Logger log = LoggerFactory.getLogger(TableSupplier.class);
 
     /**
      * The source table used to generate the supplied table

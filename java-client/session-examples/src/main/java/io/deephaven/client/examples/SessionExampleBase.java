@@ -3,8 +3,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.DaggerDeephavenSessionRoot;
 import io.deephaven.client.impl.SessionFactory;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import picocli.CommandLine.Option;
+import picocli.CommandLine.ArgGroup;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -12,15 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 abstract class SessionExampleBase implements Callable<Void> {
-    @Option(names = {"-t", "--target"}, description = "The host target.",
-            defaultValue = "localhost:10000")
-    String target;
 
-    @Option(names = {"-p", "--plaintext"}, description = "Use plaintext.")
-    Boolean plaintext;
-
-    @Option(names = {"-u", "--user-agent"}, description = "User-agent.")
-    String userAgent;
+    @ArgGroup(exclusive = false)
+    ConnectOptions connectOptions;
 
     protected abstract void execute(SessionFactory sessionFactory) throws Exception;
 
@@ -28,16 +21,7 @@ abstract class SessionExampleBase implements Callable<Void> {
     public final Void call() throws Exception {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
-        ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(target);
-        if ((plaintext != null && plaintext) || "localhost:10000".equals(target)) {
-            channelBuilder.usePlaintext();
-        } else {
-            channelBuilder.useTransportSecurity();
-        }
-        if (userAgent != null) {
-            channelBuilder.userAgent(userAgent);
-        }
-        ManagedChannel managedChannel = channelBuilder.build();
+        ManagedChannel managedChannel = ConnectOptions.open(connectOptions);
 
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));

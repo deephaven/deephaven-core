@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.runner.DeephavenApiServerModule",
+ "methods": {
+  "provideAppMode": ":return: io.deephaven.server.appmode.AppMode",
+  "provideScheduler": ":param poolSize: int\n:return: io.deephaven.server.util.Scheduler",
+  "provideUpdateGraphProcessor": ":return: io.deephaven.engine.updategraph.UpdateGraphProcessor"
+ },
+ "path": "io.deephaven.server.runner.DeephavenApiServerModule",
+ "typeName": "class"
+}

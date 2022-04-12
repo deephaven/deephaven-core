@@ -8,29 +8,34 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.exceptions.OperationException;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.util.jpy.JpyInit;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.PythonDeephavenSession.PythonSnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.KeyError;
 import org.jpy.PyDictWrapper;
+import org.jpy.PyInputMode;
+import org.jpy.PyLib.CallableKind;
+import org.jpy.PyModule;
 import org.jpy.PyObject;
 
+import java.io.Closeable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -41,7 +46,7 @@ import java.util.stream.Collectors;
  * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
  * supporting structures.
  */
-public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
+public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot> implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
@@ -51,43 +56,51 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
     public static String SCRIPT_TYPE = "Python";
 
+    private final PythonScriptSessionModule module;
+
     private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
-    private final PythonScope<?> scope;
+    private final PythonScope<PyObject> scope;
 
     /**
      * Create a Python ScriptSession.
      *
+     * @param objectTypeLookup the object type lookup
      * @param runInitScripts if init scripts should be executed
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    public PythonDeephavenSession(boolean runInitScripts) throws IOException {
-        this(null, runInitScripts, false);
+    public PythonDeephavenSession(ObjectTypeLookup objectTypeLookup, boolean runInitScripts)
+            throws IOException {
+        this(objectTypeLookup, null, runInitScripts, false);
     }
 
     /**
      * Create a Python ScriptSession.
      *
+     * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
-            @Nullable final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
+            boolean isDefaultScriptSession)
             throws IOException {
-        super(listener, isDefaultScriptSession);
-
-        JpyInit.init(log);
+        super(objectTypeLookup, listener, isDefaultScriptSession);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();
+        this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven2.server.script_session")
+                .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         /*
          * We redirect the standard Python sys.stdout and sys.stderr streams to our log object.
          */
         PythonLogAdapter.interceptOutputStreams(evaluator);
+
+        publishInitial();
 
         /*
          * And now the user-defined initialization scripts, if any.
@@ -114,9 +127,9 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(null, false);
-
-        this.scope = scope;
+        super(NoOp.INSTANCE, null, false);
+        this.scope = (PythonScope<PyObject>) scope;
+        this.module = null;
         this.evaluator = null;
         this.scriptFinder = null;
     }
@@ -186,6 +199,65 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         return Collections.unmodifiableMap(scope.getEntriesMap());
     }
 
+    protected static class PythonSnapshot implements Snapshot, Closeable {
+
+        private final PyDictWrapper dict;
+
+        public PythonSnapshot(PyDictWrapper dict) {
+            this.dict = Objects.requireNonNull(dict);
+        }
+
+        @Override
+        public void close() {
+            dict.close();
+        }
+    }
+
+    @Override
+    protected PythonSnapshot emptySnapshot() {
+        return new PythonSnapshot(PyObject.executeCode("dict()", PyInputMode.EXPRESSION).asDict());
+    }
+
+    @Override
+    protected PythonSnapshot takeSnapshot() {
+        return new PythonSnapshot(scope.globals().copy());
+    }
+
+    @Override
+    protected Changes createDiff(PythonSnapshot from, PythonSnapshot to, RuntimeException e) {
+        // TODO(deephaven-core#1775): multivariate jpy (unwrapped) return type into java
+        // It would be great if we could push down the maybeUnwrap logic into create_change_list (it could handle the
+        // unwrapping), but we are unable to tell jpy that we want to unwrap JType objects, but pass back python objects
+        // as PyObject.
+        try (
+                PythonSnapshot fromSnapshot = from;
+                PythonSnapshot toSnapshot = to;
+                PyObject changes = module.create_change_list(fromSnapshot.dict.unwrap(), toSnapshot.dict.unwrap())) {
+            final Changes diff = new Changes();
+            diff.error = e;
+            for (PyObject change : changes.asList()) {
+                // unpack the tuple
+                // (name, existing_value, new_value)
+                final String name = change.call(String.class, "__getitem__", int.class, 0);
+                final PyObject fromValue = change.call(PyObject.class, "__getitem__", int.class, 1);
+                final PyObject toValue = change.call(PyObject.class, "__getitem__", int.class, 2);
+                applyVariableChangeToDiff(diff, name, maybeUnwrap(fromValue), maybeUnwrap(toValue));
+            }
+            return diff;
+        }
+    }
+
+    private Object maybeUnwrap(PyObject o) {
+        if (o == null) {
+            return null;
+        }
+        final Object javaObject = module.unwrap_to_java_type(o);
+        if (javaObject != null) {
+            return javaObject;
+        }
+        return o;
+    }
+
     @Override
     public Set<String> getVariableNames() {
         return Collections.unmodifiableSet(scope.getKeys().collect(Collectors.toSet()));
@@ -197,8 +269,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public void setVariable(String name, @Nullable Object newValue) {
-        final Object oldValue = getVariable(name, null);
+    public synchronized void setVariable(String name, @Nullable Object newValue) {
+        final PythonSnapshot fromSnapshot = takeSnapshot();
         final PyDictWrapper globals = scope.globals();
         if (newValue == null) {
             try {
@@ -209,7 +281,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
         } else {
             globals.setItem(name, newValue);
         }
-        notifyVariableChange(name, oldValue, newValue);
+        final PythonSnapshot toSnapshot = takeSnapshot();
+        applyDiff(fromSnapshot, toSnapshot, null);
     }
 
     @Override
@@ -241,62 +314,20 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
-            if (isWidget(pyObject)) {
-                return getWidget(pyObject);
-            } else if (isTable(pyObject)) {
-                return getTable(pyObject);
+            final Object unwrapped = module.unwrap_to_java_type(pyObject);
+            if (unwrapped != null) {
+                return unwrapped;
             }
         }
 
         return object;
     }
 
-    private static final String GET_WIDGET_ATTRIBUTE = "getWidget";
+    interface PythonScriptSessionModule extends Closeable {
+        PyObject create_change_list(PyObject from, PyObject to);
 
-    private static boolean isWidget(PyObject value) {
-        if ((value != null && value.hasAttribute(GET_WIDGET_ATTRIBUTE))) {
-            try (final PyObject widget = value.callMethod(GET_WIDGET_ATTRIBUTE)) {
-                return !widget.isNone();
-            }
-        }
+        Object unwrap_to_java_type(PyObject object);
 
-        return false;
-    }
-
-    private static LiveWidget getWidget(PyObject pyObject) {
-        boolean isWidget = pyObject.hasAttribute(GET_WIDGET_ATTRIBUTE);
-        if (isWidget) {
-            try (final PyObject widget = pyObject.callMethod(GET_WIDGET_ATTRIBUTE)) {
-                if (!widget.isNone()) {
-                    return (LiveWidget) widget.getObjectValue();
-                }
-            }
-        }
-
-        throw new OperationException("Can not convert pyOjbect=" + pyObject + " to a LiveWidget.");
-    }
-
-    private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
-
-    private static boolean isTable(PyObject value) {
-        if ((value != null && value.hasAttribute(GET_TABLE_ATTRIBUTE))) {
-            try (final PyObject widget = value.callMethod(GET_TABLE_ATTRIBUTE)) {
-                return !widget.isNone();
-            }
-        }
-
-        return false;
-    }
-
-    private static Table getTable(PyObject pyObject) {
-        if (pyObject.hasAttribute(GET_TABLE_ATTRIBUTE)) {
-            try (final PyObject widget = pyObject.callMethod(GET_TABLE_ATTRIBUTE)) {
-                if (!widget.isNone()) {
-                    return (Table) widget.getObjectValue();
-                }
-            }
-        }
-
-        throw new OperationException("Can not convert pyObject=" + pyObject + " to a Table.");
+        void close();
     }
 }

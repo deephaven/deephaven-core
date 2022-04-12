@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.appmode.ScriptApplicationState",
- "methods": {
-  "setCustomField": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param type: java.lang.String\n  :param name: java.lang.String\n  :param value: T\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param type: java.lang.String\n  :param name: java.lang.String\n  :param value: T\n  :param description: java.lang.String",
-  "setField": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param name: java.lang.String\n  :param value: T\n  :param description: java.lang.String\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param name: java.lang.String\n  :param value: T"
- },
- "path": "io.deephaven.grpc_api.appmode.ScriptApplicationState",
- "typeName": "class"
-}

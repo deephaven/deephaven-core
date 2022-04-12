@@ -5,14 +5,12 @@
 package io.deephaven.stats;
 
 import io.deephaven.base.clock.TimeConstants;
-import io.deephaven.util.loggers.SimpleMailAppender;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.State;
 import io.deephaven.hash.KeyedObjectHash;
 import io.deephaven.hash.KeyedObjectKey;
-import org.apache.log4j.*;
 
 import java.lang.management.*;
 import java.text.SimpleDateFormat;
@@ -28,8 +26,6 @@ public class StatsMemoryCollector {
     private final MemoryMXBean memoryBean;
     private final Consumer<String> alertFunction;
     private final BooleanSupplier cmsAlertEnabled;
-
-    private static final Logger log = Logger.getLogger(StatsMemoryCollector.class);
 
     /*
      * This used to use the ServerStatus.getJvmUptime(), which is really only interesting because it is the first time
@@ -128,25 +124,13 @@ public class StatsMemoryCollector {
                 time.sample(timeSample);
 
                 if ("ConcurrentMarkSweep".equals(bean.getName())) {
-                    if (timeSample > 1000 && getStatsUptime() > 300000) {
-                        // snooze this e-mail for one minute after we forcefully schedule a preopen gc
-                        if (enableCmsAlerts.getAsBoolean()) {
-                            log.log(SimpleMailAppender
-                                    .MAIL("Long GC detected -- " + System.getProperty("process.name")),
-                                    "GC Time=" + timeSample);
-                        }
-                    }
-
                     if (c - lastCount > 0 && getStatsUptime() > 600000) {
                         final long now = System.currentTimeMillis();
                         if (now - lastCMSOccurrence < 30000) { // twice in 30 seconds seems like a bit much
                             if (now - lastCMSOccurrenceMailSent > TimeConstants.HOUR) { // send at most one an hour
                                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
                                 final String message =
                                         "Last CMS collection at " + dateFormat.format(new Date(lastCMSOccurrence));
-                                log.log(SimpleMailAppender
-                                        .MAIL("Rapid CMS detected -- " + System.getProperty("process.name")), message);
                                 if (alertFunction != null) {
                                     alertFunction.accept("Rapid CMS detected, " + message);
                                 }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.util.ApplicationTicketHelper",
+ "methods": {
+  "applicationFieldToBytes": "Convenience method to create the flight ticket bytes for the application field.\n\n:param applicationId: (java.lang.String) - the application ID\n:param fieldName: (java.lang.String) - the field name\n:return: (byte[]) the ticket bytes",
+  "applicationFieldToPath": "Convenience method to create the flight descriptor path for the application field.\n\n:param applicationId: (java.lang.String) - the application ID\n:param fieldName: (java.lang.String) - the field name\n:return: (java.util.List<java.lang.String>) the path"
+ },
+ "path": "io.deephaven.proto.util.ApplicationTicketHelper",
+ "typeName": "class"
+}

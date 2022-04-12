@@ -1,0 +1,27 @@
+import io.deephaven.tools.License
+
+plugins {
+    id 'io.deephaven.project.register'
+    id 'com.bmuschko.docker-remote-api'
+}
+
+def dockerContext = project.layout.buildDirectory.dir('context')
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    from 'src/main/docker'
+    from(dockerLicenses.outputs) {
+        into 'files'
+    }
+    into dockerContext
+}
+
+Docker.registerDockerImage(project, 'buildDocker') {
+    inputDir.set dockerContext
+    inputs.files prepareDocker.get().outputs.files
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
+    images.add('deephaven/web-plugin-packager:local-build')
+}
+
+assemble.dependsOn buildDocker

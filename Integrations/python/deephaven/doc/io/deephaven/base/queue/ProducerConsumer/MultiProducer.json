@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.base.queue.ProducerConsumer$MultiProducer",
+ "methods": {},
+ "path": "io.deephaven.base.queue.ProducerConsumer.MultiProducer",
+ "text": "Must implement at least: Multiple threads may call produce(), one thread may call consume()",
+ "typeName": "interface"
+}

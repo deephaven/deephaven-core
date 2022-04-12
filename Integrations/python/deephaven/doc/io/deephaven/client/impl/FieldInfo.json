@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.client.impl.FieldInfo",
+ "methods": {
+  "applicationId": ":return: java.lang.String",
+  "applicationName": ":return: java.lang.String",
+  "description": ":return: java.util.Optional<java.lang.String>",
+  "name": ":return: java.lang.String",
+  "ticket": ":return: io.deephaven.client.impl.TicketId",
+  "toString": ":return: java.lang.String",
+  "type": ":return: java.util.Optional<java.lang.String>"
+ },
+ "path": "io.deephaven.client.impl.FieldInfo",
+ "typeName": "class"
+}

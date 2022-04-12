@@ -39,6 +39,11 @@ public class InMemoryTable extends QueryTable {
                 columns);
     }
 
+    public static InMemoryTable from(TableDefinition definition, TrackingRowSet rowSet,
+            Map<String, ? extends ColumnSource<?>> columns) {
+        return new InMemoryTable(definition, rowSet, columns);
+    }
+
     public InMemoryTable(String[] columnNames, Object[] arrayValues) {
         super(RowSetFactory.flat(Array.getLength(arrayValues[0])).toTracking(),
                 createColumnsMap(columnNames, arrayValues));

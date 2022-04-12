@@ -13,6 +13,7 @@ __all__ = ['Aggregation', 'ColumnRenderersBuilder', 'DistinctFormatter', 'Downsa
 
 # None until the first successful _defineSymbols() call
 Aggregation = None       #: Class to supply helpers for constructing aggregations
+ColumnName = None               #: Class to represent a column name
 ColumnRenderersBuilder = None   #: Class to build and parse the directive for Table.COLUMN_RENDERERS_ATTRIBUTE (io.deephaven.engine.util.ColumnRenderersBuilder).
 DistinctFormatter = None        #: Class to create distinct and unique coloration for each unique input value (io.deephaven.engine.util.ColorUtil$DistinctFormatter).
 DownsampledWhereFilter = None   #: Class to downsample time series data by calculating the bin intervals for values, and then using upperBin and lastBy to select the last row for each bin (io.deephaven.engine.table.impl.select.DownsampledWhereFilter).
@@ -33,12 +34,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global Aggregation, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, Replayer, SmartKey, SortColumn, TotalsTableBuilder
 
     if Aggregation is None:
         # This will raise an exception if the desired object is not the classpath
         Aggregation = jpy.get_type('io.deephaven.api.agg.Aggregation')
+        ColumnName = jpy.get_type("io.deephaven.api.ColumnName")
         ColumnRenderersBuilder = jpy.get_type('io.deephaven.engine.util.ColumnRenderersBuilder')
         DistinctFormatter = jpy.get_type('io.deephaven.engine.util.ColorUtil$DistinctFormatter')
         DownsampledWhereFilter = jpy.get_type('io.deephaven.engine.table.impl.select.DownsampledWhereFilter')

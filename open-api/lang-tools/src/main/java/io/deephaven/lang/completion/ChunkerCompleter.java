@@ -636,6 +636,10 @@ public class ChunkerCompleter implements CompletionHandler {
             // user wants completion on the ident itself...
             String src = node.toSource();
             final Token tok = node.jjtGetFirstToken();
+            if (tok.startIndex > request.getCandidate()) {
+                // would result in a negative substring, abort
+                return;
+            }
             src = src.substring(0, request.getCandidate() - tok.startIndex);
             addMethodsAndVariables(results, node.jjtGetFirstToken(), request, Collections.singletonList(node), src);
         }

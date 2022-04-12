@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An export represents a server-side object that is being kept alive.
+ * An export represents a server-side Table that is being kept alive.
  *
  * <p>
  * Callers must maintain ownership of their exports, and close them when no longer needed.
@@ -28,7 +28,7 @@ public final class Export implements AutoCloseable, HasExportId {
 
     @Override
     public ExportId exportId() {
-        return new ExportId(state.exportId());
+        return new ExportId("Table", state.exportId());
     }
 
     @Override

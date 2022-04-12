@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageStreamGenerator$SchemaView",
+ "methods": {
+  "forEachStream": ":param visitor: java.util.function.Consumer<java.io.InputStream>",
+  "isViewport": ":return: boolean",
+  "keyspaceViewport": ":return: io.deephaven.engine.rowset.RowSet",
+  "options": ":return: io.deephaven.extensions.barrage.util.StreamReaderOptions"
+ },
+ "path": "io.deephaven.server.barrage.BarrageStreamGenerator.SchemaView",
+ "typeName": "class"
+}

@@ -61,11 +61,6 @@ class ConsoleServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.FromString,
                 )
-        self.FetchFigure = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/FetchFigure',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.FetchFigureRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.FetchFigureResponse.FromString,
-                )
 
 
 class ConsoleServiceServicer(object):
@@ -137,12 +132,6 @@ class ConsoleServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def FetchFigure(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_ConsoleServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -190,11 +179,6 @@ def add_ConsoleServiceServicer_to_server(servicer, server):
                     servicer.NextAutoCompleteStream,
                     request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.SerializeToString,
-            ),
-            'FetchFigure': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchFigure,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.FetchFigureRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.FetchFigureResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -358,22 +342,5 @@ class ConsoleService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream',
             deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def FetchFigure(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/FetchFigure',
-            deephaven_dot_proto_dot_console__pb2.FetchFigureRequest.SerializeToString,
-            deephaven_dot_proto_dot_console__pb2.FetchFigureResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

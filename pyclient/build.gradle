@@ -7,6 +7,7 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn Docker.registryProject('python')
@@ -40,8 +41,8 @@ tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyCl
     }
 })
 
-// Start up a docker container for the grpc-api, then run pydeephaven test
-evaluationDependsOn(':grpc-api-server-docker')
+// Start up a docker container for the grpc server, then run pydeephaven test
+evaluationDependsOn(':docker-server')
 String randomSuffix = UUID.randomUUID().toString();
 String dockerContainerName = "pydeephaven-test-container-${randomSuffix}"
 String dockerNetworkName = "pydeephaven-network-${randomSuffix}"
@@ -53,9 +54,9 @@ def removeDeephavenGrpcApiNetwork = tasks.register('removeDeephavenGrpcApiNetwor
 }
 
 def createDeephavenGrpcApi = tasks.register('createDeephavenGrpcApi', DockerCreateContainer) {
-    def grpcApiImage = project(':grpc-api-server-docker').tasks.named('dockerBuildImage');
+    def grpcApiImage = project(':docker-server').tasks.findByName('buildDocker-server')//docker-server-netty
     dependsOn grpcApiImage, createDeephavenGrpcApiNetwork
-    targetImageId grpcApiImage.get().getImageId()
+    targetImageId grpcApiImage.getImageId()
     containerName.set dockerContainerName
     hostConfig.network.set dockerNetworkName
 }
@@ -99,7 +100,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     dockerfile {
         from('deephaven/python:local-build')
         runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 pandas==1.2.5;\\
+                      pip3 install unittest-xml-reporting==3.0.4 pyarrow==6.0.1 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 pandas==1.2.5;\\
                       mkdir -p /out/report'''
         environmentVariable 'DH_HOST', dockerContainerName
         environmentVariable 'DH_PORT', '8080'

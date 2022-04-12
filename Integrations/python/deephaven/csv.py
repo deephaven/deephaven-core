@@ -10,39 +10,13 @@ from typing import Dict, Any, List
 import jpy
 import wrapt
 
-from deephaven.Types import DataType
+import deephaven.Types as dht
 
 _JCsvHelpers = None
-_JCsvSpecs = None
-_JInferenceSpecs = None
 _JTableHeader = None
-_JCharset = None
 _JCsvTools = None
-
-
-INFERENCE_STRINGS = None
-""" The order of parsing: STRING, INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, BYTE, FLOAT. 
-The parsers after STRING are only relevant when a specific column data type is given.
-"""
-
-INFERENCE_MINIMAL = None
-""" The order of parsing: INSTANT, LONG, DOUBLE, BOOL, STRING, BYTE, SHORT, INT, FLOAT, CHAR.
-The parsers after STRING are only relevant when a specific column data type is given.
-"""
-
-INFERENCE_STANDARD = None
-""" The order of parsing: INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
-The parsers after STRING are only relevant when a specific column data type is given.
-"""
-
-INFERENCE_STANDARD_TIMES = None
-""" The order of parsing: INSTANT, INSTANT_LEGACY, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS, SHORT, INT, 
-LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
- 
-For values that can be parsed as SECONDS/MILLISECONDS/MICROSECONDS/NANOSECONDS, they must be within the 21 century.
-
-The parsers after STRING are only relevant when a specific column data type is given.
-"""
+_JParsers = None
+_JArrays = None
 
 
 def _defineSymbols():
@@ -55,22 +29,16 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _JCsvHelpers, _JCsvSpecs, _JInferenceSpecs, _JTableHeader, _JCharset, _JCsvTools, \
-        INFERENCE_STRINGS, INFERENCE_MINIMAL, INFERENCE_STANDARD, INFERENCE_STANDARD_TIMES
+    global _JCsvHelpers, _JTableHeader, _JCsvTools, _JParsers, _JArrays
 
     if _JCsvHelpers is None:
         # This will raise an exception if the desired object is not the classpath
         _JCsvHelpers = jpy.get_type("io.deephaven.csv.CsvTools")
-        _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
-        _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
         _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
-        _JCharset = jpy.get_type("java.nio.charset.Charset")
         _JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
+        _JParsers = jpy.get_type("io.deephaven.csv.parsers.Parsers")
+        _JArrays = jpy.get_type("java.util.Arrays")
 
-        INFERENCE_STRINGS = _JInferenceSpecs.strings()
-        INFERENCE_MINIMAL = _JInferenceSpecs.minimal()
-        INFERENCE_STANDARD = _JInferenceSpecs.standard()
-        INFERENCE_STANDARD_TIMES = _JInferenceSpecs.standardTimes()
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
@@ -90,21 +58,8 @@ def _passThrough(wrapped, instance, args, kwargs):
 
 
 @_passThrough
-def _build_header(header: Dict[str, DataType] = None):
-    if not header:
-        return None
-
-    table_header_builder = _JTableHeader.builder()
-    for k, v in header.items():
-        table_header_builder.putHeaders(k, v)
-
-    return table_header_builder.build()
-
-
-@_passThrough
 def read(path: str,
-         header: Dict[str, DataType] = None,
-         inference: Any = None,
+         header: Dict[str, dht.DataType] = None,
          headless: bool = False,
          delimiter: str = ",",
          quote: str = "\"",
@@ -116,7 +71,6 @@ def read(path: str,
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DataType]): a dict to define the table columns with key being the name, value being the data type
-        inference (csv.Inference): an Enum value specifying the rules for data type inference, default is INFERENCE_STANDARD_TIMES
         headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
@@ -132,29 +86,34 @@ def read(path: str,
         Exception
     """
 
-    if inference is None:
-        inference = INFERENCE_STANDARD_TIMES
+    csv_specs_builder = _JCsvTools.builder()
 
-    try:
-        csv_specs_builder = _JCsvSpecs.builder()
+    if header:
+        csv_specs_builder.headers(_JArrays.asList(list(header.keys())))
+        parser_map = {
+            dht.bool_ : _JParsers.BOOLEAN,
+            dht.byte : _JParsers.BYTE,
+            dht.char : _JParsers.CHAR,
+            dht.short : _JParsers.SHORT,
+            dht.int_ : _JParsers.INT,
+            dht.long_ : _JParsers.LONG,
+            dht.float_ : _JParsers.FLOAT_FAST,
+            dht.double : _JParsers.DOUBLE,
+            dht.string : _JParsers.STRING,
+            dht.datetime : _JParsers.DATETIME
+        }
+        for column_name, column_type in header.items():
+            csv_specs_builder.putParserForName(column_name, parser_map[column_type])
 
-        # build the head spec
-        table_header = _build_header(header)
-        if table_header:
-            csv_specs_builder.header(table_header)
+    csv_specs = (csv_specs_builder
+                 .hasHeaderRow(not headless)
+                 .delimiter(ord(delimiter))
+                 .quote(ord(quote))
+                 .ignoreSurroundingSpaces(ignore_surrounding_spaces)
+                 .trim(trim)
+                 .build())
 
-        csv_specs = (csv_specs_builder.inference(inference)
-                     .hasHeaderRow(not headless)
-                     .delimiter(ord(delimiter))
-                     .quote(ord(quote))
-                     .ignoreSurroundingSpaces(ignore_surrounding_spaces)
-                     .trim(trim)
-                     .charset(_JCharset.forName(charset))
-                     .build())
-
-        return _JCsvHelpers.readCsv(path, csv_specs)
-    except Exception as e:
-        raise Exception(e, "read_csv failed") from e
+    return _JCsvHelpers.readCsv(path, csv_specs)
 
 
 @_passThrough
@@ -169,7 +128,4 @@ def write(table: object, path: str, cols: List[str] = []) -> None:
     Raises:
         Exception
     """
-    try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
-    except Exception as e:
-        raise Exception("write csv failed.") from e
+    _JCsvTools.writeCsv(table, False, path, *cols)

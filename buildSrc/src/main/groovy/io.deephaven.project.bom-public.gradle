@@ -1,0 +1,33 @@
+import io.deephaven.project.util.JavaDependencies
+import io.deephaven.project.util.PublishingConstants
+
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'java-platform'
+    id 'maven-publish'
+    id 'signing'
+}
+
+publishing {
+    publications {
+        myPlatform(MavenPublication) {
+            from components.javaPlatform
+            pom {
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+            }
+        }
+    }
+}
+
+PublishingConstants.setupRepositories(project)
+PublishingConstants.setupMavenPublication(project, publishing.publications.myPlatform)
+PublishingConstants.setupSigning(project, publishing.publications.myPlatform)
+
+project.tasks
+        .getByName('quick')
+        .dependsOn JavaDependencies.verifyAllConfigurationsArePublicTask(project)

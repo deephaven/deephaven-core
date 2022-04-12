@@ -96,9 +96,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         if (index < 0 || index > maxIndex) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getByteUnsafe(index);
     }
 
     private byte getByteUnsafe(long index) {
@@ -124,11 +122,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     @Override
     public Boolean getPrev(long index) {
         return BooleanUtils.byteAsBoolean(getPrevByte(index));
-    }
-
-    @Override
-    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
-        set(destKey,sourceColumn.get(sourceKey));
     }
 
     @Override
@@ -284,7 +277,18 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
+    public boolean exposesChunkedBackingStore() {
+        return false;
+    }
+
+    @Override
     public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        // we can not support this operation, because the backing array is a byte and not the type of the column
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         // we can not support this operation, because the backing array is a byte and not the type of the column
         throw new UnsupportedOperationException();
     }
@@ -610,11 +614,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
 
         @Override
-        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-            BooleanArraySource.this.set(destKey, sourceColumn.getByte(sourceKey));
-        }
-
-        @Override
         public void ensureCapacity(long capacity, boolean nullFill) {
             BooleanArraySource.this.ensureCapacity(capacity, nullFill);
         }
@@ -639,6 +638,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             BooleanArraySource.this.fillFromChunkUnordered(src, keys, chunk::get);
+        }
+
+        @Override
+        public boolean providesFillUnordered() {
+            return true;
         }
     }
 }

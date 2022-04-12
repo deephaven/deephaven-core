@@ -1,0 +1,16 @@
+FROM continuumio/miniconda3
+
+EXPOSE 8090
+
+RUN apt-get update && apt-get -qy install curl
+RUN conda config --set channel_priority strict
+RUN conda create -c conda-forge -n pypy pypy3.7
+RUN echo "conda activate pypy" >> ~/.bashrc
+SHELL ["/bin/bash", "--login", "-c"]
+RUN pypy -m ensurepip && pypy -mpip install -U pip wheel && pypy -mpip install barnum kafka-python mysql-connector-python requests wait-for-it
+
+RUN mkdir /loadgen
+COPY generate_load.py /loadgen
+COPY pypy-docker-entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ["pypy-docker-entrypoint.sh"]

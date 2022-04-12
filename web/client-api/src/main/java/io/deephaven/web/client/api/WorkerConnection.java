@@ -33,11 +33,13 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -55,7 +57,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Tabl
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
@@ -69,6 +73,7 @@ import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
+import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -78,7 +83,6 @@ import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.ide.VariableType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
@@ -122,7 +126,7 @@ public class WorkerConnection {
 
     static {
         // TODO configurable, let us support this even when ssl?
-        if (DomGlobal.window.location.getProtocol().equals("http:")) {
+        if (DomGlobal.window.location.protocol.equals("http:")) {
             useWebsockets = true;
             Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
         } else {
@@ -171,6 +175,7 @@ public class WorkerConnection {
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
     private InputTableServiceClient inputTableServiceClient;
+    private ObjectServiceClient objectServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -213,6 +218,7 @@ public class WorkerConnection {
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         inputTableServiceClient =
                 new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -693,22 +699,12 @@ public class WorkerConnection {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        switch (VariableType.valueOf(definition.getType())) {
-            case Table:
-                return (Promise) getTable(definition, null);
-            case TreeTable:
-                return (Promise) getTreeTable(definition);
-            case Figure:
-                return (Promise) getFigure(definition);
-            case Pandas:
-                return (Promise) getPandas(definition);
-            // case OtherWidget:
-            // return (Promise) getWidget(definition.getName());
-            // case TableMap:
-            // return (Promise) getTableMap(definition.getName());
-            default:
-                return Promise.reject(
-                        new Error("Object " + definition.getTitle() + " unknown type " + definition.getType() + "."));
+        if (definition.getType().equals(JsVariableChanges.TABLE)) {
+            return (Promise) getTable(definition, null);
+        } else if (definition.getType().equals(JsVariableChanges.FIGURE)) {
+            return (Promise) getFigure(definition);
+        } else {
+            return (Promise) getWidget(definition);
         }
     }
 
@@ -726,7 +722,7 @@ public class WorkerConnection {
 
                 JsArray<FieldInfo> removedFI = data.getRemovedList();
                 for (int i = 0; i < removedFI.length; ++i) {
-                    String removedId = removedFI.getAt(i).getTicket().getTicket_asB64();
+                    String removedId = removedFI.getAt(i).getTypedTicket().getTicket().getTicket_asB64();
                     JsVariableDefinition result = knownFields.get(removedId);
                     removed[removed.length] = result;
                     knownFields.remove(removedId);
@@ -816,12 +812,30 @@ public class WorkerConnection {
     }
 
     public Promise<JsFigure> getFigure(JsVariableDefinition varDef) {
+        if (!varDef.getType().equals("Figure")) {
+            throw new IllegalArgumentException("Can't load as a figure: " + varDef.getType());
+        }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this, c -> {
-                    FetchFigureRequest request = new FetchFigureRequest();
-                    request.setSourceId(TableTicket.createTicket(varDef));
-                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
                 }).refetch());
+    }
+
+    public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return whenServerReady("get a widget")
+                .then(server -> Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
+                    FetchObjectRequest request = new FetchObjectRequest();
+                    TypedTicket typedTicket = new TypedTicket();
+                    typedTicket.setTicket(TableTicket.createTicket(varDef));
+                    typedTicket.setType(varDef.getType());
+                    request.setSourceId(typedTicket);
+                    objectServiceClient().fetchObject(request, metadata(), c::apply);
+                })).then(response -> Promise.resolve(new JsWidget(this, response)));
     }
 
     public void registerFigure(JsFigure figure) {
@@ -849,8 +863,16 @@ public class WorkerConnection {
         return flightServiceClient;
     }
 
+    public BrowserFlightServiceClient browserFlightServiceClient() {
+        return browserFlightServiceClient;
+    }
+
     public InputTableServiceClient inputTableServiceClient() {
         return inputTableServiceClient;
+    }
+
+    public ObjectServiceClient objectServiceClient() {
+        return objectServiceClient;
     }
 
     public BrowserHeaders metadata() {
@@ -1244,8 +1266,8 @@ public class WorkerConnection {
                     result.or(bs2);
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
-                String[] columnTypes = Arrays.stream(state.getAllColumns())
-                        .map(Column::getType)
+                String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
+                        .map(ColumnDefinition::getType)
                         .toArray(String[]::new);
 
                 state.setSubscribed(true);
@@ -1300,7 +1322,7 @@ public class WorkerConnection {
                                 BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
                                         new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
                                                 data.getAppMetadata_asU8()));
-                        if (barrageMessageWrapper.msgType() == 0) {
+                        if (barrageMessageWrapper.msgType() == BarrageMessageType.None) {
                             // continue previous message, just read RecordBatch
                             appendAndMaybeFlush(header, body);
                         } else {

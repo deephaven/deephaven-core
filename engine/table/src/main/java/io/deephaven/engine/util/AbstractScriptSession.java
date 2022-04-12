@@ -9,14 +9,17 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.util.AbstractScriptSession.Snapshot;
+import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,18 +27,25 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
 /**
  * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation for
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
-    public static final String CLASS_CACHE_LOCATION = Configuration.getInstance()
-            .getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
+public abstract class AbstractScriptSession<S extends Snapshot> extends LivenessScope
+        implements ScriptSession, VariableProvider {
+
+    private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
     public static void createScriptCache() {
-        final File classCacheDirectory = new File(CLASS_CACHE_LOCATION);
+        final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
         createOrClearDirectory(classCacheDirectory);
     }
 
@@ -55,13 +65,17 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     protected final QueryLibrary queryLibrary;
     protected final CompilerTools.Context compilerContext;
 
+    private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
 
-    protected AbstractScriptSession(@Nullable Listener changeListener, boolean isDefaultScriptSession) {
+    protected AbstractScriptSession(ObjectTypeLookup objectTypeLookup, @Nullable Listener changeListener,
+            boolean isDefaultScriptSession) {
+        this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
+        // TODO(deephaven-core#1713): Introduce instance-id concept
         final UUID scriptCacheId = UuidCreator.getRandomBased();
-        classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
+        classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
         createOrClearDirectory(classCacheDirectory);
 
         queryScope = newQueryScope();
@@ -90,10 +104,32 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         }
     }
 
+    protected synchronized void publishInitial() {
+        applyDiff(emptySnapshot(), takeSnapshot(), null);
+    }
+
+    interface Snapshot {
+
+    }
+
+    protected abstract S emptySnapshot();
+
+    protected abstract S takeSnapshot();
+
+    protected abstract Changes createDiff(S from, S to, RuntimeException e);
+
+    protected Changes applyDiff(S from, S to, RuntimeException e) {
+        final Changes diff = createDiff(from, to, e);
+        if (changeListener != null) {
+            changeListener.onScopeChanges(this, diff);
+        }
+        return diff;
+    }
+
     @Override
     public synchronized final Changes evaluateScript(final String script, final @Nullable String scriptName) {
-        final Changes diff = new Changes();
-        final Map<String, Object> existingScope = new HashMap<>(getVariables());
+        RuntimeException evaluateErr = null;
+        final S fromSnapshot = takeSnapshot();
 
         // store pointers to exist query scope static variables
         final QueryLibrary prevQueryLibrary = QueryLibrary.getLibrary();
@@ -110,7 +146,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             // actually evaluate the script
             evaluate(script, scriptName);
         } catch (final RuntimeException err) {
-            diff.error = err;
+            evaluateErr = err;
         } finally {
             // restore pointers to query scope static variables
             QueryScope.setScope(prevQueryScope);
@@ -118,63 +154,72 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             QueryLibrary.setLibrary(prevQueryLibrary);
         }
 
-        final Map<String, Object> newScope = new HashMap<>(getVariables());
+        final S toSnapshot = takeSnapshot();
 
-        // produce a diff
-        for (final Map.Entry<String, Object> entry : newScope.entrySet()) {
-            final String name = entry.getKey();
-            final Object existingValue = existingScope.get(name);
-            final Object newValue = entry.getValue();
-            applyVariableChangeToDiff(diff, name, existingValue, newValue);
-        }
-
-        for (final Map.Entry<String, Object> entry : existingScope.entrySet()) {
-            final String name = entry.getKey();
-            if (newScope.containsKey(name)) {
-                continue; // this is already handled even if old or new values are non-displayable
-            }
-            applyVariableChangeToDiff(diff, name, entry.getValue(), null);
-        }
-
-        if (changeListener != null && !diff.isEmpty()) {
-            changeListener.onScopeChanges(this, diff);
-        }
+        final Changes diff = applyDiff(fromSnapshot, toSnapshot, evaluateErr);
 
         // re-throw any captured exception now that our listener knows what query scope state had changed prior
         // to the script session execution error
-        if (diff.error != null) {
-            throw diff.error;
+        if (evaluateErr != null) {
+            throw evaluateErr;
         }
 
         return diff;
     }
 
-    private void applyVariableChangeToDiff(final Changes diff, String name,
+    protected void applyVariableChangeToDiff(final Changes diff, String name,
             @Nullable Object fromValue, @Nullable Object toValue) {
-        fromValue = unwrapObject(fromValue);
-        final ExportedObjectType fromType = ExportedObjectType.fromObject(fromValue);
-        if (!fromType.isDisplayable()) {
+        if (fromValue == toValue) {
+            return;
+        }
+        final String fromTypeName = getTypeNameIfDisplayable(fromValue).orElse(null);
+        if (fromTypeName == null) {
             fromValue = null;
         }
-        toValue = unwrapObject(toValue);
-        final ExportedObjectType toType = ExportedObjectType.fromObject(toValue);
-        if (!toType.isDisplayable()) {
+        final String toTypeName = getTypeNameIfDisplayable(toValue).orElse(null);
+        if (toTypeName == null) {
             toValue = null;
         }
         if (fromValue == toValue) {
             return;
         }
-
         if (fromValue == null) {
-            diff.created.put(name, toType);
-        } else if (toValue == null) {
-            diff.removed.put(name, fromType);
-        } else if (fromType != toType) {
-            diff.created.put(name, toType);
-            diff.removed.put(name, fromType);
-        } else {
-            diff.updated.put(name, toType);
+            diff.created.put(name, toTypeName);
+            return;
         }
+        if (toValue == null) {
+            diff.removed.put(name, fromTypeName);
+            return;
+        }
+        if (!fromTypeName.equals(toTypeName)) {
+            diff.created.put(name, toTypeName);
+            diff.removed.put(name, fromTypeName);
+            return;
+        }
+        diff.updated.put(name, toTypeName);
+    }
+
+    private Optional<String> getTypeNameIfDisplayable(Object object) {
+        if (object == null) {
+            return Optional.empty();
+        }
+        // Should this be consolidated down into TypeLookup and brought into engine?
+        if (object instanceof Table) {
+            final Table table = (Table) object;
+            if (table.hasAttribute(NON_DISPLAY_TABLE)) {
+                return Optional.empty();
+            }
+            if (table.hasAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)) {
+                return Optional.of("TreeTable");
+            }
+            return Optional.of("Table");
+        }
+        if (object instanceof TableMap) {
+            return Optional.empty();
+            // TODO(deephaven-core#1762): Implement Smart-Keys and Table-Maps
+            // return Optional.of("TableMap");
+        }
+        return objectTypeLookup.findObjectType(object).map(ObjectType::name);
     }
 
     @Override
@@ -193,7 +238,6 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         if (changeListener == null) {
             return;
         }
-
         Changes changes = new Changes();
         applyVariableChangeToDiff(changes, name, oldValue, newValue);
         if (!changes.isEmpty()) {

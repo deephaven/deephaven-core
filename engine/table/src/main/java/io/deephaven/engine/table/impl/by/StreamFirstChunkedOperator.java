@@ -66,20 +66,46 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
-    public void addChunk(final BucketedContext context, // Unused
+    public void addChunk(final BucketedContext bucketedContext,
             final Chunk<? extends Values> values, // Unused
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             final IntChunk<ChunkLengths> length, // Unused
             @NotNull final WritableBooleanChunk<Values> stateModified) {
+
+        final StreamFirstBucketedContext context = (StreamFirstBucketedContext) bucketedContext;
+
+        long maxDestination = nextDestination - 1;
+
+        // we can essentially do a radix sort; anything less than nextDestination is not of interest; everything else
+        // must fall between nextDestination and our chunk size
+        context.rowKeyToInsert.fillWithValue(0, startPositions.size(), Long.MAX_VALUE);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-            if (maybeAssignFirst(destination, inputRowKeys.get(startPosition))) {
-                stateModified.set(ii, true);
+            final int destination = destinations.get(startPosition);
+            if (destination >= nextDestination) {
+                Assert.lt(destination, "destination", nextDestination + startPositions.size(),
+                        "nextDestination + startPositions.size()");
+                maxDestination = Math.max(destination, maxDestination);
+
+                final long inputRowKey = inputRowKeys.get(startPosition);
+                final int index = (int) (destination - nextDestination);
+
+                context.destinationsToInsert.set(index, destination);
+                context.rowKeyToInsert.set(index, Math.min(context.rowKeyToInsert.get(index), inputRowKey));
             }
         }
+        context.destinationsToInsert.setSize((int) (maxDestination - nextDestination + 1));
+        context.rowKeyToInsert.setSize((int) (maxDestination - nextDestination + 1));
+
+        for (int ii = 0; ii < context.destinationsToInsert.size(); ++ii) {
+            final int destination = context.destinationsToInsert.get(ii);
+            final long rowKey = context.rowKeyToInsert.get(ii);
+            redirections.set(destination - firstDestinationThisStep, rowKey);
+        }
+
+        nextDestination = maxDestination + 1;
     }
 
     @Override
@@ -194,5 +220,26 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 }
             }
         }
+    }
+
+    private static class StreamFirstBucketedContext implements BucketedContext {
+        final WritableIntChunk<RowKeys> destinationsToInsert;
+        final WritableLongChunk<RowKeys> rowKeyToInsert;
+
+        public StreamFirstBucketedContext(int size) {
+            destinationsToInsert = WritableIntChunk.makeWritableChunk(size);
+            rowKeyToInsert = WritableLongChunk.makeWritableChunk(size);
+        }
+
+        @Override
+        public void close() {
+            destinationsToInsert.close();
+            rowKeyToInsert.close();
+        }
+    }
+
+    @Override
+    public BucketedContext makeBucketedContext(int size) {
+        return new StreamFirstBucketedContext(size);
     }
 }

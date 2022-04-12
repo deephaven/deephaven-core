@@ -7,7 +7,6 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -120,7 +119,7 @@ public class OneClick {
         }
 
         // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
-        return Arrays.stream(JsArray.from(tableMap.getKeys())).filter(tableKey -> {
+        return JsArray.from(tableMap.getKeys()).filter((tableKey, index, all) -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }
@@ -136,7 +135,7 @@ public class OneClick {
             }
 
             return true;
-        }).toArray(String[][]::new);
+        }).asArray(new String[0][0]);
     }
 
     private Promise<JsTable> doFetchTable(Object[] keys) {
@@ -147,7 +146,7 @@ public class OneClick {
         } else {
             Promise<JsTable>[] promises =
                     Arrays.stream(keys).map(key -> tableMap.getTable(key)).toArray(Promise[]::new);
-            return JsPromise.all(promises)
+            return Promise.all(promises)
                     .then(resolved -> {
                         JsTable[] tables =
                                 Arrays.stream(resolved).filter(table -> table != null).toArray(JsTable[]::new);

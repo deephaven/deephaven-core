@@ -1,0 +1,65 @@
+plugins {
+    id 'application'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    js
+}
+
+dependencies {
+    implementation project(':server')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation('org.eclipse.jetty:jetty-servlet:11.0.8')
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.8'
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.8'
+
+//    implementation 'io.grpc:grpc-servlet-jakarta'
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
+    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.8'
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+
+    testImplementation project(':server-test')
+
+    runtimeOnly(project(path: ':web', targetConfiguration: 'jsJar'))
+}
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+
+distributions {
+    main {
+        distributionBaseName = 'server-jetty'
+    }
+}
+
+def extraJvmArgs = [
+        '-server',
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=100',
+        '-XX:+UseStringDeduplication',
+        '-XshowSettings:vm',
+]
+if (hasProperty('groovy')) {
+    extraJvmArgs += ['-Ddeephaven.console.type=groovy']
+}
+tasks.withType(JavaExec) {
+    // This appends to the existing jvm args, so that java-open-nio still takes effect
+    jvmArgs extraJvmArgs
+}
+tasks.withType(CreateStartScripts) {
+    defaultJvmOpts += extraJvmArgs
+}
+
+applicationName = 'start'
+mainClassName = 'io.deephaven.server.jetty.JettyMain'
+
+apply plugin: 'io.deephaven.java-open-nio'

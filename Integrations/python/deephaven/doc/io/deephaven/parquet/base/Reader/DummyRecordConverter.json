@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.parquet.base.Reader$DummyRecordConverter",
+ "methods": {
+  "getCurrentRecord": ":return: java.lang.Object",
+  "getRootConverter": ":return: org.apache.parquet.io.api.GroupConverter"
+ },
+ "path": "io.deephaven.parquet.base.Reader.DummyRecordConverter",
+ "typeName": "class"
+}

@@ -5,132 +5,133 @@
 
 Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
-from enum import Enum
-from typing import Iterable
+from __future__ import annotations
+
+from typing import Any, Sequence, Callable, Dict, Type
 
 import jpy
+import numpy as np
+
 from deephaven2 import DHError
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+
+_j_name_type_map: Dict[str, DType] = {}
 
 
 def _qst_custom_type(cls_name: str):
     return _JQstType.find(_JTableTools.typeFromName(cls_name))
 
 
-class DType(Enum):
-    """ An Enum for supported data types in Deephaven with type aliases to mirror the same ones in numpy or pyarrow.
+class DType:
+    """ A class representing a data type in Deephaven."""
 
-    The complex types such as BigDecimal, Period can be called to create Java objects of the same types, e.g.
-        big_decimal = BigDecimal(12.88)
+    def __init__(self, j_name: str, j_type: Type = None, qst_type: jpy.JType = None, is_primitive: bool = False,
+                 np_type: Any = np.object_):
+        """
+        Args:
+             j_name (str): the full qualified name of the Java class
+             j_type (Type): the mapped Python class created by JPY
+             qst_type (JType): the JPY wrapped object for a instance of QST Type
+             is_primitive (bool): whether this instance represents a primitive Java type
+             np_type (Any): an instance of numpy dtype (dtype("int64") or numpy class (e.g. np.int16), default is
+                np.object_
+        """
+        self.j_name = j_name
+        self.j_type = j_type if j_type else jpy.get_type(j_name)
+        self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
+        self.is_primitive = is_primitive
+        self.np_type = np_type
 
-    """
-    bool_ = _JQstType.booleanType(), "java.lang.Boolean"
-    byte = _JQstType.byteType(), "byte"
-    int8 = byte
-    short = _JQstType.shortType(), "short"
-    int16 = short
-    char = _JQstType.charType(), "char"
-    int_ = _JQstType.intType(), "int"
-    int32 = int_
-    long = _JQstType.longType(), "long"
-    int64 = long
-    float_ = _JQstType.floatType(), "float"
-    single = float_
-    float32 = float_
-    double = _JQstType.doubleType(), "double"
-    float64 = double
-    string = _JQstType.stringType(), "java.lang.String"
-    BigDecimal = _qst_custom_type("java.math.BigDecimal"), "java.math.BigDecimal"
-    StringSet = _qst_custom_type("io.deephaven.stringset.StringSet"), "io.deephaven.stringset.StringSet"
-    DateTime = _qst_custom_type("io.deephaven.time.DateTime"), "io.deephaven.time.DateTime"
-    Period = _qst_custom_type("io.deephaven.time.Period"), "io.deephaven.time.Period"
+        _j_name_type_map[j_name] = self
 
-    def __new__(cls, qst_type, j_type):
-        obj = object.__new__(cls)
-        obj._value_ = qst_type
-        return obj
-
-    def __init__(self, qst_type, j_name):
-        self._qst_type = qst_type
-        self._j_name = j_name
-        self._j_type = jpy.get_type(j_name)
+    def __repr__(self):
+        return self.j_name
 
     def __call__(self, *args, **kwargs):
-        return self._j_type(*args, **kwargs)
+        if self.is_primitive:
+            raise DHError(message=f"primitive type {self.j_name} is not callable.")
 
-    @property
-    def qst_type(self):
-        return self._qst_type
-
-    @property
-    def j_type(self):
-        """ The corresponding Java type. """
-        return self._j_type
-
-    def array(self, size: int):
-        """ Create a Java array of the same data type of the specified size.
-
-        Args:
-            size (int): the size of the array
-
-        Returns:
-            a Java array
-
-        Raises:
-            DHError
-        """
         try:
-            return jpy.array(self._j_name, size)
+            return self.j_type(*args, **kwargs)
         except Exception as e:
-            raise DHError("failed to create a Java array.") from e
-
-    def array_from(self, values: Iterable):
-        """ Create a Java array of the same data type populated with values from a Python iterable.
-
-        Args:
-            values: a Python iterable of compatible data type
-
-        Returns:
-            a Java array
-
-        Raises:
-            DHError
-        """
-        try:
-            return jpy.array(self._j_name, values)
-        except Exception as e:
-            raise DHError("failed to create a Java array.") from e
+            raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
 
-bool_ = DType.bool_
-byte = DType.byte
-int8 = DType.int8
-short = DType.short
-int16 = DType.int16
-char = DType.char
-int_ = DType.int_
-int32 = DType.int32
-long = DType.long
-int64 = DType.int64
-float_ = DType.float_
-single = DType.single
-float32 = DType.float32
-double = DType.double
-float64 = DType.float64
-string = DType.string
-BigDecimal = DType.BigDecimal
-StringSet = DType.StringSet
-DateTime = DType.DateTime
-Period = DType.Period
+bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
+byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
+int8 = byte
+short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
+int16 = short
+char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
+int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
+long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
+int64 = long
+int_ = long
+float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
+single = float32
+float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
+double = float64
+float_ = float64
+string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
+BigDecimal = DType(j_name="java.math.BigDecimal")
+StringSet = DType(j_name="io.deephaven.stringset.StringSet")
+DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
+Period = DType(j_name="io.deephaven.time.Period")
+PyObject = DType(j_name="org.jpy.PyObject")
+JObject = DType(j_name="java.lang.Object")
 
 
-def j_array_list(values: Iterable):
-    j_list = jpy.get_type("java.util.ArrayList")(len(values))
+def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
+    """ Creates a Java array of the specified data type populated with values from a sequence.
+
+    Note:
+        this method does unsafe casting, meaning precision and values might be lost with down cast
+
+    Args:
+        dtype (DType): the component type of the array
+        seq (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        remap (optional): a callable that takes one value and maps it to another, for handling the translation of
+            special DH values such as NULL_INT, NAN_INT between Python and the DH engine
+
+    Returns:
+        a Java array
+
+    Raises:
+        DHError
+    """
     try:
-        for v in values:
-            j_list.add(v)
-        return j_list
+        if remap:
+            if not callable(remap):
+                raise ValueError("Not a callable")
+            seq = [remap(v) for v in seq]
+        else:
+            if isinstance(seq, str) and dtype == char:
+                return array(char, seq, remap=ord)
+
+        return jpy.array(dtype.j_type, seq)
     except Exception as e:
-        raise DHError(e, "failed to create a Java collection from the Python collection.") from e
+        raise DHError(e, f"failed to create a Java {dtype.j_name} array.") from e
+
+
+def from_jtype(j_class: Any) -> DType:
+    """ look up a DType that matches the java type, if not found, create a DType for it. """
+    if not j_class:
+        return None
+
+    j_name = j_class.getName()
+    dtype = _j_name_type_map.get(j_name)
+    if not dtype:
+        return DType(j_name=j_name, j_type=j_class, np_type=np.object_)
+    else:
+        return dtype
+
+
+def from_np_dtype(np_dtype: np.dtype) -> DType:
+    """ Look up a DType that matches the numpy.dtype, if not found, return PyObject. """
+    for _, dtype in _j_name_type_map.items():
+        if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
+            return dtype
+
+    return PyObject

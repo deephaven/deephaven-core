@@ -1,9 +1,7 @@
-import org.gradle.internal.jvm.Jvm
-
 plugins {
-  id 'java'
-  id 'idea'
   id 'com.bmuschko.docker-remote-api'
+  id 'io.deephaven.project.register'
+  id 'idea'
 }
 
 evaluationDependsOn ':deephaven-jpy'
@@ -174,8 +172,8 @@ Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMai
       copyFile 'classpath', '/classpath'
     }
     entrypoint = ['java', '-cp', '/classpath:/classpath/*',
-                  '-Djpy.jpyLib=/usr/local/lib/python3.7/dist-packages/jpy.cpython-37m-x86_64-linux-gnu.so',
-                  '-Djpy.jdlLib=/usr/local/lib/python3.7/dist-packages/jdl.cpython-37m-x86_64-linux-gnu.so',
+                  '-Djpy.jpyLib=/opt/deephaven-venv/lib/python3.7/site-packages/jpy.cpython-37m-x86_64-linux-gnu.so',
+                  '-Djpy.jdlLib=/opt/deephaven-venv/lib/python3.7/site-packages/jdl.cpython-37m-x86_64-linux-gnu.so',
                   '-Djpy.pythonLib=/usr/lib/x86_64-linux-gnu/libpython3.7m.so.1.0'
     ] + jvmArgs + javaMain
 

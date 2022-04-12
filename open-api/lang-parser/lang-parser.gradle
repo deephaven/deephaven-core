@@ -1,10 +1,10 @@
 plugins {
     id 'java-library'
-    id 'idea'
     /*
     Temporarily disabled due to bug between javacc plugin and jacoco plugin
     id "ca.coglinc.javacc" version "2.4.0"
     */
+    id 'io.deephaven.project.register'
 }
 
 apply from: "$rootDir/gradle/web-common.gradle"

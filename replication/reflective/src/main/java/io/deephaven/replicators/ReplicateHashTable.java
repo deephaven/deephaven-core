@@ -125,17 +125,6 @@ public class ReplicateHashTable {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedOperatorAggregationStateManager.java",
                 allowMissingDestinations, Collections.singletonList("dumpTable"));
-
-        // Incremental NJ -> Incremental By (non-operator)
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/IncrementalChunkedNaturalJoinStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedByAggregationStateManager.java",
-                allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
-        // Incremental By -> Static By (non-operator)
-        doReplicate(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedByAggregationStateManager.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/StaticChunkedByAggregationStateManager.java",
-                allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
     }
 
     private static class RegionedFile {

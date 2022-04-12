@@ -1,0 +1,61 @@
+plugins {
+    id 'java-library'
+    id 'application'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    applicationDist
+}
+
+dependencies {
+    implementation project(':server')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation 'io.grpc:grpc-netty'
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+
+    testImplementation project(':server-test')
+}
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+
+distributions {
+    main {
+        distributionBaseName = 'server'
+    }
+}
+
+def extraJvmArgs = [
+        '-server',
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=100',
+        '-XX:+UseStringDeduplication',
+        '-XshowSettings:vm',
+]
+if (hasProperty('groovy')) {
+    extraJvmArgs += ['-Ddeephaven.console.type=groovy']
+}
+tasks.withType(JavaExec) {
+    // This appends to the existing jvm args, so that java-open-nio still takes effect
+    jvmArgs extraJvmArgs
+}
+tasks.withType(CreateStartScripts) {
+    defaultJvmOpts += extraJvmArgs
+}
+
+applicationName = 'start'
+mainClassName = 'io.deephaven.server.netty.NettyMain'
+
+artifacts {
+    applicationDist project.tasks.findByName('distTar')
+}
+
+apply plugin: 'io.deephaven.java-open-nio'

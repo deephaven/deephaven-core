@@ -80,7 +80,7 @@ public class TestModelFarm extends TestCase {
         // Test awaitTermination(), without calling terminate().
         // This should return true, since threads are finished.
         latchThreadComplete.countDown();
-        boolean terminated = modelFarmTick.awaitTermination(5000, TimeUnit.MILLISECONDS);
+        boolean terminated = modelFarmTick.awaitTermination(testShutdownTimeoutSecs, TimeUnit.SECONDS);
         Require.eqTrue(terminated, "terminated");
         Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.TERMINATED);
 
@@ -120,7 +120,7 @@ public class TestModelFarm extends TestCase {
         // Test awaitTermination() before calling terminate(). This should return false, since terminate() was not
         // called, and the ModelFarm should not drain its work queue since the threads have not been completed.
         {
-            boolean terminated = modelFarmTick.awaitTermination(5000, TimeUnit.MILLISECONDS);
+            boolean terminated = modelFarmTick.awaitTermination(testShutdownTimeoutSecs, TimeUnit.SECONDS);
             Require.eqFalse(terminated, "terminated");
             Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.SHUTDOWN);
         }

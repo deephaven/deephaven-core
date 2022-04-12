@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.util.PercentileOutput",
+ "methods": {
+  "of": "*Overload 1*  \n  :param percentile: double\n  :param output: io.deephaven.api.ColumnName\n  :return: io.deephaven.api.agg.util.PercentileOutput\n  \n*Overload 2*  \n  :param percentile: double\n  :param output: java.lang.String\n  :return: io.deephaven.api.agg.util.PercentileOutput",
+  "output": "Output column name.\n\n:return: (io.deephaven.api.ColumnName) The output column name",
+  "percentile": "Percentile. Must be in range [0.0, 1.0].\n\n:return: (double) The percentile"
+ },
+ "path": "io.deephaven.api.agg.util.PercentileOutput",
+ "text": "Percentile and output column pair, used when specifying that a given input column should be aggregated into multiple\n exact or approximate percentiles.",
+ "typeName": "class"
+}

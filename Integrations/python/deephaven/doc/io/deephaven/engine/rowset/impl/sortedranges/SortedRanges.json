@@ -112,7 +112,7 @@
   "toRsp": ":return: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
   "toString": ":return: java.lang.String",
   "tryCompact": ":param k: int\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
-  "tryCompactUnsafe": ":param k: (int) - if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity >> k).\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
+  "tryCompactUnsafe": ":param k: (int) - if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity\n        >> k).\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
   "tryMakeForKnownRangeFinalCapacityLowerBound": ":param initialCapacity: int\n:param finalCapacityLowerBound: int\n:param first: long\n:param last: long\n:param isDense: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
   "tryMakeForKnownRangeKnownCount": ":param count: int\n:param first: long\n:param last: long\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",
   "tryMakeForKnownRangeUnknownMaxCapacity": ":param initialCapacity: int\n:param first: long\n:param last: long\n:param isDense: boolean\n:return: io.deephaven.engine.rowset.impl.sortedranges.SortedRanges",

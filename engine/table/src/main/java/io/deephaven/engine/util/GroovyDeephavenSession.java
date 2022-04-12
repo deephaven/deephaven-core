@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.util;
 
+import com.google.auto.service.AutoService;
 import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
@@ -17,11 +18,13 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
@@ -52,7 +55,7 @@ import java.util.stream.StreamSupport;
 /**
  * Groovy {@link ScriptSession}. Not safe for concurrent use.
  */
-public class GroovyDeephavenSession extends AbstractScriptSession implements ScriptSession {
+public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot> implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
@@ -122,14 +125,16 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private transient SourceClosure sourceClosure;
     private transient SourceClosure sourceOnceClosure;
 
-    public GroovyDeephavenSession(final RunScripts runScripts) throws IOException {
-        this(null, runScripts, false);
+    public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
+            throws IOException {
+        this(objectTypeLookup, null, runScripts, false);
     }
 
     public GroovyDeephavenSession(
-            @Nullable final Listener changeListener, final RunScripts runScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup, @Nullable final Listener changeListener,
+            final RunScripts runScripts, boolean isDefaultScriptSession)
             throws IOException {
-        super(changeListener, isDefaultScriptSession);
+        super(objectTypeLookup, changeListener, isDefaultScriptSession);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
@@ -137,6 +142,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
         compilerContext.setParentClassLoader(getShell().getClassLoader());
+
+        publishInitial();
 
         for (final String path : runScripts.paths) {
             runScript(path);
@@ -620,6 +627,45 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
+    protected GroovySnapshot emptySnapshot() {
+        return new GroovySnapshot(Collections.emptyMap());
+    }
+
+    @Override
+    protected GroovySnapshot takeSnapshot() {
+        // noinspection unchecked,rawtypes
+        return new GroovySnapshot(new HashMap<>(groovyShell.getContext().getVariables()));
+    }
+
+    @Override
+    protected Changes createDiff(GroovySnapshot from, GroovySnapshot to, RuntimeException e) {
+        Changes diff = new Changes();
+        diff.error = e;
+        for (final Map.Entry<String, Object> entry : to.scope.entrySet()) {
+            final String name = entry.getKey();
+            final Object existingValue = from.scope.get(name);
+            final Object newValue = entry.getValue();
+            applyVariableChangeToDiff(diff, name, existingValue, newValue);
+        }
+        for (final Map.Entry<String, Object> entry : from.scope.entrySet()) {
+            final String name = entry.getKey();
+            if (to.scope.containsKey(name)) {
+                continue; // this is already handled even if old or new values are non-displayable
+            }
+            applyVariableChangeToDiff(diff, name, entry.getValue(), null);
+        }
+        return diff;
+    }
+
+    protected static class GroovySnapshot implements Snapshot {
+
+        private final Map<String, Object> scope;
+
+        public GroovySnapshot(Map<String, Object> existingScope) {
+            this.scope = Objects.requireNonNull(existingScope);
+        }
+    }
+
     public Set<String> getVariableNames() {
         // noinspection unchecked
         return Collections.unmodifiableSet(groovyShell.getContext().getVariables().keySet());
@@ -771,6 +817,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         int priority();
     }
 
+    @AutoService(InitScript.class)
     public static class Base implements InitScript {
         @Override
         public String getScriptPath() {
@@ -783,6 +830,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         }
     }
 
+    @AutoService(InitScript.class)
     public static class PerformanceQueries implements InitScript {
         @Override
         public String getScriptPath() {
@@ -795,6 +843,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         }
     }
 
+    @AutoService(InitScript.class)
     public static class Calendars implements InitScript {
         @Override
         public String getScriptPath() {
@@ -807,6 +856,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         }
     }
 
+    @AutoService(InitScript.class)
     public static class CountMetrics implements InitScript {
         @Override
         public String getScriptPath() {

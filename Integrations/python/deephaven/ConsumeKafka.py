@@ -10,8 +10,8 @@ import wrapt
 
 import deephaven.Types as dh
 
-from deephaven.conversion_utils import _isStr, \
-    _dictToProperties, _dictToMap, IDENTITY
+from deephaven.conversion_utils import \
+    _dictToFunWithIdentity, _dictToFunWithDefault, _dictToMap, _dictToProperties, _isStr
 
 from deephaven.Types import _jclassFromType
 
@@ -95,6 +95,34 @@ except Exception as e:
     pass
 
 @_passThrough
+def _jpy_partitions(partitions):
+    if partitions is None:
+        return ALL_PARTITIONS
+    if isinstance(partitions, collections.Sequence):
+        try:
+            jarr = jpy.array('int', partitions)
+        except Exception as e:
+            raise ValueError(
+                "when not one of the predefined constants, keyword argument 'partitions' has to " +
+                "represent a sequence of integer partition with values >= 0, instead got " +
+                str(partitions) + " of type " + type(partitions).__name__
+            ) from e
+        return _java_type_.partitionFilterFromArray(jarr)
+    if not isinstance(partitions, jpy.JType):
+        raise TypeError(
+            "argument 'partitions' has to be of str or sequence type, " +
+            "or a predefined compatible constant, instead got partitions " +
+            str(partitions) + " of type " + type(partitions).__name__)
+    return partitions
+
+@_passThrough
+def _jpy_table_type(table_type):
+    table_type_enum = _java_type_.friendlyNameToTableType(table_type)
+    if table_type_enum is None:
+        raise ValueError("unknown value " + table_type + " for argument 'table_type'")
+    return table_type_enum
+
+@_passThrough
 def consumeToTable(
         kafka_config:dict,
         topic:str,
@@ -137,23 +165,7 @@ def consumeToTable(
     if not _isStr(topic):
         raise ValueError("argument 'topic' has to be of str type, instead got " + topic)
 
-    if partitions is None:
-        partitions = ALL_PARTITIONS
-    elif isinstance(partitions, collections.Sequence):
-        try:
-            jarr = jpy.array('int', partitions)
-        except Exception as e:
-            raise ValueError(
-                "when not one of the predefined constants, keyword argument 'partitions' has to " +
-                "represent a sequence of integer partition with values >= 0, instead got " +
-                str(partitions) + " of type " + type(partitions).__name__
-            ) from e
-        partitions = _java_type_.partitionFilterFromArray(jarr)
-    elif not isinstance(partitions, jpy.JType):
-        raise TypeError(
-            "argument 'partitions' has to be of str or sequence type, " +
-            "or a predefined compatible constant, instead got partitions " +
-            str(partitions) + " of type " + type(partitions).__name__)
+    partitions = _jpy_partitions(partitions)
 
     if offsets is None:
         offsets = ALL_PARTITIONS_DONT_SEEK
@@ -186,9 +198,7 @@ def consumeToTable(
         raise TypeError(
             "argument 'table_type' expected to be of type str, instead got " +
             str(table_type) + " of type " + type(table_type).__name__)
-    table_type_enum = _java_type_.friendlyNameToTableType(table_type)
-    if table_type_enum is None:
-        raise ValueError("unknown value " + table_type + " for argument 'table_type'")
+    table_type_enum = _jpy_table_type(table_type)
 
     kafka_config = _dictToProperties(kafka_config)
     return _java_type_.consumeToTable(kafka_config, topic, partitions, offsets, key, value, table_type_enum)
@@ -223,12 +233,12 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
             "'mapping_only' expected, instead got both")
     if mapping is not None:
         have_mapping = True
-        # when providing 'mapping_only', fields names not given are mapped as identity
-        mapping = _dictToFun(mapping, default_value=IDENTITY)
+        # when providing 'mapping', fields names not given are mapped as identity
+        mapping = _dictToFunWithIdentity(mapping)
     elif mapping_only is not None:
         have_mapping = True
         # when providing 'mapping_only', fields not given are ignored.
-        mapping = _dictToFun(mapping, default_value=None)
+        mapping = _dictToFunWithDefault(mapping_only, None)
     else:
         have_mapping = False
     if _isStr(schema):

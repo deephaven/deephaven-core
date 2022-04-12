@@ -8,6 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -44,6 +45,16 @@ import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
 public class TstUtils {
+    public static boolean SHORT_TESTS = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TstUtils.class, "shortTests", false);
+
+    public static int scaleToDesiredTestLength(final int maxIter) {
+        if (!SHORT_TESTS) {
+            return maxIter;
+        }
+        final double shortTestFactor = 0.2;
+        return (int) Math.ceil(maxIter * shortTestFactor);
+    }
 
     public static <T> ColumnHolder c(String name, T... data) {
         return TableTools.col(name, data);

@@ -13,6 +13,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.client.impl.Export",
- "text": "An export represents a server-side object that is being kept alive.\n\n \n Callers must maintain ownership of their exports, and close them when no longer needed.",
+ "text": "An export represents a server-side Table that is being kept alive.\n\n \n Callers must maintain ownership of their exports, and close them when no longer needed.",
  "typeName": "class"
 }

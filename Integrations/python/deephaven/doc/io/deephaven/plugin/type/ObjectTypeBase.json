@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectTypeBase",
+ "methods": {
+  "walk": "Note: Java generics information - <T,\nV extends io.deephaven.plugin.Plugin.Visitor<T>>\n\n:param visitor: V\n:return: T",
+  "writeCompatibleObjectTo": ":param exporter: io.deephaven.plugin.type.ObjectType.Exporter\n:param object: java.lang.Object\n:param out: java.io.OutputStream",
+  "writeTo": "Serializes object into out. Must only be called with a compatible object, see\n ObjectType.isType(Object).\n\n \n Objects that object references may be serialized as ObjectType.Exporter.Reference.\n\n \n Note: the implementation should not hold onto references nor create references outside the calling thread.\n\n:param exporter: (io.deephaven.plugin.type.ObjectType.Exporter) - the exporter\n:param object: (java.lang.Object) - the (compatible) object\n:param out: (java.io.OutputStream) - the output stream"
+ },
+ "path": "io.deephaven.plugin.type.ObjectTypeBase",
+ "typeName": "class"
+}

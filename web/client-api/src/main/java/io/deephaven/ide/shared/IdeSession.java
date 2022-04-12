@@ -114,18 +114,18 @@ public class IdeSession extends HasEventHandling {
         if (!definitionObject.has("type")) {
             throw new IllegalArgumentException("no type field; could not getObject");
         }
-        String type = definitionObject.getAny("type").asString();
+        String type = definitionObject.getAsAny("type").asString();
 
         boolean hasName = definitionObject.has("name");
         boolean hasId = definitionObject.has("id");
         if (hasName && hasId) {
             throw new IllegalArgumentException("has both name and id field; could not getObject");
         } else if (hasName) {
-            String name = definitionObject.getAny("name").asString();
+            String name = definitionObject.getAsAny("name").asString();
             return getVariableDefinition(name, type)
                     .then(connection::getObject);
         } else if (hasId) {
-            String id = definitionObject.getAny("id").asString();
+            String id = definitionObject.getAsAny("id").asString();
             return connection.getObject(new JsVariableDefinition(type, null, id, null));
         } else {
             throw new IllegalArgumentException("no name/id field; could not construct getObject");
@@ -220,10 +220,7 @@ public class IdeSession extends HasEventHandling {
             connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
-            JsVariableChanges changes = new JsVariableChanges(
-                    copyVariables(response.getCreatedList()),
-                    copyVariables(response.getUpdatedList()),
-                    copyVariables(response.getRemovedList()));
+            JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
             promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
             return null;
         }, err -> {
@@ -246,17 +243,6 @@ public class IdeSession extends HasEventHandling {
         fireEvent(IdeSession.EVENT_COMMANDSTARTED, event);
 
         return result;
-    }
-
-    private JsVariableDefinition[] copyVariables(
-            JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
-        JsVariableDefinition[] array = new JsVariableDefinition[0];
-        list.forEach((item, p1, p2) -> {
-            // noinspection ConstantConditions
-            return array[array.length] =
-                    new JsVariableDefinition(item.getType(), item.getTitle(), item.getId().getTicket_asB64(), "");
-        });
-        return array;
     }
 
     public JsRunnable onLogMessage(JsConsumer<LogItem> callback) {
@@ -307,12 +293,12 @@ public class IdeSession extends HasEventHandling {
         final OpenDocumentRequest request = new OpenDocumentRequest();
 
         request.setConsoleId(result);
-        final JsPropertyMap<Object> textDoc = jsMap.getAny("textDocument").asPropertyMap();
+        final JsPropertyMap<Object> textDoc = jsMap.getAsAny("textDocument").asPropertyMap();
         final TextDocumentItem textDocument = new TextDocumentItem();
-        textDocument.setText(textDoc.getAny("text").asString());
-        textDocument.setLanguageId(textDoc.getAny("languageId").asString());
-        textDocument.setUri(textDoc.getAny("uri").asString());
-        textDocument.setVersion(textDoc.getAny("version").asDouble());
+        textDocument.setText(textDoc.getAsAny("text").asString());
+        textDocument.setLanguageId(textDoc.getAsAny("languageId").asString());
+        textDocument.setUri(textDoc.getAsAny("uri").asString());
+        textDocument.setVersion(textDoc.getAsAny("version").asDouble());
         request.setTextDocument(textDocument);
 
         JsLog.debug("Opening document for autocomplete ", request);
@@ -326,23 +312,23 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> jsMap = (JsPropertyMap<Object>) params;
         final ChangeDocumentRequest request = new ChangeDocumentRequest();
         request.setConsoleId(result);
-        final JsPropertyMap<Object> textDoc = jsMap.getAny("textDocument").asPropertyMap();
+        final JsPropertyMap<Object> textDoc = jsMap.getAsAny("textDocument").asPropertyMap();
         final VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
-        textDocument.setUri(textDoc.getAny("uri").asString());
-        textDocument.setVersion(textDoc.getAny("version").asDouble());
+        textDocument.setUri(textDoc.getAsAny("uri").asString());
+        textDocument.setVersion(textDoc.getAsAny("version").asDouble());
         request.setTextDocument(textDocument);
 
-        final JsArrayLike<Object> changes = jsMap.getAny("contentChanges").asArrayLike();
+        final JsArrayLike<Object> changes = jsMap.getAsAny("contentChanges").asArrayLike();
         final JsArray<TextDocumentContentChangeEvent> changeList = new JsArray<>();
         for (int i = 0; i < changes.getLength(); i++) {
-            final JsPropertyMap<Object> change = changes.getAnyAt(i).asPropertyMap();
+            final JsPropertyMap<Object> change = changes.getAtAsAny(i).asPropertyMap();
             final TextDocumentContentChangeEvent changeItem = new TextDocumentContentChangeEvent();
-            changeItem.setText(change.getAny("text").asString());
+            changeItem.setText(change.getAsAny("text").asString());
             if (change.has("rangeLength")) {
-                changeItem.setRangeLength(change.getAny("rangeLength").asInt());
+                changeItem.setRangeLength(change.getAsAny("rangeLength").asInt());
             }
             if (change.has("range")) {
-                changeItem.setRange(toRange(change.getAny("range")));
+                changeItem.setRange(toRange(change.getAsAny("range")));
             }
             changeList.push(changeItem);
         }
@@ -357,16 +343,16 @@ public class IdeSession extends HasEventHandling {
     private DocumentRange toRange(final Any range) {
         final JsPropertyMap<Object> rangeObj = range.asPropertyMap();
         final DocumentRange result = new DocumentRange();
-        result.setStart(toPosition(rangeObj.getAny("start")));
-        result.setEnd(toPosition(rangeObj.getAny("end")));
+        result.setStart(toPosition(rangeObj.getAsAny("start")));
+        result.setEnd(toPosition(rangeObj.getAsAny("end")));
         return result;
     }
 
     private Position toPosition(final Any pos) {
         final JsPropertyMap<Object> posObj = pos.asPropertyMap();
         final Position result = new Position();
-        result.setLine(posObj.getAny("line").asInt());
-        result.setCharacter(posObj.getAny("character").asInt());
+        result.setLine(posObj.getAsAny("line").asInt());
+        result.setCharacter(posObj.getAsAny("character").asInt());
         return result;
     }
 
@@ -374,10 +360,10 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final GetCompletionItemsRequest request = new GetCompletionItemsRequest();
 
-        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
         request.setTextDocument(textDocument);
-        request.setPosition(toPosition(jsMap.getAny("position")));
-        request.setContext(toContext(jsMap.getAny("context")));
+        request.setPosition(toPosition(jsMap.getAsAny("position")));
+        request.setContext(toContext(jsMap.getAsAny("context")));
         request.setConsoleId(this.result);
         request.setRequestId(nextAutocompleteRequestId++);
 
@@ -416,9 +402,9 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> contextObj = context.asPropertyMap();
         final CompletionContext result = new CompletionContext();
         if (contextObj.has("triggerCharacter")) {
-            result.setTriggerCharacter(contextObj.getAny("triggerCharacter").asString());
+            result.setTriggerCharacter(contextObj.getAsAny("triggerCharacter").asString());
         }
-        result.setTriggerKind(contextObj.getAny("triggerKind").asInt());
+        result.setTriggerKind(contextObj.getAsAny("triggerKind").asInt());
         return result;
     }
 
@@ -426,7 +412,7 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final CloseDocumentRequest request = new CloseDocumentRequest();
         request.setConsoleId(result);
-        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
         request.setTextDocument(textDocument);
 
         JsLog.debug("Closing document for autocomplete ", request);
@@ -438,9 +424,9 @@ public class IdeSession extends HasEventHandling {
     private VersionedTextDocumentIdentifier toVersionedTextDoc(final Any textDoc) {
         final JsPropertyMap<Object> textDocObj = textDoc.asPropertyMap();
         final VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
-        textDocument.setUri(textDocObj.getAny("uri").asString());
+        textDocument.setUri(textDocObj.getAsAny("uri").asString());
         if (textDocObj.has("version")) {
-            textDocument.setVersion(textDocObj.getAny("version").asDouble());
+            textDocument.setVersion(textDocObj.getAsAny("version").asDouble());
         }
         return textDocument;
     }

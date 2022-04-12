@@ -253,6 +253,10 @@ public class QueryPerformanceRecorder implements Serializable {
         void set(int evaluationNumber, int operationNumber, boolean uninstrumented);
     }
 
+    public synchronized QueryPerformanceNugget getOuterNugget() {
+        return userNuggetStack.peekLast();
+    }
+
     // returns true if uninstrumented code data was captured.
     public void setQueryData(final EntrySetter setter) {
         final int evaluationNumber;

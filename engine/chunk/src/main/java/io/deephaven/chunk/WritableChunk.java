@@ -52,7 +52,7 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
      * rather than a relative offset from {@code srcBuffer.position()}.
      *
      * <p>
-     * <It is required that {@code srcBuffer.limit()} is at least {@code srcOffset + length}.
+     * It is required that {@code srcBuffer.limit()} is at least {@code srcOffset + length}.
      *
      * <p>
      * {@code srcBuffer}'s position may be modified, but will always be restored to its initial value upon successful

@@ -9,8 +9,6 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Calendars imported as cals
 
-* AggregationFactory imported as af
-
 * DateTimeUtils imported as dtu
 
 * MovingAverages imported as mavg
@@ -32,7 +30,7 @@ Additionally, the following methods have been imported into the main deephaven n
 * from conversion_utils import convertToJavaArray, convertToJavaList, convertToJavaArrayList,
        convertToJavaHashSet, convertToJavaHashMap
 
-* from TableManipulation import Aggregation, ColumnRenderersBuilder, DistinctFormatter,
+* from TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter,
        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,  
        Replayer, SmartKey, SortColumn, TotalsTableBuilder, WindowCheck
 
@@ -55,10 +53,10 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'Aggregation', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
+    'Aggregation', 'ColumnName', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
     'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortColumn', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "af", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
+    "cals", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
 
     "read_csv", "write_csv" # from csv
 ]
@@ -81,7 +79,6 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 
 
 from . import Calendars as cals, \
-    AggregationFactory as af, \
     DateTimeUtils as dtu, \
     MovingAverages as mavg, \
     ConsumeKafka as ck, \
@@ -90,13 +87,13 @@ from . import Calendars as cals, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers, \
-    Types as dh
+    Types as dh, \
+    filter as _filter
 
 from .Plot import figure_wrapper as figw
 
 from .csv import read as read_csv
 from .csv import write as write_csv
-
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
@@ -107,7 +104,6 @@ def initialize():
 
     # ensure that all the symbols are called and reimport the broken symbols
     cals._defineSymbols()
-    af._defineSymbols()
     dtu._defineSymbols()
     dh._defineSymbols()
     ck._defineSymbols()
@@ -119,12 +115,13 @@ def initialize():
     ttools._defineSymbols()
     tloggers._defineSymbols()
     csv._defineSymbols()
+    _filter._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global Aggregation, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, Replayer, SmartKey, SortColumn, TotalsTableBuilder
-    from deephaven.TableManipulation import Aggregation, ColumnRenderersBuilder, DistinctFormatter, \
+    from deephaven.TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, \
         DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, Replayer, SmartKey, \
         SortColumn, TotalsTableBuilder
 
@@ -410,3 +407,18 @@ def doLocked(f, lock_type="shared"):
         UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(ThrowingRunnable(f))
     else:
         raise ValueError("Unsupported lock type: lock_type={}".format(lock_type))
+
+
+def as_list(values):
+    """
+    Creates a Java list containing the values.
+
+    :param values: values
+    :return: Java list containing the values.
+    """
+    _JArrayList = jpy.get_type("java.util.ArrayList")
+    j_list = _JArrayList(len(values))
+    for value in values:
+        j_list.add(value)
+    return j_list
+

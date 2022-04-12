@@ -12,7 +12,8 @@ import io.deephaven.time.DateTime;
 import io.deephaven.tablelogger.*;
 
 import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
-import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.Entry;
+
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 
 public class UpdatePerformanceLogLogger
         extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> {
@@ -27,7 +28,8 @@ public class UpdatePerformanceLogLogger
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, IntervalLevelDetails intervalLevelDetails, Entry performanceEntry) throws IOException;
+        void log(Row.Flags flags, IntervalLevelDetails intervalLevelDetails, PerformanceEntry performanceEntry)
+                throws IOException;
     }
 
     public static String getDefaultTableName() {
@@ -87,7 +89,7 @@ public class UpdatePerformanceLogLogger
 
         @Override
         public void log(final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
-                final Entry performanceEntry) throws IOException {
+                final PerformanceEntry performanceEntry) throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EntryId.setInt(performanceEntry.getId());
@@ -165,12 +167,14 @@ public class UpdatePerformanceLogLogger
     }
 
     public void log(
-            final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry) throws IOException {
+            final IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry)
+            throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
     }
 
     public void log(
-            final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry)
+            final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
+            final PerformanceEntry performanceEntry)
             throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");

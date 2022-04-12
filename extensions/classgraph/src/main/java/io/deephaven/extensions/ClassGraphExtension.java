@@ -1,5 +1,6 @@
 package io.deephaven.extensions;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.util.TableTools;
@@ -19,6 +20,7 @@ import javax.inject.Inject;
 
 public class ClassGraphExtension {
 
+    @AutoService(InitScript.class)
     public static class Script implements InitScript {
 
         @Inject
@@ -35,6 +37,7 @@ public class ClassGraphExtension {
         }
     }
 
+    @AutoService(QueryLibraryImports.class)
     public static class Imports implements QueryLibraryImports {
 
         @Override

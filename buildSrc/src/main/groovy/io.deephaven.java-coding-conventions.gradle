@@ -1,0 +1,11 @@
+plugins {
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    java {
+        eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+    }
+}
+
+project.tasks.getByName('quick').dependsOn project.tasks.getByName('spotlessCheck')

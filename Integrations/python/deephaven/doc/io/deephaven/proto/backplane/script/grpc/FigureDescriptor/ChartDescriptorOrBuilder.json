@@ -26,13 +26,13 @@
   "getSeriesOrBuilder": "repeated .io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesDescriptor series = 3;\n\n:param index: int\n:return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesDescriptorOrBuilder",
   "getSeriesOrBuilderList": "repeated .io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesDescriptor series = 3;\n\n:return: java.util.List<? extends io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesDescriptorOrBuilder>",
   "getShowLegend": "bool show_legend = 10;\n\n:return: (boolean) The showLegend.",
-  "getTitle": "string title = 7;\n\n:return: (java.lang.String) The title.",
-  "getTitleBytes": "string title = 7;\n\n:return: (com.google.protobuf.ByteString) The bytes for title.",
+  "getTitle": "optional string title = 7;\n\n:return: (java.lang.String) The title.",
+  "getTitleBytes": "optional string title = 7;\n\n:return: (com.google.protobuf.ByteString) The bytes for title.",
   "getTitleColor": "string title_color = 9;\n\n:return: (java.lang.String) The titleColor.",
   "getTitleColorBytes": "string title_color = 9;\n\n:return: (com.google.protobuf.ByteString) The bytes for titleColor.",
   "getTitleFont": "string title_font = 8;\n\n:return: (java.lang.String) The titleFont.",
   "getTitleFontBytes": "string title_font = 8;\n\n:return: (com.google.protobuf.ByteString) The bytes for titleFont.",
-  "hasTitle": "string title = 7;\n\n:return: (boolean) Whether the title field is set."
+  "hasTitle": "optional string title = 7;\n\n:return: (boolean) Whether the title field is set."
  },
  "path": "io.deephaven.proto.backplane.script.grpc.FigureDescriptor.ChartDescriptorOrBuilder",
  "typeName": "interface"

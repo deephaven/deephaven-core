@@ -65,9 +65,11 @@ public class KafkaToolsTest {
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         assertEquals(2, colDefs.size());
-        assertEquals("NestedField.Symbol", colDefs.get(0).getName());
+        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "Symbol",
+                colDefs.get(0).getName());
         assertEquals(String.class, colDefs.get(0).getDataType());
-        assertEquals("NestedField.Price", colDefs.get(1).getName());
+        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "Price",
+                colDefs.get(1).getName());
         assertEquals(double.class, colDefs.get(1).getDataType());
     }
 
@@ -163,13 +165,21 @@ public class KafkaToolsTest {
         final int nCols = 4;
         assertEquals(nCols, colDefs.size());
         int c = 0;
-        assertEquals("NestedFields1.field1", colDefs.get(c).getName());
+        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "field1",
+                colDefs.get(c).getName());
         assertEquals(int.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields1.field2", colDefs.get(c).getName());
+        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR + "field2",
+                colDefs.get(c).getName());
         assertEquals(float.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields2.NestedFields3.field3", colDefs.get(c).getName());
+        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                "NestedFields3" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                "field3",
+                colDefs.get(c).getName());
         assertEquals(long.class, colDefs.get(c++).getDataType());
-        assertEquals("field4", colDefs.get(c).getName());
+        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                "NestedFields3" + KafkaTools.NESTED_FIELD_NAME_SEPARATOR +
+                "field4",
+                colDefs.get(c).getName());
         assertEquals(double.class, colDefs.get(c++).getDataType());
         assertEquals(nCols, c);
     }

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.util.GrpcServiceOverrideBuilder$BidiDelegate",
+ "methods": {
+  "doInvoke": ":param responseObserver: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BidiDelegate.RespT>\n:return: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BidiDelegate.ReqT>"
+ },
+ "path": "io.deephaven.server.util.GrpcServiceOverrideBuilder.BidiDelegate",
+ "typeName": "interface"
+}

@@ -2,7 +2,6 @@ package io.deephaven.client.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.client.impl.ExportRequest.Listener;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
@@ -10,6 +9,7 @@ import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.StreamObserver;

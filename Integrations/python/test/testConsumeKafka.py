@@ -142,25 +142,71 @@ class TestConsumeKafka(unittest.TestCase):
         r = os.system(sys_str)
         self.assertEquals(0, r)
         
-        t = ck.consumeToTable(
-            { 'bootstrap.servers' : 'redpanda:29092',
-              'schema.registry.url' : 'http://redpanda:8081' },
-            'share_price',
-            key = ck.IGNORE,
-            value = ck.avro('share_price_record', schema_version='1'),
-            table_type='append'
-        )
+        with self.subTest(msg='straight schema, no mapping'):
+            t = ck.consumeToTable(
+                { 'bootstrap.servers' : 'redpanda:29092',
+                  'schema.registry.url' : 'http://redpanda:8081' },
+                'share_price',
+                key = ck.IGNORE,
+                value = ck.avro('share_price_record', schema_version='1'),
+                table_type='append'
+            )
 
-        cols = t.getDefinition().getColumns()
-        self.assertEquals(7, len(cols))
-        self._assertCommonCols(cols)
+            cols = t.getDefinition().getColumns()
+            self.assertEquals(7, len(cols))
+            self._assertCommonCols(cols)
 
-        self.assertEquals("Symbol", cols[3].getName())
-        self.assertEquals(dh.string.clazz(), cols[3].getDataType())
-        self.assertEquals("Side", cols[4].getName())
-        self.assertEquals(dh.string.clazz(), cols[4].getDataType())
-        self.assertEquals("Qty", cols[5].getName())
-        self.assertEquals(dh.int_.clazz(), cols[5].getDataType())
-        self.assertEquals("Price", cols[6].getName())
-        self.assertEquals(dh.double.clazz(), cols[6].getDataType())
-        
+            self.assertEquals("Symbol", cols[3].getName())
+            self.assertEquals(dh.string.clazz(), cols[3].getDataType())
+            self.assertEquals("Side", cols[4].getName())
+            self.assertEquals(dh.string.clazz(), cols[4].getDataType())
+            self.assertEquals("Qty", cols[5].getName())
+            self.assertEquals(dh.int_.clazz(), cols[5].getDataType())
+            self.assertEquals("Price", cols[6].getName())
+            self.assertEquals(dh.double.clazz(), cols[6].getDataType())
+
+        with self.subTest(
+                msg='mapping_only (filter out some schema fields)'):
+            m = {'Symbol' : 'Ticker', 'Price' : 'Dollars'}
+            t = ck.consumeToTable(
+                { 'bootstrap.servers' : 'redpanda:29092',
+                  'schema.registry.url' : 'http://redpanda:8081' },
+                'share_price',
+                key = ck.IGNORE,
+                value = ck.avro('share_price_record', mapping_only=m),
+                table_type='append'
+            )
+
+            cols = t.getDefinition().getColumns()
+            self.assertEquals(5, len(cols))
+            self._assertCommonCols(cols)
+
+            self.assertEquals("Ticker", cols[3].getName())
+            self.assertEquals(dh.string.clazz(), cols[3].getDataType())
+            self.assertEquals("Dollars", cols[4].getName())
+            self.assertEquals(dh.double.clazz(), cols[4].getDataType())
+
+        with self.subTest(msg='mapping (rename some fields)'):
+            m = {'Symbol' : 'Ticker', 'Qty' : 'Quantity'}
+            t = ck.consumeToTable(
+                { 'bootstrap.servers' : 'redpanda:29092',
+                  'schema.registry.url' : 'http://redpanda:8081' },
+                'share_price',
+                key = ck.IGNORE,
+                value = ck.avro('share_price_record', mapping=m),
+                table_type='append'
+            )
+
+            cols = t.getDefinition().getColumns()
+            self.assertEquals(7, len(cols))
+            self._assertCommonCols(cols)
+
+            self.assertEquals("Ticker", cols[3].getName())
+            self.assertEquals(dh.string.clazz(), cols[3].getDataType())
+            self.assertEquals("Side", cols[4].getName())
+            self.assertEquals(dh.string.clazz(), cols[4].getDataType())
+            self.assertEquals("Quantity", cols[5].getName())
+            self.assertEquals(dh.int_.clazz(), cols[5].getDataType())
+            self.assertEquals("Price", cols[6].getName())
+            self.assertEquals(dh.double.clazz(), cols[6].getDataType())
+

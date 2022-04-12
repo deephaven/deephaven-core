@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Procedure$UnaryInt",
+ "methods": {
+  "call": ":param arg: int"
+ },
+ "path": "io.deephaven.base.Procedure.UnaryInt",
+ "typeName": "interface"
+}

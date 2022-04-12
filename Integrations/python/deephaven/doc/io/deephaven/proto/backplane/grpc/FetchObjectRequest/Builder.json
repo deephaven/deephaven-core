@@ -1,0 +1,31 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.FetchObjectRequest$Builder",
+ "methods": {
+  "addRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "build": ":return: io.deephaven.proto.backplane.grpc.FetchObjectRequest",
+  "buildPartial": ":return: io.deephaven.proto.backplane.grpc.FetchObjectRequest",
+  "clear": ":return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "clearField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "clearOneof": ":param oneof: com.google.protobuf.Descriptors.OneofDescriptor\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "clearSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "clone": ":return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.FetchObjectRequest",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getDescriptorForType": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.TypedTicket) The sourceId.",
+  "getSourceIdBuilder": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TypedTicket.Builder",
+  "getSourceIdOrBuilder": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+  "hasSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:return: (boolean) Whether the sourceId field is set.",
+  "isInitialized": ":return: boolean",
+  "mergeFrom": "*Overload 1*  \n  :param other: com.google.protobuf.Message\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder\n  \n*Overload 2*  \n  :param other: io.deephaven.proto.backplane.grpc.FetchObjectRequest\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder\n  \n*Overload 3*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "mergeSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n:param value: io.deephaven.proto.backplane.grpc.TypedTicket\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "mergeUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "setField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "setRepeatedField": ":param field: com.google.protobuf.Descriptors.FieldDescriptor\n:param index: int\n:param value: java.lang.Object\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "setSourceId": ".io.deephaven.proto.backplane.grpc.TypedTicket source_id = 1;\n\n*Overload 1*  \n  :param value: io.deephaven.proto.backplane.grpc.TypedTicket\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder\n  \n*Overload 2*  \n  :param builderForValue: io.deephaven.proto.backplane.grpc.TypedTicket.Builder\n  :return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+  "setUnknownFields": ":param unknownFields: com.google.protobuf.UnknownFieldSet\n:return: io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.FetchObjectRequest.Builder",
+ "text": "Protobuf type io.deephaven.proto.backplane.grpc.FetchObjectRequest",
+ "typeName": "class"
+}

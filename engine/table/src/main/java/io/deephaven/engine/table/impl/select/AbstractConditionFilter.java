@@ -7,6 +7,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
@@ -14,7 +15,6 @@ import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -27,7 +27,7 @@ import static io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends WhereFilterImpl {
-    private static final Logger log = ProcessEnvironment.getDefaultLog(AbstractConditionFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
     final Map<String, String> innerToOuterNames;
     @NotNull

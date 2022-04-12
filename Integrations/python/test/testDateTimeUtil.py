@@ -106,10 +106,10 @@ class TestDateTimeUtil(unittest.TestCase):
             junk = DateTimeUtils.getExcelDateTime(now)
 
         tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
-        with self.subTest(msg="getExcelDateTime(DateTime, DbTimeZone)"):
+        with self.subTest(msg="getExcelDateTime(DateTime, TimeZone)"):
             junk = DateTimeUtils.getExcelDateTime(now, tz)
         with self.subTest(msg="getExcelDateTime(DateTime, TimeZone)"):
-            # NB: converting from DbTimeZone to TimeZone - should work...
+            # NB: converting from TimeZone to TimeZone - should work...
             # should we even test this?
             junk = DateTimeUtils.getExcelDateTime(now, tz.getTimeZone().toTimeZone())
 
@@ -124,7 +124,7 @@ class TestDateTimeUtil(unittest.TestCase):
             junk = DateTimeUtils.getZonedDateTime(now)  # will have TZ_DEFAULT applied
 
         tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
-        with self.subTest(msg="getZonedDateTime(DateTime, DbTimeZone)"):
+        with self.subTest(msg="getZonedDateTime(DateTime, TimeZone)"):
             zoned = DateTimeUtils.getZonedDateTime(now, tz)
         with self.subTest(msg="toDateTime(ZonedDateTime)"):
             junk = DateTimeUtils.toDateTime(zoned)
@@ -280,14 +280,14 @@ class TestDateTimeUtil(unittest.TestCase):
 
         with self.subTest(msg="formatNy(DateTime)"):
             junk = DateTimeUtils.formatNy(now)  # Eastern timezone format
-        with self.subTest(msg="format(DateTime, DbTimeZone)"):
+        with self.subTest(msg="format(DateTime, TimeZone)"):
             junk = DateTimeUtils.format(now, tz)
         # Unrelated method - formats long as period <days>T<hours>:....
         with self.subTest(msg="format(long)"):
             junk = DateTimeUtils.format(86400000000000 + 2*3600000000000 + 4*60000000000 + 8*1000000000 + 16)
 
         # Basically aliases of the above - why both?
-        with self.subTest(msg="formatDate(DateTime, DbTimeZone)"):
+        with self.subTest(msg="formatDate(DateTime, TimeZone)"):
             junk = DateTimeUtils.formatDate(now, tz)
         with self.subTest(msg="formatDateNy(DateTime)"):
             junk = DateTimeUtils.formatDateNy(now)

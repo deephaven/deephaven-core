@@ -36,12 +36,6 @@ import java.util.Collection;
 public abstract class SourceTable extends RedefinableTable {
 
     /**
-     * Static log instance for use in trace.
-     */
-    private static final Logger log = ProcessEnvironment.tryGet() == null ? LoggerFactory.getLogger(SourceTable.class)
-            : ProcessEnvironment.getGlobalLog();
-
-    /**
      * Component factory. Mostly held for redefinitions.
      */
     final SourceTableComponentFactory componentFactory;

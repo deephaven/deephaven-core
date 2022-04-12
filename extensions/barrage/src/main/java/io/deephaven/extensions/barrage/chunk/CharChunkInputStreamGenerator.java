@@ -5,16 +5,19 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -27,17 +30,30 @@ import static io.deephaven.util.QueryConstants.*;
 public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<CharChunk<Values>> {
     private static final String DEBUG_NAME = "CharChunkInputStreamGenerator";
 
+    public static CharChunkInputStreamGenerator convertBoxed(final ObjectChunk<Character, Values> inChunk) {
+        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        WritableCharChunk<Values> outChunk = WritableCharChunk.makeWritableChunk(inChunk.size());
+        for (int i = 0; i < inChunk.size(); ++i) {
+            final Character value = inChunk.get(i);
+            outChunk.set(i, TypeUtils.unbox(value));
+        }
+        if (inChunk instanceof PoolableChunk) {
+            ((PoolableChunk) inChunk).close();
+        }
+        return new CharChunkInputStreamGenerator(outChunk, Character.BYTES);
+    }
+
     CharChunkInputStreamGenerator(final CharChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
         return new CharChunkInputStream(options, subset);
     }
 
     private class CharChunkInputStream extends BaseChunkInputStream {
-        private CharChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private CharChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -113,22 +129,23 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
             }
 
-                // write the included values
-                subset.forAllRowKeys(row -> {
-                    try {
-                        final char val = chunk.get((int) row);
-                        dos.writeChar(val);
-                    } catch (final IOException e) {
-                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                    }
-                });
-
-                bytesWritten += elementSize * subset.size();
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            // write the included values
+            subset.forAllRowKeys(row -> {
+                try {
+                    final char val = chunk.get((int) row);
+                    dos.writeChar(val);
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
                 }
+            });
+
+            bytesWritten += elementSize * subset.size();
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            }
+
             return LongSizedDataStructure.intSize("CharChunkInputStreamGenerator", bytesWritten);
         }
     }
@@ -141,7 +158,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -151,7 +168,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final CharConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -192,38 +209,9 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == CharChunkInputStreamGenerator.CharConversion.IDENTITY) {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        chunk.set(ii, is.readChar());
-                    }
-                } else {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        final char in = is.readChar();
-                        final char out;
-                        if (in == NULL_CHAR) {
-                            out = in;
-                        } else {
-                            out = conversion.apply(in);
-                        }
-                        chunk.set(ii, out);
-                    }
-                }
+                useDeephavenNulls(conversion, is, nodeInfo, chunk);
             } else {
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    final char value;
-                    if ((nextValid & 0x1) == 0x0) {
-                        value = NULL_CHAR;
-                        is.skipBytes(elementSize);
-                    } else {
-                        value = conversion.apply(is.readChar());
-                    }
-                    nextValid >>= 1;
-                    chunk.set(ii, value);
-                }
+                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -234,5 +222,65 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
         chunk.setSize(nodeInfo.numElements);
         return chunk;
+    }
+
+    private static void useDeephavenNulls(
+            final CharConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableCharChunk<Values> chunk) throws IOException {
+        if (conversion == CharConversion.IDENTITY) {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                chunk.set(ii, is.readChar());
+            }
+        } else {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                final char in = is.readChar();
+                final char out = in == NULL_CHAR ? in : conversion.apply(in);
+                chunk.set(ii, out);
+            }
+        }
+    }
+
+    private static void useValidityBuffer(
+            final int elementSize,
+            final CharConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableCharChunk<Values> chunk,
+            final WritableLongChunk<Values> isValid) throws IOException {
+        final int numElements = nodeInfo.numElements;
+        final int numValidityWords = (numElements + 63) / 64;
+
+        int ei = 0;
+        int pendingSkips = 0;
+
+        for (int vi = 0; vi < numValidityWords; ++vi) {
+            int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+            long validityWord = isValid.get(vi);
+            do {
+                if ((validityWord & 1) == 1) {
+                    if (pendingSkips > 0) {
+                        is.skipBytes(pendingSkips * elementSize);
+                        chunk.fillWithNullValue(ei, pendingSkips);
+                        ei += pendingSkips;
+                        pendingSkips = 0;
+                    }
+                    chunk.set(ei++, conversion.apply(is.readChar()));
+                    validityWord >>= 1;
+                    bitsLeftInThisWord--;
+                } else {
+                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    pendingSkips += skips;
+                    validityWord >>= skips;
+                    bitsLeftInThisWord -= skips;
+                }
+            } while (bitsLeftInThisWord > 0);
+        }
+
+        if (pendingSkips > 0) {
+            is.skipBytes(pendingSkips * elementSize);
+            chunk.fillWithNullValue(ei, pendingSkips);
+        }
     }
 }

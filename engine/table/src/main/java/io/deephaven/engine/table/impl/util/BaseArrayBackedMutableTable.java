@@ -52,6 +52,18 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         processPendingUpdater.setThis(this);
     }
 
+    public MutableInputTable mutableInputTable() {
+        return (MutableInputTable) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+    }
+
+    public Table readOnlyCopy() {
+        return copy(BaseArrayBackedMutableTable::applicableForReadOnly);
+    }
+
+    private static boolean applicableForReadOnly(String attributeName) {
+        return !Table.INPUT_TABLE_ATTRIBUTE.equals(attributeName);
+    }
+
     protected static Map<String, ? extends ArrayBackedColumnSource<?>> makeColumnSourceMap(TableDefinition definition) {
         final Map<String, ArrayBackedColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {

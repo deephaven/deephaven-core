@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit GenericRecordCharFieldCopier and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -8,13 +10,14 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
-public class GenericRecordLongFieldCopier implements FieldCopier {
-    private final String fieldName;
+import java.util.regex.Pattern;
 
-    public GenericRecordLongFieldCopier(final String fieldName) {
-        this.fieldName = fieldName;
+public class GenericRecordLongFieldCopier extends GenericRecordFieldCopier {
+    public GenericRecordLongFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema) {
+        super(fieldPathStr, separator, schema);
     }
 
     @Override
@@ -26,8 +29,8 @@ public class GenericRecordLongFieldCopier implements FieldCopier {
             final int length) {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Long value = genericRecord == null ? null : (Long) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Long value = (Long) GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }

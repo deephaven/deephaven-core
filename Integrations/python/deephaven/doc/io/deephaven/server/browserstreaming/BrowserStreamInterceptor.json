@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.browserstreaming.BrowserStreamInterceptor",
+ "methods": {
+  "interceptCall": "Note: Java generics information - <ReqT,\nRespT>\n\n:param call: io.grpc.ServerCall<ReqT,RespT>\n:param headers: io.grpc.Metadata\n:param next: io.grpc.ServerCallHandler<ReqT,RespT>\n:return: io.grpc.ServerCall.Listener<ReqT>"
+ },
+ "path": "io.deephaven.server.browserstreaming.BrowserStreamInterceptor",
+ "text": "Interceptor to notice x-deephaven-stream headers in a request and provide them to later parts of BrowserStream\n tooling so that unary and server-streaming calls can be combined into an emulated bidirectional stream.",
+ "typeName": "class"
+}

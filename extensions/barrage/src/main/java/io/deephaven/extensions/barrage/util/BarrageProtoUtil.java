@@ -56,7 +56,7 @@ public class BarrageProtoUtil {
         }
     }
 
-    public static RowSet toIndex(final ByteBuffer string) {
+    public static RowSet toRowSet(final ByteBuffer string) {
         // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {

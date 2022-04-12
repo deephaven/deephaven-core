@@ -1,0 +1,12 @@
+FROM python:3
+
+EXPOSE 8090
+
+RUN apt-get update && apt-get -qy install curl
+RUN pip install barnum kafka-python mysql-connector-python requests wait-for-it
+
+RUN mkdir /loadgen
+COPY generate_load.py /loadgen
+COPY python-docker-entrypoint.sh /usr/local/bin
+
+ENTRYPOINT ["python-docker-entrypoint.sh"]

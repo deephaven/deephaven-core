@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.FigureInfoOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.grpc.FigureInfoOrBuilder",
- "typeName": "interface"
-}

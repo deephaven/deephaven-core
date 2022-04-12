@@ -146,6 +146,11 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
+    public WritableColumnSource<?> newFlatDestInstance(long size) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean isRetain() {
         return false;
     }
@@ -175,6 +180,11 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     @Override
     public boolean disallowRefresh() {
         return false;
+    }
+
+    @Override
+    public boolean isStateless() {
+        return sourceColumnSource.isStateless();
     }
 
     @Override

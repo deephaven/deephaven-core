@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.topage.ToBigDecimalFromLongPage",
+ "methods": {
+  "convertResult": ":param result: java.lang.Object\n:return: (java.math.BigDecimal[]) Produce the array of values from the result",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param precision: int\n:param scale: int\n:return: io.deephaven.parquet.table.pagestore.topage.ToPage<ATTR,java.math.BigDecimal[]>",
+  "nullValue": ":return: (java.lang.Object) The null value stored in the elements of the arrays produced by thus object."
+ },
+ "path": "io.deephaven.parquet.table.pagestore.topage.ToBigDecimalFromLongPage",
+ "typeName": "class"
+}

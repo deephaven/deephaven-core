@@ -4,9 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -15,16 +13,6 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableBooleanArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableFloatArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.util.ShiftData;
@@ -49,7 +37,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,11 +51,10 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * The column source is dense with keys from 0 to capacity, there can be no holes. Arrays are divided into blocks so
  * that the column source can be incrementally expanded without copying data from one array to another.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, Serializable {
-    private static final long serialVersionUID = -7823391894248382929L;
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
@@ -135,7 +121,7 @@ public abstract class ArrayBackedColumnSource<T>
     /**
      * A bitset with the same two-level structure as the array-backed data, except that the inner array is interpreted
      * as a bitset (and is thus not very big... its length is blockSize / 64, and because blockSize is currently 256,
-     * the size of the inner array is 4.
+     * the size of the inner array is 4).
      */
     transient long[][] prevInUse;
 
@@ -511,83 +497,6 @@ public abstract class ArrayBackedColumnSource<T>
         return (WritableColumnSource<T>) result;
     }
 
-    /**
-     * Wrap the input array in an immutable {@link ColumnSource}. This method will unbox any boxed values, and directly
-     * use the result array.
-     *
-     * @param dataArray The array to turn into a ColumnSource
-     * @return An Immutable ColumnSource that directly wraps the input array.
-     */
-    public static ColumnSource<?> getImmutableMemoryColumnSource(@NotNull final Object dataArray) {
-        final Class<?> arrayType = dataArray.getClass().getComponentType();
-        if (arrayType == null) {
-            throw new IllegalArgumentException("Input value was not an array, was " + dataArray.getClass().getName());
-        }
-
-        return getImmutableMemoryColumnSource(dataArray, arrayType, arrayType.getComponentType());
-    }
-
-    /**
-     * Wrap the input array in an immutable {@link ColumnSource}. This method will unbox any boxed values, and directly
-     * use the result array. This version allows the user to specify the column data type. It will automatically map
-     * column type Boolean/boolean with input array types byte[] to {@link ImmutableBooleanArraySource} and columnType
-     * DateTime / array type long[] to {@link ImmutableDateTimeArraySource}
-     *
-     * @param dataArray The array to turn into a ColumnSource
-     * @param dataType the data type of the resultant column source
-     * @param componentType the component type for column sources of arrays or Vectors
-     * @return An Immutable ColumnSource that directly wraps the input array.
-     */
-    public static <T> ColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
-            @NotNull final Class<T> dataType,
-            @Nullable final Class<?> componentType) {
-        final ColumnSource<?> result;
-        if (dataType == boolean.class) {
-            result = (dataArray instanceof byte[])
-                    ? new ImmutableBooleanArraySource((byte[]) dataArray)
-                    : new ImmutableBooleanArraySource((boolean[]) dataArray);
-        } else if (dataType == byte.class) {
-            result = new ImmutableByteArraySource((byte[]) dataArray);
-        } else if (dataType == char.class) {
-            result = new ImmutableCharArraySource((char[]) dataArray);
-        } else if (dataType == double.class) {
-            result = new ImmutableDoubleArraySource((double[]) dataArray);
-        } else if (dataType == float.class) {
-            result = new ImmutableFloatArraySource((float[]) dataArray);
-        } else if (dataType == int.class) {
-            result = new ImmutableIntArraySource((int[]) dataArray);
-        } else if (dataType == long.class) {
-            result = new ImmutableLongArraySource((long[]) dataArray);
-        } else if (dataType == short.class) {
-            result = new ImmutableShortArraySource((short[]) dataArray);
-        } else if (dataType == Boolean.class) {
-            result = (dataArray instanceof byte[])
-                    ? new ImmutableBooleanArraySource((byte[]) dataArray)
-                    : new ImmutableBooleanArraySource((Boolean[]) dataArray);
-        } else if (dataType == Byte.class) {
-            result = new ImmutableByteArraySource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
-        } else if (dataType == Character.class) {
-            result = new ImmutableCharArraySource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
-        } else if (dataType == Double.class) {
-            result = new ImmutableDoubleArraySource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
-        } else if (dataType == Float.class) {
-            result = new ImmutableFloatArraySource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
-        } else if (dataType == Integer.class) {
-            result = new ImmutableIntArraySource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
-        } else if (dataType == Long.class) {
-            result = new ImmutableLongArraySource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
-        } else if (dataType == Short.class) {
-            result = new ImmutableShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
-        } else if (dataType == DateTime.class && dataArray instanceof long[]) {
-            result = new ImmutableDateTimeArraySource((long[]) dataArray);
-        } else {
-            // noinspection unchecked
-            result = new ImmutableObjectArraySource<>((T[]) dataArray, dataType, componentType);
-        }
-        // noinspection unchecked
-        return (ColumnSource<T>) result;
-    }
-
     @Override
     public boolean isImmutable() {
         return false;
@@ -646,18 +555,6 @@ public abstract class ArrayBackedColumnSource<T>
             @NotNull final LongChunk<? extends RowKeys> keyIndices) {
         fillSparsePrevChunkUnordered(destination, keyIndices);
     }
-
-    /**
-     * Resets the given chunk to provide a write-through reference to our backing array.
-     * <p>
-     * Note: This is unsafe to use if previous tracking has been enabled!
-     *
-     * @param chunk the writable chunk to reset to our backing array.
-     * @param position position that we require
-     * @return the first position addressable by the chunk
-     */
-    public abstract long resetWritableChunkToBackingStore(@NotNull final ResettableWritableChunk<?> chunk,
-            long position);
 
     protected abstract void fillSparseChunk(@NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence indices);
@@ -784,5 +681,10 @@ public abstract class ArrayBackedColumnSource<T>
                 }
             });
         }
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
     }
 }

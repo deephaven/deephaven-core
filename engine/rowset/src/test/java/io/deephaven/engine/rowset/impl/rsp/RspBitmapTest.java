@@ -1,5 +1,6 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
@@ -4385,5 +4386,36 @@ public class RspBitmapTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testBinarySearchWithSingleValueInLastSpan() {
+        final long v0 = 10;
+        final long v1 = 10 + BLOCK_SIZE;
+        final RspBitmap rsp = vs2rb(v0, v1);
+        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet.SearchIterator sit = r.searchIterator();
+        final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(v0, k), 1);
+        assertEquals(v0, ans1);
+        final long ans2 = sit.binarySearchValue((long k, int ignored) -> Long.compare(v1 - 1, k), 1);
+        assertEquals(v0, ans2);
+        final long ans3 = sit.binarySearchValue((long k, int ignored) -> Long.compare(v1, k), 1);
+        assertEquals(v1, ans3);
+    }
+
+    @Test
+    public void testBinarySearchWithFullBlockSpanInLastSpan() {
+        final long value0 = 10;
+        final long rangeStart1 = BLOCK_SIZE;
+        final long rangeLast1 = BLOCK_SIZE + BLOCK_LAST;
+        final RspBitmap rsp = vs2rb(value0, rangeStart1, -rangeLast1);
+        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet.SearchIterator sit = r.searchIterator();
+        final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(value0, k), 1);
+        assertEquals(value0, ans1);
+        final long ans2 = sit.binarySearchValue((long k, int ignored) -> Long.compare(rangeStart1 - 1, k), 1);
+        assertEquals(value0, ans2);
+        final long ans3 = sit.binarySearchValue((long k, int ignored) -> Long.compare(rangeStart1, k), 1);
+        assertEquals(rangeStart1, ans3);
     }
 }

@@ -1,23 +1,49 @@
 plugins {
   id 'com.bmuschko.docker-remote-api'
+  id 'java-library'
+  id 'io.deephaven.project.register'
 }
 
-evaluationDependsOn ':protoc'
+evaluationDependsOn Docker.registryProject('protoc-base')
 
 description = 'The Deephaven proto-backplane-grpc'
 
-configurations.create('download')
-configurations.download.transitive=false
+configurations {
+  download {
+    transitive = false
+  }
+
+  // automatically pick up the standard junit version
+  testCompile.extendsFrom junit
+}
+
+// TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
+def protobufVersion = '3.17.3'
+def boringSslVersion = '2.0.34.Final'
 
 dependencies {
-  // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
-  // the same output that it contains, and we have declared the correct dependencies as necessary
-  //  compile 'io.deephaven.barrage:barrage-core:0.2.0'
-  download 'io.deephaven.barrage:barrage-core:0.2.0'
-  Classpaths.inheritArrow(project, 'flight-core', 'download')
+  // This should be implementation, if listed at all, at least once we have own own version management
+  api "com.google.protobuf:protobuf-java:${protobufVersion}"
+
+  Classpaths.inheritGrpcPlatform(project, 'api')
+  api 'io.grpc:grpc-protobuf'
+  api 'io.grpc:grpc-api'
+  api 'io.grpc:grpc-stub'
+
+  runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
+
+  // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
+  // downstream classpaths
   Classpaths.inheritArrow(project, 'flight-core', 'compileOnly')
 
   compileOnly 'javax.inject:javax.inject:1'
+  compileOnly "javax.annotation:javax.annotation-api:1.3.1"
+
+  // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
+  // the same output that it contains, and we have declared the correct dependencies as necessary
+  //  compile 'io.deephaven.barrage:barrage-core:0.4.0'
+  download 'io.deephaven.barrage:barrage-core:0.4.0'
+  Classpaths.inheritArrow(project, 'flight-core', 'download')
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {
@@ -33,7 +59,11 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
       }
     }
   }
-  parentContainers = [ project(':protoc').tasks.findByName('buildDocker') ]
+
+  // protoc-base is only provided via linux/amd64
+  parentContainers = [ Docker.registryTask(project, 'protoc-base') ]
+  platform = 'linux/amd64'
+
   containerOutPath = '/generated'
   imageName = 'deephaven/proto-backplane-grpc:local-build'
   copyOut {
@@ -60,5 +90,3 @@ spotless {
     )
   }
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'

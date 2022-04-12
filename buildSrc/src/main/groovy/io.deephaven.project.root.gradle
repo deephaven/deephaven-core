@@ -1,0 +1,19 @@
+import io.deephaven.project.ProjectType
+
+plugins {
+    id 'io.deephaven.common-conventions'
+}
+
+def verifyAllProjectsRegistered = project.tasks.register('verifyAllProjectsRegistered') { task ->
+    task.doLast {
+        project.allprojects { Project p ->
+            if (!ProjectType.isRegistered(p)) {
+                throw new IllegalStateException("Project '${project.name}' has not registered. Please apply the plugin 'io.deephaven.project.register'.")
+            }
+        }
+    }
+}
+
+project.tasks
+        .getByName('quick')
+        .dependsOn verifyAllProjectsRegistered

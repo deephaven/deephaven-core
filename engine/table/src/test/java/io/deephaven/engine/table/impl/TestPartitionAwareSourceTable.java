@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -367,7 +367,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(columnSourceManager).refresh();
                 will(throwException(exception));
                 oneOf(listener).getErrorNotification(with(any(TableDataException.class)),
-                        with(any(UpdatePerformanceTracker.Entry.class)));
+                        with(any(PerformanceEntry.class)));
                 will(new CustomAction("check exception") {
                     @Override
                     public Object invoke(Invocation invocation) {
@@ -426,6 +426,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(columnDefinition.getDataType()));
                     allowing(columnSource).getComponentType();
                     will(returnValue(columnDefinition.getComponentType()));
+                    allowing(columnSource).preventsParallelism();
+                    will(returnValue(false));
+                    allowing(columnSource).isStateless();
+                    will(returnValue(true));
                 }
             });
         });

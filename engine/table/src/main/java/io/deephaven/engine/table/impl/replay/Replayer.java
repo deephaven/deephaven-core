@@ -93,7 +93,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (done) {
             return;
         }
-        UpdateGraphProcessor.DEFAULT.removeTables(currentTables);
+        UpdateGraphProcessor.DEFAULT.removeSources(currentTables);
         currentTables = null;
         if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
             shutdownInternal();

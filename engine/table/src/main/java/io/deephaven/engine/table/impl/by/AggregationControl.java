@@ -22,15 +22,15 @@ public class AggregationControl {
 
     public int initialHashTableSize(@NotNull final Table inputTable) {
         // TODO: This approach relies on rehash. Maybe we should consider sampling instead.
-        return IncrementalChunkedByAggregationStateManager.MINIMUM_INITIAL_HASH_SIZE;
+        return IncrementalChunkedOperatorAggregationStateManager.MINIMUM_INITIAL_HASH_SIZE;
     }
 
     public double getTargetLoadFactor() {
-        return IncrementalChunkedByAggregationStateManager.DEFAULT_TARGET_LOAD_FACTOR;
+        return IncrementalChunkedOperatorAggregationStateManager.DEFAULT_TARGET_LOAD_FACTOR;
     }
 
     public double getMaximumLoadFactor() {
-        return IncrementalChunkedByAggregationStateManager.DEFAULT_MAX_LOAD_FACTOR;
+        return IncrementalChunkedOperatorAggregationStateManager.DEFAULT_MAX_LOAD_FACTOR;
     }
 
     public boolean considerGrouping(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {

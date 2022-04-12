@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.server.util.GrpcServiceOverrideBuilder$BrowserStreamMethod",
+ "methods": {
+  "invokeNext": ":param request: GrpcServiceOverrideBuilder.BrowserStreamMethod.ReqT\n:param responseObserver: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BrowserStreamMethod.NextRespT>",
+  "invokeOpen": ":param request: GrpcServiceOverrideBuilder.BrowserStreamMethod.ReqT\n:param responseObserver: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.BrowserStreamMethod.RespT>",
+  "next": ":return: io.grpc.stub.ServerCalls.UnaryMethod<GrpcServiceOverrideBuilder.BrowserStreamMethod.ReqT,GrpcServiceOverrideBuilder.BrowserStreamMethod.NextRespT>",
+  "open": ":return: io.grpc.stub.ServerCalls.ServerStreamingMethod<GrpcServiceOverrideBuilder.BrowserStreamMethod.ReqT,GrpcServiceOverrideBuilder.BrowserStreamMethod.RespT>"
+ },
+ "path": "io.deephaven.server.util.GrpcServiceOverrideBuilder.BrowserStreamMethod",
+ "typeName": "class"
+}

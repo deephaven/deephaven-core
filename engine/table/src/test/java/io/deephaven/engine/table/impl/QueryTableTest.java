@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl;
 import com.google.common.primitives.Ints;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.base.FileUtils;
@@ -1226,6 +1227,74 @@ public class QueryTableTest extends QueryTableTestBase {
         show(snapshot, 50);
         final Table expect3 = newTable(c("A", 11, 50), c("B", "A", "bc"), c("T", 8, 8));
         assertTableEquals(expect3, snapshot);
+    }
+
+    public void testSnapshotArrayTrigger() {
+        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+                c("A", 3, 1, 2), c("B", "c", "a", "b"));
+
+        final QueryTable left1 = testRefreshingTable(c("T", 1));
+        final Table leftBy = left1.aggBy(AggGroup("T"));
+
+        final Table expected = right.naturalJoin(leftBy, "", "T");
+        TableTools.showWithRowSet(expected);
+        final Table actual = leftBy.snapshot(right);
+        assertTableEquals(expected, actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            right.notifyListeners(i(20, 40), i(), i());
+        });
+        assertTableEquals(expected.where("A in 1, 2, 3"), actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(left1, i(3), c("T", 5));
+            left1.notifyListeners(i(3), i(), i());
+        });
+        assertTableEquals(expected, actual);
+    }
+
+    public void testSnapshotArrayValues() {
+        final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
+                c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        final Table rightBy = right.aggAllBy(AggSpec.group());
+
+        final QueryTable left1 = testRefreshingTable(c("T", 1));
+        final Table ex1 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 1, 2)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "a", "b")}), intCol("T", 1));
+        TableTools.showWithRowSet(ex1);
+
+        final Table actual = left1.snapshot(rightBy);
+        assertTableEquals(ex1, actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(20, 40), c("A", 30, 50), c("B", "aa", "bc"));
+            right.notifyListeners(i(20, 40), i(), i());
+        });
+        assertTableEquals(ex1, actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(left1, i(3), c("T", 5));
+            left1.notifyListeners(i(3), i(), i());
+        });
+        final Table ex2 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 30, 1, 2, 50)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aa", "a", "b", "bc")}), intCol("T", 5));
+        assertTableEquals(ex2, actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(20), intCol("A", 31), stringCol("B", "aaa"));
+            right.notifyListeners(i(), i(), i(20));
+        });
+        assertTableEquals(ex2, actual);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(left1, i(4), c("T", 6));
+            left1.notifyListeners(i(4), i(), i());
+        });
+
+        final Table ex3 = newTable(col("A", new IntVector[] {new IntVectorDirect(3, 31, 1, 2, 50)}),
+                col("B", new ObjectVector[] {new ObjectVectorDirect<>("c", "aaa", "a", "b", "bc")}), intCol("T", 6));
+        assertTableEquals(ex3, actual);
     }
 
     public void testSnapshotHistorical() {
@@ -2828,15 +2897,15 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.aggBy(List.of(AggSum("intCol"), AggAbsSum("absInt=intCol"), AggMax("doubleCol"),
                     AggFirst("Sym"), AggCountDistinct("UniqueCountSym=Sym"), AggDistinct("UniqueSym=Sym"))));
             testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))));
-            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
-                    t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+                    t -> t.aggBy(List.of(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))));
-            testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
+            testMemoize(source, t -> t.aggBy(List.of(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
                     t -> t.aggBy(List.of(AggDistinct("UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))),
-                    t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
+                    t -> t.aggBy(List.of(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.countBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.avgBy("Sym"));

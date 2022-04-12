@@ -1,12 +1,14 @@
 plugins {
-    id 'java'
     id 'application'
+    id 'io.deephaven.project.register'
 }
 
 dependencies {
     implementation project(':java-client-session-dagger')
+    implementation project(':java-client-example-utilities')
 
-    implementation 'info.picocli:picocli:4.6.1'
+    Classpaths.inheritGrpcPlatform(project)
+    runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
@@ -42,6 +44,9 @@ applicationDistribution.into('bin') {
     from(createApplication('table-manager', 'io.deephaven.client.examples.TableManagerExample'))
     from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
     from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))
+    from(createApplication('subscribe-fields', 'io.deephaven.client.examples.SubscribeToFields'))
+    from(createApplication('connect-check', 'io.deephaven.client.examples.ConnectCheck'))
+    from(createApplication('fetch-object', 'io.deephaven.client.examples.FetchObject'))
     fileMode = 0755
 }
 

@@ -115,6 +115,7 @@ def _custom_writeTable(*args):
         return _java_type_.writeTable(args[0], getFileObject(args[1]))
     elif len(args) == 3:
         return _java_type_.writeTable(args[0], getFileObject(args[1]),  getattr(_java_type_, args[2]))
+    raise Exception('Wrong number of arguments: {}'.format(len(args)))
 
 
 def _custom_writeTables(sources, tableDefinition, destinations):

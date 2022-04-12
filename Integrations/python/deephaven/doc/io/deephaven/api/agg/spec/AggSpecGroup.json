@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecGroup",
+ "methods": {
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecGroup",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecGroup",
+ "text": "Specifies an aggregation that outputs each group of input values as a Deephaven vector (io.deephaven.vector.Vector).",
+ "typeName": "class"
+}

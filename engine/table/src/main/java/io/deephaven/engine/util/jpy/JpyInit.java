@@ -2,8 +2,15 @@ package io.deephaven.engine.util.jpy;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.jpy.JpyConfig;
 import io.deephaven.jpy.JpyConfigExt;
+import io.deephaven.jpy.JpyConfigFromSubprocess;
+import io.deephaven.jpy.JpyConfigSource;
 import org.jpy.PyLibInitializer;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Initializes Jpy.
@@ -12,8 +19,23 @@ import org.jpy.PyLibInitializer;
  */
 public class JpyInit {
 
-    public static void init(Logger log) {
-        init(log, new JpyConfigExt(new JpyConfigLoader(Configuration.getInstance()).asJpyConfig()));
+    /**
+     * First, checks {@link Configuration#getInstance()} for any explicit jpy properties. If none are set, it will
+     * source the configuration from {@link JpyConfigFromSubprocess#fromSubprocess(Duration)}.
+     *
+     * @param log the log
+     * @throws IOException if an IO exception occurs
+     * @throws InterruptedException if the current thread is interrupted
+     * @throws TimeoutException if the command times out
+     */
+    public static void init(Logger log) throws IOException, InterruptedException, TimeoutException {
+        final JpyConfig explicitConfig = new JpyConfigLoader(Configuration.getInstance()).asJpyConfig();
+        if (!explicitConfig.isEmpty()) {
+            init(log, new JpyConfigExt(explicitConfig));
+            return;
+        }
+        final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
+        init(log, new JpyConfigExt(fromSubprocess.asJpyConfig()));
     }
 
     public static synchronized void init(Logger log, JpyConfigExt jpyConfig) {

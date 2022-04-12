@@ -51,6 +51,9 @@ public final class RowSetCounts {
     public final LongCounterMetric rspTwoValuesContainerCount;
     public final LongCounterMetric rspSingletonContainersCount;
 
+    public final LongCounterLog2HistogramMetric rspFullBlockSpansCount;
+    public final LongCounterLog2HistogramMetric rspFullBlockSpansLen;
+
     public RowSetCounts(final String prefix) {
         emptyCount =
                 new IntCounterMetric(prefix + "EmptyCount");
@@ -121,6 +124,11 @@ public final class RowSetCounts {
 
         rspSingletonContainersCount =
                 new LongCounterMetric(prefix + "RspSingletonContainersCount");
+
+        rspFullBlockSpansCount =
+                new LongCounterLog2HistogramMetric(prefix + "RspFullBlockSpansCount");
+        rspFullBlockSpansLen =
+                new LongCounterLog2HistogramMetric(prefix + "RspFullBlockSpansLen");
     }
 
     public void sampleRsp(final RspBitmap rb) {
@@ -148,7 +156,9 @@ public final class RowSetCounts {
                 rspSingleRangeContainersCount,
                 rspSingleRangeContainerCardinality,
                 rspSingletonContainersCount,
-                rspTwoValuesContainerCount);
+                rspTwoValuesContainerCount,
+                rspFullBlockSpansCount,
+                rspFullBlockSpansLen);
     }
 
     public void sampleSingleRange(final SingleRange sr) {

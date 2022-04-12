@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 description 'Engine RowSets: Data structures for working with row keys'
@@ -20,5 +21,4 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-// testOutOfBand: non-parallel, not a engine test, not isolated
-TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
+TestTools.addEngineOutOfBandTest(project)

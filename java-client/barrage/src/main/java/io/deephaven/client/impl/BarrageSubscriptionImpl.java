@@ -19,10 +19,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
-import io.deephaven.extensions.barrage.util.BarrageStreamReader;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.CallOptions;
@@ -136,7 +133,17 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public synchronized BarrageTable entireTable() {
+    public BarrageTable entireTable() {
+        return partialTable(null, null, false);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) {
+        return partialTable(viewport, columns, false);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
@@ -144,7 +151,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!subscribed) {
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
-                    .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(null, null, options)))
+                    .setAppMetadata(
+                            ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                     .build());
             subscribed = true;
         }
@@ -190,6 +198,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private ByteBuffer makeRequestInternal(
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
+            boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -213,6 +222,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
         BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
         BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
         metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
 
         final FlatBufferBuilder wrapper = new FlatBufferBuilder();
@@ -251,35 +261,34 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * @param columnTypes the class type per column
      * @param componentTypes the component class type per column
      * @param streamReader the stream reader - intended to be thread safe and re-usable
-     * @param <Options> the options related to deserialization
      * @return the client side method descriptor
      */
-    public static <Options> MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final Options options,
+    public static MethodDescriptor<FlightData, BarrageMessage> getClientDoExchangeDescriptor(
+            final BarrageSubscriptionOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            final StreamReader streamReader) {
         return descriptorFor(
                 MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
                 ProtoUtils.marshaller(FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
+                new BarrageDataMarshaller(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
                 FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
-        private final Options options;
+    public static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+        private final BarrageSubscriptionOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final BarrageMessageConsumer.StreamReader<Options> streamReader;
+        private final StreamReader streamReader;
 
         public BarrageDataMarshaller(
-                final Options options,
+                final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+                final StreamReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -295,7 +304,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, null, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 }

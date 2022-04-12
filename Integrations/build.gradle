@@ -1,6 +1,8 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
     id 'com.avast.gradle.docker-compose'
+    id 'idea'
 }
 
 evaluationDependsOn ':docker-runtime-base'
@@ -47,7 +49,7 @@ sourceSets {
 // we do want IntelliJ to treat them as resources in IDE.
 idea {
     module {
-        resourceDirs += [file('r'), file('python')] 
+        resourceDirs += [file('r'), file('python')]
         testResourceDirs += [file('python/test')]
     }
 }
@@ -68,7 +70,7 @@ idea {
 JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
 SourceSet test = java.sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, String sourcePath, List<String> command ->
+def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
         copyIn {
             from(sourcePath) {
@@ -89,9 +91,7 @@ def runInDocker = { String name, String sourcePath, List<String> command ->
 
         imageName = 'deephaven/py-integrations:local-build'
 
-        network = dockerCompose.projectName.toLowerCase() + '_default'
-        containerDependencies.dependsOn = dockerCompose.upTask
-        containerDependencies.finalizedBy = dockerCompose.downTask
+        addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
@@ -121,9 +121,21 @@ def runInDocker = { String name, String sourcePath, List<String> command ->
         }
     }
 }
-def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'])
+
+// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
+dockerCompose {
+    waitForTcpPortsTimeout = Duration.ofMinutes(2)
+}
+
+Closure composeConfig = { task ->
+    task.network = dockerCompose.projectName.toLowerCase() + '_default'
+    task.containerDependencies.dependsOn = dockerCompose.upTask
+    task.containerDependencies.finalizedBy = dockerCompose.downTask
+}
+
+def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
 def pyFunctionalTest = runInDocker('py-functional-test', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'])
+def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
@@ -138,8 +150,3 @@ pyTest2.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
 tasks.getByName('check').dependsOn(pyTest2)
-
-// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
-dockerCompose {
-    waitForTcpPortsTimeout = Duration.ofMinutes(2)
-}

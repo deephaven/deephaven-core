@@ -6,10 +6,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     final SelectAndViewAnalyzer inner;
@@ -24,6 +21,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn,
             ColumnSource<?> columnSource,
             String[] dependencies, ModifiedColumnSet mcsBuilder) {
+        super(inner.getLayerIndex() + 1);
         this.inner = inner;
         this.name = name;
         this.selectColumn = selectColumn;
@@ -75,5 +73,18 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     @Override
     public SelectAndViewAnalyzer getInner() {
         return inner;
+    }
+
+    @Override
+    int getLayerIndexFor(String column) {
+        if (name.equals(column)) {
+            return getLayerIndex();
+        }
+        return inner.getLayerIndexFor(column);
+    }
+
+    @Override
+    void setBaseBits(BitSet bitset) {
+        inner.setBaseBits(bitset);
     }
 }

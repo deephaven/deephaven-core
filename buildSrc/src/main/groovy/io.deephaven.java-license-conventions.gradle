@@ -1,0 +1,7 @@
+plugins {
+    id 'java'
+}
+
+def toolsLicense = io.deephaven.tools.License.createFrom(project)
+toolsLicense.register()
+project.ext.license = toolsLicense

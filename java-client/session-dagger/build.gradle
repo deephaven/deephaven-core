@@ -1,11 +1,17 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 description = 'The Deephaven client session dagger library'
 
 dependencies {
     api project(':java-client-session')
+
+    Classpaths.inheritGrpcPlatform(project, 'api')
+    api 'io.grpc:grpc-api'
+
+    implementation project(':proto:proto-backplane-grpc')
 
     Classpaths.inheritDagger(project)
 
@@ -23,11 +29,11 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'grpc-api')
+    testImplementation TestTools.projectDependency(project, 'server')
+    testImplementation project(':java-client-flight')
+    testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation project(':log-to-slf4j')
 }
 
 test {
 }
-
-apply plugin: 'io.deephaven.java-publishing-conventions'

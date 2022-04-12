@@ -16,8 +16,15 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.sized.SizedChunk;
 
+import java.lang.reflect.Array;
+
 public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
-    public final static ObjectArrayExpansionKernel INSTANCE = new ObjectArrayExpansionKernel();
+
+    private final Class<?> componentType;
+
+    public ObjectArrayExpansionKernel(final Class<?> componentType) {
+        this.componentType = componentType;
+    }
 
     @Override
     public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
@@ -63,7 +70,7 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
                 result.set(i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
             } else {
                 //noinspection unchecked
-                final T[] row = (T[])new Object[ROW_LEN];
+                final T[] row = (T[])Array.newInstance(componentType, ROW_LEN);
                 for (int j = 0; j < ROW_LEN; ++j) {
                     row[j] = typedSource.get(lenRead + j);
                 }

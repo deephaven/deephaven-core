@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.session.TicketResolverBase",
- "methods": {
-  "flightDescriptorRoute": "The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve\n the descriptor.\n\n:return: (java.lang.String) the string that will route from flight descriptor to this resolver",
-  "ticketRoute": ":return: (byte) the single byte prefix used as a route on the ticket"
- },
- "path": "io.deephaven.grpc_api.session.TicketResolverBase",
- "typeName": "class"
-}

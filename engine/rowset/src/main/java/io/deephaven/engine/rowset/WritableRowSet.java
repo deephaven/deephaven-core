@@ -134,7 +134,7 @@ public interface WritableRowSet extends RowSet {
      * Destructively convert this WritableRowSet into a {@link TrackingWritableRowSet}.
      * <p>
      * This is really only suitable when the caller "owns" this WritableRowSet. Programming errors may occur if the any
-     * code holds onto references to {@link this} rather than the result, because there may be ambiguity about resource
+     * code holds onto references to {@code this} rather than the result, because there may be ambiguity about resource
      * ownership.
      * <p>
      * Implementations are free to transfer ownership of resources from this object to the result. As such, it is an

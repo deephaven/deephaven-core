@@ -1,18 +1,11 @@
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.Table;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 import com.tdunning.math.stats.TDigest;
-import gnu.trove.list.array.TDoubleArrayList;
-
-import java.util.ArrayList;
-import java.util.List;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.vector.ObjectVector;
 
 /**
  * Generate approximate percentile aggregations of a table.
@@ -30,8 +23,7 @@ import java.util.List;
  *
  * <p>
  * The input table must be add only, if modifications or removals take place; then an UnsupportedOperationException is
- * thrown. For tables with adds and removals you must use exact percentiles with
- * {@link AggregationFactory#AggPct(double, java.lang.String...)}.
+ * thrown. For tables with adds and removals you must use exact percentiles with {@link Aggregation#AggPct}.
  * </p>
  *
  * <p>
@@ -49,25 +41,22 @@ import java.util.List;
  * and 99th percentiles of the "Size" column by "Sym":
  * 
  * <pre>
- * new ApproximatePercentile.PercentileDefinition("Latency").add(0.75, "L75").add(0.95, "L95").add(0.99, "L99")
- *         .nextColumn("Size").add(0.95, "S95").add(0.99, "S99");
- * final Table aggregated = ApproximatePercentile.approximatePercentiles(input, definition);
+ * final Table aggregated = input.aggBy(List.of(
+ *         Aggregation.ApproxPct("Latency', PctOut(0.75, "L75"), PctOut(0.95, "L95"), PctOut(0.99, "L99")
+ *         Aggregation.ApproxPct("Size', PctOut(0.95, "S95"), PctOut(0.99, "S99")));
  * </pre>
  * </p>
  *
  * <p>
  * When parallelizing a workload, you may want to divide it based on natural partitioning and then compute an overall
- * percentile. In these cases, you should use the {@link PercentileDefinition#exposeDigest} method to expose the
- * internal t-digest structure as a column. If you then perform an array aggregation ({@link Table#groupBy}), you can
- * call the {@link #accumulateDigests} function to produce a single digest that represents all of the constituent
- * digests. The amount of error introduced is related to the compression factor that you have selected for the digests.
- * Once you have a combined digest object, you can call the quantile or other functions to extract the desired
- * percentile.
+ * percentile. In these cases, you should use the {@link Aggregation#AggTDigest} aggregation to expose the internal
+ * t-digest structure as a column. If you then perform an array aggregation ({@link Table#groupBy}), you can call the
+ * {@link #accumulateDigests} function to produce a single digest that represents all of the constituent digests. The
+ * amount of error introduced is related to the compression factor that you have selected for the digests. Once you have
+ * a combined digest object, you can call the quantile or other functions to extract the desired percentile.
  * </p>
  */
 public class ApproximatePercentile {
-    public static double DEFAULT_COMPRESSION =
-            Configuration.getInstance().getDoubleWithDefault("ApproximatePercentile.defaultCompression", 100.0);
 
     // static usage only
     private ApproximatePercentile() {}
@@ -80,9 +69,8 @@ public class ApproximatePercentile {
      * @return a single row table with double columns representing the approximate percentile for each column of the
      *         input table
      */
-    public static Table approximatePercentile(Table input, double percentile) {
-        return approximatePercentile(input, DEFAULT_COMPRESSION, percentile,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    public static Table approximatePercentileBy(Table input, double percentile) {
+        return input.aggAllBy(AggSpecApproximatePercentile.of(percentile));
     }
 
     /**
@@ -94,9 +82,8 @@ public class ApproximatePercentile {
      * @return a with the groupByColumns and double columns representing the approximate percentile for each remaining
      *         column of the input table
      */
-    public static Table approximatePercentile(Table input, double percentile, String... groupByColumns) {
-        return approximatePercentile(input, DEFAULT_COMPRESSION, percentile,
-                SelectColumnFactory.getExpressions(groupByColumns));
+    public static Table approximatePercentileBy(Table input, double percentile, String... groupByColumns) {
+        return input.aggAllBy(AggSpecApproximatePercentile.of(percentile), groupByColumns);
     }
 
     /**
@@ -108,8 +95,8 @@ public class ApproximatePercentile {
      * @return a with the groupByColumns and double columns representing the approximate percentile for each remaining
      *         column of the input table
      */
-    public static Table approximatePercentile(Table input, double percentile, SelectColumn... groupByColumns) {
-        return approximatePercentile(input, DEFAULT_COMPRESSION, percentile, groupByColumns);
+    public static Table approximatePercentileBy(Table input, double percentile, SelectColumn... groupByColumns) {
+        return input.aggAllBy(AggSpecApproximatePercentile.of(percentile), groupByColumns);
     }
 
     /**
@@ -122,171 +109,13 @@ public class ApproximatePercentile {
      * @return a with the groupByColumns and double columns representing the approximate percentile for each remaining
      *         column of the input table
      */
-    public static Table approximatePercentile(Table input, double compression, double percentile,
+    public static Table approximatePercentileBy(Table input, double compression, double percentile,
             SelectColumn... groupByColumns) {
-        final NonKeyColumnAggregationFactory aggregationContextFactory = new NonKeyColumnAggregationFactory(
-                (type, resultName, exposeInternalColumns) -> new TDigestPercentileOperator(type, compression,
-                        percentile, resultName));
-        return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable) input,
-                groupByColumns);
+        return input.aggAllBy(AggSpecApproximatePercentile.of(percentile, compression), groupByColumns);
     }
 
     /**
-     * A builder class for an approximate percentile definition to be used with {@link #approximatePercentiles}.
-     */
-    public static class PercentileDefinition {
-        private final static PercentileDefinition[] ZERO_LENGTH_PERCENTILE_DEFINITION_ARRAY =
-                new PercentileDefinition[0];
-
-        private final PercentileDefinition prior;
-        private final PercentileDefinition first;
-
-        private final String inputColumn;
-        private String digestColumnName;
-        private final TDoubleArrayList percentiles;
-        private final List<String> resultNames;
-
-        double compression = DEFAULT_COMPRESSION;
-
-        /**
-         * Create a builder with the current input column set to inputColumn.
-         *
-         * @param inputColumn the current input column
-         */
-        public PercentileDefinition(String inputColumn) {
-            this(inputColumn, null);
-        }
-
-        private PercentileDefinition(String inputColumn, PercentileDefinition prior) {
-            this.inputColumn = inputColumn;
-            percentiles = new TDoubleArrayList();
-            resultNames = new ArrayList<>();
-            digestColumnName = null;
-            this.prior = prior;
-            this.first = prior == null ? this : prior.first;
-        }
-
-        /**
-         * Adds an output column.
-         *
-         * To set the inputColumn call {@link #nextColumn(String)}.
-         *
-         * @param percentile the percentile to calculate
-         * @param resultName the result name
-         *
-         * @return a (possibly new) PercentileDefinition
-         */
-        public PercentileDefinition add(double percentile, String resultName) {
-            percentiles.add(percentile);
-            resultNames.add(NameValidator.validateColumnName(resultName));
-            return this;
-        }
-
-        /**
-         * Sets the name of the inputColumn
-         *
-         * @param inputColumn the name of the input column that subsequent calls to {@link #add} operate on.
-         *
-         * @return a (possibly new) PercentileDefinition
-         */
-        public PercentileDefinition nextColumn(String inputColumn) {
-            return new PercentileDefinition(inputColumn, this);
-        }
-
-        /**
-         * Sets the t-digest compression parameter.
-         *
-         * @param compression the t-digest compression factor.
-         *
-         * @return a (possibly new) PercentileDefinition
-         */
-        public PercentileDefinition setCompression(double compression) {
-            first.compression = compression;
-            return this;
-        }
-
-        /**
-         * If true, the tDigest column is exposed using the given name
-         *
-         * @param digestColumnName the name of the t-digest column in the output
-         *
-         * @return a (possibly new) PercentileDefinition
-         */
-        public PercentileDefinition exposeDigest(String digestColumnName) {
-            this.digestColumnName = digestColumnName;
-            return this;
-        }
-
-        private static List<PercentileDefinition> flatten(PercentileDefinition value) {
-            final List<PercentileDefinition> result = new ArrayList<>();
-            value.flattenInto(result);
-            return result;
-        }
-
-        private void flattenInto(List<PercentileDefinition> result) {
-            if (prior != null) {
-                prior.flattenInto(result);
-            }
-            result.add(this);
-        }
-    }
-
-    /**
-     * Compute a set of approximate percentiles for input according to the definitions in percentileDefinitions.
-     *
-     * @param input the table to compute approximate percentiles for
-     * @param percentileDefinitions the compression factor, and map of input columns to output columns
-     * @param groupByColumns the columns to group by
-     * @return a table containing the groupByColumns and the approximate percentiles
-     */
-    public static Table approximatePercentiles(Table input, PercentileDefinition percentileDefinitions,
-            SelectColumn... groupByColumns) {
-        final List<PercentileDefinition> flatDefs = PercentileDefinition.flatten(percentileDefinitions);
-        if (flatDefs.isEmpty()) {
-            throw new IllegalArgumentException("No percentile columns defined!");
-        }
-        final double compression = flatDefs.get(0).compression;
-        final NonKeyColumnAggregationFactory aggregationContextFactory =
-                new NonKeyColumnAggregationFactory((type, resultName, exposeInternalColumns) -> {
-                    for (final PercentileDefinition percentileDefinition : flatDefs) {
-                        if (percentileDefinition.inputColumn.equals(resultName)) {
-                            return new TDigestPercentileOperator(type, compression,
-                                    percentileDefinition.digestColumnName, percentileDefinition.percentiles.toArray(),
-                                    percentileDefinition.resultNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-                        }
-                    }
-                    return null;
-                });
-        return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable) input,
-                groupByColumns);
-    }
-
-    /**
-     * Compute a set of approximate percentiles for input according to the definitions in percentileDefinitions.
-     *
-     * @param input the table to compute approximate percentiles for
-     * @param percentileDefinitions the compression factor, and map of input columns to output columns
-     * @param groupByColumns the columns to group by
-     * @return a table containing the groupByColumns and the approximate percentiles
-     */
-    public static Table approximatePercentiles(Table input, PercentileDefinition percentileDefinitions,
-            String... groupByColumns) {
-        return approximatePercentiles(input, percentileDefinitions, SelectColumnFactory.getExpressions(groupByColumns));
-    }
-
-    /**
-     * Compute a set of approximate percentiles for input according to the definitions in percentileDefinitions.
-     *
-     * @param input the table to compute approximate percentiles for
-     * @param percentileDefinitions the compression factor, and map of input columns to output columns
-     * @return a table containing a single row with the the approximate percentiles
-     */
-    public static Table approximatePercentiles(Table input, PercentileDefinition percentileDefinitions) {
-        return approximatePercentiles(input, percentileDefinitions, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
-
-    /**
-     * Accumulate an Vector of TDigests into a single new TDigest.
+     * Accumulate a Vector of TDigests into a single new TDigest.
      *
      * <p>
      * Accumulate the digests within the Vector into a single TDigest. The compression factor is one third of the
@@ -295,11 +124,12 @@ public class ApproximatePercentile {
      * </p>
      *
      * <p>
-     * This function is intended to be used for parallelization. The first step is to independently compute approximate
-     * percentiles with an exposed digest column using your desired buckets. Next, call {@link Table#groupBy(String...)}
-     * to produce arrays of Digests for each relevant bucket. Once the arrays are created, use this function to
-     * accumulate the arrays of digests within an {@link Table#update(String...)} statement. Finally, you may call the
-     * TDigest quantile function (or others) to produce the desired approximate percentile.
+     * This function is intended to be used for parallelization. The first step is to independently expose a T-Digest
+     * aggregation column with the appropriate compression factor on each of a set of sub-tables, using
+     * {@link Aggregation#AggTDigest} and {@link Table#aggBy}. Next, call {@link Table#groupBy(String...)} to produce
+     * arrays of Digests for each relevant bucket. Once the arrays are created, use this function to accumulate the
+     * arrays of digests within an {@link Table#update} statement. Finally, you may call the TDigest quantile function
+     * (or others) to produce the desired approximate percentile.
      * </p>
      *
      * @param array an array of TDigests

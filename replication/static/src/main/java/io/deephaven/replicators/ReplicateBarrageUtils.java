@@ -14,5 +14,7 @@ public class ReplicateBarrageUtils {
                 "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/CharChunkInputStreamGenerator.java");
         ReplicatePrimitiveCode.charToAll(
                 "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/array/CharArrayExpansionKernel.java");
+        ReplicatePrimitiveCode.charToAllButBoolean(
+                "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/vector/CharVectorExpansionKernel.java");
     }
 }

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectType$Exporter$Reference",
+ "methods": {
+  "index": "The index, which is defined by the order in which references are created. May be used in the output\n stream to refer to the reference from the client.\n\n:return: (int) the index",
+  "type": "The type.\n\n:return: (java.util.Optional<java.lang.String>) the type, if present"
+ },
+ "path": "io.deephaven.plugin.type.ObjectType.Exporter.Reference",
+ "text": "A reference.",
+ "typeName": "interface"
+}

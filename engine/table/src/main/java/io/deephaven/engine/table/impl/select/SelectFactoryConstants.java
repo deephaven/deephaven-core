@@ -20,21 +20,39 @@ public final class SelectFactoryConstants {
     /** A Floating point number, optionally including the initial sign */
     public static final String FLT_PTRN = "[+-]?\\d*\\.\\d+[f]?" + "|" + "[+-]?\\d+\\.\\d*[f]?";
 
+    /** A case insensitive boolean literal */
+    public static final String BOOL_PTRN = "[tT][rR][uU][eE]" + "|" + "[fF][aA][lL][sS][eE]";
+
+    /** A char, surrounded by ' characters */
+    public static final String CHAR_PTRN = "('.')";
+
     /** A string, surrounded by either " or ` characters */
     public static final String STR_PTRN = "(\"[^\"]*\")|(`[^`]*`)";
 
     /** A DateTime, surrounded by ' characters */
     public static final String DATETIME_PTRN = "('[^']*')";
 
-    /** A case insensitive boolean literal */
-    public static final String BOOL_PTRN = "[tT][rR][uU][eE]" + "|" + "[fF][aA][lL][sS][eE]";
-
     /**
-     * Any {@link #INT_PTRN int}, {@link #FLT_PTRN float}, {@link #BOOL_PTRN boolean}, or {@link #STR_PTRN string} as
-     * defined above
+     * Any pattern in:
+     * <ul>
+     * <li>{@link #INT_PTRN int}</li>
+     * <li>{@link #FLT_PTRN float}</li>
+     * <li>{@link #BOOL_PTRN boolean}</li>
+     * <li>{@link #CHAR_PTRN char}</li>
+     * <li>{@link #STR_PTRN string}</li>
+     * <li>{@link #DATETIME_PTRN datetime}</li>
+     * </ul>
      */
-    public static final String LITERAL_PTRN = "(?:" + INT_PTRN + ")|(?:" + FLT_PTRN + ")|(?:" + BOOL_PTRN + ")|(?:"
-            + STR_PTRN + ")|(?:" + DATETIME_PTRN + ")";
+    // @formatter:off
+    public static final String LITERAL_PTRN = "(?:"
+            + INT_PTRN  + ")|(?:"
+            + FLT_PTRN  + ")|(?:"
+            + BOOL_PTRN + ")|(?:"
+            + CHAR_PTRN + ")|(?:"
+            + STR_PTRN  + ")|(?:"
+            + DATETIME_PTRN
+            + ")";
+    // @formatter:on
 
     /** Case insensitive 'icase' expression */
     public static final String ICASE = "[iI][cC][aA][sS][eE]";

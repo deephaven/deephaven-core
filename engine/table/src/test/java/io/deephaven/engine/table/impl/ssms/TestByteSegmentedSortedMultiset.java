@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit TestCharSegmentedSortedMultiset and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
@@ -64,9 +66,10 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     public void testInsertAndRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int nSeeds = scaleToDesiredTestLength(100);
         for (int tableSize = 10; tableSize <= 1000; tableSize *= 2) {
             for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
-                for (int seed = 0; seed < 100; ++seed) {
+                for (int seed = 0; seed < nSeeds; ++seed) {
                     testUpdates(desc.reset(seed, tableSize, nodeSize), true, true, true);
                 }
             }
@@ -75,9 +78,10 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     public void testMove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int nSeeds = scaleToDesiredTestLength(200);
         for (int tableSize = 10; tableSize <= 10000; tableSize *= 2) {
             for (int nodeSize = 8; nodeSize <= 2048; nodeSize *= 2) {
-                for (int seed = 0; seed < 200; ++seed) {
+                for (int seed = 0; seed < nSeeds; ++seed) {
                     testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }

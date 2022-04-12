@@ -1,15 +1,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
-import io.deephaven.engine.table.impl.select.SelectColumn;
 
 import java.io.Serializable;
 
 /**
- * A class that contains information required for a particular Hierarchical table type. (i.e
- * {@link Table#treeTable(String, String) tree tables} or {@link Table#rollup(AggregationFactory, SelectColumn...)
- * rollups})
+ * A class that contains information required for a particular Hierarchical table type, for example
+ * {@link Table#treeTable(String, String) tree tables} or {@link Table#rollup rollups}.
  */
 public interface HierarchicalTableInfo extends Serializable {
     /**

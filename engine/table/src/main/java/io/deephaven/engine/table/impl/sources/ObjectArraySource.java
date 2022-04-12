@@ -98,19 +98,6 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        final T value = sourceColumn.get(sourceKey);
-
-        if (isArrayType && value instanceof Vector) {
-            final Vector<?> vector = (Vector<?>) value;
-            //noinspection unchecked
-            set(destKey, (T) vector.getDirect());
-        } else {
-            set(destKey, value);
-        }
-    }
-
-    @Override
     public T getPrev(long index) {
         if (index < 0 || index > maxIndex) {
             return null;
@@ -171,6 +158,19 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         chunk.asResettableWritableObjectChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
         return (long)blockNo << LOG_BLOCK_SIZE;
     }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final T [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableObjectChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
+    }
+
 
     @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {

@@ -1,5 +1,6 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn Docker.registryProject('python')
@@ -7,6 +8,7 @@ evaluationDependsOn Docker.registryProject('python')
 configurations {
     compile.extendsFrom fishConfig, jdom
     testCompile.extendsFrom fishBaseTest
+    combinedJavadoc
 }
 
 dependencies {
@@ -28,6 +30,8 @@ dependencies {
 
     testRuntime project(path: ':configs'),
             project(path: ':test-configs')
+
+    combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }
 
 def workspace = "$rootDir/tmp/workspace"
@@ -173,9 +177,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
             into 'out'
         }
         // Depend on generated javadoc so we can generate JSON from it
-        dependsOn ':allJavadoc'
-        from("$devRoot/build/docs/javadoc") {
-            // input for javadocExtraction.py
+        from(configurations.combinedJavadoc) {
             into 'javadoc'
         }
     }
@@ -227,8 +229,6 @@ def pythonStaticMethodsArgs = ['io.deephaven.time.calendar.Calendars',
                                'io.deephaven.engine.util.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
                                     '/Integrations/python/deephaven/TableTools/__init__.py',
-                               'io.deephaven.engine.table.impl.by.AggregationFactory',
-                                    '/Integrations/python/deephaven/AggregationFactory/__init__.py',
                                'io.deephaven.plot.colors.ColorMaps',
                                    '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
                                'io.deephaven.engine.util.WindowCheck',
@@ -311,10 +311,10 @@ tasks.register 'generateAll', {
                            ':Generators:generatePlottingConvenience',
                            ':Generators:generateAllPython'
     t.group = '~Deephaven'
-    t.description = 'Runs all code generators; you MUST pass -PwithPy=true and run on a system capable of building python wheels / venvs'
+    t.description = 'Runs all code generators'
 }
 
-check.dependsOn groovyStaticImportGeneratorAssert,
+project.tasks.getByName('quick').dependsOn groovyStaticImportGeneratorAssert,
         generateAxesPlotMethodsAssert,
         generateMultiSeriesAssert,
         generateFigureImmutableAssert,

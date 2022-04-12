@@ -9,6 +9,7 @@ import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
@@ -20,7 +21,6 @@ import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
@@ -48,13 +48,15 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             return;
         }
 
-        final Class<?> componentType = type.getComponentType();
-        final ChunkType chunkType = ChunkType.fromElementType(componentType);
-        final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType);
+        final Class<?> myType = type.getComponentType();
+        final Class<?> myComponentType = myType != null ? myType.getComponentType() : null;
+        final ChunkType chunkType = ChunkType.fromElementType(myType);
+        final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, myType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, componentType, innerChunk);
+        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                chunkType, myType, myComponentType, innerChunk);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options,
+    public DrainableColumn getInputStream(final StreamReaderOptions options,
                                           final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
@@ -85,7 +87,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         private final DrainableColumn innerStream;
 
         private VarListInputStream(
-                final BarrageSubscriptionOptions options, final RowSet subsetIn) throws IOException {
+                final StreamReaderOptions options, final RowSet subsetIn) throws IOException {
             super(chunk, options, subsetIn);
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
@@ -229,7 +231,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -240,10 +242,12 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         final long offsetsBuffer = bufferInfoIter.next();
 
         final Class<?> componentType = type.getComponentType();
+        final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
 
         if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> inner = (WritableChunk<Values>)ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, ChunkType.fromElementType(componentType), componentType, fieldNodeIter, bufferInfoIter, is)) {
+            try (final WritableChunk<Values> ignored = (WritableChunk<Values>)ChunkInputStreamGenerator.extractChunkFromInputStream(
+                    options, ChunkType.fromElementType(componentType), componentType, innerComponentType, fieldNodeIter,
+                    bufferInfoIter, is)) {
                 return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
             }
         }
@@ -279,9 +283,11 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
             }
 
-            final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(ChunkType.fromElementType(componentType));
+            final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(
+                    ChunkType.fromElementType(componentType), componentType);
             try (final WritableChunk<Values> inner = (WritableChunk<Values>)ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, ChunkType.fromElementType(componentType), componentType, fieldNodeIter, bufferInfoIter, is)) {
+                    options, ChunkType.fromElementType(componentType), componentType, innerComponentType,
+                    fieldNodeIter, bufferInfoIter, is)) {
                 chunk = kernel.contract(inner, offsets);
 
                 long nextValid = 0;

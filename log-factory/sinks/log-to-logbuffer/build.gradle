@@ -1,5 +1,6 @@
 plugins {
   id 'java-library'
+  id 'io.deephaven.project.register'
 }
 
 configurations {
@@ -8,4 +9,6 @@ configurations {
 
 dependencies {
   compileOnly project(':log-factory')
+
+  Classpaths.inheritAutoService(project)
 }

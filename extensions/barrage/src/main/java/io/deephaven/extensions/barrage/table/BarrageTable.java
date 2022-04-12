@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -53,11 +54,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
 
-    private final UpdatePerformanceTracker.Entry refreshEntry;
+    private final PerformanceEntry refreshEntry;
 
     /** the capacity that the destSources been set to */
     private int capacity = 0;
-    /** the reinterpretted destination writable sources */
+    /** the reinterpreted destination writable sources */
     private final WritableColumnSource<?>[] destSources;
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
     private final WritableRowRedirection rowRedirection;
@@ -85,6 +86,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * re-send data that the client should already have within the existing viewport.
      */
     private RowSet serverViewport;
+    private boolean serverReverseViewport;
     private BitSet serverColumns;
 
 
@@ -197,8 +199,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         enqueueError(t);
     }
 
-    private UpdateCoalescer processUpdate(final BarrageMessage update,
-            final UpdateCoalescer coalescer) {
+    private UpdateCoalescer processUpdate(final BarrageMessage update, final UpdateCoalescer coalescer) {
         if (DEBUG_ENABLED) {
             saveForDebugging(update);
 
@@ -222,6 +223,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         if (update.isSnapshot) {
             serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
+            serverReverseViewport = update.snapshotRowSetIsReversed;
             serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
         }
 
@@ -232,7 +234,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
                 final WritableRowSet populatedRows =
-                        (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
+                        (serverViewport != null
+                                ? currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)
+                                : null)) {
 
             // removes
             currentRowSet.remove(update.rowsRemoved);
@@ -306,7 +310,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             // remove all data outside of our viewport
             if (serverViewport != null) {
-                try (final RowSet newPopulated = currentRowSet.subSetForPositions(serverViewport)) {
+                try (final RowSet newPopulated =
+                        currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                     populatedRows.remove(newPopulated);
                     freeRows(populatedRows);
                 }

@@ -9,7 +9,8 @@
   "isEmpty": "Return true if the list is empty. Does not check for cleared references.\n\n:return: (boolean) true if the list is empty.",
   "remove": "Remove item from the list if present according to reference equality (==), and also any cleared\n references.\n\n:param item: (SimpleReferenceManager.T) - the item to remove.\n:return: (SimpleReferenceManager.T) The item if it was removed, else null",
   "removeAll": "Remove items in the collection from the list, and also any cleared references.\n\n:param items: (java.util.Collection<SimpleReferenceManager.T>) - the items to remove.",
-  "removeIf": "Retrieve all encountered items that satisfy a filter, while also removing any cleared references.\n\n:param filter: (java.util.function.Predicate<SimpleReferenceManager.T>) - The filter to decide if a valid item should be removed\n:return: (boolean) Whether we succeeded in removing anything"
+  "removeIf": "Retrieve all encountered items that satisfy a filter, while also removing any cleared references.\n\n:param filter: (java.util.function.Predicate<SimpleReferenceManager.T>) - The filter to decide if a valid item should be removed\n:return: (boolean) Whether we succeeded in removing anything",
+  "size": "Return the number of valid references in the list.\n\n Note that each reference is checked for validity, making this operation linear in the number of references.\n\n:return: (int) the number of valid references in the list"
  },
  "path": "io.deephaven.util.datastructures.SimpleReferenceManager",
  "text": "A helper for manging a list of References. It hides the internal management of expired references and provides for\n iteration over the valid ones",

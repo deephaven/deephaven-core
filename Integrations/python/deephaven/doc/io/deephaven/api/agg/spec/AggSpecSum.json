@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecSum",
+ "methods": {
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecSum",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecSum",
+ "text": "Specifies an aggregation that outputs the sum of input values for each group. Only works with numeric input types and\n Boolean.\n \nBoolean inputs are aggregated according to the following rules:\n \n* If any input value is true, the output value is true\n* If there are no non-null input values, the output value is null\n* Else all input values must be false, and the output value is false",
+ "typeName": "class"
+}

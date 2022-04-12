@@ -1,22 +1,25 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.qst.table.TicketTable;
+import io.deephaven.proto.util.ExportTicketHelper;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * An opaque holder for a session export ID.
  */
 public final class ExportId implements HasExportId {
 
+    private final String type;
     private final int exportId;
 
-    ExportId(int exportId) {
+    ExportId(String type, int exportId) {
+        this.type = type;
         this.exportId = exportId;
+    }
+
+    public Optional<String> type() {
+        return Optional.ofNullable(type);
     }
 
     @Override
@@ -36,7 +39,7 @@ public final class ExportId implements HasExportId {
 
     @Override
     public String toString() {
-        return ExportTicketHelper.toReadableString(exportId);
+        return (type == null ? "?:" : type + ":") + ExportTicketHelper.toReadableString(exportId);
     }
 
     int id() {

@@ -413,7 +413,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
 
         effectiveContext.shareable.ensureMappedKeysInitialized(rowRedirection, usePrev, rowSequence);
 
-        if (innerSource instanceof FillUnordered) {
+        if (FillUnordered.providesFillUnordered(innerSource)) {
             effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);
@@ -440,7 +440,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
                             () -> new Shareable(true, cs, chunkCapacity));
             innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
 
-            if (cs.innerSource instanceof FillUnordered) {
+            if (FillUnordered.providesFillUnordered(cs.innerSource)) {
                 innerOrderedValues = null;
                 innerOrderedValuesSlice = null;
                 dupExpandKernel = null;
@@ -666,5 +666,15 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
             destination.setSize(shareable.totalKeyCount);
             permuteKernel.permute(innerOrderedValues, shareable.mappedKeysOrder, destination);
         }
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
     }
 }

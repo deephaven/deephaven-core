@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.Function$ThrowingNullary",
+ "methods": {
+  "call": ":return: Function.ThrowingNullary.R"
+ },
+ "path": "io.deephaven.base.Function.ThrowingNullary",
+ "typeName": "interface"
+}

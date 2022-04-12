@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectType$Exporter",
+ "methods": {
+  "reference": "**Incompatible overloads text - text from the first overload:**\n\nGets the reference for object if it has already been created and forceNew is false,\n otherwise creates a new one. If allowUnknownType is false, and no type can be found, no\n reference will be created.\n\n*Overload 1*  \n  :param object: (java.lang.Object) - the object\n  :param allowUnknownType: (boolean) - if an unknown-typed reference can be created\n  :param forceNew: (boolean) - if a new reference should be created\n  :return: (java.util.Optional<io.deephaven.plugin.type.ObjectType.Exporter.Reference>) the reference\n  \n*Overload 2*  \n  :param object: (java.lang.Object) - the object\n  :param allowUnknownType: (boolean) - if an unknown-typed reference can be created\n  :param forceNew: (boolean) - if a new reference should be created\n  :param equals: (java.util.function.BiPredicate<java.lang.Object,java.lang.Object>) - the equals logic\n  :return: (java.util.Optional<io.deephaven.plugin.type.ObjectType.Exporter.Reference>) the reference"
+ },
+ "path": "io.deephaven.plugin.type.ObjectType.Exporter",
+ "text": "The interface for creating new references during the ObjectType.writeTo(Exporter, Object, OutputStream).",
+ "typeName": "interface"
+}

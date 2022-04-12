@@ -8,7 +8,7 @@ public interface LoggerFactory {
     }
 
     static Logger getLogger(Class<?> clazz) {
-        return getInstance().create(clazz.getName()); // todo
+        return getInstance().create(clazz.getName());
     }
 
     static LoggerFactory getInstance() {

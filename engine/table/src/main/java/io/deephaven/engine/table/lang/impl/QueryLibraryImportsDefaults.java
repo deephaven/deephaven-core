@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.lang.impl;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
@@ -79,6 +80,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@AutoService(QueryLibraryImports.class)
 public class QueryLibraryImportsDefaults implements QueryLibraryImports {
 
     @Override

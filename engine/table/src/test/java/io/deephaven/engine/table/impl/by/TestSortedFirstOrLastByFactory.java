@@ -4,11 +4,10 @@
 
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -17,14 +16,14 @@ import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.AggSortedLast;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.TstUtils.addToTable;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggCombo;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggSortedLast;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
@@ -76,8 +75,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                         SortedBy.sortedFirstBy(queryTable, sortColumns, "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
-                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Indices")),
-                                new SourceColumn("Sym"))
+                        queryTable.aggBy(AggSortedLast(List.of(sortColumns), "intCol", "doubleCol", "Indices"), "Sym")
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {
@@ -98,8 +96,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
         // source.listenForUpdates(pl);
 
-        final QueryTable sfb = (QueryTable) source.by(new SortedFirstBy("SFB"));
-        final QueryTable bucketed = (QueryTable) source.by(new SortedFirstBy("SFB"), new SourceColumn("DummyBucket"));
+        final QueryTable sfb = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"));
+        final QueryTable bucketed = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"), "DummyBucket");
         // final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
         // sfb.listenForUpdates(plsfb);
 

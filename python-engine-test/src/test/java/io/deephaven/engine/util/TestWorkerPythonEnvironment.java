@@ -12,6 +12,8 @@ import io.deephaven.engine.util.jpy.JpyInit;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 import org.junit.Ignore;
 
 /**
@@ -82,7 +84,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
 
-    public void testScript() {
+    public void testScript() throws IOException, InterruptedException, TimeoutException {
         final StreamLoggerImpl log = new StreamLoggerImpl();
         JpyInit.init(log);
         final PythonEvaluator evaluator = PythonEvaluatorJpy.withGlobalCopy();

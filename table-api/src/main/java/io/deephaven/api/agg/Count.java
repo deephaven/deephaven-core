@@ -1,10 +1,16 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.api.ColumnName;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+/**
+ * An {@link Aggregation aggregation} that provides a single output column with the number of rows in each aggregation
+ * group.
+ *
+ * @see io.deephaven.api.TableOperations#countBy
+ */
 @Immutable
 @SimpleStyle
 public abstract class Count implements Aggregation {
@@ -16,8 +22,6 @@ public abstract class Count implements Aggregation {
     public static Count of(String x) {
         return of(ColumnName.of(x));
     }
-
-    // Note: Count doesn't need Pair since there is no column as input.
 
     @Parameter
     public abstract ColumnName column();

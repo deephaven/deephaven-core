@@ -1,0 +1,6 @@
+plugins {
+    id 'io.deephaven.common-conventions'
+    id 'io.deephaven.java-common-conventions'
+    id 'io.deephaven.java-test-conventions'
+    id 'io.deephaven.java-coding-conventions'
+}

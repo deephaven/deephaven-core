@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.base.reference.WeakCleanupReference",
+ "methods": {},
+ "path": "io.deephaven.base.reference.WeakCleanupReference",
+ "text": "A weakly-held CleanupReference.",
+ "typeName": "class"
+}

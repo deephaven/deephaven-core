@@ -1024,6 +1024,8 @@ public final class ClientTableState extends TableConfig {
     }
 
     public void applyTableCreationResponse(ExportedTableCreationResponse def) {
+        assert def.getResultId().getTicket().getTicket_asB64().equals(getHandle().makeTicket().getTicket_asB64())
+                : "Ticket is incompatible with the table details";
         // by definition, the ticket is now exported and connected
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);

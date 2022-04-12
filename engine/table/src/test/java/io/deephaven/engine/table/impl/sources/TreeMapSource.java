@@ -20,7 +20,6 @@ import java.util.function.LongConsumer;
  *
  * It boxes all of its objects, and maps Long key values to the data values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class TreeMapSource<T> extends AbstractColumnSource<T> {
     private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
     protected final TreeMap<Long, T> data = new TreeMap<>();

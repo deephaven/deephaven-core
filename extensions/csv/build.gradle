@@ -1,13 +1,16 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 description 'CSV: Support to read and write engine tables from/to CSV'
 
 dependencies {
     api project(':engine-api')
+    api 'io.deephaven:deephaven-csv:0.1.0'
 
-    implementation project(':engine-table')
+    implementation project(':engine-table'),
+            project(':engine-base')
 
     Classpaths.inheritImmutables(project)
 
@@ -15,6 +18,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'engine-base'),
             'junit:junit:4.13.2'
 
     testRuntimeOnly project(':log-to-slf4j'),
@@ -23,5 +27,4 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-// testOutOfBand: non-parallel, not a engine test, not isolated
-TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
+TestTools.addEngineOutOfBandTest(project)

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.console.groovy.GroovyConsoleSessionModule",
+ "methods": {},
+ "path": "io.deephaven.server.console.groovy.GroovyConsoleSessionModule",
+ "typeName": "class"
+}

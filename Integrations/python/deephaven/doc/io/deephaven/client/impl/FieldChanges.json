@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.client.impl.FieldChanges",
+ "methods": {
+  "created": ":return: java.util.List<io.deephaven.client.impl.FieldInfo>",
+  "isEmpty": ":return: boolean",
+  "removed": ":return: java.util.List<io.deephaven.client.impl.FieldInfo>",
+  "toString": ":return: java.lang.String",
+  "updated": ":return: java.util.List<io.deephaven.client.impl.FieldInfo>"
+ },
+ "path": "io.deephaven.client.impl.FieldChanges",
+ "typeName": "class"
+}

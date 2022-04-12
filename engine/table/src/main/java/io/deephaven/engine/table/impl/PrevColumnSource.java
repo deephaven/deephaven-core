@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
  * Wrapper {@link ColumnSource} that maps current data accessors to previous data accessors (and disables previous data
  * accessors).
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
 
     private final ColumnSource<T> originalSource;
@@ -167,5 +166,15 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     public final void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return originalSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return originalSource.isStateless();
     }
 }

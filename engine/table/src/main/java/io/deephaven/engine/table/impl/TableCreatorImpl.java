@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
@@ -29,6 +30,7 @@ import java.util.stream.StreamSupport;
 public enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
 
+    @AutoService(TableFactory.TableCreatorProvider.class)
     public static final class TableCreatorProvider implements TableFactory.TableCreatorProvider {
 
         @Override

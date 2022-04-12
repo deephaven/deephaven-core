@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.netty.NettyServerComponent$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.server.netty.NettyServerComponent"
+ },
+ "path": "io.deephaven.server.netty.NettyServerComponent.Builder",
+ "typeName": "interface"
+}

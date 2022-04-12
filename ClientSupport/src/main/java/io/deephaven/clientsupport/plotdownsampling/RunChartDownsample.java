@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -14,7 +15,6 @@ import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.*;
@@ -50,7 +50,7 @@ import java.util.stream.Stream;
  * make nulls result in fewer items in the result table
  */
 public class RunChartDownsample implements Function<Table, Table> {
-    private static final Logger log = ProcessEnvironment.getDefaultLog(RunChartDownsample.class);
+    private static final Logger log = LoggerFactory.getLogger(RunChartDownsample.class);
 
     public static final int CHUNK_SIZE = Configuration.getInstance().getIntegerWithDefault("chunkSize", 1 << 14);
 

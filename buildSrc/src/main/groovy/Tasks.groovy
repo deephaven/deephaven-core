@@ -18,6 +18,7 @@ class Tasks {
             task.workingDir project.rootDir
             task.classpath = sourceSet.runtimeClasspath
             task.main = mainClassName
+            task.systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
         }
     }
 
@@ -28,6 +29,7 @@ class Tasks {
             task.workingDir project.rootDir
             task.classpath = sourceSet.runtimeClasspath
             task.main = mainClassName
+            task.systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         }
     }
 }

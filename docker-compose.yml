@@ -12,10 +12,10 @@
 version: "3.4"
 
 services:
-  grpc-api:
+  server:
     extends:
       file: docker-compose-common.yml
-      service: grpc-api
+      service: server
 
   web:
     extends:
@@ -28,7 +28,7 @@ services:
       file: docker-compose-common.yml
       service: grpc-proxy
     depends_on:
-      grpc-api:
+      server:
         condition: service_healthy
 
   envoy:
@@ -38,7 +38,7 @@ services:
       file: docker-compose-common.yml
       service: envoy
     depends_on:
-      grpc-api:
+      server:
         condition: service_healthy
       grpc-proxy:
         condition: service_started

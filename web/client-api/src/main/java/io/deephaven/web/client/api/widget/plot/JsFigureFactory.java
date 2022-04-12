@@ -2,13 +2,13 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
@@ -38,9 +38,12 @@ public class JsFigureFactory {
         }
 
         FigureDescriptor figureDescriptor = convertJsFigureDescriptor(descriptor);
-        FetchFigureResponse response = new FetchFigureResponse();
-        response.setFigureDescriptor(figureDescriptor);
-        return JsPromise.all(tables.map((table, index, all) -> table.copy(false)))
+        FetchObjectResponse response = new FetchObjectResponse();
+        response.setData(figureDescriptor.serializeBinary());
+        // noinspection unchecked
+        Promise<JsTable>[] tableCopyPromises =
+                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+        return Promise.all(tableCopyPromises)
                 .then(tableCopies -> new JsFigure(
                         c -> c.apply(null, response),
                         (figure, descriptor1) -> {
@@ -109,10 +112,6 @@ public class JsFigureFactory {
         descriptor.setRows(jsDescriptor.rows);
 
         JsArray<JsTable> tables = jsDescriptor.getTables();
-        // The only thing used by the Figure with the tableIds (outside of the default fetchTables function) is the
-        // length of these tableIds.
-        descriptor.setTablesList(new JsArray<>());
-        descriptor.getTablesList().length = tables.length;
 
         JsArray<JsChartDescriptor> charts = jsDescriptor.charts;
         ChartDescriptor[] chartDescriptors = new ChartDescriptor[charts.length];

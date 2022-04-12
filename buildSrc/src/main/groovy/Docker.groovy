@@ -12,6 +12,7 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import com.github.dockerjava.api.command.InspectImageResponse
 import com.github.dockerjava.api.exception.DockerException
 import groovy.transform.CompileStatic
+import io.deephaven.tools.docker.Architecture
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -159,6 +160,11 @@ class Docker {
         Map<String, String> buildArgs;
 
         /**
+         * Optional platform
+         */
+        String platform;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -269,6 +275,11 @@ class Docker {
                 // add build arguments, if provided
                 if (cfg.buildArgs) {
                     buildArgs.putAll(cfg.buildArgs)
+                }
+
+                // the platform, if provided
+                if (cfg.platform) {
+                    platform.set(cfg.platform)
                 }
             }
         }
@@ -419,13 +430,51 @@ class Docker {
         }
     }
 
+    static void checkValidTwoPhase(DockerBuildImage buildImage) {
+        if (buildImage.target.isPresent()) {
+            throw new IllegalArgumentException("Two phase build should not be setting target, is '${buildImage.target.get()}'")
+        }
+        if (buildImage.images.isPresent() && !buildImage.images.get().isEmpty()) {
+            throw new IllegalArgumentException("Two phase build should not be setting images, is '${buildImage.images.get()}'")
+        }
+    }
+
+    static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Closure closure) {
+        return registerDockerTwoPhaseImage(project, baseName, intermediate, ConfigureUtil.configureUsing(closure))
+    }
+
+    static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Action<? super DockerBuildImage> action) {
+        // Explicitly target and tag the intermediate task; otherwise, docker will leave it unnamed, and we won't be
+        // able to clean it up.
+        def intermediateTask = registerDockerImage(project, "buildDocker-${baseName}-${intermediate}") { DockerBuildImage buildImage ->
+            action.execute(buildImage)
+            checkValidTwoPhase(buildImage)
+            buildImage.target.set(intermediate)
+            buildImage.images.add("deephaven/${baseName}-${intermediate}:local-build".toString())
+        }
+
+        return registerDockerImage(project, "buildDocker-${baseName}") { DockerBuildImage buildImage ->
+            action.execute(buildImage)
+            checkValidTwoPhase(buildImage)
+            buildImage.dependsOn(intermediateTask)
+            buildImage.images.add("deephaven/${baseName}:local-build".toString())
+        }
+    }
+
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Closure closure) {
         return registerDockerImage(project, taskName, ConfigureUtil.configureUsing(closure))
     }
+
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Action<? super DockerBuildImage> action) {
         // Produce a docker image from the copied inputs and provided dockerfile, and tag it
         TaskProvider<DockerBuildImage> makeImage = project.tasks.register(taskName, DockerBuildImage) { buildImage ->
             action.execute(buildImage)
+            if (!buildImage.platform.isPresent()) {
+                def targetArch = Architecture.targetArchitecture(project).toString()
+                buildImage.platform.set "linux/${targetArch}".toString()
+                // Use the same environment variable that buildkit uses
+                buildImage.buildArgs.put('TARGETARCH', targetArch)
+            }
             if (buildImage.images) {
                 buildImage.images.get().forEach { String imageName -> validateImageName(imageName) }
 
@@ -519,7 +568,8 @@ class Docker {
 
                 if (repoDigest != imageId) {
                     new File(project.projectDir, 'gradle.properties').text =
-                            "deephaven.registry.imageName=${imageName}\n" +
+                            "io.deephaven.project.ProjectType=DOCKER_REGISTRY\n" +
+                                    "deephaven.registry.imageName=${imageName}\n" +
                                     "deephaven.registry.imageId=${repoDigest}\n"
                     inspect.logger.quiet("Updated imageId for '${imageName}' to '${repoDigest}' from '${imageId}'.")
                 } else {
@@ -570,6 +620,16 @@ class Docker {
         def dockerfile = project.tasks.register('dockerfile', Dockerfile) { dockerfile ->
             dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as 'deephaven/${project.projectDir.name}:local-build'."
             dockerfile.from(imageId)
+        }
+
+        project.tasks.register('createCraneTagScript', Sync) {
+            it.description = "Release task: Creates a crane tag script for '${imageName}'"
+            it.from("${project.rootDir}/buildSrc/src/crane/retag.sh")
+            it.into('build/crane')
+            it.expand([
+                imageId: imageId,
+                version: project.version
+            ])
         }
 
         // Note: even though this is a "build" task, it's really a pull-if-absent + tag task.

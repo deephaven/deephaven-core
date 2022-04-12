@@ -1,0 +1,26 @@
+{
+ "className": "io.deephaven.engine.table.impl.perf.PerformanceEntry",
+ "methods": {
+  "accumulate": ":param entry: io.deephaven.engine.table.impl.perf.PerformanceEntry",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "getCallerLine": ":return: java.lang.String",
+  "getCollectionTimeNanos": ":return: long",
+  "getCollections": ":return: long",
+  "getDescription": ":return: java.lang.String",
+  "getEvaluationNumber": ":return: int",
+  "getId": ":return: int",
+  "getIntervalAdded": ":return: long",
+  "getIntervalInvocationCount": ":return: long",
+  "getIntervalModified": ":return: long",
+  "getIntervalRemoved": ":return: long",
+  "getIntervalShifted": ":return: long",
+  "getMaxTotalMemory": ":return: long",
+  "getMinFreeMemory": ":return: long",
+  "getOperationNumber": ":return: int",
+  "onUpdateStart": "*Overload 1*  \n  \n  \n*Overload 2*  \n  :param added: io.deephaven.engine.rowset.RowSet\n  :param removed: io.deephaven.engine.rowset.RowSet\n  :param modified: io.deephaven.engine.rowset.RowSet\n  :param shifted: io.deephaven.engine.rowset.RowSetShiftData\n  \n*Overload 3*  \n  :param added: long\n  :param removed: long\n  :param modified: long\n  :param shifted: long",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.perf.PerformanceEntry",
+ "text": "Entry class for tracking the performance characteristics of a single recurring update event.",
+ "typeName": "class"
+}

@@ -42,14 +42,22 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
                     new ProtectionDomain[] {new ProtectionDomain(
                             new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null), perms)}));
 
-    public ViewColumnSource(Class<T> type, Formula formula) {
+    private final boolean preventsParallelization;
+    private final boolean isStateless;
+
+    public ViewColumnSource(Class<T> type, Formula formula, boolean preventsParallelization, boolean isStateless) {
         super(type);
         this.formula = formula;
+        this.preventsParallelization = preventsParallelization;
+        this.isStateless = isStateless;
     }
 
-    public ViewColumnSource(Class<T> type, Class elementType, Formula formula) {
+    public ViewColumnSource(Class<T> type, Class elementType, Formula formula, boolean preventsParallelization,
+            boolean isStateless) {
         super(type, elementType);
         this.formula = formula;
+        this.preventsParallelization = preventsParallelization;
+        this.isStateless = isStateless;
     }
 
     @Override
@@ -279,5 +287,14 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         public void close() {
             underlyingFillContext.close();
         }
+    }
+
+    public boolean preventsParallelism() {
+        return preventsParallelization;
+    }
+
+    @Override
+    public boolean isStateless() {
+        return isStateless;
     }
 }

@@ -12,19 +12,14 @@
   "getErrorsCount": "repeated string errors = 13;\n\n:return: (int) The count of errors.",
   "getErrorsList": "repeated string errors = 13;\n\n:return: (java.util.List<java.lang.String>) A list containing the errors.",
   "getRows": "int32 rows = 9;\n\n:return: (int) The rows.",
-  "getTables": "repeated .io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse",
-  "getTablesCount": "repeated .io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;\n\n:return: int",
-  "getTablesList": "repeated .io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;\n\n:return: java.util.List<io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
-  "getTablesOrBuilder": "repeated .io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;\n\n:param index: int\n:return: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponseOrBuilder",
-  "getTablesOrBuilderList": "repeated .io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse tables = 11;\n\n:return: java.util.List<? extends io.deephaven.proto.backplane.grpc.ExportedTableCreationResponseOrBuilder>",
-  "getTitle": "string title = 1;\n\n:return: (java.lang.String) The title.",
-  "getTitleBytes": "string title = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for title.",
+  "getTitle": "optional string title = 1;\n\n:return: (java.lang.String) The title.",
+  "getTitleBytes": "optional string title = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for title.",
   "getTitleColor": "string title_color = 3;\n\n:return: (java.lang.String) The titleColor.",
   "getTitleColorBytes": "string title_color = 3;\n\n:return: (com.google.protobuf.ByteString) The bytes for titleColor.",
   "getTitleFont": "string title_font = 2;\n\n:return: (java.lang.String) The titleFont.",
   "getTitleFontBytes": "string title_font = 2;\n\n:return: (com.google.protobuf.ByteString) The bytes for titleFont.",
   "getUpdateInterval": "int64 update_interval = 7;\n\n:return: (long) The updateInterval.",
-  "hasTitle": "string title = 1;\n\n:return: (boolean) Whether the title field is set."
+  "hasTitle": "optional string title = 1;\n\n:return: (boolean) Whether the title field is set."
  },
  "path": "io.deephaven.proto.backplane.script.grpc.FigureDescriptorOrBuilder",
  "typeName": "interface"

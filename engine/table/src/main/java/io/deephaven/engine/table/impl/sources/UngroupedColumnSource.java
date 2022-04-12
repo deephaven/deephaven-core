@@ -11,7 +11,6 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 
-@AbstractColumnSource.IsSerializable(value = true)
 public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
     long lastPreviousClockTick = LogicalClock.DEFAULT.currentStep();
 

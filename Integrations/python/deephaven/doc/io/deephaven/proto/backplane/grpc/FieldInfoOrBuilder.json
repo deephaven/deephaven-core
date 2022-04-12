@@ -1,20 +1,17 @@
 {
  "className": "io.deephaven.proto.backplane.grpc.FieldInfoOrBuilder",
  "methods": {
-  "getApplicationId": "computer-friendly identification\n \nstring application_id = 6;\n\n:return: (java.lang.String) The applicationId.",
-  "getApplicationIdBytes": "computer-friendly identification\n \nstring application_id = 6;\n\n:return: (com.google.protobuf.ByteString) The bytes for applicationId.",
-  "getApplicationName": "display-friendly identification\n \nstring application_name = 5;\n\n:return: (java.lang.String) The applicationName.",
-  "getApplicationNameBytes": "display-friendly identification\n \nstring application_name = 5;\n\n:return: (com.google.protobuf.ByteString) The bytes for applicationName.",
-  "getFieldDescription": "string field_description = 4;\n\n:return: (java.lang.String) The fieldDescription.",
-  "getFieldDescriptionBytes": "string field_description = 4;\n\n:return: (com.google.protobuf.ByteString) The bytes for fieldDescription.",
+  "getApplicationId": "computer-friendly identification\n \nstring application_id = 5;\n\n:return: (java.lang.String) The applicationId.",
+  "getApplicationIdBytes": "computer-friendly identification\n \nstring application_id = 5;\n\n:return: (com.google.protobuf.ByteString) The bytes for applicationId.",
+  "getApplicationName": "display-friendly identification\n \nstring application_name = 4;\n\n:return: (java.lang.String) The applicationName.",
+  "getApplicationNameBytes": "display-friendly identification\n \nstring application_name = 4;\n\n:return: (com.google.protobuf.ByteString) The bytes for applicationName.",
+  "getFieldDescription": "string field_description = 3;\n\n:return: (java.lang.String) The fieldDescription.",
+  "getFieldDescriptionBytes": "string field_description = 3;\n\n:return: (com.google.protobuf.ByteString) The bytes for fieldDescription.",
   "getFieldName": "string field_name = 2;\n\n:return: (java.lang.String) The fieldName.",
   "getFieldNameBytes": "string field_name = 2;\n\n:return: (com.google.protobuf.ByteString) The bytes for fieldName.",
-  "getFieldType": ".io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;\n\n:return: (io.deephaven.proto.backplane.grpc.FieldInfo.FieldType) The fieldType.",
-  "getFieldTypeOrBuilder": ".io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;\n\n:return: io.deephaven.proto.backplane.grpc.FieldInfo.FieldTypeOrBuilder",
-  "getTicket": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The ticket.",
-  "getTicketOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
-  "hasFieldType": ".io.deephaven.proto.backplane.grpc.FieldInfo.FieldType field_type = 3;\n\n:return: (boolean) Whether the fieldType field is set.",
-  "hasTicket": ".io.deephaven.proto.backplane.grpc.Ticket ticket = 1;\n\n:return: (boolean) Whether the ticket field is set."
+  "getTypedTicket": ".io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.TypedTicket) The typedTicket.",
+  "getTypedTicketOrBuilder": ".io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TypedTicketOrBuilder",
+  "hasTypedTicket": ".io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;\n\n:return: (boolean) Whether the typedTicket field is set."
  },
  "path": "io.deephaven.proto.backplane.grpc.FieldInfoOrBuilder",
  "typeName": "interface"

@@ -45,6 +45,9 @@ public class ReplicateOperators {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
         replicateObjectAddOnlyAndStreamSortedFirstLast();
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
+        replicateObjectUnorderedMergeKernel();
     }
 
     private static void replicateObjectAddOnlyMinMax() throws IOException {
@@ -93,5 +96,14 @@ public class ReplicateOperators {
                     Collections.singletonList("        sortColumnValues = new ObjectArraySource<>(Object.class);"));
             FileUtils.writeLines(objectClassFile, lines);
         }
+    }
+
+    private static void replicateObjectUnorderedMergeKernel() throws IOException {
+        final String objectUnorderedMerge = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
+        final File objectUnorderedMergeFile = new File(objectUnorderedMerge);
+        List<String> lines = ReplicationUtils
+                .fixupChunkAttributes(FileUtils.readLines(objectUnorderedMergeFile, Charset.defaultCharset()));
+        FileUtils.writeLines(objectUnorderedMergeFile, lines);
     }
 }

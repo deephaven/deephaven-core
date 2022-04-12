@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.AggregateAllByTable$Builder",
+ "methods": {
+  "addAllGroupByColumns": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.qst.table.AggregateAllByTable.Builder",
+  "addGroupByColumns": "*Overload 1*  \n  :param element: io.deephaven.api.Selectable\n  :return: io.deephaven.qst.table.AggregateAllByTable.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.Selectable...\n  :return: io.deephaven.qst.table.AggregateAllByTable.Builder",
+  "build": ":return: io.deephaven.qst.table.AggregateAllByTable",
+  "parent": ":param parent: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.AggregateAllByTable.Builder",
+  "spec": ":param spec: io.deephaven.api.agg.spec.AggSpec\n:return: io.deephaven.qst.table.AggregateAllByTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.AggregateAllByTable.Builder",
+ "typeName": "interface"
+}

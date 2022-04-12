@@ -5,14 +5,8 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.Function;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -117,21 +111,23 @@ public class FunctionGeneratedTableFactory {
     }
 
     private void copyTable(Table source) {
-        Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
+        final ChunkSource.WithPrev[] sourceColumnsArray = new ChunkSource.WithPrev[sourceColumns.size()];
+        final WritableColumnSource[] destColumnsArray = new WritableColumnSource[sourceColumns.size()];
 
-        RowSet sourceRowSet = source.getRowSet();
-
+        final RowSet sourceRowSet = source.getRowSet();
+        int cc = 0;
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
             WritableColumnSource<?> destColumn = writableSources.get(entry.getKey());
             destColumn.ensureCapacity(sourceRowSet.size());
-
-            long position = 0;
-            for (RowSet.Iterator sourceIt = sourceRowSet.iterator(); sourceIt.hasNext();) {
-                long current = sourceIt.nextLong();
-                // noinspection unchecked
-                destColumn.copy((ColumnSource) entry.getValue(), current, position++);
-            }
+            sourceColumnsArray[cc] = entry.getValue();
+            destColumnsArray[cc++] = destColumn;
         }
+
+        // noinspection unchecked
+        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray,
+                RowSequenceFactory.forRange(0, sourceRowSet.size() - 1),
+                false);
     }
 
     private class FunctionBackedTable extends QueryTable implements Runnable {

@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 description 'Engine Table: Implementation and closely-coupled utilities'
@@ -35,11 +36,17 @@ dependencies {
             project(':engine-tuple'),
             'com.github.f4b6a3:uuid-creator:3.6.0',
             "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
-            'com.tdunning:t-digest:3.2'
+            'com.tdunning:t-digest:3.2',
+	    'com.squareup:javapoet:1.9.0'
+
+    implementation project(':plugin')
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser project
+    Classpaths.inheritJavaParser(project)
+    Classpaths.inheritAutoService(project)
+
+    Classpaths.inheritImmutables(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
@@ -77,6 +84,10 @@ spotless {
                 '**/*Double*.java',
                 '**/*Object*.java',
                 '**/*StateManager.java',
+                '**/incagg/gen/*.java',
+                '**/incopenagg/gen/*.java',
+                '**/staticagg/gen/*.java',
+                '**/staticopenagg/gen/*.java',
                 'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
                 'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
                 'src/test/java/**/*Sample.java'
@@ -85,8 +96,8 @@ spotless {
 }
 
 test {
-    // alas, we have tests that cannot tolerate running in parallel.  DO NOT INCREASE THIS NUMBER WITHOUT EXTENSIVE TESTING IN JENKINS
-    maxParallelForks = Integer.parseInt(findProperty('dbTestJvms') as String ?: '1') // -PdbTestJvms=11 if you are ok pegging your local machine
+    maxParallelForks = Integer.parseInt(findProperty('maxParallelForks') as String ?: '1')
+    forkEvery = Integer.parseInt(findProperty('forkEvery') as String ?: '1')
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
     //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
     //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
@@ -99,18 +110,13 @@ test {
 // Add @Category(ParallelTest.class) to have your tests run in parallel
 // Note: Supports JUnit4 or greater only (you use @Test annotations to mark test methods).
 
-// The Parallel tests are now functionally equivalent to the Serial test logic
-// TODO (deephaven-core#643): Fix "leaking" parallel tests
-TestTools.addEngineTest(project, 'Parallel', false, false, true)
-// testSerial: non-parallel, not a engine test, isolated
-TestTools.addEngineTest(project, 'Serial', false, false, true)
-// testOutOfBand: non-parallel, not a engine test, not isolated
-TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
+TestTools.addEngineParallelTest(project)
+TestTools.addEngineSerialTest(project)
+TestTools.addEngineOutOfBandTest(project)
 
-// The configuration of this with respect to the build environment isn't very tight.
-// Ideally, the build environment would be able to configure this as appropriate.
-tasks.testParallel.maxHeapSize = '6g'
-tasks.testSerial.maxHeapSize = '6g'
-tasks.testOutOfBand.maxHeapSize = '6g'
-tasks.test.maxHeapSize = '6g'
+def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'
 
+tasks.testParallel.maxHeapSize = maxHeapSize
+tasks.testSerial.maxHeapSize = maxHeapSize
+tasks.testOutOfBand.maxHeapSize = maxHeapSize
+tasks.test.maxHeapSize = maxHeapSize

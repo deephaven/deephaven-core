@@ -43,7 +43,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     private final ChunkType chunkType;
     private final PercentileTypeHelper percentileTypeHelper;
 
-    public SsmChunkedPercentileOperator(Class<?> type, double percentile, boolean averageMedian, String name) {
+    public SsmChunkedPercentileOperator(Class<?> type, double percentile, boolean averageEvenlyDivided, String name) {
         this.name = name;
         this.ssms = new ObjectArraySource<>(SegmentedSortedMultiSet.class);
         final boolean isDateTime = type == DateTime.class;
@@ -56,9 +56,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             internalResult = new LongArraySource();
             // noinspection unchecked
             externalResult = new BoxedColumnSource.OfDateTime(internalResult);
-            averageMedian = false;
+            averageEvenlyDivided = false;
         } else {
-            if (averageMedian) {
+            if (averageEvenlyDivided) {
                 switch (chunkType) {
                     case Int:
                     case Long:
@@ -81,12 +81,12 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         compactAndCountKernel = CompactKernel.makeCompact(chunkType);
         ssmFactory = SegmentedSortedMultiSet.makeFactory(chunkType, NODE_SIZE, type);
         removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(NODE_SIZE);
-        percentileTypeHelper = makeTypeHelper(chunkType, type, percentile, averageMedian, internalResult);
+        percentileTypeHelper = makeTypeHelper(chunkType, type, percentile, averageEvenlyDivided, internalResult);
     }
 
     private static PercentileTypeHelper makeTypeHelper(ChunkType chunkType, Class<?> type, double percentile,
-            boolean averageMedian, ArrayBackedColumnSource resultColumn) {
-        if (averageMedian) {
+            boolean averageEvenlyDivided, ArrayBackedColumnSource resultColumn) {
+        if (averageEvenlyDivided) {
             switch (chunkType) {
                 // for things that are not int, long, double, or float we do not actually average the median;
                 // we just do the standard 50-%tile thing. It might be worth defining this to be friendlier.

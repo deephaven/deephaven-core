@@ -118,9 +118,9 @@ public interface Chart extends Serializable {
     /**
      * Sets the maximum row values that will be shown in title.
      * <p>
-     * If total rows < {@code maxRowsCount}, then all the values will be shown separated by comma, otherwise just
+     * If total rows &lt; {@code maxRowsCount}, then all the values will be shown separated by comma, otherwise just
      * {@code maxRowsCount} values will be shown along with ellipsis. <br/>
-     * if {@code maxRowsCount} is < 0, all values will be shown. <br/>
+     * if {@code maxRowsCount} is &lt; 0, all values will be shown. <br/>
      * if {@code maxRowsCount} is 0, then just first value will be shown without ellipsis. <br/>
      * The default is 0.
      *

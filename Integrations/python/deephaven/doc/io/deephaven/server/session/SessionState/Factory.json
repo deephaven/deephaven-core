@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.session.SessionState$Factory",
+ "methods": {
+  "create": ":param authContext: io.deephaven.util.auth.AuthContext\n:return: io.deephaven.server.session.SessionState"
+ },
+ "path": "io.deephaven.server.session.SessionState.Factory",
+ "typeName": "interface"
+}

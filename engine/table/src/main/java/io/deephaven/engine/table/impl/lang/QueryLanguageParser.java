@@ -1021,37 +1021,27 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     @Override
     public Class<?> visit(BinaryExpr n, VisitArgs printer) {
         BinaryExpr.Operator op = n.getOperator();
+        final Expression leftExpr = n.getLeft();
+        final Expression rightExpr = n.getRight();
 
-        Class<?> lhType = getTypeWithCaching(n.getLeft());
-        Class<?> rhType = getTypeWithCaching(n.getRight());
+        Class<?> lhType = getTypeWithCaching(leftExpr);
+        Class<?> rhType = getTypeWithCaching(rightExpr);
 
         if ((lhType == String.class || rhType == String.class) && op == BinaryExpr.Operator.PLUS) {
-
             if (printer.hasStringBuilder()) {
-                n.getLeft().accept(this, printer);
+                leftExpr.accept(this, printer);
+                printer.append(getOperatorSymbol(op));
+                rightExpr.accept(this, printer);
             }
-
-            printer.append(getOperatorSymbol(op));
-
-            if (printer.hasStringBuilder()) {
-                n.getRight().accept(this, printer);
-            }
-
             return String.class;
         }
 
         if (op == BinaryExpr.Operator.OR || op == BinaryExpr.Operator.AND) {
-
             if (printer.hasStringBuilder()) {
-                n.getLeft().accept(this, printer);
+                leftExpr.accept(this, printer);
+                printer.append(getOperatorSymbol(op));
+                rightExpr.accept(this, printer);
             }
-
-            printer.append(getOperatorSymbol(op));
-
-            if (printer.hasStringBuilder()) {
-                n.getRight().accept(this, printer);
-            }
-
             return boolean.class;
         }
 
@@ -1061,6 +1051,25 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         boolean isArray = lhType.isArray() || rhType.isArray() || isTypedVector(lhType) || isTypedVector(rhType);
+
+        if (op == BinaryExpr.Operator.EQUALS) {
+            if (leftExpr.isNullLiteralExpr()) {
+                if (printer.hasStringBuilder()) {
+                    printer.append("isNull(");
+                    rightExpr.accept(this, printer);
+                    printer.append(")");
+                }
+                return boolean.class;
+            }
+            if (rightExpr.isNullLiteralExpr()) {
+                if (printer.hasStringBuilder()) {
+                    printer.append("isNull(");
+                    leftExpr.accept(this, printer);
+                    printer.append(")");
+                }
+                return boolean.class;
+            }
+        }
 
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 

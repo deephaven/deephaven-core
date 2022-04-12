@@ -236,6 +236,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             if (keySerializer != null || isStream) {
                 Assert.assertion(upstream.shifted().empty(), "upstream.shifted.empty()");
             }
+            Assert.assertion(!keysModified.containsAny(upstream.modifiedColumnSet()),
+                    "!keysModified.containsAny(upstream.modifiedColumnSet())", "Key columns should never be modified");
 
             try (final SafeCloseable ignored = guard) {
                 if (isStream) {
@@ -247,8 +249,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
                 // Regular table, either keyless, add-only, or aggregated
                 publishMessages(upstream.removed(), true, false, guard);
-                if (keysModified.containsAny(upstream.modifiedColumnSet())
-                        || valuesModified.containsAny(upstream.modifiedColumnSet())) {
+                if (valuesModified.containsAny(upstream.modifiedColumnSet())) {
                     try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
                         publishMessages(addedAndModified, false, true, guard);
                     }

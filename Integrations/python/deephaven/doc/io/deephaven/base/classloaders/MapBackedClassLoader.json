@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.classloaders.MapBackedClassLoader",
+ "methods": {
+  "addClassData": ":param name: java.lang.String\n:param data: byte[]"
+ },
+ "path": "io.deephaven.base.classloaders.MapBackedClassLoader",
+ "typeName": "class"
+}

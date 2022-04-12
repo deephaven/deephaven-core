@@ -5,9 +5,9 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -137,13 +137,13 @@ public class TreeSnapshotResult {
             if (data[i] != null) {
                 final ColumnDefinition<?> colDef = originalTree.getDefinition().getColumn(columnNames.get(i));
                 // noinspection unchecked
-                sources.put(columnNames.get(i), ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i],
+                sources.put(columnNames.get(i), InMemoryColumnSource.getImmutableMemoryColumnSource(data[i],
                         colDef.getDataType(), colDef.getComponentType()));
             }
         }
 
         sources.put(TreeTableConstants.TABLE_KEY_COLUMN,
-                ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
+                InMemoryColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
         return new QueryTable(

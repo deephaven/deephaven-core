@@ -13,6 +13,7 @@ import time
 import shutil
 
 from deephaven import TableTools, ParquetTools
+import deephaven.Types as dh
 
 
 if sys.version_info[0] < 3:
@@ -49,24 +50,18 @@ class TestParquetTools(unittest.TestCase):
             shutil.rmtree(fileLocation)
         if os.path.exists(fileLocation2):
             shutil.rmtree(fileLocation2)
-        time.sleep(0.01)  # avoid race condition on file existence...
 
         # Writing
         with self.subTest(msg="writeTable(Table, String)"):
             ParquetTools.writeTable(table, fileLocation)
-            time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             shutil.rmtree(baseDir)
-            time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTable(Table, File)"):
             ParquetTools.writeTable(table, ParquetTools.getFileObject(fileLocation))
-            time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             shutil.rmtree(baseDir)
-            time.sleep(0.01)  # avoid race condition on file existence...
         with self.subTest(msg="writeTables(Table[], TableDefinition, File[]"):
             ParquetTools.writeTables([table, table], definition, [fileLocation, fileLocation2])
-            time.sleep(0.01)  # avoid race condition on file existence...
             self.assertTrue(os.path.exists(fileLocation))
             self.assertTrue(os.path.exists(fileLocation2))
 
@@ -78,12 +73,31 @@ class TestParquetTools(unittest.TestCase):
         with self.subTest(msg="delete(File)"):
             if os.path.exists(fileLocation):
                 ParquetTools.deleteTable(fileLocation)
-                time.sleep(0.01)  # avoid race condition on file existence...
                 self.assertFalse(os.path.exists(fileLocation))
             if os.path.exists(fileLocation2):
                 ParquetTools.deleteTable(fileLocation2)
-                time.sleep(0.01)  # avoid race condition on file existence...
                 self.assertFalse(os.path.exists(fileLocation2))
+        shutil.rmtree(baseDir)
+
+    def testDecimal(self):
+        jbigdecimal = jpy.get_type('java.math.BigDecimal')
+        table = dh.table_of([[jbigdecimal.valueOf(301, 2)],
+                                [jbigdecimal.valueOf(201,2)],
+                                [jbigdecimal.valueOf(101,2)]],
+                               [('decimal_value', dh.bigdecimal)])
+        self.assertIsNotNone(table)
+        baseDir = os.path.join(self.rootDir, 'testCreation')
+        fileLocation = os.path.join(baseDir, 'table1.parquet')
+        if os.path.exists(fileLocation):
+            shutil.rmtree(fileLocation)
+
+        ParquetTools.writeTable(table, fileLocation)
+        table2 = ParquetTools.readTable(fileLocation)
+        self.assertEquals(table.size(), table2.size())
+        s = TableTools.diff(table, table2, 100)
+        self.assertEquals('', s)
+        
+        self.assertTrue(os.path.exists(fileLocation))
         shutil.rmtree(baseDir)
 
     @classmethod

@@ -29,7 +29,6 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     public PythonScopeJpyImpl(PyDictWrapper dict) {
         this.dict = dict;
-
     }
 
     @Override

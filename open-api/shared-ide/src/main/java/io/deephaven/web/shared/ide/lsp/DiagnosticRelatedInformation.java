@@ -21,10 +21,10 @@ public class DiagnosticRelatedInformation implements Serializable {
         this();
 
         if (source.has("location")) {
-            location = new Location(source.getAny("location").asPropertyMap());
+            location = new Location(source.getAsAny("location").asPropertyMap());
         }
         if (source.has("message")) {
-            message = source.getAny("message").asString();
+            message = source.getAsAny("message").asString();
         }
     }
 }

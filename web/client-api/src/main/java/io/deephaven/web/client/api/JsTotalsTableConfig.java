@@ -59,17 +59,17 @@ public class JsTotalsTableConfig {
     public JsTotalsTableConfig(JsPropertyMap<Object> source) {
         this();
         if (source.has("showTotalsByTable")) {
-            showTotalsByDefault = Js.isTruthy(source.getAny("showTotalsByDefault"));
+            showTotalsByDefault = Js.isTruthy(source.getAsAny("showTotalsByDefault"));
         }
         if (source.has("showGrandTotalsByDefault")) {
-            showGrandTotalsByDefault = Js.isTruthy(source.getAny("showGrandTotalsByDefault"));
+            showGrandTotalsByDefault = Js.isTruthy(source.getAsAny("showGrandTotalsByDefault"));
         }
         if (source.has("defaultOperation")) {
-            defaultOperation = source.getAny("defaultOperation").asString();
+            defaultOperation = source.getAsAny("defaultOperation").asString();
             checkOperation(defaultOperation);
         }
         if (source.has("operationMap")) {
-            operationMap = source.getAny("operationMap").cast();
+            operationMap = source.getAsAny("operationMap").cast();
             operationMap.forEach(key -> {
                 operationMap.get(key).forEach((value, index, array) -> {
                     checkOperation(Js.cast(value));
@@ -78,7 +78,7 @@ public class JsTotalsTableConfig {
             });
         }
         if (source.has("groupBy")) {
-            groupBy = source.getAny("groupBy").cast();
+            groupBy = source.getAsAny("groupBy").cast();
         }
     }
 

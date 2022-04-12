@@ -1,0 +1,11 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    implementation.extendsFrom fishConfig
+}
+
+dependencies {
+    Classpaths.inheritAutoService(project)
+}

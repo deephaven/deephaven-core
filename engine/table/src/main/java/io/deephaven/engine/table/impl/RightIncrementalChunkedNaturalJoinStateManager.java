@@ -1056,7 +1056,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         }
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
                                   // region makeProbeContext args
                                   // endregion makeProbeContext args
@@ -1332,7 +1332,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         final long stateValue = getStateValue(leftHashSlots, position);
         if (stateValue == DUPLICATE_RIGHT_VALUE) {
             final long hashSlot = leftHashSlots.getLong(position);
-            throw new IllegalStateException("Duplicate right key for " + keyString(hashSlot));
+            throw new IllegalStateException("Natural Join found duplicate right key for " + keyString(hashSlot));
         }
         return stateValue;
     }

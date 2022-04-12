@@ -29,6 +29,8 @@ import jsinterop.base.JsArrayLike;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static io.deephaven.web.client.api.subscription.QueryConstants.FALSE_BOOLEAN_AS_BYTE;
@@ -46,7 +48,7 @@ import static io.deephaven.web.client.api.subscription.QueryConstants.TRUE_BOOLE
  * Given the expected type of a column, pick one of the enum entries and use that to read the data into arrow buffers.
  */
 public enum JsDataHandler {
-    STRING(Type.Utf8, "java.lang.String") {
+    STRING(Type.Utf8, "java.lang.String", "string") {
         @Override
         public double writeType(Builder builder) {
             return Utf8.createUtf8(builder);
@@ -86,7 +88,7 @@ public enum JsDataHandler {
             addNode.apply(new Node(data.length, nullCount));
         }
     },
-    DATE_TIME(Type.Int, "io.deephaven.time.DateTime") {
+    DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime") {
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 64, true);
@@ -205,7 +207,7 @@ public enum JsDataHandler {
             addNode.apply(new Node(data.length, nullCount));
         }
     },
-    BYTE(Type.Int, "char") {
+    BYTE(Type.Int, "byte") {
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 8, true);
@@ -254,7 +256,7 @@ public enum JsDataHandler {
                     Float64Array::new);
         }
     },
-    BOOLEAN(Type.Int, "boolean") {
+    BOOLEAN(Type.Int, "boolean", "bool") {
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 8, true);
@@ -336,13 +338,13 @@ public enum JsDataHandler {
             return Binary.createBinary(builder);
         }
     },
-    LOCAL_DATE(Type.FixedSizeBinary, "java.time.LocalDate") {
+    LOCAL_DATE(Type.FixedSizeBinary, "java.time.LocalDate", "localdate") {
         @Override
         public double writeType(Builder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 6);
         }
     },
-    LOCAL_TIME(Type.FixedSizeBinary, "java.time.LocalTime") {
+    LOCAL_TIME(Type.FixedSizeBinary, "java.time.LocalTime", "localtime") {
         @Override
         public double writeType(Builder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 7);
@@ -352,12 +354,9 @@ public enum JsDataHandler {
     ;
 
     public static JsDataHandler getHandler(String deephavenType) {
-        return Arrays
-                .stream(values())
-                .filter(h -> h.deephavenType().equals(deephavenType))
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("No support for handling data of type " + deephavenType));
+        return HandlersHolder.HANDLERS.computeIfAbsent(deephavenType, type -> {
+            throw new IllegalStateException("No handler registered for type " + type);
+        });
     }
 
     /**
@@ -419,14 +418,23 @@ public enum JsDataHandler {
         return Double.parseDouble(asString);
     }
 
+    private static class HandlersHolder {
+        private static final Map<String, JsDataHandler> HANDLERS = new HashMap<>();
+    }
+
     private static final Uint8Array EMPTY = new Uint8Array(0);
 
     private final int arrowTypeType;
     private final String deephavenType;
 
-    JsDataHandler(int arrowTypeType, String deephavenType) {
+    JsDataHandler(int arrowTypeType, String... typeNames) {
         this.arrowTypeType = arrowTypeType;
-        this.deephavenType = deephavenType;
+        assert typeNames.length > 0 : "Must have at least one name";
+        this.deephavenType = typeNames[0];
+        for (int i = 0; i < typeNames.length; i++) {
+            JsDataHandler existing = HandlersHolder.HANDLERS.put(typeNames[i], this);
+            assert existing == null : "Handler already registered for type " + typeNames[i] + ": " + name();
+        }
     }
 
     public int typeType() {

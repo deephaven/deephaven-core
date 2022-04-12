@@ -15,9 +15,12 @@ public class PythonTools {
      * @return the resulting function
      */
     @SuppressWarnings("unused")
-    public static Function<String, String> functionfromMapWithDefault(
+    public static Function<String, String> functionFromMapWithDefault(
             final Map<String, String> map,
             final String defaultValue) {
+        if (map == null) {
+            throw new IllegalArgumentException("Null map");
+        }
         return (final String key) -> map.getOrDefault(key, defaultValue);
     }
 
@@ -29,6 +32,9 @@ public class PythonTools {
      */
     @SuppressWarnings("unused")
     public static Function<String, String> functionFromMapWithIdentityDefaults(final Map<String, String> map) {
+        if (map == null) {
+            throw new IllegalArgumentException("Null map");
+        }
         return (final String key) -> map.getOrDefault(key, key);
     }
 }

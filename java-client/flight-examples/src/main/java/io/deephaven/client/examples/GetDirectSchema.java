@@ -1,11 +1,14 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.HasPathId;
 import org.apache.arrow.vector.types.pojo.Schema;
+import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-abstract class GetDirectSchema extends FlightExampleBase {
+@Command(name = "get-schema", mixinStandardHelpOptions = true, description = "Get a schema", version = "0.1.0")
+class GetDirectSchema extends FlightExampleBase {
 
     enum Format {
         DEFAULT, JSON
@@ -16,11 +19,12 @@ abstract class GetDirectSchema extends FlightExampleBase {
             defaultValue = "DEFAULT")
     Format format;
 
-    public abstract HasPathId pathId();
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    Path path;
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
-        final Schema schema = flight.schema(pathId());
+        final Schema schema = flight.schema(path);
         switch (format) {
             case DEFAULT:
                 System.out.println(schema);
@@ -31,5 +35,10 @@ abstract class GetDirectSchema extends FlightExampleBase {
             default:
                 throw new IllegalStateException("Unexpected format " + format);
         }
+    }
+
+    public static void main(String[] args) {
+        int execute = new CommandLine(new GetDirectSchema()).execute(args);
+        System.exit(execute);
     }
 }

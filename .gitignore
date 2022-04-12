@@ -24,6 +24,7 @@ irisDb.history
 .illumon.launcher.properties
 Containers/dockers/packages*
 Containers/dockers/third-party/*
+docker-compose.override.yml
 **/.DS_Store
 /data/
 /test.*

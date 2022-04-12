@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPercentileTypeMedianHelper and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -40,9 +42,9 @@ public class IntPercentileTypeMedianHelper extends IntPercentileTypeHelper {
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                // region averageMedian
+                // region averageEvenlyDivided
                 return setResult(destination, (((IntSegmentedSortedMultiset)ssmLo).getMaxInt() + ((IntSegmentedSortedMultiset)ssmHi).getMinInt()) / 2.0);
-                // endregion averageMedian
+                // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((IntSegmentedSortedMultiset)ssmLo).getMaxInt());
             }

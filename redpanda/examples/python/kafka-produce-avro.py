@@ -4,7 +4,8 @@
 # To run this script, you need confluent-kafka libraries installed.
 # To create a dedicated venv for it, you can do:
 #
-# $ mkdir confluent-kafka; cd confluent-kafka
+# $ cd $SOMEWHERE_YOU_WANT_THIS_TO_LIVE
+# $ mkdir confluent-kafka
 # $ python3 -m venv confluent-kafka
 # $ cd confluent-kafka
 # $ source bin/activate

@@ -930,7 +930,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {"myBoolean"});
 
         expression = "(String)myString==null";
-        resultExpression = "eq((String)myString, null)";
+        resultExpression = "isNull((String)myString)";
         check(expression, resultExpression, boolean.class, new String[] {"myString"});
 
         expression = "1==1 ? myString : null";
@@ -1855,7 +1855,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 new QueryLanguageParser(
                         "io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH!=null", null,
                         null, staticImports, null, null).getResult();
-        assertEquals("!eq(io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH, null)",
+        assertEquals("!isNull(io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH)",
                 result.getConvertedExpression());
     }
 

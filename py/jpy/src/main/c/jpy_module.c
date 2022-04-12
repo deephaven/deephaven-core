@@ -892,6 +892,8 @@ int JPy_InitGlobalVars(JNIEnv* jenv)
     DEFINE_METHOD(JPy_Character_Init_MID, JPy_Character_JClass, "<init>", "(C)V");
     DEFINE_METHOD(JPy_Character_CharValue_MID, JPy_Character_JClass, "charValue", "()C");
 
+    DEFINE_CLASS(JPy_Number_JClass, "java/lang/Number");
+
     DEFINE_CLASS(JPy_Byte_JClass, "java/lang/Byte");
     DEFINE_METHOD(JPy_Byte_Init_MID, JPy_Byte_JClass, "<init>", "(B)V");
 

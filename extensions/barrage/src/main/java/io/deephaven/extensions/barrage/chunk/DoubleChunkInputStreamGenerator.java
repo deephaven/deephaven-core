@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkInputStreamGenerator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -8,16 +10,19 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -30,17 +35,30 @@ import static io.deephaven.util.QueryConstants.*;
 public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<DoubleChunk<Values>> {
     private static final String DEBUG_NAME = "DoubleChunkInputStreamGenerator";
 
+    public static DoubleChunkInputStreamGenerator convertBoxed(final ObjectChunk<Double, Values> inChunk) {
+        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
+        WritableDoubleChunk<Values> outChunk = WritableDoubleChunk.makeWritableChunk(inChunk.size());
+        for (int i = 0; i < inChunk.size(); ++i) {
+            final Double value = inChunk.get(i);
+            outChunk.set(i, TypeUtils.unbox(value));
+        }
+        if (inChunk instanceof PoolableChunk) {
+            ((PoolableChunk) inChunk).close();
+        }
+        return new DoubleChunkInputStreamGenerator(outChunk, Double.BYTES);
+    }
+
     DoubleChunkInputStreamGenerator(final DoubleChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
+    public DrainableColumn getInputStream(final StreamReaderOptions options, final @Nullable RowSet subset) {
         return new DoubleChunkInputStream(options, subset);
     }
 
     private class DoubleChunkInputStream extends BaseChunkInputStream {
-        private DoubleChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
+        private DoubleChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -116,22 +134,23 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                 bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
             }
 
-                // write the included values
-                subset.forAllRowKeys(row -> {
-                    try {
-                        final double val = chunk.get((int) row);
-                        dos.writeDouble(val);
-                    } catch (final IOException e) {
-                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                    }
-                });
-
-                bytesWritten += elementSize * subset.size();
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            // write the included values
+            subset.forAllRowKeys(row -> {
+                try {
+                    final double val = chunk.get((int) row);
+                    dos.writeDouble(val);
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
                 }
+            });
+
+            bytesWritten += elementSize * subset.size();
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            }
+
             return LongSizedDataStructure.intSize("DoubleChunkInputStreamGenerator", bytesWritten);
         }
     }
@@ -144,7 +163,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
     static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
             final DataInput is) throws IOException {
@@ -154,7 +173,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
     static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
-            final BarrageSubscriptionOptions options,
+            final StreamReaderOptions options,
             final DoubleConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -195,38 +214,9 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             if (options.useDeephavenNulls()) {
-                if (conversion == DoubleChunkInputStreamGenerator.DoubleConversion.IDENTITY) {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        chunk.set(ii, is.readDouble());
-                    }
-                } else {
-                    for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                        final double in = is.readDouble();
-                        final double out;
-                        if (in == NULL_DOUBLE) {
-                            out = in;
-                        } else {
-                            out = conversion.apply(in);
-                        }
-                        chunk.set(ii, out);
-                    }
-                }
+                useDeephavenNulls(conversion, is, nodeInfo, chunk);
             } else {
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    final double value;
-                    if ((nextValid & 0x1) == 0x0) {
-                        value = NULL_DOUBLE;
-                        is.skipBytes(elementSize);
-                    } else {
-                        value = conversion.apply(is.readDouble());
-                    }
-                    nextValid >>= 1;
-                    chunk.set(ii, value);
-                }
+                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -237,5 +227,65 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
         chunk.setSize(nodeInfo.numElements);
         return chunk;
+    }
+
+    private static void useDeephavenNulls(
+            final DoubleConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableDoubleChunk<Values> chunk) throws IOException {
+        if (conversion == DoubleConversion.IDENTITY) {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                chunk.set(ii, is.readDouble());
+            }
+        } else {
+            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                final double in = is.readDouble();
+                final double out = in == NULL_DOUBLE ? in : conversion.apply(in);
+                chunk.set(ii, out);
+            }
+        }
+    }
+
+    private static void useValidityBuffer(
+            final int elementSize,
+            final DoubleConversion conversion,
+            final DataInput is,
+            final FieldNodeInfo nodeInfo,
+            final WritableDoubleChunk<Values> chunk,
+            final WritableLongChunk<Values> isValid) throws IOException {
+        final int numElements = nodeInfo.numElements;
+        final int numValidityWords = (numElements + 63) / 64;
+
+        int ei = 0;
+        int pendingSkips = 0;
+
+        for (int vi = 0; vi < numValidityWords; ++vi) {
+            int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+            long validityWord = isValid.get(vi);
+            do {
+                if ((validityWord & 1) == 1) {
+                    if (pendingSkips > 0) {
+                        is.skipBytes(pendingSkips * elementSize);
+                        chunk.fillWithNullValue(ei, pendingSkips);
+                        ei += pendingSkips;
+                        pendingSkips = 0;
+                    }
+                    chunk.set(ei++, conversion.apply(is.readDouble()));
+                    validityWord >>= 1;
+                    bitsLeftInThisWord--;
+                } else {
+                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    pendingSkips += skips;
+                    validityWord >>= skips;
+                    bitsLeftInThisWord -= skips;
+                }
+            } while (bitsLeftInThisWord > 0);
+        }
+
+        if (pendingSkips > 0) {
+            is.skipBytes(pendingSkips * elementSize);
+            chunk.fillWithNullValue(ei, pendingSkips);
+        }
     }
 }

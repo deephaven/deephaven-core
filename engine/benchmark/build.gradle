@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'io.deephaven.project.register'
 }
 
 description 'Engine Benchmark: Benchmarks for Engine modules'
@@ -63,7 +64,7 @@ task jmhRun(type: JavaExec)  {
 }
 
 def createJmhTask = {
-    taskName, cliArgs, heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
         new File("$rootDir/tmp/logs").mkdirs()
 
@@ -72,7 +73,7 @@ def createJmhTask = {
         task.main = 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application
-        task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+        def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',
                 "-Ddevroot=$rootDir",
                 "-Dworkspace=$rootDir/tmp/workspace",
                 '-Dconfiguration.quiet=true',
@@ -81,7 +82,9 @@ def createJmhTask = {
                 '-DUpdateGraphProcessor.checkTableOperations=false',
                 "-Xmx$heapSize"
                 //'-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=9501'
-
+        ]
+        jvmArgs.addAll(jvmAddArgs)
+        task.jvmArgs jvmArgs
         task.args cliArgs
 
         return
@@ -94,7 +97,8 @@ createJmhTask('jmhRunRangeFilter', 'RangeFilterBenchmark')
 createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
-createJmhTask('jmhRunBy', 'ByBenchmark', '8g')
+createJmhTask('jmhRunBy', 'ByBenchmark')
+createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

@@ -1,0 +1,47 @@
+import io.deephaven.tools.License
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('slim-base')
+
+configurations {
+    serverApplicationDist
+}
+
+dependencies {
+    serverApplicationDist project(path: ':server-netty', configuration: 'applicationDist')
+}
+
+def dockerContext = project.layout.buildDirectory.dir('context')
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
+    // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to
+    // make sure that dockerCreateDockerfile has the proper dependencies.
+    // If we change how our build works in the future (so that gradle is responsible for pushing the
+    // image), we can remove this extra dependency.
+    dependsOn Docker.registryTask(project, 'slim-base')
+
+    from 'src/main/docker'
+    from(configurations.serverApplicationDist) {
+        into 'serverApplicationDist'
+    }
+    from(dockerLicenses.outputs) {
+        into 'licenses'
+    }
+    into dockerContext
+}
+
+def buildDocker = Docker.registerDockerTwoPhaseImage(project, 'server-slim', 'install') {
+    dependsOn prepareDocker
+    inputDir.set dockerContext
+    inputs.files Docker.registryFiles(project, 'slim-base')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
+}
+
+assemble.dependsOn buildDocker

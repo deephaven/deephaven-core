@@ -4,6 +4,8 @@ import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -16,8 +18,13 @@ import org.apache.parquet.schema.Types;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
+import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
+
 import java.io.Externalizable;
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
@@ -93,9 +100,54 @@ class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static TypeInfo getTypeInfo(
+    static PrecisionAndScale getPrecisionAndScale(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final String columnName,
+            final TrackingRowSet rowSet,
+            Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+        return (PrecisionAndScale) computedCache
+                .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
+                .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
+                        unusedCacheTag -> computePrecisionAndScale(rowSet, columnSourceSupplier.get()));
+    }
+
+    static TypeInfo bigDecimalTypeInfo(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
+            final TrackingRowSet rowSet,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
+        final String columnName = column.getName();
+        // noinspection unchecked
+        final PrecisionAndScale precisionAndScale = getPrecisionAndScale(
+                computedCache, columnName, rowSet, () -> (ColumnSource<BigDecimal>) columnSourceMap.get(columnName));
+        final Set<Class<?>> clazzes = Collections.singleton(BigDecimal.class);
+        return new TypeInfo() {
+            @Override
+            public Set<Class<?>> getTypes() {
+                return clazzes;
+            }
+
+            @Override
+            public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+                if (!isValidFor(dataType)) {
+                    throw new IllegalArgumentException("Invalid data type " + dataType);
+                }
+                return type(PrimitiveTypeName.BINARY, required, repeating)
+                        .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
+            }
+        };
+    }
+
+    static TypeInfo getTypeInfo(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            @NotNull final ColumnDefinition<?> column,
+            final TrackingRowSet rowSet,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
+        final Class<?> dataType = column.getDataType();
+        if (BigDecimal.class.equals(dataType)) {
+            return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
+        }
         return lookupTypeInfo(column, instructions);
     }
 
@@ -323,6 +375,8 @@ class TypeInfos {
                 @NotNull final ParquetInstructions instructions) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
+            final String parquetColumnName =
+                    instructions.getParquetColumnNameFromColumnNameOrDefault(columnDefinition.getName());
 
             final PrimitiveBuilder<PrimitiveType> builder;
             final boolean isRepeating;
@@ -341,12 +395,12 @@ class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
-                return builder.named(columnDefinition.getName());
+                return builder.named(parquetColumnName);
             }
             return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(columnDefinition.getName()))
-                    .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
+                            builder.named("item")).named(parquetColumnName))
+                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
         }
 
         PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);

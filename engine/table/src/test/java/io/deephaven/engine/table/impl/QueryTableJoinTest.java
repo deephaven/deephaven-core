@@ -956,19 +956,6 @@ public class QueryTableJoinTest {
         assertEquals(1, uValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table2.naturalJoin(table1.groupBy("String"), "String");
-
-        assertEquals(2, pairMatch.size());
-        assertEquals(3, pairMatch.getColumns().length);
-        assertEquals("String", pairMatch.getColumns()[0].getName());
-        assertEquals("v", pairMatch.getColumns()[1].getName());
-        assertEquals("u", pairMatch.getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(int.class, pairMatch.getColumns()[1].getType());
-        assertEquals(asList("c", "e"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        assertEquals(1, pairMatch.getColumn("v").getInt(0));
-        assertEquals(2, pairMatch.getColumn("v").getInt(1));
-
         pairMatch = table1.naturalJoin(table2.groupBy("String"), "String=String");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
@@ -983,19 +970,6 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-
-        pairMatch = table2.naturalJoin(table1.groupBy("String"), "String=String");
-
-        assertEquals(2, pairMatch.size());
-        assertEquals(3, pairMatch.getColumns().length);
-        assertEquals("String", pairMatch.getColumns()[0].getName());
-        assertEquals("v", pairMatch.getColumns()[1].getName());
-        assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(int.class, pairMatch.getColumns()[1].getType());
-        assertEquals(asList("c", "e"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        assertEquals(1, pairMatch.getColumn("v").getInt(0));
-        assertEquals(2, pairMatch.getColumn("v").getInt(1));
-
 
         table1 = TableTools.newTable(
                 c("String1", "c", "e", "g"));
@@ -1046,21 +1020,5 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-
-        pairMatch = table2.naturalJoin(table1.groupBy("String1"), "String2=String1");
-
-        assertEquals(2, pairMatch.size());
-        assertEquals(3, pairMatch.getColumns().length);
-        assertEquals("String2", pairMatch.getColumns()[0].getName());
-        assertEquals("v", pairMatch.getColumns()[1].getName());
-        assertEquals("String1", pairMatch.getColumns()[2].getName());
-        assertEquals(String.class, pairMatch.getColumn("String2").getType());
-        assertEquals(String.class, pairMatch.getColumn("String1").getType());
-        assertEquals(int.class, pairMatch.getColumn("v").getType());
-        assertEquals(asList("c", "e"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        assertEquals(1, pairMatch.getColumn("v").getInt(0));
-        assertEquals(2, pairMatch.getColumn("v").getInt(1));
-        assertEquals(asList("c", "e"), asList((String[]) pairMatch.getColumn("String1").getDirect()));
-
     }
 }

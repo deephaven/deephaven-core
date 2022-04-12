@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.server.runner.GrpcServer",
+ "methods": {
+  "getPort": "After the server is started, this will return the port it is using.\n\n:return: (int) the tcp port that the server is listening on after it has started",
+  "join": "Blocks as long as the server is running, unless this thread is interrupted. If stopWithTimeout has been called\n and the timeout has expired, this will return, and the server will be stopped.",
+  "of": ":param server: io.grpc.Server\n:return: io.deephaven.server.runner.GrpcServer",
+  "start": "Starts the server, if possible. Otherwise, throws an exception. If successful, returns.",
+  "stopWithTimeout": "Stops the server, using the specified timeout as a deadline. Returns immediately. Call join() to block\n until this is completed.\n\n:param timeout: (long) - time to allow for a graceful shutdown before giving up and halting\n:param unit: (java.util.concurrent.TimeUnit) - unit to apply to the timeout"
+ },
+ "path": "io.deephaven.server.runner.GrpcServer",
+ "text": "This interface handles the lifecycle of Netty and Jetty servers in a unified way, while still supporting the use\n cases that Deephaven expects:\n \n* Deephaven wants to initiate stop early in the shutdown process, and block on it after all services have begun to\n stop.\n* gRPC+Netty supports a non-blocking stop, a \"stop now\", and a pair of await methods, one of which takes a\n timeout.\n* gRPC+Jetty supports a blocking stop with a timeout, and a join() method.\n\n In order to not block on the initial stop call, the Jetty implementation will run stop() in another thread. Since\n Jetty doesn't have an extra \"shutdownNow\" method, the Netty implementation will use the timeout in another thread to\n decide if it needs to invoke shutdownNow when normal shutdown is taking too long.",
+ "typeName": "interface"
+}

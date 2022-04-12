@@ -45,14 +45,24 @@
   (async () => {
     connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
 
-    ide = await connection.startSession("python");
+    var types = await connection.getConsoleTypes();
+    if (types.indexOf("python") !== -1) {
+      ide = await connection.startSession("python");
 
-    await ide.runCode(`
+      await ide.runCode(`
 from deephaven.TableTools import emptyTable
 import jpy
 KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable')
 remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
     `)
+    } else if (types.indexOf("groovy") !== -1) {
+      ide = await connection.startSession("groovy");
+
+      await ide.runCode(`
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable
+remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
+`)
+    }
 
     openTable(await ide.getTable('remoteTable'), simplePagingTable);
 

@@ -34,7 +34,12 @@ public interface RowRedirection {
     /**
      * A basic, empty, singleton default FillContext instance.
      */
-    ChunkSource.FillContext DEFAULT_FILL_INSTANCE = new ChunkSource.FillContext() {};
+    ChunkSource.FillContext DEFAULT_FILL_INSTANCE = new ChunkSource.FillContext() {
+        @Override
+        public boolean supportsUnboundedFill() {
+            return true;
+        }
+    };
 
     /**
      * Make a FillContext for this RowRedirection. The default implementation supplied {@link #DEFAULT_FILL_INSTANCE},

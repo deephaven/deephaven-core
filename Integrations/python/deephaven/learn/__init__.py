@@ -30,12 +30,12 @@ def _defineSymbols():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
     global _Input_, _Output_, _Computer_, _Scatterer_
+
     if _Input_ is None:
         _Input_ = jpy.get_type("io.deephaven.integrations.learn.Input")
         _Output_ = jpy.get_type("io.deephaven.integrations.learn.Output")
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
-
 
 # every module method that invokes Java classes should be decorated with @_passThrough
 @wrapt.decorator
@@ -55,6 +55,10 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
 
 @_passThrough
 class Input:

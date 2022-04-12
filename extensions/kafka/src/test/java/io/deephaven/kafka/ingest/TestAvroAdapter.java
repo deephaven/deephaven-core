@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class TestAvroAdapter {
     @NotNull
@@ -64,7 +65,8 @@ public class TestAvroAdapter {
                 }
 
                 final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
-                        (idx) -> output[idx].getChunkType(), colMap, avroSchema, true);
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
                 adapter.handleChunk(inputValues, output);
 
                 TestCase.assertEquals(1, output[0].size());
@@ -147,7 +149,8 @@ public class TestAvroAdapter {
                 }
 
                 final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
-                        (idx) -> output[idx].getChunkType(), colMap, avroSchema, true);
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
                 adapter.handleChunk(inputValues, output);
 
                 for (int ii = 0; ii < 7; ++ii) {

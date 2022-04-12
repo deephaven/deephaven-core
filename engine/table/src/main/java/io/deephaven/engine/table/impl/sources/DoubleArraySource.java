@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterArraySource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -78,21 +80,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public Double get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final double getDouble(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_DOUBLE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        return blocks[blockIndex][indexWithinBlock];
+        return getUnsafe(index);
     }
 
     public final double getUnsafe(long index) {
@@ -131,11 +123,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         } else {
             return blocks[blockIndex][indexWithinBlock];
         }
-    }
-
-    @Override
-    public void copy(ColumnSource<? extends Double> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getDouble(sourceKey));
     }
 
     @Override
@@ -241,6 +228,18 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         final double [] backingArray = blocks[blockNo];
         chunk.asResettableWritableDoubleChunk().resetFromTypedArray(backingArray, 0, BLOCK_SIZE);
         return ((long)blockNo) << LOG_BLOCK_SIZE;
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final double [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableDoubleChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
     }
 
     @Override

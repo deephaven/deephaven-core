@@ -8,6 +8,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.util.PythonScope;
+import io.deephaven.engine.util.PythonScopeJpyImpl;
+import io.deephaven.time.DateTime;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
@@ -35,7 +38,12 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyDictWrapper;
+import org.jpy.PyListWrapper;
+import org.jpy.PyObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -797,5 +805,75 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         String makeGetExpression(boolean usePrev) {
             return String.format("%s.%s(k)", name, getGetterName(columnSource.getType(), usePrev));
         }
+    }
+
+    /**
+     * Is this parameter immutable, and thus would contribute no state to the formula?
+     *
+     * If any query scope parameter is not a primitive, String, or known immutable class; then it may be a mutable
+     * object that results in undefined results when the column is not evaluated strictly in order.
+     *
+     * @return true if this query scope parameter is immutable
+     */
+    private static boolean isImmutableType(QueryScopeParam<?> param) {
+        final Object value = param.getValue();
+        if (value == null) {
+            return true;
+        }
+        final Class<?> type = value.getClass();
+        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class) {
+            return true;
+        }
+        // if it is a boxed type, then it is immutable; otherwise we don't know what to do with it
+        return TypeUtils.isBoxedType(type);
+    }
+
+    /**
+     * Is this parameter possibly a Python type?
+     *
+     * Immutable types are not Python, known Python wrappers are Python, and anything else from a PythonScope is Python.
+     *
+     * @return true if this query scope parameter may be a Python type
+     */
+    private static boolean isPythonType(QueryScopeParam<?> param) {
+        if (isImmutableType(param)) {
+            return false;
+        }
+
+        // we want to catch PyObjects, and CallableWrappers even if they were hand inserted into a scope
+        final Object value = param.getValue();
+        if (value instanceof PyObject || value instanceof PythonScopeJpyImpl.CallableWrapper
+                || value instanceof PyListWrapper || value instanceof PyDictWrapper) {
+            return true;
+        }
+
+        // beyond the immutable types, we must assume that anything coming from Python is python
+        return QueryScope.getScope() instanceof PythonScope;
+    }
+
+    private boolean isUsedColumnStateless(String columnName) {
+        return columnSources.get(columnName).isStateless();
+    }
+
+    private boolean usedColumnUsesPython(String columnName) {
+        return columnSources.get(columnName).preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType)
+                && usedColumns.stream().allMatch(this::isUsedColumnStateless)
+                && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
+    }
+
+    /**
+     * Does this formula column use Python (which would cause us to hang the GIL if we evaluate it off thread?)
+     *
+     * @return true if this column has the potential to hang the gil
+     */
+    public boolean preventsParallelization() {
+        return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType)
+                || usedColumns.stream().anyMatch(this::usedColumnUsesPython)
+                || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);
     }
 }

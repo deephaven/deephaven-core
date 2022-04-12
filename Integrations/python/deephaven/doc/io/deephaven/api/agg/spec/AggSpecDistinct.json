@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecDistinct",
+ "methods": {
+  "description": "Get a simple description for this AggSpec.\n\n:return: (java.lang.String) The description",
+  "includeNulls": "Whether null input values should be included in the distinct output values.\n\n:return: (boolean) Whether to include nulls",
+  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecDistinct\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecDistinct",
+  "walk": "Glue method to deliver this AggSpec to a AggSpec.Visitor.\n\nNote: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: (V) - The visitor\n:return: (V) The visitor"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecDistinct",
+ "text": "Specifies an aggregation that outputs the distinct values for each group as a Deephaven vector\n (io.deephaven.vector.Vector).",
+ "typeName": "class"
+}

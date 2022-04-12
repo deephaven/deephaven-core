@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.plugin.PluginsModule",
+ "methods": {
+  "bindPluginRegistrationCallback": ":param visitor: io.deephaven.server.plugin.PluginRegistrationVisitor\n:return: io.deephaven.plugin.Registration.Callback"
+ },
+ "path": "io.deephaven.server.plugin.PluginsModule",
+ "text": "Includes the modules necessary to provide PluginRegistration.\n\n \n Note: runtime plugin registration is not currently supported - ie, no Registration.Callback is provided. See\n deephaven-core#1809 for the feature request.",
+ "typeName": "interface"
+}

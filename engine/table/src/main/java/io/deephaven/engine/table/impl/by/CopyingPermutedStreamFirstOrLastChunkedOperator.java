@@ -37,7 +37,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
 
     @Override
     public void ensureCapacity(final long tableSize) {
-        redirections.ensureCapacity(tableSize, false);
+        redirections.ensureCapacity(tableSize, true);
     }
 
     @Override

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher",
+ "methods": {
+  "dispatch": ":param tableKeySources: io.deephaven.engine.table.ColumnSource[]\n:param tableSize: int\n:param maximumLoadFactor: double\n:param targetLoadFactor: double\n:return: io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase"
+ },
+ "path": "io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher",
+ "text": "The TypedHashDispatcher returns a pre-generated and precompiled hasher instance suitable for the provided column sources, or null if there is not a precompiled hasher suitable for the specified sources.",
+ "typeName": "class"
+}

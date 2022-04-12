@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.session.SessionServiceGrpcImpl$AuthServerInterceptor",
+ "methods": {
+  "interceptCall": "Note: Java generics information - <ReqT,\nRespT>\n\n:param serverCall: io.grpc.ServerCall<ReqT,RespT>\n:param metadata: io.grpc.Metadata\n:param serverCallHandler: io.grpc.ServerCallHandler<ReqT,RespT>\n:return: io.grpc.ServerCall.Listener<ReqT>"
+ },
+ "path": "io.deephaven.server.session.SessionServiceGrpcImpl.AuthServerInterceptor",
+ "typeName": "class"
+}

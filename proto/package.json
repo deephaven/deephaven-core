@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@deephaven/barrage": "0.3.0",
+    "@deephaven/barrage": "0.4.0",
     "@improbable-eng/grpc-web": "^0.14.0",
     "apache-arrow": "5.0.0",
     "flatbuffers": "^1.12.0",

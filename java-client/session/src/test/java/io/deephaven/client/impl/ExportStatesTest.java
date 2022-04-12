@@ -1,9 +1,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
-import io.deephaven.grpc_api.DeephavenChannel;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.OperationHelper;
+import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -15,6 +13,8 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceImplBase;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.proto.util.OperationHelper;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.TableSpec;

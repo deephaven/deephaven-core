@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 
 import java.util.Collection;
@@ -260,6 +261,26 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
+    public final TOPS_1 aggAllBy(AggSpec spec) {
+        return adapt(delegate.aggAllBy(spec));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, String... groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
+    }
+
+    @Override
     public final TOPS_1 aggBy(Aggregation aggregation) {
         return adapt(delegate.aggBy(aggregation));
     }
@@ -288,5 +309,285 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return adapt(delegate.aggBy(aggregations, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct() {
+        return adapt(delegate.selectDistinct());
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(String... groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(Selectable... groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName) {
+        return adapt(delegate.countBy(countColumnName));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, String... groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, Selectable... groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, Collection<String> groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 firstBy() {
+        return adapt(delegate.firstBy());
+    }
+
+    @Override
+    public final TOPS_1 firstBy(String... groupByColumns) {
+        return adapt(delegate.firstBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 firstBy(Selectable... groupByColumns) {
+        return adapt(delegate.firstBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 firstBy(Collection<String> groupByColumns) {
+        return adapt(delegate.firstBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 lastBy() {
+        return adapt(delegate.lastBy());
+    }
+
+    @Override
+    public final TOPS_1 lastBy(String... groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 lastBy(Selectable... groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 lastBy(Collection<String> groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 minBy() {
+        return adapt(delegate.minBy());
+    }
+
+    @Override
+    public final TOPS_1 minBy(String... groupByColumns) {
+        return adapt(delegate.minBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 minBy(Selectable... groupByColumns) {
+        return adapt(delegate.minBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 minBy(Collection<String> groupByColumns) {
+        return adapt(delegate.minBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 maxBy() {
+        return adapt(delegate.maxBy());
+    }
+
+    @Override
+    public final TOPS_1 maxBy(String... groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 maxBy(Selectable... groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 maxBy(Collection<String> groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 sumBy() {
+        return adapt(delegate.sumBy());
+    }
+
+    @Override
+    public final TOPS_1 sumBy(String... groupByColumns) {
+        return adapt(delegate.sumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 sumBy(Selectable... groupByColumns) {
+        return adapt(delegate.sumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 sumBy(Collection<String> groupByColumns) {
+        return adapt(delegate.sumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 avgBy() {
+        return adapt(delegate.avgBy());
+    }
+
+    @Override
+    public final TOPS_1 avgBy(String... groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 avgBy(Selectable... groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 avgBy(Collection<String> groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 medianBy() {
+        return adapt(delegate.medianBy());
+    }
+
+    @Override
+    public final TOPS_1 medianBy(String... groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 medianBy(Selectable... groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 medianBy(Collection<String> groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 stdBy() {
+        return adapt(delegate.stdBy());
+    }
+
+    @Override
+    public final TOPS_1 stdBy(String... groupByColumns) {
+        return adapt(delegate.stdBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 stdBy(Selectable... groupByColumns) {
+        return adapt(delegate.stdBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 stdBy(Collection<String> groupByColumns) {
+        return adapt(delegate.stdBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 varBy() {
+        return adapt(delegate.varBy());
+    }
+
+    @Override
+    public final TOPS_1 varBy(String... groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 varBy(Selectable... groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 varBy(Collection<String> groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 absSumBy() {
+        return adapt(delegate.absSumBy());
+    }
+
+    @Override
+    public final TOPS_1 absSumBy(String... groupByColumns) {
+        return adapt(delegate.absSumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 absSumBy(Selectable... groupByColumns) {
+        return adapt(delegate.absSumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 absSumBy(Collection<String> groupByColumns) {
+        return adapt(delegate.absSumBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn) {
+        return adapt(delegate.wsumBy(weightColumn));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, String... groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, Collection<String> groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn) {
+        return adapt(delegate.wavgBy(weightColumn));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, String... groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, Collection<String> groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
     }
 }

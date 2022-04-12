@@ -43,8 +43,8 @@ class Table(TableInterface):
             if self.ticket and self.schema and self.session.is_alive:
                 self.session.release(self.ticket)
         except Exception as e:
-            # TODO: log the exception
-            ...
+            # TODO(deephaven-core#1858): Better error handling for pyclient around release #1858
+            pass
 
     @property
     def is_closed(self):

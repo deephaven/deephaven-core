@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-@AbstractColumnSource.IsSerializable(value = true)
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, Serializable {
 

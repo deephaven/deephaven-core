@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.session.SessionState$ExportErrorGrpcHandler",
- "methods": {
-  "onError": "This error handler receives a grpc friendly StatusRuntimeException that can be directly sent to\n StreamObserver.onError(java.lang.Throwable).\n\n:param notification: (io.grpc.StatusRuntimeException) - the notification to forward to the grpc client"
- },
- "path": "io.deephaven.grpc_api.session.SessionState.ExportErrorGrpcHandler",
- "typeName": "interface"
-}

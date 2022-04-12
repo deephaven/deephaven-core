@@ -13,9 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Check gitignore rules
-        run: .github/scripts/check-gitignore-rules.sh
-
       - name: Setup JDK 11
         id: setup-java-11
         uses: actions/setup-java@v2
@@ -36,14 +33,15 @@ jobs:
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          cat gradle.properties
 
       - name: Check
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: checks
-          # todo: eventually expand to more
-          arguments: --scan --continue quick
+          arguments: --scan --continue check
           gradle-version: wrapper
 
       - name: Upload Test Results

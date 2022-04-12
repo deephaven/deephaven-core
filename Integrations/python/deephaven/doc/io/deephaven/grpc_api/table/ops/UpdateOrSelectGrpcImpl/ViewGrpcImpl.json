@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl$ViewGrpcImpl",
- "methods": {},
- "path": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl.ViewGrpcImpl",
- "typeName": "class"
-}

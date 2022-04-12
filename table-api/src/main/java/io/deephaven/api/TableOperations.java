@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 
 import java.util.Collection;
@@ -489,6 +490,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS aggAllBy(AggSpec spec);
+
+    TOPS aggAllBy(AggSpec spec, String... groupByColumns);
+
+    TOPS aggAllBy(AggSpec spec, Selectable... groupByColumns);
+
+    TOPS aggAllBy(AggSpec spec, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
     TOPS aggBy(Aggregation aggregation);
 
     TOPS aggBy(Aggregation aggregation, String... groupByColumns);
@@ -500,4 +511,146 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS selectDistinct();
+
+    TOPS selectDistinct(String... groupByColumns);
+
+    TOPS selectDistinct(Selectable... groupByColumns);
+
+    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS countBy(String countColumnName);
+
+    TOPS countBy(String countColumnName, String... groupByColumns);
+
+    TOPS countBy(String countColumnName, Selectable... groupByColumns);
+
+    TOPS countBy(String countColumnName, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS firstBy();
+
+    TOPS firstBy(String... groupByColumns);
+
+    TOPS firstBy(Selectable... groupByColumns);
+
+    TOPS firstBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS lastBy();
+
+    TOPS lastBy(String... groupByColumns);
+
+    TOPS lastBy(Selectable... groupByColumns);
+
+    TOPS lastBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS minBy();
+
+    TOPS minBy(String... groupByColumns);
+
+    TOPS minBy(Selectable... groupByColumns);
+
+    TOPS minBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS maxBy();
+
+    TOPS maxBy(String... groupByColumns);
+
+    TOPS maxBy(Selectable... groupByColumns);
+
+    TOPS maxBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS sumBy();
+
+    TOPS sumBy(String... groupByColumns);
+
+    TOPS sumBy(Selectable... groupByColumns);
+
+    TOPS sumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS avgBy();
+
+    TOPS avgBy(String... groupByColumns);
+
+    TOPS avgBy(Selectable... groupByColumns);
+
+    TOPS avgBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS medianBy();
+
+    TOPS medianBy(String... groupByColumns);
+
+    TOPS medianBy(Selectable... groupByColumns);
+
+    TOPS medianBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS stdBy();
+
+    TOPS stdBy(String... groupByColumns);
+
+    TOPS stdBy(Selectable... groupByColumns);
+
+    TOPS stdBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS varBy();
+
+    TOPS varBy(String... groupByColumns);
+
+    TOPS varBy(Selectable... groupByColumns);
+
+    TOPS varBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS absSumBy();
+
+    TOPS absSumBy(String... groupByColumns);
+
+    TOPS absSumBy(Selectable... groupByColumns);
+
+    TOPS absSumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS wsumBy(String weightColumn);
+
+    TOPS wsumBy(String weightColumn, String... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS wavgBy(String weightColumn);
+
+    TOPS wavgBy(String weightColumn, String... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

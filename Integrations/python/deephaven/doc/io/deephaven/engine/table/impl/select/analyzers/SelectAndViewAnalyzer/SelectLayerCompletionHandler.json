@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer$SelectLayerCompletionHandler",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.SelectLayerCompletionHandler",
+ "text": "A class that handles the completion of one select column. The handlers are chained together so that when a column\n completes all of the downstream dependencies may execute.",
+ "typeName": "class"
+}

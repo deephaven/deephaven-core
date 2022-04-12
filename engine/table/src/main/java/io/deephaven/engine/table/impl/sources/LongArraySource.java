@@ -30,9 +30,4 @@ public class LongArraySource extends AbstractLongArraySource<Long> {
     public Long getPrev(long index) {
         return box(getPrevLong(index));
     }
-
-    @Override
-    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getLong(sourceKey));
-    }
 }

@@ -5,11 +5,11 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.AdaptiveOrderedLongSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -203,14 +203,14 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
-        final OrderedLongSetBuilderSequential chunkDestinationBuilder = new OrderedLongSetBuilderSequential(true);
+        final AdaptiveOrderedLongSetBuilderRandom chunkDestinationBuilder = new AdaptiveOrderedLongSetBuilderRandom();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
 
             if (appendShifts(preShiftRowKeys, postShiftRowKeys, startPosition, runLength, destination)) {
-                chunkDestinationBuilder.appendKey(destination);
+                chunkDestinationBuilder.addKey(destination);
             }
         }
         try (final RowSet chunkDestinationsShifted =

@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
@@ -36,7 +37,6 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.io.*;
@@ -58,7 +58,7 @@ import java.util.stream.Stream;
 @SuppressWarnings("unused")
 public class TableTools {
 
-    private static final Logger staticLog_ = ProcessEnvironment.getDefaultLog(TableTools.class);
+    private static final Logger staticLog_ = LoggerFactory.getLogger(TableTools.class);
 
     // Public so it can be used from user scripts
     @SuppressWarnings("WeakerAccess")

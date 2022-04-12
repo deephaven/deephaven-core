@@ -21,6 +21,9 @@ public class ReplicateSourceAndChunkTests {
 
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
+
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
                 Collections.emptyMap()));
@@ -28,12 +31,21 @@ public class ReplicateSourceAndChunkTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
 
         charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java");
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java",
+                Collections.emptyMap()));
+        fixupObjectColumnSourceTest(charToObject(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java"));
+        charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
                 Collections.emptyMap()));
-        fixupObjectColumnSourceTest(charToObject(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutableArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutable2DArraySource.java");
 
         charToAll("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
         fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
@@ -71,7 +83,6 @@ public class ReplicateSourceAndChunkTests {
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
 
         lines = globalReplacements(lines,
-                "BooleanChunk(\\s+)", "ObjectChunk<Boolean, ?>$1",
                 "\\(BooleanChunk\\)", "\\(ObjectChunk\\)",
                 "\\(BooleanChunk<[?] extends Values>\\)", "\\(ObjectChunk<Boolean, ? extends Values>\\)",
                 "BooleanChunk<Values>(\\s+)", "ObjectChunk<Boolean, Values>$1",
@@ -81,8 +92,15 @@ public class ReplicateSourceAndChunkTests {
                 "BooleanChunkEquals", "ObjectChunkEquals",
                 "WritableBooleanChunk.makeWritableChunk", "WritableObjectChunk.makeWritableChunk");
 
+        if (booleanPath.contains("Abstract")) {
+            lines = globalReplacements(lines, "BooleanChunk(\\s+)", "ObjectChunk<Boolean, Values>$1");
+        } else {
+            lines = globalReplacements(lines, "BooleanChunk(\\s+)", "ObjectChunk<Boolean, ? extends Values>$1");
+        }
+
         lines = simpleFixup(lines, "arrayFill", "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "testsourcesink", "ChunkType.Boolean", "ChunkType.Object");
+        lines = simpleFixup(lines, "null unordered check", "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE");
 
         lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromSource(.*)\\) \\{",
                 m -> Collections.singletonList(
@@ -100,7 +118,7 @@ public class ReplicateSourceAndChunkTests {
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
         lines = addImport(lines, "import io.deephaven.chunk.WritableObjectChunk;");
         lines = addImport(lines, "import io.deephaven.chunk.ObjectChunk;");
-        if (!booleanPath.contains("Sparse")) {
+        if (!booleanPath.contains("Abstract") && !booleanPath.contains("Sparse")) {
             lines = removeImport(lines, "import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",

@@ -9,10 +9,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -20,7 +18,6 @@ import io.deephaven.engine.table.impl.QueryTableTestBase.ListenerWithGlobals;
 import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.util.*;
@@ -30,7 +27,6 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -47,13 +43,32 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testSelectAndUpdate() {
+        testSelectAndUpdate(false);
+        testSelectAndUpdate(true);
+    }
+
+    public void testSelectAndUpdate(boolean useRedirection) {
+        final boolean startSelect = QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT;
+        final boolean startUpdate = QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE;
+
+        try {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = useRedirection;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = useRedirection;
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                doTestSelectAndUpdate();
+            }
+        } finally {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
+        }
+    }
+
+    public void doTestSelectAndUpdate() {
         final QueryTable table1 =
                 (QueryTable) TstUtils.testRefreshingTable(i(2, 4, 6).toTracking())
                         .select("x = i*3", "y = \"\" + k");
-        TestCase.assertEquals(3, table1.size());
-        TestCase
-                .assertEquals(Arrays.asList(0, 3, 6), Arrays.asList(table1.getColumn("x").get(0, table1.size())));
-        TestCase.assertEquals(Arrays.asList("2", "4", "6"), Arrays.asList(table1.getColumn("y").get(0, table1.size())));
+
+        assertTableEquals(TableTools.newTable(intCol("x", 0, 3, 6), stringCol("y", "2", "4", "6")), table1);
 
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
@@ -62,29 +77,29 @@ public class QueryTableSelectUpdateTest {
         QueryTable table2 = (QueryTable) table.select("x = x * 2", "z = y");
         TableTools.showWithRowSet(table2);
 
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6), charCol("z", 'a', 'b', 'c')), table2);
+
         final Table table3 = table.update("q = i", "q = q + 1", "p = q+10");
+
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3), charCol("y", 'a', 'b', 'c'), intCol("q", 1, 2, 3),
+                intCol("p", 11, 12, 13)), table3);
+
         final ShiftObliviousListener table2Listener = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
-        TestCase
-                .assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList('a', 'b', 'c'), Arrays.asList(table2.getColumn("z").get(0, table2.size())));
+
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            show(table3);
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
         TableTools.showWithRowSet(table);
         TableTools.showWithRowSet(table2);
-        TestCase.assertEquals(5, table.size());
-        TestCase.assertEquals(5, table2.size());
         TableTools.showWithRowSet(table3);
-        TestCase.assertEquals(Arrays.asList(1, 2, 3, 4, 5), Arrays.asList(table3.getColumn("q").get(0, table3.size())));
-        TestCase.assertEquals(Arrays.asList(11, 12, 13, 14, 15),
-                Arrays.asList(table3.getColumn("p").get(0, table3.size())));
-        TestCase.assertEquals(Arrays.asList(2, 4, 6, 8, 10),
-                Arrays.asList(table2.getColumn("x").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList('a', 'b', 'c', 'd', 'e'),
-                Arrays.asList(table2.getColumn("z").get(0, table2.size())));
+
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 4, 5), charCol("y", 'a', 'b', 'c', 'd', 'e'),
+                intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 8, 10), charCol("z", 'a', 'b', 'c', 'd', 'e')),
+                table2);
+
         TestCase.assertEquals(i(7, 9), base.added);
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
@@ -93,13 +108,12 @@ public class QueryTableSelectUpdateTest {
             addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
-        TestCase.assertEquals(5, table.size());
-        TestCase.assertEquals(5, table2.size());
 
-        TestCase.assertEquals(Arrays.asList(2, 4, 6, 6, 20),
-                Arrays.asList(table2.getColumn("x").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList('a', 'b', 'c', 'e', 'd'),
-                Arrays.asList(table2.getColumn("z").get(0, table2.size())));
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 3, 10), charCol("y", 'a', 'b', 'c', 'e', 'd'),
+                intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 6, 20), charCol("z", 'a', 'b', 'c', 'e', 'd')),
+                table2);
+
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(7, 9), base.modified);
@@ -108,13 +122,12 @@ public class QueryTableSelectUpdateTest {
             TstUtils.removeRows(table, i(2, 6, 7));
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
-        TestCase.assertEquals(2, table.size());
-        TestCase.assertEquals(2, table2.size());
 
-        TestCase
-                .assertEquals(Arrays.asList(4, 20), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
-        TestCase
-                .assertEquals(Arrays.asList('b', 'd'), Arrays.asList(table2.getColumn("z").get(0, table2.size())));
+        assertTableEquals(
+                TableTools.newTable(intCol("x", 2, 10), charCol("y", 'b', 'd'), intCol("q", 2, 5), intCol("p", 12, 15)),
+                table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 4, 20), charCol("z", 'b', 'd')), table2);
+
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(2, 6, 7), base.removed);
         TestCase.assertEquals(i(), base.modified);
@@ -124,55 +137,48 @@ public class QueryTableSelectUpdateTest {
             addToTable(table, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
-        TestCase.assertEquals(3, table.size());
         TestCase.assertEquals(3, table2.size());
-        TestCase
-                .assertEquals(Arrays.asList(2, 44, 6), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList('a', 'x', 'c'), Arrays.asList(table2.getColumn("z").get(0, table2.size())));
+
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 22, 3), charCol("y", 'a', 'x', 'c'), intCol("q", 1, 2, 3),
+                intCol("p", 11, 12, 13)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 44, 6), charCol("z", 'a', 'x', 'c')), table2);
+
         TestCase.assertEquals(i(2, 6), base.added);
         TestCase.assertEquals(i(9), base.removed);
         TestCase.assertEquals(i(4), base.modified);
 
         final QueryTable table4 = (QueryTable) TableTools.emptyTable(3).select("x = i*2", "y = \"\" + x");
-        TestCase
-                .assertEquals(Arrays.asList(0, 2, 4), Arrays.asList(table4.getColumn("x").get(0, table4.size())));
-        TestCase.assertEquals(Arrays.asList("0", "2", "4"), Arrays.asList(table4.getColumn("y").get(0, table4.size())));
+        assertTableEquals(TableTools.newTable(intCol("x", 0, 2, 4), stringCol("y", "0", "2", "4")), table4);
 
         final QueryTable table5 = (QueryTable) table4.update("z = x", "x = z + 1", "t = x - 3");
-        TestCase
-                .assertEquals(Arrays.asList(0, 2, 4), Arrays.asList(table5.getColumn("z").get(0, table5.size())));
-        TestCase
-                .assertEquals(Arrays.asList(1, 3, 5), Arrays.asList(table5.getColumn("x").get(0, table5.size())));
-        TestCase
-                .assertEquals(Arrays.asList(-2, 0, 2), Arrays.asList(table5.getColumn("t").get(0, table5.size())));
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 3, 5), stringCol("y", "0", "2", "4"), intCol("z", 0, 2, 4),
+                intCol("t", -2, 0, 2)), table5);
+
 
         final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
-        table2 = (QueryTable) table6.update("z = x", "x = z + 1", "t = x - 3");
-        final ShiftObliviousListener table2Listener2 = base.newListenerWithGlobals(table2);
-        table2.listenForUpdates(table2Listener2);
+        final Table table7 = table6.update("z = x", "x = z + 1", "t = x - 3");
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4), charCol("y", 'a', 'b', 'c'), intCol("z", 1, 2, 3),
+                intCol("t", -1, 0, 1)), table7);
+
+        final ShiftObliviousListener table7Listener2 = base.newListenerWithGlobals(table7);
+        table7.listenForUpdates(table7Listener2);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
             table6.notifyListeners(i(7, 9), i(), i());
         });
 
-        TestCase.assertEquals(5, table6.size());
-        TestCase.assertEquals(5, table2.size());
-        assertTableEquals(table6.update("z = x", "x = z + 1", "t = x - 3"), table2);
-        TestCase.assertEquals(i(7, 9), base.added);
-        TestCase.assertEquals(i(), base.modified);
-        TestCase.assertEquals(i(), base.removed);
-
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 5, 6), charCol("y", 'a', 'b', 'c', 'd', 'e'),
+                intCol("z", 1, 2, 3, 4, 5), intCol("t", -1, 0, 1, 2, 3)), table7);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
             table6.notifyListeners(i(), i(), i(7, 9));
         });
 
-        TestCase.assertEquals(5, table6.size());
-        TestCase.assertEquals(5, table2.size());
-        assertTableEquals(table6.update("z = x", "x = z + 1", "t = x - 3"), table2);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 4, 11), charCol("y", 'a', 'b', 'c', 'e', 'd'),
+                intCol("z", 1, 2, 3, 3, 10), intCol("t", -1, 0, 1, 1, 8)), table7);
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(7, 9), base.modified);
         TestCase.assertEquals(i(), base.removed);
@@ -182,15 +188,12 @@ public class QueryTableSelectUpdateTest {
             table6.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        TestCase.assertEquals(2, table6.size());
-        TestCase.assertEquals(2, table2.size());
-        show(table6);
-        show(table2);
-        assertTableEquals(table6.update("z = x", "x = z + 1", "t = x - 3"), table2);
+        assertTableEquals(
+                TableTools.newTable(intCol("x", 3, 11), charCol("y", 'b', 'd'), intCol("z", 2, 10), intCol("t", 0, 8)),
+                table7);
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(2, 6, 7), base.removed);
         TestCase.assertEquals(i(), base.modified);
-
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table6, i(9));
@@ -198,9 +201,8 @@ public class QueryTableSelectUpdateTest {
             table6.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        TestCase.assertEquals(3, table6.size());
-        TestCase.assertEquals(3, table2.size());
-        assertTableEquals(table6.update("z = x", "x = z + 1", "t = x - 3"), table2);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 23, 4), charCol("y", 'a', 'x', 'c'), intCol("z", 1, 22, 3),
+                intCol("t", -1, 20, 1)), table7);
         TestCase.assertEquals(i(2, 6), base.added);
         TestCase.assertEquals(i(9), base.removed);
         TestCase.assertEquals(i(4), base.modified);
@@ -310,10 +312,10 @@ public class QueryTableSelectUpdateTest {
         PartialEvalNugget(Table sourceTable, boolean indexPositionChangesAllowed) {
             this.sourceTable = sourceTable;
             listener1 = new UpdateListener();
-            ((QueryTable) sourceTable).listenForUpdates(listener1);
+            sourceTable.listenForUpdates(listener1);
 
             listener2 = new UpdateListener();
-            ((QueryTable) originalValue).listenForUpdates(listener2);
+            originalValue.listenForUpdates(listener2);
 
             this.indexPositionChangesAllowed = indexPositionChangesAllowed;
         }
@@ -509,9 +511,13 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testUpdateIncremental() {
-        for (int seed = 0; seed < 5; ++seed) {
-            testUpdateIncremental(seed, false);
-            testUpdateIncremental(seed, true);
+        for (int seed = 0; seed < 3; ++seed) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                testUpdateIncremental(seed, false);
+            }
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                testUpdateIncremental(seed, true);
+            }
         }
     }
 
@@ -545,18 +551,14 @@ public class QueryTableSelectUpdateTest {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.update("intCol=intCol * 2")),
-                EvalNugget.from(() -> queryTable.update("intCol=intCol + doubleCol")),
                 EvalNugget.from(() -> queryTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
                 EvalNugget.from(() -> queryTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
-                EvalNugget.from(() -> queryTable.select("intCol=intCol * 2")),
                 EvalNugget.from(() -> queryTable.select("intCol=intCol + doubleCol")),
                 EvalNugget.from(() -> queryTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
-                EvalNugget.from(() -> sortedTable.update("intCol=intCol * 2")),
                 EvalNugget.from(() -> sortedTable.update("intCol=intCol + doubleCol")),
                 EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
                 EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
                 EvalNugget.from(() -> sortedTable.select("intCol=intCol * 2")),
-                EvalNugget.from(() -> sortedTable.select("intCol=intCol + doubleCol")),
                 EvalNugget.from(() -> sortedTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
                 partialEvalNuggetFrom(queryTable, false,
                         () -> queryTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
@@ -606,7 +608,6 @@ public class QueryTableSelectUpdateTest {
                 new UpdateValidatorNugget(queryTable.select("newCol=intCol / 2", "newCol=newCol_[i] + 7")),
                 // Let's change the type of a column.
                 EvalNugget.from(() -> queryTable.select("intCol = intCol/2")),
-                EvalNugget.from(() -> queryTable.update("intCol = intCol/2")),
                 EvalNugget.from(() -> queryTable.update("newCol = `` + intCol/2")),
                 EvalNugget.from(() -> queryTable.update("newCol = intCol > 50")),
                 // Let's create a datetime and use it as an override
@@ -616,6 +617,84 @@ public class QueryTableSelectUpdateTest {
                 partialEvalNuggetFrom(queryTable, true,
                         () -> queryTable.select("Time = new DateTime(0) + intCol * MINUTE").select("Time",
                                 "Diff = Time_[i]")),
+        };
+
+        final int maxSteps = numSteps.intValue();
+        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + numSteps.intValue());
+            }
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    @Test
+    public void testUpdateIncrementalRandomized() {
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 2, 1);
+        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
+        try {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+            for (int seed = 0; seed < 5; ++seed) {
+                System.out.println("Seed: " + seed);
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUpdateIncrementalRandomized(seed, false, 25);
+                }
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUpdateIncrementalRandomized(seed, true, 25);
+                }
+            }
+        } finally {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
+        }
+    }
+
+    @Test
+    public void testUpdateIncrementalRandomizedLarge() {
+        // this test has large enough size that we will have individual column updates spread across threads
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 2, 1);
+        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
+        try {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+            for (int seed = 0; seed < 1; ++seed) {
+                System.out.println("Seed: " + seed);
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testUpdateIncrementalRandomized(seed, false, 4096);
+                }
+            }
+        } finally {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
+        }
+    }
+
+    private void testUpdateIncrementalRandomized(int seed, boolean useRedirection, int size) {
+        final boolean startSelect = QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT;
+        final boolean startUpdate = QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE;
+
+        try {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = useRedirection;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = useRedirection;
+            testUpdateIncrementalRandomized(seed, new MutableInt(100), size);
+        } finally {
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
+            QueryTable.USE_REDIRECTED_COLUMNS_FOR_UPDATE = startUpdate;
+        }
+    }
+
+    private void testUpdateIncrementalRandomized(final int seed, MutableInt numSteps, int size) {
+        final Random random = new Random(seed);
+        final TstUtils.ColumnInfo[] columnInfo;
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> queryTable.select("intCol=intCol * 2", "multiplication=intCol * doubleCol",
+                        "intQuad=intCol * 2", "Sym", "newCol=7", "FC=Sym.charAt(0)", "UC=Sym.toUpperCase()",
+                        "Concat=UC + FC")),
         };
 
         final int maxSteps = numSteps.intValue();
@@ -710,9 +789,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            table.notifyListeners(i(), i(), i(9));
-        });
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(9)));
 
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
@@ -725,7 +802,7 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
-    public void testUpdateArrayColumns() throws IOException {
+    public void testUpdateArrayColumns() {
         QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "PrevI=Position_[i-1]");
         // QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k", "PrevI=Position_[i-1]");
@@ -752,9 +829,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            table.notifyListeners(i(), i(), i(9));
-        });
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(9)));
 
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
@@ -852,192 +927,6 @@ public class QueryTableSelectUpdateTest {
 
         assertTableEquals(table, selected);
         assertTableEquals(prevTable(table), prevTable(selected));
-    }
-
-    @Test
-    public void testSparseSelect() {
-        int size = 1000;
-        for (int seed = 0; seed < 10; ++seed) {
-            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
-            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-                testSparseSelect(size, seed);
-            }
-        }
-        size = 10000;
-        for (int seed = 0; seed < 1; ++seed) {
-            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
-            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-                testSparseSelect(size, seed);
-            }
-        }
-    }
-
-    private void testSparseSelect(int size, int seed) {
-        final Random random = new Random(seed);
-        final TstUtils.ColumnInfo[] columnInfo;
-
-        final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(
-                        new String[] {"Sym", "intCol", "doubleCol", "boolCol", "floatCol", "longCol", "charCol",
-                                "byteCol", "shortCol", "dateTime"},
-                        new SetGenerator<>("a", "b", "c", "d", "e"),
-                        new IntGenerator(10, 100),
-                        new SetGenerator<>(10.1, 20.1, 30.1),
-                        new BooleanGenerator(0.5, 0.1),
-                        new FloatGenerator(-1000.0f, 1000.0f),
-                        new LongGenerator(),
-                        new CharGenerator('a', 'z'),
-                        new ByteGenerator(),
-                        new ShortGenerator(),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
-                                DateTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
-
-        final Table sortedTable = queryTable.sort("intCol");
-
-        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.sparseSelect(queryTable, "Sym");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.partialSparseSelect(queryTable, "Sym");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.sparseSelect(queryTable, "boolCol");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.sparseSelect(queryTable, "dateTime");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.sparseSelect(queryTable);
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect.sparseSelect(sortedTable);
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect
-                                .sparseSelect(TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable));
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect
-                                .sparseSelect(TableTools.merge(queryTable, queryTable, queryTable, queryTable));
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return SparseSelect
-                                .sparseSelect(TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable)
-                                        .groupBy("Sym").sort("Sym").ungroup());
-                    }
-                },
-                new TableComparator(
-                        TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable).groupBy("Sym").sort("Sym")
-                                .ungroup(),
-                        SparseSelect.sparseSelect(TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable)
-                                .groupBy("Sym").sort("Sym").ungroup())),
-                new TableComparator(queryTable, SparseSelect.sparseSelect(queryTable)),
-                new TableComparator(queryTable,
-                        SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "dateTime"))),
-                new TableComparator(sortedTable, SparseSelect.sparseSelect(sortedTable))
-        };
-
-        for (int step = 0; step < 25; step++) {
-            if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step: " + step);
-            }
-            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
-        }
-    }
-
-    @Test
-    public void testSparseSelectWideIndex() {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        final int[] intVals = new int[63];
-        for (int ii = 0; ii < 63; ii++) {
-            builder.appendKey(1L << ii);
-            intVals[ii] = ii;
-        }
-        final QueryTable table = TstUtils.testRefreshingTable(builder.build().toTracking(),
-                intCol("Value", intVals));
-        final Table selected = SparseSelect.sparseSelect(table);
-        final String diff = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff);
-    }
-
-    @Test
-    public void testSparseSelectSkipMemoryColumns() {
-        final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
-                intCol("Value", intVals))
-                .update("V2=Value*2");
-        final Table selected = SparseSelect.sparseSelect(table);
-        assertTableEquals(table, selected);
-        TestCase.assertSame(table.getColumnSource("V2"), selected.getColumnSource("V2"));
-        TestCase.assertNotSame(table.getColumnSource("Value"), selected.getColumnSource("Value"));
-
-        final Table tt = TableTools.newTable(intCol("Val", intVals)).updateView("V2=Val*2");
-        TestCase.assertTrue(tt.getColumnSource("Val") instanceof ArrayBackedColumnSource);
-        final Table selected2 = SparseSelect.sparseSelect(tt);
-        TestCase.assertSame(tt.getColumnSource("Val"), selected2.getColumnSource("Val"));
-        TestCase.assertNotSame(tt.getColumnSource("V2"), selected2.getColumnSource("V2"));
-    }
-
-    @Test
-    public void testSparseSelectReuse() {
-
-        final QueryTable table = TstUtils.testRefreshingTable(i(1, 1L << 20 + 1).toTracking(),
-                longCol("Value", 1, 2));
-
-
-        final Table selected = SparseSelect.sparseSelect(table);
-        final String diff = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff);
-
-        final String diffPrev = TableTools.diff(prevTable(selected), prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev);
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(2), longCol("Value", 3));
-            table.notifyListeners(i(2), i(), i());
-        });
-
-        final String diff2 = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff2);
-
-        final String diffPrev2 = TableTools.diff(prevTable(selected), prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev2);
-
-        TableTools.show(table);
-        TableTools.show(selected);
-
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(1L << 20 + 2), longCol("Value", 4));
-            table.notifyListeners(i(1L << 20 + 2), i(), i());
-        });
-
-        TableTools.show(table);
-        TableTools.show(selected);
-
-        final String diff3 = TableTools.diff(selected, table, 10);
-        TestCase.assertEquals("", diff3);
-
-        final String diffPrev3 = TableTools.diff(prevTable(selected), prevTable(table), 10);
-        TestCase.assertEquals("", diffPrev3);
     }
 
     @Test

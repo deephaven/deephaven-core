@@ -7,7 +7,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -16,7 +15,6 @@ import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
@@ -43,6 +41,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -1134,20 +1134,21 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testByConcurrent(t -> t.varBy("KeyColumn"));
     }
 
+    private static <T extends Table> T setAddOnly(@NotNull final T table) {
+        table.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        return table;
+    }
+
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
-        testByConcurrent(t -> ((QueryTable) t).by(new AddOnlyMinMaxBySpecImpl(true), new SourceColumn("KeyColumn")),
-                true, false, false, true);
-        testByConcurrent(t -> ((QueryTable) t).by(new AddOnlyMinMaxBySpecImpl(false), new SourceColumn("KeyColumn")),
-                true, false, false, true);
+        testByConcurrent(t -> setAddOnly(t).minBy("KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> setAddOnly(t).maxBy("KeyColumn"), true, false, false, true);
     }
 
     public void testFirstLastBy() throws Exception {
         testByConcurrent(t -> t.firstBy("KeyColumn"));
         testByConcurrent(t -> t.lastBy("KeyColumn"));
-        testByConcurrent(t -> ((QueryTable) t).by(new TrackingFirstBySpecImpl(), new SourceColumn("KeyColumn")));
-        testByConcurrent(t -> ((QueryTable) t).by(new TrackingLastBySpecImpl(), new SourceColumn("KeyColumn")));
     }
 
     public void testSortedFirstLastBy() throws Exception {

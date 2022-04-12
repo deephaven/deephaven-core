@@ -20,6 +20,4 @@ public interface FormulaColumn extends SelectColumn {
     static FormulaColumn createFormulaColumn(String columnName, String formulaString) {
         return createFormulaColumn(columnName, formulaString, FormulaParserConfiguration.parser);
     }
-
-    ColumnSource<?> updateData(WritableColumnSource<?> result, long destPos, long sourcePos);
 }

@@ -1,7 +1,7 @@
 package io.deephaven.jpy.integration;
 
 import io.deephaven.jpy.JpyConfigExt;
-import io.deephaven.jpy.JpyConfigSource.SysProps;
+import io.deephaven.jpy.JpyConfigSource;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jpy.PyLib;
@@ -18,7 +18,7 @@ public class PyDebug {
 
     public static void main(String[] args) {
 
-        JpyConfigExt jpyConfigExt = new JpyConfigExt(SysProps.INSTANCE.asJpyConfig());
+        JpyConfigExt jpyConfigExt = new JpyConfigExt(JpyConfigSource.sysProps().asJpyConfig());
         jpyConfigExt.initPython();
         debug("Calling JpyConfig.startPython()...");
         jpyConfigExt.startPython();

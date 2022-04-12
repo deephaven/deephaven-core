@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.AggregateAllByTable",
+ "methods": {
+  "asAggregation": "Transform this agg-all-by table into an AggregationTable by constructing the necessary\n Aggregation from the spec() and tableColumns.\n\n:param tableColumns: (java.util.Collection<? extendsio.deephaven.api.ColumnName>) - the table columns\n:return: (io.deephaven.qst.table.AggregationTable) the aggregation table",
+  "builder": ":return: io.deephaven.qst.table.AggregateAllByTable.Builder",
+  "singleAggregation": "Computes the single-aggregation from the agg-all implied by the spec and groupByColumns by\n removing the groupByColumns and any extra columns implied by the spec.\n\n:param spec: (io.deephaven.api.agg.spec.AggSpec) - the spec\n:param groupByColumns: (java.util.Collection<? extendsio.deephaven.api.Selectable>) - the group by columns\n:param tableColumns: (java.util.Collection<? extendsio.deephaven.api.ColumnName>) - the table columns\n:return: (java.util.Optional<io.deephaven.api.agg.Aggregation>) the aggregation, if non-empty",
+  "spec": ":return: io.deephaven.api.agg.spec.AggSpec",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.AggregateAllByTable",
+ "typeName": "class"
+}

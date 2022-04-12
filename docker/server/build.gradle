@@ -1,0 +1,102 @@
+import io.deephaven.tools.docker.Architecture
+import io.deephaven.tools.License
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+def targetArch = Architecture.targetArchitecture(project)
+
+def baseMapAmd64 = [
+        'server-base': 'server',
+        'nltk-base': 'server-nltk',
+        'pytorch-base': 'server-pytorch',
+        'sklearn-base': 'server-sklearn',
+        'tensorflow-base': 'server-tensorflow',
+]
+
+// Only the server image is supported on arm64
+// TODO(deephaven-core#1702): Support arm64 builds for applicable extended images
+def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server' }
+
+def baseMap = targetArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
+
+baseMap.keySet().each {base ->
+    evaluationDependsOn Docker.registryProject(base)
+}
+
+evaluationDependsOn ':deephaven-jpy'
+evaluationDependsOn ':deephaven-wheel'
+evaluationDependsOn ':deephaven2-wheel'
+
+configurations {
+    serverApplicationDist
+}
+
+dependencies {
+    serverApplicationDist project(path: ':server-netty', configuration: 'applicationDist')
+}
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+def context= project.layout.buildDirectory.dir('context')
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // deephaven-jpy.whl
+    def deephavenJpyWheel = project(':deephaven-jpy').tasks.getByName('buildWheel')
+
+    // deephaven.whl
+    def deephavenWheel = project(':deephaven-wheel').tasks.getByName('buildWheel')
+
+    // deephaven2.whl
+    def deephaven2Wheel = project(':deephaven2-wheel').tasks.getByName('buildWheel')
+
+    from 'src/main/docker'
+    baseMap.values().each { server ->
+        from("src/main/${server}") {
+            into server
+        }
+    }
+    from ('src/main/configure') {
+        into 'configure'
+    }
+    from (deephavenJpyWheel.outputs.files) {
+        into 'deephaven-jpy-wheel'
+    }
+    from (deephavenWheel.outputs.files) {
+        into 'deephaven-wheel'
+    }
+    from (deephaven2Wheel.outputs.files) {
+        into 'deephaven2-wheel'
+    }
+    from(configurations.serverApplicationDist) {
+        into 'serverApplicationDist'
+    }
+    from(dockerLicenses.outputs) {
+        into 'licenses'
+    }
+    into context
+}
+
+// TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
+// Currently, GH build-ci.yml calls prepareDockerAll, and relies on buildx; so we need to
+// make sure that dockerCreateDockerfile has the proper dependencies.
+// If we change how our build works in the future (so that gradle is responsible for pushing the
+// image), we can remove this extra dependency.
+project.tasks.register('prepareDockerAll') {
+    dependsOn prepareDocker, baseMap.keySet().collect { base -> Docker.registryTask(project, base) }
+}
+
+def buildDockerClosure = { String base, String server ->
+    Docker.registerDockerTwoPhaseImage(project, server, 'install') {
+        dependsOn prepareDocker
+        inputDir.set context
+        inputs.files Docker.registryFiles(project, base)
+        buildArgs.put('BASE', "deephaven/${base}:local-build")
+        buildArgs.put('SERVER', server)
+        buildArgs.put('DEEPHAVEN_VERSION', project.version)
+    }
+}
+
+assemble.dependsOn baseMap.collect { base, server -> buildDockerClosure(base, server) }

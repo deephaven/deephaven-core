@@ -5,8 +5,9 @@
 package io.deephaven.plot;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.plot.axisformatters.AxisFormat;
 import io.deephaven.plot.axisformatters.NanosAxisFormat;
@@ -43,7 +44,6 @@ import io.deephaven.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.time.calendar.BusinessCalendar;
@@ -55,8 +55,8 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static io.deephaven.api.agg.Aggregation.AggLast;
 import static io.deephaven.plot.datasets.interval.IntervalXYDataSeriesArray.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggLast;
 
 /**
  * Chart's axes.
@@ -262,14 +262,17 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     private static SelectableDataSet getAggregatedSelectableDataSet(final SelectableDataSet sds,
-            final Supplier<AggregationFactory> aggSupplier, final List<String> byColumns) {
+            final Supplier<Collection<? extends Aggregation>> aggSupplier, final List<String> byColumns) {
         final List<String> cols = new ArrayList<>(byColumns);
         if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
 
-        final AggregationFactory caf = aggSupplier.get();
-        return sds.transform(caf.getMemoKey(), t -> ((QueryTable) t).by(caf, SelectColumn.from(Selectable.from(cols))));
+        final Collection<? extends Aggregation> aggs = aggSupplier.get();
+        final Collection<? extends Selectable> selectableCols = Selectable.from(cols);
+        final SelectColumn[] gbsColumns = SelectColumn.from(selectableCols);
+        final Function<Table, Table> applyAggs = t -> t.aggBy(aggs, selectableCols);
+        return sds.transform(MemoizedOperationKey.aggBy(aggs, gbsColumns), applyAggs);
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {
@@ -1126,7 +1129,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public CategoryDataSeries catErrorBar(final Comparable seriesName, final SelectableDataSet sds,
             final String categories, final String values, final String yLow, final String yHigh) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values, yLow, yHigh)),
+                () -> PlotUtils.createCategoryAggs(AggLast(values, yLow, yHigh)),
                 Collections.singletonList(categories));
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, yLow,
                 yHigh, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
@@ -1178,7 +1181,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         allOfTheByColumns.add(categories);
         allOfTheByColumns.addAll(Arrays.asList(byColumns));
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values, yLow, yHigh)),
+                () -> PlotUtils.createCategoryAggs(AggLast(values, yLow, yHigh)),
                 allOfTheByColumns);
 
 
@@ -1707,7 +1710,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final SelectableDataSet sds,
             final String categories, final String values) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values)), Collections.singletonList(categories));
+                () -> PlotUtils.createCategoryAggs(AggLast(values)), Collections.singletonList(categories));
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return catPlot(
@@ -1759,7 +1762,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         allOfTheByColumns.add(categories);
         allOfTheByColumns.addAll(Arrays.asList(byColumns));
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values)),
+                () -> PlotUtils.createCategoryAggs(AggLast(values)),
                 allOfTheByColumns);
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, columns);
         configureCategoryPlot();
@@ -1819,7 +1822,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final SelectableDataSet sds,
             final String categories, final String values) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values)), Collections.singletonList(categories));
+                () -> PlotUtils.createCategoryAggs(AggLast(values)), Collections.singletonList(categories));
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         return piePlot(

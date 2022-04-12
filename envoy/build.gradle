@@ -3,6 +3,7 @@ import io.deephaven.tools.License
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn Docker.registryProject('envoyproxy')
@@ -26,6 +27,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'envoyproxy')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
     images.add('deephaven/envoy:local-build')
 }
 

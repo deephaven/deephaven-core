@@ -1,6 +1,5 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.CloseSessionResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportNotification;

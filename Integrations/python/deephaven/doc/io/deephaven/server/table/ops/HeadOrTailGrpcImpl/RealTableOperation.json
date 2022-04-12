@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.table.ops.HeadOrTailGrpcImpl$RealTableOperation",
+ "methods": {
+  "apply": ":param source: io.deephaven.engine.table.Table\n:param nRows: long\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.server.table.ops.HeadOrTailGrpcImpl.RealTableOperation",
+ "typeName": "interface"
+}

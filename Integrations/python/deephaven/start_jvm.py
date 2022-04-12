@@ -148,8 +148,8 @@ def start_jvm(devroot=None,
         java_version_file=open("/usr/deephaven/latest/etc/JAVA_VERSION", "r")
         java_version=java_version_file.read()
         java_version_file.close()
-    elif path.exists("{}/projects/configs/build/resources/main/JAVA_VERSION".format(devroot)):
-        java_version_file=open("{}/projects/configs/build/resources/main/JAVA_VERSION".format(devroot), "r")
+    elif path.exists("{}/props/configs/build/resources/main/JAVA_VERSION".format(devroot)):
+        java_version_file=open("{}/props/configs/build/resources/main/JAVA_VERSION".format(devroot), "r")
         java_version=java_version_file.read()
         java_version_file.close()
     elif os.environ.get('JAVA_VERSION') is not None:

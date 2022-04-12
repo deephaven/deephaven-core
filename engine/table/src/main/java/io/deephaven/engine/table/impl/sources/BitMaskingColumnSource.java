@@ -350,7 +350,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
             shareable = sharedContext == null ? new Shareable(false, chunkCapacity)
                     : sharedContext.getOrCreate(new SharingKey(cs.shiftState),
                             () -> new Shareable(true, chunkCapacity));
-            if (cs.innerSource instanceof FillUnordered) {
+            if (FillUnordered.providesFillUnordered(cs.innerSource)) {
                 innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
             } else {
                 innerFillContext = null;
@@ -455,7 +455,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
         effectiveContext.shareable.ensureMaskedKeysInitialized(shiftState, usePrev, rowSequence);
         final WritableLongChunk<RowKeys> maskedKeys = effectiveContext.shareable.maskedKeys;
 
-        if (innerSource instanceof FillUnordered) {
+        if (FillUnordered.providesFillUnordered(innerSource)) {
             final FillUnordered cs = (FillUnordered) innerSource;
             if (usePrev) {
                 cs.fillPrevChunkUnordered(effectiveContext.innerFillContext, destination, maskedKeys);
@@ -473,5 +473,15 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
         }
 
         destination.setSize((int) sz);
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return innerSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return innerSource.isStateless();
     }
 }

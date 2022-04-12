@@ -51,7 +51,7 @@ public
 // endregion class visibility
 class StaticChunkedOperatorAggregationStateManager
     // region extensions
-    implements ChunkedOperatorAggregationStateManager
+    implements OperatorAggregationStateManager
     // endregion extensions
 {
     // region constants

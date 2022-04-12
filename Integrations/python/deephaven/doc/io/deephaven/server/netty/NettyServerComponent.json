@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.netty.NettyServerComponent",
+ "methods": {},
+ "path": "io.deephaven.server.netty.NettyServerComponent",
+ "typeName": "interface"
+}

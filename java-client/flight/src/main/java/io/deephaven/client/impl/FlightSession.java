@@ -1,15 +1,11 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.table.NewTable;
 import io.grpc.ManagedChannel;
-import org.apache.arrow.flight.Criteria;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightGrpcUtilsExtension;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.types.pojo.Schema;
 
@@ -77,6 +73,18 @@ public class FlightSession implements AutoCloseable {
      */
     public FlightStream stream(HasTicketId ticketId) {
         return FlightClientHelper.get(client, ticketId);
+    }
+
+    /**
+     * Creates a new server side DoExchange session.
+     *
+     * @param descriptor the FlightDescriptor object to include on the first FlightData message (other fields will
+     *        remain null)
+     * @param options the GRPC otions to apply to this call
+     * @return the bi-directional ReaderWriter object
+     */
+    public FlightClient.ExchangeReaderWriter startExchange(FlightDescriptor descriptor, CallOption... options) {
+        return client.doExchange(descriptor, options);
     }
 
     /**

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.CacheDir",
+ "methods": {
+  "get": "Return the value for the configuration \"deephaven.cache.dir\" if it is present.\n\n \n Otherwise, return \"%s/deephaven/cache\", parameterized from the value of the system property\n \"java.io.tmpdir\".\n\n:return: (java.nio.file.Path) the cache dir"
+ },
+ "path": "io.deephaven.engine.util.CacheDir",
+ "text": "The cache directory is a directory that the application may use for storing data with \"cache-like\" semantics.\n Cache-like data is data that may be preserved across restarts, but the application logic should not make the\n assumptions that the data will be available.",
+ "typeName": "class"
+}

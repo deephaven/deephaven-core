@@ -9,8 +9,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.util.FunctionalInterfaces;
 
@@ -33,7 +33,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     private static final boolean LOG_PERF =
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
-    private static final Logger log = ProcessEnvironment.getDefaultLog(ModelFarmOnDemand.class);
+    private static final Logger log = LoggerFactory.getLogger(ModelFarmOnDemand.class);
     private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION =
             getDoLockedConsumer(GetDataLockType.UGP_READ_LOCK);
 

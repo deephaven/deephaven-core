@@ -1,6 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -8,7 +9,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -197,16 +197,10 @@ public class PercentileByBenchmark {
     private Function<Table, Table> getFunction() {
         final Function<Table, Table> fut;
         if (percentileMode.equals("normal")) {
-            fut = (t) -> ((QueryTable) t).by(new PercentileBySpecImpl(0.99),
-                    SelectColumn.from(Selectable.from(keyColumnNames)));
+            fut = t -> t.aggAllBy(AggSpec.percentile(0.99), SelectColumn.from(Selectable.from(keyColumnNames)));
         } else if (percentileMode.equals("tdigest")) {
-            fut = (t) -> {
-                final NonKeyColumnAggregationFactory aggregationContextFactory =
-                        new NonKeyColumnAggregationFactory((type, resultName,
-                                exposeInternalColumns) -> new TDigestPercentileOperator(type, 100.0, 0.99, resultName));
-                return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable) t,
-                        SelectColumnFactory.getExpressions(keyColumnNames));
-            };
+            fut = (t) -> t.aggAllBy(AggSpec.approximatePercentile(0.99, 100.0),
+                    SelectColumnFactory.getExpressions(keyColumnNames));
         } else {
             throw new IllegalArgumentException("Bad mode: " + percentileMode);
         }

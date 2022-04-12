@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.console.python.PythonConsoleSessionModule",
+ "methods": {},
+ "path": "io.deephaven.server.console.python.PythonConsoleSessionModule",
+ "typeName": "class"
+}

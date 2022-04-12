@@ -51,4 +51,34 @@ public class BooleanUtils {
         return booleanValue == null ? NULL_BOOLEAN_AS_BYTE
                 : booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
     }
+
+    /**
+     * Convert an array of {@code booleanValues} to an array of bytes.
+     *
+     * @param booleanArray the primitive boolean array to convert to a byte
+     *
+     * @return booleanArray represented as a byte array
+     */
+    public static byte[] booleanAsByteArray(final boolean[] booleanArray) {
+        final byte[] result = new byte[booleanArray.length];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = booleanAsByte(booleanArray[ii]);
+        }
+        return result;
+    }
+
+    /**
+     * Convert an array of {@code booleanValues} to an array of bytes.
+     *
+     * @param booleanArray the boxed boolean array to convert to a byte
+     *
+     * @return booleanArray represented as a byte array
+     */
+    public static byte[] booleanAsByteArray(final Boolean[] booleanArray) {
+        final byte[] result = new byte[booleanArray.length];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = booleanAsByte(booleanArray[ii]);
+        }
+        return result;
+    }
 }

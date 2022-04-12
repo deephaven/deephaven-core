@@ -1,3 +1,7 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
 dependencies {
     compile project(':Base')
 }

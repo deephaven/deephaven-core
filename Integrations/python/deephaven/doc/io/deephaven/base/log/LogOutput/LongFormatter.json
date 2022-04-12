@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.base.log.LogOutput$LongFormatter",
+ "methods": {
+  "format": ":param logOutput: io.deephaven.base.log.LogOutput\n:param n: long"
+ },
+ "path": "io.deephaven.base.log.LogOutput.LongFormatter",
+ "typeName": "interface"
+}

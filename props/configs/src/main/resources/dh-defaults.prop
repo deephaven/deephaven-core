@@ -1,0 +1,52 @@
+CompilerTools.logEnabledDefault=false
+UpdatePerformanceTracker.reportingMode=LISTENER_ONLY
+UpdatePerformanceTracker.reportIntervalMillis=60000
+measurement.per_thread_cpu=false
+allocation.stats.enabled=true
+statsdriver.enabled=true
+UpdateGraphProcessor.checkTableOperations=true
+
+#
+# NIO driver thread pool
+#
+# TODO: if we reach the maximum thread count, the driver will crash the process if it comes
+# TODO: to a handoff and there is no thread waiting to become the leader.  The most likely reason
+# TODO: for this to happen is a deadlock, but another possibility is a temporary situation in
+# TODO: all of the created threads are waiting on RPCs or locks.
+#
+NIO.driver.workTimeout=100
+NIO.driver.initialThreadCount=4
+NIO.driver.maxThreadCount=16
+NIO.driver.useFast=true
+
+QueryLibrary.defaultPackageImportList=default_package_imports.txt
+QueryLibrary.defaultClassImportList=default_class_imports.txt
+QueryLibrary.defaultStaticImportList=default_static_imports.txt
+
+StringUtils.cacheSize=0
+
+TrackedFileHandleFactory.maxOpenFiles=1024
+
+Calendar.default=USNYSE
+Calendar.importPath=/default_calendar_imports.txt
+
+NIO.wireLagClock.native=false
+
+WorkerPythonEnvironment.defaultScriptPath=<devroot>
+
+QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
+
+########## Deephaven Groovy and Python Session defaults ##########
+
+GroovyDeephavenSession.defaultScriptPath=<devroot>
+GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
+
+PythonDeephavenSession.defaultScriptPath=<devroot>
+PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
+
+###### Server's timezone #####
+server.timezone=America/New_York
+
+default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
+
+OperationInitializationThreadPool.threads=1

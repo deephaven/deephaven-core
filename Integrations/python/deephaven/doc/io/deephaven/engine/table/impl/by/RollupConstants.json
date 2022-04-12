@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.RollupConstants",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.by.RollupConstants",
+ "text": "Implementation constants for Table.rollup(java.util.Collection<? extends io.deephaven.api.agg.Aggregation>, java.util.Collection<java.lang.String>) support.",
+ "typeName": "class"
+}

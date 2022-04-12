@@ -46,8 +46,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
         throw new UnsupportedOperationException();
     }
 
-    void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey);
-
     /**
      * Equivalent to {@code ensureCapacity(capacity, true)}.
      */

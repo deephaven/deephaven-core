@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkHasher and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.LongChunk;
@@ -18,34 +20,34 @@ public class LongChunkHasher implements ChunkHasher {
     private static void hashInitial(LongChunk<Values> values, WritableIntChunk<HashCodes> destination) {
         for (int ii = 0; ii < values.size(); ++ii) {
             final long value = values.get(ii);
-            destination.set(ii, hashInitialInternal(value));
+            destination.set(ii, hashInitialSingle(value));
         }
         destination.setSize(values.size());
     }
 
     private static void hashSecondary(LongChunk<Values> values, WritableIntChunk<HashCodes> destination) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            destination.set(ii, hashUpdateInternal(destination.get(ii), values.get(ii)));
+            destination.set(ii, hashUpdateSingle(destination.get(ii), values.get(ii)));
         }
         destination.setSize(values.size());
     }
 
-    private static int hashInitialInternal(long value) {
+    public static int hashInitialSingle(long value) {
         return scrambleHash(Long.hashCode(value));
     }
 
-    private static int hashUpdateInternal(int existing, long newValue) {
-        return existing * 31 + hashInitialInternal(newValue);
+    public static int hashUpdateSingle(int existing, long newValue) {
+        return existing * 31 + hashInitialSingle(newValue);
     }
 
     @Override
     public int hashInitial(Object value) {
-        return hashInitialInternal(TypeUtils.unbox((Long)value));
+        return hashInitialSingle(TypeUtils.unbox((Long)value));
     }
 
     @Override
     public int hashUpdate(int existing, Object value) {
-        return hashUpdateInternal(existing, TypeUtils.unbox((Long)value));
+        return hashUpdateSingle(existing, TypeUtils.unbox((Long)value));
     }
 
     @Override

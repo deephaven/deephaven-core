@@ -22,7 +22,7 @@ class DHError(Exception):
     """
 
     def __init__(self, cause=None, message=""):
-        super().__init__()
+        super().__init__(cause, message)
         self._message = message
         self._traceback = traceback.format_exc()
 
@@ -48,6 +48,9 @@ class DHError(Exception):
 
             if for_compact_tb:
                 self._compact_tb.append(tb_ln)
+
+        if not self._root_cause:
+            self._root_cause = self._message
 
     @property
     def root_cause(self):

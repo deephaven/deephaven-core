@@ -1,6 +1,7 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.csv.CsvTools;
@@ -142,7 +143,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
         try {
             partitioningColumnTable = csvBuilder.length() == 0 ? TableTools.emptyTable(targetFiles.size())
                     : CsvTools.readCsv(new ByteArrayInputStream(csvBuilder.toString().getBytes()));
-        } catch (IOException e) {
+        } catch (CsvReaderException e) {
             throw new TableDataException("Failed converting partition CSV to table for " + tableRootDirectory, e);
         }
 

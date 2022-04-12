@@ -278,5 +278,15 @@ public class MergeSortedHelper {
         public boolean isImmutable() {
             return true;
         }
+
+        @Override
+        public boolean preventsParallelism() {
+            return innerSources.stream().anyMatch(ColumnSource::preventsParallelism);
+        }
+
+        @Override
+        public boolean isStateless() {
+            return innerSources.stream().allMatch(ColumnSource::isStateless);
+        }
     }
 }

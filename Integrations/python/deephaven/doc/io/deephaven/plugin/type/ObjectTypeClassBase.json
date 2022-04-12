@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.plugin.type.ObjectTypeClassBase",
+ "methods": {
+  "clazz": ":return: java.lang.Class<ObjectTypeClassBase.T>",
+  "isType": "Returns true if, and only if, the object is compatible with this object type.\n\n:param object: (java.lang.Object) - the object\n:return: (boolean) true if the object is compatible",
+  "name": "The name of the object type.\n\n:return: (java.lang.String) the name",
+  "toString": ":return: java.lang.String",
+  "writeCompatibleObjectTo": ":param exporter: io.deephaven.plugin.type.ObjectType.Exporter\n:param object: java.lang.Object\n:param out: java.io.OutputStream",
+  "writeToImpl": ":param exporter: io.deephaven.plugin.type.ObjectType.Exporter\n:param object: ObjectTypeClassBase.T\n:param out: java.io.OutputStream"
+ },
+ "path": "io.deephaven.plugin.type.ObjectTypeClassBase",
+ "text": "An implementation that uses strict Class equality for the isType(Object) check.",
+ "typeName": "class"
+}

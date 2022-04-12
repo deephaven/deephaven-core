@@ -9,8 +9,6 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
@@ -52,13 +50,8 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
-        context.keyIndices.setSize(startPositions.size());
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            context.keyIndices.set(ii, destinations.get(startPosition));
-        }
-        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
-            updateResult(context, destinationOk, stateModified);
+        try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
+            updateResult(context, destinationSeq, stateModified);
         }
     }
 
@@ -88,8 +81,11 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
         final LongChunk<? extends Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asLongChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
+
+        final boolean ordered = reAvgContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
+            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 
@@ -104,20 +100,19 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
         }
     }
 
-    private class ReAvgContext implements BucketedContext {
-        final WritableLongChunk<OrderedRowKeys> keyIndices;
+    private class ReAvgContext extends ReAvgVarOrderingContext implements BucketedContext {
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext nncSumContext;
 
         private ReAvgContext(int size) {
-            keyIndices = WritableLongChunk.makeWritableChunk(size);
+            super(size);
             sumSumContext = sumSum.makeGetContext(size);
             nncSumContext = nncSum.makeGetContext(size);
         }
 
         @Override
         public void close() {
-            keyIndices.close();
+            super.close();
             sumSumContext.close();
             nncSumContext.close();
         }

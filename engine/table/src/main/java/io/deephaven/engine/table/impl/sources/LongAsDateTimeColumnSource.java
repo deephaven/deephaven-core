@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -18,8 +19,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link long} to {@code DateTime} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
-public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime> {
+public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime>, FillUnordered {
 
     private final ColumnSource<Long> alternateColumnSource;
 
@@ -58,14 +58,27 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
 
     private class ToDateTimeFillContext implements FillContext {
         final GetContext alternateGetContext;
+        final FillContext alternateFillContext;
+        final WritableLongChunk<Values> longChunk;
 
         private ToDateTimeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
             alternateGetContext = alternateColumnSource.makeGetContext(chunkCapacity, sharedContext);
+            if (providesFillUnordered()) {
+                alternateFillContext = alternateColumnSource.makeFillContext(chunkCapacity, sharedContext);
+                longChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            } else {
+                alternateFillContext = null;
+                longChunk = null;
+            }
         }
 
         @Override
         public void close() {
             alternateGetContext.close();
+            if (alternateFillContext != null) {
+                alternateFillContext.close();
+                longChunk.close();
+            }
         }
     }
 
@@ -88,6 +101,33 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
         convertToDateTime(destination, longChunk);
     }
 
+    @Override
+    public boolean providesFillUnordered() {
+        return FillUnordered.providesFillUnordered(alternateColumnSource);
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
+        if (toDateTimeFillContext.longChunk == null) {
+            throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
+        }
+        toDateTimeFillContext.longChunk.setSize(keys.size());
+        ((FillUnordered) alternateColumnSource).fillChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
+        convertToDateTime(dest, toDateTimeFillContext.longChunk);
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+        final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
+        if (toDateTimeFillContext.longChunk == null) {
+            throw new UnsupportedOperationException("Unordered fill is not supported by this column source!");
+        }
+        toDateTimeFillContext.longChunk.setSize(keys.size());
+        ((FillUnordered) alternateColumnSource).fillPrevChunkUnordered(toDateTimeFillContext.alternateFillContext, toDateTimeFillContext.longChunk, keys);
+        convertToDateTime(dest, toDateTimeFillContext.longChunk);
+    }
+
     private static void convertToDateTime(@NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Values> longChunk) {
         final WritableObjectChunk<DateTime, ? super Values> dateTimeObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < longChunk.size(); ++ii) {
@@ -95,5 +135,15 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
             dateTimeObjectDestination.set(ii, DateTimeUtils.nanosToTime(longValue));
         }
         dateTimeObjectDestination.setSize(longChunk.size());
+    }
+    
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
     }
 }

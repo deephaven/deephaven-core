@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.base.pool.Pool$MultiTaker",
+ "methods": {},
+ "path": "io.deephaven.base.pool.Pool.MultiTaker",
+ "text": "Must implement at least: Multiple threads may call take(), one thread may call give()",
+ "typeName": "interface"
+}

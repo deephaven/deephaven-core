@@ -7,15 +7,13 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSubscriptionOptions {
-    public enum ColumnConversionMode {
-        Stringify, JavaSerialization, ThrowError
-    }
+public abstract class BarrageSubscriptionOptions implements StreamReaderOptions {
 
     public static Builder builder() {
         return ImmutableBarrageSubscriptionOptions.builder();
@@ -28,7 +26,7 @@ public abstract class BarrageSubscriptionOptions {
         final byte mode = options.columnConversionMode();
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
-                .columnConversionMode(conversionModeFbToEnum(mode))
+                .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .minUpdateIntervalMs(options.minUpdateIntervalMs())
                 .batchSize(options.batchSize())
                 .build();
@@ -43,6 +41,7 @@ public abstract class BarrageSubscriptionOptions {
      *
      * @return whether to use deephaven nulls
      */
+    @Override
     @Default
     public boolean useDeephavenNulls() {
         return false;
@@ -56,7 +55,7 @@ public abstract class BarrageSubscriptionOptions {
      * subscriptions to that table.
      *
      * The default interval can be set on the server with the flag
-     * {@code io.deephaven.grpc_api.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
+     * {@code io.deephaven.server.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
      * {@code -Dbarrage.minUpdateInterval=1000}.
      *
      * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to
@@ -79,6 +78,7 @@ public abstract class BarrageSubscriptionOptions {
         return 0;
     }
 
+    @Override
     @Default
     public ColumnConversionMode columnConversionMode() {
         return ColumnConversionMode.Stringify;
@@ -86,34 +86,9 @@ public abstract class BarrageSubscriptionOptions {
 
     public int appendTo(FlatBufferBuilder builder) {
         return io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions.createBarrageSubscriptionOptions(
-                builder, conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(), minUpdateIntervalMs(),
+                builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
+                minUpdateIntervalMs(),
                 batchSize());
-    }
-
-    private static ColumnConversionMode conversionModeFbToEnum(final byte mode) {
-        switch (mode) {
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify:
-                return ColumnConversionMode.Stringify;
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.JavaSerialization:
-                return ColumnConversionMode.JavaSerialization;
-            case io.deephaven.barrage.flatbuf.ColumnConversionMode.ThrowError:
-                return ColumnConversionMode.ThrowError;
-            default:
-                throw new UnsupportedOperationException("Unexpected column conversion mode " + mode + " (byte)");
-        }
-    }
-
-    private static byte conversionModeEnumToFb(final ColumnConversionMode mode) {
-        switch (mode) {
-            case Stringify:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.Stringify;
-            case JavaSerialization:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.JavaSerialization;
-            case ThrowError:
-                return io.deephaven.barrage.flatbuf.ColumnConversionMode.ThrowError;
-            default:
-                throw new UnsupportedOperationException("Unexpected column conversion mode " + mode + " (enum)");
-        }
     }
 
     public interface Builder {

@@ -1,13 +1,8 @@
 {
  "className": "io.deephaven.client.impl.script.Changes$Builder",
  "methods": {
-  "addAllCreated": ":param elements: java.lang.Iterable<? extendsio.deephaven.client.impl.script.VariableDefinition>\n:return: io.deephaven.client.impl.script.Changes.Builder",
-  "addAllRemoved": ":param elements: java.lang.Iterable<? extendsio.deephaven.client.impl.script.VariableDefinition>\n:return: io.deephaven.client.impl.script.Changes.Builder",
-  "addAllUpdated": ":param elements: java.lang.Iterable<? extendsio.deephaven.client.impl.script.VariableDefinition>\n:return: io.deephaven.client.impl.script.Changes.Builder",
-  "addCreated": "*Overload 1*  \n  :param element: io.deephaven.client.impl.script.VariableDefinition\n  :return: io.deephaven.client.impl.script.Changes.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.client.impl.script.VariableDefinition...\n  :return: io.deephaven.client.impl.script.Changes.Builder",
-  "addRemoved": "*Overload 1*  \n  :param element: io.deephaven.client.impl.script.VariableDefinition\n  :return: io.deephaven.client.impl.script.Changes.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.client.impl.script.VariableDefinition...\n  :return: io.deephaven.client.impl.script.Changes.Builder",
-  "addUpdated": "*Overload 1*  \n  :param element: io.deephaven.client.impl.script.VariableDefinition\n  :return: io.deephaven.client.impl.script.Changes.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.client.impl.script.VariableDefinition...\n  :return: io.deephaven.client.impl.script.Changes.Builder",
   "build": ":return: io.deephaven.client.impl.script.Changes",
+  "changes": ":param changes: io.deephaven.client.impl.FieldChanges\n:return: io.deephaven.client.impl.script.Changes.Builder",
   "errorMessage": ":param errorMessage: java.lang.String\n:return: io.deephaven.client.impl.script.Changes.Builder"
  },
  "path": "io.deephaven.client.impl.script.Changes.Builder",

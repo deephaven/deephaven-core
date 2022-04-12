@@ -6,27 +6,35 @@ gradle.ext.buildStartTime = new Date()
 
 rootProject.name='Deephaven Community Core'
 
-String[] bins = ['configs', 'test-configs' ]
-
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
-        'CompilerTools', 'Generators',
-        'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'python-engine-test', 'Parquet',
-        'grpc-api', 'table-api', 'qst']
+String[] mods = [
+        'Util',
+        'Numerics',
+        'TableLogger',
+        'Plot',
+        'CompilerTools',
+        'Generators',
+        'Integrations',
+        'ModelFarm',
+        'ClientSupport',
+        'BenchmarkSupport',
+        'python-engine-test',
+        'server',
+        'table-api',
+        'qst'
+]
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
 String[] webMods = [
+        'web',
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
-        'web-jupyter-grid', // React Jupyter grid client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
         'open-api-lang-parser', // a javacc generated general-purpose language parser.
         'open-api-lang-tools', // language processing tools that we want to be accessible to many modules
         'open-api-shared-fu', // general purpose tools and dtos for both client and server
-        'open-api-shared-rpc', // contains the open api rpc interfaces, and all relevant dependencies
         'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
@@ -35,14 +43,11 @@ Map<String, String> pyMods = [
         'deephaven-jpy-config': 'py/jpy-config',
         'deephaven-jpy-ext': 'py/jpy-ext',
         'jpy-integration': 'py/jpy-integration',
-        'py36': 'py/py36',
-        'py37': 'py/py37',
         'sphinx': 'sphinx',
         'pyclient': 'pyclient',
 ]
 
 // Include our modules
-include bins
 include webMods
 include mods
 
@@ -52,12 +57,23 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
-include 'fishconfig-local'
+include 'bom'
+
+include(':configs')
+project(':configs').projectDir = file('props/configs')
+
+include(':test-configs')
+project(':test-configs').projectDir = file('props/test-configs')
+
+include 'combined-javadoc'
+
+include 'grpc-java:grpc-servlet-jakarta'
+include 'grpc-java:grpc-servlet-websocket-jakarta'
+
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
 include 'proto:raw-js-openapi'
-include 'protoc'
 
 // logger
 include 'log-factory'
@@ -98,14 +114,14 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-server-docker')
-project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
+include(':server-test')
+project(':server-test').projectDir = file('server/test')
 
-include(':grpc-api-server-native')
-project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
+include(':server-netty')
+project(':server-netty').projectDir = file('server/netty')
 
-include(':grpc-api-client-console')
-project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
+include(':server-jetty')
+project(':server-jetty').projectDir = file('server/jetty')
 
 include(':Base')
 
@@ -198,6 +214,14 @@ project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
+include(':plugin')
+
+include(':plugin-dagger')
+project(':plugin-dagger').projectDir = file('plugin/dagger')
+
+include(':plugin-figure')
+project(':plugin-figure').projectDir = file('plugin/figure')
+
 include(':envoy')
 
 include(':grpc-proxy')
@@ -232,6 +256,9 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
+include(':java-client-example-utilities')
+project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
+
 include(':qst:graphviz')
 
 include(':application-mode')
@@ -245,15 +272,26 @@ project(':deephaven-wheel').projectDir = file('py/deephaven-wheel')
 include(':deephaven2-wheel')
 project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
 
-include(':docker-java-and-python')
-project(':docker-java-and-python').projectDir = file('docker/java-and-python')
-
 include(':docker-runtime-base')
 project(':docker-runtime-base').projectDir = file('docker/runtime-base')
 
-file("${rootDir}/docker/registry").list().each {name ->
-    include(":docker-${name}")
-    project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+include(':docker-server')
+project(':docker-server').projectDir = file('docker/server')
+
+include(':docker-web')
+project(':docker-web').projectDir = file('docker/web')
+
+include(':docker-web-plugin-packager')
+project(':docker-web-plugin-packager').projectDir = file('docker/web-plugin-packager')
+
+include(':docker-server-slim')
+project(':docker-server-slim').projectDir = file('docker/server-slim')
+
+file("${rootDir}/docker/registry").list().each { name ->
+    if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
+        include(":docker-${name}")
+        project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+    }
 }
 
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
@@ -272,22 +310,6 @@ mods.each {
         }
     }
     source.projectDir = sourceDir
-}
-
-// "bin modules" are projects with a single directory filled with static resources we put into jars.
-// In order to use "separate modules per sourceset" option in IntelliJ, we must give these projects
-// a different directory than their resource directory to use as the project root.
-// We'll use "$rootDir/projects/bin" for the project root of the :bin project,
-// with $rootDir/bin as the resource root, so IntelliJ doesn't blow up (a resource dir cannot contain project root dir).
-bins.each {
-    String mod->
-    def source = project(":$mod")
-    File sourceDir = new File(root, 'projects')
-    source.projectDir = new File(sourceDir, mod)
-    File buildscript = new File(source.projectDir, "${mod}.gradle".toString())
-    if (buildscript.file) {
-        source.buildFileName = buildscript.name
-    }
 }
 
 Closure configureWebModule = {

@@ -26,14 +26,23 @@ var ide;
     // Open a connection to the server
     connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
 
-    // Start a python session
-    ide = await connection.startSession("python");
 
-    // Run code that will create a static table with 10 rows and three columns, I, J, K
-    await ide.runCode(`
+    var types = await connection.getConsoleTypes();
+
+    if (types.indexOf("python") !== -1) {
+        // Start a python session
+        ide = await connection.startSession("python");
+        // Run code that will create a static table with 10 rows and three columns, I, J, K
+        await ide.runCode(`
 from deephaven.TableTools import emptyTable
 remoteTable = emptyTable(10).updateView('I=i', 'J=I*I', 'K=i%2==0?"Hello":"World"')
-    `)
+`)
+    } else if (types.indexOf("groovy") !== -1) {
+        // Start a groovy session
+        ide = await connection.startSession("groovy");
+        // Run code that will create a static table with 10 rows and three columns, I, J, K
+        await ide.runCode('remoteTable = emptyTable(10).updateView(\'I=i\', \'J=I*I\', \'K=i%2==0?"Hello":"World"\')')
+    }
 
     // Retrieve the JS Table object
     table = await ide.getTable('remoteTable');

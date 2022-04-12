@@ -18,10 +18,10 @@ public class Location implements Serializable {
         this();
 
         if (source.has("uri")) {
-            uri = source.getAny("uri").asString();
+            uri = source.getAsAny("uri").asString();
         }
         if (source.has("range")) {
-            range = new DocumentRange(source.getAny("range").asPropertyMap());
+            range = new DocumentRange(source.getAsAny("range").asPropertyMap());
         }
     }
 }

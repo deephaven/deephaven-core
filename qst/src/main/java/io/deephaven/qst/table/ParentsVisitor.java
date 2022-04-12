@@ -240,8 +240,8 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(GroupByTable groupByTable) {
-        out = single(groupByTable);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        out = single(aggAllByTable);
     }
 
     @Override
@@ -267,6 +267,16 @@ public class ParentsVisitor implements Visitor {
                 out = none();
             }
         });
+    }
+
+    @Override
+    public void visit(SelectDistinctTable selectDistinctTable) {
+        out = single(selectDistinctTable);
+    }
+
+    @Override
+    public void visit(CountByTable countByTable) {
+        out = single(countByTable);
     }
 
     private static class Search {

@@ -182,6 +182,29 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testWriteTableRenames() {
+        final String path = testRoot + File.separator + "Table_W_Renames.parquet";
+        final File pathFile = new File(path);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping("X", "StringKeys")
+                .addColumnNameMapping("Y", "GroupedInts")
+                .build();
+        ParquetTools.writeTable(table1, pathFile, instructions);
+
+        final Table resultDefault = ParquetTools.readTable(pathFile);
+        TableTools.show(table1);
+        TableTools.show(resultDefault);
+        TstUtils.assertTableEquals(table1.view("X=StringKeys", "Y=GroupedInts"), resultDefault);
+        resultDefault.close();
+
+        final Table resultRenamed = ParquetTools.readTable(pathFile, instructions);
+        TableTools.show(table1);
+        TableTools.show(resultRenamed);
+        TstUtils.assertTableEquals(table1, resultRenamed);
+        resultRenamed.close();
+    }
+
+    @Test
     public void testWriteTableEmpty() {
         final File dest = new File(testRoot + File.separator + "Empty.parquet");
         ParquetTools.writeTable(emptyTable, dest);
@@ -326,7 +349,7 @@ public class TestParquetTools {
         allColumns.add(
                 ColumnDefinition.fromGenericType("Date", String.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.add(
-                ColumnDefinition.fromGenericType("Num", short.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+                ColumnDefinition.fromGenericType("Num", int.class, ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         allColumns.addAll(table1.getDefinition().getColumnList());
         final TableDefinition partitionedDefinition = new TableDefinition(allColumns);
 
@@ -334,9 +357,9 @@ public class TestParquetTools {
                 new ParquetKeyValuePartitionedLayout(testRootFile, 2), ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
-                table1.updateView("Date=`2021-07-20`", "Num=(short)100"),
-                table1.updateView("Date=`2021-07-20`", "Num=(short)200"),
-                table1.updateView("Date=`2021-07-21`", "Num=(short)300")).moveColumnsUp("Date", "Num");
+                table1.updateView("Date=`2021-07-20`", "Num=100"),
+                table1.updateView("Date=`2021-07-20`", "Num=200"),
+                table1.updateView("Date=`2021-07-21`", "Num=300")).moveColumnsUp("Date", "Num");
         TstUtils.assertTableEquals(expected, result);
     }
 }

@@ -52,12 +52,12 @@ public
 // endregion class visibility
 class IncrementalChunkedOperatorAggregationStateManager
     // region extensions
-    implements ChunkedOperatorAggregationStateManager
+    implements IncrementalOperatorAggregationStateManager
     // endregion extensions
 {
     // region constants
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
-    private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
+    public static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = HashTableColumnSource.MINIMUM_OVERFLOW_HASH_SLOT;
     // endregion constants
 
@@ -242,6 +242,10 @@ class IncrementalChunkedOperatorAggregationStateManager
 
     // region build wrappers
     @Override
+    public void beginUpdateCycle() {
+    }
+
+    @Override
     public void add(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions) {
         if (rowSequence.isEmpty()) {
             return;
@@ -249,11 +253,12 @@ class IncrementalChunkedOperatorAggregationStateManager
         buildTable((BuildContext) bc, rowSequence, sources, nextOutputPosition, outputPositions, null);
     }
 
-    void addForUpdate(final SafeCloseable bc, RowSequence leftIndex, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
-        if (leftIndex.isEmpty()) {
+    @Override
+    public void addForUpdate(final SafeCloseable bc, RowSequence rowSequence, ColumnSource<?>[] sources, MutableInt nextOutputPosition, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> reincarnatedPositions) {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        buildTable((BuildContext) bc, leftIndex, sources, nextOutputPosition, outputPositions, reincarnatedPositions);
+        buildTable((BuildContext) bc, rowSequence, sources, nextOutputPosition, outputPositions, reincarnatedPositions);
     }
 
     @Override
@@ -1282,18 +1287,20 @@ class IncrementalChunkedOperatorAggregationStateManager
     // endmixin prev
 
     // region probe wrappers
-    void remove(final ProbeContext pc, RowSequence indexToRemove, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
-        if (indexToRemove.isEmpty()) {
+    @Override
+    public void remove(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions, WritableIntChunk<RowKeys> emptiedPositions)  {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        decorationProbe(pc, indexToRemove, sources, true, true, outputPositions, emptiedPositions);
+        decorationProbe((ProbeContext)pc, rowSequence, sources, true, true, outputPositions, emptiedPositions);
     }
 
-    void findModifications(final ProbeContext pc, RowSequence modifiedIndex, ColumnSource<?> [] leftSources, WritableIntChunk<RowKeys> outputPositions)  {
-        if (modifiedIndex.isEmpty()) {
+    @Override
+    public void findModifications(final SafeCloseable pc, RowSequence rowSequence, ColumnSource<?> [] sources, WritableIntChunk<RowKeys> outputPositions)  {
+        if (rowSequence.isEmpty()) {
             return;
         }
-        decorationProbe(pc, modifiedIndex, leftSources, false, false, outputPositions, null);
+        decorationProbe((ProbeContext)pc, rowSequence, sources, false, false, outputPositions, null);
     }
     // endregion probe wrappers
 
@@ -1420,7 +1427,7 @@ class IncrementalChunkedOperatorAggregationStateManager
         }
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
+    public ProbeContext makeProbeContext(ColumnSource<?>[] probeSources,
                                   long maxSize
                                   // region makeProbeContext args
                                   // endregion makeProbeContext args
@@ -1697,11 +1704,13 @@ class IncrementalChunkedOperatorAggregationStateManager
         return true;
     }
 
-    void startTrackingPrevValues() {
+    @Override
+    public void startTrackingPrevValues() {
         resultIndexToHashSlot.startTrackingPrevValues();
     }
 
-    void setRowSize(int outputPosition, long size) {
+    @Override
+    public void setRowSize(int outputPosition, long size) {
         rowCountSource.set(outputPosition, size);
     }
     // endregion extraction functions

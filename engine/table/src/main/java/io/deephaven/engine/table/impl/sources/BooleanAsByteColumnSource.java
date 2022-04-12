@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link Boolean} to {@code byte} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte {
 
     private final ColumnSource<Boolean> alternateColumnSource;
@@ -91,5 +90,15 @@ public class BooleanAsByteColumnSource extends AbstractColumnSource<Byte> implem
             byteDestination.set(ii, BooleanUtils.booleanAsByte(booleanObjectChunk.get(ii)));
         }
         byteDestination.setSize(booleanObjectChunk.size());
+    }
+
+    @Override
+    public boolean preventsParallelism() {
+        return alternateColumnSource.preventsParallelism();
+    }
+
+    @Override
+    public boolean isStateless() {
+        return alternateColumnSource.isStateless();
     }
 }

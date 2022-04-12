@@ -12,9 +12,8 @@ import org.junit.Assert;
 
 import java.util.*;
 
+import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.diff;
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 
 public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
@@ -29,8 +28,7 @@ public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
 
         final Table functionBacked = FunctionGeneratedTableFactory.create(() -> queryTable, queryTable);
 
-        final String diff = diff(functionBacked, queryTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
-        Assert.assertEquals("", diff);
+        assertTableEquals(queryTable, functionBacked, TableDiff.DiffItems.DoublesExact);
 
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(functionBacked, queryTable),

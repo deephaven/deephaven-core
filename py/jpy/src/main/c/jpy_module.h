@@ -197,6 +197,8 @@ extern jclass JPy_Character_JClass;
 extern jmethodID JPy_Character_Init_MID;
 extern jmethodID JPy_Character_CharValue_MID;
 
+extern jclass JPy_Number_JClass;
+
 extern jclass JPy_Byte_JClass;
 extern jmethodID JPy_Byte_Init_MID;
 

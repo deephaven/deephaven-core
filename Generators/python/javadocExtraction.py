@@ -721,7 +721,7 @@ if __name__ == '__main__':
             # finalize the generation task for this class
             classDocGeneration(currentDocs, assertNoChange, details, outDir)
 
-    finalize(currentDocs, assertNoChange, '\nTo resolve failure, run the task "./gradlew :Generators:generatePyDoc -PwithPy=true" '
+    finalize(currentDocs, assertNoChange, '\nTo resolve failure, run the task "./gradlew :Generators:generatePyDoc" '
                                           'to regenerate, and then commit the generated changes.\n'
                                           'To diagnose trouble, run the generation task followed by \"git diff\" to see the changes.\n'
                                           'To diagnose possible indeterminism in the generation process, regenerate the code and check '

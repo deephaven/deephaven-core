@@ -15,34 +15,34 @@ public class CharChunkHasher implements ChunkHasher {
     private static void hashInitial(CharChunk<Values> values, WritableIntChunk<HashCodes> destination) {
         for (int ii = 0; ii < values.size(); ++ii) {
             final char value = values.get(ii);
-            destination.set(ii, hashInitialInternal(value));
+            destination.set(ii, hashInitialSingle(value));
         }
         destination.setSize(values.size());
     }
 
     private static void hashSecondary(CharChunk<Values> values, WritableIntChunk<HashCodes> destination) {
         for (int ii = 0; ii < values.size(); ++ii) {
-            destination.set(ii, hashUpdateInternal(destination.get(ii), values.get(ii)));
+            destination.set(ii, hashUpdateSingle(destination.get(ii), values.get(ii)));
         }
         destination.setSize(values.size());
     }
 
-    private static int hashInitialInternal(char value) {
+    public static int hashInitialSingle(char value) {
         return scrambleHash(Character.hashCode(value));
     }
 
-    private static int hashUpdateInternal(int existing, char newValue) {
-        return existing * 31 + hashInitialInternal(newValue);
+    public static int hashUpdateSingle(int existing, char newValue) {
+        return existing * 31 + hashInitialSingle(newValue);
     }
 
     @Override
     public int hashInitial(Object value) {
-        return hashInitialInternal(TypeUtils.unbox((Character)value));
+        return hashInitialSingle(TypeUtils.unbox((Character)value));
     }
 
     @Override
     public int hashUpdate(int existing, Object value) {
-        return hashUpdateInternal(existing, TypeUtils.unbox((Character)value));
+        return hashUpdateSingle(existing, TypeUtils.unbox((Character)value));
     }
 
     @Override

@@ -30,8 +30,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
             final long newCount = length.get(ii);
-            final long oldCount = countColumnSource.getUnsafe(destination);
-            countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, newCount));
+            countColumnSource.getAndAddUnsafe(destination, newCount);
         }
         stateModified.fillWithValue(0, startPositions.size(), true);
     }
@@ -45,8 +44,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
             final long newCount = length.get(ii);
-            final long oldCount = countColumnSource.getUnsafe(destination);
-            countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, newCount));
+            countColumnSource.getAndAddUnsafe(destination, -newCount);
         }
         stateModified.fillWithValue(0, startPositions.size(), true);
     }
@@ -54,16 +52,14 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final long oldCount = countColumnSource.getUnsafe(destination);
-        countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, chunkSize));
+        countColumnSource.getAndAddUnsafe(destination, chunkSize);
         return true;
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final long oldCount = countColumnSource.getUnsafe(destination);
-        countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, chunkSize));
+        countColumnSource.getAndAddUnsafe(destination, -chunkSize);
         return true;
     }
 
@@ -83,7 +79,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void ensureCapacity(long tableSize) {
-        countColumnSource.ensureCapacity(tableSize);
+        countColumnSource.ensureCapacity(tableSize, false);
     }
 
     @Override

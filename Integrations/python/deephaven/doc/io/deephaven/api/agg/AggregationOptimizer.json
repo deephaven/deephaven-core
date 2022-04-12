@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.AggregationOptimizer",
+ "methods": {
+  "build": ":return: java.util.List<io.deephaven.api.agg.Aggregation>",
+  "of": "Optimizes a collection of aggregations by grouping like-specced aggregations together. The\n input order will be preserved based on the spec-encountered order.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - the aggregations\n:return: (java.util.List<io.deephaven.api.agg.Aggregation>) the optimized aggregations",
+  "visit": "**Incompatible overloads text - text from the first overload:**\n\nVisit a column aggregation.\n\n*Overload 1*  \n  :param aggregations: (io.deephaven.api.agg.Aggregations) - The compound aggregation to visit\n  \n*Overload 2*  \n  :param columnAgg: (io.deephaven.api.agg.ColumnAggregation) - The column aggregation to visit\n  \n*Overload 3*  \n  :param columnAggs: (io.deephaven.api.agg.ColumnAggregations) - The compound column aggregation to visit\n  \n*Overload 4*  \n  :param count: (io.deephaven.api.agg.Count) - The count aggregation\n  \n*Overload 5*  \n  :param firstRowKey: (io.deephaven.api.agg.FirstRowKey) - The first row key aggregation\n  \n*Overload 6*  \n  :param lastRowKey: (io.deephaven.api.agg.LastRowKey) - The last row key aggregation"
+ },
+ "path": "io.deephaven.api.agg.AggregationOptimizer",
+ "text": "Optimizes a collection of aggregations by grouping like-specced aggregations together.",
+ "typeName": "class"
+}

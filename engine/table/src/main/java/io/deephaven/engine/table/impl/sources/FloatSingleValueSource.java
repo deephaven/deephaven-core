@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSingleValueSource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -84,11 +86,6 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
             return current;
         }
         return prev;
-    }
-
-    @Override
-    public final void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
-        set(sourceColumn.get(sourceKey));
     }
 
     @Override

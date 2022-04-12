@@ -2,11 +2,9 @@
  "className": "io.deephaven.client.impl.script.Changes",
  "methods": {
   "builder": ":return: io.deephaven.client.impl.script.Changes.Builder",
-  "created": ":return: java.util.List<io.deephaven.client.impl.script.VariableDefinition>",
+  "changes": ":return: io.deephaven.client.impl.FieldChanges",
   "errorMessage": ":return: java.util.Optional<java.lang.String>",
-  "isEmpty": ":return: boolean",
-  "removed": ":return: java.util.List<io.deephaven.client.impl.script.VariableDefinition>",
-  "updated": ":return: java.util.List<io.deephaven.client.impl.script.VariableDefinition>"
+  "isEmpty": ":return: boolean"
  },
  "path": "io.deephaven.client.impl.script.Changes",
  "typeName": "class"

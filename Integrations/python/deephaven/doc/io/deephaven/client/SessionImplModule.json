@@ -2,8 +2,8 @@
  "className": "io.deephaven.client.SessionImplModule",
  "methods": {
   "bindsManagedChannel": ":param managedChannel: io.grpc.ManagedChannel\n:return: io.grpc.Channel",
-  "session": ":param channel: io.deephaven.grpc_api.DeephavenChannel\n:param scheduler: java.util.concurrent.ScheduledExecutorService\n:return: io.deephaven.client.impl.SessionImpl",
-  "sessionFuture": ":param channel: io.deephaven.grpc_api.DeephavenChannel\n:param scheduler: java.util.concurrent.ScheduledExecutorService\n:return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.SessionImpl>"
+  "session": ":param channel: io.deephaven.proto.DeephavenChannel\n:param scheduler: java.util.concurrent.ScheduledExecutorService\n:return: io.deephaven.client.impl.SessionImpl",
+  "sessionFuture": ":param channel: io.deephaven.proto.DeephavenChannel\n:param scheduler: java.util.concurrent.ScheduledExecutorService\n:return: java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.SessionImpl>"
  },
  "path": "io.deephaven.client.SessionImplModule",
  "typeName": "interface"

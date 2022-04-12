@@ -8,8 +8,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.CharSsmBackedSource;
@@ -45,8 +45,8 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final char noValueKey;
-    private final char nonUniqueKey;
+    private final char onlyNullsSentinel;
+    private final char nonUniqueSentinel;
 
     private UpdateCommitter<CharRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -56,12 +56,12 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    char noValueKey,
-                                    char nonUniqueKey) {
+                                    char onlyNullsSentinel,
+                                    char nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new CharSsmBackedSource();
         // endregion SsmCreation
@@ -512,7 +512,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         columns.put(name, externalResult);
-        columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+        columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
         return columns;
     }
 
@@ -541,11 +541,11 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     //region Private Helpers
     private void updateResult(CharSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 

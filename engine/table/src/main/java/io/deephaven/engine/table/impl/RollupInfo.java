@@ -1,7 +1,8 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 
 import java.util.*;
@@ -15,7 +16,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
     public final LeafType leafType;
     public final Set<String> byColumnNames;
 
-    public final transient AggregationFactory factory;
+    public final transient Collection<? extends Aggregation> aggregations;
     public final transient SelectColumn[] selectColumns;
 
     /**
@@ -32,16 +33,16 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
         Constituent
     }
 
-    public RollupInfo(AggregationFactory factory, SelectColumn[] selectColumns, LeafType leafType) {
-        this(factory, selectColumns, leafType, null);
+    public RollupInfo(Collection<? extends Aggregation> aggregations, SelectColumn[] selectColumns, LeafType leafType) {
+        this(aggregations, selectColumns, leafType, null);
     }
 
-    public RollupInfo(AggregationFactory factory, SelectColumn[] selectColumns, LeafType leafType,
+    public RollupInfo(Collection<? extends Aggregation> aggregations, SelectColumn[] selectColumns, LeafType leafType,
             String[] columnFormats) {
         super(columnFormats);
-        this.factory = factory;
+        this.aggregations = aggregations;
         this.selectColumns = selectColumns;
-        this.matchPairs = factory.getMatchPairs();
+        this.matchPairs = AggregationPairs.of(aggregations).map(MatchPair::of).collect(Collectors.toList());
         this.leafType = leafType;
 
         final Set<String> tempSet = Arrays.stream(selectColumns).map(SelectColumn::getName)
@@ -76,7 +77,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
 
     @Override
     public HierarchicalTableInfo withColumnFormats(String[] columnFormats) {
-        return new RollupInfo(factory, selectColumns, leafType, columnFormats);
+        return new RollupInfo(aggregations, selectColumns, leafType, columnFormats);
     }
 
     public LeafType getLeafType() {

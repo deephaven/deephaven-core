@@ -16,8 +16,8 @@ class ApplicationServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.listFields = channel.unary_stream(
-                '/io.deephaven.proto.backplane.grpc.ApplicationService/listFields',
+        self.ListFields = channel.unary_stream(
+                '/io.deephaven.proto.backplane.grpc.ApplicationService/ListFields',
                 request_serializer=deephaven_dot_proto_dot_application__pb2.ListFieldsRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_application__pb2.FieldsChangeUpdate.FromString,
                 )
@@ -28,7 +28,7 @@ class ApplicationServiceServicer(object):
     Allows clients to list fields that are accessible to them.
     """
 
-    def listFields(self, request, context):
+    def ListFields(self, request, context):
         """
         Request the list of the fields exposed via the worker.
 
@@ -44,8 +44,8 @@ class ApplicationServiceServicer(object):
 
 def add_ApplicationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'listFields': grpc.unary_stream_rpc_method_handler(
-                    servicer.listFields,
+            'ListFields': grpc.unary_stream_rpc_method_handler(
+                    servicer.ListFields,
                     request_deserializer=deephaven_dot_proto_dot_application__pb2.ListFieldsRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_application__pb2.FieldsChangeUpdate.SerializeToString,
             ),
@@ -62,7 +62,7 @@ class ApplicationService(object):
     """
 
     @staticmethod
-    def listFields(request,
+    def ListFields(request,
             target,
             options=(),
             channel_credentials=None,
@@ -72,7 +72,7 @@ class ApplicationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.ApplicationService/listFields',
+        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.ApplicationService/ListFields',
             deephaven_dot_proto_dot_application__pb2.ListFieldsRequest.SerializeToString,
             deephaven_dot_proto_dot_application__pb2.FieldsChangeUpdate.FromString,
             options, channel_credentials,

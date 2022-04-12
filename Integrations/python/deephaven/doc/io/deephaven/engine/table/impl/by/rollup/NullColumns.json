@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.rollup.NullColumns",
+ "methods": {
+  "builder": ":return: io.deephaven.engine.table.impl.by.rollup.NullColumns.Builder",
+  "from": ":param resultColumns: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.table.impl.by.rollup.NullColumns",
+  "of": ":param name: java.lang.String\n:param type: java.lang.Class<?>\n:return: io.deephaven.engine.table.impl.by.rollup.NullColumns",
+  "resultColumns": ":return: java.util.Map<java.lang.String,java.lang.Class<?>>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.engine.table.impl.by.rollup.RollupAggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.engine.table.impl.by.rollup.NullColumns",
+ "text": "RollupAggregation that allows columns to be nulled-out at higher aggregation levels.",
+ "typeName": "class"
+}

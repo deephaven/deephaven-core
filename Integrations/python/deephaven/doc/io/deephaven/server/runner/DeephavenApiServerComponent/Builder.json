@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.server.runner.DeephavenApiServerComponent$Builder",
+ "methods": {
+  "withErr": ":param err: java.io.PrintStream\n:return: DeephavenApiServerComponent.Builder.B",
+  "withMaxInboundMessageSize": ":param maxInboundMessageSize: int\n:return: DeephavenApiServerComponent.Builder.B",
+  "withOut": ":param out: java.io.PrintStream\n:return: DeephavenApiServerComponent.Builder.B",
+  "withPort": ":param port: int\n:return: DeephavenApiServerComponent.Builder.B",
+  "withSchedulerPoolSize": ":param numThreads: int\n:return: DeephavenApiServerComponent.Builder.B",
+  "withSessionTokenExpireTmMs": ":param tokenExpireMs: long\n:return: DeephavenApiServerComponent.Builder.B"
+ },
+ "path": "io.deephaven.server.runner.DeephavenApiServerComponent.Builder",
+ "typeName": "interface"
+}
