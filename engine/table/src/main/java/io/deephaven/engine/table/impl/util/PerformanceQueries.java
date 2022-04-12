@@ -52,7 +52,7 @@ public class PerformanceQueries {
                                                                                  // seconds
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange",
                         "QueryMemUsed = TotalMemory - FreeMemory", // Memory in use by the query. (Only
-                                                                            // includes active heap memory.)
+                                                                   // includes active heap memory.)
                         "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of max heap
                                                                            // size (-Xmx)
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed" // Remaining memory until the query runs into the
@@ -148,7 +148,7 @@ public class PerformanceQueries {
                         "Ratio = EntryIntervalUsage / IntervalDurationNanos", // % of time during this interval that the
                                                                               // operation was using CPU
                         "QueryMemUsed = MaxTotalMemory - MinFreeMemory", // Memory in use by the query. (Only
-                                                                            // includes active heap memory.)
+                                                                         // includes active heap memory.)
                         "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of the max
                                                                            // heap size (-Xmx)
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed", // Remaining memory until the query runs into
