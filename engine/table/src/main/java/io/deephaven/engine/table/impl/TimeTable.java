@@ -9,7 +9,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -19,9 +18,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.replay.Replayer;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.LongNumericPrimitives;
 import io.deephaven.internal.log.LoggerFactory;
@@ -30,6 +30,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -45,49 +46,91 @@ import static io.deephaven.util.type.TypeUtils.box;
 public class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
+    public static class Builder {
+        private UpdateSourceRegistrar registrar = UpdateGraphProcessor.DEFAULT;
+        private TimeProvider timeProvider;
+        private DateTime startTime;
+        private long period;
+        private boolean isStreamTable;
+
+        public Builder withRegistrar(UpdateSourceRegistrar registrar) {
+            this.registrar = registrar;
+            return this;
+        }
+
+        public Builder withTimeProvider(TimeProvider timeProvider) {
+            this.timeProvider = timeProvider;
+            return this;
+        }
+
+        public Builder withStartTime(DateTime startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        public Builder withStartTime(String startTime) {
+            this.startTime = DateTimeUtils.convertDateTime(startTime);
+            return this;
+        }
+
+        public Builder withPeriod(long period) {
+            this.period = period;
+            return this;
+        }
+
+        public Builder withPeriod(String period) {
+            this.period = DateTimeUtils.expressionToNanos(period);
+            return this;
+        }
+
+        public Builder asStreamTable() {
+            this.isStreamTable = true;
+            return this;
+        }
+
+        public QueryTable build() {
+            return new TimeTable(registrar,
+                    timeProvider == null ? Replayer.getTimeProvider(null) : timeProvider,
+                    startTime, period, isStreamTable);
+        }
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
     private static final String TIMESTAMP = "Timestamp";
     private long lastIndex = -1;
     private final SyntheticDateTimeSource columnSource;
     private final TimeProvider timeProvider;
     private final PerformanceEntry entry;
-    private final boolean isStreaming;
+    private final boolean isStreamTable;
 
-    public TimeTable(TimeProvider timeProvider, long period) {
-        this(timeProvider, null, period, false);
-    }
-
-    public TimeTable(TimeProvider timeProvider, long period, boolean isStreaming) {
-        this(timeProvider, null, period, isStreaming);
-    }
-
-    public TimeTable(TimeProvider timeProvider, DateTime firstTime, long period) {
-        this(timeProvider, firstTime, period, false);
-    }
-
-    public TimeTable(TimeProvider timeProvider, DateTime firstTime, long period, boolean isStreaming) {
-        super(RowSetFactory.fromKeys().toTracking(), initColumn(period));
-        if (period <= 0) {
-            throw new IllegalArgumentException("Invalid time period: " + period + " nanoseconds");
-        }
-        this.isStreaming = isStreaming;
-        final String name = isStreaming ? "TimeTableStream" : "TimeTable";
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + firstTime + "," + period + ")");
+    public TimeTable(UpdateSourceRegistrar registrar, TimeProvider timeProvider,
+            @Nullable DateTime startTime, long period, boolean isStreamTable) {
+        super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
+        this.isStreamTable = isStreamTable;
+        final String name = isStreamTable ? "TimeTableStream" : "TimeTable";
+        this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
         columnSource = (SyntheticDateTimeSource) getColumnSourceMap().get(TIMESTAMP);
-        columnSource.baseTime = firstTime;
         this.timeProvider = timeProvider;
-        if (isStreaming) {
+        if (isStreamTable) {
             setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
         } else {
             setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
             setFlat();
         }
-        if (firstTime != null) {
+        if (startTime != null) {
             refresh(false);
         }
+        registrar.addSource(this);
     }
 
-    private static Map<String, ColumnSource<?>> initColumn(long period) {
-        return Collections.singletonMap(TIMESTAMP, new SyntheticDateTimeSource(period));
+    private static Map<String, ColumnSource<?>> initColumn(DateTime firstTime, long period) {
+        if (period <= 0) {
+            throw new IllegalArgumentException("Invalid time period: " + period + " nanoseconds");
+        }
+        return Collections.singletonMap(TIMESTAMP, new SyntheticDateTimeSource(firstTime, period));
     }
 
     @Override
@@ -100,28 +143,25 @@ public class TimeTable extends QueryTable implements Runnable {
         try {
             final DateTime dateTime = timeProvider.currentTime();
             long rangeStart = lastIndex + 1;
-            if (columnSource.baseTime == null) {
+            if (columnSource.startTime == null) {
                 lastIndex = 0;
-                columnSource.baseTime = new DateTime(
+                columnSource.startTime = new DateTime(
                         LongNumericPrimitives.lowerBin(dateTime.getNanos(), columnSource.period));
             } else {
                 lastIndex = Math.max(lastIndex,
-                        DateTimeUtils.minus(dateTime, columnSource.baseTime) / columnSource.period);
+                        DateTimeUtils.minus(dateTime, columnSource.startTime) / columnSource.period);
             }
 
             if (rangeStart <= lastIndex) {
-                // If we have a period longer than 10s, print out that the timetable has been updated. This can be
-                // useful when analyzing what's gone wrong in the logs. It is capped at periods of 5s, so we don't
-                // end up with too much log spam for short interval time tables. 5s is not so coincidentally the period
-                // of the Jvm Heap: messages.
-                if (columnSource.period >= 5_000_000_000L) {
-                    log.info().append("TimeTable updated to ").append(columnSource.get(lastIndex).toString()).endl();
+                final RowSet addedRange = RowSetFactory.fromRange(rangeStart, lastIndex);
+                final RowSet removedRange = isStreamTable && rangeStart > 0
+                        ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1) : RowSetFactory.empty();
+                if (isStreamTable && rangeStart > 0) {
+                    getRowSet().writableCast().removeRange(0, rangeStart - 1);
                 }
-                final RowSet range = RowSetFactory.fromRange(rangeStart, lastIndex);
-                final RowSet removedRange = isStreaming ? getRowSet().copy() : RowSetFactory.empty();
-                getRowSet().writableCast().update(range, removedRange);
+                getRowSet().writableCast().insertRange(rangeStart, lastIndex);
                 if (notifyListeners) {
-                    notifyListeners(range, removedRange, RowSetFactory.empty());
+                    notifyListeners(addedRange, removedRange, RowSetFactory.empty());
                 }
             }
         } finally {
@@ -135,68 +175,33 @@ public class TimeTable extends QueryTable implements Runnable {
         UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 
-    private static class SyntheticDateTimeSource implements
-            ColumnSource<DateTime>,
-            DefaultChunkSource.WithPrev<Values>,
-            MutableColumnSourceGetDefaults.LongBacked<DateTime>,
-            FillUnordered,
-            InMemoryColumnSource {
+    private static class SyntheticDateTimeSource extends AbstractColumnSource<DateTime> implements
+            ImmutableColumnSourceGetDefaults.LongBacked<DateTime>,
+            FillUnordered {
 
-        private DateTime baseTime;
+        private DateTime startTime;
         private final long period;
 
-        private SyntheticDateTimeSource(long period) {
+        private SyntheticDateTimeSource(DateTime startTime, long period) {
+            super(DateTime.class);
+            this.startTime = startTime;
             this.period = period;
         }
 
         @Override
-        public DateTime get(long index) {
-            return DateTimeUtils.plus(baseTime, period * index);
+        public DateTime get(long rowKey) {
+            return DateTimeUtils.plus(startTime, period * rowKey);
         }
 
         @Override
-        public long getLong(long index) {
-            return baseTime.getNanos() + period * index;
-        }
-
-        @Override
-        public DateTime getPrev(long index) {
-            return get(index);
-        }
-
-        @Override
-        public long getPrevLong(long index) {
-            return getLong(index);
-        }
-
-        @Override
-        public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                @NotNull RowSequence rowSequence) {
-            final WritableObjectChunk<DateTime, ? super Values> objectDest = destination.asWritableObjectChunk();
-            objectDest.setSize(0);
-            rowSequence.forAllRowKeys(ii -> objectDest.add(DateTimeUtils.plus(baseTime, period * ii)));
-        }
-
-        @Override
-        public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                @NotNull RowSequence rowSequence) {
-            fillChunk(context, destination, rowSequence);
-        }
-
-        @Override
-        public Class<DateTime> getType() {
-            return DateTime.class;
-        }
-
-        @Override
-        public Class<?> getComponentType() {
-            return null;
+        public long getLong(long rowKey) {
+            return startTime.getNanos() + period * rowKey;
         }
 
         @Override
         public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet selection,
                 Object... keys) {
-            if (baseTime == null) {
+            if (startTime == null) {
                 // there are no valid rows for this column source yet
                 return RowSetFactory.empty();
             }
@@ -209,11 +214,11 @@ public class TimeTable extends QueryTable implements Runnable {
                 }
                 final DateTime key = (DateTime) o;
 
-                if (key.getNanos() % period != baseTime.getNanos() % period || DateTimeUtils.isBefore(key, baseTime)) {
+                if (key.getNanos() % period != startTime.getNanos() % period || DateTimeUtils.isBefore(key, startTime)) {
                     continue;
                 }
 
-                matchingSet.addKey(DateTimeUtils.minus(key, baseTime) / period);
+                matchingSet.addKey(DateTimeUtils.minus(key, startTime) / period);
             }
 
             if (invertMatch) {
@@ -231,18 +236,8 @@ public class TimeTable extends QueryTable implements Runnable {
         public Map<DateTime, RowSet> getValuesMapping(RowSet subRange) {
             final Map<DateTime, RowSet> result = new LinkedHashMap<>();
             subRange.forAllRowKeys(
-                    ii -> result.put(DateTimeUtils.plus(baseTime, period * ii), RowSetFactory.fromKeys(ii)));
+                    ii -> result.put(get(ii), RowSetFactory.fromKeys(ii)));
             return result;
-        }
-
-        @Override
-        public Map<DateTime, RowSet> getGroupToRange() {
-            return null;
-        }
-
-        @Override
-        public Map<DateTime, RowSet> getGroupToRange(RowSet rowSet) {
-            return null;
         }
 
         @Override
@@ -252,20 +247,10 @@ public class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> reinterpret(
+        public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
                 @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            if (!allowsReinterpret(alternateDataType)) {
-                throw new IllegalArgumentException("Unsupported reinterpret for " + getClass().getSimpleName()
-                        + ": type=" + getType()
-                        + ", alternateDataType=" + alternateDataType);
-            }
             // noinspection unchecked
             return (ColumnSource<ALTERNATE_DATA_TYPE>) new SyntheticDateTimeAsLongSource();
-        }
-
-        @Override
-        public ColumnSource<DateTime> getPrevSource() {
-            return this;
         }
 
         @Override
@@ -275,7 +260,7 @@ public class TimeTable extends QueryTable implements Runnable {
             objectDest.setSize(keys.size());
 
             for (int ii = 0; ii < keys.size(); ++ii) {
-                objectDest.set(ii, DateTimeUtils.plus(baseTime, period * keys.get(ii)));
+                objectDest.set(ii, get(keys.get(ii)));
             }
         }
 
@@ -290,61 +275,28 @@ public class TimeTable extends QueryTable implements Runnable {
             return true;
         }
 
-        private class SyntheticDateTimeAsLongSource implements
-                ColumnSource<Long>,
-                DefaultChunkSource.WithPrev<Values>,
-                MutableColumnSourceGetDefaults.LongBacked<Long>,
-                FillUnordered,
-                InMemoryColumnSource {
+        private class SyntheticDateTimeAsLongSource extends AbstractColumnSource<Long> implements
+                ImmutableColumnSourceGetDefaults.LongBacked<Long>,
+                FillUnordered {
 
-            @Override
-            public Long get(long index) {
-                return box(getLong(index));
+            SyntheticDateTimeAsLongSource() {
+                super(Long.class);
             }
 
             @Override
-            public long getLong(long index) {
-                return baseTime.getNanos() + period * index;
+            public Long get(long rowKey) {
+                return box(getLong(rowKey));
             }
 
             @Override
-            public Long getPrev(long index) {
-                return get(index);
-            }
-
-            @Override
-            public long getPrevLong(long index) {
-                return getLong(index);
-            }
-
-            @Override
-            public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                    @NotNull RowSequence rowSequence) {
-                final WritableLongChunk<? super Values> longDest = destination.asWritableLongChunk();
-                longDest.setSize(0);
-                rowSequence.forAllRowKeys(ii -> longDest.add(baseTime.getNanos() + period * ii));
-            }
-
-            @Override
-            public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                    @NotNull RowSequence rowSequence) {
-                fillChunk(context, destination, rowSequence);
-            }
-
-            @Override
-            public Class<Long> getType() {
-                return long.class;
-            }
-
-            @Override
-            public Class<?> getComponentType() {
-                return null;
+            public long getLong(long rowKey) {
+                return startTime.getNanos() + period * rowKey;
             }
 
             @Override
             public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet selection,
                     Object... keys) {
-                if (baseTime == null) {
+                if (startTime == null) {
                     // there are no valid rows for this column source yet
                     return RowSetFactory.empty();
                 }
@@ -357,11 +309,11 @@ public class TimeTable extends QueryTable implements Runnable {
                     }
                     final long key = (Long) o;
 
-                    if (key % period != baseTime.getNanos() % period || key < baseTime.getNanos()) {
+                    if (key % period != startTime.getNanos() % period || key < startTime.getNanos()) {
                         continue;
                     }
 
-                    matchingSet.addKey((key - baseTime.getNanos()) / period);
+                    matchingSet.addKey((key - startTime.getNanos()) / period);
                 }
 
                 if (invertMatch) {
@@ -379,18 +331,8 @@ public class TimeTable extends QueryTable implements Runnable {
             public Map<Long, RowSet> getValuesMapping(RowSet subRange) {
                 final Map<Long, RowSet> result = new LinkedHashMap<>();
                 subRange.forAllRowKeys(
-                        ii -> result.put(box(baseTime.getNanos() + period * ii), RowSetFactory.fromKeys(ii)));
+                        ii -> result.put(box(startTime.getNanos() + period * ii), RowSetFactory.fromKeys(ii)));
                 return result;
-            }
-
-            @Override
-            public Map<Long, RowSet> getGroupToRange() {
-                return null;
-            }
-
-            @Override
-            public Map<Long, RowSet> getGroupToRange(RowSet rowSet) {
-                return null;
             }
 
             @Override
@@ -400,20 +342,10 @@ public class TimeTable extends QueryTable implements Runnable {
             }
 
             @Override
-            public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> reinterpret(
+            public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
                     @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-                if (!allowsReinterpret(alternateDataType)) {
-                    throw new IllegalArgumentException("Unsupported reinterpret for " + getClass().getSimpleName()
-                            + ": type=" + getType()
-                            + ", alternateDataType=" + alternateDataType);
-                }
                 // noinspection unchecked
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) SyntheticDateTimeSource.this;
-            }
-
-            @Override
-            public ColumnSource<Long> getPrevSource() {
-                return this;
             }
 
             @Override
@@ -423,7 +355,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 longDest.setSize(keys.size());
 
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    longDest.set(ii, baseTime.getNanos() + period * keys.get(ii));
+                    longDest.set(ii, get(keys.get(ii)));
                 }
             }
 

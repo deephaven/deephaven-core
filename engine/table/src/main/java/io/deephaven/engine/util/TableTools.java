@@ -885,9 +885,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), null, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+                null, periodNanos, false);
     }
 
     /**
@@ -898,9 +897,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(null),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -912,9 +910,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -949,166 +946,16 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(TimeProvider timeProvider, DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, timeProvider, startTime, periodNanos, false);
     }
 
     /**
-     * Creates a streaming table that adds a new row on a regular interval.
+     * Creates a new time table builder.
      *
-     * @param period time interval between new row additions.
-     * @return time table
+     * @return a time table builder
      */
-    public static Table timeTableStream(String period) {
-        return timeTableStream(period, (ReplayerInterface) null);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param period time interval between new row additions
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtils.expressionToNanos(period);
-        return timeTableStream(periodValue, replayer);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param period time interval between new row additions
-     * @return time table
-     */
-    public static Table timeTableStream(DateTime startTime, String period) {
-        final long periodValue = DateTimeUtils.expressionToNanos(period);
-        return timeTableStream(startTime, periodValue);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param period time interval between new row additions
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(DateTime startTime, String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtils.expressionToNanos(period);
-        return timeTableStream(startTime, periodValue, replayer);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param period time interval between new row additions
-     * @return time table
-     */
-    public static Table timeTableStream(String startTime, String period) {
-        return timeTableStream(DateTimeUtils.convertDateTime(startTime), period);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param period time interval between new row additions
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(String startTime, String period, ReplayerInterface replayer) {
-        return timeTableStream(DateTimeUtils.convertDateTime(startTime), period, replayer);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @return time table
-     */
-    public static Table timeTableStream(long periodNanos) {
-        return timeTableStream(periodNanos, null);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), null, periodNanos, true);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @return time table
-     */
-    public static Table timeTableStream(DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos, true);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos, true);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @return time table
-     */
-    public static Table timeTableStream(String startTime, long periodNanos) {
-        return timeTableStream(DateTimeUtils.convertDateTime(startTime), periodNanos);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param startTime start time for adding new rows
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @param replayer data replayer
-     * @return time table
-     */
-    public static Table timeTableStream(String startTime, long periodNanos, ReplayerInterface replayer) {
-        return timeTableStream(DateTimeUtils.convertDateTime(startTime), periodNanos, replayer);
-    }
-
-    /**
-     * Creates a streaming table that adds a new row on a regular interval.
-     *
-     * @param timeProvider the time provider
-     * @param startTime start time for adding new rows
-     * @param periodNanos time interval between new row additions in nanoseconds.
-     * @return time table
-     */
-    public static Table timeTableStream(TimeProvider timeProvider, DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos, true);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+    public static TimeTable.Builder newTimeTableBuilder() {
+        return TimeTable.newBuilder();
     }
 
     // endregion time tables
