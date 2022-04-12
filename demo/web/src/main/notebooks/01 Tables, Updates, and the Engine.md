@@ -68,7 +68,7 @@ row_count_by_instrument = trades_stream.count_by(col="Tot_Rows",  by=["Instrumen
 \
 USDT is a cryptocurrency pinned to the dollar.  Pretend you want to consider USD and USDT one in the same.\
 Below is one way to use a replace() method to swap one for the other.\
-To learn more about updateView (or other selection or projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
+To learn more about `update_view` (or other selection/projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
 
 ```python
 trades_stream_cleaner = trades_stream.update_view(formulas=["Instrument = Instrument.replace(`USDT`, `USD`)"])

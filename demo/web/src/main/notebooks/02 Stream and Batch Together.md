@@ -12,17 +12,18 @@ Below you’ll do calculations and aggregations on stream and batch data using i
 First, hook up a Kafka stream. (This is the same script from the first notebook.) Our [how-to guide](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) provides detail on the integration.
 
 ```python
-from deephaven import ConsumeKafka as ck
+from deephaven import kafka_consumer as ck
+from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 
 def get_trades_stream():
-    return ck.consumeToTable(
+    return ck.consume(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = ck.IGNORE,
-        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
-        table_type='append')
+        key_spec = KeyValueSpec.IGNORE,
+        value = ck.avro_spec('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        offsets = ck.ALL_PARTITIONS_SEEK_TO_END,
+        table_type = TableType.Append)
 
 trades_stream = get_trades_stream()
 ```
@@ -33,7 +34,7 @@ trades_stream = get_trades_stream()
 You can select columns and reverse the table to make it nicer and more exciting to look at.
 
 ```python
-trades_stream_view = trades_stream.view("KafkaTimestamp", "Instrument", "Exchange", "Price", "Size").reverse()
+trades_stream_view = trades_stream.view(formulas=["KafkaTimestamp", "Instrument", "Exchange", "Price", "Size"]).reverse()
 ```
 
 \
@@ -46,8 +47,8 @@ The simple script below reads in a 10 billion row, one column table.
 Feel free to scroll around at 
 
 ```python
-from deephaven import ParquetTools as pt
-t_parquet = pt.readTable("/data/large/misc/10b-x.snappy.parquet").coalesce().restrictSortTo()
+from deephaven import parquet as pt
+t_parquet = pt.read(path="/data/large/misc/10b-x.snappy.parquet").coalesce().restrict_sort_to()
 # Allowing users to sort 10 bb rows in the UI is not best practice.
 ```
 \
@@ -55,7 +56,7 @@ t_parquet = pt.readTable("/data/large/misc/10b-x.snappy.parquet").coalesce().res
 \
 You can see the row count by hovering on the column header or running this script.
 ```python
-t_parquet_row_count = t_parquet.countBy("Row_Count")
+t_parquet_row_count = t_parquet.countBy(col="Row_Count")
 ```
 \
 \
@@ -74,8 +75,8 @@ trades_batch_view = read_csv("/data/large/crypto/CryptoTrades_20210922.csv")
 You can easily examine the table schemas, noting the columns are identically named and typed.
 
 ```python
-schema_stream = trades_stream_view.getMeta()
-schema_batch  = trades_batch_view.getMeta()
+schema_stream = trades_stream_view.meta_table
+schema_batch  = trades_batch_view.meta_table
 ```
 
 \
@@ -93,25 +94,25 @@ The following scripts will demonstrate much the same with two examples:
 
 ```python
 # the table decoration
-from deephaven.DateTimeUtils import formatDate
+from deephaven.time import format_date
 
-add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
-add_column_batch     = trades_batch_view .updateView("Date = formatDate(Timestamp, TZ_NY)")
+add_column_streaming = trades_stream_view.update_view(formulas=["Date = format_date(KafkaTimestamp, TZ_NY)"])
+add_column_batch     = trades_batch_view .update_view(formulas=["Date = format_date(Timestamp, TZ_NY)"])
 
 # the table aggregation
-from deephaven import Aggregation as agg, as_list
+from deephaven import agg
 
-agg_list = as_list([
-    agg.AggFirst("Price"),
-    agg.AggAvg("Avg_Price = Price"),
-])
+agg_list = [
+    agg.first(cols=["Price"]), 
+    agg.avg(cols=["Avg_Price = Price"])
+]
 
-agg_streaming = add_column_streaming.aggBy(
-    agg_list, "Date", "Exchange", "Instrument"
+agg_streaming = add_column_streaming.agg_by(
+    aggs=agg_list, by=["Date", "Exchange", "Instrument"]
 )
 
-agg_batch = add_column_batch.aggBy(
-    agg_list, "Date", "Exchange", "Instrument"
+agg_batch = add_column_batch.agg_by(
+    aggs=agg_list, by=["Date", "Exchange", "Instrument"]
 )
 ```
 
@@ -124,11 +125,11 @@ The two tables simply need to have the same schema. You already inspected that a
 Below you'll merge the two raw tables (with each other), then the two aggregations.
 
 ```python
-from deephaven.TableTools import merge
-merge_trade_views = merge(add_column_streaming, add_column_streaming)
+from deephaven.table_factory import merge
+merge_trade_views = merge([add_column_streaming, add_column_streaming])
 
-merge_aggs = merge(agg_streaming, agg_batch)\
-  .formatColumnWhere("Date", "Date = currentDateNy()", "IVORY")
+merge_aggs = merge([agg_streaming, agg_batch])\
+    .format_column_where(col="Date", cond="Date = currentDateNy()", formula="Date = `IVORY`")
 ```
 
 \
@@ -142,11 +143,10 @@ You can use Deephaven for **time-series and relational** joins on static tables,
 Please note that you do not have to think about whether a named_table happens to be updating (stream-like) or static (batch-like). The methods are common between the two.
 
 ```python
-join_stream_batch = agg_streaming.renameColumns("Price_Streaming = Price", "Avg_Price_Streaming = Avg_Price")\
-  .naturalJoin(agg_batch, "Exchange, Instrument", "Date_Batch = Date, Price_Batch = Price, Avg_Price_Batch = Avg_Price")\
-  .formatColumns("Date = `IVORY`")\
-  .formatColumns("Date_Batch = `SKYBLUE`")\
-  .updateView("Avg_Price_Change = Avg_Price_Streaming - Avg_Price_Batch")
+join_stream_batch = agg_streaming.rename_columns(cols=["Price_Streaming = Price", "Avg_Price_Streaming = Avg_Price"])\
+    .naturalJoin(table=agg_batch, on=["Exchange, Instrument"], joins=["Date_Batch = Date, Price_Batch = Price, Avg_Price_Batch = Avg_Price"])\
+    .format_columns(formulas=["Date = `IVORY`", "Date_Batch = `SKYBLUE`"])\
+    .update_view(formulas=["Avg_Price_Change = Avg_Price_Streaming - Avg_Price_Batch"])
 ```
 
 \
