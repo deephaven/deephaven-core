@@ -35,7 +35,7 @@ public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
     public void remove(RowSet rowSet) {}
 
     @Override
-    public T getPrev(long index) {
-        return data.get(index);
+    public T getPrev(long rowKey) {
+        return data.get(rowKey);
     }
 }

@@ -338,57 +338,57 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public T get(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().get(index, translatedIndex);
+    public T get(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().get(rowKey, translatedIndex);
     }
 
     @Override
-    public Boolean getBoolean(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getBoolean(index, translatedIndex);
+    public Boolean getBoolean(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getBoolean(rowKey, translatedIndex);
     }
 
     @Override
-    public byte getByte(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getByte(index, translatedIndex);
+    public byte getByte(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getByte(rowKey, translatedIndex);
     }
 
     @Override
-    public char getChar(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getChar(index, translatedIndex);
+    public char getChar(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getChar(rowKey, translatedIndex);
     }
 
     @Override
-    public double getDouble(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getDouble(index, translatedIndex);
+    public double getDouble(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getDouble(rowKey, translatedIndex);
     }
 
     @Override
-    public float getFloat(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getFloat(index, translatedIndex);
+    public float getFloat(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getFloat(rowKey, translatedIndex);
     }
 
     @Override
-    public int getInt(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getInt(index, translatedIndex);
+    public int getInt(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getInt(rowKey, translatedIndex);
     }
 
     @Override
-    public long getLong(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getLong(index, translatedIndex);
+    public long getLong(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getLong(rowKey, translatedIndex);
     }
 
     @Override
-    public short getShort(final long index) {
-        final long translatedIndex = lookupIndexInDeltaSpace(index);
-        return chunkAdapter.get().getShort(index, translatedIndex);
+    public short getShort(final long rowKey) {
+        final long translatedIndex = lookupIndexInDeltaSpace(rowKey);
+        return chunkAdapter.get().getShort(rowKey, translatedIndex);
     }
 
     // ==================================================================================================================
@@ -396,48 +396,48 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     // ==================================================================================================================
 
     @Override
-    public T getPrev(final long index) {
-        return chunkAdapter.get().get(index, -1);
+    public T getPrev(final long rowKey) {
+        return chunkAdapter.get().get(rowKey, -1);
     }
 
     @Override
-    public Boolean getPrevBoolean(final long index) {
-        return chunkAdapter.get().getBoolean(index, -1);
+    public Boolean getPrevBoolean(final long rowKey) {
+        return chunkAdapter.get().getBoolean(rowKey, -1);
     }
 
     @Override
-    public byte getPrevByte(final long index) {
-        return chunkAdapter.get().getByte(index, -1);
+    public byte getPrevByte(final long rowKey) {
+        return chunkAdapter.get().getByte(rowKey, -1);
     }
 
     @Override
-    public char getPrevChar(final long index) {
-        return chunkAdapter.get().getChar(index, -1);
+    public char getPrevChar(final long rowKey) {
+        return chunkAdapter.get().getChar(rowKey, -1);
     }
 
     @Override
-    public double getPrevDouble(final long index) {
-        return chunkAdapter.get().getDouble(index, -1);
+    public double getPrevDouble(final long rowKey) {
+        return chunkAdapter.get().getDouble(rowKey, -1);
     }
 
     @Override
-    public float getPrevFloat(final long index) {
-        return chunkAdapter.get().getFloat(index, -1);
+    public float getPrevFloat(final long rowKey) {
+        return chunkAdapter.get().getFloat(rowKey, -1);
     }
 
     @Override
-    public int getPrevInt(final long index) {
-        return chunkAdapter.get().getInt(index, -1);
+    public int getPrevInt(final long rowKey) {
+        return chunkAdapter.get().getInt(rowKey, -1);
     }
 
     @Override
-    public long getPrevLong(final long index) {
-        return chunkAdapter.get().getLong(index, -1);
+    public long getPrevLong(final long rowKey) {
+        return chunkAdapter.get().getLong(rowKey, -1);
     }
 
     @Override
-    public short getPrevShort(final long index) {
-        return chunkAdapter.get().getShort(index, -1);
+    public short getPrevShort(final long rowKey) {
+        return chunkAdapter.get().getShort(rowKey, -1);
     }
 
     @Override

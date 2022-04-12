@@ -29,8 +29,8 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     }
 
     @Override
-    public long getLong(final long elementIndex) {
-        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+    public long getLong(final long rowKey) {
+        return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getLong(rowKey);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionLong<Values>> {
@@ -66,8 +66,8 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         }
 
         @Override
-        public long getLong(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+        public long getLong(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getLong(rowKey);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

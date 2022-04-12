@@ -143,13 +143,13 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
             @Override
-            public Object getPrev(long key) {
-                return function.apply(key, sourceColumnSource.getPrev(key));
+            public Object getPrev(long rowKey) {
+                return function.apply(rowKey, sourceColumnSource.getPrev(rowKey));
             }
 
             @Override
-            public Object get(long key) {
-                return function.apply(key, sourceColumnSource.get(key));
+            public Object get(long rowKey) {
+                return function.apply(rowKey, sourceColumnSource.get(rowKey));
             }
 
             @Override

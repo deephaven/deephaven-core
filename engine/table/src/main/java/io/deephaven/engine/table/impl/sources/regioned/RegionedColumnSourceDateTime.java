@@ -36,8 +36,8 @@ final class RegionedColumnSourceDateTime
     }
 
     @Override
-    public DateTime get(long elementIndex) {
-        return elementIndex == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.nanosToTime(lookupRegion(elementIndex).getReferencedRegion().getLong(elementIndex));
+    public DateTime get(long rowKey) {
+        return rowKey == RowSequence.NULL_ROW_KEY ? null
+                : DateTimeUtils.nanosToTime(lookupRegion(rowKey).getReferencedRegion().getLong(rowKey));
     }
 }

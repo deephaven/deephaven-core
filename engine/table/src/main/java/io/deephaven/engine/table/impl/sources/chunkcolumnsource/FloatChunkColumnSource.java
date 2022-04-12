@@ -47,14 +47,14 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float> implemen
     // endregion constructor
 
     @Override
-    public float getFloat(final long index) {
-        if (index < 0 || index >= totalSize) {
+    public float getFloat(final long rowKey) {
+        if (rowKey < 0 || rowKey >= totalSize) {
             return QueryConstants.NULL_FLOAT;
         }
 
-        final int chunkIndex = getChunkIndex(index);
+        final int chunkIndex = getChunkIndex(rowKey);
         final long offset = firstOffsetForData.getQuick(chunkIndex);
-        return data.get(chunkIndex).get((int) (index - offset));
+        return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {

@@ -418,19 +418,19 @@ public class WindowCheck {
         }
 
         @Override
-        public Boolean get(long index) {
-            final DateTime tableTimeStamp = timeStampSource.get(index);
+        public Boolean get(long rowKey) {
+            final DateTime tableTimeStamp = timeStampSource.get(rowKey);
             return computeInWindow(tableTimeStamp, currentTime);
         }
 
         @Override
-        public Boolean getPrev(long index) {
+        public Boolean getPrev(long rowKey) {
             final long currentStep = LogicalClock.DEFAULT.currentStep();
 
             final long time = (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
 
             // get the previous value from the underlying column source
-            final DateTime tableTimeStamp = timeStampSource.getPrev(index);
+            final DateTime tableTimeStamp = timeStampSource.getPrev(rowKey);
             return computeInWindow(tableTimeStamp, time);
         }
 

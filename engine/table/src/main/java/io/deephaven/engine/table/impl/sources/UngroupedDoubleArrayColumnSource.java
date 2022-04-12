@@ -29,12 +29,12 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     }
 
     @Override
-    public double getDouble(long index) {
-        if (index < 0) {
+    public double getDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         double[] array = innerSource.get(segment);
         if(array == null || offset >= array.length) {
             return NULL_DOUBLE;
@@ -43,12 +43,12 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        if (index < 0) {
+    public double getPrevDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         double[] array = innerSource.getPrev(segment);
         if(array == null || offset >= array.length) {
             return NULL_DOUBLE;
@@ -60,7 +60,7 @@ public class UngroupedDoubleArrayColumnSource extends UngroupedColumnSource<Doub
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
-    
+
     @Override
     public boolean preventsParallelism() {
         return innerSource.preventsParallelism();

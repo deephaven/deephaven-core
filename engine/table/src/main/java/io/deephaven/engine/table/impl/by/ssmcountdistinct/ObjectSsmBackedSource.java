@@ -72,13 +72,13 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
     }
 
     @Override
-    public ObjectVector get(long index) {
-        return underlying.get(index);
+    public ObjectVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public ObjectVector getPrev(long index) {
-        final ObjectSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public ObjectVector getPrev(long rowKey) {
+        final ObjectSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

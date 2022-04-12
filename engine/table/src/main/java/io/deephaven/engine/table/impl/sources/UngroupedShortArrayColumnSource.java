@@ -29,12 +29,12 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     }
 
     @Override
-    public short getShort(long index) {
-        if (index < 0) {
+    public short getShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         short[] array = innerSource.get(segment);
         if(array == null || offset >= array.length) {
             return NULL_SHORT;
@@ -43,12 +43,12 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     }
 
     @Override
-    public short getPrevShort(long index) {
-        if (index < 0) {
+    public short getPrevShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         short[] array = innerSource.getPrev(segment);
         if(array == null || offset >= array.length) {
             return NULL_SHORT;
@@ -60,7 +60,7 @@ public class UngroupedShortArrayColumnSource extends UngroupedColumnSource<Short
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
-    
+
     @Override
     public boolean preventsParallelism() {
         return innerSource.preventsParallelism();

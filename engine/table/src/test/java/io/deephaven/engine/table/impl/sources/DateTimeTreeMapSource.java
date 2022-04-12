@@ -81,8 +81,8 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DateTime>
     }
 
     @Override
-    public DateTime get(long index) {
-        final Long v = treeMapSource.get(index);
+    public DateTime get(long rowKey) {
+        final Long v = treeMapSource.get(rowKey);
         return v == null ? null : new DateTime(v);
     }
 
@@ -92,19 +92,19 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DateTime>
     }
 
     @Override
-    public long getLong(long index) {
-        return treeMapSource.getLong(index);
+    public long getLong(long rowKey) {
+        return treeMapSource.getLong(rowKey);
     }
 
     @Override
-    public DateTime getPrev(long index) {
-        final Long v = treeMapSource.getPrev(index);
+    public DateTime getPrev(long rowKey) {
+        final Long v = treeMapSource.getPrev(rowKey);
         return v == null ? null : new DateTime(v);
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return treeMapSource.getPrevLong(index);
+    public long getPrevLong(long rowKey) {
+        return treeMapSource.getPrevLong(rowKey);
     }
 
     @Override

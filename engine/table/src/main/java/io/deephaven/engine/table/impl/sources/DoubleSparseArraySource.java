@@ -129,36 +129,36 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     }
 
     @Override
-    public Double get(long index) {
-        return box(getDouble(index));
+    public Double get(long rowKey) {
+        return box(getDouble(rowKey));
     }
 
     @Override
-    public Double getPrev(long index) {
-        return box(getPrevDouble(index));
+    public Double getPrev(long rowKey) {
+        return box(getPrevDouble(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final double getDouble(long index) {
-        if (index < 0) {
+    public final double getDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        return getDoubleFromBlock(blocks, index);
+        return getDoubleFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final double getPrevDouble(long index) {
-        if (index < 0) {
+    public final double getPrevDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        if (shouldUsePrevious(index)) {
-            return getDoubleFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getDoubleFromBlock(prevBlocks, rowKey);
         }
 
-        return getDoubleFromBlock(blocks, index);
+        return getDoubleFromBlock(blocks, rowKey);
     }
 
     private double getDoubleFromBlock(DoubleOneOrN.Block0 blocks, long key) {

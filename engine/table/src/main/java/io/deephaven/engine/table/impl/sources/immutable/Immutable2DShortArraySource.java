@@ -76,12 +76,12 @@ public class Immutable2DShortArraySource extends AbstractDeferredGroupingColumnS
     // endregion allocateArray
 
     @Override
-    public final short getShort(long index) {
-        if (index < 0 || index >= size) {
+    public final short getShort(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return NULL_SHORT;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {

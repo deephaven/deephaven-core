@@ -76,12 +76,12 @@ public class ShortSingleValueSource extends SingleValueColumnSource<Short> imple
     }
 
     @Override
-    public final short getShort(long index) {
+    public final short getShort(long rowKey) {
         return current;
     }
 
     @Override
-    public final short getPrevShort(long index) {
+    public final short getPrevShort(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

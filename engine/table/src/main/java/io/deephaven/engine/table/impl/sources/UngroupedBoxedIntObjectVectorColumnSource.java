@@ -25,14 +25,14 @@ public class UngroupedBoxedIntObjectVectorColumnSource extends UngroupedObjectVe
     }
 
     @Override
-    public int getInt(long index) {
-        final Integer result = get(index);
+    public int getInt(long rowKey) {
+        final Integer result = get(rowKey);
         return result == null ? NULL_INT : result;
     }
 
     @Override
-    public int getPrevInt(long index) {
-        final Integer result = getPrev(index);
+    public int getPrevInt(long rowKey) {
+        final Integer result = getPrev(rowKey);
         return result == null ? NULL_INT : result;
     }
 }
