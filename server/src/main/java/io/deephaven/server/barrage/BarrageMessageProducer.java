@@ -1410,7 +1410,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (snapshot != null) {
             try (final StreamGenerator<MessageView> snapshotGenerator =
-                         streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
+                    streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
                         continue;
