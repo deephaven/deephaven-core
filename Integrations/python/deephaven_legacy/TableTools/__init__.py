@@ -734,6 +734,17 @@ def newTable(*args):
 
 
 @_passThrough
+def newTimeTableBuilder():
+    """
+    Creates a new time table builder.
+    
+    :return: (io.deephaven.engine.table.impl.TimeTable.Builder) a time table builder
+    """
+    
+    return _java_type_.newTimeTableBuilder()
+
+
+@_passThrough
 def nullToNullString(obj):
     """
     :param obj: java.lang.Object

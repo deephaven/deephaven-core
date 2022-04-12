@@ -2,6 +2,9 @@
  "className": "io.deephaven.extensions.barrage.table.BarrageTable",
  "methods": {
   "getAttribute": "Get the value of the specified attribute.\n\n:param key: (java.lang.String) - the name of the attribute\n:return: (java.lang.Object) the value, or null if there was none.",
+  "getServerColumns": ":return: java.util.BitSet",
+  "getServerReverseViewport": ":return: boolean",
+  "getServerViewport": ":return: io.deephaven.engine.rowset.RowSet",
   "getWireChunkTypes": ":return: io.deephaven.chunk.ChunkType[]",
   "getWireComponentTypes": ":return: java.lang.Class<?>[]",
   "getWireTypes": ":return: java.lang.Class<?>[]",

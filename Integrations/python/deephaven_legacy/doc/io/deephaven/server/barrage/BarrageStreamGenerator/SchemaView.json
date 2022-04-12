@@ -4,7 +4,6 @@
   "addRowOffsets": ":return: io.deephaven.engine.rowset.RowSet",
   "forEachStream": ":param visitor: java.util.function.Consumer<java.io.InputStream>",
   "isViewport": ":return: boolean",
-  "keyspaceViewport": ":return: io.deephaven.engine.rowset.RowSet",
   "modRowOffsets": ":param col: int\n:return: io.deephaven.engine.rowset.RowSet",
   "options": ":return: io.deephaven.extensions.barrage.util.StreamReaderOptions"
  },
