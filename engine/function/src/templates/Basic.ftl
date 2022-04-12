@@ -4,8 +4,8 @@
 
 package io.deephaven.querylibrary;
 
-import com.illumon.iris.db.tables.dbarrays.*;
-import com.illumon.util.QueryConstants;
+import io.deephaven.vector.*;
+import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
 import gnu.trove.set.*;
 import gnu.trove.set.hash.*;
@@ -14,7 +14,7 @@ import java.lang.reflect.Array;
 
 import java.util.*;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Basic functions that can be applied to primitive types.
@@ -120,7 +120,7 @@ public class Basic {
      * @param replacement replacement to use when value is null according to Deephaven convention.
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
-    static public <T> T[] replaceIfNull(DbArray<T> values, T replacement) {
+    static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
         final int n = values.intSize("replaceIfNull");
         T[] result = values.toArray();
 
@@ -142,7 +142,7 @@ public class Basic {
             return NULL_LONG;
         }
 
-        return count(new DbArrayDirect<>(values));
+        return count(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -151,7 +151,7 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public <T> long count(DbArray<T> values) {
+    static public <T> long count(ObjectVector<T> values) {
         if(values == null){
             return NULL_LONG;
         }
@@ -190,7 +190,7 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public <T> T last(DbArray<T> values) {
+    static public <T> T last(ObjectVector<T> values) {
         if(values == null || values.size() == 0) {
             return null;
         }
@@ -218,7 +218,7 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public <T> T first(DbArray<T> values) {
+    static public <T> T first(ObjectVector<T> values) {
         if(values == null || values.size() == 0) {
             return null;
         }
@@ -248,7 +248,7 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public <T> T nth(long index, DbArray<T> values) {
+    static public <T> T nth(long index, ObjectVector<T> values) {
         if (values == null || index < 0 || index >= values.size()) {
             return null;
         }
@@ -262,7 +262,7 @@ public class Basic {
      * @param values DB array
      * @return primitive array.
      */
-    public static <T> T[] vec(DbArray<T> values) {
+    public static <T> T[] vec(ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
@@ -277,12 +277,12 @@ public class Basic {
      * @return DB array.
      */
     @SafeVarargs
-    public static <T> DbArray<T> array(T... values){
+    public static <T> ObjectVector<T> array(T... values){
         if(values == null) {
             return null;
         }
 
-        return new DbArrayDirect<>(values);
+        return new ObjectVectorDirect<>(values);
     }
 
     /**
@@ -309,7 +309,7 @@ public class Basic {
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
     static public <T> boolean in(T testedValue, T[] possibleValues) {
-        return in(testedValue, new DbArrayDirect<>(possibleValues));
+        return in(testedValue, new ObjectVectorDirect<>(possibleValues));
     }
 
     /**
@@ -319,7 +319,7 @@ public class Basic {
      * @param possibleValues possible values.
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
-    static public <T> boolean in(T testedValue, DbArray<T> possibleValues) {
+    static public <T> boolean in(T testedValue, ObjectVector<T> possibleValues) {
         final boolean testedIsNull = isNull(testedValue);
         final long size = possibleValues.size();
 
@@ -341,7 +341,7 @@ public class Basic {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(final DbArray<T> values) {
+    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -360,7 +360,7 @@ public class Basic {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbArrayDirect<>(values), false);
+        return countDistinct(new ObjectVectorDirect<>(values), false);
     }
 
     /**
@@ -375,7 +375,7 @@ public class Basic {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbArrayDirect<>(values), countNull);
+        return countDistinct(new ObjectVectorDirect<>(values), countNull);
     }
 
     /**
@@ -386,7 +386,7 @@ public class Basic {
      * @return number of distinct values.
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    public static <T extends Comparable<? super T>> long countDistinct(final DbArray<T> values, boolean countNull) {
+    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -434,7 +434,7 @@ public class Basic {
             return null;
         }
 
-        return distinct(new DbArrayDirect<>(values), false);
+        return distinct(new ObjectVectorDirect<>(values), false);
     }
 
     /**
@@ -443,7 +443,7 @@ public class Basic {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static <T extends Comparable<? super T>> T[] distinct(final DbArray<T> values) {
+    public static <T extends Comparable<? super T>> T[] distinct(final ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
@@ -463,7 +463,7 @@ public class Basic {
             return null;
         }
 
-        return distinct(new DbArrayDirect<>(values), includeNull);
+        return distinct(new ObjectVectorDirect<>(values), includeNull);
     }
 
     /**
@@ -474,7 +474,7 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T extends Comparable<? super T>> T[] distinct(final DbArray<T> values, boolean includeNull) {
+    public static <T extends Comparable<? super T>> T[] distinct(final ObjectVector<T> values, boolean includeNull) {
         if(values == null) {
             return null;
         }
@@ -566,16 +566,16 @@ public class Basic {
      */
     @SafeVarargs
     @SuppressWarnings({"unchecked"})
-    public static <T> T[] concat(DbArray<T>... values){
+    public static <T> T[] concat(ObjectVector<T>... values){
 
         if(values.length == 0){
             return (T[])Array.newInstance(Object.class, 0);
         }
 
         int n = 0;
-        DbArray<T> nonNullValues = null;
+        ObjectVector<T> nonNullValues = null;
 
-        for (DbArray<T> v : values) {
+        for (ObjectVector<T> v : values) {
             if (v != null) {
                 n += v.size();
                 nonNullValues = v;
@@ -585,7 +585,7 @@ public class Basic {
         final T[] result = (T[])Array.newInstance(nonNullValues == null ? Object.class : nonNullValues.getComponentType(), n);
         int idx = 0;
 
-        for (DbArray<T> v : values) {
+        for (ObjectVector<T> v : values) {
             if (v != null) {
                 final long nn = v.size();
                 for (long i = 0; i < nn; i++) {
@@ -609,7 +609,7 @@ public class Basic {
             return null;
         }
 
-        return reverse(new DbArrayDirect<>(values));
+        return reverse(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -618,7 +618,7 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static <T> T[] reverse(DbArray<T> values){
+    public static <T> T[] reverse(ObjectVector<T> values){
         if(values == null){
             return null;
         }
@@ -646,7 +646,7 @@ public class Basic {
             return NULL_LONG;
         }
 
-        return firstIndexOf(val, new DbArrayDirect<>(values));
+        return firstIndexOf(val, new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -656,7 +656,7 @@ public class Basic {
      * @param val value to search for.
      * @return first index containing the value or null, if the value is not present.
      */
-    public static <T> long firstIndexOf(T val, DbArray<T> values) {
+    public static <T> long firstIndexOf(T val, ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }

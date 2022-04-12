@@ -4,13 +4,13 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.*;
-import com.illumon.util.*;
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.vector.*;
+import io.deephaven.util.*;
 import junit.framework.TestCase;
 
 import static io.deephaven.querylibrary.Basic.*;
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Test Basic.
@@ -67,7 +67,7 @@ public class TestBasic extends BaseArrayTestCase {
 
     public void testGenericReplaceIfNullArray() {
         assertEquals(new Integer[]{new Integer(7), new Integer(3), new Integer(-5)},
-                replaceIfNull(new DbArrayDirect<>(new Integer[]{new Integer(7), null, new Integer(-5)}), new Integer(3)));
+                replaceIfNull(new ObjectVectorDirect<>(new Integer[]{new Integer(7), null, new Integer(-5)}), new Integer(3)));
     }
 
     public void testGenericInRange() {
@@ -79,12 +79,12 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericCount() {
-        assertEquals(NULL_LONG, count((DbArray)null));
-        assertEquals(3, count(new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(0, count(new DbArrayDirect<Integer>()));
-        assertEquals(0, count(new DbArrayDirect<Integer>(new Integer[]{null})));
-        assertEquals(2, count(new DbArrayDirect<Integer>(5, null, 15)));
-        assertEquals(2, count(new DbArrayDirect<Integer>(5, null, 15, NULL_INT)));
+        assertEquals(NULL_LONG, count((ObjectVector)null));
+        assertEquals(3, count(new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(0, count(new ObjectVectorDirect<Integer>()));
+        assertEquals(0, count(new ObjectVectorDirect<Integer>(new Integer[]{null})));
+        assertEquals(2, count(new ObjectVectorDirect<Integer>(5, null, 15)));
+        assertEquals(2, count(new ObjectVectorDirect<Integer>(5, null, 15, NULL_INT)));
 
         assertEquals(NULL_LONG, count((Integer[])null));
         assertEquals(3, count(new Integer[]{40, 50, 60}));
@@ -95,14 +95,14 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbArray<Short>)null));
-        assertEquals(NULL_LONG, countDistinct((DbArray<Short>)null,true));
-        assertEquals(0, countDistinct(new DbArrayDirect<Short>(new Short[]{})));
-        assertEquals(0, countDistinct(new DbArrayDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(1, countDistinct(new DbArrayDirect<Short>(new Short[]{1})));
-        assertEquals(2, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(2, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(3, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null));
+        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null,true));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{})));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(1, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(3, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
 
         assertEquals(NULL_LONG, countDistinct((Short[])null));
         assertEquals(NULL_LONG, countDistinct((Short[])null,true));
@@ -115,17 +115,17 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericDistinct() {
-        assertEquals(null, distinct((DbArrayDirect<Short>)null));
-        assertEquals(null, distinct((DbArrayDirect<Short>)null, true));
+        assertEquals(null, distinct((ObjectVectorDirect<Short>)null));
+        assertEquals(null, distinct((ObjectVectorDirect<Short>)null, true));
         assertEquals(new Short[]{}, distinct(new Short[]{}));
-        assertEquals(new Short[]{}, distinct(new DbArrayDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(new Short[]{1}, distinct(new DbArrayDirect<Short>(new Short[]{1})));
-        assertEquals(new Short[]{1,2}, distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(new Short[]{1,2}, distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{1,2,NULL_SHORT}, distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
-        assertEquals(new Short[]{3,1,2}, distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{3,1,2,4}, distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(new Short[]{}, distinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(new Short[]{1}, distinct(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(new Short[]{1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(new Short[]{1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{1,2,NULL_SHORT}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(new Short[]{3,1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{3,1,2,4}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true));
 
         assertEquals(null, distinct((Short[])null));
         assertEquals(null, distinct((Short[])null, true));
@@ -152,17 +152,17 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericConcat() {
-        assertEquals(new Character[0], concat(new DbArrayDirect<Character>()));
-        assertEquals(new Character[]{'a','b','c','x','y','z'}, concat(new DbArrayDirect<>(new Character[]{'a','b','c'}), new DbArrayDirect<>(new Character[]{'x'}), new DbArrayDirect<>(new Character[]{'y','z'})));
+        assertEquals(new Character[0], concat(new ObjectVectorDirect<Character>()));
+        assertEquals(new Character[]{'a','b','c','x','y','z'}, concat(new ObjectVectorDirect<>(new Character[]{'a','b','c'}), new ObjectVectorDirect<>(new Character[]{'x'}), new ObjectVectorDirect<>(new Character[]{'y','z'})));
 
         assertEquals(new Character[0], concat(new Character[]{}));
         assertEquals(new Character[]{'a','b','c','x','y','z'}, concat(new Character[]{'a','b','c'}, new Character[]{'x'}, new Character[]{'y','z'}));
     }
 
     public void testGenericReverse() {
-        assertEquals(null, reverse((DbArray[])null));
-        assertEquals(new Object[]{}, reverse(new DbArrayDirect()));
-        assertEquals(new Character[]{'c','b','a'}, reverse(new DbArrayDirect<>(new Character[]{'a','b','c'})));
+        assertEquals(null, reverse((ObjectVector[])null));
+        assertEquals(new Object[]{}, reverse(new ObjectVectorDirect()));
+        assertEquals(new Character[]{'c','b','a'}, reverse(new ObjectVectorDirect<>(new Character[]{'a','b','c'})));
 
         assertEquals(null, reverse((Character[])null));
         assertEquals(new Character[]{}, reverse(new Character[]{}));
@@ -175,16 +175,16 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(NULL_LONG, firstIndexOf(new Integer(1), new Integer[]{0, 40, null, 40, 60, 40, 0}));
         assertEquals(NULL_LONG, firstIndexOf(new Integer(40), (Integer[])null));
 
-        assertEquals(1, firstIndexOf(new Integer(40), new DbArrayDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(4, firstIndexOf(new Integer(60), new DbArrayDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(1), new DbArrayDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(40), (DbArray) null));
+        assertEquals(1, firstIndexOf(new Integer(40), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(4, firstIndexOf(new Integer(60), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOf(new Integer(1), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOf(new Integer(40), (ObjectVector) null));
     }
 
     public void testGenericLast() {
-        assertEquals(10, last(new DbArrayDirect<Object>(10)));
-        assertEquals(3, last(new DbArrayDirect<Object>(1, 2, 3)));
-        assertEquals(null, last(new DbArrayDirect<Object>(1, 2, null)));
+        assertEquals(10, last(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, last(new ObjectVectorDirect<Object>(1, 2, 3)));
+        assertEquals(null, last(new ObjectVectorDirect<Object>(1, 2, null)));
 
         assertEquals(new Integer(10), last(new Integer[]{10}));
         assertEquals(new Integer(3), last(new Integer[]{1, 2, 3}));
@@ -192,9 +192,9 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericFirst() {
-        assertEquals(10, first(new DbArrayDirect<Object>(10)));
-        assertEquals(3, first(new DbArrayDirect<Object>(3, 2, 1)));
-        assertEquals(null, first(new DbArrayDirect<Object>(null, 1, 2)));
+        assertEquals(10, first(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, first(new ObjectVectorDirect<Object>(3, 2, 1)));
+        assertEquals(null, first(new ObjectVectorDirect<Object>(null, 1, 2)));
 
         assertEquals(new Integer(10), first(new Integer[]{10}));
         assertEquals(new Integer(3), first(new Integer[]{3, 2, 1}));
@@ -202,11 +202,11 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericNth() {
-        assertEquals(null, nth(-1, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(40), nth(0, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(50), nth(1, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(60), nth(2, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(null, nth(10, new DbArrayDirect<Integer>(40, 50, 60)));
+        assertEquals(null, nth(-1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(40), nth(0, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(50), nth(1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(60), nth(2, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(null, nth(10, new ObjectVectorDirect<Integer>(40, 50, 60)));
 
         assertEquals(null, nth(-1, new Integer[]{40, 50, 60}));
         assertEquals(new Integer(40), nth(0, new Integer[]{40, 50, 60}));
@@ -216,11 +216,11 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericVec() {
-        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vec(new DbArrayDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
+        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vec(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
     }
 
     public void testGenericArray() {
-        assertEquals(new DbArrayDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), array(new Character('1'), new Character('3'), new Character('5')));
+        assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), array(new Character('1'), new Character('3'), new Character('5')));
     }
 
     public void testGenericIn() {
@@ -257,11 +257,11 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(2,count(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true}));
         assertEquals(NULL_LONG, count((Boolean[])null));
 
-        assertEquals(3,count(new DbArrayDirect<>(new Boolean[]{true, false, true})));
-        assertEquals(0,count(new DbArrayDirect<>()));
-        assertEquals(0,count(new DbArrayDirect<>(QueryConstants.NULL_BOOLEAN)));
-        assertEquals(2,count(new DbArrayDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true})));
-        assertEquals(NULL_LONG, count((DbArray)null));
+        assertEquals(3,count(new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
+        assertEquals(0,count(new ObjectVectorDirect<>()));
+        assertEquals(0,count(new ObjectVectorDirect<>(QueryConstants.NULL_BOOLEAN)));
+        assertEquals(2,count(new ObjectVectorDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true})));
+        assertEquals(NULL_LONG, count((ObjectVector)null));
     }
 
     public void testBooleanLast(){
@@ -283,11 +283,11 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testBooleanNth(){
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(-1,new DbArrayDirect<>(new Boolean[]{true, false, true})));
-        assertEquals((Boolean)true, nth(0,new DbArrayDirect<>(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)false, nth(1,new DbArrayDirect<>(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)true, nth(2,new DbArrayDirect<>(new Boolean[]{true,false,true})));
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(10,new DbArrayDirect<>(new Boolean[]{true,false,true})));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nth(-1,new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
+        assertEquals((Boolean)true, nth(0,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)false, nth(1,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)true, nth(2,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nth(10,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
 
         assertEquals(QueryConstants.NULL_BOOLEAN, nth(-1,new Boolean[]{true, false, true}));
         assertEquals((Boolean)true, nth(0,new Boolean[]{true,false,true}));
@@ -297,12 +297,12 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testBooleanVec(){
-        assertEquals(null, vec((DbArray)null));
-        assertEquals(new Boolean[]{true,false,true}, vec(new DbArrayDirect<>(true,false,true)));
+        assertEquals(null, vec((ObjectVector)null));
+        assertEquals(new Boolean[]{true,false,true}, vec(new ObjectVectorDirect<>(true,false,true)));
     }
 
     public void testBooleanArray(){
-        assertEquals(new DbArrayDirect<Boolean>(true,false,true), array(new Boolean[]{true,false,true}));
+        assertEquals(new ObjectVectorDirect<Boolean>(true,false,true), array(new Boolean[]{true,false,true}));
     }
 
     public void testBooleanIn(){
@@ -314,17 +314,17 @@ public class TestBasic extends BaseArrayTestCase {
 
 
     public void testBooleanCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbArray)null));
-        assertEquals(0, countDistinct(new DbArrayDirect<Boolean>((Boolean)null)));
-        assertEquals(1, countDistinct(new DbArrayDirect<Boolean>((Boolean)null), true));
-        assertEquals(0, countDistinct(new DbArrayDirect<>(new Boolean[]{})));
-        assertEquals(0, countDistinct(new DbArrayDirect<>(new Boolean[]{NULL_BOOLEAN})));
-        assertEquals(1, countDistinct(new DbArrayDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
-        assertEquals(1, countDistinct(new DbArrayDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
-        assertEquals(2, countDistinct(new DbArrayDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
-        assertEquals(2, countDistinct(new DbArrayDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(2, countDistinct(new DbArrayDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(3, countDistinct(new DbArrayDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
+        assertEquals(NULL_LONG, countDistinct((ObjectVector)null));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<Boolean>((Boolean)null)));
+        assertEquals(1, countDistinct(new ObjectVectorDirect<Boolean>((Boolean)null), true));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<>(new Boolean[]{})));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
+        assertEquals(1, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
+        assertEquals(1, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(3, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
 
         assertEquals(NULL_LONG, countDistinct((Boolean[])null));
         assertEquals(0, countDistinct(new Boolean[]{null}));
@@ -340,19 +340,19 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testBooleanDistinct() {
-        assertEquals(null, distinct((DbArray)null));
-        assertEquals(null, distinct((DbArray)null, true));
-        assertEquals(new Boolean[]{}, distinct(new DbArrayDirect<>(new Boolean[]{})));
-        assertEquals(new Boolean[]{}, distinct(new DbArrayDirect<>(new Boolean[]{NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true}, distinct(new DbArrayDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{false}, distinct(new DbArrayDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true,false}, distinct(new DbArrayDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{true,false,false,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinct(new DbArrayDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
+        assertEquals(null, distinct((ObjectVector)null));
+        assertEquals(null, distinct((ObjectVector)null, true));
+        assertEquals(new Boolean[]{}, distinct(new ObjectVectorDirect<>(new Boolean[]{})));
+        assertEquals(new Boolean[]{}, distinct(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{false}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true,false}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,false,false,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
 
         assertEquals(null, distinct((Boolean[])null));
         assertEquals(null, distinct((Boolean[])null, true));
@@ -386,16 +386,16 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new Boolean[]{true,false,false,false,true,true}, concat(new Boolean[]{true,false}, new Boolean[]{false}, new Boolean[]{false,true,true}));
         assertEquals(new Boolean[]{}, concat((Boolean[])(null)));
 
-        assertEquals(new Boolean[]{true,false,false,false,true,true}, concat(new DbArrayDirect<>(new Boolean[]{true,false}), new DbArrayDirect<>(new Boolean[]{false}), new DbArrayDirect<>(new Boolean[]{false,true,true})));
-        assertEquals(new Boolean[]{}, concat((DbArray) (null)));
+        assertEquals(new Boolean[]{true,false,false,false,true,true}, concat(new ObjectVectorDirect<>(new Boolean[]{true,false}), new ObjectVectorDirect<>(new Boolean[]{false}), new ObjectVectorDirect<>(new Boolean[]{false,true,true})));
+        assertEquals(new Boolean[]{}, concat((ObjectVector) (null)));
     }
 
     public void testBooleanReverse() {
         assertEquals(new Boolean[]{false,true,true}, reverse(new Boolean[]{true, true, false}));
         assertEquals(null, reverse((Boolean[])(null)));
 
-        assertEquals(new Boolean[]{false,true,true}, reverse(new DbArrayDirect<>(new Boolean[]{true,true,false})));
-        assertEquals(null, reverse((DbArray) (null)));
+        assertEquals(new Boolean[]{false,true,true}, reverse(new ObjectVectorDirect<>(new Boolean[]{true,true,false})));
+        assertEquals(null, reverse((ObjectVector) (null)));
     }
 
     public void testBooleanFirstIndexOf() {
@@ -405,11 +405,11 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(NULL_LONG, firstIndexOf(true, new Boolean[]{false, NULL_BOOLEAN, false}));
         assertEquals(NULL_LONG, firstIndexOf(true, (Boolean[])null));
 
-        assertEquals(0, firstIndexOf(true, new DbArrayDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(2, firstIndexOf(false, new DbArrayDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(1, firstIndexOf(NULL_BOOLEAN, new DbArrayDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(NULL_LONG, firstIndexOf(true, new DbArrayDirect<Boolean>(new Boolean[]{false, NULL_BOOLEAN, false})));
-        assertEquals(NULL_LONG, firstIndexOf(true, (DbArray<Boolean>)null));
+        assertEquals(0, firstIndexOf(true, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(2, firstIndexOf(false, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(1, firstIndexOf(NULL_BOOLEAN, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(NULL_LONG, firstIndexOf(true, new ObjectVectorDirect<Boolean>(new Boolean[]{false, NULL_BOOLEAN, false})));
+        assertEquals(NULL_LONG, firstIndexOf(true, (ObjectVector<Boolean>)null));
     }
 
 

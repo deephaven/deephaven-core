@@ -1,13 +1,13 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.verify.Require;
-import com.illumon.iris.db.tables.dbarrays.*;
-import com.illumon.iris.db.util.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.vector.*;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Basic.*;
 import static io.deephaven.querylibrary.Cast.castDouble;
 
@@ -27,7 +27,7 @@ public class Numeric {
      * @param values values.
      * @return maximum of non-null values, or null if there are no non-null values.
      */
-    static public <T extends Comparable<T>> T max(DbArray<T> values) {
+    static public <T extends Comparable<T>> T max(ObjectVector<T> values) {
         final long idx = indexOfMax(values);
         return idx == NULL_LONG ? null : values.get(idx);
     }
@@ -43,7 +43,7 @@ public class Numeric {
             return null;
         }
 
-        return max(new DbArrayDirect<>(values));
+        return max(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -52,7 +52,7 @@ public class Numeric {
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
-    static public <T extends Comparable<T>> T min(DbArray<T> values) {
+    static public <T extends Comparable<T>> T min(ObjectVector<T> values) {
         final long idx = indexOfMin(values);
         return idx == NULL_LONG ? null : values.get(idx);
     }
@@ -68,7 +68,7 @@ public class Numeric {
             return null;
         }
 
-        return min(new DbArrayDirect<>(values));
+        return min(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -82,7 +82,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return indexOfMax(new DbArrayDirect<>(values));
+        return indexOfMax(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -91,7 +91,7 @@ public class Numeric {
      * @param values values.
      * @return index of the maximum value.
      */
-    public static <T extends Comparable<T>> long indexOfMax(DbArray<T> values) {
+    public static <T extends Comparable<T>> long indexOfMax(ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -124,7 +124,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return indexOfMin(new DbArrayDirect<>(values));
+        return indexOfMin(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -133,7 +133,7 @@ public class Numeric {
      * @param values values.
      * @return index of the minimum value.
      */
-    public static <T extends Comparable<T>> long indexOfMin(DbArray<T> values) {
+    public static <T extends Comparable<T>> long indexOfMin(ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }

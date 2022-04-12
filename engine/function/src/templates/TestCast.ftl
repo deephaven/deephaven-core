@@ -4,11 +4,11 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.vector.*;
 
 import static io.deephaven.querylibrary.Cast.*;
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Test Cast.

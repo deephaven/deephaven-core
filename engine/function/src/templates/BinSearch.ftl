@@ -1,11 +1,11 @@
 
 package io.deephaven.querylibrary;
 
-import com.illumon.iris.db.tables.dbarrays.*;
-import com.illumon.iris.db.util.LongSizedDataStructure;
-import com.illumon.util.QueryConstants;
+import io.deephaven.vector.*;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.QueryConstants;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Basic.isNull;
 
 /**
@@ -30,7 +30,7 @@ public class BinSearch {
             return QueryConstants.NULL_INT;
         }
 
-        return binSearchIndex(new DbArrayDirect<>(values), key, choiceWhenEquals);
+        return binSearchIndex(new ObjectVectorDirect<>(values), key, choiceWhenEquals);
     }
 
     /**
@@ -41,7 +41,7 @@ public class BinSearch {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
      */
-    static public <T extends Comparable<? super T>> int binSearchIndex(DbArray<T> values, T key, BinSearchAlgo choiceWhenEquals) {
+    static public <T extends Comparable<? super T>> int binSearchIndex(ObjectVector<T> values, T key, BinSearchAlgo choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
         if (index == QueryConstants.NULL_INT) {
             return index;
@@ -67,7 +67,7 @@ public class BinSearch {
             return QueryConstants.NULL_INT;
         }
 
-        return rawBinSearchIndex(new DbArrayDirect<>(values), key, choiceWhenEquals);
+        return rawBinSearchIndex(new ObjectVectorDirect<>(values), key, choiceWhenEquals);
     }
 
     /**
@@ -78,7 +78,7 @@ public class BinSearch {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
-    static public <T extends Comparable<? super T>> int rawBinSearchIndex(DbArray<T> values, T key, BinSearchAlgo choiceWhenEquals) {
+    static public <T extends Comparable<? super T>> int rawBinSearchIndex(ObjectVector<T> values, T key, BinSearchAlgo choiceWhenEquals) {
         if (values == null || key == null) {
             return QueryConstants.NULL_INT;
         }
@@ -90,7 +90,7 @@ public class BinSearch {
         }
     }
 
-    static private <T extends Comparable<? super T>> int binarySearch0(DbArray<T> array, int fromIndex, int toIndex, T key) {
+    static private <T extends Comparable<? super T>> int binarySearch0(ObjectVector<T> array, int fromIndex, int toIndex, T key) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -113,7 +113,7 @@ public class BinSearch {
         return -(low + 1);  // key not found.
     }
 
-    static private <T extends Comparable<? super T>> int binarySearch0Modified(DbArray<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
+    static private <T extends Comparable<? super T>> int binarySearch0Modified(ObjectVector<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
         if(array.size() == 0){
             return -1;
         }

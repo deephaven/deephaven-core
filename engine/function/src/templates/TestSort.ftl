@@ -4,13 +4,13 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.vector.*;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigDecimal;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Sort.*;
 
 /**
@@ -22,9 +22,9 @@ public class TestSort extends BaseArrayTestCase {
     //////////////////////////// Object ////////////////////////////
 
     public void testGenericSort() {
-        final DbArray<ComparableExtended> comparableExtendedDbArray = new DbArrayDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
-        ComparableExtended[] sort = sort(comparableExtendedDbArray);
+        ComparableExtended[] sort = sort(comparableExtendedObjectVector);
         ComparableExtended[] expected = new ComparableExtended[]{null, null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d),
                 new ComparableExtended(0d), new ComparableExtended(1d), new ComparableExtended(9.4d), new ComparableExtended(12d)};
         assertEquals(expected, sort);
@@ -38,10 +38,10 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void testGenericSortDescending() {
-        final DbArray<ComparableExtended> comparableExtendedDbArray = new DbArrayDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
 
-        ComparableExtended[] sort = sortDescending(comparableExtendedDbArray);
+        ComparableExtended[] sort = sortDescending(comparableExtendedObjectVector);
         ComparableExtended[] expected = new ComparableExtended[]{new ComparableExtended(12d), new ComparableExtended(9.4d), new ComparableExtended(1d),
                 new ComparableExtended(0d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d), new ComparableExtended(-5.6d), null, null};
         assertEquals(expected, sort);
@@ -55,7 +55,7 @@ public class TestSort extends BaseArrayTestCase {
 
     public void testGenericSortExceptions() {
         //sort
-        DbArray dbArrayToSort = null;
+        ObjectVector dbArrayToSort = null;
 
         Object[] sort = sort(dbArrayToSort);
         assertNull(sort);
@@ -64,7 +64,7 @@ public class TestSort extends BaseArrayTestCase {
         BigDecimal[] sortedNumbers = sort(bd);
         assertNull(sortedNumbers);
 
-        sort = sort(new DbArrayDirect<ComparableExtended>());
+        sort = sort(new ObjectVectorDirect<ComparableExtended>());
         assertEquals(new ComparableExtended[0], sort);
 
         bd = new BigDecimal[]{};
@@ -80,7 +80,7 @@ public class TestSort extends BaseArrayTestCase {
         sortedNumbers = sortDescending(bd);
         assertNull(sortedNumbers);
 
-        sort = sortDescending(new DbArrayDirect<ComparableExtended>());
+        sort = sortDescending(new ObjectVectorDirect<ComparableExtended>());
         assertEquals(new ComparableExtended[0], sort);
 
         bd = new BigDecimal[]{};

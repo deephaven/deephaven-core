@@ -1,14 +1,14 @@
 
 package io.deephaven.querylibrary;
 
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.vector.*;
 import io.deephaven.querylibrary.comparators.NullNaNAwareComparator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Basic.isNull;
 
 /**
@@ -26,7 +26,7 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final DbArray<T> values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sort(final ObjectVector<T> values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
@@ -45,7 +45,7 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final DbArray<T> values) {
+    static public <T extends Comparable<? super T>> T[] sort(final ObjectVector<T> values) {
         return sort(values, new NullNaNAwareComparator<>());
     }
 
@@ -88,7 +88,7 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final DbArray<T> values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sortDescending(final ObjectVector<T> values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
@@ -108,7 +108,7 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final DbArray<T> values) {
+    static public <T extends Comparable<? super T>> T[] sortDescending(final ObjectVector<T> values) {
         return sortDescending(values, new NullNaNAwareComparator<>());
     }
 
@@ -124,7 +124,7 @@ public class Sort {
             return null;
         }
 
-        return sortDescending(new DbArrayDirect<>(values), comparator);
+        return sortDescending(new ObjectVectorDirect<>(values), comparator);
     }
 
     /**

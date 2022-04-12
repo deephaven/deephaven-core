@@ -4,15 +4,15 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.vector.*;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Basic.count;
 import static io.deephaven.querylibrary.Numeric.*;
 
@@ -29,9 +29,9 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(BigInteger.valueOf(-2), min(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
         assertEquals(null, min(new BigInteger[0]));
 
-        assertEquals(BigInteger.valueOf(1), min(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(BigInteger.valueOf(-2), min(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(null, min(new DbArrayDirect<BigInteger>()));
+        assertEquals(BigInteger.valueOf(1), min(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(BigInteger.valueOf(-2), min(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(null, min(new ObjectVectorDirect<BigInteger>()));
     }
 
     public void testGenericMax() {
@@ -39,9 +39,9 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(BigInteger.valueOf(10), max(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
         assertEquals(null, max(new BigInteger[0]));
 
-        assertEquals(BigInteger.valueOf(3), max(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(BigInteger.valueOf(10), max(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(null, max(new DbArrayDirect<BigInteger>()));
+        assertEquals(BigInteger.valueOf(3), max(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(BigInteger.valueOf(10), max(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(null, max(new ObjectVectorDirect<BigInteger>()));
     }
 
     public void testGenericIndexOfMin() {
@@ -50,10 +50,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_LONG, indexOfMin(new BigInteger[0]));
         assertEquals(NULL_LONG, indexOfMin((BigInteger[])null));
 
-        assertEquals(1, indexOfMin(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(2, indexOfMin(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(NULL_LONG, indexOfMin(new DbArrayDirect<BigInteger>()));
-        assertEquals(NULL_LONG, indexOfMin((DbArray<BigInteger>)null));
+        assertEquals(1, indexOfMin(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(2, indexOfMin(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(NULL_LONG, indexOfMin(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(NULL_LONG, indexOfMin((ObjectVector<BigInteger>)null));
     }
 
     public void testGenericIndexOfMax() {
@@ -62,10 +62,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_LONG, indexOfMax(new BigInteger[0]));
         assertEquals(NULL_LONG, indexOfMax((BigInteger[])null));
 
-        assertEquals(0, indexOfMax(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(1, indexOfMax(new DbArrayDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(NULL_LONG, indexOfMax(new DbArrayDirect<BigInteger>()));
-        assertEquals(NULL_LONG, indexOfMax((DbArray<BigInteger>)null));
+        assertEquals(0, indexOfMax(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(1, indexOfMax(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(NULL_LONG, indexOfMax(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(NULL_LONG, indexOfMax((ObjectVector<BigInteger>)null));
     }
 
 
@@ -445,13 +445,13 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(${pt.null}, sum((${pt.primitive}[]) null));
     }
 
-//    public void test${pt.boxed}SumDbArray() {
-//        assertEquals(new ${pt.primitive}[]{4, 15}, sum(new DbArrayDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));
-//        assertEquals(new ${pt.primitive}[]{4, ${pt.null}}, sum(new DbArrayDirect<>(new ${pt.primitive}[][]{{5, ${pt.null}}, {-3, 5}, {2, 6}})));
-//        assertEquals(null, sum((DbArray<${pt.primitive}[]>) null));
+//    public void test${pt.boxed}SumObjectVector() {
+//        assertEquals(new ${pt.primitive}[]{4, 15}, sum(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));
+//        assertEquals(new ${pt.primitive}[]{4, ${pt.null}}, sum(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, ${pt.null}}, {-3, 5}, {2, 6}})));
+//        assertEquals(null, sum((ObjectVector<${pt.primitive}[]>) null));
 //
 //        try {
-//            sum(new DbArrayDirect<>(new ${pt.primitive}[][]{{5}, {-3, 5}, {2, 6}}));
+//            sum(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5}, {-3, 5}, {2, 6}}));
 //            fail("Should have failed on different length arrays");
 //        } catch (RequirementFailure e) {
 //            //pass
@@ -485,13 +485,13 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(${pt.null}, product((${pt.dbArray}) null));
     }
 
-//    public void test${pt.boxed}ProdDbArray() {
-//        assertEquals(new ${pt.primitive}[]{-30, 120}, product(new DbArrayDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));
-//        assertEquals(new ${pt.primitive}[]{-30, ${pt.null}}, product(new DbArrayDirect<>(new ${pt.primitive}[][]{{5, ${pt.null}}, {-3, 5}, {2, 6}})));
-//        assertEquals(null, product((DbArray<${pt.primitive}[]>) null));
+//    public void test${pt.boxed}ProdObjectVector() {
+//        assertEquals(new ${pt.primitive}[]{-30, 120}, product(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));
+//        assertEquals(new ${pt.primitive}[]{-30, ${pt.null}}, product(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, ${pt.null}}, {-3, 5}, {2, 6}})));
+//        assertEquals(null, product((ObjectVector<${pt.primitive}[]>) null));
 //
 //        try {
-//            product(new DbArrayDirect<>(new ${pt.primitive}[][]{{5}, {-3, 5}, {2, 6}}));
+//            product(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5}, {-3, 5}, {2, 6}}));
 //            fail("Should have failed on different length arrays");
 //        } catch (RequirementFailure e) {
 //            //pass

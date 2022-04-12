@@ -4,10 +4,10 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.vector.*;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.BinSearch.*;
 
 /**
@@ -20,13 +20,13 @@ public class TestBinSearch extends BaseArrayTestCase {
 
     public void testGenericBinSearchIndex() {
         Short[] data = {1,3,4};
-        assertEquals(NULL_INT, binSearchIndex((DbArray<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbArrayDirect<Short>(data), (short)0, BinSearchAlgo.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbArrayDirect<Short>(data), (short)1, BinSearchAlgo.BS_ANY));
-        assertEquals(1, binSearchIndex(new DbArrayDirect<Short>(data), (short)2, BinSearchAlgo.BS_ANY));
-        assertEquals(1, binSearchIndex(new DbArrayDirect<Short>(data), (short)3, BinSearchAlgo.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbArrayDirect<Short>(data), (short)4, BinSearchAlgo.BS_ANY));
-        assertEquals(3, binSearchIndex(new DbArrayDirect<Short>(data), (short)5, BinSearchAlgo.BS_ANY));
+        assertEquals(NULL_INT, binSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
+        assertEquals(0, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)0, BinSearchAlgo.BS_ANY));
+        assertEquals(0, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)1, BinSearchAlgo.BS_ANY));
+        assertEquals(1, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)2, BinSearchAlgo.BS_ANY));
+        assertEquals(1, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)3, BinSearchAlgo.BS_ANY));
+        assertEquals(2, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)4, BinSearchAlgo.BS_ANY));
+        assertEquals(3, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)5, BinSearchAlgo.BS_ANY));
 
         assertEquals(NULL_INT, binSearchIndex((Short[])null, (short) 0, BinSearchAlgo.BS_ANY));
         assertEquals(0, binSearchIndex(data, (short)0, BinSearchAlgo.BS_ANY));
@@ -38,73 +38,73 @@ public class TestBinSearch extends BaseArrayTestCase {
     }
 
     public void testGenericRawBinSearchIndex() {
-        assertEquals(NULL_INT, rawBinSearchIndex((DbArray<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbArray<Short>)null, (short) 0, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbArray<Short>)null, (short) 0, BinSearchAlgo.BS_LOWEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
+        assertEquals(NULL_INT, rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_LOWEST));
 
         Short[] empty = {};
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearchAlgo.BS_LOWEST));
 
         Short[] one = {11};
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearchAlgo.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearchAlgo.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearchAlgo.BS_ANY));
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearchAlgo.BS_ANY));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearchAlgo.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearchAlgo.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearchAlgo.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearchAlgo.BS_LOWEST));
 
 
         Short[] v = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 15, 20, 20, 25, 25};
 
-        rawBinSearchIndex((DbArray<Short>)null, (short) 0, null);
+        rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, null);
 
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearchAlgo.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearchAlgo.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearchAlgo.BS_ANY));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearchAlgo.BS_ANY));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearchAlgo.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearchAlgo.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearchAlgo.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(2, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 2, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 2, BinSearchAlgo.BS_LOWEST));
+        assertEquals(2, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 2, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 2, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(5, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 3, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(3, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 3, BinSearchAlgo.BS_LOWEST));
+        assertEquals(5, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 3, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(3, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 3, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(9, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 4, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(6, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 4, BinSearchAlgo.BS_LOWEST));
+        assertEquals(9, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 4, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(6, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 4, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(14, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 5, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(10, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 5, BinSearchAlgo.BS_LOWEST));
+        assertEquals(14, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 5, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(10, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 5, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearchAlgo.BS_ANY));
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearchAlgo.BS_LOWEST));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearchAlgo.BS_ANY));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(19, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 10, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(15, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 10, BinSearchAlgo.BS_LOWEST));
+        assertEquals(19, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 10, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(15, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 10, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(24, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 11, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(20, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 11, BinSearchAlgo.BS_LOWEST));
+        assertEquals(24, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 11, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(20, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 11, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearchAlgo.BS_ANY));
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearchAlgo.BS_LOWEST));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearchAlgo.BS_ANY));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearchAlgo.BS_LOWEST));
 
-        assertEquals(29, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 25, BinSearchAlgo.BS_HIGHEST));
-        assertEquals(28, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 25, BinSearchAlgo.BS_LOWEST));
+        assertEquals(29, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 25, BinSearchAlgo.BS_HIGHEST));
+        assertEquals(28, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 25, BinSearchAlgo.BS_LOWEST));
 
         rawBinSearchIndex((Short[])null, (short) 0, null);
 

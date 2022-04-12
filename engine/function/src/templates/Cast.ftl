@@ -4,9 +4,9 @@
 
 package io.deephaven.querylibrary;
 
-import com.illumon.iris.db.tables.dbarrays.*;
+import io.deephaven.vector.*;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Functions for casting between types.

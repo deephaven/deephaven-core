@@ -126,14 +126,14 @@ public class PrimitiveType {
 
     public static PrimitiveType[] primitiveTypes() {
         return new PrimitiveType[] {
-                new PrimitiveType("Boolean", "Boolean", "DbArray<Boolean>", "DbArrayDirect<Boolean>", "NULL_BOOLEAN", null, null, ValueType.BOOLEAN),
-                new PrimitiveType("char", "Character", "DbCharArray", "DbCharArrayDirect", "NULL_CHAR", null, null, ValueType.CHARACTER),
-                new PrimitiveType("byte", "Byte", "DbByteArray", "DbByteArrayDirect","NULL_BYTE", "POS_INF_BYTE", "NEG_INF_BYTE", ValueType.INTEGER),
-                new PrimitiveType("short", "Short", "DbShortArray","DbShortArrayDirect", "NULL_SHORT", "POS_INF_SHORT", "NEG_INF_SHORT", ValueType.INTEGER),
-                new PrimitiveType("int", "Integer", "DbIntArray", "DbIntArrayDirect","NULL_INT", "POS_INF_INT", "NEG_INF_INT", ValueType.INTEGER),
-                new PrimitiveType("long", "Long", "DbLongArray", "DbLongArrayDirect","NULL_LONG", "POS_INF_LONG", "NEG_INF_LONG", ValueType.INTEGER),
-                new PrimitiveType("float", "Float", "DbFloatArray", "DbFloatArrayDirect","NULL_FLOAT", "POS_INF_FLOAT", "NEG_INF_FLOAT",ValueType.FLOATING_POINT),
-                new PrimitiveType("double", "Double", "DbDoubleArray", "DbDoubleArrayDirect","NULL_DOUBLE", "POS_INF_DOUBLE", "NEG_INF_DOUBLE", ValueType.FLOATING_POINT),
+                new PrimitiveType("Boolean", "Boolean", "BooleanVector", "BooleanVectorDirect", "NULL_BOOLEAN", null, null, ValueType.BOOLEAN),
+                new PrimitiveType("char", "Character", "CharVector", "CharVectorDirect", "NULL_CHAR", null, null, ValueType.CHARACTER),
+                new PrimitiveType("byte", "Byte", "ByteVector", "ByteVectorDirect","NULL_BYTE", "POS_INF_BYTE", "NEG_INF_BYTE", ValueType.INTEGER),
+                new PrimitiveType("short", "Short", "ShortVector","ShortVectorDirect", "NULL_SHORT", "POS_INF_SHORT", "NEG_INF_SHORT", ValueType.INTEGER),
+                new PrimitiveType("int", "Integer", "IntVector", "IntVectorDirect","NULL_INT", "POS_INF_INT", "NEG_INF_INT", ValueType.INTEGER),
+                new PrimitiveType("long", "Long", "LongVector", "LongVectorDirect","NULL_LONG", "POS_INF_LONG", "NEG_INF_LONG", ValueType.INTEGER),
+                new PrimitiveType("float", "Float", "FloatVector", "FloatVectorDirect","NULL_FLOAT", "POS_INF_FLOAT", "NEG_INF_FLOAT",ValueType.FLOATING_POINT),
+                new PrimitiveType("double", "Double", "DoubleVector", "DoubleVectorDirect","NULL_DOUBLE", "POS_INF_DOUBLE", "NEG_INF_DOUBLE", ValueType.FLOATING_POINT),
         };
     }
 }
