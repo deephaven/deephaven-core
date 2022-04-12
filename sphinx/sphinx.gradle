@@ -132,8 +132,8 @@ project.tasks.named('pythonDocsPrepareDocker').configure {
 }
 
 makePyDocTask('pydeephavenDocs', 'pydeephaven', [
-        ("$rootDir/pyclient/docs/source".toString()):'source',
-        ("$rootDir/pyclient/pydeephaven".toString()):'pydeephaven'
+        ("$rootDir/py/client/docs/source".toString()):'source',
+        ("$rootDir/py/client/pydeephaven".toString()):'pydeephaven'
 ], "$buildDir/pyclient-docs")
 
 
