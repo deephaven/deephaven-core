@@ -6,7 +6,12 @@ public class TestPrimitiveType extends TestCase {
 
     public void testPrimitiveType() {
 
-        final PrimitiveType pt = new PrimitiveType("primitive", "boxed", "DbArrayDEBUG", "DirectDEBUG", "NULLDEBUG", "POSINFDEBUG", "NEGINFDEBUG", ValueType.CHARACTER);
+        final PrimitiveType pt = new PrimitiveType(
+                "primitive", "boxed",
+                "DbArrayDEBUG", "DirectDEBUG",
+                "NULLDEBUG", "POSINFDEBUG", "NEGINFDEBUG",
+                ValueType.CHARACTER);
+
         assertEquals("primitive", pt.getPrimitive());
         assertEquals("boxed", pt.getBoxed());
         assertEquals("DbArrayDEBUG", pt.getDbArray());

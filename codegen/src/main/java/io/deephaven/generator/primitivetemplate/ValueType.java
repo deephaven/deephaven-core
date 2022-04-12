@@ -5,8 +5,11 @@ package io.deephaven.generator.primitivetemplate;
  */
 public enum ValueType {
     BOOLEAN(true, false, false, false),
+
     CHARACTER(false, true, false, false),
+
     INTEGER(false, false, true, false),
+
     FLOATING_POINT(false, false, false, true);
 
     private final boolean isBoolean;
