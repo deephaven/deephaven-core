@@ -27,6 +27,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
     }
 
     static Table of(SwapListener swapListener, Table parent, int capacity, Init init) {
+        if (swapListener == null && init == Init.NONE) {
+            throw new IllegalArgumentException(String.format(
+                    "Trying to initialize %s against a static table, but init=NONE; no data will be filled in this case.",
+                    AddsToRingsListener.class.getName()));
+        }
         final Map<String, ? extends ColumnSource<?>> sourceMap = parent.getColumnSourceMap();
         final int numColumns = sourceMap.size();
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>(numColumns);
@@ -55,12 +60,18 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             ++ix;
         }
         final QueryTable result = new QueryTable(RowSetFactory.empty().toTracking(), resultMap);
-        result.setRefreshing(true);
-        result.addParentReference(swapListener);
+        if (swapListener == null) {
+            result.setRefreshing(false);
+        } else {
+            result.setRefreshing(true);
+            result.addParentReference(swapListener);
+        }
         final AddsToRingsListener listener =
                 new AddsToRingsListener("AddsToRingsListener", parent, result, sources, rings);
         listener.init(init);
-        swapListener.setListenerAndResult(listener, result);
+        if (swapListener != null) {
+            swapListener.setListenerAndResult(listener, result);
+        }
         return result;
     }
 
@@ -84,7 +95,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
         if (sources.length == 0) {
             throw new IllegalArgumentException();
         }
-        if (!(dependent.getRowSet() instanceof WritableRowSet)) {
+        if (!dependent.getRowSet().isWritable()) {
             throw new IllegalArgumentException("Expected writable row set");
         }
         final int capacity = rings[0].capacity();
@@ -98,7 +109,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
     }
 
     private WritableRowSet resultRowSet() {
-        return (WritableRowSet) getDependent().getRowSet();
+        return getDependent().getRowSet().writableCast();
     }
 
     private void init(Init init) {
@@ -106,7 +117,8 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             return;
         }
         final boolean usePrev = init == Init.FROM_PREVIOUS;
-        try (final RowSet srcKeys = usePrev ? getParent().getRowSet().copyPrev() : getParent().getRowSet().copy()) {
+        try (final RowSet prevToClose = usePrev ? getParent().getRowSet().copyPrev() : null) {
+            final RowSet srcKeys = usePrev ? prevToClose : getParent().getRowSet();
             if (srcKeys.isEmpty()) {
                 return;
             }

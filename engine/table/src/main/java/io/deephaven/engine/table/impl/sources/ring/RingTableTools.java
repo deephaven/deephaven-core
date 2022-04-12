@@ -46,12 +46,11 @@ public class RingTableTools {
             this.parent = Objects.requireNonNull(parent);
             this.capacity = capacity;
             this.initialize = initialize;
-            this.swapListener = Objects.requireNonNull(swapListener);
+            this.swapListener = swapListener;
         }
 
         public Table constructResults() {
-            ConstructSnapshot.callDataSnapshotFunction(RingTableSnapshotFunction.class.getSimpleName(),
-                    swapListener.makeSnapshotControl(), this);
+            BaseTable.initializeWithSnapshot(RingTableSnapshotFunction.class.getSimpleName(), swapListener, this);
             return Objects.requireNonNull(results);
         }
 

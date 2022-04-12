@@ -60,6 +60,10 @@ final class RingColumnSource<T>
         return ObjectRingChunkSource.columnSource(type, capacity);
     }
 
+    public static <T> RingColumnSource<T> ofObject(Class<T> type, Class<?> componentType, int capacity) {
+        return ObjectRingChunkSource.columnSource(type, componentType, capacity);
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> RingColumnSource<T> of(int capacity, Class<T> dataType, Class<?> componentType) {
         if (dataType == byte.class || dataType == Byte.class) {
@@ -84,7 +88,7 @@ final class RingColumnSource<T>
                     "No DateTime chunk source for RingColumnSource - use long and reinterpret");
         } else {
             if (componentType != null) {
-                throw new UnsupportedOperationException("todo");
+                return ofObject(dataType, componentType, capacity);
             } else {
                 return ofObject(dataType, capacity);
             }
@@ -99,6 +103,16 @@ final class RingColumnSource<T>
             RING ring,
             RING prev) {
         super(type);
+        this.ring = Objects.requireNonNull(ring);
+        this.prev = Objects.requireNonNull(prev);
+    }
+
+    <ARRAY, RING extends AbstractRingChunkSource<T, ARRAY, RING>> RingColumnSource(
+            @NotNull Class<T> type,
+            Class<?> elementType,
+            RING ring,
+            RING prev) {
+        super(type, elementType);
         this.ring = Objects.requireNonNull(ring);
         this.prev = Objects.requireNonNull(prev);
     }
@@ -132,7 +146,8 @@ final class RingColumnSource<T>
             // No intersection. Prev may be empty.
             // Removed: empty or [k1, k2]
             // Added: [k3, k4]
-            removed = k2 == -1 ? RowSetFactory.empty() : RowSetFactory.fromRange(k1, k2);
+            removed = k2 == AbstractRingChunkSource.LAST_KEY_EMPTY ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(k1, k2);
             added = RowSetFactory.fromRange(k3, k4);
         } else {
             // Intersection from [k3, k2]. Neither prev nor ring are empty.
@@ -180,7 +195,8 @@ final class RingColumnSource<T>
 
     @Override
     public boolean isImmutable() {
-        return false;
+        // Values for an index don't change from prev -> current
+        return true;
     }
 
     @Override

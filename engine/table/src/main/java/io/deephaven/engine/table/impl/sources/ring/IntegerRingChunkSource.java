@@ -6,12 +6,14 @@
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
+import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -30,25 +32,46 @@ final class IntegerRingChunkSource extends AbstractRingChunkSource<Integer, int[
     }
 
     @Override
-    void clear() {
-        Arrays.fill(ring, NULL_INT);
-    }
-
-    @Override
-    void fillKey(@NotNull WritableChunk<? super Values> destination, int destOffset, int ringIx) {
-        destination.asWritableIntChunk().set(destOffset, ring[ringIx]);
-    }
-
-    @Override
     Integer get(long key) {
         return TypeUtils.box(getInt(key));
     }
 
     @Override
     int getInt(long key) {
-        if (!containsKey(key)) {
+        if (key == RowSet.NULL_ROW_KEY) {
             return NULL_INT;
         }
+        if (STRICT_KEYS && !containsKey(key)) {
+            throw new IllegalArgumentException(String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
+        }
         return ring[keyToRingIndex(key)];
+    }
+
+    @Override
+    Filler filler(@NotNull WritableChunk<? super Values> destination) {
+        return new FillerImpl(destination.asWritableIntChunk());
+    }
+
+    private class FillerImpl extends Filler {
+        private final WritableIntChunk<? super Values> dest;
+
+        FillerImpl(WritableIntChunk<? super Values> dest) {
+            this.dest = Objects.requireNonNull(dest);
+        }
+
+        @Override
+        protected void copyFromRing(int srcRingIx, int destOffset) {
+            dest.set(destOffset, ring[srcRingIx]);
+        }
+
+        @Override
+        protected void copyFromRing(int srcRingIx, int destOffset, int size) {
+            dest.copyFromTypedArray(ring, srcRingIx, destOffset, size);
+        }
+
+        @Override
+        protected void setSize(int size) {
+            dest.setSize(size);
+        }
     }
 }

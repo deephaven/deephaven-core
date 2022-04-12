@@ -4,6 +4,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.lang.reflect.Array;
-import java.util.Objects;
 import java.util.function.LongConsumer;
 
 import static io.deephaven.engine.table.impl.AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH;
@@ -31,19 +31,38 @@ import static io.deephaven.engine.table.impl.AbstractColumnSource.USE_RANGES_AVE
 abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkSource<T, ARRAY, SELF>>
         implements DefaultChunkSource<Values> {
 
+    /**
+     * The return value of {@link #firstKey()} when {@link #isEmpty()}.
+     */
+    public static final long FIRST_KEY_EMPTY = 0;
+
+    /**
+     * The return value of {@link #lastKey()} when {@link #isEmpty()}.
+     */
+    public static final long LAST_KEY_EMPTY = -1;
+
+    public static final String STRICT_KEYS_KEY = "AbstractRingChunkSource.strict_keys";
+
+    /**
+     * When strict key checks are enabled, read methods will throw {@link IllegalArgumentException} when the key is not
+     * contained within the key range. Looks up the configuration key {@value STRICT_KEYS_KEY}. Defaults to
+     * {@code true}.
+     */
+    public static final boolean STRICT_KEYS = Configuration.getInstance().getBooleanWithDefault(STRICT_KEYS_KEY, true);
+
     protected final ARRAY ring;
     protected final int capacity;
     long nextRingIx;
 
     private final ResettableWritableChunk<Values> ringView;
 
-    public AbstractRingChunkSource(@NotNull Class<T> componentType, int capacity) {
+    public AbstractRingChunkSource(@NotNull Class<T> type, int capacity) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
         this.capacity = capacity;
         // noinspection unchecked
-        ring = (ARRAY) Array.newInstance(componentType, capacity);
+        ring = (ARRAY) Array.newInstance(type, capacity);
         ringView = getChunkType().makeResettableWritableChunk();
     }
 
@@ -111,7 +130,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     /**
-     * The first key (inclusive). If {@link #isEmpty()}, returns {@code 0}.
+     * The first key (inclusive). If {@link #isEmpty()}, returns {@value #FIRST_KEY_EMPTY}.
      *
      * @return the first key
      * @see #lastKey()
@@ -121,7 +140,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     /**
-     * The last key (inclusive). If {@link #isEmpty()}, returns {@code -1}.
+     * The last key (inclusive). If {@link #isEmpty()}, returns {@value #LAST_KEY_EMPTY}.
      *
      * @return the last key
      * @see #firstKey()
@@ -213,87 +232,67 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
 
     @Override
     public final Chunk<Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
-        // This check should not be necessary given precondition on getChunk
-        if (!containsRange(firstKey, lastKey)) {
+        if (STRICT_KEYS && !containsRange(firstKey, lastKey)) {
             throw new IllegalStateException(
                     String.format("getChunk precondition broken, invalid range. requested=[%d, %d], available=[%d, %d]",
                             firstKey, lastKey, firstKey(), lastKey()));
         }
         final int firstRingIx = keyToRingIndex(firstKey);
-        final int secondRingIx = keyToRingIndex(lastKey);
-        if (firstRingIx <= secondRingIx) {
+        final int lastRingIx = keyToRingIndex(lastKey);
+        if (firstRingIx <= lastRingIx) {
             // Optimization when we can return a contiguous view
-            return ring(firstRingIx, secondRingIx - firstRingIx + 1); // todo: is it bad that this is writable?
+            return ring(firstRingIx, lastRingIx - firstRingIx + 1);
         }
         final WritableChunk<Values> chunk = DefaultGetContext.getWritableChunk(context);
-        final int size = fillByCopy2(chunk, 0, firstRingIx, secondRingIx);
-        if (size != lastKey - firstKey + 1) {
-            throw new IllegalStateException();
+        try (final Filler filler = filler(chunk)) {
+            final int size = filler.fillByCopy2(firstRingIx, lastRingIx, 0);
+            if (size != lastKey - firstKey + 1) {
+                throw new IllegalStateException();
+            }
         }
-        chunk.setSize(size);
         return chunk;
     }
 
     @Override
     public final void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            try (final KeyFiller filler = new KeyFiller(destination)) {
-                rowSequence.forAllRowKeys(filler);
+        if (rowSequence.isEmpty()) {
+            destination.setSize(0);
+            return;
+        }
+        if (STRICT_KEYS) {
+            final long firstKey = rowSequence.firstRowKey();
+            final long lastKey = rowSequence.lastRowKey();
+            if (!containsRange(firstKey, lastKey)) {
+                throw new IllegalStateException(String.format(
+                        "fillChunk precondition broken, invalid range. requested=[%d, %d] (or subset), available=[%d, %d]",
+                        firstKey, lastKey, firstKey(), lastKey()));
             }
-        } else {
-            try (final RangeFiller filler = new RangeFiller(destination)) {
+        }
+        try (final Filler filler = filler(destination)) {
+            if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+                rowSequence.forAllRowKeys(filler);
+            } else {
                 rowSequence.forAllRowKeyRanges(filler);
             }
         }
     }
 
-    private final class KeyFiller implements LongConsumer, Closeable {
-        private final WritableChunk<? super Values> destination;
-        private int destOffset;
+    protected abstract class Filler implements LongConsumer, LongRangeConsumer, Closeable {
 
-        public KeyFiller(WritableChunk<? super Values> destination) {
-            this.destination = Objects.requireNonNull(destination);
-        }
+        private int destOffset = 0;
 
         @Override
-        public void accept(long key) {
-            // this check should not be necessary given precondition on fillChunk
-            if (!containsKey(key)) {
-                throw new IllegalStateException(
-                        String.format("fillChunk precondition broken, invalid key. requested=%d, available=[%d, %d]",
-                                key, firstKey(), lastKey()));
-            }
-            final int ringIx = keyToRingIndex(key);
-            fillKey(destination, destOffset, ringIx);
+        public final void accept(long key) {
+            copyFromRing(keyToRingIndex(key), destOffset);
             ++destOffset;
         }
 
         @Override
-        public void close() {
-            destination.setSize(destOffset);
-        }
-    }
-
-    private final class RangeFiller implements LongRangeConsumer, Closeable {
-        private final WritableChunk<? super Values> destination;
-        private int destOffset;
-
-        public RangeFiller(WritableChunk<? super Values> destination) {
-            this.destination = Objects.requireNonNull(destination);
-        }
-
-        @Override
-        public void accept(long firstKey, long lastKey) {
-            // this check should not be necessary given precondition on fillChunk
-            if (!containsRange(firstKey, lastKey)) {
-                throw new IllegalStateException(String.format(
-                        "fillChunk precondition broken, invalid range. requested=[%d, %d], available=[%d, %d]",
-                        firstKey, lastKey, firstKey(), lastKey()));
-            }
+        public final void accept(long firstKey, long lastKey) {
             final int firstRingIx = keyToRingIndex(firstKey);
             final int lastRingIx = keyToRingIndex(lastKey);
-            final int size = fillByCopy(destination, destOffset, firstRingIx, lastRingIx);
+            final int size = fillByCopy(firstRingIx, lastRingIx, destOffset);
             if (size != lastKey - firstKey + 1) {
                 throw new IllegalStateException();
             }
@@ -301,61 +300,65 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
         }
 
         @Override
-        public void close() {
-            destination.setSize(destOffset);
+        public final void close() {
+            setSize(destOffset);
         }
+
+        private int fillByCopy(int firstRingIx, int lastRingIx, int destOffset) {
+            // Precondition: valid firstRingIx, lastRingIx
+            if (firstRingIx <= lastRingIx) {
+                // Optimization when we can accomplish with single copy
+                final int size = lastRingIx - firstRingIx + 1;
+                copyFromRing(firstRingIx, destOffset, size);
+                return size;
+            }
+            return fillByCopy2(firstRingIx, lastRingIx, destOffset);
+        }
+
+        private int fillByCopy2(int firstRingIx, int lastRingIx, int destOffset) {
+            // Precondition: valid firstRingIx, lastRingIx
+            // Precondition: firstRingIx > lastRingIx
+            final int fillSize1 = capacity - firstRingIx;
+            final int fillSize2 = lastRingIx + 1;
+            copyFromRing(firstRingIx, destOffset, fillSize1);
+            copyFromRing(0, destOffset + fillSize1, fillSize2);
+            return fillSize1 + fillSize2;
+        }
+
+        protected abstract void copyFromRing(int srcRingIx, int destOffset);
+
+        protected abstract void copyFromRing(int srcRingIx, int destOffset, int size);
+
+        protected abstract void setSize(int size);
     }
 
     private WritableChunk<Values> ring(int offset, int length) {
         return ringView.resetFromArray(ring, offset, length);
     }
 
-    private int fillByCopy(@NotNull WritableChunk<? super Values> destination, int destOffset, int firstRingIx,
-            int lastRingIx) {
-        // Precondition: valid firstRingIx, lastRingIx
-        if (firstRingIx <= lastRingIx) {
-            // Optimization when we can accomplish with single copy
-            final int size = lastRingIx - firstRingIx + 1;
-            destination.copyFromArray(ring, firstRingIx, destOffset, size);
-            return size;
-        }
-        return fillByCopy2(destination, destOffset, firstRingIx, lastRingIx);
-    }
-
-    private int fillByCopy2(@NotNull WritableChunk<? super Values> destination, int destOffset, int firstRingIx,
-            int lastRingIx) {
-        // Precondition: valid firstRingIx, lastRingIx
-        // Precondition: firstRingIx > lastRingIx
-        final int fillSize1 = capacity - firstRingIx;
-        final int fillSize2 = lastRingIx + 1;
-        destination.copyFromArray(ring, firstRingIx, destOffset, fillSize1);
-        destination.copyFromArray(ring, 0, destOffset + fillSize1, fillSize2);
-        return fillSize1 + fillSize2;
-    }
-
+    /**
+     * Compute the ring index. Assumes that {@code key} is valid and in the range of {@code this}. When
+     * {@link #STRICT_KEYS} is {@code true}, callers using the return value for reading purposes should verify
+     * {@code key} with {@link #containsKey(long)} or {@link #containsRange(long, long)}.
+     *
+     * <p>
+     * Equivalent to {@code (int) (key % capacity)}.
+     *
+     * @param key the key
+     * @return the ring index
+     */
     final int keyToRingIndex(long key) {
         return (int) (key % capacity);
     }
 
     final void bringUpToDate(FillContext fillContext, SELF current) {
-        // We *could* try to be smart and get away with a single copy.
-        // append should be relatively efficient though, and at worst will be two copies...
-        // final long logicalFillSize = current.nextRingIx - nextRingIx;
-        // if (logicalFillSize >= capacity / 2) {
-        // // noinspection SuspiciousSystemArraycopy
-        // System.arraycopy(current.ring, 0, ring, 0, capacity);
-        // nextRingIx = current.nextRingIx;
-        // return;
-        // }
         append(fillContext, current, RowSetFactory.fromRange(nextRingIx, current.nextRingIx - 1));
         if (nextRingIx != current.nextRingIx) {
             throw new IllegalStateException();
         }
     }
 
-    abstract void clear();
-
-    abstract void fillKey(@NotNull WritableChunk<? super Values> destination, int destOffset, int ringIx);
+    abstract Filler filler(@NotNull WritableChunk<? super Values> destination);
 
     abstract T get(long key);
 
