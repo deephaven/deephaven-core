@@ -1,0 +1,10 @@
+/src/main/java/io/deephaven/querylibrary/Basic.java
+/src/test/java/io/deephaven/querylibrary/TestBasic.java
+/src/main/java/io/deephaven/querylibrary/Cast.java
+/src/test/java/io/deephaven/querylibrary/TestCast.java
+/src/main/java/io/deephaven/querylibrary/BinSearch.java
+/src/test/java/io/deephaven/querylibrary/TestBinSearch.java
+/src/main/java/io/deephaven/querylibrary/Sort.java
+/src/test/java/io/deephaven/querylibrary/TestSort.java
+/src/main/java/io/deephaven/querylibrary/Numeric.java
+/src/test/java/io/deephaven/querylibrary/TestNumeric.java
