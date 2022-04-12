@@ -132,13 +132,13 @@ public class RunChartDownsample implements Function<Table, Table> {
         throw new IllegalArgumentException("Can't downsample table of type " + wholeTable.getClass());
     }
 
-    private Table makeDownsampledQueryTable(final QueryTable wholeQueryTable, final DownsampleKey memoKey) {
+    private static Table makeDownsampledQueryTable(final QueryTable wholeQueryTable, final DownsampleKey memoKey) {
         final SwapListener swapListener =
                 wholeQueryTable.createSwapListenerIfRefreshing(SwapListener::new);
 
         final Mutable<Table> result = new MutableObject<>();
 
-        wholeQueryTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
+        BaseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
             final boolean usePrev = prevRequested && wholeQueryTable.isRefreshing();
 
             final DownsamplerListener downsampleListener = DownsamplerListener.of(wholeQueryTable, memoKey);
