@@ -307,7 +307,7 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
         } else if (type == JPy_JPyObject || type == JPy_JPyModule) {
             jlong value = (*jenv)->CallLongMethod(jenv, objectRef, JPy_PyObject_GetPointer_MID);
             PyObject* pyObj = (PyObject*) value;
-            Py_INCREF(pyObj);
+            JPy_INCREF(pyObj);
             return pyObj;
         } else if (type == JPy_JString) {
             return JPy_FromJString(jenv, objectRef);
@@ -334,7 +334,7 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
 
                 (*jenv)->DeleteLocalRef(jenv, jPyObject);
                 PyObject* pyObj = (PyObject*) value;
-                Py_INCREF(pyObj);
+                JPy_INCREF(pyObj);
                 return pyObj;
             }
         }

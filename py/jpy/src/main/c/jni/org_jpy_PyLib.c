@@ -1804,7 +1804,7 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_eq
     */
 
     eq = PyObject_RichCompare(pyObject1, pyObject2, Py_EQ);
-    Py_DECREF(pyObject2);
+    JPy_DECREF(pyObject2);
 
     if (eq == NULL) {
         PyLib_HandlePythonException(jenv);
@@ -2042,7 +2042,7 @@ error:
         (*jenv)->ReleaseStringUTFChars(jenv, jName, nameChars);
     }
 
-    Py_XDECREF(pyValue);
+    JPy_XDECREF(pyValue);
 
     JPy_END_GIL_STATE
 }
