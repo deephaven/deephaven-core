@@ -11,6 +11,7 @@ import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -25,7 +26,7 @@ public class DelegatingScriptSession implements ScriptSession {
     private final Set<String> knownVariables = new HashSet<>();
 
     public DelegatingScriptSession(final ScriptSession delegate) {
-        this.delegate = delegate;
+        this.delegate = Objects.requireNonNull(delegate);
     }
 
     private Changes contextualizeChanges(final Changes diff) {
