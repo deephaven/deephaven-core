@@ -32,6 +32,7 @@ class ApplicationState(JObjectWrapper):
         value = wrap_j_object(self.j_app_state.getField(item))
         if not value:
             raise KeyError(item)
+        return value
 
     def __setitem__(self, key, value):
         key = str(key)
