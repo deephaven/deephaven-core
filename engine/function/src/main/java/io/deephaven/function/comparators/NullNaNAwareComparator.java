@@ -3,12 +3,12 @@
  */
 
 
-package io.deephaven.querylibrary.comparators;
+package io.deephaven.function.comparators;
 
 import java.util.Comparator;
 
-import static io.deephaven.querylibrary.Basic.isNull;
-import static io.deephaven.querylibrary.Numeric.isNaN;
+import static io.deephaven.function.Basic.isNull;
+import static io.deephaven.function.Numeric.isNaN;
 
 /**
  * Comparator which is aware of NaN and Null values, in the Deephaven convention.

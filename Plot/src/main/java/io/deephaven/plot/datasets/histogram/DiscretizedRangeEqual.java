@@ -4,7 +4,7 @@
 
 package io.deephaven.plot.datasets.histogram;
 
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 
 import java.io.Serializable;
 

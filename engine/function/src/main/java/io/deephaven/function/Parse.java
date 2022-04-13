@@ -1,13 +1,13 @@
 package io.deephaven.function;
 
-
 import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.function.Basic.isNull;
 
 /**
- * A set of commonly used functions for parsing strings to primitive values.
+ * Functions for parsing strings to primitive values.
  */
 @SuppressWarnings("WeakerAccess")
-public class PrimitiveParseUtil {
+public class Parse {
 
     // byte
 
@@ -32,7 +32,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static byte parseByte(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_BYTE;
         }
         return Byte.parseByte(s, radix);
@@ -61,7 +61,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static short parseShort(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_SHORT;
         }
         return Short.parseShort(s, radix);
@@ -90,7 +90,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static int parseInt(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_INT;
         }
         return Integer.parseInt(s, radix);
@@ -117,7 +117,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static int parseUnsignedInt(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_INT;
         }
         return Integer.parseUnsignedInt(s, radix);
@@ -146,7 +146,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static long parseLong(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_LONG;
         }
         return Long.parseLong(s, radix);
@@ -173,7 +173,7 @@ public class PrimitiveParseUtil {
      * @return parsed value.
      */
     public static long parseUnsignedLong(String s, int radix) {
-        if (s == null || IntegerPrimitives.isNull(radix)) {
+        if (s == null || isNull(radix)) {
             return NULL_LONG;
         }
         return Long.parseUnsignedLong(s, radix);

@@ -10,7 +10,7 @@ import io.deephaven.base.clock.TimeZones;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;

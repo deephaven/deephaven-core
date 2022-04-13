@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
@@ -11,7 +11,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.math.BigDecimal;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.Sort.*;
+import static io.deephaven.function.Sort.*;
 
 /**
  * Test Sort.

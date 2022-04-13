@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TotalsTableBuilder;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;

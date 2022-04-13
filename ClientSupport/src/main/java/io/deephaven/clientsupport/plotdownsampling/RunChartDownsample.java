@@ -8,7 +8,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.time.DateTime;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;

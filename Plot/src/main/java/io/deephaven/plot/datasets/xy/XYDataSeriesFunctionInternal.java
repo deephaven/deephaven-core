@@ -1,6 +1,6 @@
 package io.deephaven.plot.datasets.xy;
 
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 
 /**
  * {@link XYDataSeries} based on a function.

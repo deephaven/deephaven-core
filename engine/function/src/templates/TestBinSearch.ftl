@@ -2,13 +2,13 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.BinSearch.*;
+import static io.deephaven.function.BinSearch.*;
 
 /**
  * Test BinSearch.

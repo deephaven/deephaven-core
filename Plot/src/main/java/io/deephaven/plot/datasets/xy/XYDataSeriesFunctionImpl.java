@@ -11,7 +11,7 @@ import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 
 import java.util.Map;
 import java.util.SortedMap;

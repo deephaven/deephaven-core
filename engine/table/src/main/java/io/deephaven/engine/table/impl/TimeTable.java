@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;

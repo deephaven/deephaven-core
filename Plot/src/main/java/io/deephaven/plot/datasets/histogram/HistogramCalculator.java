@@ -5,7 +5,7 @@
 package io.deephaven.plot.datasets.histogram;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
@@ -45,7 +45,7 @@ public class HistogramCalculator {
 
         return t
                 .view(view)
-                .where("io.deephaven.querylibrary.Numeric.isNormal(X)");
+                .where("io.deephaven.function.Numeric.isNormal(X)");
     }
 
     private static Table counts(final Table data, final Table range, final String... byColumns) {

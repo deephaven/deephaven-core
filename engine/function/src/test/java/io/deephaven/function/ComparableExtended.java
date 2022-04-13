@@ -1,4 +1,4 @@
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 class ComparableExtended implements Comparable<ComparableExtended> {
 

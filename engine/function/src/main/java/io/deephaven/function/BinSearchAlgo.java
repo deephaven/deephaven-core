@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 /**
  * Algorithm used to resolve ties when performing a binary search.

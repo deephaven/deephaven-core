@@ -6,7 +6,7 @@ import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
-import io.deephaven.querylibrary.Basic;
+import io.deephaven.function.Basic;
 
 import java.lang.reflect.Method;
 import java.util.Collection;

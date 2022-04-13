@@ -7,14 +7,14 @@ package io.deephaven.function;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A set of commonly used functions which are not associated with a specific type.
+ * Functions for the generation random numbers.
  */
-public class SpecialPrimitives {
+public class Random {
 
     /**
-     * Returns a uniform random number between {@code 0.0} and {@code 1.0}.
+     * Returns a uniform random number between {@code 0.0} (inclusive) and {@code 1.0} (exclusive).
      *
-     * @return uniform random number between {@code 0.0} and {@code 1.0}.
+     * @return uniform random number between {@code 0.0} (inclusive) and {@code 1.0} (exclusive).
      */
     static public double random() {
         return ThreadLocalRandom.current().nextDouble();
@@ -50,7 +50,7 @@ public class SpecialPrimitives {
      *
      * @param min minimum result.
      * @param max maximum result (exclusive).
-     * @return uniform random number between {@code min} and {@code max} (exclusive).
+     * @return uniform random number between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public int randomInt(int min, int max) {
         return min + ThreadLocalRandom.current().nextInt(max - min);
@@ -62,7 +62,7 @@ public class SpecialPrimitives {
      * @param min minimum result.
      * @param max maximum result (exclusive).
      * @param size array size to generate.
-     * @return array of uniform random numbers between {@code min} and {@code max} (exclusive).
+     * @return array of uniform random numbers between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public int[] randomInt(int min, int max, int size) {
         final int[] result = new int[size];
@@ -79,10 +79,10 @@ public class SpecialPrimitives {
      *
      * @param min minimum result.
      * @param max maximum result (exclusive).
-     * @return uniform random number between {@code min} and {@code max} (exclusive).
+     * @return uniform random number between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public long randomLong(long min, long max) {
-        return min + (long) (ThreadLocalRandom.current().nextDouble() * (max - min));
+        return ThreadLocalRandom.current().nextLong(min, max);
     }
 
     /**
@@ -91,7 +91,7 @@ public class SpecialPrimitives {
      * @param min minimum result.
      * @param max maximum result (exclusive).
      * @param size array size to generate.
-     * @return array of uniform random numbers between {@code min} and {@code max} (exclusive).
+     * @return array of uniform random numbers between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public long[] randomLong(long min, long max, int size) {
         final long[] result = new long[size];
@@ -108,10 +108,10 @@ public class SpecialPrimitives {
      *
      * @param min minimum result.
      * @param max maximum result.
-     * @return uniform random number between {@code min} and {@code max}.
+     * @return uniform random number between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public float randomFloat(float min, float max) {
-        return min + (max - min) * ThreadLocalRandom.current().nextFloat();
+        return (float) ThreadLocalRandom.current().nextDouble(min, max);
     }
 
     /**
@@ -120,7 +120,7 @@ public class SpecialPrimitives {
      * @param min minimum result.
      * @param max maximum result.
      * @param size array size to generate.
-     * @return array of uniform random numbers between {@code min} and {@code max}.
+     * @return array of uniform random numbers between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public float[] randomFloat(float min, float max, int size) {
         final float[] result = new float[size];
@@ -137,10 +137,10 @@ public class SpecialPrimitives {
      *
      * @param min minimum result.
      * @param max maximum result.
-     * @return uniform random number between {@code min} and {@code max}.
+     * @return uniform random number between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public double randomDouble(double min, double max) {
-        return min + (max - min) * ThreadLocalRandom.current().nextDouble();
+        return ThreadLocalRandom.current().nextDouble(min, max);
     }
 
     /**
@@ -149,7 +149,7 @@ public class SpecialPrimitives {
      * @param min minimum result.
      * @param max maximum result.
      * @param size array size to generate.
-     * @return array of uniform random numbers between {@code min} and {@code max}.
+     * @return array of uniform random numbers between {@code min} (inclusive) and {@code max} (exclusive).
      */
     static public double[] randomDouble(double min, double max, int size) {
         final double[] result = new double[size];

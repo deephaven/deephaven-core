@@ -1,15 +1,15 @@
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.vector.*;
-import io.deephaven.querylibrary.comparators.NullNaNAwareComparator;
+import io.deephaven.function.comparators.NullNaNAwareComparator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.Basic.isNull;
+import static io.deephaven.function.Basic.isNull;
 
 /**
  * Functions for sorting primitive types.

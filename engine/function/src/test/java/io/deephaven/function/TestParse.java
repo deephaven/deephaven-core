@@ -1,9 +1,9 @@
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.verify.Require;
 import junit.framework.TestCase;
 
-import static io.deephaven.querylibrary.Parse.*;
+import static io.deephaven.function.Parse.*;
 import static io.deephaven.util.QueryConstants.*;
 
 public class TestParse extends TestCase {

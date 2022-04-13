@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
@@ -13,8 +13,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.Basic.count;
-import static io.deephaven.querylibrary.Numeric.*;
+import static io.deephaven.function.Basic.count;
+import static io.deephaven.function.Numeric.*;
 
 /**
  * Test Numeric.

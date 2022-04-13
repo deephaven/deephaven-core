@@ -7,20 +7,25 @@ package io.deephaven.function;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
-public class TestSpecialPrimitives extends BaseArrayTestCase {
-    final int n = 4000;
+import static io.deephaven.function.Random.*;
+
+/**
+ * Test Random.
+ */
+public class TestRandom extends BaseArrayTestCase {
+    final int n = 10000;
 
     public void testRandom() {
         final double[] vals = new double[n];
 
         for (int i = 0; i < n; i++) {
-            vals[i] = SpecialPrimitives.random();
+            vals[i] = random();
         }
 
-        final double min = DoubleNumericPrimitives.min(vals);
-        final double max = DoubleNumericPrimitives.max(vals);
-        final double avg = DoubleNumericPrimitives.avg(vals);
-        final double std = DoubleNumericPrimitives.std(vals);
+        final double min = Numeric.min(vals);
+        final double max = Numeric.max(vals);
+        final double avg = Numeric.avg(vals);
+        final double std = Numeric.std(vals);
 
         assertTrue(0 <= min);
         assertTrue(max <= 1);
@@ -29,7 +34,7 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
     }
 
     public void testRandomBool() {
-        final boolean[] vals = SpecialPrimitives.randomBool(n);
+        final boolean[] vals = randomBool(n);
 
         for (boolean i : new boolean[] {true, false}) {
             boolean found = false;
@@ -46,9 +51,9 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
     public void testRandomInt() {
         final int a = 5;
         final int b = 11;
-        final int[] vals = SpecialPrimitives.randomInt(a, b, n);
+        final int[] vals = randomInt(a, b, n);
 
-        final int[] d = IntegerPrimitives.distinct(vals);
+        final int[] d = Basic.distinct(vals);
         assertEquals(b - a, d.length);
 
         for (int i = a; i < b; i++) {
@@ -59,9 +64,9 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
     public void testRandomLong() {
         final int a = 5;
         final int b = 11;
-        final long[] vals = SpecialPrimitives.randomLong(a, b, n);
+        final long[] vals = randomLong(a, b, n);
 
-        final long[] d = LongPrimitives.distinct(vals);
+        final long[] d = Basic.distinct(vals);
         assertEquals(b - a, d.length);
 
         for (long i = a; i < b; i++) {
@@ -79,12 +84,12 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
     public void testRandomFloat() {
         final float a = (float) 4.5;
         final float b = (float) 95.6;
-        final float[] vals = SpecialPrimitives.randomFloat(a, b, n);
+        final float[] vals = randomFloat(a, b, n);
 
-        final double min = FloatNumericPrimitives.min(vals);
-        final double max = FloatNumericPrimitives.max(vals);
-        final double avg = FloatNumericPrimitives.avg(vals);
-        final double std = FloatNumericPrimitives.std(vals);
+        final double min = Numeric.min(vals);
+        final double max = Numeric.max(vals);
+        final double avg = Numeric.avg(vals);
+        final double std = Numeric.std(vals);
 
         assertTrue(a <= min);
         assertTrue(max <= b);
@@ -92,15 +97,16 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
         assertEquals(Math.sqrt(1.0 / 12.0 * (b - a) * (b - a)), std, 0.05 * (b - a));
     }
 
+    @SuppressWarnings("RedundantCast")
     public void testRandomDouble() {
         final double a = (double) 4.5;
         final double b = (double) 95.6;
-        final double[] vals = SpecialPrimitives.randomDouble(a, b, n);
+        final double[] vals = randomDouble(a, b, n);
 
-        final double min = DoubleNumericPrimitives.min(vals);
-        final double max = DoubleNumericPrimitives.max(vals);
-        final double avg = DoubleNumericPrimitives.avg(vals);
-        final double std = DoubleNumericPrimitives.std(vals);
+        final double min = Numeric.min(vals);
+        final double max = Numeric.max(vals);
+        final double avg = Numeric.avg(vals);
+        final double std = Numeric.std(vals);
 
         assertTrue(a <= min);
         assertTrue(max <= b);
@@ -108,13 +114,14 @@ public class TestSpecialPrimitives extends BaseArrayTestCase {
         assertEquals(Math.sqrt(1.0 / 12.0 * (b - a) * (b - a)), std, 0.05 * (b - a));
     }
 
+    @SuppressWarnings("RedundantCast")
     public void testRandomGaussian() {
         final double m = (double) 4.5;
         final double s = (double) 2.6;
-        final double[] vals = SpecialPrimitives.randomGaussian(m, s, n);
+        final double[] vals = randomGaussian(m, s, n);
 
-        final double avg = DoubleNumericPrimitives.avg(vals);
-        final double std = DoubleNumericPrimitives.std(vals);
+        final double avg = Numeric.avg(vals);
+        final double std = Numeric.std(vals);
 
         assertEquals(m, avg, 0.2);
         assertEquals(s, std, 0.2);

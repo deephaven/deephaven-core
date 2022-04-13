@@ -1,4 +1,4 @@
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.vector.BooleanVector;
 

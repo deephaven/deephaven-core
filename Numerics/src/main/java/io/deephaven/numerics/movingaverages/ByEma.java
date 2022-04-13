@@ -5,7 +5,7 @@
 package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.querylibrary.Basic;
+import io.deephaven.function.Basic;
 import io.deephaven.time.DateTime;
 
 import java.io.Serializable;

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.querylibrary.Numeric;
+import io.deephaven.function.Numeric;
 import io.deephaven.vector.*;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;

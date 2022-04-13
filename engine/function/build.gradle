@@ -21,18 +21,7 @@ dependencies {
 }
 
 ext {
-    //todo fix excludes
-    spotlessExcludes = [
-            '**/*Boolean*Primitives.java',
-            '**/*Byte*Primitives.java',
-            '**/*Char*Primitives.java',
-            '**/*Short*Primitives.java',
-            '**/*Int*Primitives.java',
-            '**/*Long*Primitives.java',
-            '**/*Float*Primitives.java',
-            '**/*Double*Primitives.java',
-            '**/*Object*Primitives.java',
-    ]
+    spotlessExcludes = []
 }
 
 spotless {
@@ -65,16 +54,16 @@ def gencode(name, template, output) {
     }
 }
 
-gencode "GenPrimitivesBasic", 'src/templates/Basic.ftl', 'src/main/java/io/deephaven/querylibrary/Basic.java'
-gencode "GenPrimitivesBasicTest", 'src/templates/TestBasic.ftl', 'src/test/java/io/deephaven/querylibrary/TestBasic.java'
-gencode "GenPrimitivesCast", 'src/templates/Cast.ftl', 'src/main/java/io/deephaven/querylibrary/Cast.java'
-gencode "GenPrimitivesCastTest", 'src/templates/TestCast.ftl', 'src/test/java/io/deephaven/querylibrary/TestCast.java'
-gencode "GenPrimitivesBinSearch", 'src/templates/BinSearch.ftl', 'src/main/java/io/deephaven/querylibrary/BinSearch.java'
-gencode "GenPrimitivesBinSearchTest", 'src/templates/TestBinSearch.ftl', 'src/test/java/io/deephaven/querylibrary/TestBinSearch.java'
-gencode "GenPrimitivesSort", 'src/templates/Sort.ftl', 'src/main/java/io/deephaven/querylibrary/Sort.java'
-gencode "GenPrimitivesSortTest", 'src/templates/TestSort.ftl', 'src/test/java/io/deephaven/querylibrary/TestSort.java'
-gencode "GenPrimitivesNumeric", 'src/templates/Numeric.ftl', 'src/main/java/io/deephaven/querylibrary/Numeric.java'
-gencode "GenPrimitivesNumericTest", 'src/templates/TestNumeric.ftl', 'src/test/java/io/deephaven/querylibrary/TestNumeric.java'
+gencode "GenPrimitivesBasic", 'src/templates/Basic.ftl', 'src/main/java/io/deephaven/function/Basic.java'
+gencode "GenPrimitivesBasicTest", 'src/templates/TestBasic.ftl', 'src/test/java/io/deephaven/function/TestBasic.java'
+gencode "GenPrimitivesCast", 'src/templates/Cast.ftl', 'src/main/java/io/deephaven/function/Cast.java'
+gencode "GenPrimitivesCastTest", 'src/templates/TestCast.ftl', 'src/test/java/io/deephaven/function/TestCast.java'
+gencode "GenPrimitivesBinSearch", 'src/templates/BinSearch.ftl', 'src/main/java/io/deephaven/function/BinSearch.java'
+gencode "GenPrimitivesBinSearchTest", 'src/templates/TestBinSearch.ftl', 'src/test/java/io/deephaven/function/TestBinSearch.java'
+gencode "GenPrimitivesSort", 'src/templates/Sort.ftl', 'src/main/java/io/deephaven/function/Sort.java'
+gencode "GenPrimitivesSortTest", 'src/templates/TestSort.ftl', 'src/test/java/io/deephaven/function/TestSort.java'
+gencode "GenPrimitivesNumeric", 'src/templates/Numeric.ftl', 'src/main/java/io/deephaven/function/Numeric.java'
+gencode "GenPrimitivesNumericTest", 'src/templates/TestNumeric.ftl', 'src/test/java/io/deephaven/function/TestNumeric.java'
 
 
 task printSourceSetInformation(){

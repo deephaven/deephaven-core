@@ -1,12 +1,12 @@
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.vector.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.Basic.isNull;
+import static io.deephaven.function.Basic.isNull;
 
 /**
  * Functions for performing binary searches.

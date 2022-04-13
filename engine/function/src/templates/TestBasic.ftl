@@ -2,14 +2,14 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
 import io.deephaven.util.*;
 import junit.framework.TestCase;
 
-import static io.deephaven.querylibrary.Basic.*;
+import static io.deephaven.function.Basic.*;
 import static io.deephaven.util.QueryConstants.*;
 
 /**

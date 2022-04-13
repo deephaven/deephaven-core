@@ -1,4 +1,4 @@
-package io.deephaven.querylibrary.comparators;
+package io.deephaven.function.comparators;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 

@@ -1,5 +1,5 @@
 
-package io.deephaven.querylibrary;
+package io.deephaven.function;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.vector.*;
@@ -8,8 +8,8 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.querylibrary.Basic.*;
-import static io.deephaven.querylibrary.Cast.castDouble;
+import static io.deephaven.function.Basic.*;
+import static io.deephaven.function.Cast.castDouble;
 
 /**
  * A set of commonly used numeric functions that can be applied to numeric types.
