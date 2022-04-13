@@ -9,13 +9,13 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.querylibrary.Numeric;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
-import io.deephaven.function.LongNumericPrimitives;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
 
@@ -76,7 +76,7 @@ public class TimeTable extends QueryTable implements Runnable {
         try {
             final DateTime dateTime = timeProvider.currentTime();
             DateTime currentBinnedTime = new DateTime(
-                    LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, period) + binOffset);
+                    Numeric.lowerBin(dateTime.getNanos() - binOffset, period) + binOffset);
             long rangeStart = lastIndex + 1;
             if (lastTime == null) {
                 lastIndex = 0;

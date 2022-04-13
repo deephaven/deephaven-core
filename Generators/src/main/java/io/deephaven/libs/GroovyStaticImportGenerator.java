@@ -285,7 +285,7 @@ public class GroovyStaticImportGenerator {
         code += "/**\n";
         code += " * Functions statically imported into Groovy.\n";
         code += " *\n";
-        code += " * @see io.deephaven.function\n";
+        code += " * @see io.deephaven.querylibrary\n";
         code += " */\n";
         code += "public class GroovyStaticImports {\n";
 
@@ -388,7 +388,7 @@ public class GroovyStaticImportGenerator {
         final String[] imports = {
                 "io.deephaven.querylibrary.Basic",
                 "io.deephaven.querylibrary.BinSearch",
-                "io.deephaven.querylibrary.BinSearchAlgo",
+//                "io.deephaven.querylibrary.BinSearchAlgo",
                 "io.deephaven.querylibrary.Cast",
                 "io.deephaven.querylibrary.Logic",
                 "io.deephaven.querylibrary.Numeric",

@@ -1,7 +1,7 @@
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.plot.Chart;
-import io.deephaven.function.DoubleFpPrimitives;
+import io.deephaven.querylibrary.Numeric;
 
 /**
  * {@link XYDataSeries} based on a function.
@@ -25,7 +25,7 @@ public interface XYDataSeriesFunction extends XYDataSeries {
      * Sets the data range for this series.
      *
      * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
-     *         must be normal. See {@link DoubleFpPrimitives#isNormal} {@code npoints} must non-negative
+     *         must be normal. See {@link Numeric#isNormal} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
