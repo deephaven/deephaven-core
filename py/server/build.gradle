@@ -1,0 +1,7 @@
+plugins {
+    id 'io.deephaven.python-wheel'
+}
+
+dependencies {
+    pythonWheel project(path: ':deephaven-jpy', targetConfiguration: 'pythonWheel')
+}

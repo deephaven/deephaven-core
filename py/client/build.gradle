@@ -7,39 +7,8 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
-    id 'io.deephaven.project.register'
+    id 'io.deephaven.python-wheel'
 }
-
-evaluationDependsOn Docker.registryProject('python')
-
-// Build the pydeephaven wheel from sources in a vanilla docker container
-tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyClient') {
-    copyIn {
-        from('requirements.txt') {
-            into 'project'
-        }
-        from('setup.py') {
-            into 'project'
-        }
-        from('README.md') {
-            into 'project'
-        }
-        from('pydeephaven') {
-            into 'project/pydeephaven'
-        }
-    }
-    dockerfile {
-        from('deephaven/python:local-build')
-        copyFile('project', '/project')
-        workingDir('/project')
-        runCommand('python3 setup.py bdist_wheel')
-    }
-    parentContainers = [ Docker.registryTask(project, 'python') ]
-    containerOutPath = '/project/dist'
-    copyOut {
-        into 'build/wheel'
-    }
-})
 
 // Start up a docker container for the grpc server, then run pydeephaven test
 evaluationDependsOn(':docker-server')
