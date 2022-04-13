@@ -3,6 +3,7 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.io.PrintStream;
 
@@ -24,9 +25,9 @@ public interface DeephavenApiServerComponent {
         B withMaxInboundMessageSize(@Named("grpc.maxInboundMessageSize") int maxInboundMessageSize);
 
         @BindsInstance
-        B withOut(@Named("out") PrintStream out);
+        B withOut(@Nullable @Named("out") PrintStream out);
 
         @BindsInstance
-        B withErr(@Named("err") PrintStream err);
+        B withErr(@Nullable @Named("err") PrintStream err);
     }
 }
