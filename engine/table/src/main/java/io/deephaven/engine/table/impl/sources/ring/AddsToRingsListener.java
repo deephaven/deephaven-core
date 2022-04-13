@@ -5,7 +5,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ChunkSource.FillContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -15,7 +14,6 @@ import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +57,9 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             resultMap.put(name, output);
             ++ix;
         }
-        final QueryTable result = new QueryTable(RowSetFactory.empty().toTracking(), resultMap);
+
+        final WritableRowSet initialRowSet = init(init, parent, sources, rings);
+        final QueryTable result = new QueryTable(initialRowSet.toTracking(), resultMap);
         if (swapListener == null) {
             result.setRefreshing(false);
         } else {
@@ -68,16 +68,34 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
         }
         final AddsToRingsListener listener =
                 new AddsToRingsListener("AddsToRingsListener", parent, result, sources, rings);
-        listener.init(init);
         if (swapListener != null) {
             swapListener.setListenerAndResult(listener, result);
         }
         return result;
     }
 
+    private static WritableRowSet init(Init init, Table parent, ColumnSource<?>[] sources,
+            RingColumnSource<?>[] rings) {
+        if (init == Init.NONE) {
+            return RowSetFactory.empty();
+        }
+        final boolean usePrev = init == Init.FROM_PREVIOUS;
+        try (final RowSet prevToClose = usePrev ? parent.getRowSet().copyPrev() : null) {
+            final RowSet srcKeys = usePrev ? prevToClose : parent.getRowSet();
+            if (srcKeys.isEmpty()) {
+                return RowSetFactory.empty();
+            }
+            for (int i = 0; i < rings.length; ++i) {
+                final ChunkSource<? extends Values> source = usePrev ? sources[i].getPrevSource() : sources[i];
+                rings[i].append(source, srcKeys);
+                rings[i].bringPreviousUpToDate();
+            }
+        }
+        return rings[0].rowSet();
+    }
+
     private final ColumnSource<?>[] sources;
     private final RingColumnSource<?>[] rings;
-    private final FillContext[] fillContexts;
     private final UpdateCommitter<AddsToRingsListener> prevFlusher;
 
     private AddsToRingsListener(
@@ -104,35 +122,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
                 throw new IllegalArgumentException();
             }
         }
-        fillContexts = Arrays.stream(sources).map(s -> s.makeFillContext(capacity)).toArray(FillContext[]::new);
         prevFlusher = new UpdateCommitter<>(this, AddsToRingsListener::bringPreviousUpToDate);
     }
 
     private WritableRowSet resultRowSet() {
         return getDependent().getRowSet().writableCast();
-    }
-
-    private void init(Init init) {
-        if (init == Init.NONE) {
-            return;
-        }
-        final boolean usePrev = init == Init.FROM_PREVIOUS;
-        try (final RowSet prevToClose = usePrev ? getParent().getRowSet().copyPrev() : null) {
-            final RowSet srcKeys = usePrev ? prevToClose : getParent().getRowSet();
-            if (srcKeys.isEmpty()) {
-                return;
-            }
-            for (int i = 0; i < rings.length; ++i) {
-                final ChunkSource<? extends Values> source = usePrev ? sources[i].getPrevSource() : sources[i];
-                rings[i].append(fillContexts[i], source, srcKeys);
-            }
-        }
-        final TableUpdate update = rings[0].tableUpdate();
-        if (!update.removed().isEmpty()) {
-            throw new IllegalStateException();
-        }
-        resultRowSet().insert(update.added());
-        bringPreviousUpToDate();
     }
 
     @Override
@@ -149,7 +143,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
 
     private void append(RowSet added) {
         for (int i = 0; i < rings.length; ++i) {
-            rings[i].append(fillContexts[i], sources[i], added);
+            rings[i].append(sources[i], added);
         }
         prevFlusher.maybeActivate();
         final TableUpdate update = rings[0].tableUpdate();
@@ -158,8 +152,8 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
     }
 
     private void bringPreviousUpToDate() {
-        for (int i = 0; i < rings.length; i++) {
-            rings[i].bringPreviousUpToDate(fillContexts[i]);
+        for (RingColumnSource<?> ring : rings) {
+            ring.bringPreviousUpToDate();
         }
     }
 }

@@ -602,6 +602,19 @@ public class TableTools {
     }
 
     /**
+     * Returns a ColumnHolder of type Boolean that can be used when creating in-memory tables.
+     *
+     * @param name name of the column
+     * @param data a list of values for the column
+     * @return a Deephaven ColumnHolder object
+     */
+    public static ColumnHolder booleanCol(String name, Boolean... data) {
+        // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
+        // noinspection RedundantCast
+        return new ColumnHolder(name, Boolean.class, null, false, (Object[]) data);
+    }
+
+    /**
      * Returns a ColumnHolder of type long that can be used when creating in-memory tables.
      *
      * @param name name of the column

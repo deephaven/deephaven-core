@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -121,17 +122,21 @@ final class RingColumnSource<T>
         return ring.capacity();
     }
 
-    public void append(FillContext fillContext, ColumnSource<T> src, RowSet srcKeys) {
-        ring.append(fillContext, src, srcKeys);
+    public void append(ColumnSource<T> src, RowSet srcKeys) {
+        ring.append(src, srcKeys);
     }
 
-    public void append(FillContext fillContext, ChunkSource<? extends Values> src, RowSet srcKeys) {
-        ring.append(fillContext, src, srcKeys);
+    public void append(ChunkSource<? extends Values> src, RowSet srcKeys) {
+        ring.append(src, srcKeys);
     }
 
-    public void bringPreviousUpToDate(FillContext fillContext) {
+    public void bringPreviousUpToDate() {
         // noinspection unchecked,rawtypes
-        ((AbstractRingChunkSource) prev).bringUpToDate(fillContext, ring);
+        ((AbstractRingChunkSource) prev).bringUpToDate(ring);
+    }
+
+    public WritableRowSet rowSet() {
+        return ring.isEmpty() ? RowSetFactory.empty() : RowSetFactory.fromRange(ring.firstKey(), ring.lastKey());
     }
 
     public TableUpdate tableUpdate() {
@@ -195,8 +200,7 @@ final class RingColumnSource<T>
 
     @Override
     public boolean isImmutable() {
-        // Values for an index don't change from prev -> current
-        return true;
+        return false;
     }
 
     @Override

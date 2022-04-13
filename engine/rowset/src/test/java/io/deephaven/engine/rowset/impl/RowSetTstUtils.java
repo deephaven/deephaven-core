@@ -1,6 +1,9 @@
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -56,6 +59,18 @@ public class RowSetTstUtils {
 
     public static WritableRowSet makeSingleRange(final long start, final long end) {
         return new WritableRowSetImpl(SingleRange.make(start, end));
+    }
+
+    public static WritableRowSet subset(RowSet input, int dutyOn, int dutyOff) {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator it = input.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                builder.appendRowSequence(it.getNextRowSequenceWithLength(dutyOn));
+                // ignore
+                it.getNextRowSequenceWithLength(dutyOff);
+            }
+        }
+        return builder.build();
     }
 
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
