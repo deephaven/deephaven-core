@@ -6,15 +6,12 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,8 +49,6 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
      * {@code true}.
      */
     public static final boolean STRICT_KEYS = Configuration.getInstance().getBooleanWithDefault(STRICT_KEYS_KEY, true);
-
-    private static final Logger log = LoggerFactory.getLogger(AbstractRingChunkSource.class);
 
     protected final ARRAY ring;
     protected final int capacity;
@@ -203,17 +198,14 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             final int fillSize1 = Math.min(fillMax1, physicalFillSize);
             final int fillSize2 = physicalFillSize - fillSize1;
             if (fillSize2 == 0) {
-                // log.info(String.format("append fill1: %d %d%n", fillIndex1, fillSize1));
                 src.fillChunk(fillContext, ring(fillIndex1, fillSize1), physicalRows);
             } else {
                 // might be nice if there was a "split"
                 // (could be more efficient than calling subSetByPositionRange twice)
                 try (final RowSet rows1 = physicalRows.subSetByPositionRange(0, fillSize1)) {
-                    // log.info(String.format("append fill2a: %d %d%n", fillIndex1, fillSize1));
                     src.fillChunk(fillContext, ring(fillIndex1, fillSize1), rows1);
                 }
                 try (final RowSet rows2 = physicalRows.subSetByPositionRange(fillSize1, fillSize1 + fillSize2)) {
-                    // log.info(String.format("append fill2b: %d%n", fillSize2));
                     src.fillChunk(fillContext, ring(0, fillSize2), rows2);
                 }
             }
@@ -245,21 +237,15 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
                     String.format("getChunk precondition broken, invalid range. requested=[%d, %d], available=[%d, %d]",
                             firstKey, lastKey, firstKey(), lastKey()));
         }
-        final WritableChunk<Values> chunk = DefaultGetContext.getWritableChunk(context);
         final int firstRingIx = keyToRingIndex(firstKey);
         final int lastRingIx = keyToRingIndex(lastKey);
         if (firstRingIx <= lastRingIx) {
             // Optimization when we can return a contiguous view
-            log.info(String.format("getChunk view: [%d, %d] [%d, %d]", firstKey, lastKey, firstRingIx, lastRingIx));
             return ring(firstRingIx, lastRingIx - firstRingIx + 1);
         }
+        final WritableChunk<Values> chunk = DefaultGetContext.getWritableChunk(context);
         try (final Filler filler = filler(chunk)) {
-            log.info(String.format("getChunk fillByCopy2: [%d, %d] [%d, %d]", firstKey, lastKey, firstRingIx,
-                    lastRingIx));
-            final int size = filler.fillByCopy2(firstRingIx, lastRingIx, 0);
-            if (size != lastKey - firstKey + 1) {
-                throw new IllegalStateException();
-            }
+            filler.acceptCopy2(firstRingIx, lastRingIx);
         }
         return chunk;
     }
@@ -295,7 +281,6 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
 
         @Override
         public final void accept(long key) {
-            // log.info(String.format("fillKey: %d %d %n", keyToRingIndex(key), destOffset));
             copyFromRing(keyToRingIndex(key), destOffset);
             ++destOffset;
         }
@@ -311,6 +296,11 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             destOffset += size;
         }
 
+        public final void acceptCopy2(int firstRingIx, int lastRingIx) {
+            final int size = fillByCopy2(firstRingIx, lastRingIx, destOffset);
+            destOffset += size;
+        }
+
         @Override
         public final void close() {
             setSize(destOffset);
@@ -321,7 +311,6 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             if (firstRingIx <= lastRingIx) {
                 // Optimization when we can accomplish with single copy
                 final int size = lastRingIx - firstRingIx + 1;
-                // log.info(String.format("fillByCopy: %d %d %d%n", firstRingIx, destOffset, size));
                 copyFromRing(firstRingIx, destOffset, size);
                 return size;
             }
@@ -333,11 +322,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             // Precondition: firstRingIx > lastRingIx
             final int fillSize1 = capacity - firstRingIx;
             final int fillSize2 = lastRingIx + 1;
-
-            // log.info(String.format("fillByCopy2a: %d %d %d%n", firstRingIx, destOffset, fillSize1));
             copyFromRing(firstRingIx, destOffset, fillSize1);
-
-            // log.info(String.format("fillByCopy2b: %d %d %d%n", 0, destOffset + fillSize1, fillSize2));
             copyFromRing(0, destOffset + fillSize1, fillSize2);
             return fillSize1 + fillSize2;
         }
