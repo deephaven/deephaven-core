@@ -9,17 +9,15 @@ In this notebook, we'll use SciKit-Learn to create a K-Nearest neighbors classif
 Let's start by importing everything we need.  We split up the imports into three categories: Deephaven imports, SciKit-Learn imports, and additional required imports.
 
 ```python
-# Deephaven imports
-from deephaven import dataFrameToTable, tableToDataFrame
+from deephaven.pandas import to_pandas, to_table
 from deephaven import DynamicTableWriter
-from deephaven import learn, read_csv
+from deephaven import dtypes as dht
 from deephaven.learn import gather
-import deephaven.Types as dht
+from deephaven.csv import read
+from deephaven import learn
 
-# SciKit-Learn imports
 from sklearn.neighbors import KNeighborsClassifier as knn
 
-# Additional required imports
 import random, threading, time
 import pandas as pd
 import numpy as np
@@ -30,7 +28,7 @@ We will now import our data into Deephaven as a Pandas dataframe and as a table.
 
 ```python
 iris_raw = read_csv("/data/examples/Iris/csv/iris.csv")
-raw_iris = tableToDataFrame(iris_raw)
+raw_iris = to_pandas(table = iris_raw)
 ```
 \
 \
@@ -40,8 +38,8 @@ We now have the data in memory.  We need to split it into training and testing s
 raw_iris_train = raw_iris.sample(frac = 0.8)
 raw_iris_test = raw_iris.drop(raw_iris_train.index)
 
-iris_train_raw = dataFrameToTable(raw_iris_train)
-iris_test_raw = dataFrameToTable(raw_iris_test)
+iris_train_raw = to_table(df = raw_iris_train)
+iris_test_raw = to_table(df = raw_iris_test)
 ```
 \
 \
@@ -57,8 +55,8 @@ def get_class_number(c):
         num_classes += 1
     return classes[c]
 
-iris_train = iris_train_raw.update("Class = (int)(byte)get_class_number(Class)")
-iris_test = iris_test_raw.update("Class = (int)(byte)get_class_number(Class)")
+iris_train = iris_train_raw.update(formulas=["Class = (int)get_class_number(Class)"])
+iris_test = iris_test_raw.update(formulas=["Class = (int)get_class_number(Class)"])
 ```
 \
 \
@@ -67,13 +65,11 @@ With our data quantized and split into training and testing sets, we can get to 
 ```python
 neigh = 0
 
-# Construct and classify the Iris dataset
 def fit_knn(X_train, Y_train):
     global neigh
     neigh = knn(n_neighbors = 3)
     neigh.fit(X_train, Y_train)
 
-# Use the K-Nearest neighbors classifier on the Iris dataset
 def use_knn(features):
     if features.ndim == 1:
         features = np.expand_dims(features, 0)
@@ -89,17 +85,14 @@ def use_knn(features):
 There's one more step we need to take before we use these functions.  We have to define how our K-Neighbors classifier will interact with data in Deephaven tables.  There will be two functions that gather data from a table, and one that scatters data back into an output table.
 
 ```python
-# A function to gather data from columns into a NumPy array of doubles
 def table_to_array_double(rows, cols):
-    return gather.table_to_numpy_2d(rows, cols, dtype = np.double)
+    return gather.table_to_numpy_2d(rows, cols, np_type = np.double)
 
-# A function to gather data from columns into a NumPy array of integers
 def table_to_array_int(rows, cols):
-    return np.squeeze(gather.table_to_numpy_2d(rows, cols, dtype = np.intc))
+    return np.squeeze(gather.table_to_numpy_2d(rows, cols, np_type = np.intc))
 
-# A function to extract a list element and cast to an integer
 def get_predicted_class(data, idx):
-    return int(data[idx])
+    return data[idx]
 ```
 \
 \
@@ -123,34 +116,22 @@ iris_knn_classified = learn.learn(
     table = iris_test,
     model_func = use_knn,
     inputs = [learn.Input(["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"], table_to_array_double)],
-    outputs = [learn.Output("ClassifiedClass", get_predicted_class, "int")],
+    outputs = [learn.Output("Prediction", get_predicted_class, "int")],
     batch_size = 150
 )
 ```
 \
 \
-The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large or real-time.  Let's create a real-time table of faux Iris measurements and apply our fitted classifier.
-We need to make sure our faux measurements are realistic, so let's grab the minimum and maximum observation values and use those to generate random numbers.
-
-```python
-min_petal_length, max_petal_length = raw_iris["PetalLengthCM"].min(), raw_iris["PetalLengthCM"].max()
-min_petal_width, max_petal_width = raw_iris["PetalWidthCM"].min(), raw_iris["PetalWidthCM"].max()
-min_sepal_length, max_sepal_length = raw_iris["SepalLengthCM"].min(), raw_iris["SepalLengthCM"].max()
-min_sepal_width, max_sepal_width = raw_iris["SepalWidthCM"].min(), raw_iris["SepalWidthCM"].max()
-```
-\
-\
-With these quantities now calculated and stored in memory, we need to set up alive table that we can write measurements to.  To keep it simple, we'll write measurements to the table once per second for a minute.
+The K-Nearest neighbors classifier worked great!  We just did some classifications using a simple model on a static data set.  That's kind of cool, but this data set is neither large or real-time.  Let's create a real-time table of faux Iris measurements and apply our fitted classifier.  We need to make sure our faux measurements are realistic, so we'll use the minimum and maximum values for each feature and use those to generate random numbers.  To keep it simple, we'll write measurements to the table once per second for a minute.
 
 ```python
 # Create the table writer
 table_writer = DynamicTableWriter(
-    ["SepalLengthCM", "SepalWidthCM", "PetalLengthCM", "PetalWidthCM"],
-    [dht.double, dht.double, dht.double, dht.double]
+    {"SepalLengthCM": dht.double, "SepalWidthCM": dht.double, "PetalLengthCM": dht.double, "PetalWidthCM": dht.double}
 )
 
 # Get the live, ticking table
-live_iris = table_writer.getTable()
+live_iris = table_writer.table
 
 # This function creates faux Iris measurements once per second for a minute
 def write_to_iris():
@@ -160,11 +141,11 @@ def write_to_iris():
         sepal_length = random.randint(43, 79) / 10
         sepal_width = random.randint(20, 44) / 10
 
-        table_writer.logRow(sepal_length, sepal_width, petal_length, petal_width)
+        table_writer.write_row(sepal_length, sepal_width, petal_length, petal_width)
         time.sleep(1)
 
 # Use a thread to write data to the table
-thread = threading.Thread(target = write_to_iris)
+thread = threading.Thread(target=write_to_iris)
 thread.start()
 ```
 \

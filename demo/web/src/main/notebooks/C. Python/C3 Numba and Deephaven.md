@@ -149,7 +149,7 @@ If you are considering using Numba in your Deephaven queries, `@vectorize` is pr
 Let's see how queries in Deephaven can be sped up with the `@vectorize` decorator:
 
 ```python
-from deephaven.TableTools import emptyTable
+from deephaven import empty_table
 from numba import jit, vectorize, double, int64
 import time
 
@@ -175,41 +175,41 @@ def cubic_func_jit(c):
 def cubic_func_vectorize(c):
     return 0.0025 * c**3 - 1.75 * c**2 - c + 10
 
-t = emptyTable(625000).update("A = ii", "B = ii")
+t = empty_table(size = 625000).update(formulas = ["A = i", "B = i"])
 
 # Time column addition without Numba
 start = time.time()
-t2 = t.update("C = add_columns(A, B)")
+t2 = t.update(formulas = ["C = add_columns(A, B)"])
 end = time.time()
 print("column addition - Execution time (without Numba) = %s" % (end - start))
 
 # Time column addition with jit
 start = time.time()
-t3 = t.update("C = add_columns_jit(A, B)")
+t3 = t.update(formulas = ["C = add_columns_jit(A, B)"])
 end = time.time()
 print("column addition - Execution time (jit) = %s" % (end - start))
 
 # Time column addition with vectorize
 start = time.time()
-t4 = t.update("C = add_columns_vectorize(A, B)")
+t4 = t.update(formulas = ["C = add_columns_vectorize(A, B)"])
 end = time.time()
 print("column addition - Execution time (vectorize) = %s" % (end - start))
 
 # Time cubic polynomial without Numba
 start = time.time()
-t5 = t2.update("D = cubic_func(C)")
+t5 = t2.update(formulas = ["D = cubic_func(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (without Numba) = %s" % (end - start))
 
 # Time cubic polynomial with jit
 start = time.time()
-t5 = t2.update("D = cubic_func_jit(C)")
+t5 = t2.update(formulas = ["D = cubic_func_jit(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (jit) = %s" % (end - start))
 
 # Time a cubic polynomial with vectorize
 start = time.time()
-t6 = t2.update("D = cubic_func_vectorize(C)")
+t6 = t2.update(formulas = ["D = cubic_func_vectorize(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (vectorize) = %s" % (end - start))
 ```

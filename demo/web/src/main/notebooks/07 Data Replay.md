@@ -8,65 +8,67 @@ To start, let's make a sample table containing random numbers generated at certa
 
 ```python
 from deephaven import DynamicTableWriter
-from deephaven.DateTimeUtils import Period, convertDateTime, plus
-import deephaven.Types as dht
+from deephaven.time import to_period, to_datetime, plus_period
+from deephaven.dtypes import DateTime, int_
 
 import random
 
 table_writer = DynamicTableWriter(
-    ["DateTime", "Number"],
-    [dht.datetime, dht.int_]
+    {
+        "DateTime": DateTime,
+        "Number": int_,
+    }
 )
 
-time = convertDateTime("2000-01-01T00:00:00 NY")
-time_offset = Period("T1S")
+time = to_datetime("2000-01-01T00:00:00 NY")
+time_offset = to_period("T1S")
 
-result = table_writer.getTable()
+result = table_writer.table
 
 for i in range(100):
     random_number = random.randint(1, 100)
 
-    table_writer.logRow(time, random_number)
-    time = plus(time, time_offset)
+    table_writer.write_row(time, random_number)
+    time = plus_period(time, time_offset)
 ```
 
 After running this code, we can see that the `result` table contains 100 entries of random numbers with each number having a historical timestamp.
 
-So how do we replay this data? Using the [`Replayer`](https://deephaven.io/core/docs/reference/table-operations/create/Replayer/) object, we can specify a start and end time, and apply this to our table.
+So how do we replay this data? Using the [`replayer`](https://deephaven.io/core/docs/reference/table-operations/create/Replayer/) object, we can specify a start and end time, and apply this to our table.
 
 ```python
-from deephaven.TableManipulation import Replayer
+from deephaven.replay import TableReplayer
 
-start_time = convertDateTime("2000-01-01T00:00:00 NY")
-end_time = convertDateTime("2000-01-01T00:01:40 NY")
+start_time = to_datetime("2000-01-01T00:00:00 NY")
+end_time = to_datetime("2000-01-01T00:01:40 NY")
 
-result_replayer = Replayer(start_time, end_time)
+replayer = TableReplayer(start_time, end_time)
+replayed_table = replayer.add_table(result, "DateTime")
 
-replayed_result = result_replayer.replay(result, "DateTime")
-result_replayer.start()
+replayer.start()
 ```
 
 After running this code, the `replayed_result` table begins updating in "real-time" with our historical data. Since each of our timestamps are one second apart, the table updates with a new row every second. This gives us an exact replication of how our initial table would have been populated in real-time.
 
 Deephaven table operations do not discriminate between dynamic or static data; we can apply the same table operations to this table as we would any table.
 
-```
-from deephaven.TableManipulation import Replayer
-from deephaven import Aggregation as agg, as_list
+```python
+from deephaven.replay import TableReplayer
+from deephaven import agg
 
-start_time = convertDateTime("2000-01-01T00:00:00 NY")
-end_time = convertDateTime("2000-01-01T00:01:40 NY")
+start_time = to_datetime("2000-01-01T00:00:00 NY")
+end_time = to_datetime("2000-01-01T00:01:40 NY")
 
-result_replayer = Replayer(start_time, end_time)
+replayer = TableReplayer(start_time, end_time)
+replayed_table = replayer.add_table(result, "DateTime")
 
-replayed_result = result_replayer.replay(result, "DateTime")
-result_replayer.start()
+replayer.start()
 
-agg_list = as_list([
-    agg.AggAvg("Number")
-])
+agg_list = [
+    agg.avg(["Number"])
+]
 
-replayed_average = replayed_result.aggBy(agg_list)
+replayed_average = replayed_table.agg_by(agg_list, [])
 ```
 
 With this example, we can re-run our replay and see our average value updating in real-time.

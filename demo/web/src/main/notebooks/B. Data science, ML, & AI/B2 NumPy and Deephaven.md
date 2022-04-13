@@ -6,7 +6,7 @@ NumPy is a numerical computing library for Python that is widely used by data sc
 
 Deephaven is a real-time, time-series, column-oriented data engine with relational database features.  Its Python API enables users to interact with table data using any Python module of their choice.  Given NumPy's popularity and capabilities, it makes perfect sense to pair it with Deephaven and the learn module.  The learn module provides efficient data transfer to and from Deephaven tables and NumPy arrays.  So how can you use these two in tandem to bring solutions to fruition faster and more efficiently than ever before?  In this demo notebook, we will show you how you can use these two to do some interesting analysis on both static an real-time data.
 \
-
+\
 ## NumPy ndarrays
 
 NumPy is used to create N-dimensional arrays through its `ndarray` object.  To create one, use the `array` method.
@@ -80,29 +80,30 @@ print(f"b flattened:\n{b_flattened}")
 Let's integrate NumPy with Deephaven by creating a table with some data.  That data will be an independent variable (X) and sum of sine waves of different amplitudes and frequencies (Y).  We can construct this noisy signal with NumPy's built in function for a sine wave.
 
 ```python
-from deephaven.TableTools import emptyTable
+from deephaven import empty_table
 
 def generate_noisy_signal(x):
     return 3.5 * np.sin(x) + 1.5 * np.sin(2.5 * x) + 0.75 * np.sin(3.5 * x) + np.random.normal()
 
-data_table = emptyTable(1000).update(
-    "X = 0.01 * (int)(byte)i",
-    "Y = (double)generate_noisy_signal(X)"
+data_table = empty_table(size=1000).update(
+    formulas=["X = 0.01 * i", "Y = (double)generate_noisy_signal(X)"]
 )
 ```
 \
-
+\
 ## Plot data
 
 Let's plot the `X` and `Y` columns to see what this signal like.
 
 ```python
-from deephaven import Plot
+from deephaven.plot.figure import Figure
 
-data_plot = Plot.plot("Noisy Signal", data_table, "X", "Y").show()
+figure = Figure()
+new_fig = figure.plot_xy(series_name = "Noisy Signal", t = data_table, x = "X", y = "Y")
+new_plot = new_fig.show()
 ```
 \
-
+\
 ## Remove noise
 
 Our signal is cyclic, but with some clear irregularities, since we have the sum of three different sine waves of differing amplitudes and frequencies.  Without the prior knowledge we have (since we just made the signal), we might know that it's cyclic, but not much else.  We would, however, probably want to learn more about the signal beneath the noise.  There are many different ways we could get more information, so let's explore a few of them.
@@ -111,15 +112,16 @@ Our signal is cyclic, but with some clear irregularities, since we have the sum 
 We can start by quantizing each value in the `Y` column.  This probably won't help too much, but hey, let's give it a shot.  Remember, we're pretending we didn't just create this data ourselves!
 
 ```python
-data_table_quantized = data_table.update("Quantized_Y = (double)np.round(Y)")
+data_table_quantized = data_table.update(formulas = ["Quantized_Y = (double)np.round(Y)"])
 
-quantized_plot = Plot.plot("Quantized Signal", data_table_quantized, "X", "Quantized_Y").show()
+quantized_fig = figure.plot_xy(series_name = "Quantized Signal", t = data_table_quantized, x = "X", y = "Quantized_Y")
+quantized_plot = quantized_fig.show()
 ```
 \
 \
 Hmm.  Rounding each data point to the nearest integer doesn't really help much.  That's also not really surprising.  We're not really going to be able to reduce noise in the data by only working on one data point at a time.  We could operate on multiple data points by using globals to access them in a function, but that's generally not good coding practice.  Instead, let's use the learn module to operate on however many values we please.  Before we dive into real analysis, let's start with the basics of the learn module.
 \
-
+\
 ## deephaven.learn
 
 `deephaven.learn` is a package designed to facilitate the transfer of data to and from Deephaven tables and NumPy arrays.  We can exemplify this with some simple code.
@@ -134,11 +136,11 @@ def print_num_rows_and_cols(data):
     print(f"{n_rows} rows and {n_cols} columns.")
 
 def table_to_numpy_double(rows, columns):
-    return gather.table_to_numpy_2d(rows, columns, dtype = np.double)
+    return gather.table_to_numpy_2d(rows, columns, np_type = np.double)
 
 learn.learn(
     table = data_table,
-    model_func = print_num_rows_and_cols, 
+    model_func = print_num_rows_and_cols,
     inputs = [learn.Input(["X", "Y"], table_to_numpy_double)],
     outputs = None,
     batch_size = 101
@@ -163,7 +165,7 @@ Let's break down the code above step by step:
 
 There are 1000 rows in `data_table`.  We've specified a `batch_size` of 101 to demonstrate that the `deephaven.learn` will take _**up to**_ `batch_size` rows at once.  The first nine times data is taken from the table, 101 rows are used.  The last time it's called, only 91 rows remain in the table, so 91 are used.  This is an important concept that plays a critical role for real-time applications, as we'll demonstrate later on.
 \
-
+\
 ## Quantize the signal with deephaven.learn
 
 We previously "quantized" the signal by rounding each value to the nearest integer.  It was a very poor attempt to smooth the noise out of the data.  This time, let's properly quantize the data by quantizing segments at a time using `deephaven.learn`.  We can reuse the `table_to_numpy_double` function we just made.  This time around, we'll have to use a function that defines how data is placed from a NumPy array back into a table.
@@ -185,11 +187,14 @@ data_table_quantized = learn.learn(
     batch_size = 20
 )
 
-data_plot_quantized = Plot.plot("Raw Signal", data_table_quantized, "X", "Y").plot("Quantized Signal", data_table_quantized, "X", "Quantized_Y").show()
+quant_fig = figure.\
+    plot_xy(series_name = "Raw Signal", t = data_table_quantized, x = "X", y = "Y").\
+    plot_xy(series_name = "Quantized Signal", t = data_table_quantized, x = "X", y = "Quantized_Y")
+quant_fig = quant_fig.chart_title(title = "Noisy vs Quantized Signal")
+quant_plot = quant_fig.show()
 ```
-
 \
-
+\
 ## Rolling ball filter
 
 That helps a bit, but the real signal clearly isn't quantized like this underneath the noise.  We are taking a step in the right direction.  This time around, let's do some real signal filtering by applying a discrete convolution of the signal based on the `batch_size` we provide.
@@ -213,7 +218,11 @@ data_table_smoothed = learn.learn(
     batch_size = 100
 )
 
-data_plot_smoothed = Plot.plot("Raw Signal", data_table_smoothed, "X", "Y").plot("Quantized Signal", data_table_smoothed, "X", "Smoothed_Y").show()
+ball_fig = figure.\
+    plot_xy(series_name = "Raw Signal", t = data_table_smoothed, x = "X", y = "Y").\
+    plot_xy(series_name = "Smoothed Signal", t = data_table_smoothed, x = "X", y = "Smoothed_Y")
+ball_fig = ball_fig.chart_title(title = "Noisy vs Smoothed Signal")
+ball_plot = ball_fig.show()
 ```
 \
 \
@@ -225,7 +234,7 @@ Let's do one last thing for our static table: perform a polynomial fit using Num
 
 ```python
 def table_to_numpy_double(rows, columns):
-    return gather.table_to_numpy_2d(rows, columns, dtype = np.double)
+    return gather.table_to_numpy_2d(rows, columns, np_type = np.double)
 
 def numpy_to_table(data, index):
     return data[index]
@@ -246,7 +255,11 @@ data_table_polyfitted = learn.learn(
     batch_size = 100
 )
 
-data_plot_polyfitted = Plot.plot("Raw Signal", data_table, "X", "Y").plot("Polyfitted Signal", data_table_polyfitted, "X", "Fitted_Y").show()
+poly_fig = figure.\
+    plot_xy(series_name = "Raw Signal", t = data_table_polyfitted, x = "X", y = "Y").\
+    plot_xy(series_name = "Polyfitted Signal", t = data_table_polyfitted, x = "X", y = "Fitted_Y")
+poly_fig = poly_fig.chart_title(title = "Noisy vs Polyfitted Signal")
+poly_plot = poly_fig.show()
 ```
 \
 \
@@ -258,18 +271,17 @@ As a final exercise, let's set up a real-time data feed based on the static exam
 
 ```python
 from deephaven import DynamicTableWriter
-import deephaven.Types as dht
+from deephaven import dtypes as dht
 
 import threading, time
 
 sleep_time = 1
 
 table_writer = DynamicTableWriter(
-    ["X", "Y"],
-    [dht.double, dht.double]
+    {"X": dht.double, "Y": dht.double}
 )
 
-data_table_live = table_writer.getTable()
+data_table_live = table_writer.table
 
 def write_noisy_signal():
     x0 = 0
@@ -280,7 +292,7 @@ def write_noisy_signal():
         x = np.arange(x0, x1, step_size)
         y = 3.5 * np.sin(x) + 1.5 * np.sin(x) + 0.75 * np.sin(3.5 * x) + np.random.normal(0, 1, 100)
         for i in range(len(y)):
-            table_writer.logRow(x[i], y[i])
+            table_writer.write_row([x[i], y[i]])
         x0 += 1
         x1 += 1
         end = time.time()
@@ -290,10 +302,13 @@ def write_noisy_signal():
 thread = threading.Thread(target = write_noisy_signal)
 thread.start()
 
-data_plot_live = Plot.plot("Raw Signal", data_table_live, "X", "Y").show()
+live_fig = figure.\
+    plot_xy(series_name = "Raw Signal", t = data_table_live, x = "X", y = "Y")
+live_fig = live_fig.chart_title(title = "Real-Time Noisy Signal")
+live_plot = live_fig.show()
 ```
-
-
+\
+\
 # Polynomial fit in real-time
 
 Alright, with a live feed set up and ready to go, let's do the polynomial fitting.  But this time, it's in real-time.  Oh yea, and we don't have to do any more work.  Everything is already set up that we need!
@@ -307,7 +322,11 @@ data_table_live_polyfitted = learn.learn(
     batch_size = 100
 )
 
-data_plot_live_polyfitted = Plot.plot("Raw Signal", data_table_live, "X", "Y").plot("Polyfitted Signal", data_table_live_polyfitted, "X", "Fitted_Y").show()
+live_poly_fig = figure.\
+    plot_xy(series_name = "Raw Signal", t = data_table_live_polyfitted, x = "X", y = "Y").\
+    plot_xy(series_name = "Polyfitted Signal", t = data_table_live_polyfitted, x = "X", y = "Fitted_Y")
+live_poly_fig = live_poly_fig.chart_title(title = "Real-Time Polynomial Fit")
+live_poly_plot = live_poly_fig.show()
 ```
 \
 \

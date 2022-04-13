@@ -14,52 +14,51 @@ First, let's create a Deephaven table.
 
 
 ```python
-from deephaven.TableTools import newTable, stringCol, intCol, floatCol, doubleCol
+from deephaven import new_table
+from deephaven.column import double_col, float_col, int_col, string_col
 
-source = newTable(
-   stringCol("Strings", "String 1", "String 2", "String 3"),
-   intCol("Ints", 4, 5, 6),
-   floatCol("Floats", 9.9, 8.8, 7.7),
-   doubleCol("Doubles", 0.1, 0.2, 0.3)
-)
+source = new_table([
+    string_col("Strings", ["String 1", "String 2", "String 3"]),
+    int_col("Ints", [4, 5, 6]),
+    float_col("Floats", [9.9, 8.8, 7.7]),
+    double_col("Doubles", [0.1, 0.2, 0.3])
+])
 ```
 
 
-To convert the Deephaven table to a DataFrame, import the [`tableToDataFrame`](https://deephaven.io/core/pydoc/code/deephaven.html#deephaven.tableToDataFrame) method and then perform the conversion. To see the DataFrame, we print it.
+To convert the Deephaven table to a DataFrame, import the [`to_pandas`](https://deephaven.io/core/pydoc/code/deephaven.pandas.html?highlight=to_pandas#deephaven.pandas.to_pandas) method and then perform the conversion. To see the DataFrame, we print it.
 
 ```python
-from deephaven import tableToDataFrame
+from deephaven.pandas import to_pandas
 
-data_frame = tableToDataFrame(source)
-print(data_frame)
+data_frame = to_pandas(source)
 ```
-
 
 ## DataFrame to Table
 
-Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`dataFrameToTable`](https://deephaven.io/core/pydoc/code/deephaven.html#deephaven.dataFrameToTable) method.
+Users often perform analysis which results in a Pandas DataFrame. To convert this to a Deephaven table, we start with the DataFrame created above and map that to a Deephaven table using the [`to_table`](https://deephaven.io/core/pydoc/code/deephaven.pandas.html?highlight=to_table#deephaven.pandas.to_table) method.
 
 ```python
-from deephaven import dataFrameToTable
+from deephaven.pandas import to_table
 
-new_table = dataFrameToTable(data_frame)
+new_table = to_table(data_frame)
 ```
-The new Deephaven table will display in the IDE and the data will match the original data. To check that the data type conversions are accurate, we can look at the [table metadata](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getMeta()).
+The new Deephaven table will display in the IDE and the data will match the original data. To check that the data type conversions are accurate, we can look at the [column metadata](https://deephaven.io/core/pydoc/code/deephaven.table.html?highlight=columns#deephaven.table.Table.columns).
 
 For the DataFrame, we print the data types in the Console. For the Deephaven table, we create a new table containing the metadata information.
 
 ```python
 print(data_frame.dtypes)
 
-meta_table = new_table.getMeta()
+print(new_table.columns)
 ```
 
 Pandas uses `float32` and `float64` data types, which are equivalent to `float` and `double` in Deephaven. These are the same type and require the same memory. A `String` in Deephaven is an `object` in Pandas.
 
 \
-Pandas has fewer data types than Deephaven. To learn more about creating tables with specific types, see our guide [How to create a table with newTable](https://deephaven.io/core/docs/how-to-guides/new-table/).
+Pandas has fewer data types than Deephaven. To learn more about creating tables with specific types, see our guide [How to create a table with new_table](https://deephaven.io/core/docs/how-to-guides/new-table/).
 
-
+\
 
 ## Table operations
 
@@ -80,13 +79,13 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
-from deephaven.TableTools import col, newTable
-
-table = newTable(
-   col('A', 1, 2, 3),
-   col('B', 'X', 'Y', 'Z')
-)
+table = new_table([
+    int_col("A", [1, 2, 3]),
+    string_col("B", ["X", "Y", "Z"])
+])
 ```
 
 You'll often want to perform operations on whole columns. Deephaven has various methods for viewing, selecting, updating, eliminating, changing, and creating columns of data in tables. The choice of each can result in performance differences. See our guide [Choosing the right selection method for your query](https://deephaven.io/core/docs/conceptual/choose-select-view-update/) or [How to select, view, and update data in tables](https://deephaven.io/core/docs/how-to-guides/use-select-view-update/) for detailed advice.
@@ -95,31 +94,28 @@ You'll often want to perform operations on whole columns. Deephaven has various 
 In this case, we wish to add a column `C` that is equal to column `A` plus 5.
 
 ```python
-added_data_frame = data_frame.assign(C = data_frame['A'] + 5)
+added_data_frame = data_frame.assign(C=data_frame['A'] + 5)
 print(added_data_frame)
 
-from deephaven.TableTools import col, newTable
-added_table = table.update("C = A + 5")
+added_table = table.update(formulas=["C = A + 5"])
 ```
 
-We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop.html) in Pandas or [`dropColumns`](https://deephaven.io/core/docs/reference/table-operations/select/drop-columns/) in Deephaven.
+We can remove whole columns with [`drop`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.drop.html) in Pandas or [`drop_columns`](https://deephaven.io/core/docs/reference/table-operations/select/drop-columns/) in Deephaven.
 
 ```python
-dropped_data_frame = data_frame.drop(columns = ['A'])
+dropped_data_frame = data_frame.drop(columns=['A'])
 print(dropped_data_frame)
 
-dropped_table = table.dropColumns("A")
+dropped_table = table.drop_columns(cols=["A"])
 ```
-
 
 [Renaming](https://deephaven.io/core/docs/reference/table-operations/select/rename-columns/) columns in a DataFrame or Deephaven table is simple:
 
 ```python
-data_frame.rename(columns={"A": "X", "B": "B"}, inplace = True)
+data_frame.rename(columns={"A": "X", "B": "B"}, inplace=True)
 print(data_frame)
 
-
-renamed_table = table.renameColumns("X = A")
+renamed_table = table.rename_columns(cols=["X = A"])
 ```
 
 Deephaven offers several types of filters. See our article, [How to use filters](https://deephaven.io/core/docs/how-to-guides/use-filters/).
@@ -139,13 +135,13 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
-from deephaven.TableTools import col, newTable
-
-table = newTable(
-   col('A', 1, 2, 3),
-   col('B', 'X', 'Y', 'Z')
-)
+table = new_table([
+    int_col("A", [1, 2, 3]),
+    string_col("B", ["X", "Y", "Z"])
+])
 ```
 
 We can limit the columns to certain values that match a formula. See our article, [How to use formulas](https://deephaven.io/core/docs/formulas-how-to/).
@@ -154,7 +150,7 @@ We can limit the columns to certain values that match a formula. See our article
 filtered_data_frame = data_frame[data_frame.A < 2]
 print(filtered_data_frame)
 
-filtered_table = table.where("A < 2")
+filtered_table = table.where(filters=["A < 2"])
 ```
 
 
@@ -165,7 +161,7 @@ head_data_frame = data_frame.iloc[:3]
 print(head_data_frame)
 
 
-head_table = table.head(3)
+head_table = table.head(num_rows=3)
 ```
 
 Below, we request the last three rows:
@@ -174,7 +170,7 @@ Below, we request the last three rows:
 tail_data_frame = data_frame.iloc[-3:]
 print(tail_data_frame)
 
-tail_table = table.tail(3)
+tail_table = table.tail(num_rows=3)
 ```
 
 
@@ -193,37 +189,36 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
-from deephaven.TableTools import col, newTable
-
-table = newTable(
-   col('A', 1, 2, 3, 4, 5, 6),
-   col('B', 'Z', 'Y', 'X', 'X', 'Y', 'Z'),
-   col('C', 7, 2, 1, 5, 3, 4)
-)
-
+table = new_table([
+   int_col('A', [1, 2, 3, 4, 5, 6]),
+   string_col('B', ['Z', 'Y', 'X', 'X', 'Y', 'Z']),
+   int_col('C', [7, 2, 1, 5, 3, 4])
+])
 ```
 
 
 We can [sort](https://deephaven.io/core/docs/reference/table-operations/sort/sort/) in ascending order on a dataset for a DataFrame or table:
 
 ```python
-sorted_data_frame = data_frame.sort_values(by = 'B')
+sorted_data_frame = data_frame.sort_values(by='B')
 print(sorted_data_frame)
 
 
-sorted_table = table.sort("B")
+sorted_table = table.sort(order_by=["B"])
 ```
 
 
 We can [sort descending](https://deephaven.io/core/docs/reference/table-operations/sort/sort-descending/) on a dataset for a DataFrame or table:
 
 ```python
-sorted_data_frame = data_frame.sort_values(by = 'B', ascending = False)
+sorted_data_frame = data_frame.sort_values(by='B', ascending=False)
 print(sorted_data_frame)
 
 
-sorted_table = table.sortDescending("B")
+sorted_table = table.sort_descending(order_by=["B"])
 ```
 
 
@@ -240,11 +235,18 @@ data_frame = pd.concat([data_frame1, data_frame2])
 print(data_frame)
 
 
-from deephaven.TableTools import col, newTable, merge
+from deephaven import new_table
+from deephaven.column import int_col
+from deephaven.table_factory import merge
 
-table1 = newTable(col('A', 1, 2))
-table2 = newTable(col('A', 3, 4))
-table = merge(table1, table2)
+table1 = new_table([
+    int_col("A", [1, 2])
+])
+table2 = new_table([
+    int_col("A", [3, 4])
+])
+
+table = merge(tables=[table1, table2])
 ```
 
 
@@ -257,18 +259,25 @@ Pandas and Deephaven provide many of the same join methods, but there is not a o
 ```python
 import pandas as pd
 
-data_frameLeft = pd.DataFrame({'A': [1, 2, 3], 'B': ['X', 'Y', 'Z']})
-data_frameRight = pd.DataFrame({'A': [3, 4, 5], 'C': ['L', 'M', 'N']})
-data_frame = pd.merge(data_frameLeft, data_frameRight, on = 'A')
+data_frame_left = pd.DataFrame({'A': [1, 2, 3], 'B': ['X', 'Y', 'Z']})
+data_frame_right = pd.DataFrame({'A': [3, 4, 5], 'C': ['L', 'M', 'N']})
+data_frame = pd.merge(data_frame_left, data_frame_right, on='A')
 
-print( data_frame)
+print(data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col, string_col
 
-from deephaven.TableTools import col, newTable
+table_left = new_table([
+    int_col("A", [1, 2, 3]),
+    string_col("B", ["X", "Y", "Z"])
+])
+table_right = new_table([
+    int_col("A", [3, 4, 5]),
+    string_col("C", ["L", "M", "N"])
+])
 
-tableLeft = newTable(col("A", 1, 2, 3), col("B", 'X', 'Y', 'Z'))
-tableRight = newTable(col("A", 3, 4, 5), col("C", 'L', 'M', 'N'))
-table = tableLeft.join(tableRight, "A")
+table = table_left.join(table=table_right, on=["A"])
 ```
 
 
@@ -300,36 +309,34 @@ data_frame_right = pd.DataFrame(
      'C': [random.randint(0, 100) for j in range(0, 1) for i in range(0, 365)]
     })
 
-data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on = 'A')
+data_frame_aj = pd.merge_asof(data_frame_left, data_frame_right, on='A')
 
 print(data_frame_aj)
 
-
-from deephaven.TableTools import emptyTable
-from deephaven.DateTimeUtils import convertDateTime, plus, Period
+from deephaven import empty_table
+from deephaven.time import to_datetime, to_period, plus_period
 
 def period(i):
-    return Period(f"{i}D")
+    return to_period(f"{i}D")
 
 start_times = [
-    convertDateTime("2020-01-01T00:00:00 NY"),
-    convertDateTime("2020-01-01T00:00:02 NY")
+    to_datetime("2020-01-01T00:00:00 NY"),
+    to_datetime("2020-01-01T00:00:02 NY")
 ]
 
-deephaven_table_left = emptyTable(365).update(
-      "A = plus(start_times[0], period(i))",
-      "B = random.choice(ch)",
-      "C = (int)(byte)random.randint(1, 100)")
+deephaven_table_left = empty_table(size = 365).update(formulas=[
+    "A = plus_period(start_times[0], period(i))",
+    "B = random.choice(ch)",
+    "C = (int)(byte)random.randint(1, 100)"
+])
+deephaven_table_right = empty_table(size = 365).update(formulas=[
+    "A = plus_period(start_times[1], period(i))",
+    "B = random.choice(ch)",
+    "C = (int)(byte)random.randint(1, 100)"
+])
 
-deephaven_table_right = emptyTable(365).update(
-      "A = plus(start_times[1], period(i))",
-      "B = random.choice(ch)",
-      "C = (int)(byte)random.randint(1, 100)")
-
-
-joined_data_aj = deephaven_table_left.aj(deephaven_table_right, "A", "B_y = B, C_y = C")
+joined_data_aj = deephaven_table_left.aj(table=deephaven_table_right, on=["A"], joins=["B_y = B", "C_y = C"])
 ```
-
 
 
 You'll often want to partition your data into groups and then compute values for the groups. Deephaven supports many kinds of data aggregations. There are more methods than can be covered here, so see our guides
@@ -346,15 +353,15 @@ data_frame = pd.DataFrame(
 avg_data_frame = data_frame.mean()
 print(avg_data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col
 
-from deephaven.TableTools import col, newTable
+table = new_table([
+    int_col("A", [1, 3, 5]),
+    int_col("B", [5, 7, 9])
+])
 
-table = newTable(
-   col("A", 1, 3, 5),
-   col("B", 5, 7, 9)
-)
-
-avg_table = table.avgBy()
+avg_table = table.avg_by()
 ```
 
 
@@ -381,33 +388,31 @@ def agg_list(data):
 grouped_data_frame = data_frame.groupby('A').apply(agg_list)
 print(grouped_data_frame)
 
+from deephaven import new_table
+from deephaven.column import int_col, string_col
+from deephaven import agg
 
-from deephaven.TableTools import intCol, stringCol, newTable
-
-table = newTable(
-   stringCol('A', 'X', 'Y', 'X', 'Z', 'Z', 'X'),
-   intCol('B', 2, 2, 5, 1, 3, 4),
-   intCol('C', 12, 22, 13, 12, 8, 2)
-)
-
-from deephaven import Aggregation as agg, as_list
-
-agg_list = as_list([
-    agg.AggSum("Sum = C"),
-    agg.AggMin("Min = C"),
-    agg.AggStd("Std = C"),
-    agg.AggWAvg("B", "WAvg = C")
+table = new_table([
+    string_col("A", ["X", "Y", "X", "Z", "Z", "X"]),
+    int_col("B", [2, 2, 5, 1, 3, 4]),
+    int_col("C", [12, 22, 13, 12, 8, 2])
 ])
 
-grouped_table = table.aggBy(agg_list, "A")
+agg_list = [
+    agg.sum_(cols=["Sum = C"]),
+    agg.min_(cols=["Min = C"]),
+    agg.std(cols=["Std = C"]),
+    agg.weighted_avg(wcol="B", cols=["WAvg = C"])
+]
 
+grouped_table = table.agg_by(aggs=agg_list, by=["A"])
 ```
 
 
 If your data set has [null](https://deephaven.io/core/docs/reference/query-language/types/nulls/) or [NaN](https://deephaven.io/core/docs/reference/query-language/types/NaNs/) values, you'll probably want to remove or replace them before performing analysis. See our guide [How to handle null, infinity, and not-a-number values](https://deephaven.io/core/docs/how-to-guides/handle-null-inf-nan) for information on these data types in Deephaven.
 \
 \
-In this example, we define a data set with a missing value. Pandas uses `np.nan` to represent missing double values, while Deephaven uses `NULL_DOUBLE`.
+In this example, we define a data set with a missing value. Pandas uses `np.nan` to represent missing double values, while Deephaven uses `NULL_` followed by the data type.  In the code below, `NULL_DOUBLE` is used for a column of double values.
 
 ```python
 import pandas as pd
@@ -420,13 +425,14 @@ data_frame = pd.DataFrame(
 
 print(data_frame)
 
-from deephaven.TableTools import col, newTable
-from deephaven.conversion_utils import NULL_DOUBLE
+from deephaven import new_table
+from deephaven.column import double_col
+from deephaven.constants import NULL_DOUBLE
 
-table = newTable(
-   col('A', 1.0, 2.0, 3.0),
-   col('B', 4.0, 2.0, NULL_DOUBLE)
-)
+table = new_table([
+    double_col("A", [1., 2., 3.]),
+    double_col("B", [4., 2., NULL_DOUBLE])
+])
 ```
 
 We can filter the datasets to remove the missing values.
@@ -436,17 +442,17 @@ remove_values_data_frame = data_frame.dropna()
 print(remove_values_data_frame)
 
 
-remove_values_table = table.where("!isNull(B)")
+remove_values_table = table.where(filters=["!isNull(B)"])
 ```
 
 Or we can replace the missing values.
 
 ```python
-replace_values_data_frame = data_frame.fillna(value = 0.0)
+replace_values_data_frame = data_frame.fillna(value=0.0)
 print(replace_values_data_frame)
 
 
-replace_values_table = table.update("B = isNull(B) ? 0.0 : B")
+replace_values_table = table.update(formulas=["B = isNull(B) ? 0.0 : B"])
 ```
 
 The [Deephaven documentation](https://deephaven.io/core/docs/) has many more examples.
