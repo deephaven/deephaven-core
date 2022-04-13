@@ -167,7 +167,7 @@ final class RingColumnSource<T>
     }
 
     @Override
-    public Chunk<Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return ring.getChunk(context, firstKey, lastKey);
     }
 
