@@ -9,17 +9,19 @@ You can quickly see streaming data in a UI and do table operations, interactivel
 For example, you can listen to a Kafka stream of cryptocurrency trades sourced from their native exchanges (like the ones below, built using the [XChange library](https://github.com/knowm/XChange)).
 
 ```python
-from deephaven import ConsumeKafka as ck
+from deephaven import kafka_consumer as ck
+from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
+
 
 def get_trades_stream():
-    return ck.consumeToTable(
-        { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
+    return ck.consume(
+        {  'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = ck.IGNORE,
-        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        key_spec=KeyValueSpec.IGNORE,
+        value_spec = ck.avro_spec('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
         offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
-        table_type='append')
+        table_type=TableType.Append)
 
 trades_stream = get_trades_stream()
 ```
@@ -40,7 +42,7 @@ Tables and streams are a single abstraction. Event streams, feeds, [soon] CDC, a
 You can readily see that your table grows as greater volumes of data are inherited from the Kafka feed.
 
 ```python
-row_count = trades_stream.countBy("Tot_Rows")
+row_count = trades_stream.count_by(col="Tot_Rows")
 ```
 \
 \
@@ -58,21 +60,21 @@ As you might expect, a named table can have multiple dependencies.\
 After you run the following command, you'll see that all three of your tables are now updating in lock-step.
 
 ```python
-row_count_by_instrument = trades_stream.countBy("Tot_Rows", "Instrument")\
-    .sortDescending("Tot_Rows")
+row_count_by_instrument = trades_stream.count_by(col="Tot_Rows",  by=["Instrument"])\
+    .sort_descending(order_by=["Tot_Rows"])
 ```
 \
 \
 \
 USDT is a cryptocurrency pinned to the dollar.  Pretend you want to consider USD and USDT one in the same.\
 Below is one way to use a replace() method to swap one for the other.\
-To learn more about updateView (or other selection or projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
+To learn more about `update_view` (or other selection/projection alternatives), refer to [the docs](https://deephaven.io/core/docs/conceptual/choose-select-view-update/).
 
 ```python
-trades_stream_cleaner = trades_stream.updateView("Instrument = Instrument.replace(`USDT`, `USD`)")
+trades_stream_cleaner = trades_stream.update_view(formulas=["Instrument = Instrument.replace(`USDT`, `USD`)"])
 
-row_count_by_instrument = trades_stream_cleaner.countBy("Tot_Rows", "Instrument")\
-    .sortDescending("Tot_Rows")
+row_count_by_instrument = trades_stream_cleaner.count_by(col="Tot_Rows", by=["Instrument"])\
+    .sort_descending(order_by=["Tot_Rows"])
 ```
 \
 \
@@ -80,20 +82,19 @@ row_count_by_instrument = trades_stream_cleaner.countBy("Tot_Rows", "Instrument"
 Counts are informative, but often you'll be interested in other aggregations. The script below shows both how to [bin data by time](https://deephaven.io/core/docs/reference/cheat-sheets/datetime-cheat-sheet/#downsampling-temporal-data-via-time-binning) and to [do multiple aggregations](https://deephaven.io/core/docs/how-to-guides/combined-aggregations/).
 
 ```python
-from deephaven import Aggregation as agg, as_list
+from deephaven import agg as agg
 
-agg_list = as_list([
-    agg.AggCount("Trade_Count"),
-    agg.AggSum("Total_Size = Size"),
-    agg.AggAvg("Avg_Size = Size", "Avg_Price = Price"),
-    agg.AggMin("Low_Price = Price"),
-    agg.AggMax("High_Price = Price")
-])
+agg_list = [
+    agg.count_(col="Trade_Count"),
+    agg.sum_(cols=["Total_Size = Size"]),
+    agg.avg(cols=["Avg_Size = Size", "Avg_Price = Price"]),
+    agg.min_(cols=["Low_Price = Price"]),
+    agg.max_(cols=["High_Price = Price"])
+]
 
-multi_agg = trades_stream_cleaner.updateView("TimeBin = upperBin(KafkaTimestamp, MINUTE)")\
-    .aggBy(agg_list, "TimeBin", "Instrument")\
-    .sortDescending("TimeBin", "Trade_Count")\
-    .formatColumnWhere("Instrument", "Instrument = `BTC/USD`", "CYAN")
+multi_agg = trades_stream_cleaner.update_view(formulas=["TimeBin = upperBin(KafkaTimestamp, MINUTE)"])\
+    .agg_by(agg_list, by=["TimeBin", "Instrument"])\
+    .sort_descending(order_by=["TimeBin", "Trade_Count"])
 ```
 \
 \
@@ -102,14 +103,13 @@ Filtering streams is straightforward. One simply uses `where()` to impose a huge
 
 ```python
 # Filter on a manually-set filter
-multi_agg_btc = multi_agg.where("Instrument = `BTC/USD`")
-multi_agg_eth = multi_agg.where("Instrument = `ETH/USD`")
+multi_agg_btc = multi_agg.where(["Instrument = `BTC/USD`"])
+multi_agg_eth = multi_agg.where(["Instrument = `ETH/USD`"])
 
 # Filter on a programatically set criteria
 top_instrument = multi_agg.head(1)
 
-multi_agg_row_0 = multi_agg.whereIn(top_instrument, "Instrument")\
-    .formatColumns("Total_Size = heatmap(Total_Size, 10, 300, MAGENTA, CYAN)")
+multi_agg_row_0 = multi_agg.where_in(top_instrument, ["Instrument"])
 ```
 \
 \
@@ -117,10 +117,9 @@ multi_agg_row_0 = multi_agg.whereIn(top_instrument, "Instrument")\
 [Joining streams](https://deephaven.io/core/docs/how-to-guides/joins-overview/) is one of Deephaven's superpowers . Deephaven supports both high-performance joins that are (i) relational in nature .......
 
 ```python
-join_eth_btc = multi_agg_eth.view("TimeBin", "Eth_Avg_Price = Avg_Price")\
-    .naturalJoin(multi_agg_btc, "TimeBin", "Btc_Avg_Price = Avg_Price")\
-    .updateView("Ratio_Avg_Prices = Btc_Avg_Price / Eth_Avg_Price")\
-    .formatColumns("Eth_Avg_Price = Decimal(`#,###.00`)", "Btc_Avg_Price = Decimal(`#,###.00`)")
+join_eth_btc = multi_agg_eth.view(["TimeBin", "Eth_Avg_Price = Avg_Price"])\
+    .natural_join(table=multi_agg_btc, on=["TimeBin"], joins=["Btc_Avg_Price = Avg_Price"])\
+    .update_view(["Ratio_Avg_Prices = Btc_Avg_Price / Eth_Avg_Price"])
 ```
 \
 \
@@ -132,13 +131,12 @@ join_eth_btc = multi_agg_eth.view("TimeBin", "Eth_Avg_Price = Avg_Price")\
 # KafkaTimestamp in the right table (btc_trades).
 # If there is no exact nanosecond match, the record with KafkaTimestamp just preceding Eth_Time is used
 
-eth_trades = trades_stream.where("Instrument = `ETH/USD`")
-btc_trades = trades_stream.where("Instrument = `BTC/USD`")
+eth_trades = trades_stream.where(["Instrument = `ETH/USD`"])
+btc_trades = trades_stream.where(["Instrument = `BTC/USD`"])
 
-time_series_join_eth_btc = eth_trades.view("Eth_Time = KafkaTimestamp", "Eth_Price = Price")\
-    .aj(btc_trades, "Eth_Time = KafkaTimestamp", "Btc_Price = Price, Btc_Time = KafkaTimestamp")\
-    .updateView("Ratio_Each_Trade = Btc_Price / Eth_Price")\
-    .formatColumns("Eth_Price = Decimal(`#,###.00`)", "Btc_Price = Decimal(`#,###.00`)")
+time_series_join_eth_btc = eth_trades.view(["Eth_Time = KafkaTimestamp", "Eth_Price = Price"])\
+    .aj(btc_trades, on=["Eth_Time = KafkaTimestamp"],joins=["Btc_Price = Price, Btc_Time = KafkaTimestamp"])\
+    .update_view(["Ratio_Each_Trade = Btc_Price / Eth_Price"])
 ```
 \
 \

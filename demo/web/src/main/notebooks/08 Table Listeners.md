@@ -5,11 +5,11 @@ One of Deephaven's defining features is its ability to handle real-time data wit
 To start, let's make a table that updates every two seconds with a random number.
 
 ```python
-from deephaven.TableTools import timeTable
+from deephaven import time_table
 
 import random
 
-table = timeTable('00:00:02').update("Number = (int)(byte)random.randint(1,100)")
+table = time_table('00:00:02').update(["Number = (int)random.randint(1,100)"])
 ```
 
 As you can see, this table updates with a new row every two seconds.
@@ -17,7 +17,7 @@ As you can see, this table updates with a new row every two seconds.
 Now let's add a listener. This listener will simply log every update to the table.
 
 ```python
-from deephaven import listen
+from deephaven.table_listener import listen
 
 def log_table_update(update):
     print(f"FUNCTION LISTENER: update={update}")
@@ -35,7 +35,7 @@ def log_table_update_with_row(update):
 
     while added_iterator.hasNext():
         added_index = added_iterator.nextLong()
-        added_number = table.getColumnSource("Number").get(added_index)
+        added_number = table.j_object.getColumnSource("Number").get(added_index)
 
         print(f"Added number: {added_number}")
 log_table_update_with_row_handler = listen(table, log_table_update_with_row)
@@ -50,8 +50,8 @@ What if we had two time tables and wanted to reuse the same listener method? We 
 Let's start with our two time tables.
 
 ```python
-table_one = timeTable('00:00:02').update("Number = (int)(byte)random.randint(1,100)")
-table_two = timeTable('00:00:05').update("Number = (int)(byte)random.randint(1,100)")
+table_one = time_table('00:00:02').update(["Number = (int)random.randint(1,100)"])
+table_two = time_table('00:00:05').update(["Number = (int)random.randint(1,100)"])
 ```
 
 Now let's build our function.
@@ -65,7 +65,7 @@ def log_table_builder(table):
 
         while added_iterator.hasNext():
             added_index = added_iterator.nextLong()
-            added_number = table.getColumnSource("Number").get(added_index)
+            added_number = table.j_object.getColumnSource("Number").get(added_index)
 
             print(f"Added number: {added_number}")
     return log_table_update_with_row
@@ -83,19 +83,4 @@ table_one_handler = listen(table_one, table_one_listener)
 table_two_handler = listen(table_two, table_two_listener)
 ```
 
-We've successfully reused our base listener across two tables! 
-
-
-Now to turn off the table listeners on all tables, we deregister each handler.
-
-```python
-log_table_update_handler.deregister()
-
-log_table_update_with_row_handler.deregister()
-
-table_one_handler.deregister()
-table_two_handler.deregister()
-```
-
-
-To learn more about table listeners, see [How to create table listeners in Python](https://deephaven.io/core/docs/how-to-guides/table-listeners-python/).
+We've successfully reused our base listener across two tables! To learn more about table listeners, see [How to create table listeners in Python](https://deephaven.io/core/docs/how-to-guides/table-listeners-python/).
