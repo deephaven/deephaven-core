@@ -23,7 +23,7 @@ from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape,
     SelectableDataSet
 from deephaven.table import Table
 from deephaven.calendar import BusinessCalendar
-from deephaven._jcompat import j_function
+from deephaven.jcompat import j_function
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 

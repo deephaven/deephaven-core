@@ -108,14 +108,14 @@ def delete(path: str) -> None:
         raise DHError(e, f"failed to delete a parquet table: {path} on disk.") from e
 
 
-def write(table: Table, destination: str, col_definitions: List[Column] = None,
+def write(table: Table, path: str, col_definitions: List[Column] = None,
           col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
           max_dictionary_keys: int = None) -> None:
     """ Write a table to a Parquet file.
 
     Args:
         table (Table): the source table
-        destination (str): destination file path; the file name should end in a ".parquet" extension. If the path
+        path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
             includes non-existing directories they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
         col_definitions (List[Column]): the column definitions to use, default is None
@@ -138,22 +138,22 @@ def write(table: Table, destination: str, col_definitions: List[Column] = None,
 
         if table_definition:
             if write_instructions:
-                _JParquetTools.writeTable(table.j_table, destination, table_definition, write_instructions)
+                _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
             else:
-                _JParquetTools.writeTable(table.j_table, _JFile(destination), table_definition)
+                _JParquetTools.writeTable(table.j_table, _JFile(path), table_definition)
         else:
             if write_instructions:
-                _JParquetTools.writeTable(table.j_table, _JFile(destination), write_instructions)
+                _JParquetTools.writeTable(table.j_table, _JFile(path), write_instructions)
             else:
-                _JParquetTools.writeTable(table.j_table, destination)
+                _JParquetTools.writeTable(table.j_table, path)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
 
-def batch_write(tables: List[Table], destinations: List[str], col_definitions: List[Column],
+def batch_write(tables: List[Table], paths: List[str], col_definitions: List[Column],
                 col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
                 max_dictionary_keys: int = None, grouping_cols: List[str] = None):
-    """ Writes tables to disk in parquet format to a supplied set of destinations.
+    """ Writes tables to disk in parquet format to a supplied set of paths.
 
     If you specify grouping columns, there must already be grouping information for those columns in the sources.
     This can be accomplished with .groupBy(<grouping columns>).ungroup() or .sort(<grouping column>).
@@ -162,7 +162,7 @@ def batch_write(tables: List[Table], destinations: List[str], col_definitions: L
 
     Args:
         tables (List[Table]): the source tables
-        destinations (List[str]): the destinations paths. Any non existing directories in the paths provided are
+        paths (List[str]): the destinations paths. Any non existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         col_definitions (List[Column]): the column definitions to use
@@ -184,9 +184,9 @@ def batch_write(tables: List[Table], destinations: List[str], col_definitions: L
 
         if grouping_cols:
             _JParquetTools.writeParquetTables([t.j_table for t in tables], table_definition, write_instructions,
-                                              _j_file_array(destinations), grouping_cols)
+                                              _j_file_array(paths), grouping_cols)
         else:
             _JParquetTools.writeTables([t.j_table for t in tables], table_definition,
-                                       _j_file_array(destinations))
+                                       _j_file_array(paths))
     except Exception as e:
         raise DHError(e, "write multiple tables to parquet data failed.") from e

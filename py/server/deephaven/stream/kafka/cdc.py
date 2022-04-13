@@ -9,7 +9,7 @@ from typing import Dict, List
 import jpy
 
 from deephaven import DHError
-from deephaven._jcompat import j_properties
+from deephaven.jcompat import j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.stream.kafka.consumer import j_partitions, TableType
 from deephaven.table import Table
