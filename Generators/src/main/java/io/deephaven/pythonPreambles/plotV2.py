@@ -47,6 +47,15 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
         raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
 
 
+def _no_convert_j(name: str, obj: Any, types: List) -> Any:
+    if obj is None:
+        return None
+
+    _assert_type(name, obj, types)
+
+    return obj
+
+
 def _convert_j(name: str, obj: Any, types: List) -> Any:
     """Convert the input object into a Java object that can be used for plotting.
 
@@ -78,6 +87,7 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         else:
             return obj.value
     elif isinstance(obj, Sequence):
+        # to avoid JPY's 'too many matching overloads' error
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
