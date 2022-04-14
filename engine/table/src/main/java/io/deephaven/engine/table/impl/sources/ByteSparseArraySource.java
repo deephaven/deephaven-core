@@ -129,36 +129,36 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
 
     @Override
-    public Byte get(long index) {
-        return box(getByte(index));
+    public Byte get(long rowKey) {
+        return box(getByte(rowKey));
     }
 
     @Override
-    public Byte getPrev(long index) {
-        return box(getPrevByte(index));
+    public Byte getPrev(long rowKey) {
+        return box(getPrevByte(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final byte getByte(long index) {
-        if (index < 0) {
+    public final byte getByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        return getByteFromBlock(blocks, index);
+        return getByteFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final byte getPrevByte(long index) {
-        if (index < 0) {
+    public final byte getPrevByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        if (shouldUsePrevious(index)) {
-            return getByteFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getByteFromBlock(prevBlocks, rowKey);
         }
 
-        return getByteFromBlock(blocks, index);
+        return getByteFromBlock(blocks, rowKey);
     }
 
     private byte getByteFromBlock(ByteOneOrN.Block0 blocks, long key) {

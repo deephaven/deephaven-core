@@ -1356,7 +1356,7 @@ public abstract class BaseTable extends LivenessArtifact
     public Table setLayoutHints(String hints) {
         final Table result = copy();
         result.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, hints);
-        return this;
+        return result;
     }
 
     @Override

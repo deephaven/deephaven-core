@@ -30,6 +30,26 @@ extern "C" {
 
 #include "jpy_compat.h"
 
+#if true
+#define JPy_DECREF(x) Py_DECREF(x)
+#define JPy_INCREF(x) Py_INCREF(x)
+#define JPy_XDECREF(x) Py_XDECREF(x)
+#else
+#include "jpy_diag.h"
+#define JPy_DECREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_DECREF: %s:%d %p %ld\n", __FILE__, __LINE__, x, ((PyObject *)x)->ob_refcnt);\
+     Py_DECREF(x);\
+} while (0)
+#define JPy_INCREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_INCREF: %s:%d %p %ld\n", __FILE__, __LINE__, x, ((PyObject *)x)->ob_refcnt);\
+     Py_INCREF(x);\
+} while (0)
+#define JPy_XDECREF(x) do { \
+     JPy_DiagPrint(JPy_DIAG_F_ALL, "JPy_XDECREF: %s:%d %p %ld\n", __FILE__, __LINE__,  x, x == NULL ? -1 : ((PyObject *)x)->ob_refcnt);\
+     Py_XDECREF(x);\
+} while (0)
+#endif
+
 #define JPY_JNI_VERSION JNI_VERSION_1_6
 
 extern PyObject* JPy_Module;

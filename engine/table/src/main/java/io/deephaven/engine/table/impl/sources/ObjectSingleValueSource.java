@@ -65,12 +65,12 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     }
 
     @Override
-    public final T get(long index) {
+    public final T get(long rowKey) {
         return current;
     }
 
     @Override
-    public final T getPrev(long index) {
+    public final T getPrev(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

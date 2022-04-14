@@ -25,14 +25,14 @@ public class UngroupedBoxedFloatObjectVectorColumnSource extends UngroupedObject
     }
 
     @Override
-    public float getFloat(long index) {
-        final Float result = get(index);
+    public float getFloat(long rowKey) {
+        final Float result = get(rowKey);
         return result == null ? NULL_FLOAT : result;
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        final Float result = getPrev(index);
+    public float getPrevFloat(long rowKey) {
+        final Float result = getPrev(rowKey);
         return result == null ? NULL_FLOAT : result;
     }
 }

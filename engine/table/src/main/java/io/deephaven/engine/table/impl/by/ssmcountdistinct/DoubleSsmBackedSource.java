@@ -70,13 +70,13 @@ public class DoubleSsmBackedSource extends AbstractColumnSource<DoubleVector>
     }
 
     @Override
-    public DoubleVector get(long index) {
-        return underlying.get(index);
+    public DoubleVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public DoubleVector getPrev(long index) {
-        final DoubleSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public DoubleVector getPrev(long rowKey) {
+        final DoubleSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

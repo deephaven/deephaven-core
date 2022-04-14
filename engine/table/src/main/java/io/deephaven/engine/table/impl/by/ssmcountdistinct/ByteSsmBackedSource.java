@@ -70,13 +70,13 @@ public class ByteSsmBackedSource extends AbstractColumnSource<ByteVector>
     }
 
     @Override
-    public ByteVector get(long index) {
-        return underlying.get(index);
+    public ByteVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public ByteVector getPrev(long index) {
-        final ByteSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public ByteVector getPrev(long rowKey) {
+        final ByteSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

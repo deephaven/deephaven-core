@@ -24,12 +24,12 @@ public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Charac
     }
 
     @Override
-    public char getChar(long index) {
-        if (index < 0) {
+    public char getChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         char[] array = innerSource.get(segment);
         if(array == null || offset >= array.length) {
             return NULL_CHAR;
@@ -38,12 +38,12 @@ public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Charac
     }
 
     @Override
-    public char getPrevChar(long index) {
-        if (index < 0) {
+    public char getPrevChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         char[] array = innerSource.getPrev(segment);
         if(array == null || offset >= array.length) {
             return NULL_CHAR;
@@ -55,7 +55,7 @@ public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Charac
     public boolean isImmutable() {
         return innerSource.isImmutable();
     }
-    
+
     @Override
     public boolean preventsParallelism() {
         return innerSource.preventsParallelism();

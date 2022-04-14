@@ -80,11 +80,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    public final short getShort(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final short getShort(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_SHORT;
         }
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final short getUnsafe(long index) {
@@ -107,18 +107,18 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    public Short getPrev(long index) {
-        return box(getPrevShort(index));
+    public Short getPrev(long rowKey) {
+        return box(getPrevShort(rowKey));
     }
 
     @Override
-    public final short getPrevShort(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final short getPrevShort(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_SHORT;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];

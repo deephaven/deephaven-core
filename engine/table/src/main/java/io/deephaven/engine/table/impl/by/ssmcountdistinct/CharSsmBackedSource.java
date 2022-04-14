@@ -65,13 +65,13 @@ public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
     }
 
     @Override
-    public CharVector get(long index) {
-        return underlying.get(index);
+    public CharVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public CharVector getPrev(long index) {
-        final CharSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public CharVector getPrev(long rowKey) {
+        final CharSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

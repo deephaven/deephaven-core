@@ -80,11 +80,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    public final byte getByte(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final byte getByte(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_BYTE;
         }
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final byte getUnsafe(long index) {
@@ -107,18 +107,18 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    public Byte getPrev(long index) {
-        return box(getPrevByte(index));
+    public Byte getPrev(long rowKey) {
+        return box(getPrevByte(rowKey));
     }
 
     @Override
-    public final byte getPrevByte(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final byte getPrevByte(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_BYTE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];

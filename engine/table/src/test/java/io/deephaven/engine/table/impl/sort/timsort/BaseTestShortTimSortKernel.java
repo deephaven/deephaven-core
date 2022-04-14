@@ -91,13 +91,13 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
             columnSource = new AbstractColumnSource.DefaultedImmutable<Short>(short.class) {
                 // region tuple column source
                 @Override
-                public Short get(long index) {
-                    return getShort(index);
+                public Short get(long rowKey) {
+                    return getShort(rowKey);
                 }
 
                 @Override
-                public short getShort(long index) {
-                    return javaTuples.get(((int)index) / 10).getFirstElement();
+                public short getShort(long rowKey) {
+                    return javaTuples.get(((int) rowKey) / 10).getFirstElement();
                 }
                 // endregion tuple column source
             };
@@ -171,14 +171,14 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
 
             secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
                 @Override
-                public Long get(long index) {
-                    final long result = getLong(index);
+                public Long get(long rowKey) {
+                    final long result = getLong(rowKey);
                     return result == QueryConstants.NULL_LONG ? null : result;
                 }
 
                 @Override
-                public long getLong(long index) {
-                    final ShortLongLongTuple shortLongLongTuple = javaTuples.get((int) (index / 10));
+                public long getLong(long rowKey) {
+                    final ShortLongLongTuple shortLongLongTuple = javaTuples.get((int) (rowKey / 10));
                     return shortLongLongTuple.getSecondElement();
                 }
             };

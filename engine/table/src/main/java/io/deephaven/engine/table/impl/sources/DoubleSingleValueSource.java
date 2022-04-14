@@ -76,12 +76,12 @@ public class DoubleSingleValueSource extends SingleValueColumnSource<Double> imp
     }
 
     @Override
-    public final double getDouble(long index) {
+    public final double getDouble(long rowKey) {
         return current;
     }
 
     @Override
-    public final double getPrevDouble(long index) {
+    public final double getPrevDouble(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

@@ -35,14 +35,14 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     }
 
     @Override
-    public DateTime get(long index) {
-        final long nanos = getLong(index);
+    public DateTime get(long rowKey) {
+        final long nanos = getLong(rowKey);
         return DateTimeUtils.nanosToTime(nanos);
     }
 
     @Override
-    public DateTime getPrev(long index) {
-        final long nanos = getPrevLong(index);
+    public DateTime getPrev(long rowKey) {
+        final long nanos = getPrevLong(rowKey);
         return DateTimeUtils.nanosToTime(nanos);
     }
 
@@ -145,13 +145,13 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
         }
 
         @Override
-        public long getLong(long index) {
-            return DateTimeArraySource.this.getLong(index);
+        public long getLong(long rowKey) {
+            return DateTimeArraySource.this.getLong(rowKey);
         }
 
         @Override
-        public long getPrevLong(long index) {
-            return DateTimeArraySource.this.getPrevLong(index);
+        public long getPrevLong(long rowKey) {
+            return DateTimeArraySource.this.getPrevLong(rowKey);
         }
 
         @Override

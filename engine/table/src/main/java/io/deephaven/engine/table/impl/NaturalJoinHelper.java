@@ -433,8 +433,8 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public int getInt(long index) {
-            final long symbolId = symbolSource.getLong(index);
+        public int getInt(long rowKey) {
+            final long symbolId = symbolSource.getLong(rowKey);
             return symbolLookup.getInt(symbolId);
         }
 

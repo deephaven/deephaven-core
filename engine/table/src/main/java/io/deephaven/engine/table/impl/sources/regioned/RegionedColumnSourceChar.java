@@ -24,8 +24,8 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     }
 
     @Override
-    public char getChar(final long elementIndex) {
-        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getChar(elementIndex);
+    public char getChar(final long rowKey) {
+        return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getChar(rowKey);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionChar<Values>> {
@@ -61,8 +61,8 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         }
 
         @Override
-        public char getChar(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getChar(elementIndex);
+        public char getChar(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getChar(rowKey);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

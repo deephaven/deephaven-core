@@ -69,9 +69,9 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         @Override
-        public long getLong(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
-                    .getLong(elementIndex);
+        public long getLong(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey))
+                    .getLong(rowKey);
         }
 
         @Override
@@ -159,9 +159,9 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         @Override
-        public DATA_TYPE get(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
-                    .getObject(elementIndex);
+        public DATA_TYPE get(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey))
+                    .getObject(rowKey);
         }
 
         @Override

@@ -64,12 +64,12 @@ public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSourc
     // endregion allocateArray
 
     @Override
-    public final int getInt(long index) {
-        if (index < 0 || index >= data.length) {
+    public final int getInt(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_INT;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final int getUnsafe(long index) {

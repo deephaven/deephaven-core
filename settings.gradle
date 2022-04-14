@@ -38,24 +38,9 @@ String[] webMods = [
         'open-api-shared-ide', // ide-related dto and configuration objects for both client and server
 ]
 
-Map<String, String> pyMods = [
-        'deephaven-jpy' : 'py/jpy',
-        'deephaven-jpy-config': 'py/jpy-config',
-        'deephaven-jpy-ext': 'py/jpy-ext',
-        'jpy-integration': 'py/jpy-integration',
-        'sphinx': 'sphinx',
-        'pyclient': 'pyclient',
-]
-
 // Include our modules
 include webMods
 include mods
-
-pyMods.each {
-    name, dir ->
-        include(name)
-        project(":$name").projectDir = file(dir)
-}
 
 include 'bom'
 
@@ -270,11 +255,29 @@ include(':application-mode')
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
 
-include(':deephaven-wheel')
-project(':deephaven-wheel').projectDir = file('py/deephaven-wheel')
+include(':deephaven-jpy')
+project(':deephaven-jpy').projectDir = file('py/jpy')
 
-include(':deephaven2-wheel')
-project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
+include(':deephaven-jpy-config')
+project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
+
+include(':deephaven-jpy-ext')
+project(':deephaven-jpy-ext').projectDir = file('py/jpy-ext')
+
+include(':jpy-integration')
+project(':jpy-integration').projectDir = file('py/jpy-integration')
+
+include(':py-client')
+project(':py-client').projectDir = file('py/client')
+
+include(':py-server')
+project(':py-server').projectDir = file('py/server')
+
+include(':deephaven-legacy-wheel')
+project(':deephaven-legacy-wheel').projectDir = file('py/deephaven-legacy-wheel')
+
+include(':sphinx')
+project(':sphinx').buildFileName = 'sphinx.gradle'
 
 include(':docker-runtime-base')
 project(':docker-runtime-base').projectDir = file('docker/runtime-base')
@@ -330,16 +333,6 @@ Closure configureWebModule = {
 }
 
 webMods.collect({ project(":$it")}).each configureWebModule
-
-Closure configurePyModule = {
-    ProjectDescriptor p, String path ->
-        File f = new File("$p.projectDir", "${p.name}.gradle")
-        if (f.exists()) {
-            p.buildFileName = "${p.name}.gradle".toString()
-        }
-}
-
-pyMods.forEach {String k, String v -> configurePyModule(project(":$k"), v) }
 
 buildCache {
     local {

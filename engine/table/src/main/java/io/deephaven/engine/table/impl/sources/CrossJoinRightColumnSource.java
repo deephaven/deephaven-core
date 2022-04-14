@@ -54,147 +54,147 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     public void startTrackingPrevValues() {}
 
     @Override
-    public T get(long index) {
-        if (index < 0) {
+    public T get(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.get(redirect(index));
+        return innerSource.get(redirect(rowKey));
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        if (index < 0) {
+    public Boolean getBoolean(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getBoolean(redirect(index));
+        return innerSource.getBoolean(redirect(rowKey));
     }
 
     @Override
-    public byte getByte(long index) {
-        if (index < 0) {
+    public byte getByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        return innerSource.getByte(redirect(index));
+        return innerSource.getByte(redirect(rowKey));
     }
 
     @Override
-    public char getChar(long index) {
-        if (index < 0) {
+    public char getChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        return innerSource.getChar(redirect(index));
+        return innerSource.getChar(redirect(rowKey));
     }
 
     @Override
-    public double getDouble(long index) {
-        if (index < 0) {
+    public double getDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        return innerSource.getDouble(redirect(index));
+        return innerSource.getDouble(redirect(rowKey));
     }
 
     @Override
-    public float getFloat(long index) {
-        if (index < 0) {
+    public float getFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        return innerSource.getFloat(redirect(index));
+        return innerSource.getFloat(redirect(rowKey));
     }
 
     @Override
-    public int getInt(long index) {
-        if (index < 0) {
+    public int getInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        return innerSource.getInt(redirect(index));
+        return innerSource.getInt(redirect(rowKey));
     }
 
     @Override
-    public long getLong(long index) {
-        if (index < 0) {
+    public long getLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        return innerSource.getLong(redirect(index));
+        return innerSource.getLong(redirect(rowKey));
     }
 
     @Override
-    public short getShort(long index) {
-        if (index < 0) {
+    public short getShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        return innerSource.getShort(redirect(index));
+        return innerSource.getShort(redirect(rowKey));
     }
 
     @Override
-    public T getPrev(long index) {
-        if (index < 0) {
+    public T getPrev(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getPrev(redirectPrev(index));
+        return innerSource.getPrev(redirectPrev(rowKey));
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        if (index < 0) {
+    public Boolean getPrevBoolean(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getPrevBoolean(redirectPrev(index));
+        return innerSource.getPrevBoolean(redirectPrev(rowKey));
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        if (index < 0) {
+    public byte getPrevByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        return innerSource.getPrevByte(redirectPrev(index));
+        return innerSource.getPrevByte(redirectPrev(rowKey));
     }
 
     @Override
-    public char getPrevChar(long index) {
-        if (index < 0) {
+    public char getPrevChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        return innerSource.getPrevChar(redirectPrev(index));
+        return innerSource.getPrevChar(redirectPrev(rowKey));
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        if (index < 0) {
+    public double getPrevDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        return innerSource.getPrevDouble(redirectPrev(index));
+        return innerSource.getPrevDouble(redirectPrev(rowKey));
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        if (index < 0) {
+    public float getPrevFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        return innerSource.getPrevFloat(redirectPrev(index));
+        return innerSource.getPrevFloat(redirectPrev(rowKey));
     }
 
     @Override
-    public int getPrevInt(long index) {
-        if (index < 0) {
+    public int getPrevInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        return innerSource.getPrevInt(redirectPrev(index));
+        return innerSource.getPrevInt(redirectPrev(rowKey));
     }
 
     @Override
-    public long getPrevLong(long index) {
-        if (index < 0) {
+    public long getPrevLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        return innerSource.getPrevLong(redirectPrev(index));
+        return innerSource.getPrevLong(redirectPrev(rowKey));
     }
 
     @Override
-    public short getPrevShort(long index) {
-        if (index < 0) {
+    public short getPrevShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        return innerSource.getPrevShort(redirectPrev(index));
+        return innerSource.getPrevShort(redirectPrev(rowKey));
     }
 
     @Override

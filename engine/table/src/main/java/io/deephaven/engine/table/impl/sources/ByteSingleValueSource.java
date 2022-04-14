@@ -76,12 +76,12 @@ public class ByteSingleValueSource extends SingleValueColumnSource<Byte> impleme
     }
 
     @Override
-    public final byte getByte(long index) {
+    public final byte getByte(long rowKey) {
         return current;
     }
 
     @Override
-    public final byte getPrevByte(long index) {
+    public final byte getPrevByte(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

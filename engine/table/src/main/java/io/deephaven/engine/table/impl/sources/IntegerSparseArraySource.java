@@ -129,36 +129,36 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     }
 
     @Override
-    public Integer get(long index) {
-        return box(getInt(index));
+    public Integer get(long rowKey) {
+        return box(getInt(rowKey));
     }
 
     @Override
-    public Integer getPrev(long index) {
-        return box(getPrevInt(index));
+    public Integer getPrev(long rowKey) {
+        return box(getPrevInt(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final int getInt(long index) {
-        if (index < 0) {
+    public final int getInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        return getIntFromBlock(blocks, index);
+        return getIntFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final int getPrevInt(long index) {
-        if (index < 0) {
+    public final int getPrevInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        if (shouldUsePrevious(index)) {
-            return getIntFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getIntFromBlock(prevBlocks, rowKey);
         }
 
-        return getIntFromBlock(blocks, index);
+        return getIntFromBlock(blocks, rowKey);
     }
 
     private int getIntFromBlock(IntOneOrN.Block0 blocks, long key) {

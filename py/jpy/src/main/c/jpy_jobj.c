@@ -717,7 +717,7 @@ int JType_InitSlots(JPy_JType* type)
     // todo: The following lines are actually correct, but setting Py_TYPE(type) = &JType_Type results in an interpreter crash. Why?
     // This is still a problem because all the JType slots are actually never called (especially JType_getattro is
     // needed to resolve unresolved JTypes and to recognize static field and methods access)
-    //Py_INCREF(&JType_Type);
+    //JPy_INCREF(&JType_Type);
     //Py_TYPE(type) = &JType_Type;
     //Py_SIZE(type) = sizeof (JPy_JType);
 
