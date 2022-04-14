@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -8,17 +10,70 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
- * Tools for working with partitioned tables. A partitioned table is a table with one or more columns containing
- * like-defined component tables.
- * 
- * @see Table#partitionBy
- * @see io.deephaven.api.agg.Partition
+ * {@link PartitionedTable} implementation.
  */
-public class PartitionedTableTools {
+public class PartitionedTableImpl extends LivenessArtifact implements PartitionedTable {
+
+    private final Table table;
+    private final Set<String> keyColumnNames;
+    private final String constituentColumnName;
+    private final TableDefinition constituentDefinition;
+
+    /**
+     * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition) Factory method
+     *      that delegates to this method
+     */
+    PartitionedTableImpl(@NotNull final Table table,
+            @NotNull final Collection<String> keyColumnNames,
+            @NotNull final String constituentColumnName,
+            @NotNull final TableDefinition constituentDefinition) {
+        this.table = table;
+        this.keyColumnNames = new LinkedHashSet<>(keyColumnNames);
+        this.constituentColumnName = constituentColumnName;
+        this.constituentDefinition = constituentDefinition;
+    }
+
+    @Override
+    public Table table() {
+        return table;
+    }
+
+    @Override
+    public TableOperations<? extends TableOperations, ? extends TableOperations> proxy() {
+
+    }
+
+    @Override
+    public Table merge() {
+
+    }
+
+    @Override
+    public PartitionedTable filter(@NotNull final Collection<? extends Filter> filters) {
+
+    }
+
+    @Override
+    public PartitionedTable transform(@NotNull final Function<Table, Table> transformer) {
+
+    }
+
+    @Override
+    public PartitionedTable partitionedTransform(
+            @NotNull final PartitionedTable other,
+            @NotNull final BiFunction<Table, Table, Table> transformer) {
+
+    }
+
+    // TODO-RWC: Add ticket for this
+    // TODO (insert ticket here): Support "PartitionedTable withCombinedKeys(String keyColumnName)" for combining
+    //     multiple key columns into a compound key column using the tuple library, and then add "transformWithKeys"
+    //     support.
 
     /**
      * {@link TableOperations} that proxies methods to the component tables of a partitioned table via
@@ -48,7 +103,7 @@ public class PartitionedTableTools {
         Table getUnderlyingPartitionedTable();
     }
 
-    private static class ProxyHandler implements InvocationHandler {
+    private static class ProxyHandler extends LivenessArtifact implements InvocationHandler {
 
         private final Table underlying;
         private final String componentColumnName;
@@ -58,17 +113,9 @@ public class PartitionedTableTools {
         public ProxyHandler(@NotNull final Table underlying, @NotNull final String componentColumnName) {
             this.underlying = underlying;
             this.componentColumnName = componentColumnName;
-            final ColumnDefinition<?> componentColumnDefinition =
-                    underlying.getDefinition().getColumn(componentColumnName);
-            if (componentColumnDefinition == null) {
-                throw new IllegalArgumentException("Underlying table " + underlying
-                        + " has no column named " + componentColumnName);
-            }
-            if (!Table.class.isAssignableFrom(componentColumnDefinition.getDataType())) {
-                throw new IllegalArgumentException("Component column " + componentColumnName
-                        + " has unsupported data type " + componentColumnDefinition.getDataType());
-            }
-            description = "PartitionedTableTools{" + underlying + ',' + componentColumnName + '}';
+            checkPartitionTable(underlying, componentColumnName);
+            description = "PartitionedTable{" + underlying + ',' + componentColumnName + '}';
+            manage(underlying);
         }
 
         public Table getUnderlyingPartitionedTable() {
