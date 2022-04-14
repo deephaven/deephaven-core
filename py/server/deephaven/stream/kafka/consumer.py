@@ -8,7 +8,7 @@ from typing import Dict, Tuple, List, Callable
 import jpy
 
 from deephaven import dtypes
-from deephaven._jcompat import j_hashmap, j_properties
+from deephaven.jcompat import j_hashmap, j_properties
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dherror import DHError

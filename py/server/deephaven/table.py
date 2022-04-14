@@ -10,7 +10,7 @@ from typing import Union, TypeVar, Sequence, List
 import jpy
 
 from deephaven import DHError, dtypes
-from deephaven._jcompat import j_array_list
+from deephaven.jcompat import j_array_list
 from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType

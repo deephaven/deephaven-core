@@ -12,7 +12,7 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_LONG, MAX_LONG
 from deephaven.numpy import to_numpy, to_table
-from deephaven._jcompat import j_array_list
+from deephaven.jcompat import j_array_list
 
 
 @dataclass

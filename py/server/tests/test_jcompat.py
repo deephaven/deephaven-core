@@ -5,7 +5,7 @@
 import unittest
 
 from deephaven import dtypes
-from deephaven._jcompat import j_function
+from deephaven.jcompat import j_function
 from tests.testbase import BaseTestCase
 
 
