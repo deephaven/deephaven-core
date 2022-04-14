@@ -16,7 +16,7 @@ class ExperimentalTestCase(BaseTestCase):
             t = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
 
         self.assertEqual("InWindow", t.columns[-1].name)
-        self.wait_ticking_table_update(t, row_count=20, timeout=5)
+        self.wait_ticking_table_update(t, row_count=20, timeout=60)
         self.assertIn("true", t.to_string(1000))
         self.assertIn("false", t.to_string(1000))
 
