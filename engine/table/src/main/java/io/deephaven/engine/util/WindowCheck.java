@@ -71,6 +71,7 @@ public class WindowCheck {
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
