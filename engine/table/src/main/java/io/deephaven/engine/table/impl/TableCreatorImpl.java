@@ -27,7 +27,11 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Engine-specific implementation of {@link TableCreator}.
+ */
 public enum TableCreatorImpl implements TableCreator<Table> {
+
     INSTANCE;
 
     @AutoService(TableFactory.TableCreatorProvider.class)
