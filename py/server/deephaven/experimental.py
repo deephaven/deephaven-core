@@ -14,8 +14,8 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
     """Creates a new table by applying a time window to the source table and adding a new Boolean column.
 
     The value of the new Boolean column is set to false when the timestamp column value is older than the window from
-    now or true otherwise. If the timestamp column value is null; the Boolean column value will be null as well. The
-    resultant table ticks whenever the source table ticks, or modifies a row when it passes out of the window.
+    now or true otherwise. If the timestamp column value is null, the Boolean column value will be null as well. The
+    result table ticks whenever the source table ticks, or modifies a row when it passes out of the window.
 
     Args:
         table (Table): the source table
