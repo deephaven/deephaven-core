@@ -9,6 +9,6 @@ DIR=$(dirname "$0")
 
 for test_file_name in $DIR/*test.py;
 do
-   echo $test_file_name
-   python3 $test_file_name>> /out/report/scripting-test_results 2>&1
+   echo $test_file_name >> /out/report/scripting-test_results 2>&1
+   python3 $test_file_name >> /out/report/scripting-test_results 2>&1
 done

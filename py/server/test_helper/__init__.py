@@ -7,11 +7,13 @@ import os
 import re
 import warnings
 from glob import glob
+from typing import Dict
 
 import jpy
 import jpyutil
 
-def start_jvm():
+
+def start_jvm(jvm_props: Dict[str, str] = None):
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
     if not jpy.has_jvm():
@@ -50,7 +52,7 @@ def start_jvm():
                               "the existence/permissions of the directory.".format(dtemp),
                               RuntimeWarning)
 
-        jvm_properties= {
+        jvm_properties = {
             'PyObject.cleanup_on_thread': 'false',
 
             'java.awt.headless': 'true',
@@ -61,7 +63,13 @@ def start_jvm():
             'workspace': os.path.realpath(workspace),
 
         }
-        jvm_options= {
+
+        if jvm_props:
+            jvm_properties.update(jvm_props)
+
+        print(jvm_properties)
+
+        jvm_options = {
             '-XX:+UseG1GC',
             '-XX:MaxGCPauseMillis=100',
             '-XX:+UseStringDeduplication',
@@ -72,7 +80,8 @@ def start_jvm():
 
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
         }
-        jvm_classpath= os.environ.get('DEEPHAVEN_CLASSPATH', '')
+        jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
+
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
