@@ -55,6 +55,8 @@ dependencies {
    // implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.smallrye.reactive:smallrye-mutiny-vertx-web-client'
 
+    implementation 'io.quarkus:quarkus-container-image-docker'
+
     implementation 'com.squareup.okhttp3:okhttp'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
