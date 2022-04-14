@@ -45,7 +45,7 @@ class BaseTestCase(unittest.TestCase):
                 table.j_table.awaitUpdate(timeout // 10**6)
                 timeout -= time.time_ns() - s_time
 
-            self.assertEqual(table.size, row_count)
+            self.assertGreaterEqual(table.size, row_count)
         finally:
             j_exclusive_lock.unlock()
 
