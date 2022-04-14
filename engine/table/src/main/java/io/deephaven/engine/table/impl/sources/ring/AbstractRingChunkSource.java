@@ -52,8 +52,14 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
      */
     public static final boolean STRICT_KEYS = Configuration.getInstance().getBooleanWithDefault(STRICT_KEYS_KEY, true);
 
+    public static final String APPEND_CHUNK_SIZE_KEY = "AbstractRingChunkSource.append_chunk_size";
+
+    /**
+     * The chunk size used while appending. Looks up the configuration key {@value APPEND_CHUNK_SIZE_KEY}. Defaults to
+     * {@code 4096}.
+     */
     public static final int APPEND_CHUNK_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("AbstractRingChunkSource.append_chunk_size", 4096);
+            Configuration.getInstance().getIntegerWithDefault(APPEND_CHUNK_SIZE_KEY, 4096);
 
     protected final ARRAY ring;
     protected final int capacity;
