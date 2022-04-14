@@ -15,6 +15,7 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.StreamToLogBuffer;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
@@ -55,7 +56,8 @@ public interface LogModule {
     }
 
     @Provides
-    static StreamToPrintStreams providesStreamToReal(@Named("out") PrintStream out, @Named("err") PrintStream err) {
+    static StreamToPrintStreams providesStreamToReal(@Nullable @Named("out") PrintStream out,
+            @Nullable @Named("err") PrintStream err) {
         final boolean skipStdout = Boolean.getBoolean("stdout.skipReal");
         final boolean skipStderr = Boolean.getBoolean("stderr.skipReal");
         return new StreamToPrintStreams(skipStdout ? null : out, skipStderr ? null : err);
