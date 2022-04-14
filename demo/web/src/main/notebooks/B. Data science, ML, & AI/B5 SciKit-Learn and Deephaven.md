@@ -13,7 +13,7 @@ from deephaven.pandas import to_pandas, to_table
 from deephaven import DynamicTableWriter
 from deephaven import dtypes as dht
 from deephaven.learn import gather
-from deephaven.csv import read
+from deephaven import read_csv
 from deephaven import learn
 
 from sklearn.neighbors import KNeighborsClassifier as knn
