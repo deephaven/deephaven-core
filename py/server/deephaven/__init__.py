@@ -6,7 +6,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.12.0"
+__version__ = "0.12.10"
 
 from .dherror import DHError
 from .table import SortDirection, AsOfMatchRule
