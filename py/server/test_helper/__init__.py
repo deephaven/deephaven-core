@@ -67,8 +67,6 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         if jvm_props:
             jvm_properties.update(jvm_props)
 
-        print(jvm_properties)
-
         jvm_options = {
             '-XX:+UseG1GC',
             '-XX:MaxGCPauseMillis=100',
