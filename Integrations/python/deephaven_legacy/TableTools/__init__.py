@@ -374,6 +374,11 @@ def base64Fingerprint(source):
 
 
 @_passThrough
+def booleanCol(name, *data):
+    return _java_type_.booleanCol(name, *data)
+
+
+@_passThrough
 def byteCol(name, *data):
     """
     Creates a new ColumnHolder of type `byte` that can be used when creating in-memory tables.
