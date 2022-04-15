@@ -10,6 +10,12 @@ plugins {
     id 'io.deephaven.python-wheel'
 }
 
+wheel {
+    src 'pydeephaven'
+    src 'examples'
+    src 'tests'
+}
+
 // Start up a docker container for the grpc server, then run pydeephaven test
 evaluationDependsOn(':docker-server')
 String randomSuffix = UUID.randomUUID().toString();
