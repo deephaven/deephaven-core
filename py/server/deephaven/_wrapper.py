@@ -35,6 +35,15 @@ class JObjectWrapper(ABC):
     def j_object(self) -> jpy.JType:
         ...
 
+    def __eq__(self, other):
+        return isinstance(other, JObjectWrapper) and self.j_object.equals(other.j_object)
+
+    def __hash__(self):
+        return self.j_object.hashCode()
+
+    def __str__(self):
+        return self.j_object.toString()
+
 
 def _is_direct_initialisable(cls) -> bool:
     """ Returns whether a wrapper class instance can be initialized with a Java object. """

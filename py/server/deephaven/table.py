@@ -70,23 +70,14 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
 
-    def __repr__(self):
-        default_repr = super().__repr__()
+    def __str__(self):
+        default_str = super().__str__()
         column_dict = {col.name: col.data_type for col in self.columns[:10]}
-        repr_str = (
-            f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
+        str_str = (
+            f"{default_str[:-2]}, num_rows = {self.size}, columns = {column_dict}"
         )
-        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str
-        return repr_str
-
-    def __eq__(self, table: Table) -> bool:
-        try:
-            if _JTableTools.diff(self.j_table, table.j_table, 1):
-                return False
-            else:
-                return True
-        except Exception as e:
-            raise DHError(e, "table equality test failed.") from e
+        str_str = str_str[:115] + "...}>" if len(str_str) > 120 else str_str
+        return str_str
 
     @property
     def size(self) -> int:
