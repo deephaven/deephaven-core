@@ -12,8 +12,8 @@ class ExperimentalTestCase(BaseTestCase):
 
     def test_time_window(self):
         with self.ugp_lock_exclusive():
-            source_table = time_table("00:00:00.0000001").update(["TS=currentTime()"])
-            t = time_window(source_table, ts_col="TS", window=10 ** 4, bool_col="InWindow")
+            source_table = time_table("00:00:00.01").update(["TS=currentTime()"])
+            t = time_window(source_table, ts_col="TS", window=10**8, bool_col="InWindow")
 
         self.assertEqual("InWindow", t.columns[-1].name)
         self.wait_ticking_table_update(t, row_count=20, timeout=60)
