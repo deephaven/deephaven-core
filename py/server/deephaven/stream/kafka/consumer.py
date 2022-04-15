@@ -18,23 +18,7 @@ from deephaven.table import Table
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
-_JTableType = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
-
-
-class TableType(Enum):
-    """An Enum that defines the supported Table Type for consuming Kafka."""
-
-    Stream = _JTableType.Stream
-    """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
-     to downstream operations and visualizations."""
-    Append = _JTableType.Append
-    """ Consume all partitions into a single interleaved in-memory append-only table."""
-    StreamMap = _JTableType.StreamMap
-    """ Similar to Stream, but each partition is mapped to a distinct stream table."""
-    AppendMap = _JTableType.AppendMap
-    """ Similar to Append, but each partition is mapped to a distinct in-memory append-only table. """
-
 
 SEEK_TO_BEGINNING = _JKafkaTools.SEEK_TO_BEGINNING
 """ Start consuming at the beginning of a partition. """
@@ -74,6 +58,64 @@ KeyValueSpec.FROM_PROPERTIES = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
 in the properties as "key.column.name" or "value.column.name" in the config, and otherwise default to "key" or "value".
 """
 
+class TableType(JObjectWrapper):
+    """An Enum that defines the supported Table Type for consuming Kafka."""
+
+    j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
+
+    @staticmethod
+    def stream():
+        """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
+         to downstream operations and visualizations."""
+        return TableType(TableType.j_object_type.stream())
+
+    @staticmethod
+    def stream_map():
+        """ Similar to stream(), but each partition is mapped to a distinct stream table."""
+        return TableType(TableType.j_object_type.streamMap())
+
+    @staticmethod
+    def append():
+        """ Consume all partitions into a single interleaved in-memory append-only table."""
+        return TableType(TableType.j_object_type.append())
+
+    @staticmethod
+    def append_map():
+        """ Similar to append(), but each partition is mapped to a distinct in-memory append-only table. """
+        return TableType(TableType.j_object_type.appendMap())
+
+    @staticmethod
+    def ring(capacity : int):
+        """ Consume all partitions into a single in-memory ring table."""
+        return TableType(TableType.j_object_type.ring(capacity))
+
+    @staticmethod
+    def ring_map(capacity : int):
+        """ Similar to ring(capacity), but each partition is mapped to a distinct in-memory ring table. """
+        return TableType(TableType.j_object_type.ringMap(capacity))
+
+    def __init__(self, j_spec: jpy.JType):
+        self._j_spec = j_spec
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_spec
+
+
+TableType.Stream = TableType.stream()
+""" Deprecated, prefer TableType.stream(). Consume all partitions into a single interleaved stream table, which will
+present only newly-available rows to downstream operations and visualizations."""
+
+TableType.Append = TableType.append()
+""" Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only table."""
+
+TableType.StreamMap = TableType.stream_map()
+""" Deprecated, prefer TableType.stream_map(). Similar to Stream, but each partition is mapped to a distinct stream table."""
+
+TableType.AppendMap = TableType.append_map()
+""" Deprecated, prefer TableType.append_map(). Similar to Append, but each partition is mapped to a distinct in-memory
+append-only table. """
+
 
 def j_partitions(partitions):
     if partitions is None:
@@ -106,7 +148,7 @@ def consume(
         offsets: Dict[int, int] = None,
         key_spec: KeyValueSpec = None,
         value_spec: KeyValueSpec = None,
-        table_type: TableType = TableType.Stream,
+        table_type: TableType = TableType.stream(),
 ) -> Table:
     """Consume from Kafka to a Deephaven table.
 
@@ -132,7 +174,7 @@ def consume(
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        table_type (TableType): a TableType enum, default is TableType.Stream
+        table_type (TableType): a TableType enum, default is TableType.stream()
 
     Returns:
         a Deephaven live table that will update based on Kafka messages consumed for the given topic
@@ -172,7 +214,7 @@ def consume(
                 offsets,
                 key_spec.j_object,
                 value_spec.j_object,
-                table_type.value,
+                table_type.j_object,
             )
         )
     except Exception as e:
