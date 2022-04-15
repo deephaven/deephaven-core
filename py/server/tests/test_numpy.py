@@ -13,6 +13,7 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
 from deephaven.constants import NULL_LONG, MAX_LONG
 from deephaven.numpy import to_numpy, to_table
 from deephaven.jcompat import j_array_list
+from tests.testbase import BaseTestCase
 
 
 @dataclass
@@ -21,7 +22,7 @@ class CustomClass:
     f2: str
 
 
-class NumpyTestCase(unittest.TestCase):
+class NumpyTestCase(BaseTestCase):
     def setUp(self):
         j_array_list1 = j_array_list([1, -1])
         j_array_list2 = j_array_list([2, -2])

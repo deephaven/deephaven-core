@@ -9,6 +9,14 @@ import jpy
 
 from deephaven.table import Table
 
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+
+def table_equals(table_a: Table, table_b: Table) -> bool:
+    try:
+        return False if _JTableTools.diff(table_a.j_table, table_b.j_table, 1) else True
+    except Exception as e:
+        raise DHError(e, "table equality test failed.") from e
+
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
@@ -74,3 +82,12 @@ class BaseTestCase(unittest.TestCase):
             yield
         finally:
             j_shared_lock.unlock()
+
+    def assert_table_equals(self, table_a: Table, table_b: Table):
+        self.assertTrue(table_equals(table_a, table_b))
+
+    def assertEqual(self, obj_a, obj_b):
+        if isinstance(obj_a, Table) and isinstance(obj_b, Table):
+            self.assert_table_equals(obj_a, obj_b)
+        else:
+            super().assertEqual(obj_a, obj_b)
