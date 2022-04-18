@@ -148,7 +148,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 lastIndex = 0;
                 columnSource.startTime = new DateTime(
                         LongNumericPrimitives.lowerBin(dateTime.getNanos(), columnSource.period));
-            } else {
+            } else if (dateTime.compareTo(columnSource.startTime) >= 0) {
                 lastIndex = Math.max(lastIndex,
                         DateTimeUtils.minus(dateTime, columnSource.startTime) / columnSource.period);
             }
@@ -272,7 +272,7 @@ public class TimeTable extends QueryTable implements Runnable {
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                                   @NotNull RowSequence rowSequence) {
+                @NotNull RowSequence rowSequence) {
             fillChunk(context, destination, rowSequence);
         }
 
@@ -369,12 +369,6 @@ public class TimeTable extends QueryTable implements Runnable {
                     @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
                 // noinspection unchecked
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) SyntheticDateTimeSource.this;
-            }
-
-            @Override
-            public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                                      @NotNull RowSequence rowSequence) {
-                fillChunk(context, destination, rowSequence);
             }
 
             @Override
