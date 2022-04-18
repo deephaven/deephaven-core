@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -122,12 +121,12 @@ final class RingColumnSource<T>
         return ring.capacity();
     }
 
-    public void append(ColumnSource<T> src, RowSet srcKeys) {
-        ring.append(src, srcKeys);
+    public void appendBounded(ChunkSource<? extends Values> source, RowSet srcKeys) {
+        ring.appendBounded(source, srcKeys);
     }
 
-    public void append(ChunkSource<? extends Values> src, RowSet srcKeys) {
-        ring.append(src, srcKeys);
+    public void appendUnbounded(ChunkSource<? extends Values> source, RowSet srcKeys) {
+        ring.appendUnbounded(source, srcKeys);
     }
 
     public void bringPreviousUpToDate() {

@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSequence.Iterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.util.datastructures.LongRangeConsumer;
@@ -158,25 +157,46 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     /**
-     * Equivalent to {@code append(fillContext, (ChunkSource<? extends Values>) src, srcKeys)}.
+     * Equivalent to {@code append(source, srcKeys, APPEND_CHUNK_SIZE)}.
      *
-     * @param src the source
+     * <p>
+     * A generic append with a conservatively sized {@code appendChunkSize}. If the caller knows that the {@code source}
+     * uses a {@link FillContext} with {@link FillContext#supportsUnboundedFill()}, they should instead call
+     * {@link #appendUnbounded(ChunkSource, RowSet)}.
+     * 
+     * @param source the source
      * @param srcKeys the source keys
-     * @see #append(ChunkSource, RowSet)
+     * @see #append(ChunkSource, RowSet, int)
      */
-    public final void append(ColumnSource<T> src, RowSet srcKeys) {
-        append((ChunkSource<? extends Values>) src, srcKeys);
+    public final void appendBounded(ChunkSource<? extends Values> source, RowSet srcKeys) {
+        append(source, srcKeys, APPEND_CHUNK_SIZE);
     }
 
     /**
-     * Append the data represented by {@code src} and {@code srcKeys} into {@code this} ring. This method is meant to be
-     * efficient, and will read at most {@link #capacity()} items from the end of {@code src} and {@code srcKeys}. The
-     * {@link #lastKey() lastKey} will increase by {@code srcKeys.size()}.
+     * Equivalent to {@code append(source, srcKeys, capacity)}.
      *
-     * @param src the source
+     * <p>
+     * A specialized append, where the caller knows that {@code source} is using a {@link FillContext} with
+     * {@link FillContext#supportsUnboundedFill()}.
+     *
+     * @param source the source
      * @param srcKeys the source keys
+     * @see #append(ChunkSource, RowSet, int)
      */
-    public final void append(ChunkSource<? extends Values> src, RowSet srcKeys) {
+    public final void appendUnbounded(ChunkSource<? extends Values> source, RowSet srcKeys) {
+        append(source, srcKeys, capacity);
+    }
+
+    /**
+     * Append the data represented by {@code source} and {@code srcKeys} into {@code this} ring. This method is meant to
+     * be efficient, and will read at most {@link #capacity()} items from the end of {@code source} and {@code srcKeys}.
+     * The {@link #lastKey() lastKey} will increase by {@code srcKeys.size()}.
+     *
+     * @param source the source
+     * @param srcKeys the source keys
+     * @param appendChunkSize the append chunk size
+     */
+    public final void append(ChunkSource<? extends Values> source, RowSet srcKeys, int appendChunkSize) {
         if (srcKeys.isEmpty()) {
             return;
         }
@@ -196,11 +216,11 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
         try (
                 final RowSet _physicalRowsToClose = hasSkippedRows ? physicalRows : null;
                 final ResettableWritableChunk<Any> chunk = getChunkType().makeResettableWritableChunk();
-                final FillContext fillContext = src.makeFillContext(APPEND_CHUNK_SIZE);
+                final FillContext fillContext = source.makeFillContext(appendChunkSize);
                 final Iterator it = physicalRows.getRowSequenceIterator()) {
             // Note: if we could do it.skip(skipRows), that would probably be more efficient than subSetByPositionRange
-            fillRingFromMiddle(src, chunk, fillContext, it, fillStartIx);
-            fillRingFromStart(src, chunk, fillContext, it, fillStartIx);
+            fillRingFromMiddle(source, chunk, fillContext, it, fillStartIx, appendChunkSize);
+            fillRingFromStart(source, chunk, fillContext, it, fillStartIx, appendChunkSize);
         }
         nextRingIx += logicalFillSize;
     }
@@ -210,15 +230,16 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             ResettableWritableChunk<Any> chunk,
             FillContext fillContext,
             Iterator it,
-            int ringStartIx) {
+            int ringStartIx,
+            int appendChunkSize) {
         int ringIx = ringStartIx;
-        int nextSize = Math.min(APPEND_CHUNK_SIZE, capacity - ringIx);
+        int nextSize = Math.min(appendChunkSize, capacity - ringIx);
         do {
             final RowSequence rows = it.getNextRowSequenceWithLength(nextSize);
             final int rowsSize = rows.intSize();
             src.fillChunk(fillContext, ring(chunk, ringIx, rowsSize), rows);
             ringIx += rowsSize;
-        } while (it.hasMore() && (nextSize = Math.min(APPEND_CHUNK_SIZE, capacity - ringIx)) > 0);
+        } while (it.hasMore() && (nextSize = Math.min(appendChunkSize, capacity - ringIx)) > 0);
     }
 
     private void fillRingFromStart(
@@ -226,10 +247,11 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             ResettableWritableChunk<Any> chunk,
             FillContext fillContext,
             Iterator it,
-            int ringStartIx) {
+            int ringStartIx,
+            int appendChunkSize) {
         int ringIx = 0;
         while (it.hasMore()) {
-            final RowSequence rows = it.getNextRowSequenceWithLength(APPEND_CHUNK_SIZE);
+            final RowSequence rows = it.getNextRowSequenceWithLength(appendChunkSize);
             final int rowsSize = rows.intSize();
             if (ringIx + rowsSize > ringStartIx) {
                 throw new IllegalStateException("Overrunning into the start of our fillRingFromMiddle");
@@ -376,7 +398,9 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     final void bringUpToDate(SELF current) {
-        append(current, RowSetFactory.fromRange(nextRingIx, current.nextRingIx - 1));
+        // When we are bringing ourselves up-to-date, we know that current is a ring and uses the default FillContext,
+        // which is unbounded.
+        appendUnbounded(current, RowSetFactory.fromRange(nextRingIx, current.nextRingIx - 1));
         if (nextRingIx != current.nextRingIx) {
             throw new IllegalStateException();
         }

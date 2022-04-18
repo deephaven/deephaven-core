@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ChunkSource.FillContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -34,6 +35,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
         final int numColumns = sourceMap.size();
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>(numColumns);
         final ColumnSource<?>[] sources = new ColumnSource[numColumns];
+        final boolean[] sourceHasUnboundedFillContexts = new boolean[numColumns];
         final RingColumnSource<?>[] rings = new RingColumnSource[numColumns];
         int ix = 0;
         for (Map.Entry<String, ? extends ColumnSource<?>> e : sourceMap.entrySet()) {
@@ -44,6 +46,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             // for the source columns, we would like to read primitives instead of objects in cases where it is possible
             final ColumnSource<?> source = ReinterpretUtils.maybeConvertToPrimitive(original);
 
+            final boolean sourceSupportsUnboundedFill;
+            try (final FillContext tmpFillContext = source.makeFillContext(1)) {
+                sourceSupportsUnboundedFill = tmpFillContext.supportsUnboundedFill();
+            }
+
             // for the destination sources, we know they are array backed sources that will actually store primitives
             // and we can fill efficiently
             final RingColumnSource<?> ring = RingColumnSource.of(capacity, source.getType(), source.getComponentType());
@@ -53,12 +60,13 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
                     source == original ? ring : ReinterpretUtils.convertToOriginal(original.getType(), ring);
 
             sources[ix] = source;
+            sourceHasUnboundedFillContexts[ix] = sourceSupportsUnboundedFill;
             rings[ix] = ring;
             resultMap.put(name, output);
             ++ix;
         }
 
-        final WritableRowSet initialRowSet = init(init, parent, sources, rings);
+        final WritableRowSet initialRowSet = init(init, parent, sources, sourceHasUnboundedFillContexts, rings);
         final QueryTable result = new QueryTable(initialRowSet.toTracking(), resultMap);
         if (swapListener == null) {
             result.setRefreshing(false);
@@ -66,8 +74,8 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             result.setRefreshing(true);
             result.addParentReference(swapListener);
         }
-        final AddsToRingsListener listener =
-                new AddsToRingsListener("AddsToRingsListener", parent, result, sources, rings);
+        final AddsToRingsListener listener = new AddsToRingsListener(
+                "AddsToRingsListener", parent, result, sources, sourceHasUnboundedFillContexts, rings);
         if (swapListener != null) {
             swapListener.setListenerAndResult(listener, result);
         }
@@ -75,7 +83,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
     }
 
     private static WritableRowSet init(Init init, Table parent, ColumnSource<?>[] sources,
-            RingColumnSource<?>[] rings) {
+            boolean[] sourceHasUnboundedFillContexts, RingColumnSource<?>[] rings) {
         if (init == Init.NONE) {
             return RowSetFactory.empty();
         }
@@ -87,7 +95,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             }
             for (int i = 0; i < rings.length; ++i) {
                 final ChunkSource<? extends Values> source = usePrev ? sources[i].getPrevSource() : sources[i];
-                rings[i].append(source, srcKeys);
+                if (sourceHasUnboundedFillContexts[i]) {
+                    rings[i].appendUnbounded(source, srcKeys);
+                } else {
+                    rings[i].appendBounded(source, srcKeys);
+                }
                 rings[i].bringPreviousUpToDate();
             }
         }
@@ -95,6 +107,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
     }
 
     private final ColumnSource<?>[] sources;
+    private final boolean[] sourceHasUnboundedFillContexts;
     private final RingColumnSource<?>[] rings;
     private final UpdateCommitter<AddsToRingsListener> prevFlusher;
 
@@ -103,10 +116,15 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             Table parent,
             BaseTable dependent,
             ColumnSource<?>[] sources,
+            boolean[] sourceHasUnboundedFillContexts,
             RingColumnSource<?>[] rings) {
         super(description, parent, Objects.requireNonNull(dependent));
         this.sources = Objects.requireNonNull(sources);
+        this.sourceHasUnboundedFillContexts = sourceHasUnboundedFillContexts;
         this.rings = Objects.requireNonNull(rings);
+        if (sources.length != sourceHasUnboundedFillContexts.length) {
+            throw new IllegalArgumentException();
+        }
         if (sources.length != rings.length) {
             throw new IllegalArgumentException();
         }
@@ -143,7 +161,11 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
 
     private void append(RowSet added) {
         for (int i = 0; i < rings.length; ++i) {
-            rings[i].append(sources[i], added);
+            if (sourceHasUnboundedFillContexts[i]) {
+                rings[i].appendUnbounded(sources[i], added);
+            } else {
+                rings[i].appendBounded(sources[i], added);
+            }
         }
         prevFlusher.maybeActivate();
         final TableUpdate update = rings[0].tableUpdate();
