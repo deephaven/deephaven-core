@@ -220,7 +220,7 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericArray() {
-        assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), array(new Character('1'), new Character('3'), new Character('5')));
+        assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), arrayObj(new Character('1'), new Character('3'), new Character('5')));
     }
 
     public void testGenericIn() {
@@ -368,7 +368,7 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new Boolean[]{false,false,NULL_BOOLEAN},true));
         assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinct(new Boolean[]{false,true,false,true,NULL_BOOLEAN},true));
 
-        assertEquals(new Boolean[]{false,true}, distinct(false,true,false,true,NULL_BOOLEAN));
+        assertEquals(new Boolean[]{false,true}, distinctObj(false,true,false,true,NULL_BOOLEAN));
     }
 
     public void testBooleanRepeat() {

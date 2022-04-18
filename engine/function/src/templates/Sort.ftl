@@ -76,9 +76,19 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    @SafeVarargs
-    static public <T extends Comparable<? super T>> T[] sort(final T... values) {
+    static public <T extends Comparable<? super T>> T[] sort(final T[] values) {
         return sort(values, new NullNaNAwareComparator<>());
+    }
+
+    /**
+     * Returns sorted values from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted values.
+     */
+    @SafeVarargs
+    static public <T extends Comparable<? super T>> T[] sortObj(final T... values) {
+        return sort(values);
     }
 
     /**
@@ -133,9 +143,19 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    @SafeVarargs
-    static public <T extends Comparable<? super T>> T[] sortDescending(final T... values) {
+    static public <T extends Comparable<? super T>> T[] sortDescending(final T[] values) {
         return sortDescending(values, new NullNaNAwareComparator<>());
+    }
+
+    /**
+     * Returns sorted values from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted values.
+     */
+    @SafeVarargs
+    static public <T extends Comparable<? super T>> T[] sortDescendingObj(final T... values) {
+        return sortDescending(values);
     }
 
     <#list primitiveTypes as pt>

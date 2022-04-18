@@ -151,6 +151,16 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
+    static public <T> long countObj(T... values) {
+        return count(values);
+    }
+
+    /**
+     * Counts the number of non-null values.
+     *
+     * @param values values.
+     * @return number of non-null values.
+     */
     static public <T> long count(ObjectVector<T> values) {
         if(values == null){
             return NULL_LONG;
@@ -190,6 +200,16 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
+    static public <T> T lastObj(T... values) {
+        return last(values);
+    }
+
+    /**
+     * Returns the last value from an array.
+     *
+     * @param values values.
+     * @return last value from the array.
+     */
     static public <T> T last(ObjectVector<T> values) {
         if(values == null || values.size() == 0) {
             return null;
@@ -210,6 +230,16 @@ public class Basic {
         }
 
         return values[0];
+    }
+
+    /**
+     * Returns the first value from an array.
+     *
+     * @param values values.
+     * @return first value from the array.
+     */
+    static public <T> T firstObj(T... values) {
+        return first(values);
     }
 
     /**
@@ -248,6 +278,17 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
+    static public <T> T nthObj(long index, T... values) {
+        return nth(index, values);
+    }
+
+    /**
+     * Returns the nth value from an array.
+     *
+     * @param index index of the value to return.
+     * @param values values.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
+     */
     static public <T> T nth(long index, ObjectVector<T> values) {
         if (values == null || index < 0 || index >= values.size()) {
             return null;
@@ -276,13 +317,23 @@ public class Basic {
      * @param values primitive array
      * @return DB array.
      */
-    @SafeVarargs
-    public static <T> ObjectVector<T> array(T... values){
+    public static <T> ObjectVector<T> array(T[] values){
         if(values == null) {
             return null;
         }
 
         return new ObjectVectorDirect<>(values);
+    }
+
+    /**
+     * Converts a primitive array to a DB array.
+     *
+     * @param values primitive array
+     * @return DB array.
+     */
+    @SafeVarargs
+    public static <T> ObjectVector<T> arrayObj(T... values){
+        return array(values);
     }
 
     /**
@@ -310,6 +361,17 @@ public class Basic {
      */
     static public <T> boolean in(T testedValue, T[] possibleValues) {
         return in(testedValue, new ObjectVectorDirect<>(possibleValues));
+    }
+
+    /**
+     * Checks if a value is within a discrete set of possible values.
+     *
+     * @param testedValue tested value.
+     * @param possibleValues possible values.
+     * @return true if the tested value is contained in the possible values, and false otherwise.
+     */
+    static public <T> boolean inObj(T testedValue, T... possibleValues) {
+        return in(testedValue, possibleValues);
     }
 
     /**
@@ -361,6 +423,16 @@ public class Basic {
         }
 
         return countDistinct(new ObjectVectorDirect<>(values), false);
+    }
+
+    /**
+     * Counts the number of distinct elements in the array.
+     *
+     * @param values values.
+     * @return number of distinct non-null values.
+     */
+    public static <T extends Comparable<? super T>> long countDistinctObj(T... values) {
+        return countDistinct(values, false);
     }
 
     /**
@@ -428,13 +500,23 @@ public class Basic {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    @SafeVarargs
-    public static <T extends Comparable<? super T>> T[] distinct(T... values) {
+    public static <T extends Comparable<? super T>> T[] distinct(T[] values) {
         if(values == null) {
             return null;
         }
 
         return distinct(new ObjectVectorDirect<>(values), false);
+    }
+
+    /**
+     * Returns an array containing only the distinct values from the input.
+     *
+     * @param values values.
+     * @return unsorted array containing only distinct non-null items from arr.
+     */
+    @SafeVarargs
+    public static <T extends Comparable<? super T>> T[] distinctObj(T... values) {
+        return distinct(values, false);
     }
 
     /**
@@ -618,6 +700,16 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
+    public static <T> T[] reverseObj(T... values){
+        return reverse(values);
+    }
+
+    /**
+     * Returns an array with the values reversed.
+     *
+     * @param values values.
+     * @return array with the values reversed.
+     */
     public static <T> T[] reverse(ObjectVector<T> values){
         if(values == null){
             return null;
@@ -647,6 +739,17 @@ public class Basic {
         }
 
         return firstIndexOf(val, new ObjectVectorDirect<>(values));
+    }
+
+    /**
+     * Returns the first index containing the value.
+     *
+     * @param values values.
+     * @param val value to search for.
+     * @return first index containing the value or null, if the value is not present.
+     */
+    public static <T> long firstIndexOfObj(T val, T... values) {
+        return firstIndexOf(val, values);
     }
 
     /**

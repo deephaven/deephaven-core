@@ -47,6 +47,16 @@ public class Numeric {
     }
 
     /**
+     * Returns the maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return maximum of non-null values, or null if there are no non-null values.
+     */
+    static public <T extends Comparable<T>> T maxObj(final T... values) {
+        return max(values);
+    }
+
+    /**
      * Returns the minimum.  Null values are excluded.
      *
      * @param values values.
@@ -72,6 +82,16 @@ public class Numeric {
     }
 
     /**
+     * Returns the minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values.
+     */
+    public static <T extends Comparable<T>> T minObj(final T... values) {
+        return min(values);
+    }
+
+    /**
      * Returns the index of the maximum value.
      *
      * @param values values.
@@ -83,6 +103,16 @@ public class Numeric {
         }
 
         return indexOfMax(new ObjectVectorDirect<>(values));
+    }
+
+    /**
+     * Returns the index of the maximum value.
+     *
+     * @param values values.
+     * @return index of the maximum value.
+     */
+    public static <T extends Comparable<T>> long indexOfMaxObj(T... values) {
+        return indexOfMax(values);
     }
 
     /**
@@ -125,6 +155,16 @@ public class Numeric {
         }
 
         return indexOfMin(new ObjectVectorDirect<>(values));
+    }
+
+    /**
+     * Returns the index of the minimum value.
+     *
+     * @param values values.
+     * @return index of the minimum value.
+     */
+    public static <T extends Comparable<T>> long indexOfMinObj(T... values) {
+        return indexOfMin(values);
     }
 
     /**
