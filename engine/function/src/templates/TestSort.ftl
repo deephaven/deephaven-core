@@ -16,75 +16,81 @@ import static io.deephaven.function.Sort.*;
 /**
  * Test Sort.
  */
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "rawtypes", "RedundantCast", "RedundantArrayCreation", "unchecked"})
 public class TestSort extends BaseArrayTestCase {
 
     //////////////////////////// Object ////////////////////////////
 
-    public void testGenericSort() {
+    public void testObjSort() {
         final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
-        ComparableExtended[] sort = sort(comparableExtendedObjectVector);
+        ComparableExtended[] sort = sortObj(comparableExtendedObjectVector);
         ComparableExtended[] expected = new ComparableExtended[]{null, null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d),
                 new ComparableExtended(0d), new ComparableExtended(1d), new ComparableExtended(9.4d), new ComparableExtended(12d)};
         assertEquals(expected, sort);
 
-        final BigDecimal[] bigDecimals = new BigDecimal[]{null, new BigDecimal("2.369"), new BigDecimal(26), new BigDecimal(Float.MAX_VALUE), null, new BigDecimal(Long.MIN_VALUE)
-                , new BigDecimal(-2395.365)};
-        BigDecimal[] expectedBDs = new BigDecimal[]{null, null, new BigDecimal(Long.MIN_VALUE), new BigDecimal(-2395.365), new BigDecimal("2.369"), new BigDecimal(26), new BigDecimal(Float.MAX_VALUE)
+        final BigDecimal[] bigDecimals = new BigDecimal[]{null, BigDecimal.valueOf(2.369), BigDecimal.valueOf(26), BigDecimal.valueOf(Float.MAX_VALUE), null, BigDecimal.valueOf(Long.MIN_VALUE)
+                , BigDecimal.valueOf(-2395.365)};
+        BigDecimal[] expectedBDs = new BigDecimal[]{null, null, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(2.369), BigDecimal.valueOf(26), BigDecimal.valueOf(Float.MAX_VALUE)
         };
-        BigDecimal[] sortedArray = sort(bigDecimals);
+        BigDecimal[] sortedArray = sortObj(bigDecimals);
         assertEquals(expectedBDs, sortedArray);
+
+        // check that functions can be resolved with varargs
+        assertEquals(expectedBDs, sortObj(null, null, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(2.369), BigDecimal.valueOf(26), BigDecimal.valueOf(Float.MAX_VALUE)));
     }
 
-    public void testGenericSortDescending() {
+    public void testObjSortDescending() {
         final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
 
-        ComparableExtended[] sort = sortDescending(comparableExtendedObjectVector);
+        ComparableExtended[] sort = sortDescendingObj(comparableExtendedObjectVector);
         ComparableExtended[] expected = new ComparableExtended[]{new ComparableExtended(12d), new ComparableExtended(9.4d), new ComparableExtended(1d),
                 new ComparableExtended(0d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d), new ComparableExtended(-5.6d), null, null};
         assertEquals(expected, sort);
 
-        final BigDecimal[] bigDecimals = new BigDecimal[]{null, new BigDecimal("2.369"), new BigDecimal(26), new BigDecimal(Float.MAX_VALUE), null, new BigDecimal(Long.MIN_VALUE)
-                , new BigDecimal(-2395.365)};
-        BigDecimal[] expectedBDs = new BigDecimal[]{new BigDecimal(Float.MAX_VALUE), new BigDecimal(26), new BigDecimal("2.369"), new BigDecimal(-2395.365), new BigDecimal(Long.MIN_VALUE), null, null};
-        BigDecimal[] sortedArray = sortDescending(bigDecimals);
+        final BigDecimal[] bigDecimals = new BigDecimal[]{null, BigDecimal.valueOf(2.369), BigDecimal.valueOf(26), BigDecimal.valueOf(Float.MAX_VALUE), null, BigDecimal.valueOf(Long.MIN_VALUE)
+                , BigDecimal.valueOf(-2395.365)};
+        BigDecimal[] expectedBDs = new BigDecimal[]{BigDecimal.valueOf(Float.MAX_VALUE), BigDecimal.valueOf(26), BigDecimal.valueOf(2.369), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(Long.MIN_VALUE), null, null};
+        BigDecimal[] sortedArray = sortDescendingObj(bigDecimals);
         assertEquals(expectedBDs, sortedArray);
+
+        // check that functions can be resolved with varargs
+        assertEquals(expectedBDs, sortDescendingObj(BigDecimal.valueOf(Float.MAX_VALUE), BigDecimal.valueOf(26), BigDecimal.valueOf(2.369), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(Long.MIN_VALUE), null, null));
     }
 
-    public void testGenericSortExceptions() {
+    public void testObjSortExceptions() {
         //sort
         ObjectVector dbArrayToSort = null;
 
-        Object[] sort = sort(dbArrayToSort);
+        Object[] sort = sortObj(dbArrayToSort);
         assertNull(sort);
 
         BigDecimal[] bd = null;
-        BigDecimal[] sortedNumbers = sort(bd);
+        BigDecimal[] sortedNumbers = sortObj(bd);
         assertNull(sortedNumbers);
 
-        sort = sort(new ObjectVectorDirect<ComparableExtended>());
+        sort = sortObj(new ObjectVectorDirect<ComparableExtended>());
         assertEquals(new ComparableExtended[0], sort);
 
         bd = new BigDecimal[]{};
-        sortedNumbers = sort(bd);
+        sortedNumbers = sortObj(bd);
         assertTrue(ArrayUtils.isEmpty(sortedNumbers));
 
         //sortDescending
 
-        sort = sortDescending(dbArrayToSort);
+        sort = sortDescendingObj(dbArrayToSort);
         assertNull(sort);
 
         bd = null;
-        sortedNumbers = sortDescending(bd);
+        sortedNumbers = sortDescendingObj(bd);
         assertNull(sortedNumbers);
 
-        sort = sortDescending(new ObjectVectorDirect<ComparableExtended>());
+        sort = sortDescendingObj(new ObjectVectorDirect<ComparableExtended>());
         assertEquals(new ComparableExtended[0], sort);
 
         bd = new BigDecimal[]{};
-        sortedNumbers = sortDescending(bd);
+        sortedNumbers = sortDescendingObj(bd);
         assertTrue(ArrayUtils.isEmpty(sortedNumbers));
     }
 

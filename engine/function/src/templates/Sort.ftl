@@ -26,7 +26,7 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final ObjectVector<T> values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sortObj(final ObjectVector<T> values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
@@ -45,8 +45,8 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final ObjectVector<T> values) {
-        return sort(values, new NullNaNAwareComparator<>());
+    static public <T extends Comparable<? super T>> T[] sortObj(final ObjectVector<T> values) {
+        return sortObj(values, new NullNaNAwareComparator<>());
     }
 
     /**
@@ -56,7 +56,7 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final T[] values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sortObj(final T[] values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
@@ -76,19 +76,9 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sort(final T[] values) {
-        return sort(values, new NullNaNAwareComparator<>());
-    }
-
-    /**
-     * Returns sorted values from smallest to largest.
-     *
-     * @param values values.
-     * @return sorted values.
-     */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortObj(final T... values) {
-        return sort(values);
+        return sortObj(values, new NullNaNAwareComparator<>());
     }
 
     /**
@@ -98,7 +88,7 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final ObjectVector<T> values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sortDescendingObj(final ObjectVector<T> values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
@@ -118,8 +108,8 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final ObjectVector<T> values) {
-        return sortDescending(values, new NullNaNAwareComparator<>());
+    static public <T extends Comparable<? super T>> T[] sortDescendingObj(final ObjectVector<T> values) {
+        return sortDescendingObj(values, new NullNaNAwareComparator<>());
     }
 
     /**
@@ -129,22 +119,12 @@ public class Sort {
      * @param comparator value comparator.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final T[] values, final Comparator<T> comparator) {
+    static public <T extends Comparable<? super T>> T[] sortDescendingObj(final T[] values, final Comparator<T> comparator) {
         if (values == null) {
             return null;
         }
 
-        return sortDescending(new ObjectVectorDirect<>(values), comparator);
-    }
-
-    /**
-     * Returns sorted values from largest to smallest.
-     *
-     * @param values values.
-     * @return sorted values.
-     */
-    static public <T extends Comparable<? super T>> T[] sortDescending(final T[] values) {
-        return sortDescending(values, new NullNaNAwareComparator<>());
+        return sortDescendingObj(new ObjectVectorDirect<>(values), comparator);
     }
 
     /**
@@ -155,7 +135,7 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortDescendingObj(final T... values) {
-        return sortDescending(values);
+        return sortDescendingObj(values, new NullNaNAwareComparator<>());
     }
 
     <#list primitiveTypes as pt>

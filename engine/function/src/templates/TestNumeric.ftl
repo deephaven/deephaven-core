@@ -19,53 +19,65 @@ import static io.deephaven.function.Numeric.*;
 /**
  * Test Numeric.
  */
-@SuppressWarnings({"RedundantCast", "RedundantArrayCreation", "PointlessArithmeticExpression", "ConstantConditions", "SimplifiableAssertion"})
+@SuppressWarnings({"RedundantCast", "RedundantArrayCreation", "PointlessArithmeticExpression", "ConstantConditions", "SimplifiableAssertion", "Convert2Diamond"})
 public class TestNumeric extends BaseArrayTestCase {
 
     //////////////////////////// Object ////////////////////////////
 
-    public void testGenericMin() {
-        assertEquals(BigInteger.valueOf(1), min(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
-        assertEquals(BigInteger.valueOf(-2), min(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
-        assertEquals(null, min(new BigInteger[0]));
+    public void testObjMin() {
+        assertEquals(BigInteger.valueOf(1), minObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
+        assertEquals(BigInteger.valueOf(-2), minObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
+        assertEquals(null, minObj(new BigInteger[0]));
 
-        assertEquals(BigInteger.valueOf(1), min(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(BigInteger.valueOf(-2), min(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(null, min(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(BigInteger.valueOf(1), minObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(BigInteger.valueOf(-2), minObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(null, minObj(new ObjectVectorDirect<BigInteger>()));
+
+        // check that functions can be resolved with varargs
+        assertEquals(BigInteger.valueOf(1), minObj(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)));
     }
 
-    public void testGenericMax() {
-        assertEquals(BigInteger.valueOf(3), max(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
-        assertEquals(BigInteger.valueOf(10), max(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
-        assertEquals(null, max(new BigInteger[0]));
+    public void testObjMax() {
+        assertEquals(BigInteger.valueOf(3), maxObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
+        assertEquals(BigInteger.valueOf(10), maxObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
+        assertEquals(null, maxObj(new BigInteger[0]));
 
-        assertEquals(BigInteger.valueOf(3), max(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(BigInteger.valueOf(10), max(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(null, max(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(BigInteger.valueOf(3), maxObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(BigInteger.valueOf(10), maxObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(null, maxObj(new ObjectVectorDirect<BigInteger>()));
+
+        // check that functions can be resolved with varargs
+        assertEquals(BigInteger.valueOf(3), maxObj(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)));
     }
 
-    public void testGenericIndexOfMin() {
-        assertEquals(1, indexOfMin(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
-        assertEquals(2, indexOfMin(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
-        assertEquals(NULL_LONG, indexOfMin(new BigInteger[0]));
-        assertEquals(NULL_LONG, indexOfMin((BigInteger[])null));
+    public void testObjIndexOfMin() {
+        assertEquals(1, indexOfMinObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
+        assertEquals(2, indexOfMinObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
+        assertEquals(NULL_LONG, indexOfMinObj(new BigInteger[0]));
+        assertEquals(NULL_LONG, indexOfMinObj((BigInteger[])null));
 
-        assertEquals(1, indexOfMin(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(2, indexOfMin(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(NULL_LONG, indexOfMin(new ObjectVectorDirect<BigInteger>()));
-        assertEquals(NULL_LONG, indexOfMin((ObjectVector<BigInteger>)null));
+        assertEquals(1, indexOfMinObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(2, indexOfMinObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(NULL_LONG, indexOfMinObj(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(NULL_LONG, indexOfMinObj((ObjectVector<BigInteger>)null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(1, indexOfMinObj(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)));
     }
 
-    public void testGenericIndexOfMax() {
-        assertEquals(0, indexOfMax(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
-        assertEquals(1, indexOfMax(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
-        assertEquals(NULL_LONG, indexOfMax(new BigInteger[0]));
-        assertEquals(NULL_LONG, indexOfMax((BigInteger[])null));
+    public void testObjIndexOfMax() {
+        assertEquals(0, indexOfMaxObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)}));
+        assertEquals(1, indexOfMaxObj(new BigInteger[]{BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1)}));
+        assertEquals(NULL_LONG, indexOfMaxObj(new BigInteger[0]));
+        assertEquals(NULL_LONG, indexOfMaxObj((BigInteger[])null));
 
-        assertEquals(0, indexOfMax(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
-        assertEquals(1, indexOfMax(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
-        assertEquals(NULL_LONG, indexOfMax(new ObjectVectorDirect<BigInteger>()));
-        assertEquals(NULL_LONG, indexOfMax((ObjectVector<BigInteger>)null));
+        assertEquals(0, indexOfMaxObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2))));
+        assertEquals(1, indexOfMaxObj(new ObjectVectorDirect<BigInteger>(BigInteger.valueOf(3), BigInteger.valueOf(10), BigInteger.valueOf(-2), BigInteger.valueOf(1))));
+        assertEquals(NULL_LONG, indexOfMaxObj(new ObjectVectorDirect<BigInteger>()));
+        assertEquals(NULL_LONG, indexOfMaxObj((ObjectVector<BigInteger>)null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(0, indexOfMaxObj(BigInteger.valueOf(3), BigInteger.valueOf(1), BigInteger.valueOf(2)));
     }
 
 
@@ -387,6 +399,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cov(new ${pt.dbArrayDirect}(a), (${pt2.dbArrayDirect})null));
         assertEquals(NULL_DOUBLE, cov((${pt.dbArrayDirect})null, new ${pt2.dbArrayDirect}(b)));
         assertEquals(NULL_DOUBLE, cov((${pt.dbArrayDirect})null, (${pt2.dbArrayDirect})null));
+
+
+        try {
+            cov(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
     }
 
     public void test${pt.boxed}${pt2.boxed}Cor() {
@@ -422,6 +442,13 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cor(new ${pt.dbArrayDirect}(a), (${pt2.dbArrayDirect})null));
         assertEquals(NULL_DOUBLE, cor((${pt.dbArrayDirect})null, new ${pt2.dbArrayDirect}(b)));
         assertEquals(NULL_DOUBLE, cor((${pt.dbArrayDirect})null, (${pt2.dbArrayDirect})null));
+
+        try {
+            cor(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
     }
 
 
@@ -717,6 +744,8 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Median() {
+        assertEquals(Double.NaN, median(new ${pt.primitive}[]{}));
+
         assertEquals(3.0, median(new ${pt.primitive}[]{4,2,3}));
         assertEquals(3.5, median(new ${pt.primitive}[]{5,4,2,3}));
         assertEquals(NULL_DOUBLE, median((${pt.primitive}[])null));
@@ -741,6 +770,21 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(2.0, percentile(0.00, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(3.0, percentile(0.50, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,2,3})));
         assertEquals(NULL_DOUBLE, percentile(0.25, (${pt.dbArray}) null));
+
+        try {
+            percentile(-1, new ${pt.primitive}[]{4,2,3});
+            fail("Illegal argument check");
+        } catch(IllegalArgumentException e) {
+            // pass
+        }
+
+        try {
+            percentile(1.01, new ${pt.primitive}[]{4,2,3});
+            fail("Illegal argument check");
+        } catch(IllegalArgumentException e) {
+            // pass
+        }
+
     }
 
     public void test${pt.boxed}Wsum() {
@@ -762,6 +806,13 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wsum((${pt.dbArray}) null, new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.dbArray}) null));
+
+        try {
+            wsum(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
 
         </#if>
         </#list>
@@ -786,6 +837,13 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wavg((${pt.dbArray}) null, new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wavg(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.dbArray}) null));
+
+        try {
+            wavg(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
 
         </#if>
         </#list>
@@ -815,6 +873,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(target, wvar(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wvar((${pt.dbArray}) null, new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wvar(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.dbArray}) null));
+
+        try {
+            wvar(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
+
 
         </#if>
         </#list>
@@ -876,6 +942,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(target, wste(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wste((${pt.dbArray}) null, new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wste(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.dbArray}) null));
+
+        try {
+            wste(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.dbArrayDirect}(new ${pt2.primitive}[]{4,5}));
+            fail("Mismatched arguments");
+        } catch(IllegalArgumentException e){
+            // pass
+        }
+
 
         </#if>
         </#list>

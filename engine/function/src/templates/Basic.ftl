@@ -137,12 +137,13 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public <T> long count(T[] values) {
+    @SafeVarargs
+    static public <T> long countObj(T... values) {
         if (values == null) {
             return NULL_LONG;
         }
 
-        return count(new ObjectVectorDirect<>(values));
+        return countObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -151,17 +152,7 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public <T> long countObj(T... values) {
-        return count(values);
-    }
-
-    /**
-     * Counts the number of non-null values.
-     *
-     * @param values values.
-     * @return number of non-null values.
-     */
-    static public <T> long count(ObjectVector<T> values) {
+    static public <T> long countObj(ObjectVector<T> values) {
         if(values == null){
             return NULL_LONG;
         }
@@ -186,7 +177,8 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public <T> T last(T[] values) {
+    @SafeVarargs
+    static public <T> T lastObj(T... values) {
         if(values == null || values.length == 0) {
             return null;
         }
@@ -200,17 +192,7 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public <T> T lastObj(T... values) {
-        return last(values);
-    }
-
-    /**
-     * Returns the last value from an array.
-     *
-     * @param values values.
-     * @return last value from the array.
-     */
-    static public <T> T last(ObjectVector<T> values) {
+    static public <T> T lastObj(ObjectVector<T> values) {
         if(values == null || values.size() == 0) {
             return null;
         }
@@ -224,7 +206,8 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public <T> T first(T[] values) {
+    @SafeVarargs
+    static public <T> T firstObj(T... values) {
         if(values == null || values.length == 0) {
             return null;
         }
@@ -238,17 +221,7 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public <T> T firstObj(T... values) {
-        return first(values);
-    }
-
-    /**
-     * Returns the first value from an array.
-     *
-     * @param values values.
-     * @return first value from the array.
-     */
-    static public <T> T first(ObjectVector<T> values) {
+    static public <T> T firstObj(ObjectVector<T> values) {
         if(values == null || values.size() == 0) {
             return null;
         }
@@ -263,7 +236,8 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public <T> T nth(long index, T[] values) {
+    @SafeVarargs
+    static public <T> T nthObj(long index, T... values) {
         if (values == null || index < 0 || index >= values.length) {
             return null;
         }
@@ -278,18 +252,7 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public <T> T nthObj(long index, T... values) {
-        return nth(index, values);
-    }
-
-    /**
-     * Returns the nth value from an array.
-     *
-     * @param index index of the value to return.
-     * @param values values.
-     * @return nth value from the array or null, if the index is outside of the array's index range.
-     */
-    static public <T> T nth(long index, ObjectVector<T> values) {
+    static public <T> T nthObj(long index, ObjectVector<T> values) {
         if (values == null || index < 0 || index >= values.size()) {
             return null;
         }
@@ -298,12 +261,12 @@ public class Basic {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a DB array to an array.
      *
      * @param values DB array
      * @return primitive array.
      */
-    public static <T> T[] vec(ObjectVector<T> values) {
+    public static <T> T[] vecObj(ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
@@ -312,28 +275,18 @@ public class Basic {
     }
 
     /**
-     * Converts a primitive array to a DB array.
-     *
-     * @param values primitive array
-     * @return DB array.
-     */
-    public static <T> ObjectVector<T> array(T[] values){
-        if(values == null) {
-            return null;
-        }
-
-        return new ObjectVectorDirect<>(values);
-    }
-
-    /**
-     * Converts a primitive array to a DB array.
+     * Converts an array to a DB array.
      *
      * @param values primitive array
      * @return DB array.
      */
     @SafeVarargs
     public static <T> ObjectVector<T> arrayObj(T... values){
-        return array(values);
+        if(values == null) {
+            return null;
+        }
+
+        return new ObjectVectorDirect<>(values);
     }
 
     /**
@@ -359,19 +312,9 @@ public class Basic {
      * @param possibleValues possible values.
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
-    static public <T> boolean in(T testedValue, T[] possibleValues) {
-        return in(testedValue, new ObjectVectorDirect<>(possibleValues));
-    }
-
-    /**
-     * Checks if a value is within a discrete set of possible values.
-     *
-     * @param testedValue tested value.
-     * @param possibleValues possible values.
-     * @return true if the tested value is contained in the possible values, and false otherwise.
-     */
+    @SafeVarargs
     static public <T> boolean inObj(T testedValue, T... possibleValues) {
-        return in(testedValue, possibleValues);
+        return inObj(testedValue, new ObjectVectorDirect<>(possibleValues));
     }
 
     /**
@@ -381,7 +324,7 @@ public class Basic {
      * @param possibleValues possible values.
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
-    static public <T> boolean in(T testedValue, ObjectVector<T> possibleValues) {
+    static public <T> boolean inObj(T testedValue, ObjectVector<T> possibleValues) {
         final boolean testedIsNull = isNull(testedValue);
         final long size = possibleValues.size();
 
@@ -403,12 +346,12 @@ public class Basic {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values) {
+    public static <T extends Comparable<? super T>> long countDistinctObj(final ObjectVector<T> values) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(values, false);
+        return countDistinctObj(values, false);
     }
 
     /**
@@ -417,22 +360,13 @@ public class Basic {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(T[] values) {
-        if(values == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
-        return countDistinct(new ObjectVectorDirect<>(values), false);
-    }
-
-    /**
-     * Counts the number of distinct elements in the array.
-     *
-     * @param values values.
-     * @return number of distinct non-null values.
-     */
+    @SafeVarargs
     public static <T extends Comparable<? super T>> long countDistinctObj(T... values) {
-        return countDistinct(values, false);
+        if(values == null) {
+            return QueryConstants.NULL_LONG;
+        }
+
+        return countDistinctObj(new ObjectVectorDirect<>(values), false);
     }
 
     /**
@@ -442,12 +376,12 @@ public class Basic {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(final T[] values, boolean countNull) {
+    public static <T extends Comparable<? super T>> long countDistinctObj(final T[] values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new ObjectVectorDirect<>(values), countNull);
+        return countDistinctObj(new ObjectVectorDirect<>(values), countNull);
     }
 
     /**
@@ -458,7 +392,7 @@ public class Basic {
      * @return number of distinct values.
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values, boolean countNull) {
+    public static <T extends Comparable<? super T>> long countDistinctObj(final ObjectVector<T> values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -500,23 +434,13 @@ public class Basic {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static <T extends Comparable<? super T>> T[] distinct(T[] values) {
-        if(values == null) {
-            return null;
-        }
-
-        return distinct(new ObjectVectorDirect<>(values), false);
-    }
-
-    /**
-     * Returns an array containing only the distinct values from the input.
-     *
-     * @param values values.
-     * @return unsorted array containing only distinct non-null items from arr.
-     */
     @SafeVarargs
     public static <T extends Comparable<? super T>> T[] distinctObj(T... values) {
-        return distinct(values, false);
+        if(values == null) {
+            return null;
+        }
+
+        return distinctObj(new ObjectVectorDirect<>(values), false);
     }
 
     /**
@@ -525,12 +449,12 @@ public class Basic {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static <T extends Comparable<? super T>> T[] distinct(final ObjectVector<T> values) {
+    public static <T extends Comparable<? super T>> T[] distinctObj(final ObjectVector<T> values) {
         if(values == null) {
             return null;
         }
 
-        return distinct(values, false);
+        return distinctObj(values, false);
     }
 
     /**
@@ -540,12 +464,12 @@ public class Basic {
      * @param includeNull true to include null values, and false to exclude null values.
      * @return array containing only distinct items from arr.
      */
-    public static <T extends Comparable<? super T>> T[] distinct(final T[] values, boolean includeNull) {
+    public static <T extends Comparable<? super T>> T[] distinctObj(final T[] values, boolean includeNull) {
         if(values == null) {
             return null;
         }
 
-        return distinct(new ObjectVectorDirect<>(values), includeNull);
+        return distinctObj(new ObjectVectorDirect<>(values), includeNull);
     }
 
     /**
@@ -556,7 +480,7 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     @SuppressWarnings({"unchecked"})
-    public static <T extends Comparable<? super T>> T[] distinct(final ObjectVector<T> values, boolean includeNull) {
+    public static <T extends Comparable<? super T>> T[] distinctObj(final ObjectVector<T> values, boolean includeNull) {
         if(values == null) {
             return null;
         }
@@ -686,12 +610,13 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static <T> T[] reverse(T[] values){
+    @SafeVarargs
+    public static <T> T[] reverseObj(T... values){
         if(values == null){
             return null;
         }
 
-        return reverse(new ObjectVectorDirect<>(values));
+        return reverseObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -700,17 +625,7 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static <T> T[] reverseObj(T... values){
-        return reverse(values);
-    }
-
-    /**
-     * Returns an array with the values reversed.
-     *
-     * @param values values.
-     * @return array with the values reversed.
-     */
-    public static <T> T[] reverse(ObjectVector<T> values){
+    public static <T> T[] reverseObj(ObjectVector<T> values){
         if(values == null){
             return null;
         }
@@ -733,12 +648,13 @@ public class Basic {
      * @param val value to search for.
      * @return first index containing the value or null, if the value is not present.
      */
-    public static <T> long firstIndexOf(T val, T[] values) {
+    @SafeVarargs
+    public static <T> long firstIndexOfObj(T val, T... values) {
         if (values == null) {
             return NULL_LONG;
         }
 
-        return firstIndexOf(val, new ObjectVectorDirect<>(values));
+        return firstIndexOfObj(val, new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -748,18 +664,7 @@ public class Basic {
      * @param val value to search for.
      * @return first index containing the value or null, if the value is not present.
      */
-    public static <T> long firstIndexOfObj(T val, T... values) {
-        return firstIndexOf(val, values);
-    }
-
-    /**
-     * Returns the first index containing the value.
-     *
-     * @param values values.
-     * @param val value to search for.
-     * @return first index containing the value or null, if the value is not present.
-     */
-    public static <T> long firstIndexOf(T val, ObjectVector<T> values) {
+    public static <T> long firstIndexOfObj(T val, ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1018,7 +923,7 @@ public class Basic {
      * @param values primitive array
      * @return DB array.
      */
-    public static ${pt.dbArray} array(${pt.primitive}[] values) {
+    public static ${pt.dbArray} array(${pt.primitive}... values) {
         return new ${pt.dbArrayDirect}(values);
     }
 

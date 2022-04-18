@@ -7,7 +7,6 @@ package io.deephaven.function;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.*;
 import io.deephaven.util.*;
-import junit.framework.TestCase;
 
 import static io.deephaven.function.Basic.*;
 import static io.deephaven.util.QueryConstants.*;
@@ -15,6 +14,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Test Basic.
  */
+@SuppressWarnings({"RedundantArrayCreation", "UnnecessaryBoxing", "RedundantCast", "SimplifiableAssertion", "ConstantConditions", "Convert2Diamond", "unchecked", "deprecation", "rawtypes"})
 public class TestBasic extends BaseArrayTestCase {
 
     //////////////////////////// Object ////////////////////////////
@@ -61,83 +61,92 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testGenericReplaceIfNullScalar() {
-        assertEquals(new Integer(7), replaceIfNull(new Integer(7), new Integer(3)));
-        assertEquals(new Integer(3), replaceIfNull((Integer) null, new Integer(3)));
+        assertEquals(Integer.valueOf(7), replaceIfNull(Integer.valueOf(7), Integer.valueOf(3)));
+        assertEquals(Integer.valueOf(3), replaceIfNull((Integer) null, Integer.valueOf(3)));
     }
 
     public void testGenericReplaceIfNullArray() {
-        assertEquals(new Integer[]{new Integer(7), new Integer(3), new Integer(-5)},
-                replaceIfNull(new ObjectVectorDirect<>(new Integer[]{new Integer(7), null, new Integer(-5)}), new Integer(3)));
+        assertEquals(new Integer[]{Integer.valueOf(7), Integer.valueOf(3), Integer.valueOf(-5)},
+                replaceIfNull(new ObjectVectorDirect<>(new Integer[]{Integer.valueOf(7), null, Integer.valueOf(-5)}), Integer.valueOf(3)));
     }
 
     public void testGenericInRange() {
-        assertTrue(inRange(2, 1, 3));
-        assertTrue(inRange(1, 1, 3));
-        assertFalse(inRange(null, 1, 3));
-        assertTrue(inRange(3, 1, 3));
-        assertFalse(inRange(4, 1, 3));
+        assertTrue(inRange(Integer.valueOf(2), Integer.valueOf(1), Integer.valueOf(3)));
+        assertTrue(inRange(Integer.valueOf(1), Integer.valueOf(1), Integer.valueOf(3)));
+        assertFalse(inRange(null, Integer.valueOf(1), Integer.valueOf(3)));
+        assertTrue(inRange(Integer.valueOf(3), Integer.valueOf(1), Integer.valueOf(3)));
+        assertFalse(inRange(Integer.valueOf(4), Integer.valueOf(1), Integer.valueOf(3)));
     }
 
-    public void testGenericCount() {
-        assertEquals(NULL_LONG, count((ObjectVector)null));
-        assertEquals(3, count(new ObjectVectorDirect<Integer>(40, 50, 60)));
-        assertEquals(0, count(new ObjectVectorDirect<Integer>()));
-        assertEquals(0, count(new ObjectVectorDirect<Integer>(new Integer[]{null})));
-        assertEquals(2, count(new ObjectVectorDirect<Integer>(5, null, 15)));
-        assertEquals(2, count(new ObjectVectorDirect<Integer>(5, null, 15, NULL_INT)));
+    public void testObjCount() {
+        assertEquals(NULL_LONG, countObj((ObjectVector)null));
+        assertEquals(3, countObj(new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(0, countObj(new ObjectVectorDirect<Integer>()));
+        assertEquals(0, countObj(new ObjectVectorDirect<Integer>(new Integer[]{null})));
+        assertEquals(2, countObj(new ObjectVectorDirect<Integer>(5, null, 15)));
+        assertEquals(2, countObj(new ObjectVectorDirect<Integer>(5, null, 15, NULL_INT)));
 
-        assertEquals(NULL_LONG, count((Integer[])null));
-        assertEquals(3, count(new Integer[]{40, 50, 60}));
-        assertEquals(0, count(new Integer[]{}));
-        assertEquals(0, count(new Integer[]{null}));
-        assertEquals(2, count(new Integer[]{5, null, 15}));
-        assertEquals(2, count(new Integer[]{5, null, 15, NULL_INT}));
+        assertEquals(NULL_LONG, countObj((Integer[])null));
+        assertEquals(3, countObj(new Integer[]{40, 50, 60}));
+        assertEquals(0, countObj(new Integer[]{}));
+        assertEquals(0, countObj(new Integer[]{null}));
+        assertEquals(2, countObj(new Integer[]{5, null, 15}));
+        assertEquals(2, countObj(new Integer[]{5, null, 15, NULL_INT}));
+
+        // check that functions can be resolved with varargs
+        assertEquals(3, countObj(40, 50, 60));
     }
 
-    public void testGenericCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null));
-        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null,true));
-        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{})));
-        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(1, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1})));
-        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(3, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+    public void testObjCountDistinct() {
+        assertEquals(NULL_LONG, countDistinctObj((ObjectVector<Short>)null));
+        assertEquals(NULL_LONG, countDistinctObj((ObjectVector<Short>)null,true));
+        assertEquals(0, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{})));
+        assertEquals(0, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(1, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(2, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(2, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(3, countDistinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
 
-        assertEquals(NULL_LONG, countDistinct((Short[])null));
-        assertEquals(NULL_LONG, countDistinct((Short[])null,true));
-        assertEquals(0, countDistinct(new Short[]{}));
-        assertEquals(0, countDistinct(new Short[]{NULL_SHORT}));
-        assertEquals(1, countDistinct(new Short[]{1}));
-        assertEquals(2, countDistinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}));
-        assertEquals(2, countDistinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, false));
-        assertEquals(3, countDistinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, true));
+        assertEquals(NULL_LONG, countDistinctObj((Short[])null));
+        assertEquals(NULL_LONG, countDistinctObj((Short[])null,true));
+        assertEquals(0, countDistinctObj(new Short[]{}));
+        assertEquals(0, countDistinctObj(new Short[]{NULL_SHORT}));
+        assertEquals(1, countDistinctObj(new Short[]{1}));
+        assertEquals(2, countDistinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}));
+        assertEquals(2, countDistinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, false));
+        assertEquals(3, countDistinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, true));
+
+        // check that functions can be resolved with varargs
+        assertEquals(2, countDistinctObj((short)1,(short)2,(short)1,NULL_SHORT,NULL_SHORT));
     }
 
-    public void testGenericDistinct() {
-        assertEquals(null, distinct((ObjectVectorDirect<Short>)null));
-        assertEquals(null, distinct((ObjectVectorDirect<Short>)null, true));
-        assertEquals(new Short[]{}, distinct(new Short[]{}));
-        assertEquals(new Short[]{}, distinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(new Short[]{1}, distinct(new ObjectVectorDirect<Short>(new Short[]{1})));
-        assertEquals(new Short[]{1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(new Short[]{1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{1,2,NULL_SHORT}, distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
-        assertEquals(new Short[]{3,1,2}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{3,1,2,4}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true));
+    public void testObjDistinct() {
+        assertEquals(null, distinctObj((ObjectVectorDirect<Short>)null));
+        assertEquals(null, distinctObj((ObjectVectorDirect<Short>)null, true));
+        assertEquals(new Short[]{}, distinctObj(new Short[]{}));
+        assertEquals(new Short[]{}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(new Short[]{1}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(new Short[]{1,2}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(new Short[]{1,2}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{1,2,NULL_SHORT}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(new Short[]{3,1,2}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{3,1,2,4}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinctObj(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true));
 
-        assertEquals(null, distinct((Short[])null));
-        assertEquals(null, distinct((Short[])null, true));
-        assertEquals(new Short[]{}, distinct(new Short[]{}));
-        assertEquals(new Short[]{}, distinct(new Short[]{NULL_SHORT}));
-        assertEquals(new Short[]{1}, distinct(new Short[]{1}));
-        assertEquals(new Short[]{1,2}, distinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}));
-        assertEquals(new Short[]{1,2}, distinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, false));
-        assertEquals(new Short[]{1,2,NULL_SHORT}, distinct(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, true));
-        assertEquals(new Short[]{3,1,2}, distinct(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}, false));
-        assertEquals(new Short[]{3,1,2,4}, distinct(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}, false));
-        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinct(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}, true));
+        assertEquals(null, distinctObj((Short[])null));
+        assertEquals(null, distinctObj((Short[])null, true));
+        assertEquals(new Short[]{}, distinctObj(new Short[]{}));
+        assertEquals(new Short[]{}, distinctObj(new Short[]{NULL_SHORT}));
+        assertEquals(new Short[]{1}, distinctObj(new Short[]{1}));
+        assertEquals(new Short[]{1,2}, distinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}));
+        assertEquals(new Short[]{1,2}, distinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, false));
+        assertEquals(new Short[]{1,2,NULL_SHORT}, distinctObj(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}, true));
+        assertEquals(new Short[]{3,1,2}, distinctObj(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}, false));
+        assertEquals(new Short[]{3,1,2,4}, distinctObj(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}, false));
+        assertEquals(new Short[]{3,1,2,4,NULL_SHORT}, distinctObj(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}, true));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new Short[]{1,2}, distinctObj((short)1,(short)2,(short)1,NULL_SHORT,NULL_SHORT));
     }
 
     public void testGenericRepeat() {
@@ -159,75 +168,98 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new Character[]{'a','b','c','x','y','z'}, concat(new Character[]{'a','b','c'}, new Character[]{'x'}, new Character[]{'y','z'}));
     }
 
-    public void testGenericReverse() {
-        assertEquals(null, reverse((ObjectVector[])null));
-        assertEquals(new Object[]{}, reverse(new ObjectVectorDirect()));
-        assertEquals(new Character[]{'c','b','a'}, reverse(new ObjectVectorDirect<>(new Character[]{'a','b','c'})));
+    public void testObjReverse() {
+        assertEquals(null, reverseObj((ObjectVector[])null));
+        assertEquals(new Object[]{}, reverseObj(new ObjectVectorDirect()));
+        assertEquals(new Character[]{'c','b','a'}, reverseObj(new ObjectVectorDirect<>(new Character[]{'a','b','c'})));
 
-        assertEquals(null, reverse((Character[])null));
-        assertEquals(new Character[]{}, reverse(new Character[]{}));
-        assertEquals(new Character[]{'c','b','a'}, reverse(new Character[]{'a','b','c'}));
+        assertEquals(null, reverseObj((Character[])null));
+        assertEquals(new Character[]{}, reverseObj(new Character[]{}));
+        assertEquals(new Character[]{'c','b','a'}, reverseObj(new Character[]{'a','b','c'}));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new Character[]{'c','b','a'}, reverseObj('a','b','c'));
     }
 
-    public void testGenericFirstIndexOf() {
-        assertEquals(1, firstIndexOf(new Integer(40), new Integer[]{0, 40, null, 40, 60, 40, 0}));
-        assertEquals(4, firstIndexOf(new Integer(60), new Integer[]{0, 40, null, 40, 60, 40, 0}));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(1), new Integer[]{0, 40, null, 40, 60, 40, 0}));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(40), (Integer[])null));
+    public void testObjFirstIndexOf() {
+        assertEquals(1, firstIndexOfObj(Integer.valueOf(40), new Integer[]{0, 40, null, 40, 60, 40, 0}));
+        assertEquals(4, firstIndexOfObj(Integer.valueOf(60), new Integer[]{0, 40, null, 40, 60, 40, 0}));
+        assertEquals(NULL_LONG, firstIndexOfObj(Integer.valueOf(1), new Integer[]{0, 40, null, 40, 60, 40, 0}));
+        assertEquals(NULL_LONG, firstIndexOfObj(Integer.valueOf(40), (Integer[])null));
 
-        assertEquals(1, firstIndexOf(new Integer(40), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(4, firstIndexOf(new Integer(60), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(1), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf(new Integer(40), (ObjectVector) null));
+        assertEquals(1, firstIndexOfObj(Integer.valueOf(40), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(4, firstIndexOfObj(Integer.valueOf(60), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOfObj(Integer.valueOf(1), new ObjectVectorDirect<>(new Integer[]{0, 40, null, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOfObj(Integer.valueOf(40), (ObjectVector) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(1, firstIndexOfObj(40, 0, 40, 40, 60, 40, 0));
     }
 
-    public void testGenericLast() {
-        assertEquals(10, last(new ObjectVectorDirect<Object>(10)));
-        assertEquals(3, last(new ObjectVectorDirect<Object>(1, 2, 3)));
-        assertEquals(null, last(new ObjectVectorDirect<Object>(1, 2, null)));
+    public void testObjLast() {
+        assertEquals(null, lastObj((ObjectVectorDirect<Object>)null));
+        assertEquals(10, lastObj(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, lastObj(new ObjectVectorDirect<Object>(1, 2, 3)));
+        assertEquals(null, lastObj(new ObjectVectorDirect<Object>(1, 2, null)));
 
-        assertEquals(new Integer(10), last(new Integer[]{10}));
-        assertEquals(new Integer(3), last(new Integer[]{1, 2, 3}));
-        assertEquals(null, last(new Integer[]{1, 2, null}));
+        assertEquals(null, lastObj((Integer[])null));
+        assertEquals(Integer.valueOf(10), lastObj(new Integer[]{10}));
+        assertEquals(Integer.valueOf(3), lastObj(new Integer[]{1, 2, 3}));
+        assertEquals(null, lastObj(new Integer[]{1, 2, null}));
+
+        // check that functions can be resolved with varargs
+        assertEquals(Integer.valueOf(3), lastObj(1, 2, 3));
     }
 
-    public void testGenericFirst() {
-        assertEquals(10, first(new ObjectVectorDirect<Object>(10)));
-        assertEquals(3, first(new ObjectVectorDirect<Object>(3, 2, 1)));
-        assertEquals(null, first(new ObjectVectorDirect<Object>(null, 1, 2)));
+    public void testObjFirst() {
+        assertEquals(null, firstObj((ObjectVectorDirect<Object>)null));
+        assertEquals(10, firstObj(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, firstObj(new ObjectVectorDirect<Object>(3, 2, 1)));
+        assertEquals(null, firstObj(new ObjectVectorDirect<Object>(null, 1, 2)));
 
-        assertEquals(new Integer(10), first(new Integer[]{10}));
-        assertEquals(new Integer(3), first(new Integer[]{3, 2, 1}));
-        assertEquals(null, first(new Integer[]{null, 1, 2}));
+        assertEquals(null, firstObj((Integer[])null));
+        assertEquals(Integer.valueOf(10), firstObj(new Integer[]{10}));
+        assertEquals(Integer.valueOf(3), firstObj(new Integer[]{3, 2, 1}));
+        assertEquals(null, firstObj(new Integer[]{null, 1, 2}));
+
+        // check that functions can be resolved with varargs
+        assertEquals(Integer.valueOf(3), firstObj(3, 2, 1));
     }
 
-    public void testGenericNth() {
-        assertEquals(null, nth(-1, new ObjectVectorDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(40), nth(0, new ObjectVectorDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(50), nth(1, new ObjectVectorDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(60), nth(2, new ObjectVectorDirect<Integer>(40, 50, 60)));
-        assertEquals(null, nth(10, new ObjectVectorDirect<Integer>(40, 50, 60)));
+    public void testObjNth() {
+        assertEquals(null, nthObj(-1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(Integer.valueOf(40), nthObj(0, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(Integer.valueOf(50), nthObj(1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(Integer.valueOf(60), nthObj(2, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(null, nthObj(10, new ObjectVectorDirect<Integer>(40, 50, 60)));
 
-        assertEquals(null, nth(-1, new Integer[]{40, 50, 60}));
-        assertEquals(new Integer(40), nth(0, new Integer[]{40, 50, 60}));
-        assertEquals(new Integer(50), nth(1, new Integer[]{40, 50, 60}));
-        assertEquals(new Integer(60), nth(2, new Integer[]{40, 50, 60}));
-        assertEquals(null, nth(10, new Integer[]{40,50,60}));
+        assertEquals(null, nthObj(-1, new Integer[]{40, 50, 60}));
+        assertEquals(Integer.valueOf(40), nthObj(0, new Integer[]{40, 50, 60}));
+        assertEquals(Integer.valueOf(50), nthObj(1, new Integer[]{40, 50, 60}));
+        assertEquals(Integer.valueOf(60), nthObj(2, new Integer[]{40, 50, 60}));
+        assertEquals(null, nthObj(10, new Integer[]{40,50,60}));
+
+        // check that functions can be resolved with varargs
+        assertEquals(Integer.valueOf(40), nthObj(0, 40, 50, 60));
     }
 
-    public void testGenericVec() {
-        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vec(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
+    public void testObjVec() {
+        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vecObj(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
     }
 
-    public void testGenericArray() {
+    public void testObjArray() {
+        assertEquals(null, arrayObj((Character[])null));
         assertEquals(new ObjectVectorDirect<>(new Character[]{new Character('1'), new Character('3'), new Character('5')}), arrayObj(new Character('1'), new Character('3'), new Character('5')));
     }
 
-    public void testGenericIn() {
-        assertTrue(in(1000000L, new Long[]{1000000L, 2000000L, 3000000L}));
-        assertFalse(in(5000000L, new Long[]{1000000L, 2000000L, 3000000L}));
-        assertFalse(in((Integer)null, new Integer[]{1, 2, 3}));
-        assertTrue(in((Integer)null, new Integer[]{1, 2, null, 3}));
+    public void testObjIn() {
+        assertTrue(inObj(1000000L, new Long[]{1000000L, 2000000L, 3000000L}));
+        assertFalse(inObj(5000000L, new Long[]{1000000L, 2000000L, 3000000L}));
+        assertFalse(inObj((Integer)null, new Integer[]{1, 2, 3}));
+        assertTrue(inObj((Integer)null, new Integer[]{1, 2, null, 3}));
+
+        // check that functions can be resolved with varargs
+        assertTrue(inObj(1000000L, 1000000L, 2000000L, 3000000L));
     }
 
 
@@ -251,122 +283,122 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void testBooleanCount(){
-        assertEquals(3,count(new Boolean[]{true, false, true}));
-        assertEquals(0,count(new Boolean[]{}));
-        assertEquals(0,count(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
-        assertEquals(2,count(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true}));
-        assertEquals(NULL_LONG, count((Boolean[])null));
+        assertEquals(3,countObj(new Boolean[]{true, false, true}));
+        assertEquals(0,countObj(new Boolean[]{}));
+        assertEquals(0,countObj(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
+        assertEquals(2,countObj(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true}));
+        assertEquals(NULL_LONG, countObj((Boolean[])null));
 
-        assertEquals(3,count(new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
-        assertEquals(0,count(new ObjectVectorDirect<>()));
-        assertEquals(0,count(new ObjectVectorDirect<>(QueryConstants.NULL_BOOLEAN)));
-        assertEquals(2,count(new ObjectVectorDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true})));
-        assertEquals(NULL_LONG, count((ObjectVector)null));
+        assertEquals(3,countObj(new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
+        assertEquals(0,countObj(new ObjectVectorDirect<>()));
+        assertEquals(0,countObj(new ObjectVectorDirect<>(QueryConstants.NULL_BOOLEAN)));
+        assertEquals(2,countObj(new ObjectVectorDirect<>(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,true})));
+        assertEquals(NULL_LONG, countObj((ObjectVector)null));
     }
 
     public void testBooleanLast(){
-        assertFalse(last(new Boolean[]{true,true,false}));
-        assertEquals(QueryConstants.NULL_BOOLEAN,last((Boolean[])null));
-        assertEquals(QueryConstants.NULL_BOOLEAN,last(new Boolean[]{}));
-        assertEquals(QueryConstants.NULL_BOOLEAN,last(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
-        assertTrue(last(new Boolean[]{false, QueryConstants.NULL_BOOLEAN,true}));
-        assertTrue(last(new Boolean[]{true}));
+        assertFalse(lastObj(new Boolean[]{true,true,false}));
+        assertEquals(QueryConstants.NULL_BOOLEAN,lastObj((Boolean[])null));
+        assertEquals(QueryConstants.NULL_BOOLEAN,lastObj(new Boolean[]{}));
+        assertEquals(QueryConstants.NULL_BOOLEAN,lastObj(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
+        assertTrue(lastObj(new Boolean[]{false, QueryConstants.NULL_BOOLEAN,true}));
+        assertTrue(lastObj(new Boolean[]{true}));
     }
 
     public void testBooleanFirst(){
-        assertTrue(first(new Boolean[]{true,false,false}));
-        assertEquals(QueryConstants.NULL_BOOLEAN,first((Boolean[])null));
-        assertEquals(QueryConstants.NULL_BOOLEAN,first(new Boolean[]{}));
-        assertEquals(QueryConstants.NULL_BOOLEAN,first(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
-        assertTrue(first(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,false}));
-        assertTrue(first(new Boolean[]{true}));
+        assertTrue(firstObj(new Boolean[]{true,false,false}));
+        assertEquals(QueryConstants.NULL_BOOLEAN,firstObj((Boolean[])null));
+        assertEquals(QueryConstants.NULL_BOOLEAN,firstObj(new Boolean[]{}));
+        assertEquals(QueryConstants.NULL_BOOLEAN,firstObj(new Boolean[]{QueryConstants.NULL_BOOLEAN}));
+        assertTrue(firstObj(new Boolean[]{true, QueryConstants.NULL_BOOLEAN,false}));
+        assertTrue(firstObj(new Boolean[]{true}));
     }
 
     public void testBooleanNth(){
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(-1,new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
-        assertEquals((Boolean)true, nth(0,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)false, nth(1,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)true, nth(2,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(10,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nthObj(-1,new ObjectVectorDirect<>(new Boolean[]{true, false, true})));
+        assertEquals((Boolean)true, nthObj(0,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)false, nthObj(1,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)true, nthObj(2,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nthObj(10,new ObjectVectorDirect<>(new Boolean[]{true,false,true})));
 
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(-1,new Boolean[]{true, false, true}));
-        assertEquals((Boolean)true, nth(0,new Boolean[]{true,false,true}));
-        assertEquals((Boolean)false, nth(1,new Boolean[]{true,false,true}));
-        assertEquals((Boolean)true, nth(2,new Boolean[]{true,false,true}));
-        assertEquals(QueryConstants.NULL_BOOLEAN, nth(10,new Boolean[]{true,false,true}));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nthObj(-1,new Boolean[]{true, false, true}));
+        assertEquals((Boolean)true, nthObj(0,new Boolean[]{true,false,true}));
+        assertEquals((Boolean)false, nthObj(1,new Boolean[]{true,false,true}));
+        assertEquals((Boolean)true, nthObj(2,new Boolean[]{true,false,true}));
+        assertEquals(QueryConstants.NULL_BOOLEAN, nthObj(10,new Boolean[]{true,false,true}));
     }
 
     public void testBooleanVec(){
-        assertEquals(null, vec((ObjectVector)null));
-        assertEquals(new Boolean[]{true,false,true}, vec(new ObjectVectorDirect<>(true,false,true)));
+        assertEquals(null, vecObj((ObjectVector)null));
+        assertEquals(new Boolean[]{true,false,true}, vecObj(new ObjectVectorDirect<>(true,false,true)));
     }
 
     public void testBooleanArray(){
-        assertEquals(new ObjectVectorDirect<Boolean>(true,false,true), array(new Boolean[]{true,false,true}));
+        assertEquals(new ObjectVectorDirect<Boolean>(true,false,true), arrayObj(new Boolean[]{true,false,true}));
     }
 
     public void testBooleanIn(){
-        assertTrue(in(true,new Boolean[]{true,false}));
-        assertFalse(in(false,new Boolean[]{true,true}));
-        assertFalse(in((Boolean)null,new Boolean[]{true,false}));
-        assertTrue(in(null,new Boolean[]{(Boolean)null,true,false}));
+        assertTrue(inObj(true,new Boolean[]{true,false}));
+        assertFalse(inObj(false,new Boolean[]{true,true}));
+        assertFalse(inObj((Boolean)null,new Boolean[]{true,false}));
+        assertTrue(inObj(null,new Boolean[]{(Boolean)null,true,false}));
     }
 
 
     public void testBooleanCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((ObjectVector)null));
-        assertEquals(0, countDistinct(new ObjectVectorDirect<Boolean>((Boolean)null)));
-        assertEquals(1, countDistinct(new ObjectVectorDirect<Boolean>((Boolean)null), true));
-        assertEquals(0, countDistinct(new ObjectVectorDirect<>(new Boolean[]{})));
-        assertEquals(0, countDistinct(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
-        assertEquals(1, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
-        assertEquals(1, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
-        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
-        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(2, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(3, countDistinct(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
+        assertEquals(NULL_LONG, countDistinctObj((ObjectVector)null));
+        assertEquals(0, countDistinctObj(new ObjectVectorDirect<Boolean>((Boolean)null)));
+        assertEquals(1, countDistinctObj(new ObjectVectorDirect<Boolean>((Boolean)null), true));
+        assertEquals(0, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{})));
+        assertEquals(0, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
+        assertEquals(1, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
+        assertEquals(1, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
+        assertEquals(2, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
+        assertEquals(2, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(2, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(3, countDistinctObj(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
 
-        assertEquals(NULL_LONG, countDistinct((Boolean[])null));
-        assertEquals(0, countDistinct(new Boolean[]{null}));
-        assertEquals(1, countDistinct(new Boolean[]{null}, true));
-        assertEquals(0, countDistinct(new Boolean[]{}));
-        assertEquals(0, countDistinct(new Boolean[]{NULL_BOOLEAN}));
-        assertEquals(1, countDistinct(new Boolean[]{true,true,NULL_BOOLEAN}));
-        assertEquals(1, countDistinct(new Boolean[]{false,false,NULL_BOOLEAN}));
-        assertEquals(2, countDistinct(new Boolean[]{true,false,true,false,NULL_BOOLEAN}));
-        assertEquals(2, countDistinct(new Boolean[]{true,true,NULL_BOOLEAN},true));
-        assertEquals(2, countDistinct(new Boolean[]{false,false,NULL_BOOLEAN},true));
-        assertEquals(3, countDistinct(new Boolean[]{false,true,false,true,NULL_BOOLEAN},true));
+        assertEquals(NULL_LONG, countDistinctObj((Boolean[])null));
+        assertEquals(0, countDistinctObj(new Boolean[]{null}));
+        assertEquals(1, countDistinctObj(new Boolean[]{null}, true));
+        assertEquals(0, countDistinctObj(new Boolean[]{}));
+        assertEquals(0, countDistinctObj(new Boolean[]{NULL_BOOLEAN}));
+        assertEquals(1, countDistinctObj(new Boolean[]{true,true,NULL_BOOLEAN}));
+        assertEquals(1, countDistinctObj(new Boolean[]{false,false,NULL_BOOLEAN}));
+        assertEquals(2, countDistinctObj(new Boolean[]{true,false,true,false,NULL_BOOLEAN}));
+        assertEquals(2, countDistinctObj(new Boolean[]{true,true,NULL_BOOLEAN},true));
+        assertEquals(2, countDistinctObj(new Boolean[]{false,false,NULL_BOOLEAN},true));
+        assertEquals(3, countDistinctObj(new Boolean[]{false,true,false,true,NULL_BOOLEAN},true));
     }
 
     public void testBooleanDistinct() {
-        assertEquals(null, distinct((ObjectVector)null));
-        assertEquals(null, distinct((ObjectVector)null, true));
-        assertEquals(new Boolean[]{}, distinct(new ObjectVectorDirect<>(new Boolean[]{})));
-        assertEquals(new Boolean[]{}, distinct(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{false}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true,false}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,false,false,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
-        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinct(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
+        assertEquals(null, distinctObj((ObjectVector)null));
+        assertEquals(null, distinctObj((ObjectVector)null, true));
+        assertEquals(new Boolean[]{}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{})));
+        assertEquals(new Boolean[]{}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{false}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true,false}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{true,false,true,false,NULL_BOOLEAN})));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{true,false,false,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{true,true,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{false,false,NULL_BOOLEAN}),true));
+        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinctObj(new ObjectVectorDirect<>(new Boolean[]{false,true,false,true,NULL_BOOLEAN}),true));
 
-        assertEquals(null, distinct((Boolean[])null));
-        assertEquals(null, distinct((Boolean[])null, true));
-        assertEquals(new Boolean[]{}, distinct(new Boolean[]{}));
-        assertEquals(new Boolean[]{}, distinct(new Boolean[]{NULL_BOOLEAN}));
-        assertEquals(new Boolean[]{true}, distinct(new Boolean[]{true,true,NULL_BOOLEAN}));
-        assertEquals(new Boolean[]{false}, distinct(new Boolean[]{false,false,NULL_BOOLEAN}));
-        assertEquals(new Boolean[]{true,false}, distinct(new Boolean[]{true,false,true,false,NULL_BOOLEAN}));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new Boolean[]{true,true,NULL_BOOLEAN},true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new Boolean[]{false,false,NULL_BOOLEAN},true));
-        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinct(new Boolean[]{true,false,false,true,NULL_BOOLEAN},true));
-        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinct(new Boolean[]{true,true,NULL_BOOLEAN},true));
-        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinct(new Boolean[]{false,false,NULL_BOOLEAN},true));
-        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinct(new Boolean[]{false,true,false,true,NULL_BOOLEAN},true));
+        assertEquals(null, distinctObj((Boolean[])null));
+        assertEquals(null, distinctObj((Boolean[])null, true));
+        assertEquals(new Boolean[]{}, distinctObj(new Boolean[]{}));
+        assertEquals(new Boolean[]{}, distinctObj(new Boolean[]{NULL_BOOLEAN}));
+        assertEquals(new Boolean[]{true}, distinctObj(new Boolean[]{true,true,NULL_BOOLEAN}));
+        assertEquals(new Boolean[]{false}, distinctObj(new Boolean[]{false,false,NULL_BOOLEAN}));
+        assertEquals(new Boolean[]{true,false}, distinctObj(new Boolean[]{true,false,true,false,NULL_BOOLEAN}));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinctObj(new Boolean[]{true,true,NULL_BOOLEAN},true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinctObj(new Boolean[]{false,false,NULL_BOOLEAN},true));
+        assertEquals(new Boolean[]{true,false,NULL_BOOLEAN}, distinctObj(new Boolean[]{true,false,false,true,NULL_BOOLEAN},true));
+        assertEquals(new Boolean[]{true,NULL_BOOLEAN}, distinctObj(new Boolean[]{true,true,NULL_BOOLEAN},true));
+        assertEquals(new Boolean[]{false,NULL_BOOLEAN}, distinctObj(new Boolean[]{false,false,NULL_BOOLEAN},true));
+        assertEquals(new Boolean[]{false,true,NULL_BOOLEAN}, distinctObj(new Boolean[]{false,true,false,true,NULL_BOOLEAN},true));
 
         assertEquals(new Boolean[]{false,true}, distinctObj(false,true,false,true,NULL_BOOLEAN));
     }
@@ -388,28 +420,29 @@ public class TestBasic extends BaseArrayTestCase {
 
         assertEquals(new Boolean[]{true,false,false,false,true,true}, concat(new ObjectVectorDirect<>(new Boolean[]{true,false}), new ObjectVectorDirect<>(new Boolean[]{false}), new ObjectVectorDirect<>(new Boolean[]{false,true,true})));
         assertEquals(new Boolean[]{}, concat((ObjectVector) (null)));
+        assertEquals(new Boolean[]{}, concat(new ObjectVector[]{}));
     }
 
     public void testBooleanReverse() {
-        assertEquals(new Boolean[]{false,true,true}, reverse(new Boolean[]{true, true, false}));
-        assertEquals(null, reverse((Boolean[])(null)));
+        assertEquals(new Boolean[]{false,true,true}, reverseObj(new Boolean[]{true, true, false}));
+        assertEquals(null, reverseObj((Boolean[])(null)));
 
-        assertEquals(new Boolean[]{false,true,true}, reverse(new ObjectVectorDirect<>(new Boolean[]{true,true,false})));
-        assertEquals(null, reverse((ObjectVector) (null)));
+        assertEquals(new Boolean[]{false,true,true}, reverseObj(new ObjectVectorDirect<>(new Boolean[]{true,true,false})));
+        assertEquals(null, reverseObj((ObjectVector) (null)));
     }
 
     public void testBooleanFirstIndexOf() {
-        assertEquals(0, firstIndexOf(true, new Boolean[]{true, NULL_BOOLEAN, false}));
-        assertEquals(2, firstIndexOf(false, new Boolean[]{true, NULL_BOOLEAN, false}));
-        assertEquals(1, firstIndexOf(NULL_BOOLEAN, new Boolean[]{true, NULL_BOOLEAN, false}));
-        assertEquals(NULL_LONG, firstIndexOf(true, new Boolean[]{false, NULL_BOOLEAN, false}));
-        assertEquals(NULL_LONG, firstIndexOf(true, (Boolean[])null));
+        assertEquals(0, firstIndexOfObj(true, new Boolean[]{true, NULL_BOOLEAN, false}));
+        assertEquals(2, firstIndexOfObj(false, new Boolean[]{true, NULL_BOOLEAN, false}));
+        assertEquals(1, firstIndexOfObj(NULL_BOOLEAN, new Boolean[]{true, NULL_BOOLEAN, false}));
+        assertEquals(NULL_LONG, firstIndexOfObj(true, new Boolean[]{false, NULL_BOOLEAN, false}));
+        assertEquals(NULL_LONG, firstIndexOfObj(true, (Boolean[])null));
 
-        assertEquals(0, firstIndexOf(true, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(2, firstIndexOf(false, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(1, firstIndexOf(NULL_BOOLEAN, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
-        assertEquals(NULL_LONG, firstIndexOf(true, new ObjectVectorDirect<Boolean>(new Boolean[]{false, NULL_BOOLEAN, false})));
-        assertEquals(NULL_LONG, firstIndexOf(true, (ObjectVector<Boolean>)null));
+        assertEquals(0, firstIndexOfObj(true, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(2, firstIndexOfObj(false, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(1, firstIndexOfObj(NULL_BOOLEAN, new ObjectVectorDirect<Boolean>(new Boolean[]{true, NULL_BOOLEAN, false})));
+        assertEquals(NULL_LONG, firstIndexOfObj(true, new ObjectVectorDirect<Boolean>(new Boolean[]{false, NULL_BOOLEAN, false})));
+        assertEquals(NULL_LONG, firstIndexOfObj(true, (ObjectVector<Boolean>)null));
     }
 
 
@@ -528,6 +561,14 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{})));
         assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}})));
         assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1})));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{}),true));
+        assertEquals(new ${pt.primitive}[]{${pt.null}}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}}),true));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1}),true));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{}),false));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}}),false));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1}),false));
+
+
         assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}})));
         assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), false));
         assertEquals(new ${pt.primitive}[]{1,2, ${pt.null}}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), true));
@@ -540,6 +581,12 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.primitive}[]{}));
         assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.primitive}[]{1}));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.primitive}[]{}, true));
+        assertEquals(new ${pt.primitive}[]{${pt.null}}, distinct(new ${pt.primitive}[]{${pt.null}}, true));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.primitive}[]{1}, true));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.primitive}[]{}, false));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.primitive}[]{${pt.null}}, false));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.primitive}[]{1}, false));
         assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}));
         assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}, false));
         assertEquals(new ${pt.primitive}[]{1,2, ${pt.null}}, distinct(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}, true));

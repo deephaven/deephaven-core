@@ -27,8 +27,8 @@ public class Numeric {
      * @param values values.
      * @return maximum of non-null values, or null if there are no non-null values.
      */
-    static public <T extends Comparable<T>> T max(ObjectVector<T> values) {
-        final long idx = indexOfMax(values);
+    static public <T extends Comparable<T>> T maxObj(ObjectVector<T> values) {
+        final long idx = indexOfMaxObj(values);
         return idx == NULL_LONG ? null : values.get(idx);
     }
 
@@ -38,22 +38,13 @@ public class Numeric {
      * @param values values.
      * @return maximum of non-null values, or null if there are no non-null values.
      */
-    static public <T extends Comparable<T>> T max(final T[] values) {
-        if (values == null || values.length == 0) {
-            return null;
-        }
-
-        return max(new ObjectVectorDirect<>(values));
-    }
-
-    /**
-     * Returns the maximum.  Null values are excluded.
-     *
-     * @param values values.
-     * @return maximum of non-null values, or null if there are no non-null values.
-     */
+    @SafeVarargs
     static public <T extends Comparable<T>> T maxObj(final T... values) {
-        return max(values);
+        if (values == null || values.length == 0) {
+            return null;
+        }
+
+        return maxObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -62,8 +53,8 @@ public class Numeric {
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
-    static public <T extends Comparable<T>> T min(ObjectVector<T> values) {
-        final long idx = indexOfMin(values);
+    static public <T extends Comparable<T>> T minObj(ObjectVector<T> values) {
+        final long idx = indexOfMinObj(values);
         return idx == NULL_LONG ? null : values.get(idx);
     }
 
@@ -73,22 +64,13 @@ public class Numeric {
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
-    public static <T extends Comparable<T>> T min(final T[] values) {
+    @SafeVarargs
+    public static <T extends Comparable<T>> T minObj(final T... values) {
         if (values == null || values.length == 0) {
             return null;
         }
 
-        return min(new ObjectVectorDirect<>(values));
-    }
-
-    /**
-     * Returns the minimum.  Null values are excluded.
-     *
-     * @param values values.
-     * @return minimum of non-null values, or null if there are no non-null values.
-     */
-    public static <T extends Comparable<T>> T minObj(final T... values) {
-        return min(values);
+        return minObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -97,12 +79,13 @@ public class Numeric {
      * @param values values.
      * @return index of the maximum value.
      */
-    public static <T extends Comparable<T>> long indexOfMax(T[] values) {
+    @SafeVarargs
+    public static <T extends Comparable<T>> long indexOfMaxObj(T... values) {
         if (values == null) {
             return NULL_LONG;
         }
 
-        return indexOfMax(new ObjectVectorDirect<>(values));
+        return indexOfMaxObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -111,17 +94,7 @@ public class Numeric {
      * @param values values.
      * @return index of the maximum value.
      */
-    public static <T extends Comparable<T>> long indexOfMaxObj(T... values) {
-        return indexOfMax(values);
-    }
-
-    /**
-     * Returns the index of the maximum value.
-     *
-     * @param values values.
-     * @return index of the maximum value.
-     */
-    public static <T extends Comparable<T>> long indexOfMax(ObjectVector<T> values) {
+    public static <T extends Comparable<T>> long indexOfMaxObj(ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -149,12 +122,13 @@ public class Numeric {
      * @param values values.
      * @return index of the minimum value.
      */
-    public static <T extends Comparable<T>> long indexOfMin(T[] values) {
+    @SafeVarargs
+    public static <T extends Comparable<T>> long indexOfMinObj(T... values) {
         if (values == null) {
             return NULL_LONG;
         }
 
-        return indexOfMin(new ObjectVectorDirect<>(values));
+        return indexOfMinObj(new ObjectVectorDirect<>(values));
     }
 
     /**
@@ -163,17 +137,7 @@ public class Numeric {
      * @param values values.
      * @return index of the minimum value.
      */
-    public static <T extends Comparable<T>> long indexOfMinObj(T... values) {
-        return indexOfMin(values);
-    }
-
-    /**
-     * Returns the index of the minimum value.
-     *
-     * @param values values.
-     * @return index of the minimum value.
-     */
-    public static <T extends Comparable<T>> long indexOfMin(ObjectVector<T> values) {
+    public static <T extends Comparable<T>> long indexOfMinObj(ObjectVector<T> values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1180,7 +1144,7 @@ public class Numeric {
         }
 
         if (percentile < 0 || percentile > 1) {
-            throw new RuntimeException("Invalid percentile = " + percentile);
+            throw new IllegalArgumentException("Invalid percentile = " + percentile);
         }
 
         int n = values.intSize("percentile");
@@ -1253,7 +1217,7 @@ public class Numeric {
         }
 
         if (values0.size() != values1.size()) {
-            throw new RuntimeException("Input arrays are different lengths!");
+            throw new IllegalArgumentException("Input arrays are different lengths!");
         }
 
         double sum0 = 0;
@@ -1332,7 +1296,7 @@ public class Numeric {
         }
 
         if (values0.size() != values1.size()) {
-            throw new RuntimeException("Input arrays are different lengths!");
+            throw new IllegalArgumentException("Input arrays are different lengths!");
         }
 
         double sum0 = 0;
