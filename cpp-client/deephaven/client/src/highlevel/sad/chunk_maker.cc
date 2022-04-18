@@ -4,6 +4,7 @@ namespace deephaven::client::highlevel::sad {
 namespace {
 struct Visitor final : SadColumnSourceVisitor {
   explicit Visitor(size_t chunkSize) : chunkSize_(chunkSize) {}
+  void visit(const SadIntColumnSource *source) final;
   void visit(const SadLongColumnSource *source) final;
   void visit(const SadDoubleColumnSource *source) final;
 
@@ -20,6 +21,10 @@ std::shared_ptr<SadChunk> ChunkMaker::createChunkFor(const SadColumnSource &colu
 }
 
 namespace {
+void Visitor::visit(const SadIntColumnSource *source) {
+    result_ = SadLongChunk::create(chunkSize_);
+}
+
 void Visitor::visit(const SadLongColumnSource *source) {
   result_ = SadLongChunk::create(chunkSize_);
 }

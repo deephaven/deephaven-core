@@ -31,6 +31,11 @@ public:
 
 // the per-type interfaces
 
+class SadIntColumnSource : public SadMutableColumnSource {
+public:
+    ~SadIntColumnSource() override;
+};
+
 class SadLongColumnSource : public SadMutableColumnSource {
 public:
   ~SadLongColumnSource() override;
@@ -39,6 +44,25 @@ public:
 class SadDoubleColumnSource : public SadMutableColumnSource {
 public:
   ~SadDoubleColumnSource() override;
+};
+
+class SadIntArrayColumnSource final : public SadIntColumnSource, std::enable_shared_from_this<SadIntArrayColumnSource> {
+    struct Private {};
+public:
+    static std::shared_ptr<SadIntArrayColumnSource> create();
+    explicit SadIntArrayColumnSource(Private);
+    ~SadIntArrayColumnSource() final;
+
+    std::shared_ptr<SadColumnSourceContext> createContext(size_t chunkSize) const final;
+    void fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const final;
+    void fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys, size_t size, SadChunk *dest) const final;
+    void fillFromChunkUnordered(SadContext *context, const SadChunk &src, const SadLongChunk &rowKeys, size_t size) final;
+
+    void acceptVisitor(SadColumnSourceVisitor *visitor) const final;
+
+private:
+    void ensureSize(size_t size);
+    std::vector<int32_t> data_;
 };
 
 class SadLongArrayColumnSource final : public SadLongColumnSource, std::enable_shared_from_this<SadLongArrayColumnSource> {
@@ -86,6 +110,7 @@ public:
 
 class SadColumnSourceVisitor {
 public:
+  virtual void visit(const SadIntColumnSource *) = 0;
   virtual void visit(const SadLongColumnSource *) = 0;
   virtual void visit(const SadDoubleColumnSource *) = 0;
 };

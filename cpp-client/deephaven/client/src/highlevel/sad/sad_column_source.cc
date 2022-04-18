@@ -23,11 +23,72 @@ void assertInRange(size_t index, size_t size);
 }  // namespace
 SadColumnSource::~SadColumnSource() = default;
 SadMutableColumnSource::~SadMutableColumnSource() = default;
+SadIntColumnSource::~SadIntColumnSource() = default;
 SadLongColumnSource::~SadLongColumnSource() = default;
 SadDoubleColumnSource::~SadDoubleColumnSource() = default;
 
+std::shared_ptr<SadIntArrayColumnSource> SadIntArrayColumnSource::create() {
+  return std::make_shared<SadIntArrayColumnSource>(Private());
+}
+
+SadIntArrayColumnSource::SadIntArrayColumnSource(Private) {}
+SadIntArrayColumnSource::~SadIntArrayColumnSource() = default;
+
+std::shared_ptr<SadColumnSourceContext> SadIntArrayColumnSource::createContext(size_t chunkSize) const {
+    // We're not really using contexts yet.
+    return std::make_shared<MySadLongColumnSourceContext>();
+}
+
+void SadIntArrayColumnSource::fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys,
+                                                  size_t size, SadChunk *dest) const {
+    auto *typedDest = verboseCast<SadIntChunk*>(dest);
+    assertFits(size, dest->capacity());
+
+    for (size_t i = 0; i < size; ++i) {
+        auto srcIndex = rowKeys.data()[i];
+        assertInRange(srcIndex, data_.size());
+        typedDest->data()[i] = this->data_[srcIndex];
+    }
+}
+
+void SadIntArrayColumnSource::fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const {
+    auto *typedDest = verboseCast<SadIntChunk*>(dest);
+    assertFits(rows.size(), dest->capacity());
+
+    size_t destIndex = 0;
+    int64_t srcIndex;
+    auto iter = rows.getRowSequenceIterator();
+    while (iter->tryGetNext(&srcIndex)) {
+        assertInRange(srcIndex, data_.size());
+        typedDest->data()[destIndex] = data_[srcIndex];
+        ++destIndex;
+    }
+}
+
+void SadIntArrayColumnSource::fillFromChunkUnordered(SadContext *context, const SadChunk &src,
+                                                     const SadLongChunk &rowKeys, size_t size) {
+    auto *typedSrc = verboseCast<const SadIntChunk*>(&src);
+    assertFits(size, src.capacity());
+
+    for (size_t i = 0; i < size; ++i) {
+        auto destIndex = rowKeys.data()[i];
+        ensureSize(destIndex + 1);
+        data_[destIndex] = typedSrc->data()[i];
+    }
+}
+
+void SadIntArrayColumnSource::ensureSize(size_t size) {
+    if (size > data_.size()) {
+        data_.resize(size);
+    }
+}
+
+void SadIntArrayColumnSource::acceptVisitor(SadColumnSourceVisitor *visitor) const {
+    visitor->visit(this);
+}
+
 std::shared_ptr<SadLongArrayColumnSource> SadLongArrayColumnSource::create() {
-  return std::make_shared<SadLongArrayColumnSource>(Private());
+    return std::make_shared<SadLongArrayColumnSource>(Private());
 }
 
 SadLongArrayColumnSource::SadLongArrayColumnSource(Private) {}

@@ -30,15 +30,30 @@ protected:
   std::unique_ptr<T[]> data_;
 };
 
+class SadIntChunk;
 class SadLongChunk;
 class SadDoubleChunk;
 class SadSizeTChunk;
 
 class SadChunkVisitor {
 public:
+
+  virtual void visit(const SadIntChunk &) const = 0;
   virtual void visit(const SadLongChunk &) const = 0;
   virtual void visit(const SadDoubleChunk &) const = 0;
   virtual void visit(const SadSizeTChunk &) const = 0;
+};
+
+class SadIntChunk final : public SadNumericChunk<int32_t> {
+    struct Private {};
+public:
+    static std::shared_ptr<SadIntChunk> create(size_t capacity);
+
+    SadIntChunk(Private, size_t capacity) : SadNumericChunk<int32_t>(capacity) {}
+
+    void acceptVisitor(const SadChunkVisitor &v) const final {
+        v.visit(*this);
+    }
 };
 
 class SadLongChunk final : public SadNumericChunk<int64_t> {

@@ -22,6 +22,7 @@ using deephaven::client::highlevel::sad::SadChunk;
 using deephaven::client::highlevel::sad::SadChunkVisitor;
 using deephaven::client::highlevel::sad::SadContext;
 using deephaven::client::highlevel::sad::SadDoubleChunk;
+using deephaven::client::highlevel::sad::SadIntChunk;
 using deephaven::client::highlevel::sad::SadLongChunk;
 using deephaven::client::highlevel::sad::SadSizeTChunk;
 using deephaven::client::utility::okOrThrow;
@@ -31,25 +32,36 @@ using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
 using deephaven::client::utility::valueOrThrow;
 
+using std::size_t;
+
 // Hey, we should standardize on either deephaven or io::deephaven
 
 namespace {
-class MyCallback final : public TickingCallback {
+class Callback final : public TickingCallback {
 public:
   void onFailure(std::exception_ptr ep) final;
   void onTick(const std::shared_ptr<SadTable> &table) final;
+  bool failed() { return failed_; }
+
+private:
+    std::atomic<bool> failed_ = false;
 };
 
 // or maybe make a stream manipulator
 std::string getWhat(std::exception_ptr ep);
 
-void MyCallback::onFailure(std::exception_ptr ep) {
-  streamf(std::cerr, "SYSTEM REPORTED FAILURE: %o\n", getWhat(std::move(ep)));
+void Callback::onFailure(std::exception_ptr ep) {
+  streamf(std::cerr, "Callback reported failure: %o\n", getWhat(std::move(ep)));
+  failed_ = true;
 }
 
 class ElementStreamer final : public SadChunkVisitor {
 public:
   ElementStreamer(std::ostream &s, size_t index) : s_(s), index_(index) {}
+
+  void visit(const SadIntChunk &chunk) const final {
+    s_ << chunk.data()[index_];
+  }
 
   void visit(const SadLongChunk &chunk) const final {
     s_ << chunk.data()[index_];
@@ -68,14 +80,19 @@ private:
   size_t index_ = 0;
 };
 
-void MyCallback::onTick(const std::shared_ptr<SadTable> &table) {
+template<typename T> inline std::vector<T> reserved_vector(size_t n) {
+    std::vector<T> v;
+    v.reserve(n);
+    return v;
+}
+
+void Callback::onTick(const std::shared_ptr<SadTable> &table) {
   // Deliberately chosen to be small so I can test chunking. In production this would be a lot larger.
   const size_t chunkSize = 8;
 
   auto ncols = table->numColumns();
-  std::vector<size_t> selectedCols;
+  auto selectedCols = reserved_vector<size_t>(ncols);
 
-  selectedCols.reserve(ncols);
   for (size_t col = 0; col < ncols; ++col) {
     selectedCols.push_back(col);
   }
@@ -90,10 +107,8 @@ void MyCallback::onTick(const std::shared_ptr<SadTable> &table) {
     auto unwrappedTable = table->unwrap(selectedRows, selectedCols);
     auto rowKeys = unwrappedTable->getUnorderedRowKeys();
 
-    std::vector<std::shared_ptr<SadContext>> contexts;
-    std::vector<std::shared_ptr<SadChunk>> chunks;
-    chunks.reserve(ncols);
-    contexts.reserve(ncols);
+    auto contexts = reserved_vector<std::shared_ptr<SadContext>>(ncols);
+    auto chunks = reserved_vector<std::shared_ptr<SadChunk>>(ncols);
 
     for (size_t col = 0; col < ncols; ++col) {
       const auto &c = unwrappedTable->getColumn(col);
@@ -105,10 +120,10 @@ void MyCallback::onTick(const std::shared_ptr<SadTable> &table) {
     }
     for (size_t j = 0; j < thisSize; ++j) {
       ElementStreamer es(std::cerr, j);
-      auto zamboni = [&es](std::ostream &s, const std::shared_ptr<SadChunk> &chunk) {
+      auto chunk_accept = [&es](std::ostream &s, const std::shared_ptr<SadChunk> &chunk) {
         chunk->acceptVisitor(es);
       };
-      std::cerr << deephaven::client::utility::separatedList(chunks.begin(), chunks.end(), ", ", zamboni) << '\n';
+      std::cerr << deephaven::client::utility::separatedList(chunks.begin(), chunks.end(), ", ", chunk_accept) << '\n';
     }
   }
 }
@@ -122,7 +137,7 @@ void doit(const TableHandleManager &manager) {
 //      .select("Foo = (ii % 20)", "Bar = ii")
 //      .select("Foo = ii < 3 ? ii * 10 : (i == 3 ? 15 : (i == 4 ? 12 : 3))"
 //      // .select("Foo = ii < 10 ? ii * 10 : 23")
-      .select("Foo = ((ii * 0xdeadbeef) + 0xbaddbabe) % 5000", "Bar = 34.2 + ii", "II = ii")
+      .select("Foo = ((ii * 0xdeadbeef) + 0xbaddbabe) % 5000", "Bar = 34.2 + ii", "II = ii", "SomeInt = (int) Bar")
       .sort({SortPair::ascending("Foo", false)})
       .head(10)
       //.tail(3)  // this will give us deletes
@@ -140,13 +155,20 @@ void doit(const TableHandleManager &manager) {
   //      .sort({SortPair::ascending("Foo", false)})
   //      .head(10);
 
-  auto myCallback = std::make_shared<MyCallback>();
+  auto myCallback = std::make_shared<Callback>();
   tt1.subscribeToAppendOnlyTable(myCallback);
-  std::this_thread::sleep_for(std::chrono::seconds(5'000));
-  std::cerr << "I unsubscribed here\n";
+  uint32_t tens_of_seconds_to_run = 50000;
+  while (tens_of_seconds_to_run-- > 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds (100));
+      if (myCallback->failed()) {
+          std::cerr << "callback reported failure, aborting in main subscription thread.\n";
+          break;
+      }
+  }
+  std::cerr << "I unsubscribed here.\n";
   tt1.unsubscribeFromAppendOnlyTable(std::move(myCallback));
   std::this_thread::sleep_for(std::chrono::seconds(5));
-  std::cerr << "exiting\n";
+  std::cerr << "exiting.\n";
 }
 
 // let's keep this off to the side

@@ -41,6 +41,7 @@ using deephaven::client::highlevel::sad::ChunkFiller;
 using deephaven::client::highlevel::sad::ChunkMaker;
 using deephaven::client::highlevel::sad::SadColumnSource;
 using deephaven::client::highlevel::sad::SadContext;
+using deephaven::client::highlevel::sad::SadIntArrayColumnSource;
 using deephaven::client::highlevel::sad::SadLongArrayColumnSource;
 using deephaven::client::highlevel::sad::SadDoubleArrayColumnSource;
 using deephaven::client::highlevel::sad::SadMutableColumnSource;
@@ -381,6 +382,7 @@ public:
 
 private:
   void runForeverHelper();
+  void runForeverHelperImpl();
 
 public:
   std::unique_ptr<arrow::flight::FlightStreamReader> fsr_;
@@ -506,7 +508,7 @@ void ThreadNubbin::runForever(const std::shared_ptr<ThreadNubbin> &self) {
   try {
     self->runForeverHelper();
   } catch (const std::exception &e) {
-    streamf(std::cerr, "Ooops caught %o\n", e.what());
+    streamf(std::cerr, "Caught exception in main table handle loop: %o\n", e.what());
     self->callback_->onFailure(std::make_exception_ptr(e));
   }
   std::cerr << "ThreadNubbin is exiting. Bye.\n";
@@ -590,6 +592,17 @@ void addedSetShifter(int64_t start, int64_t endInclusive, int64_t delta, std::se
 }  // namespace
 
 void ThreadNubbin::runForeverHelper() {
+    std::exception_ptr eptr;
+    try {
+        runForeverHelperImpl();
+    }
+    catch (...) {
+        eptr = std::current_exception();
+    }
+    callback_->onFailure(eptr);
+}
+
+void ThreadNubbin::runForeverHelperImpl() {
   const auto &vec = colDefs_->vec();
   // Create some MutableColumnSources and keep two views on them: a Mutable view which we
   // will keep around locally in order to effect changes, and a readonly view used to make the
@@ -779,6 +792,11 @@ std::shared_ptr<SadRowSequence> readExternalCompressedDelta(DataInput *in) {
 }
 
 struct MyVisitor final : public arrow::TypeVisitor {
+  arrow::Status Visit(const arrow::Int32Type &type) final {
+    result_ = SadIntArrayColumnSource::create();
+    return arrow::Status::OK();
+  }
+
   arrow::Status Visit(const arrow::Int64Type &type) final {
     result_ = SadLongArrayColumnSource::create();
     return arrow::Status::OK();
