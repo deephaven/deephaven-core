@@ -4,6 +4,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -29,8 +30,11 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[]
 
     @Override
     T get(long key) {
-        if (!containsKey(key)) {
+        if (key == RowSet.NULL_ROW_KEY) {
             return null;
+        }
+        if (STRICT_KEYS && !containsKey(key)) {
+            throw new IllegalArgumentException(String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
         }
         //noinspection unchecked
         return (T)ring[keyToRingIndex(key)];

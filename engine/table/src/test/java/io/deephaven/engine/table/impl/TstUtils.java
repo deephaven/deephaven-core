@@ -2200,6 +2200,15 @@ public class TstUtils {
         }
     }
 
+    /**
+     * Equivalent to {@code input.getSubTable(RowSetTstUtils.subset(input.getRowSet(), dutyOn, dutyOff).toTracking())}.
+     *
+     * @param input the input table
+     * @param dutyOn the duty-on size
+     * @param dutyOff the duty-off size
+     * @return a duty-limited subset
+     * @see RowSetTstUtils#subset(RowSet, int, int)
+     */
     public static Table subset(Table input, int dutyOn, int dutyOff) {
         return input.getSubTable(RowSetTstUtils.subset(input.getRowSet(), dutyOn, dutyOff).toTracking());
     }

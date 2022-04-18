@@ -61,7 +61,23 @@ public class RowSetTstUtils {
         return new WritableRowSetImpl(SingleRange.make(start, end));
     }
 
+    /**
+     * Creates a duty-limited subset of {@code input} by taking the first {@code dutyOn} keys from {@code input} as "on"
+     * and by skipping the next {@code dutyOff} keys from {@code input}. This process repeats until all keys from
+     * {@code input} are exhausted.
+     *
+     * @param input the input row set
+     * @param dutyOn the duty-on size
+     * @param dutyOff the duty-off size
+     * @return the duty-limited subset
+     */
     public static WritableRowSet subset(RowSet input, int dutyOn, int dutyOff) {
+        if (dutyOn <= 0) {
+            throw new IllegalArgumentException("dutyOn must be positive");
+        }
+        if (dutyOff <= 0) {
+            throw new IllegalArgumentException("dutyOff must be positive");
+        }
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator it = input.getRowSequenceIterator()) {
             while (it.hasMore()) {

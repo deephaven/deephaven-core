@@ -56,6 +56,6 @@ public class DoubleRingChunkSourceTest extends RingChunkSourceTestBase {
     }
 
     public void append(DoubleRingChunkSource source, int len) {
-        source.append(DATA, RowSetFactory.fromRange(source.lastKey() + 1, source.lastKey() + len), AbstractRingChunkSource.APPEND_CHUNK_SIZE);
+        source.appendUnbounded(DATA, RowSetFactory.fromRange(source.lastKey() + 1, source.lastKey() + len));
     }
 }

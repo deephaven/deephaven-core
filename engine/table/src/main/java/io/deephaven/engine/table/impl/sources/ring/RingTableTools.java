@@ -42,7 +42,7 @@ public class RingTableTools {
         return QueryPerformanceRecorder.withNugget("RingTableTools.of", () -> {
             final BaseTable baseTable = (BaseTable) parent.coalesce();
             final SwapListener swapListener = baseTable.createSwapListenerIfRefreshing(SwapListener::new);
-            return new RingTableSnapshotFunction(parent, capacity, initialize, swapListener).constructResults();
+            return new RingTableSnapshotFunction(baseTable, capacity, initialize, swapListener).constructResults();
         });
     }
 
@@ -69,7 +69,7 @@ public class RingTableTools {
             final BaseTable baseTable = (BaseTable) parent.coalesce();
             final SwapListener swapListener = baseTable.createSwapListenerIfRefreshing(SwapListener::new);
             final Table tablePowerOf2 =
-                    new RingTableSnapshotFunction(parent, capacityPowerOf2, initialize, swapListener)
+                    new RingTableSnapshotFunction(baseTable, capacityPowerOf2, initialize, swapListener)
                             .constructResults();
             return capacityPowerOf2 == capacity ? tablePowerOf2 : tablePowerOf2.tail(capacity);
         });

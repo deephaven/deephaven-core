@@ -6,8 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ChunkSource.FillContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.datastructures.LongSizedDataStructure;

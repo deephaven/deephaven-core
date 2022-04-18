@@ -42,7 +42,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
      */
     public static final long LAST_KEY_EMPTY = -1;
 
-    public static final String STRICT_KEYS_KEY = "AbstractRingChunkSource.strict_keys";
+    public static final String STRICT_KEYS_KEY = "AbstractRingChunkSource.strictKeys";
 
     /**
      * When strict key checks are enabled, read methods will throw {@link IllegalArgumentException} when the key is not
@@ -51,11 +51,11 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
      */
     public static final boolean STRICT_KEYS = Configuration.getInstance().getBooleanWithDefault(STRICT_KEYS_KEY, true);
 
-    public static final String APPEND_CHUNK_SIZE_KEY = "AbstractRingChunkSource.append_chunk_size";
+    public static final String APPEND_CHUNK_SIZE_KEY = "AbstractRingChunkSource.appendChunkSize";
 
     /**
-     * The chunk size used while appending. Looks up the configuration key {@value APPEND_CHUNK_SIZE_KEY}. Defaults to
-     * {@code 4096}.
+     * The chunk size used while {@link #appendBounded(ChunkSource, RowSet)}. Looks up the configuration key
+     * {@value APPEND_CHUNK_SIZE_KEY}. Defaults to {@code 4096}.
      */
     public static final int APPEND_CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault(APPEND_CHUNK_SIZE_KEY, 4096);
@@ -201,37 +201,37 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             return;
         }
         final long logicalFillSize = srcKeys.size();
-        final RowSet physicalRows;
-        final long physicalStartRingIx;
-        final boolean hasSkippedRows = logicalFillSize > capacity;
-        if (!hasSkippedRows) {
-            physicalRows = srcKeys;
-            physicalStartRingIx = nextRingIx;
-        } else {
-            final long skipRows = logicalFillSize - capacity;
-            physicalRows = srcKeys.subSetByPositionRange(skipRows, logicalFillSize);
-            physicalStartRingIx = nextRingIx + skipRows;
-        }
-        final int fillStartIx = keyToRingIndex(physicalStartRingIx);
+        final long skipRows = Math.max(logicalFillSize - capacity, 0);
+        final int fillStartIx = keyToRingIndex(nextRingIx + skipRows);
         try (
-                final RowSet _physicalRowsToClose = hasSkippedRows ? physicalRows : null;
                 final ResettableWritableChunk<Any> chunk = getChunkType().makeResettableWritableChunk();
                 final FillContext fillContext = source.makeFillContext(appendChunkSize);
-                final Iterator it = physicalRows.getRowSequenceIterator()) {
-            // Note: if we could do it.skip(skipRows), that would probably be more efficient than subSetByPositionRange
+                final Iterator it = srcKeys.getRowSequenceIterator()) {
+            if (skipRows > 0) {
+                skipRows(it, srcKeys.get(skipRows), skipRows);
+            }
             fillRingFromMiddle(source, chunk, fillContext, it, fillStartIx, appendChunkSize);
             fillRingFromStart(source, chunk, fillContext, it, fillStartIx, appendChunkSize);
         }
         nextRingIx += logicalFillSize;
     }
 
+    private void skipRows(Iterator it, long skipKey, long expectedDistance) {
+        final long actualDistance = it.advanceAndGetPositionDistance(skipKey);
+        if (expectedDistance != actualDistance) {
+            throw new IllegalStateException(
+                    String.format("Inconsistent advanceAndGetPositionDistance: key=%d, expected=%d, actual=%d", skipKey,
+                            expectedDistance, actualDistance));
+        }
+    }
+
     private void fillRingFromMiddle(
-            ChunkSource<? extends Values> src,
-            ResettableWritableChunk<Any> chunk,
-            FillContext fillContext,
-            Iterator it,
-            int ringStartIx,
-            int appendChunkSize) {
+            final ChunkSource<? extends Values> src,
+            final ResettableWritableChunk<Any> chunk,
+            final FillContext fillContext,
+            final Iterator it,
+            final int ringStartIx,
+            final int appendChunkSize) {
         int ringIx = ringStartIx;
         int nextSize = Math.min(appendChunkSize, capacity - ringIx);
         do {
@@ -243,12 +243,12 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     private void fillRingFromStart(
-            ChunkSource<? extends Values> src,
-            ResettableWritableChunk<Any> chunk,
-            FillContext fillContext,
-            Iterator it,
-            int ringStartIx,
-            int appendChunkSize) {
+            final ChunkSource<? extends Values> src,
+            final ResettableWritableChunk<Any> chunk,
+            final FillContext fillContext,
+            final Iterator it,
+            final int ringStartIx,
+            final int appendChunkSize) {
         int ringIx = 0;
         while (it.hasMore()) {
             final RowSequence rows = it.getNextRowSequenceWithLength(appendChunkSize);
@@ -398,8 +398,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     }
 
     final void bringUpToDate(SELF current) {
-        // When we are bringing ourselves up-to-date, we know that current is a ring and uses the default FillContext,
-        // which is unbounded.
+        // When we are bringing ourselves up-to-date, we know that current is a ring and uses an unbounded FillContext
         appendUnbounded(current, RowSetFactory.fromRange(nextRingIx, current.nextRingIx - 1));
         if (nextRingIx != current.nextRingIx) {
             throw new IllegalStateException();
