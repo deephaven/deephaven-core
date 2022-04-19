@@ -35,14 +35,33 @@ class JObjectWrapper(ABC):
     def j_object(self) -> jpy.JType:
         ...
 
-    def __eq__(self, other):
-        return isinstance(other, JObjectWrapper) and self.j_object.equals(other.j_object)
-
-    def __hash__(self):
-        return self.j_object.hashCode()
+    def __repr__(self):
+        self_type = type(self)
+        return f"{self_type.__module__}.{self_type.__name__}({repr(self.j_object)})"
 
     def __str__(self):
-        return self.j_object.toString()
+        return str(self.j_object)
+
+    def __hash__(self):
+        return hash(self.j_object)
+
+    def __eq__(self, other):
+        return self.j_object == other.j_object
+
+    def __neq__(self, other):
+        return self.j_object != other.j_object
+
+    def __lt__(self, other):
+        return self.j_object < other.j_object
+
+    def __lte__(self, other):
+        return self.j_object <= other.j_object
+
+    def __gt__(self, other):
+        return self.j_object > other.j_object
+
+    def __gte__(self, other):
+        return self.j_object >= other.j_object
 
 
 def _is_direct_initialisable(cls) -> bool:

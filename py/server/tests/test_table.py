@@ -25,7 +25,7 @@ class TableTestCase(BaseTestCase):
     #
     def test_eq(self):
         t = self.test_table.select()
-        self.assertEqual(t, self.test_table)
+        self.assert_table_equals(t, self.test_table)
 
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)

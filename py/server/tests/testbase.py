@@ -85,9 +85,3 @@ class BaseTestCase(unittest.TestCase):
 
     def assert_table_equals(self, table_a: Table, table_b: Table):
         self.assertTrue(table_equals(table_a, table_b))
-
-    def assertEqual(self, obj_a, obj_b):
-        if isinstance(obj_a, Table) and isinstance(obj_b, Table):
-            self.assert_table_equals(obj_a, obj_b)
-        else:
-            super().assertEqual(obj_a, obj_b)

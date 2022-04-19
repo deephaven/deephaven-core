@@ -114,7 +114,7 @@ class NumpyTestCase(BaseTestCase):
             self.assertEqual((2, 2), np_array.shape)
             self.assertEqual(np_array.dtype, float)
             tmp_table2 = to_table(np_array, ['Long2', 'Long4'])
-            self.assertEqual(tmp_table2, tmp_table.select(['Long2', 'Long4']))
+            self.assert_table_equals(tmp_table2, tmp_table.select(['Long2', 'Long4']))
 
     def test_to_table(self):
         for col in self.test_table.columns:
@@ -133,7 +133,7 @@ class NumpyTestCase(BaseTestCase):
             tmp_table = new_table(cols=input_cols)
             np_array = to_numpy(tmp_table, [col.name for col in tmp_table.columns])
             tmp_table2 = to_table(np_array, [col.name for col in tmp_table.columns])
-            self.assertEqual(tmp_table2, tmp_table)
+            self.assert_table_equals(tmp_table2, tmp_table)
 
             with self.assertRaises(DHError) as cm:
                 tmp_table3 = to_table(np_array[:, [0, 1, 3]], [col.name for col in tmp_table.columns])
