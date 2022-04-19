@@ -3,24 +3,9 @@
 #
 import unittest
 
-from deephaven import DHError, read_csv, empty_table, SortDirection
-from deephaven.agg import (
-    sum_,
-    weighted_avg,
-    avg,
-    pct,
-    group,
-    count_,
-    first,
-    last,
-    max_,
-    median,
-    min_,
-    std,
-    abs_sum,
-    var,
-    formula,
-)
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
+    var, formula
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -44,6 +29,10 @@ class TableTestCase(BaseTestCase):
 
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
+
+    def test_meta_table(self):
+        t = self.test_table.meta_table
+        self.assertEqual(len(self.test_table.columns), t.size)
 
     def test_coalesce(self):
         t = self.test_table.update_view(["A = a * b"])
@@ -285,7 +274,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a")
+            result_table = left_table.aj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.LESS_THAN)
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -293,7 +282,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a")
+            result_table = left_table.raj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -419,6 +408,14 @@ class TableTestCase(BaseTestCase):
         with self.subTest("do_init is True"):
             snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
+
+    def test_snapshot_history(self):
+        t = empty_table(1).update(
+            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
+        )
+        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+        self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
+        self.assertEqual(self.test_table.size, snapshot_hist.size)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)

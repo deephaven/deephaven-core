@@ -4,33 +4,55 @@
 """ This module implements the Table class and functions that work with Tables. """
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import Union, TypeVar, Sequence, List
 
 import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._jcompat import j_array_list
-from deephaven._wrapper import JObjectWrapper
+from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
-from deephaven.constants import SortDirection
+from deephaven.filters import Filter
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
+_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
+_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
+_JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
+
+
+class SortDirection(Enum):
+    """An enum defining the sorting orders."""
+    DESCENDING = auto()
+    """"""
+    ASCENDING = auto()
+    """"""
+
+
+class AsOfMatchRule(Enum):
+    """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
+    operation. """
+    LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
+    LESS_THAN = _JAsOfMatchRule.LESS_THAN
+    GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
+    GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
+
 
 T = TypeVar("T")
 
 
-def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
+def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (v,)
+        return (unwrap(v),)
     else:
-        return v
+        return tuple((unwrap(o) for o in v))
 
 
 class Table(JObjectWrapper):
@@ -97,6 +119,11 @@ class Table(JObjectWrapper):
         return self._schema
 
     @property
+    def meta_table(self) -> Table:
+        """The column definitions of the table in a Table form. """
+        return Table(j_table=self.j_table.getMeta())
+
+    @property
     def j_object(self) -> jpy.JType:
         return self.j_table
 
@@ -129,8 +156,8 @@ class Table(JObjectWrapper):
         Note, this table is often a time table that adds new rows at a regular, user-defined interval.
 
         Args:
-            do_init (bool): whether to snapshot when this method is initially called, default is False
             source_table (Table): the table to be snapshot
+            do_init (bool): whether to snapshot when this method is initially called, default is False
 
         Returns:
             a new table
@@ -141,7 +168,33 @@ class Table(JObjectWrapper):
         try:
             return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init))
         except Exception as e:
-            raise DHError(message="failed to take a table snapshot") from e
+            raise DHError(message="failed to create a snapshot table.") from e
+
+    def snapshot_history(self, source_table: Table) -> Table:
+        """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
+        changes.
+
+        The trigger table is often a time table that adds new rows at a regular, user-defined interval.
+
+        Columns from the trigger table appear in the result table. If the trigger and source tables have columns with
+        the same name, an error will be raised. To avoid this problem, rename conflicting columns.
+
+        Because snapshot_history stores a copy of the source table for every trigger event, large source tables or
+        rapidly changing trigger tables can result in large memory usage.
+
+        Args:
+            source_table (Table): the table to be snapshot
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+        except Exception as e:
+            raise DHError(message="failed to create a snapshot history table.") from e
 
     #
     # Table operation category: Select
@@ -360,12 +413,14 @@ class Table(JObjectWrapper):
     # Table operation category: Filter
     #
     # region Filter
-    def where(self, filters: Union[str, Sequence[str]] = None) -> Table:
+
+    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> Table:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
         Args:
-            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s), default is None
 
         Returns:
             a new table
@@ -563,7 +618,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
-    def sort(self, order_by: Union[str, Sequence[str]], order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
+    def sort(self, order_by: Union[str, Sequence[str]],
+             order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
         order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
@@ -606,7 +662,8 @@ class Table(JObjectWrapper):
     # Table operation category: Join
     #
     # region Join
-    def natural_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def natural_join(self, table: Table, on: Union[str, Sequence[str]],
+                     joins: Union[str, Sequence[str]] = None) -> Table:
         """The natural_join method creates a new table containing all of the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
@@ -709,7 +766,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
+           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
         """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -722,7 +780,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new table
 
@@ -732,18 +791,16 @@ class Table(JObjectWrapper):
         try:
             on = _to_sequence(on)
             joins = _to_sequence(joins)
+            if on:
+                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
-                return Table(
-                    j_table=self.j_table.aj(
-                        table.j_table, ",".join(on), ",".join(joins)
-                    )
-                )
-            else:
-                return Table(j_table=self.j_table.aj(table.j_table, ",".join(on)))
+                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
+            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
         """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -756,6 +813,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
+                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
 
         Returns:
             a new table
@@ -766,14 +825,13 @@ class Table(JObjectWrapper):
         try:
             on = _to_sequence(on)
             joins = _to_sequence(joins)
+            on = _to_sequence(on)
+            joins = _to_sequence(joins)
+            if on:
+                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
-                return Table(
-                    j_table=self.j_table.raj(
-                        table.j_table, ",".join(on), ",".join(joins)
-                    )
-                )
-            else:
-                return Table(j_table=self.j_table.raj(table.j_table, ",".join(on)))
+                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
@@ -1076,13 +1134,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]]) -> Table:
+    def agg_by(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None) -> Table:
         """The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
 
         Returns:
             a new table
