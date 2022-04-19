@@ -271,12 +271,6 @@ public class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
-                @NotNull RowSequence rowSequence) {
-            fillChunk(context, destination, rowSequence);
-        }
-
-        @Override
         public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
                 @NotNull LongChunk<? extends RowKeys> keys) {
             final WritableObjectChunk<DateTime, ? super Values> objectDest = dest.asWritableObjectChunk();

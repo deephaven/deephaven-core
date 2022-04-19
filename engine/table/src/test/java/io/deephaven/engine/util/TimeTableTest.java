@@ -1,6 +1,5 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -21,6 +20,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeProvider;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -78,19 +78,19 @@ public class TimeTableTest extends RefreshingTableTestCase {
         build(TimeTable.newBuilder().period(10));
 
         tick(0);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 0);
+        Assert.assertEquals(timeTable.size(), 1L);
+        Assert.assertEquals(column.getLong(0), 0);
 
         tick(9);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
+        Assert.assertEquals(timeTable.size(), 1);
 
         tick(10);
-        Assert.eq(timeTable.size(), "timeTable.size()", 2);
-        Assert.eq(column.getLong(1), "column.getLong(1)", 10);
+        Assert.assertEquals(timeTable.size(), 2);
+        Assert.assertEquals(column.getLong(1), 10);
 
         // Check that it will tick multiple rows.
         tick(100);
-        Assert.eq(timeTable.size(), "timeTable.size()", 11);
+        Assert.assertEquals(timeTable.size(), 11);
     }
 
     @Test
@@ -98,12 +98,12 @@ public class TimeTableTest extends RefreshingTableTestCase {
         build(TimeTable.newBuilder().period(10));
 
         tick(15);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 10);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 10);
 
         tick(24);
-        Assert.eq(timeTable.size(), "timeTable.size()", 2);
-        Assert.eq(column.getLong(1), "column.getLong(1)", 20);
+        Assert.assertEquals(timeTable.size(), 2);
+        Assert.assertEquals(column.getLong(1), 20);
     }
 
     @Test
@@ -113,11 +113,11 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .period(10));
 
         tick(9);
-        Assert.eq(timeTable.size(), "timeTable.size()", 0);
+        Assert.assertEquals(timeTable.size(), 0);
 
         tick(10);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 10);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 10);
     }
 
     @Test
@@ -127,15 +127,15 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .period(10));
 
         tick(14);
-        Assert.eq(timeTable.size(), "timeTable.size()", 0);
+        Assert.assertEquals(timeTable.size(), 0);
 
         tick(16);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 15);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 15);
 
         tick(34);
-        Assert.eq(timeTable.size(), "timeTable.size()", 2);
-        Assert.eq(column.getLong(1), "column.getLong(1)", 25);
+        Assert.assertEquals(timeTable.size(), 2);
+        Assert.assertEquals(column.getLong(1), 25);
     }
 
     @Test
@@ -143,18 +143,18 @@ public class TimeTableTest extends RefreshingTableTestCase {
         build(TimeTable.newBuilder().streamTable(true).period(10));
 
         tick(0);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 0);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 0);
 
         // Check for stream table property that rows exist for a single tick.
         tick(9);
-        Assert.eq(timeTable.size(), "timeTable.size()", 0);
+        Assert.assertEquals(timeTable.size(), 0);
 
         // Ensure multiple rows in one tick.
         tick(100);
-        Assert.eq(timeTable.size(), "timeTable.size()", 10);
-        Assert.eq(timeTable.getRowSet().firstRowKey(), "timeTable.getRowSet().firstRowKey()", 1);
-        Assert.eq(column.getLong(10), "column.getLong(10)", 100);
+        Assert.assertEquals(timeTable.size(), 10);
+        Assert.assertEquals(timeTable.getRowSet().firstRowKey(), 1);
+        Assert.assertEquals(column.getLong(10), 100);
     }
 
     @Test
@@ -162,13 +162,13 @@ public class TimeTableTest extends RefreshingTableTestCase {
         build(TimeTable.newBuilder().streamTable(true).period(10));
 
         tick(15);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 10);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 10);
 
         tick(21);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(timeTable.getRowSet().firstRowKey(), "timeTable.getRowSet().firstRowKey()", 1);
-        Assert.eq(column.getLong(1), "column.getLong(1)", 20);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(timeTable.getRowSet().firstRowKey(), 1);
+        Assert.assertEquals(column.getLong(1), 20);
     }
 
     @Test
@@ -179,11 +179,11 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .period(10));
 
         tick(9);
-        Assert.eq(timeTable.size(), "timeTable.size()", 0);
+        Assert.assertEquals(timeTable.size(), 0);
 
         tick(10);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 10);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 10);
     }
 
     @Test
@@ -194,16 +194,16 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .period(10));
 
         tick(14);
-        Assert.eq(timeTable.size(), "timeTable.size()", 0);
+        Assert.assertEquals(timeTable.size(), 0);
 
         tick(16);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(column.getLong(0), "column.getLong(0)", 15);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(column.getLong(0), 15);
 
         tick(34);
-        Assert.eq(timeTable.size(), "timeTable.size()", 1);
-        Assert.eq(timeTable.getRowSet().firstRowKey(), "timeTable.getRowSet().firstRowKey()", 1);
-        Assert.eq(column.getLong(1), "column.getLong(0)", 25);
+        Assert.assertEquals(timeTable.size(), 1);
+        Assert.assertEquals(timeTable.getRowSet().firstRowKey(), 1);
+        Assert.assertEquals(column.getLong(1), 25);
     }
 
     @Test
@@ -212,28 +212,28 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
-        Assert.eq(timeTable.size(), "timeTable.size()", 201);
+        Assert.assertEquals(timeTable.size(), 201);
 
-        final Long[] longKeys = new Long[] {null, 1000L, 1050L, 1100L};
+        final Long[] longKeys = new Long[] {null, 1000L, 1050L, 1100L, 1025L};
         final DateTime[] keys = Arrays.stream(longKeys)
                 .map(l -> l == null ? null : DateTimeUtils.nanosToTime(l))
                 .toArray(DateTime[]::new);
         try (final RowSet match =
                 dtColumn.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {
-            Assert.equals(match, "match", RowSetFactory.fromKeys(100, 105, 110));
+            Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         try (final RowSet match =
                 column.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) longKeys)) {
-            Assert.equals(match, "match", RowSetFactory.fromKeys(100, 105, 110));
+            Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         // inverted
         try (final RowSet match =
                 dtColumn.match(true, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {
-            Assert.equals(match, "match", RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
+            Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }
         try (final RowSet match =
                 column.match(true, false, false, RowSetFactory.fromRange(100, 110), (Object[]) longKeys)) {
-            Assert.equals(match, "match", RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
+            Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }
     }
 
@@ -243,20 +243,20 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
-        Assert.eq(timeTable.size(), "timeTable.size()", 201);
+        Assert.assertEquals(timeTable.size(), 201);
 
         final Map<DateTime, RowSet> dtMap = dtColumn.getValuesMapping(RowSetFactory.fromRange(100, 109));
-        Assert.eq(dtMap.size(), "dtMap.size()", 10);
+        Assert.assertEquals(dtMap.size(), 10);
         dtMap.forEach((tm, rows) -> {
-            Assert.eq(rows.size(), "rows.size()", 1);
-            Assert.equals(dtColumn.get(rows.firstRowKey()), "dtColumn.get(rows.firstRowKey())", tm, "tm");
+            Assert.assertEquals(rows.size(), 1);
+            Assert.assertEquals(dtColumn.get(rows.firstRowKey()), tm);
         });
 
         Map<Long, RowSet> longMap = column.getValuesMapping(RowSetFactory.fromRange(100, 109));
-        Assert.eq(longMap.size(), "dtMap.size()", 10);
+        Assert.assertEquals(longMap.size(), 10);
         longMap.forEach((tm, rows) -> {
-            Assert.eq(rows.size(), "rows.size()", 1);
-            Assert.equals(column.get(rows.firstRowKey()), "dtColumn.get(rows.firstRowKey())", tm, "tm");
+            Assert.assertEquals(rows.size(), 1);
+            Assert.assertEquals(column.get(rows.firstRowKey()), tm);
         });
     }
 
@@ -266,12 +266,12 @@ public class TimeTableTest extends RefreshingTableTestCase {
         final ColumnSource<DateTime> dtColumn = timeTable.getColumnSource("Timestamp");
         tick(0);
         tick(2000);
-        Assert.eq(timeTable.size(), "timeTable.size()", 201);
+        Assert.assertEquals(timeTable.size(), 201);
 
         final FillUnordered fillDtColumn = (FillUnordered) dtColumn;
-        Assert.eqTrue(fillDtColumn.providesFillUnordered(), "fillDtColumn.providesFillUnordered()");
+        Assert.assertTrue(fillDtColumn.providesFillUnordered());
         final FillUnordered fillLongColumn = (FillUnordered) column;
-        Assert.eqTrue(fillLongColumn.providesFillUnordered(), "fillLongColumn.providesFillUnordered()");
+        Assert.assertTrue(fillLongColumn.providesFillUnordered());
 
         try (final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(10)) {
             keys.setSize(0);
@@ -287,9 +287,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
             try (final ChunkSource.FillContext context = dtColumn.makeFillContext(10);
                     final WritableObjectChunk<DateTime, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
                 fillDtColumn.fillChunkUnordered(context, dest, keys);
-                Assert.eq(dest.size(), "dest.size()", keys.size(), "keys.size()");
+                Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    Assert.equals(dest.get(ii), "dest.get(ii)", dtColumn.get(keys.get(ii)));
+                    Assert.assertEquals(dest.get(ii), dtColumn.get(keys.get(ii)));
                 }
             }
 
@@ -297,9 +297,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
             try (final ChunkSource.FillContext context = dtColumn.makeFillContext(10);
                     final WritableObjectChunk<DateTime, Any> dest = WritableObjectChunk.makeWritableChunk(10)) {
                 fillDtColumn.fillPrevChunkUnordered(context, dest, keys);
-                Assert.eq(dest.size(), "dest.size()", keys.size(), "keys.size()");
+                Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    Assert.equals(dest.get(ii), "dest.get(ii)", dtColumn.get(keys.get(ii)));
+                    Assert.assertEquals(dest.get(ii), dtColumn.get(keys.get(ii)));
                 }
             }
 
@@ -307,9 +307,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
             try (final ChunkSource.FillContext context = column.makeFillContext(10);
                     final WritableLongChunk<Values> dest = WritableLongChunk.makeWritableChunk(10)) {
                 fillLongColumn.fillChunkUnordered(context, dest, keys);
-                Assert.eq(dest.size(), "dest.size()", keys.size(), "keys.size()");
+                Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    Assert.equals(dest.get(ii), "dest.get(ii)", column.getLong(keys.get(ii)));
+                    Assert.assertEquals(dest.get(ii), column.getLong(keys.get(ii)));
                 }
             }
 
@@ -317,9 +317,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
             try (final ChunkSource.FillContext context = dtColumn.makeFillContext(10);
                     final WritableLongChunk<Values> dest = WritableLongChunk.makeWritableChunk(10)) {
                 fillLongColumn.fillPrevChunkUnordered(context, dest, keys);
-                Assert.eq(dest.size(), "dest.size()", keys.size(), "keys.size()");
+                Assert.assertEquals(dest.size(), keys.size());
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    Assert.equals(dest.get(ii), "dest.get(ii)", column.get(keys.get(ii)));
+                    Assert.assertEquals(dest.get(ii), column.getLong(keys.get(ii)));
                 }
             }
         }
