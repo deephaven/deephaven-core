@@ -100,6 +100,9 @@ void JPy_ClearGlobalVars(JNIEnv* jenv);
  */
 void JPy_HandleJavaException(JNIEnv* jenv);
 
+#define JPy_DELETE_LOCAL_REF(VALUE) \
+    (*jenv)->DeleteLocalRef(jenv, VALUE); \
+    VALUE = NULL;
 
 #define JPy_ON_JAVA_EXCEPTION_GOTO(LABEL) \
     if ((*jenv)->ExceptionCheck(jenv)) { \
