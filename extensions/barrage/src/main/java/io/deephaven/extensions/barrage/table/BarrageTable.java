@@ -698,7 +698,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         public Stats(final String tableKey) {
             this.tableKey = tableKey;
-            runFuture = executorService.scheduleAtFixedRate(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS,
+            runFuture = executorService.scheduleWithFixedDelay(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS,
                     BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
         }
 
@@ -707,9 +707,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         @Override
-        public synchronized void run() {
+        public void run() {
             final DateTime now = DateTime.now();
-            executorService.schedule(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
 
             final BarragePerformanceLogLogger logger = BarragePerformanceLog.getInstance().getLogger();
             try {
