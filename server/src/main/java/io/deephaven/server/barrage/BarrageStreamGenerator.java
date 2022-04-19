@@ -336,7 +336,7 @@ public class BarrageStreamGenerator implements
                     modViewport.close();
                 }
             }
-            generator.writeConsumer.onWrite(bytesWritten * 8, System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten, System.nanoTime() - startTm);
         }
 
         private int batchSize() {

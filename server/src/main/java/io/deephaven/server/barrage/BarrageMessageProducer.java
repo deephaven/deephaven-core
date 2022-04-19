@@ -116,7 +116,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
     public interface StreamGenerator<MessageView> extends SafeCloseable {
         interface WriteMetricsConsumer {
-            void onWrite(long bits, long cpuTime);
+            void onWrite(long bytes, long cpuNanos);
         }
 
         interface Factory<MessageView> {
@@ -2114,9 +2114,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
-    private void recordWriteMetrics(final long bits, final long time) {
-        recordMetric(stats -> stats.writeBits, bits);
-        recordMetric(stats -> stats.writeTime, time);
+    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeTime, cpuNanos);
     }
 
     private void recordMetric(final Function<Stats, Histogram> hist, final long value) {

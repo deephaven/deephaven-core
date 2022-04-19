@@ -530,8 +530,9 @@ public class ArrowFlightUtil {
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, (bits, tm) -> {
-                                });
+                                try (final BarrageStreamGenerator bsg =
+                                        new BarrageStreamGenerator(msg, (bytes, nanos) -> {
+                                        });
                                         final RowSet keySpaceViewport =
                                                 hasViewport
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
