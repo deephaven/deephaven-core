@@ -306,6 +306,7 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
             return JPy_FROM_JDOUBLE(value);
         } else if (type == JPy_JPyObject || type == JPy_JPyModule) {
             jlong value = (*jenv)->CallLongMethod(jenv, objectRef, JPy_PyObject_GetPointer_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
             PyObject* pyObj = (PyObject*) value;
             JPy_INCREF(pyObj);
             return pyObj;
@@ -326,13 +327,9 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
             JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
             if (jPyObject != NULL) {
                 // We know that jPyObject is of the proper type, no need to check it.
-
                 jlong value = (*jenv)->CallLongMethod(jenv, jPyObject, JPy_PyObject_GetPointer_MID);
-
-                // TODO: should we handle exceptions here, and make sure we cleanup after exceptions?
-                // The call to getPointer() a bit earlier in this method does *NOT* handle exceptions
-
                 (*jenv)->DeleteLocalRef(jenv, jPyObject);
+                JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
                 PyObject* pyObj = (PyObject*) value;
                 JPy_INCREF(pyObj);
                 return pyObj;
