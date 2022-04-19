@@ -387,13 +387,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
-    def select_distinct(self, cols: Union[str, Sequence[str]] = None) -> Table:
+    def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> Table:
         """The select_distinct method creates a new table containing all of the unique values for a set of key
         columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
         the selected columns.
 
         Args:
-            cols (Union[str, Sequence[str]], optional): the column name(s), default is None
+            formulas (Union[str, Sequence[str]], optional): the column name(s), default is None
 
         Returns:
             a new table
@@ -402,8 +402,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
-            return Table(j_table=self.j_table.selectDistinct(*cols))
+            formulas = _to_sequence(formulas)
+            return Table(j_table=self.j_table.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
 
@@ -618,13 +618,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
-    def sort(self, order_by: Union[str, Sequence[str]],
+    def sort(self, order_by: Union[str, Sequence[str]] = None,
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
         order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
         Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on, default is None
             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for each sort
                 column, default is None. In the absence of explicit sort directions, data will be sorted in the ascending order.
 
@@ -733,7 +733,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
-    def join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+    def join(self, table: Table, on: Union[str, Sequence[str]] = None, joins: Union[str, Sequence[str]] = None) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
@@ -742,7 +742,7 @@ class Table(JObjectWrapper):
         Args:
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+                i.e. "col_a = col_b" for different column names; default is None
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
@@ -840,12 +840,12 @@ class Table(JObjectWrapper):
     #
     # Table operation category: Aggregation
     # region Aggregation
-    def head_by(self, num_rows: int, by: Union[str, Sequence[str]]) -> Table:
+    def head_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (Union[str, Sequence[str]]): the group-by column name(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -859,12 +859,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
-    def tail_by(self, num_rows: int, by: Union[str, Sequence[str]]) -> Table:
+    def tail_by(self, num_rows: int, by: Union[str, Sequence[str]] = None) -> Table:
         """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (Union[str, Sequence[str]]): the group-by column name(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -1156,7 +1156,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 
-    def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]]) -> Table:
+    def agg_all_by(self, agg: Aggregation, by: Union[str, Sequence[str]] = None) -> Table:
         """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregation specified.
 
@@ -1165,7 +1165,7 @@ class Table(JObjectWrapper):
 
         Args:
             agg (Aggregation): the aggregation
-            by (Union[str, Sequence[str]]): the group-by column name(s)
+            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
 
         Returns:
             a new table
