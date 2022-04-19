@@ -12,11 +12,15 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
 /**
- * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.statsLoggingEnabled} flag, or by
- * adding the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE} as an attribute to the table.
+ * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.enableAll} flag, or by adding the
+ * {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE} as an attribute to the table.
  */
 public class BarragePerformanceLog {
-    /** If all barrage performance logging is enabled by default, then table's description is used as TableKey */
+    /**
+     * If all barrage performance logging is enabled by default, then table's description is used as TableKey unless
+     * override with {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key}
+     * {@link io.deephaven.engine.table.Table#setAttribute(String, Object) attribute}.
+     */
     public static final boolean ALL_PERFORMANCE_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(
             BarragePerformanceLog.class, "enableAll", true);
 
@@ -24,7 +28,7 @@ public class BarragePerformanceLog {
     public static final long CYCLE_DURATION_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             BarragePerformanceLog.class, "cycleDurationMillis", 60000);
 
-    private static BarragePerformanceLog INSTANCE;
+    private static volatile BarragePerformanceLog INSTANCE;
 
     public static BarragePerformanceLog getInstance() {
         if (INSTANCE == null) {

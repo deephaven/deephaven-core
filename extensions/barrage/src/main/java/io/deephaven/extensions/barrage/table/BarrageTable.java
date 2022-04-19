@@ -44,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
@@ -564,6 +565,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      *
      * @param executorService an executor service used to flush stats
      * @param tableDefinition the table definition
+     * @param attributes Key-Value pairs of attributes to forward to the QueryTable's metadata
      * @param isViewPort true if the table will be a viewport.
      *
      * @return a properly initialized {@link BarrageTable}
@@ -692,24 +694,20 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         public final Histogram deserialize = new Histogram(NUM_SIG_FIGS);
         public final Histogram processUpdate = new Histogram(NUM_SIG_FIGS);
         public final Histogram refresh = new Histogram(NUM_SIG_FIGS);
-
-        private volatile boolean running = true;
+        public final ScheduledFuture<?> runFuture;
 
         public Stats(final String tableKey) {
             this.tableKey = tableKey;
-            executorService.schedule(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
+            runFuture = executorService.scheduleAtFixedRate(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS,
+                    BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
         }
 
         public void stop() {
-            running = false;
+            runFuture.cancel(false);
         }
 
         @Override
         public synchronized void run() {
-            if (!running) {
-                return;
-            }
-
             final DateTime now = DateTime.now();
             executorService.schedule(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
 

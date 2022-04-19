@@ -124,9 +124,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
              * Create a StreamGenerator that now owns the BarrageMessage.
              *
              * @param message the message that contains the update that we would like to propagate
-             * @param writeTmRecorder a method that can be used to record write time
+             * @param metricsConsumer a method that can be used to record write metrics
              */
-            StreamGenerator<MessageView> newGenerator(BarrageMessage message, WriteMetricsConsumer writeTmRecorder);
+            StreamGenerator<MessageView> newGenerator(BarrageMessage message, WriteMetricsConsumer metricsConsumer);
 
             /**
              * Create a MessageView of the Schema to send as the initial message to a new subscriber.
@@ -2147,8 +2147,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             this.tableKey = tableKey;
 
             final DateTime now = scheduler.currentTime();
-            final DateTime nextRun = DateTimeUtils.millisToTime(
-                    now.getMillis() + BarragePerformanceLog.CYCLE_DURATION_MILLIS);
+            final DateTime nextRun = DateTimeUtils.plus(now,
+                    DateTimeUtils.millisToNanos(BarragePerformanceLog.CYCLE_DURATION_MILLIS));
             scheduler.runAtTime(nextRun, this);
         }
 
