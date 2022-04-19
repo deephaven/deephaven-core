@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import java.util.NavigableSet;
 import java.util.PrimitiveIterator;
 import java.util.TreeMap;
+import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 public class SubscriptionTableData {
     @JsFunction
@@ -27,7 +28,7 @@ public class SubscriptionTableData {
     }
 
     private final JsArray<Column> columns;
-    private final Integer rowStyleColumn;
+    private final int rowStyleColumn;
     private final HasEventHandling evented;
 
     // the actual rows present on the client, in their correct order
@@ -42,7 +43,7 @@ public class SubscriptionTableData {
     // array of data columns, cast each to a jsarray to read rows
     private Object[] data;
 
-    public SubscriptionTableData(JsArray<Column> columns, Integer rowStyleColumn, HasEventHandling evented) {
+    public SubscriptionTableData(JsArray<Column> columns, int rowStyleColumn, HasEventHandling evented) {
         this.columns = columns;
         this.rowStyleColumn = rowStyleColumn;
         this.evented = evented;
@@ -479,7 +480,7 @@ public class SubscriptionTableData {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
                 cellColors = colors.getAtAsAny(redirectedIndex).asLong();
             }
-            if (rowStyleColumn != null) {
+            if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
                 rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
@@ -567,7 +568,7 @@ public class SubscriptionTableData {
                 JsArray<Any> colors = Js.uncheckedCast(data[column.getStyleColumnIndex()]);
                 cellColors = colors.getAtAsAny(redirectedIndex).asLong();
             }
-            if (rowStyleColumn != null) {
+            if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
                 JsArray<Any> rowStyle = Js.uncheckedCast(data[rowStyleColumn]);
                 rowColors = rowStyle.getAtAsAny(redirectedIndex).asLong();
             }
