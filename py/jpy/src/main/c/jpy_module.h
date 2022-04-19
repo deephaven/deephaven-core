@@ -30,7 +30,7 @@ extern "C" {
 
 #include "jpy_compat.h"
 
-#if true
+#if 1
 #define JPy_DECREF(x) Py_DECREF(x)
 #define JPy_INCREF(x) Py_INCREF(x)
 #define JPy_XDECREF(x) Py_XDECREF(x)
