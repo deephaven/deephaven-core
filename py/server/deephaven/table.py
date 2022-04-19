@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Union, TypeVar, Sequence, List, Any
+from typing import Union, TypeVar, Sequence, List
 
 import jpy
 
