@@ -11,6 +11,7 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkList;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -1580,6 +1581,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
+                adds.data = new ChunkList();
+
                 downstream.addColumnData[ci] = adds;
 
                 if (addColumnSet.get(ci)) {
@@ -1589,9 +1592,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localAdded);
                     }
-                    adds.data = chunk;
+                    adds.data.addChunk(chunk);
                 } else {
-                    adds.data = deltaColumn.getChunkType().getEmptyChunk();
+                    adds.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1600,11 +1603,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
-                final BarrageMessage.ModColumnData modifications = new BarrageMessage.ModColumnData();
-                downstream.modColumnData[ci] = modifications;
+                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
+                mods.data = new ChunkList();
+                downstream.modColumnData[ci] = mods;
 
                 if (modColumnSet.get(ci)) {
-                    modifications.rowsModified = firstDelta.recordedMods.copy();
+                    mods.rowsModified = firstDelta.recordedMods.copy();
 
                     final int chunkCapacity = localModified.intSize("serializeItems");
                     final WritableChunk<Values> chunk =
@@ -1612,14 +1616,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localModified);
                     }
-                    modifications.data = chunk;
+                    mods.data.addChunk(chunk);
                 } else {
-                    modifications.rowsModified = RowSetFactory.empty();
-                    modifications.data = deltaColumn.getChunkType().getEmptyChunk();
+                    mods.rowsModified = RowSetFactory.empty();
+                    mods.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
-                modifications.type = deltaColumn.getType();
-                modifications.componentType = deltaColumn.getComponentType();
+                mods.type = deltaColumn.getType();
+                mods.componentType = deltaColumn.getComponentType();
             }
         } else {
             // We must coalesce these updates.
@@ -1782,6 +1786,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
+                adds.data = new ChunkList();
+
                 downstream.addColumnData[ci] = adds;
 
                 if (addColumnSet.get(ci)) {
@@ -1792,9 +1798,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
                                 LongChunk.chunkWrap(info.addedMapping));
                     }
-                    adds.data = chunk;
+                    adds.data.addChunk(chunk);
                 } else {
-                    adds.data = deltaColumn.getChunkType().getEmptyChunk();
+                    adds.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1804,12 +1810,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             int numActualModCols = 0;
             for (int i = 0; i < downstream.modColumnData.length; ++i) {
                 final ColumnSource<?> sourceColumn = deltaColumns[i];
-                final BarrageMessage.ModColumnData modifications = new BarrageMessage.ModColumnData();
-                downstream.modColumnData[numActualModCols++] = modifications;
+                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
+                mods.data = new ChunkList();
+
+                downstream.modColumnData[numActualModCols++] = mods;
 
                 if (modColumnSet.get(i)) {
                     final ColumnInfo info = getColumnInfo.apply(i);
-                    modifications.rowsModified = info.recordedMods.copy();
+                    mods.rowsModified = info.recordedMods.copy();
 
                     final WritableChunk<Values> chunk =
                             sourceColumn.getChunkType().makeWritableChunk(info.modifiedMapping.length);
@@ -1817,15 +1825,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
                                 LongChunk.chunkWrap(info.modifiedMapping));
                     }
-
-                    modifications.data = chunk;
+                    mods.data.addChunk(chunk);
                 } else {
-                    modifications.rowsModified = RowSetFactory.empty();
-                    modifications.data = sourceColumn.getChunkType().getEmptyChunk();
+                    mods.rowsModified = RowSetFactory.empty();
+                    mods.data.addChunk(sourceColumn.getChunkType().getEmptyChunk());
                 }
 
-                modifications.type = sourceColumn.getType();
-                modifications.componentType = sourceColumn.getComponentType();
+                mods.type = sourceColumn.getType();
+                mods.componentType = sourceColumn.getComponentType();
             }
         }
 

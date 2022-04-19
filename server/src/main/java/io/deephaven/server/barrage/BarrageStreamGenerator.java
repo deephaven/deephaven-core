@@ -28,6 +28,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -53,13 +54,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.BitSet;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class BarrageStreamGenerator implements
         BarrageMessageProducer.StreamGenerator<BarrageStreamGenerator.View> {
@@ -104,14 +103,130 @@ public class BarrageStreamGenerator implements
         }
     }
 
+    public static class ChunkSetInputStreamGenerator extends BaseChunkInputStreamGenerator implements SafeCloseable {
+        public RowSet[] rowSets;
+        public ChunkInputStreamGenerator[] generators;
+
+        private class ChunkSetInputStream extends DrainableColumn {
+
+            private final ChunkSetInputStreamGenerator generator;
+            private final StreamReaderOptions options;
+            private final RowSet subset;
+
+            private int cachedNullCount = - 1;
+
+            public ChunkSetInputStream(ChunkSetInputStreamGenerator generator, StreamReaderOptions options, RowSet subset) {
+                this.generator = generator;
+                this.options = options;
+                this.subset = subset;
+            }
+
+            @Override
+            public void visitFieldNodes(FieldNodeListener listener) {
+                listener.noteLogicalFieldNode(subset.intSize("ChunkSetInputStreamGenerator"), nullCount());
+            }
+
+            @Override
+            public void visitBuffers(BufferListener listener) {
+
+            }
+
+            @Override
+            public int nullCount() {
+                if (options.useDeephavenNulls()) {
+                    return 0;
+                }
+                if (cachedNullCount == -1) {
+                    cachedNullCount = 0;
+
+                    // look through each chunk for this calculation
+                    for (int i = 0; i < generator.size(); ++i) {
+
+                        final long shiftAmount = -generator.rowSets[i].firstRowKey();
+
+                        // get an offset rowset for each chunk in the set
+                        try (final WritableRowSet adjustedOffsets = subset.intersect(generator.rowSets[i])) {
+                            // normalize this to the chunk offsets
+                            adjustedOffsets.shiftInPlace(shiftAmount);
+
+                            adjustedOffsets.forAllRowKeys(row -> {
+                                generator.generators[i].chunk
+                                if (chunk.get((int) row) == NULL_INT) {
+                                    ++cachedNullCount;
+                                }
+                            });
+                        } catch (Exception ex) {
+                            System.out.println(ex.getMessage());
+                        }
+
+
+
+                    }
+                }
+                return cachedNullCount;
+            }
+
+            @Override
+            public int drainTo(OutputStream target) throws IOException {
+                return 0;
+            }
+        }
+
+        ChunkSetInputStreamGenerator(BarrageMessage.AddColumnData acd) {
+            // create an input stream generator for each chunk
+            rowSets = new RowSet[acd.data.size()];
+            generators = new ChunkInputStreamGenerator[acd.data.size()];
+
+            for (int i = 0; i < acd.data.size(); ++i) {
+                rowSets[i] = RowSetFactory.fromRange(acd.data.startIndex.get(i), acd.data.endIndex.get(i));
+
+                generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                        acd.data.chunks.get(i).getChunkType(), acd.type, acd.componentType, acd.data.chunks.get(i));
+            }
+        }
+
+        ChunkSetInputStreamGenerator(BarrageMessage.ModColumnData mcd) {
+            // create an input stream generator for each chunk
+            rowSets = new RowSet[mcd.data.size()];
+            generators = new ChunkInputStreamGenerator[mcd.data.size()];
+
+            for (int i = 0; i < mcd.data.size(); ++i) {
+                rowSets[i] = RowSetFactory.fromRange(mcd.data.startIndex.get(i), mcd.data.endIndex.get(i));
+
+                generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                        mcd.data.chunks.get(i).getChunkType(), mcd.type, mcd.componentType, mcd.data.chunks.get(i));
+            }
+        }
+
+        public int size() {
+            return rowSets.length;
+        }
+
+        @Override
+        public void close() {
+            for (int i = 0; i < generators.length; i++) {
+                generators[i].close();
+                generators[i] = null;
+            }
+            for (int i = 0; i < rowSets.length; i++) {
+                rowSets[i].close();
+                rowSets[i] = null;
+            }
+        }
+
+        @Override
+        public DrainableColumn getInputStream(StreamReaderOptions options, @Nullable RowSet subset) throws IOException {
+            return new ChunkSetInputStream(this, options, subset);
+        }
+    }
+
     public static class ModColumnData {
         public final RowSetGenerator rowsModified;
-        public final ChunkInputStreamGenerator data;
+        public final ChunkSetInputStreamGenerator data;
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
-            data = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                    col.data.getChunkType(), col.type, col.componentType, col.data);
+            data = new ChunkSetInputStreamGenerator(col);
         }
     }
 
@@ -128,7 +243,7 @@ public class BarrageStreamGenerator implements
     public final RowSetGenerator rowsRemoved;
     public final RowSetShiftDataGenerator shifted;
 
-    public final ChunkInputStreamGenerator[] addColumnData;
+    public final ChunkSetInputStreamGenerator[] addColumnData;
     public final ModColumnData[] modColumnData;
 
     /**
@@ -149,11 +264,9 @@ public class BarrageStreamGenerator implements
             rowsRemoved = new RowSetGenerator(message.rowsRemoved);
             shifted = new RowSetShiftDataGenerator(message.shifted);
 
-            addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
+            addColumnData = new ChunkSetInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
-                final BarrageMessage.AddColumnData acd = message.addColumnData[i];
-                addColumnData[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                        acd.data.getChunkType(), acd.type, acd.componentType, acd.data);
+                addColumnData[i] = new ChunkSetInputStreamGenerator(message.addColumnData[i]);
             }
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
@@ -184,7 +297,7 @@ public class BarrageStreamGenerator implements
         rowsRemoved.close();
 
         if (addColumnData != null) {
-            for (final ChunkInputStreamGenerator in : addColumnData) {
+            for (final ChunkSetInputStreamGenerator in : addColumnData) {
                 in.close();
             }
         }
@@ -648,17 +761,37 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
 
-
-        try (final RowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
+        try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
             // add the add-column streams
-            for (final ChunkInputStreamGenerator col : addColumnData) {
-                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                        col.getInputStream(view.options(), myAddedOffsets);
-                drainableColumn.visitFieldNodes(fieldNodeListener);
-                drainableColumn.visitBuffers(bufferListener);
+            for (final ChunkSetInputStreamGenerator chunkSetGen : addColumnData) {
 
-                // Add the drainable last as it is allowed to immediately close a row set the visitors need
-                addStream.accept(drainableColumn);
+                if (chunkSetGen.size() == 0) {
+                    System.out.println("oops");
+                }
+                // iterate through each chunk
+                for (int i = 0; i < chunkSetGen.size(); ++i) {
+                    final ChunkInputStreamGenerator generator = chunkSetGen.generators[i];
+
+                    final long shiftAmount = -chunkSetGen.rowSets[i].firstRowKey();
+
+                    // get an offset rowset for each chunk in the set
+                    try (final WritableRowSet adjustedOffsets = myAddedOffsets.intersect(chunkSetGen.rowSets[i])) {
+                        // normalize this to the chunk offsets
+                        adjustedOffsets.shiftInPlace(shiftAmount);
+
+//                        System.out.println("myAddedOffsets: " + myAddedOffsets + ", adjustedOffsets: " + adjustedOffsets);
+
+                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                generator.getInputStream(view.options(), adjustedOffsets);
+                        drainableColumn.visitFieldNodes(fieldNodeListener);
+                        drainableColumn.visitBuffers(bufferListener);
+
+                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                        addStream.accept(drainableColumn);
+                    } catch (Exception ex) {
+                        System.out.println(ex.getMessage());
+                    }
+                }
             }
             return myAddedOffsets.size();
         }
@@ -689,14 +822,26 @@ public class BarrageStreamGenerator implements
             numRows = Math.max(numRows, myModOffsets.size());
 
             try {
-                final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                        mcd.data.getInputStream(view.options(), myModOffsets);
+                // iterate through each chunk
+                for (int i = 0; i < mcd.data.size(); ++i) {
+                    final ChunkInputStreamGenerator generator = mcd.data.generators[i];
 
-                drainableColumn.visitFieldNodes(fieldNodeListener);
-                drainableColumn.visitBuffers(bufferListener);
+                    final long shiftAmount = -mcd.data.rowSets[i].firstRowKey();
 
-                // See comment in appendAddColumns
-                addStream.accept(drainableColumn);
+                    // get an offset rowset for each chunk in the set
+                    try (final WritableRowSet adjustedOffsets = myModOffsets.intersect(mcd.data.rowSets[i])) {
+                        // normalize this to the chunk offsets
+                        adjustedOffsets.shiftInPlace(shiftAmount);
+
+                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                generator.getInputStream(view.options(), adjustedOffsets);
+                        drainableColumn.visitFieldNodes(fieldNodeListener);
+                        drainableColumn.visitBuffers(bufferListener);
+
+                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                        addStream.accept(drainableColumn);
+                    }
+                }
             } finally {
                 myModOffsets.close();
             }

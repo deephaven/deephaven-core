@@ -169,13 +169,13 @@ public class ArrowFlightUtil {
                     final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                     msg.addColumnData[ci] = acd;
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
-                    try {
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
-                                columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                bufferInfoIter, mi.inputStream, null, 0, 0);
-                    } catch (final IOException unexpected) {
-                        throw new UncheckedDeephavenException(unexpected);
-                    }
+//                    try {
+//                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
+//                                columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+//                                bufferInfoIter, mi.inputStream, null, 0, 0);
+//                    } catch (final IOException unexpected) {
+//                        throw new UncheckedDeephavenException(unexpected);
+//                    }
 
                     if (acd.data.size() != numRowsAdded) {
                         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,

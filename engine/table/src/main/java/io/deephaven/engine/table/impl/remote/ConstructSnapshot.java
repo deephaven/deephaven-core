@@ -45,6 +45,8 @@ import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
 
+import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of the UGP lock. This class
  * supports snapshots in both position space and key space.
@@ -1316,7 +1318,7 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
+        //LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
 
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -1340,14 +1342,14 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.data = getSnapshotDataAsChunkSet(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactory.empty(), usePrev);
+                mcd.data = getSnapshotDataAsChunkSet(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }
@@ -1428,6 +1430,50 @@ public class ConstructSnapshot {
             }
             return result;
         }
+    }
+
+    private static <T> ChunkList getSnapshotDataAsChunkSet(final ColumnSource<T> columnSource,
+                                                                    final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+        long offset = 0;
+        final long size = rowSet.size();
+        final ChunkList result = new ChunkList();
+
+        while (offset < rowSet.size()) {
+            final int chunkSize;
+            if (size - offset > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+                chunkSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+            } else {
+                chunkSize = (int)(size - offset);
+            }
+
+            final long keyStart = rowSet.get(offset);
+            final long keyEnd = rowSet.get(offset + chunkSize - 1);
+
+            try (final ColumnSource.FillContext context = sharedContext != null
+                    ? sourceToUse.makeFillContext(chunkSize, sharedContext)
+                    : sourceToUse.makeFillContext(chunkSize);
+                    final WritableRowSet reducedRowSet = rowSet.subSetByKeyRange(keyStart, keyEnd)) {
+
+                final ChunkType chunkType = sourceToUse.getChunkType();
+
+                // create a new chunk
+                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+
+                if (usePrev) {
+                    sourceToUse.fillPrevChunk(context, currentChunk, reducedRowSet);
+                } else {
+                    sourceToUse.fillChunk(context, currentChunk, reducedRowSet);
+                }
+
+                // add the chunk to the current list
+                result.addChunk(currentChunk, offset, offset + currentChunk.size() - 1);
+
+                // increment the offset for the next chunk (using the actual values written)
+                offset += currentChunk.size();
+            }
+        }
+        return result;
     }
 
     /**
