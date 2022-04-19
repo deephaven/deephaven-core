@@ -37,7 +37,7 @@ class JObjectWrapper(ABC):
 
     def __repr__(self):
         self_type = type(self)
-        return f"{self_type.__module__}.{self_type.__name__}({repr(self.j_object)})"
+        return f"{self_type.__module__}.{self_type.__qualname__}({repr(self.j_object)})"
 
     def __str__(self):
         return str(self.j_object)
@@ -46,22 +46,22 @@ class JObjectWrapper(ABC):
         return hash(self.j_object)
 
     def __eq__(self, other):
-        return self.j_object == other.j_object
+        return self.j_object == other.j_object if isinstance(other, self.__class__) else NotImplemented
 
     def __neq__(self, other):
-        return self.j_object != other.j_object
+        return self.j_object != other.j_object if isinstance(other, self.__class__) else NotImplemented
 
     def __lt__(self, other):
-        return self.j_object < other.j_object
+        return self.j_object < other.j_object if isinstance(other, self.__class__) else NotImplemented
 
-    def __lte__(self, other):
-        return self.j_object <= other.j_object
+    def __le__(self, other):
+        return self.j_object <= other.j_object if isinstance(other, self.__class__) else NotImplemented
 
     def __gt__(self, other):
-        return self.j_object > other.j_object
+        return self.j_object > other.j_object if isinstance(other, self.__class__) else NotImplemented
 
-    def __gte__(self, other):
-        return self.j_object >= other.j_object
+    def __ge__(self, other):
+        return self.j_object >= other.j_object if isinstance(other, self.__class__) else NotImplemented
 
 
 def _is_direct_initialisable(cls) -> bool:
