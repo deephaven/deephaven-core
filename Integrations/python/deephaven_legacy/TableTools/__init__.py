@@ -375,6 +375,14 @@ def base64Fingerprint(source):
 
 @_passThrough
 def booleanCol(name, *data):
+    """
+    Returns a ColumnHolder of type Boolean that can be used when creating in-memory tables.
+    
+    :param name: (java.lang.String) - name of the column
+    :param data: (java.lang.Boolean...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    """
+    
     return _java_type_.booleanCol(name, *data)
 
 
@@ -734,17 +742,6 @@ def newTable(*args):
 
 
 @_passThrough
-def newTimeTableBuilder():
-    """
-    Creates a new time table builder.
-    
-    :return: (io.deephaven.engine.table.impl.TimeTable.Builder) a time table builder
-    """
-    
-    return _java_type_.newTimeTableBuilder()
-
-
-@_passThrough
 def nullToNullString(obj):
     """
     :param obj: java.lang.Object
@@ -1057,6 +1054,17 @@ def timeTable(*args):
     """
     
     return _java_type_.timeTable(*args)
+
+
+@_passThrough
+def timeTableBuilder():
+    """
+    Creates a new time table builder.
+    
+    :return: (io.deephaven.engine.table.impl.TimeTable.Builder) a time table builder
+    """
+    
+    return _java_type_.timeTableBuilder()
 
 
 @_passThrough
