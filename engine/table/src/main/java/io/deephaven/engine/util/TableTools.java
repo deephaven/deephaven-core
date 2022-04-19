@@ -885,9 +885,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), null, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+                null, periodNanos, false);
     }
 
     /**
@@ -898,9 +897,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(null),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -912,9 +910,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getTimeProvider(replayer),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -949,9 +946,16 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(TimeProvider timeProvider, DateTime startTime, long periodNanos) {
-        final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
-        return timeTable;
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, timeProvider, startTime, periodNanos, false);
+    }
+
+    /**
+     * Creates a new time table builder.
+     *
+     * @return a time table builder
+     */
+    public static TimeTable.Builder timeTableBuilder() {
+        return TimeTable.newBuilder();
     }
 
     // endregion time tables

@@ -59,6 +59,7 @@ dependencies {
             TestTools.projectDependency(project, 'Util'),
             TestTools.projectDependency(project, 'engine-chunk'),
             TestTools.projectDependency(project, 'engine-rowset'),
+            project(':Base'),
             project(':BenchmarkSupport'),
             project(':extensions-csv'),
             project(':extensions-parquet-table'),
