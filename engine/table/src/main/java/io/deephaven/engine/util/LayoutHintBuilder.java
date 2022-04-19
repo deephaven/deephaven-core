@@ -108,9 +108,11 @@ public class LayoutHintBuilder {
         }
     }
 
-    private LayoutHintBuilder() {}
+    private LayoutHintBuilder() {
+    }
 
     // region Builder Methods
+
     /**
      * Create a LayoutHintBuilder from the specified parameter string.
      *
@@ -136,7 +138,7 @@ public class LayoutHintBuilder {
 
         final String endStr = options.get("back");
         if (endStr != null && !endStr.isEmpty()) {
-            lhb.atEnd(endStr.split(","));
+            lhb.atBack(endStr.split(","));
         }
 
         final String hideStr = options.get("hide");
@@ -218,11 +220,11 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * @see LayoutHintBuilder#atEnd(Collection)
+     * @see LayoutHintBuilder#atBack(Collection)
      */
     @ScriptApi
-    public LayoutHintBuilder atEnd(String... cols) {
-        return atEnd(cols == null ? null : Arrays.asList(cols));
+    public LayoutHintBuilder atBack(String... cols) {
+        return atBack(cols == null ? null : Arrays.asList(cols));
     }
 
     /**
@@ -232,7 +234,7 @@ public class LayoutHintBuilder {
      * @return this LayoutHintBuilder
      */
     @ScriptApi
-    public LayoutHintBuilder atEnd(Collection<String> cols) {
+    public LayoutHintBuilder atBack(Collection<String> cols) {
         if (cols == null || cols.isEmpty()) {
             backCols = null;
             return this;
@@ -325,7 +327,7 @@ public class LayoutHintBuilder {
      * Set the default initial number of rows to fetch for columns that have been marked as
      * {@link LayoutHintBuilder#autoFilter(Collection) AutoFilter} columns.
      *
-     * @param col the column to set the fetch size for
+     * @param col  the column to set the fetch size for
      * @param size the number of rows to fetch initially
      * @return this LayoutHintBuilder
      */
@@ -464,7 +466,7 @@ public class LayoutHintBuilder {
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
+                            StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
                     .append(';');
         }
 
@@ -485,7 +487,7 @@ public class LayoutHintBuilder {
 
     /**
      * Helper method for building and {@link Table#setLayoutHints(String) applying} layout hints to a {@link Table}.
-     * 
+     *
      * @param table The source {@link Table}
      * @return {@code table.setLayoutHints(build())}
      */
@@ -495,6 +497,7 @@ public class LayoutHintBuilder {
     }
 
     // region Getters
+
     /**
      * Check if saved layouts should be allowed.
      *
@@ -516,7 +519,7 @@ public class LayoutHintBuilder {
     /**
      * Get the ordered set of columns that should be displayed as the last N columns.
      *
-     * @return an ordfered set of columns to display at the end.
+     * @return an ordered set of columns to display at the end.
      */
     public @NotNull Set<String> getBackCols() {
         return backCols == null ? Collections.emptySet() : Collections.unmodifiableSet(backCols);
