@@ -1922,14 +1922,14 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             pyBuffer = PyMem_New(Py_buffer, 1);
             if (pyBuffer == NULL) {
                 PyErr_NoMemory();
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 return -1;
             }
 
             flags = paramDescriptor->isMutable ? PyBUF_WRITABLE : PyBUF_SIMPLE;
             if (PyObject_GetBuffer(pyArg, pyBuffer, flags) < 0) {
                 PyMem_Del(pyBuffer);
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 return -1;
             }
 
@@ -1937,7 +1937,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             if (itemCount <= 0) {
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 PyErr_Format(PyExc_ValueError, "illegal buffer argument: not a positive item count: %ld", itemCount);
                 return -1;
             }
@@ -1967,7 +1967,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
                 jArray = (*jenv)->NewDoubleArray(jenv, itemCount);
                 itemSize = sizeof(jdouble);
             } else {
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_SetString(PyExc_RuntimeError, "internal error: illegal primitive Java type");
@@ -1978,7 +1978,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
                 Py_ssize_t bufferLen = pyBuffer->len;
                 Py_ssize_t bufferItemSize = pyBuffer->itemsize;
                 //printf("%ld, %ld, %ld, %ld\n", pyBuffer->len , pyBuffer->itemsize, itemCount, itemSize);
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_Format(PyExc_ValueError,
@@ -1988,7 +1988,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             }
 
             if (jArray == NULL) {
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_NoMemory();
@@ -1998,7 +1998,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             if (!paramDescriptor->isOutput) {
                 arrayItems = (*jenv)->GetPrimitiveArrayCritical(jenv, jArray, NULL);
                 if (arrayItems == NULL) {
-                    Py_DECREF(pyArg);
+                    JPy_DECREF(pyArg);
                     PyBuffer_Release(pyBuffer);
                     PyMem_Del(pyBuffer);
                     PyErr_NoMemory();
@@ -2015,7 +2015,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
         } else {
             jobject objectRef;
             if (JType_ConvertPythonToJavaObject(jenv, paramType, pyArg, &objectRef, JNI_FALSE) < 0) {
-                Py_DECREF(pyArg);
+                JPy_DECREF(pyArg);
                 return -1;
             }
             value->l = objectRef;
@@ -2024,7 +2024,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
         }
     }
 
-    Py_DECREF(pyArg);
+    JPy_DECREF(pyArg);
 
     return 0;
 }
