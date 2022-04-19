@@ -22,7 +22,7 @@ std::shared_ptr<SadChunk> ChunkMaker::createChunkFor(const SadColumnSource &colu
 
 namespace {
 void Visitor::visit(const SadIntColumnSource *source) {
-    result_ = SadLongChunk::create(chunkSize_);
+  result_ = SadIntChunk::create(chunkSize_);
 }
 
 void Visitor::visit(const SadLongColumnSource *source) {

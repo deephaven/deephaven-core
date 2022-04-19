@@ -41,13 +41,18 @@ set(ALL_FILES
     include/private/deephaven/client/highlevel/impl/string_expression_impl.h
     include/private/deephaven/client/highlevel/impl/table_handle_impl.h
     include/private/deephaven/client/highlevel/impl/table_handle_manager_impl.h
+    include/private/deephaven/client/highlevel/impl/util.h
 
     src/highlevel/columns.cc
     src/highlevel/expressions.cc
     src/highlevel/client.cc
     src/highlevel/ticking.cc
     src/highlevel/types.cc
+    src/highlevel/sad/chunk_filler.cc
+    src/highlevel/sad/chunk_maker.cc
+    src/highlevel/sad/sad_chunk.cc
     src/highlevel/sad/sad_column_source.cc
+    src/highlevel/sad/sad_context.cc
     src/highlevel/sad/sad_row_sequence.cc
     src/highlevel/sad/sad_table.cc
     src/highlevel/sad/sad_ticking_table.cc
@@ -58,6 +63,8 @@ set(ALL_FILES
     include/public/deephaven/client/highlevel/client.h
     include/public/deephaven/client/highlevel/ticking.h
     include/public/deephaven/client/highlevel/types.h
+    include/public/deephaven/client/highlevel/sad/chunk_filler.h
+    include/public/deephaven/client/highlevel/sad/chunk_maker.h
     include/public/deephaven/client/highlevel/sad/sad_chunk.h
     include/public/deephaven/client/highlevel/sad/sad_column_source.h
     include/public/deephaven/client/highlevel/sad/sad_context.h
@@ -99,7 +106,7 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.h
 
     flatbuf/deephaven/flatbuf/Barrage_generated.h
-    include/public/deephaven/client/highlevel/sad/chunk_maker.h src/highlevel/sad/chunk_maker.cc src/highlevel/sad/sad_chunk.cc include/public/deephaven/client/highlevel/sad/chunk_filler.h src/highlevel/sad/chunk_filler.cc src/highlevel/sad/sad_context.cc)
+    )
 
 add_library(client ${ALL_FILES})
 # This is so deephaven::client works both when using the installed CMake config

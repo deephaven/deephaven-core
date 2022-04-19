@@ -1,8 +1,10 @@
 #include "deephaven/client/highlevel/sad/chunk_filler.h"
+#include "deephaven/client/highlevel/impl/util.h"
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::stringf;
+using deephaven::client::highlevel::impl::verboseCast;
 
 namespace deephaven::client::highlevel::sad {
 namespace {
@@ -30,24 +32,18 @@ void ChunkFiller::fillChunk(const arrow::Array &src, const SadRowSequence &keys,
 
 namespace {
 arrow::Status Visitor::Visit(const arrow::Int32Array &array) {
-    auto *typedDest = dynamic_cast<SadIntChunk*>(dest_);
-    if (typedDest == nullptr) {
-        throw std::runtime_error("Null destination in Visit(const arrow::Int32Array&)");
-    }
-    int64_t destIndex = 0;
-    int64_t srcIndex;
-    auto iter = keys_.getRowSequenceIterator();
-    while (iter->tryGetNext(&srcIndex)) {
-        typedDest->data()[destIndex++] = array.Value(srcIndex);
-    }
-    return arrow::Status::OK();
+  auto *typedDest = verboseCast<SadIntChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest_);
+  int64_t destIndex = 0;
+  int64_t srcIndex;
+  auto iter = keys_.getRowSequenceIterator();
+  while (iter->tryGetNext(&srcIndex)) {
+    typedDest->data()[destIndex++] = array.Value(srcIndex);
+  }
+  return arrow::Status::OK();
 }
 
 arrow::Status Visitor::Visit(const arrow::Int64Array &array) {
-  auto *typedDest = dynamic_cast<SadLongChunk*>(dest_);
-  if (typedDest == nullptr) {
-      throw std::runtime_error("Null destination in Visit(const arrow::Int64Array&)");
-  }
+  auto *typedDest = verboseCast<SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest_);
   int64_t destIndex = 0;
   int64_t srcIndex;
   auto iter = keys_.getRowSequenceIterator();
@@ -58,10 +54,7 @@ arrow::Status Visitor::Visit(const arrow::Int64Array &array) {
 }
 
 arrow::Status Visitor::Visit(const arrow::DoubleArray &array) {
-  auto *typedDest = dynamic_cast<SadDoubleChunk*>(dest_);
-  if (typedDest == nullptr) {
-      throw std::runtime_error("Null destination in Visit(const arrow::DoubleArray&)");
-  }
+  auto *typedDest = verboseCast<SadDoubleChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest_);
   int64_t destIndex = 0;
   int64_t srcIndex;
   auto iter = keys_.getRowSequenceIterator();

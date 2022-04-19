@@ -1,9 +1,11 @@
 #include "deephaven/client/highlevel/sad/sad_column_source.h"
+#include "deephaven/client/highlevel/impl/util.h"
 #include "deephaven/client/highlevel/sad/sad_chunk.h"
 
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::utility::stringf;
+using deephaven::client::highlevel::impl::verboseCast;
 
 namespace deephaven::client::highlevel::sad {
 namespace {
@@ -14,9 +16,6 @@ public:
 class MySadDoubleColumnSourceContext final : public SadColumnSourceContext {
 public:
 };
-
-template<typename DESTP, typename SRCP>
-DESTP verboseCast(SRCP ptr);
 
 void assertFits(size_t size, size_t capacity);
 void assertInRange(size_t index, size_t size);
@@ -35,60 +34,60 @@ SadIntArrayColumnSource::SadIntArrayColumnSource(Private) {}
 SadIntArrayColumnSource::~SadIntArrayColumnSource() = default;
 
 std::shared_ptr<SadColumnSourceContext> SadIntArrayColumnSource::createContext(size_t chunkSize) const {
-    // We're not really using contexts yet.
-    return std::make_shared<MySadLongColumnSourceContext>();
+  // We're not really using contexts yet.
+  return std::make_shared<MySadLongColumnSourceContext>();
 }
 
 void SadIntArrayColumnSource::fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys,
-                                                  size_t size, SadChunk *dest) const {
-    auto *typedDest = verboseCast<SadIntChunk*>(dest);
-    assertFits(size, dest->capacity());
+    size_t size, SadChunk *dest) const {
+  auto *typedDest = verboseCast<SadIntChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
+  assertFits(size, dest->capacity());
 
-    for (size_t i = 0; i < size; ++i) {
-        auto srcIndex = rowKeys.data()[i];
-        assertInRange(srcIndex, data_.size());
-        typedDest->data()[i] = this->data_[srcIndex];
-    }
+  for (size_t i = 0; i < size; ++i) {
+    auto srcIndex = rowKeys.data()[i];
+    assertInRange(srcIndex, data_.size());
+    typedDest->data()[i] = this->data_[srcIndex];
+  }
 }
 
 void SadIntArrayColumnSource::fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const {
-    auto *typedDest = verboseCast<SadIntChunk*>(dest);
-    assertFits(rows.size(), dest->capacity());
+  auto *typedDest = verboseCast<SadIntChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
+  assertFits(rows.size(), dest->capacity());
 
-    size_t destIndex = 0;
-    int64_t srcIndex;
-    auto iter = rows.getRowSequenceIterator();
-    while (iter->tryGetNext(&srcIndex)) {
-        assertInRange(srcIndex, data_.size());
-        typedDest->data()[destIndex] = data_[srcIndex];
-        ++destIndex;
-    }
+  size_t destIndex = 0;
+  int64_t srcIndex;
+  auto iter = rows.getRowSequenceIterator();
+  while (iter->tryGetNext(&srcIndex)) {
+    assertInRange(srcIndex, data_.size());
+    typedDest->data()[destIndex] = data_[srcIndex];
+    ++destIndex;
+  }
 }
 
 void SadIntArrayColumnSource::fillFromChunkUnordered(SadContext *context, const SadChunk &src,
-                                                     const SadLongChunk &rowKeys, size_t size) {
-    auto *typedSrc = verboseCast<const SadIntChunk*>(&src);
-    assertFits(size, src.capacity());
+    const SadLongChunk &rowKeys, size_t size) {
+  auto *typedSrc = verboseCast<const SadIntChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
+  assertFits(size, src.capacity());
 
-    for (size_t i = 0; i < size; ++i) {
-        auto destIndex = rowKeys.data()[i];
-        ensureSize(destIndex + 1);
-        data_[destIndex] = typedSrc->data()[i];
-    }
+  for (size_t i = 0; i < size; ++i) {
+    auto destIndex = rowKeys.data()[i];
+    ensureSize(destIndex + 1);
+    data_[destIndex] = typedSrc->data()[i];
+  }
 }
 
 void SadIntArrayColumnSource::ensureSize(size_t size) {
-    if (size > data_.size()) {
-        data_.resize(size);
-    }
+  if (size > data_.size()) {
+    data_.resize(size);
+  }
 }
 
 void SadIntArrayColumnSource::acceptVisitor(SadColumnSourceVisitor *visitor) const {
-    visitor->visit(this);
+  visitor->visit(this);
 }
 
 std::shared_ptr<SadLongArrayColumnSource> SadLongArrayColumnSource::create() {
-    return std::make_shared<SadLongArrayColumnSource>(Private());
+  return std::make_shared<SadLongArrayColumnSource>(Private());
 }
 
 SadLongArrayColumnSource::SadLongArrayColumnSource(Private) {}
@@ -101,7 +100,7 @@ std::shared_ptr<SadColumnSourceContext> SadLongArrayColumnSource::createContext(
 
 void SadLongArrayColumnSource::fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys,
     size_t size, SadChunk *dest) const {
-  auto *typedDest = verboseCast<SadLongChunk*>(dest);
+  auto *typedDest = verboseCast<SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
   assertFits(size, dest->capacity());
 
   for (size_t i = 0; i < size; ++i) {
@@ -112,7 +111,7 @@ void SadLongArrayColumnSource::fillChunkUnordered(SadContext *context, const Sad
 }
 
 void SadLongArrayColumnSource::fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const {
-  auto *typedDest = verboseCast<SadLongChunk*>(dest);
+  auto *typedDest = verboseCast<SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
   assertFits(rows.size(), dest->capacity());
 
   size_t destIndex = 0;
@@ -127,7 +126,7 @@ void SadLongArrayColumnSource::fillChunk(SadContext *context, const SadRowSequen
 
 void SadLongArrayColumnSource::fillFromChunkUnordered(SadContext *context, const SadChunk &src,
     const SadLongChunk &rowKeys, size_t size) {
-  auto *typedSrc = verboseCast<const SadLongChunk*>(&src);
+  auto *typedSrc = verboseCast<const SadLongChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
   assertFits(size, src.capacity());
 
   for (size_t i = 0; i < size; ++i) {
@@ -161,7 +160,7 @@ std::shared_ptr<SadColumnSourceContext> SadDoubleArrayColumnSource::createContex
 
 void SadDoubleArrayColumnSource::fillChunkUnordered(SadContext *context, const SadLongChunk &rowKeys,
     size_t size, SadChunk *dest) const {
-  auto *typedDest = verboseCast<SadDoubleChunk*>(dest);
+  auto *typedDest = verboseCast<SadDoubleChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
   assertFits(size, dest->capacity());
 
   for (size_t i = 0; i < size; ++i) {
@@ -172,7 +171,7 @@ void SadDoubleArrayColumnSource::fillChunkUnordered(SadContext *context, const S
 }
 
 void SadDoubleArrayColumnSource::fillChunk(SadContext *context, const SadRowSequence &rows, SadChunk *dest) const {
-  auto *typedDest = verboseCast<SadDoubleChunk*>(dest);
+  auto *typedDest = verboseCast<SadDoubleChunk*>(DEEPHAVEN_PRETTY_FUNCTION, dest);
   assertFits(rows.size(), dest->capacity());
 
   size_t destIndex = 0;
@@ -187,7 +186,7 @@ void SadDoubleArrayColumnSource::fillChunk(SadContext *context, const SadRowSequ
 
 void SadDoubleArrayColumnSource::fillFromChunkUnordered(SadContext *context, const SadChunk &src,
     const SadLongChunk &rowKeys, size_t size) {
-  auto *typedSrc = verboseCast<const SadDoubleChunk*>(&src);
+  auto *typedSrc = verboseCast<const SadDoubleChunk*>(DEEPHAVEN_PRETTY_FUNCTION, &src);
   assertFits(size, src.capacity());
 
   for (size_t i = 0; i < size; ++i) {
@@ -210,18 +209,6 @@ void SadDoubleArrayColumnSource::acceptVisitor(SadColumnSourceVisitor *visitor) 
 SadColumnSourceContext::~SadColumnSourceContext() = default;
 
 namespace {
-template<typename DESTP, typename SRCP>
-DESTP verboseCast(SRCP ptr) {
-  auto *typedPtr = dynamic_cast<DESTP>(ptr);
-  if (typedPtr != nullptr) {
-    return typedPtr;
-  }
-  typedef decltype(*std::declval<DESTP>()) destType_t;
-  auto message = stringf("Expected type %o. Got type %o",
-      typeid(destType_t).name(), typeid(*ptr).name());
-  throw std::runtime_error(message);
-}
-
 void assertFits(size_t size, size_t capacity) {
   if (size > capacity) {
     auto message = stringf("Expected capacity at least %o, have %o", size, capacity);
