@@ -216,7 +216,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
         nextRingIx += logicalFillSize;
     }
 
-    private void skipRows(Iterator it, long skipKey, long expectedDistance) {
+    private static void skipRows(Iterator it, long skipKey, long expectedDistance) {
         final long actualDistance = it.advanceAndGetPositionDistance(skipKey);
         if (expectedDistance != actualDistance) {
             throw new IllegalStateException(
