@@ -19,7 +19,7 @@ def create_some_counters():
 
 class PerfmonTestCase(BaseTestCase):
 
-    def test_metrics_get_counters(self):
+    def do_not_test_metrics_get_counters(self):
         metrics_reset_counters()
         t = create_some_counters()
         # counters should accumulate some values after performing some operations
