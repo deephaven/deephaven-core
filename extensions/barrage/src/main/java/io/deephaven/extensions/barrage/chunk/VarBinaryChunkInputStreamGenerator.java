@@ -128,7 +128,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     baos.close();
                     baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
 
-                    // add the item to this buffer
+                    // add the item to the new buffer
                     appendItem.append(baos, chunk.get(i));
                     baosSize = baos.size();
                     startIndex = i;

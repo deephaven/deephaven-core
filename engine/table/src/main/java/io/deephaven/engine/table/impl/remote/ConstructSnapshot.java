@@ -1342,14 +1342,14 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data = getSnapshotDataAsChunkSet(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.data = getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunkSet(columnSource, null, RowSetFactory.empty(), usePrev);
+                mcd.data = getSnapshotDataAsChunkList(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }
@@ -1432,12 +1432,17 @@ public class ConstructSnapshot {
         }
     }
 
-    private static <T> ChunkList getSnapshotDataAsChunkSet(final ColumnSource<T> columnSource,
-                                                                    final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+    private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(final ColumnSource<T> columnSource,
+                                                            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
         long offset = 0;
         final long size = rowSet.size();
-        final ChunkList result = new ChunkList();
+        final ArrayList<Chunk<Values>> result = new ArrayList<>();
+
+        if (rowSet.size() == 0) {
+            result.add(sourceToUse.getChunkType().getEmptyChunk());
+            return result;
+        }
 
         while (offset < rowSet.size()) {
             final int chunkSize;
@@ -1467,7 +1472,7 @@ public class ConstructSnapshot {
                 }
 
                 // add the chunk to the current list
-                result.addChunk(currentChunk, offset, offset + currentChunk.size() - 1);
+                result.add(currentChunk);
 
                 // increment the offset for the next chunk (using the actual values written)
                 offset += currentChunk.size();

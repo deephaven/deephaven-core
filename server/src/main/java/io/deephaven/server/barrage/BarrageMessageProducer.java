@@ -11,7 +11,6 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ChunkList;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -1581,7 +1580,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
-                adds.data = new ChunkList();
+                adds.data = new ArrayList<>();
 
                 downstream.addColumnData[ci] = adds;
 
@@ -1592,9 +1591,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localAdded);
                     }
-                    adds.data.addChunk(chunk);
+                    adds.data.add(chunk);
                 } else {
-                    adds.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
+                    adds.data.add(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1604,7 +1603,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
-                mods.data = new ChunkList();
+                mods.data = new ArrayList<>();
                 downstream.modColumnData[ci] = mods;
 
                 if (modColumnSet.get(ci)) {
@@ -1616,10 +1615,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localModified);
                     }
-                    mods.data.addChunk(chunk);
+                    mods.data.add(chunk);
                 } else {
                     mods.rowsModified = RowSetFactory.empty();
-                    mods.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
+                    mods.data.add(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
                 mods.type = deltaColumn.getType();
@@ -1786,7 +1785,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
                 final ColumnSource<?> deltaColumn = deltaColumns[ci];
                 final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
-                adds.data = new ChunkList();
+                adds.data = new ArrayList<>();
 
                 downstream.addColumnData[ci] = adds;
 
@@ -1798,9 +1797,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
                                 LongChunk.chunkWrap(info.addedMapping));
                     }
-                    adds.data.addChunk(chunk);
+                    adds.data.add(chunk);
                 } else {
-                    adds.data.addChunk(deltaColumn.getChunkType().getEmptyChunk());
+                    adds.data.add(deltaColumn.getChunkType().getEmptyChunk());
                 }
 
                 adds.type = deltaColumn.getType();
@@ -1811,7 +1810,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int i = 0; i < downstream.modColumnData.length; ++i) {
                 final ColumnSource<?> sourceColumn = deltaColumns[i];
                 final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
-                mods.data = new ChunkList();
+                mods.data = new ArrayList<>();
 
                 downstream.modColumnData[numActualModCols++] = mods;
 
@@ -1825,10 +1824,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                         ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,
                                 LongChunk.chunkWrap(info.modifiedMapping));
                     }
-                    mods.data.addChunk(chunk);
+                    mods.data.add(chunk);
                 } else {
                     mods.rowsModified = RowSetFactory.empty();
-                    mods.data.addChunk(sourceColumn.getChunkType().getEmptyChunk());
+                    mods.data.add(sourceColumn.getChunkType().getEmptyChunk());
                 }
 
                 mods.type = sourceColumn.getType();

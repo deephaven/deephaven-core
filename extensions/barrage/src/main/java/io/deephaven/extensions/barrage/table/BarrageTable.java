@@ -50,7 +50,7 @@ import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DI
 public class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
 
     public static final boolean DEBUG_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", true);
+            Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
 
     private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
@@ -301,7 +301,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
 
                 elapsed = System.nanoTime() - start; start = System.nanoTime();
-                System.out.println("BT ensureCapacity (ms): " + (double)elapsed / 1_000_000.0);
+//                System.out.println("BT ensureCapacity (ms): " + (double)elapsed / 1_000_000.0);
 
                 // this will hold all the free rows allocated for the included rows
                 final WritableRowSet destinationRowSet = RowSetFactory.empty();
@@ -325,30 +325,30 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
 
                 elapsed = System.nanoTime() - start; start = System.nanoTime();
-                System.out.println("BT rowRedirection (ms): " + (double)elapsed / 1_000_000.0);
+//                System.out.println("BT rowRedirection (ms): " + (double)elapsed / 1_000_000.0);
 
                 // update the column sources
                 for (int ii = 0; ii < update.addColumnData.length; ++ii) {
                     if (isSubscribedColumn(ii)) {
                         final BarrageMessage.AddColumnData column = update.addColumnData[ii];
                         // grab the matching rows from each chunk
+                        long offset = 0;
                         for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
+                            final Chunk<Values> chunk = column.data.get(chunkIndex);
                             try (final RowSet chunkRows
-                                     = RowSetFactory.fromRange(
-                                            column.data.startIndex.get(chunkIndex),
-                                            column.data.endIndex.get(chunkIndex));
+                                     = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
                                  final RowSet chunkDestSet = destinationRowSet.subSetForPositions(chunkRows);
                                  final ChunkSink.FillFromContext ctxt =
                                          destSources[ii].makeFillFromContext(chunkDestSet.intSize())) {
-                                    final Chunk<Values> chunkData = column.data.chunks.get(chunkIndex);
-                                    destSources[ii].fillFromChunk(ctxt, chunkData, chunkDestSet);
+                                    destSources[ii].fillFromChunk(ctxt, chunk, chunkDestSet);
                             }
+                            offset += chunk.size();
                         }
                     }
                 }
 
                 elapsed = System.nanoTime() - start; start = System.nanoTime();
-                System.out.println("BT fill column data (ms): " + (double)elapsed / 1_000_000.0);
+//                System.out.println("BT fill column data (ms): " + (double)elapsed / 1_000_000.0);
             }
 
             modifiedColumnSet.clear();
@@ -361,49 +361,31 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 modifiedColumnSet.setColumnWithIndex(ii);
 
                 // grab the matching rows from each chunk
+                long offset = 0;
                 for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
+                    final Chunk<Values> chunk = column.data.get(chunkIndex);
                     try (final RowSet chunkRows
-                                 = RowSetFactory.fromRange(
-                            column.data.startIndex.get(chunkIndex),
-                            column.data.endIndex.get(chunkIndex))) {
-                        final Chunk<Values> chunkData = column.data.chunks.get(chunkIndex);
+                                = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
+                        final ChunkSource.FillContext redirContext =
+                                rowRedirection.makeFillContext(chunkRows.intSize(), null);
+                        final WritableLongChunk<RowKeys> keys =
+                                WritableLongChunk.makeWritableChunk(chunkRows.intSize());
+                        final RowSet chunkKeys = column.rowsModified.subSetForPositions(chunkRows)) {
 
-                        try (final ChunkSource.FillContext redirContext =
-                                     rowRedirection.makeFillContext(chunkRows.intSize(), null);
-                             final WritableLongChunk<RowKeys> keys =
-                                     WritableLongChunk.makeWritableChunk(chunkRows.intSize());
-                             final RowSet chunkKeys = column.rowsModified.subSetForPositions(chunkRows)) {
+                        // fill the key chunk with the keys from this chunk
+                        rowRedirection.fillChunk(redirContext, keys, chunkKeys);
+                        for (int i = 0; i < keys.size(); ++i) {
+                            Assert.notEquals(keys.get(i), "keys[i]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
+                        }
 
-                            // fill the key chunk with the keys from this chunk
-                            rowRedirection.fillChunk(redirContext, keys, chunkKeys);
-                            for (int i = 0; i < keys.size(); ++i) {
-                                Assert.notEquals(keys.get(i), "keys[i]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
-                            }
-
-                            // fill the column with the data from this chunk
-                            try (final ChunkSink.FillFromContext ctxt =
-                                         destSources[ii].makeFillFromContext(keys.size())) {
-                                destSources[ii].fillFromChunkUnordered(ctxt, chunkData, keys);
-                            }
+                        // fill the column with the data from this chunk
+                        try (final ChunkSink.FillFromContext ctxt =
+                                     destSources[ii].makeFillFromContext(keys.size())) {
+                            destSources[ii].fillFromChunkUnordered(ctxt, chunk, keys);
                         }
                     }
+                    offset += chunk.size();
                 }
-
-//                try (final ChunkSource.FillContext redirContext =
-//                        rowRedirection.makeFillContext(column.rowsModified.intSize(), null);
-//                        final WritableLongChunk<RowKeys> keys =
-//                                WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
-//                    rowRedirection.fillChunk(redirContext, keys, column.rowsModified);
-//                    for (int i = 0; i < keys.size(); ++i) {
-//                        Assert.notEquals(keys.get(i), "keys[i]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
-//                    }
-//
-//                    try (final ChunkSink.FillFromContext ctxt =
-//                            destSources[ii].makeFillFromContext(keys.size())) {
-//                        destSources[ii].fillFromChunkUnordered(ctxt, column.data, keys);
-//                    }
-//                }
-
             }
 
             // remove all data outside of our viewport
