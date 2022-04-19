@@ -115,7 +115,7 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
          */
         default boolean supportsUnboundedFill() {
             return false;
-        };
+        }
     }
 
     /**

@@ -1000,6 +1000,10 @@ public abstract class BaseTable extends LivenessArtifact
         protected Table getParent() {
             return parent;
         }
+
+        protected BaseTable getDependent() {
+            return dependent;
+        }
     }
 
     @Override
