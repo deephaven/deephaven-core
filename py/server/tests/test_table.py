@@ -184,7 +184,7 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(sorted_table.size, self.test_table.size)
         sorted_table = self.test_table.sort(order_by="a", order=SortDirection.DESCENDING)
         self.assertEqual(sorted_table.size, self.test_table.size)
-        sorted_table = self.test_table.sort()
+        sorted_table = self.test_table.sort(order_by=[], order=SortDirection.DESCENDING)
         self.assertEqual(sorted_table, self.test_table)
 
     def test_restrict_sort_to(self):
@@ -206,8 +206,9 @@ class TableTestCase(BaseTestCase):
         sorted_table = self.test_table.sort(order_by="b", order=SortDirection.DESCENDING)
         sorted_table2 = self.test_table.sort_descending(order_by="b")
         self.assertEqual(sorted_table, sorted_table2)
-        sorted_table3 = self.test_table.sort_descending()
-        self.assertEqual(sorted_table3, self.test_table)
+
+        with self.assertRaises(TypeError):
+            sorted_table3 = self.test_table.sort_descending()
 
     def test_reverse(self):
         reversed_table = self.test_table.reverse()

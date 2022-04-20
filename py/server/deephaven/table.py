@@ -585,12 +585,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
-    def sort_descending(self, order_by: Union[str, Sequence[str]] = None) -> Table:
+    def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
         """The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
         order based on the order_by column(s).
 
         Args:
-            order_by (Union[str, Sequence[str]], optional): the column name(s), default is None
+            order_by (Union[str, Sequence[str]], optional): the column name(s)
 
         Returns:
             a new table
@@ -618,13 +618,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
-    def sort(self, order_by: Union[str, Sequence[str]] = None,
+    def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
         """The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
         order_by column(s) (2) where rows are sorted in the order defined by the order argument.
 
         Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on, default is None
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
             order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for each sort
                 column, default is None. In the absence of explicit sort directions, data will be sorted in the ascending order.
 
