@@ -102,10 +102,6 @@ public abstract class OperatorAggregationStateManagerOpenAddressedBase
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    // public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
-    // return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
-    // }
-
     protected abstract void onNextChunk(int nextChunkSize);
 
     protected void buildTable(
