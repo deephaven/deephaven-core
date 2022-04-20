@@ -256,6 +256,9 @@ extern jmethodID JPy_PyObject_Init_MID;
 extern jclass JPy_PyDictWrapper_JClass;
 extern jmethodID JPy_PyDictWrapper_GetPointer_MID;
 
+extern jclass JPy_Supplier_JClass;
+extern jmethodID JPy_Supplier_get_MID;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
