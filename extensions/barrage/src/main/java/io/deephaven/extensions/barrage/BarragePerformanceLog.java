@@ -19,7 +19,7 @@ import io.deephaven.io.logger.Logger;
 public class BarragePerformanceLog {
     /**
      * If all barrage performance logging is enabled by default, then table's description is used as TableKey unless
-     * override with the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key}
+     * overriden with the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key}
      * {@link io.deephaven.engine.table.Table#setAttribute(String, Object) attribute}.
      */
     public static final boolean ALL_PERFORMANCE_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(
