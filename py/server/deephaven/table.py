@@ -150,7 +150,7 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
-    def snapshot(self, source_table: Table, do_init: bool = False) -> Table:
+    def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
         """Produces an in-memory copy of a source table that refreshes when this table changes.
 
         Note, this table is often a time table that adds new rows at a regular, user-defined interval.
@@ -158,6 +158,8 @@ class Table(JObjectWrapper):
         Args:
             source_table (Table): the table to be snapshot
             do_init (bool): whether to snapshot when this method is initially called, default is False
+            cols (Union[str, List[str]]): names of the columns of this table to be included in the snapshot, default is
+                None, meaning all the columns
 
         Returns:
             a new table
@@ -166,7 +168,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init))
+            cols = _to_sequence(cols)
+            return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
         except Exception as e:
             raise DHError(message="failed to create a snapshot table.") from e
 
