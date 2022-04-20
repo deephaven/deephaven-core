@@ -222,10 +222,10 @@ int JObj_Equals(JNIEnv* jenv, JPy_JObj* obj1, JPy_JObj* obj2)
     ref1 = obj1->objectRef;
     ref2 = obj2->objectRef;
 
-    if ((*jenv)->IsSameObject(jenv, ref1, ref2)) {
+    if ((*jenv)->IsSameObject(jenv, ref1, ref2) || (*jenv)->CallBooleanMethod(jenv, ref1, JPy_Object_Equals_MID, ref2)) {
         returnValue = 1;
     } else {
-        returnValue = (*jenv)->CallIntMethod(jenv, ref1, JPy_Object_Equals_MID, ref2);
+        returnValue = 0;
     }
     (*jenv)->ExceptionClear(jenv); // we can't deal with exceptions here, so clear any
     return returnValue;
