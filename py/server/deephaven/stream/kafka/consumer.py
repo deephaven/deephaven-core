@@ -94,12 +94,12 @@ class TableType(JObjectWrapper):
         """ Similar to ring(capacity), but each partition is mapped to a distinct in-memory ring table. """
         return TableType(TableType.j_object_type.ringMap(capacity))
 
-    def __init__(self, j_spec: jpy.JType):
-        self._j_spec = j_spec
+    def __init__(self, j_table_type: jpy.JType):
+        self._j_table_type = j_table_type
 
     @property
     def j_object(self) -> jpy.JType:
-        return self._j_spec
+        return self._j_table_type
 
 
 TableType.Stream = TableType.stream()
