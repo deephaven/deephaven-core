@@ -269,7 +269,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
         if (leftRowSet.isEmpty()) {
             return;
         }

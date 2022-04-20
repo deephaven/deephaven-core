@@ -10,7 +10,9 @@ import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationSt
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
+import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -24,11 +26,12 @@ public class ReplicateTypedHashers {
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
+        generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {
-        final TypedHasherFactory.HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
-        final String packageName = TypedHasherFactory.packageName(hasherConfig.packageMiddle);
+        final HasherConfig<?> hasherConfig = TypedHasherFactory.hasherConfigForBase(baseClass);
+        final String packageName = TypedHasherFactory.packageName(hasherConfig);
         final File sourceRoot = new File("engine/table/src/main/java/");
 
         final MethodSpec singleDispatch = generateSingleDispatch(baseClass, hasherConfig, packageName, sourceRoot);
@@ -79,7 +82,7 @@ public class ReplicateTypedHashers {
 
     @NotNull
     private static MethodSpec generateSingleDispatch(Class<?> baseClass,
-            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+            HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType");
@@ -115,7 +118,7 @@ public class ReplicateTypedHashers {
 
     @NotNull
     private static MethodSpec generateDoubleDispatch(Class<?> baseClass,
-            TypedHasherFactory.HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
+            HasherConfig<?> hasherConfig, String packageName, File sourceRoot) throws IOException {
         final MethodSpec.Builder doubleDispatchBuilder = MethodSpec.methodBuilder("dispatchDouble")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType0")

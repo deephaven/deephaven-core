@@ -884,7 +884,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
 
     // region probe wrappers
     @Override
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
         // TODO: FIGURE OUT THE RIGHT INTERFACE HERE
         throw new UnsupportedOperationException();
     }

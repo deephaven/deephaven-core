@@ -13,6 +13,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.QueryConstants;
@@ -25,7 +27,6 @@ import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,43 +56,10 @@ public class TypedHasherFactory {
         return make(hasherConfigForBase(baseClass), tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
     }
 
-    private static class ProbeSpec {
-        final String name;
-        final String stateValueName;
-        final Consumer<CodeBlock.Builder> found;
-        final Consumer<CodeBlock.Builder> missing;
-        final ParameterSpec[] params;
-
-        private ProbeSpec(String name, String stateValueName, Consumer<CodeBlock.Builder> found,
-                Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
-            this.name = name;
-            this.stateValueName = stateValueName;
-            this.found = found;
-            this.missing = missing;
-            this.params = params;
-        }
-    }
-
-    private static class BuildSpec {
-        final String name;
-        final String stateValueName;
-        final BiConsumer<HasherConfig<?>, CodeBlock.Builder> found;
-        final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
-        final ParameterSpec[] params;
-
-        private BuildSpec(String name, String stateValueName, BiConsumer<HasherConfig<?>, CodeBlock.Builder> found,
-                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
-            this.name = name;
-            this.stateValueName = stateValueName;
-            this.found = found;
-            this.insert = insert;
-            this.params = params;
-        }
-    }
-
     @NotNull
     public static <T> HasherConfig<T> hasherConfigForBase(Class<T> baseClass) {
         final String classPrefix;
+        final String packageGroup;
         final String packageMiddle;
         final String mainStateName;
         final String overflowOrAlternateStateName;
@@ -99,11 +67,12 @@ public class TypedHasherFactory {
         final boolean openAddressed;
         final boolean openAddressedAlternate;
         final Consumer<CodeBlock.Builder> moveMain;
-        final List<BuildSpec> builds = new ArrayList<>();
-        final List<ProbeSpec> probes = new ArrayList<>();
+        final List<HasherConfig.BuildSpec> builds = new ArrayList<>();
+        final List<HasherConfig.ProbeSpec> probes = new ArrayList<>();
         final boolean alwaysMoveMain;
         if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "StaticAggHasher";
+            packageGroup = "by";
             packageMiddle = "staticagg";
             openAddressed = false;
             openAddressedAlternate = false;
@@ -114,18 +83,20 @@ public class TypedHasherFactory {
             alwaysMoveMain = false;
         } else if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "StaticAggOpenHasher";
+            packageGroup = "by";
             packageMiddle = "staticopenagg";
             openAddressed = true;
             openAddressedAlternate = false;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = null;
             emptyStateName = "EMPTY_OUTPUT_POSITION";
-            moveMain = TypedHasherFactory::staticAggMoveMain;
-            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFound,
-                    TypedHasherFactory::buildInsert));
+            moveMain = TypedAggregationFactory::staticAggMoveMain;
+            builds.add(new HasherConfig.BuildSpec("build", "outputPosition", TypedAggregationFactory::buildFound,
+                    TypedAggregationFactory::buildInsert));
             alwaysMoveMain = false;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
             classPrefix = "IncrementalAggHasher";
+            packageGroup = "by";
             packageMiddle = "incagg";
             openAddressed = false;
             openAddressedAlternate = false;
@@ -136,13 +107,14 @@ public class TypedHasherFactory {
             alwaysMoveMain = false;
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             classPrefix = "IncrementalAggOpenHasher";
+            packageGroup = "by";
             packageMiddle = "incopenagg";
             openAddressed = true;
             openAddressedAlternate = true;
             mainStateName = "mainOutputPosition";
             overflowOrAlternateStateName = "alternateOutputPosition";
             emptyStateName = "EMPTY_OUTPUT_POSITION";
-            moveMain = TypedHasherFactory::incAggMoveMain;
+            moveMain = TypedAggregationFactory::incAggMoveMain;
             alwaysMoveMain = true;
 
             final ClassName rowKeyType = ClassName.get(RowKeys.class);
@@ -150,129 +122,49 @@ public class TypedHasherFactory {
                     ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
             final ParameterSpec emptiedPositions = ParameterSpec.builder(emptiedChunkType, "emptiedPositions").build();;
 
-            probes.add(new ProbeSpec("doRemoveProbe", "outputPosition", TypedHasherFactory::removeProbeFound,
-                    TypedHasherFactory::probeMissing, emptiedPositions));
-            probes.add(new ProbeSpec("doModifyProbe", "outputPosition", TypedHasherFactory::probeFound,
-                    TypedHasherFactory::probeMissing));
+            probes.add(new HasherConfig.ProbeSpec("doRemoveProbe", "outputPosition",
+                    TypedAggregationFactory::removeProbeFound,
+                    TypedAggregationFactory::probeMissing, emptiedPositions));
+            probes.add(
+                    new HasherConfig.ProbeSpec("doModifyProbe", "outputPosition", TypedAggregationFactory::probeFound,
+                            TypedAggregationFactory::probeMissing));
 
-            builds.add(new BuildSpec("build", "outputPosition", TypedHasherFactory::buildFoundIncrementalInitial,
-                    TypedHasherFactory::buildInsertIncremental));
+            builds.add(new HasherConfig.BuildSpec("build", "outputPosition",
+                    TypedAggregationFactory::buildFoundIncrementalInitial,
+                    TypedAggregationFactory::buildInsertIncremental));
 
             final ParameterSpec reincarnatedPositions =
                     ParameterSpec.builder(emptiedChunkType, "reincarnatedPositions").build();;
             builds.add(
-                    new BuildSpec("buildForUpdate", "outputPosition", TypedHasherFactory::buildFoundIncrementalUpdate,
-                            TypedHasherFactory::buildInsertIncremental, reincarnatedPositions));
+                    new HasherConfig.BuildSpec("buildForUpdate", "outputPosition",
+                            TypedAggregationFactory::buildFoundIncrementalUpdate,
+                            TypedAggregationFactory::buildInsertIncremental, reincarnatedPositions));
+        } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
+            classPrefix = "StaticNaturalJoinHasher";
+            packageGroup = "naturaljoin";
+            packageMiddle = "static";
+            openAddressed = true;
+            openAddressedAlternate = true;
+            mainStateName = "rightRowKey";
+            overflowOrAlternateStateName = "alternateRightRowKey";
+            emptyStateName = "EMPTY_RIGHT_STATE";
+            moveMain = TypedNaturalJoinFactory::staticNaturalJoinMoveMain;
+            alwaysMoveMain = true;
+
+            builds.add(new HasherConfig.BuildSpec("buildLeft", "rightSideSentinel",
+                    TypedNaturalJoinFactory::staticBuildLeftFound, TypedNaturalJoinFactory::staticBuildLeftInsert));
+            builds.add(new HasherConfig.BuildSpec("buildRight", "rightRowKey",
+                    TypedNaturalJoinFactory::staticBuildRightFound, TypedNaturalJoinFactory::staticBuildRightInsert));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }
 
-        return new HasherConfig<>(baseClass, classPrefix, packageMiddle, openAddressed, openAddressedAlternate,
+        return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
+                openAddressedAlternate,
                 alwaysMoveMain,
                 mainStateName,
                 overflowOrAlternateStateName,
                 emptyStateName, int.class, moveMain, probes, builds);
-    }
-
-    private static void staticAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositionToHashSlot.set(currentStateValue, destinationTableLocation)");
-    }
-
-    private static void incAggMoveMain(CodeBlock.Builder builder) {
-        builder.addStatement(
-                "outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation)");
-    }
-
-    private static void buildFound(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
-    }
-
-    private static void buildFoundIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildFound(hasherConfig, builder);
-        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, 1)");
-    }
-
-    private static void buildFoundIncrementalInitial(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildFoundIncremental(hasherConfig, builder);
-        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
-    }
-
-    private static void buildFoundIncrementalUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildFoundIncremental(hasherConfig, builder);
-        builder.beginControlFlow("if (oldRowCount == 0)");
-        builder.addStatement("reincarnatedPositions.add(outputPosition)");
-        builder.endControlFlow();
-    }
-
-    private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
-        builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
-        builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
-    }
-
-    private static void buildInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildInsertCommon(hasherConfig, builder);
-        builder.addStatement("outputPositionToHashSlot.set(outputPosition, tableLocation)");
-    }
-
-    private static void buildInsertIncremental(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        buildInsertCommon(hasherConfig, builder);
-        builder.addStatement("outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation)");
-        builder.addStatement("rowCountSource.set(outputPosition, 1L)");
-    }
-
-    private static void probeFound(CodeBlock.Builder builder) {
-        builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
-    }
-
-    private static void removeProbeFound(CodeBlock.Builder builder) {
-        probeFound(builder);
-
-        builder.addStatement("final long oldRowCount = rowCountSource.getAndAddUnsafe(outputPosition, -1)");
-        builder.addStatement("Assert.gtZero(oldRowCount, \"oldRowCount\")");
-        builder.beginControlFlow("if (oldRowCount == 1)");
-        builder.addStatement("emptiedPositions.add(outputPosition)");
-        builder.endControlFlow();
-    }
-
-    private static void probeMissing(CodeBlock.Builder builder) {
-        builder.addStatement("throw new IllegalStateException($S)", "Missing value in probe");
-    }
-
-    public static class HasherConfig<T> {
-        final Class<T> baseClass;
-        public final String classPrefix;
-        public final String packageMiddle;
-        final boolean openAddressed;
-        final boolean openAddressedAlternate;
-        final boolean alwaysMoveMain;
-        final String mainStateName;
-        final String overflowOrAlternateStateName;
-        final String emptyStateName;
-        final Class<?> stateType;
-        final Consumer<CodeBlock.Builder> moveMain;
-        private final List<ProbeSpec> probes;
-        private final List<BuildSpec> builds;
-
-        HasherConfig(Class<T> baseClass, String classPrefix, String packageMiddle, boolean openAddressed,
-                boolean openAddressedAlternate, boolean alwaysMoveMain, String mainStateName,
-                String overflowOrAlternateStateName,
-                String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain, List<ProbeSpec> probes,
-                List<BuildSpec> builds) {
-            this.baseClass = baseClass;
-            this.classPrefix = classPrefix;
-            this.packageMiddle = packageMiddle;
-            this.openAddressed = openAddressed;
-            this.openAddressedAlternate = openAddressedAlternate;
-            this.alwaysMoveMain = alwaysMoveMain;
-            this.mainStateName = mainStateName;
-            this.overflowOrAlternateStateName = overflowOrAlternateStateName;
-            this.emptyStateName = emptyStateName;
-            this.stateType = stateType;
-            this.moveMain = moveMain;
-            this.probes = probes;
-            this.builds = builds;
-        }
     }
 
     /**
@@ -333,7 +225,8 @@ public class TypedHasherFactory {
         final String javaString =
                 Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
 
-        final Class<?> clazz = CompilerTools.compile(className, javaString, packageName(hasherConfig.packageMiddle));
+        final Class<?> clazz = CompilerTools.compile(className, javaString,
+                "io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen");
         if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
         }
@@ -353,8 +246,9 @@ public class TypedHasherFactory {
     }
 
     @NotNull
-    public static String packageName(String packageMiddle) {
-        return "io.deephaven.engine.table.impl.by.typed." + packageMiddle + ".gen";
+    public static String packageName(HasherConfig<?> hasherConfig) {
+        return "io.deephaven.engine.table.impl." + hasherConfig.packageGroup + ".typed." + hasherConfig.packageMiddle
+                + ".gen";
     }
 
     @NotNull
@@ -368,7 +262,7 @@ public class TypedHasherFactory {
             final ChunkType[] chunkTypes,
             final String className,
             Optional<Modifier> visibility) {
-        final String packageName = packageName(hasherConfig.packageMiddle);
+        final String packageName = packageName(hasherConfig);
         final TypeSpec.Builder hasherBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
         visibility.ifPresent(hasherBuilder::addModifiers);
@@ -960,7 +854,8 @@ public class TypedHasherFactory {
     }
 
     @NotNull
-    private static MethodSpec createBuildMethodForOpenAddressed(HasherConfig<?> hasherConfig, BuildSpec buildSpec,
+    private static MethodSpec createBuildMethodForOpenAddressed(HasherConfig<?> hasherConfig,
+            HasherConfig.BuildSpec buildSpec,
             ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -997,7 +892,8 @@ public class TypedHasherFactory {
                 .build();
     }
 
-    private static void doBuildSearch(HasherConfig<?> hasherConfig, BuildSpec buildSpec, ChunkType[] chunkTypes,
+    private static void doBuildSearch(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes,
             CodeBlock.Builder builder, boolean alternate) {
         final String tableLocationName = alternate ? "alternateTableLocation" : "tableLocation";
         final String firstTableLocationName = alternate ? "firstAlternateTableLocation" : "firstTableLocation";
@@ -1049,7 +945,7 @@ public class TypedHasherFactory {
         builder.endControlFlow();
     }
 
-    private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, ProbeSpec ps,
+    private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, HasherConfig.ProbeSpec ps,
             ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -1089,7 +985,7 @@ public class TypedHasherFactory {
         return methodBuilder.build();
     }
 
-    private static void doProbeSearch(HasherConfig<?> hasherConfig, ProbeSpec ps, ChunkType[] chunkTypes,
+    private static void doProbeSearch(HasherConfig<?> hasherConfig, HasherConfig.ProbeSpec ps, ChunkType[] chunkTypes,
             CodeBlock.Builder builder, boolean alternate) {
         final String tableLocationName = alternate ? "alternateTableLocation" : "tableLocation";
         final String firstTableLocationName = alternate ? "firstAlternateTableLocation" : "firstTableLocation";
