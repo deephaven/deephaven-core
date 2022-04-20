@@ -399,15 +399,21 @@ class TableTestCase(BaseTestCase):
     def test_snapshot(self):
         with self.subTest("do_init is False"):
             t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
+                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
             )
             snapshot = t.snapshot(source_table=self.test_table)
-            self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
             self.assertEqual(0, snapshot.size)
 
         with self.subTest("do_init is True"):
             snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
+
+        with self.subTest("with cols"):
+            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
+            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_history(self):
         t = empty_table(1).update(
