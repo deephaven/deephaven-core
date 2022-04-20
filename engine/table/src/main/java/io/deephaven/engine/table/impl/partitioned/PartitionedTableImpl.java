@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;

@@ -1,6 +1,12 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.partitioned;
 
-import io.deephaven.engine.table.*;
+import com.google.auto.service.AutoService;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -11,11 +17,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Engine-specific implementation of {@link PartitionedTableFactory.PartitionedTableCreator}.
+ * Engine-specific implementation of {@link PartitionedTableFactory.Creator}.
  */
-public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.PartitionedTableCreator {
+public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creator {
 
     INSTANCE;
+
+    @AutoService(PartitionedTableFactory.CreatorProvider.class)
+    public static final class Provider implements PartitionedTableFactory.CreatorProvider {
+
+        @Override
+        public PartitionedTableFactory.Creator get() {
+            return INSTANCE;
+        }
+    }
 
     public PartitionedTable of(
             @NotNull final Table table,
@@ -60,7 +75,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Parti
         if (table.isRefreshing()) {
             ConstructSnapshot.callDataSnapshotFunction(
                     table,
-                    ConstructSnapshot.makeSnapshotControl(false, (NotificationStepSource) table),
+                    ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) table),
                     ((usePrev, beforeClockValue) -> readFirstConstituent(firstConstituentHolder, table,
                             constituentColumnName, usePrev)));
         } else {

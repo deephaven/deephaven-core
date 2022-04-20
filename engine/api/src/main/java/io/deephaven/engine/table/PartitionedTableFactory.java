@@ -15,7 +15,7 @@ public class PartitionedTableFactory {
     /**
      * Creator interface for runtime-supplied implementation.
      */
-    public interface PartitionedTableCreator {
+    public interface Creator {
 
         /**
          * @see PartitionedTableFactory#of(Table, Set, String, TableDefinition) Factory method that delegates to this
@@ -37,17 +37,16 @@ public class PartitionedTableFactory {
      * Creator provider to supply the implementation at runtime.
      */
     @FunctionalInterface
-    public interface PartitionedTableCreatorProvider {
-        PartitionedTableCreator get();
+    public interface CreatorProvider {
+        Creator get();
     }
 
     private static final class PartitionedTableCreatorHolder {
-        private static final PartitionedTableCreator partitionedTableCreator =
-                ServiceLoader.load(PartitionedTableCreator.class).iterator().next().get();
+        private static final Creator creator = ServiceLoader.load(CreatorProvider.class).iterator().next().get();
     }
 
-    private static PartitionedTableCreator partitionedTableCreator() {
-        return PartitionedTableCreatorHolder.partitionedTableCreator;
+    private static Creator partitionedTableCreator() {
+        return PartitionedTableCreatorHolder.creator;
     }
 
     /**
