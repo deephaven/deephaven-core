@@ -387,7 +387,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.parent = parent;
 
         final Object tableKey = parent.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
-        if (tableKey instanceof String) {
+        if (scheduler.inTestMode()) {
+            // When testing do not schedule statistics, as the scheduler will never empty its work queue.
+            stats = null;
+        } else if (tableKey instanceof String) {
             stats = new Stats((String) tableKey);
         } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
             stats = new Stats(parent.getDescription());
