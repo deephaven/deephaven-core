@@ -25,14 +25,14 @@ public class UngroupedBoxedShortObjectVectorColumnSource extends UngroupedObject
     }
 
     @Override
-    public short getShort(long index) {
-        final Short result = get(index);
+    public short getShort(long rowKey) {
+        final Short result = get(rowKey);
         return result == null ? NULL_SHORT : result;
     }
 
     @Override
-    public short getPrevShort(long index) {
-        final Short result = getPrev(index);
+    public short getPrevShort(long rowKey) {
+        final Short result = getPrev(rowKey);
         return result == null ? NULL_SHORT : result;
     }
 }

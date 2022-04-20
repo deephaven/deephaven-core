@@ -307,7 +307,7 @@ public class HierarchicalTable extends QueryTable {
         // Create a copy of the root partitionBy table as a HierarchicalTable, and wire it up for listeners.
         final SwapListener swapListener =
                 rootTable.createSwapListenerIfRefreshing(SwapListener::new);
-        rootTable.initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
+        initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
             final HierarchicalTable table = new HierarchicalTable(rootTable, info);
             rootTable.copyAttributes(table, a -> true);
 

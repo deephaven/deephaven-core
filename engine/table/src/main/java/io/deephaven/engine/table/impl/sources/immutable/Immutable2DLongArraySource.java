@@ -80,12 +80,12 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
     // endregion allocateArray
 
     @Override
-    public final long getLong(long index) {
-        if (index < 0 || index >= size) {
+    public final long getLong(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return NULL_LONG;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {

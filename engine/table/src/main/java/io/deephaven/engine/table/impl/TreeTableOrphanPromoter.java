@@ -73,147 +73,147 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
             // noinspection unchecked
             final ColumnSource<?> parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
                 @Override
-                public Object get(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.get(index);
+                public Object get(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.get(rowKey);
                     }
                     return null;
                 }
 
                 @Override
-                public Object getPrev(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrev(index);
+                public Object getPrev(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrev(rowKey);
                     }
                     return null;
                 }
 
                 @Override
-                public Boolean getPrevBoolean(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevBoolean(index);
+                public Boolean getPrevBoolean(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevBoolean(rowKey);
                     }
                     return null;
                 }
 
                 @Override
-                public byte getPrevByte(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevByte(index);
+                public byte getPrevByte(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevByte(rowKey);
                     }
                     return QueryConstants.NULL_BYTE;
                 }
 
                 @Override
-                public char getPrevChar(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevChar(index);
+                public char getPrevChar(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevChar(rowKey);
                     }
                     return QueryConstants.NULL_CHAR;
                 }
 
                 @Override
-                public double getPrevDouble(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevDouble(index);
+                public double getPrevDouble(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevDouble(rowKey);
                     }
                     return QueryConstants.NULL_DOUBLE;
                 }
 
                 @Override
-                public float getPrevFloat(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevFloat(index);
+                public float getPrevFloat(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevFloat(rowKey);
                     }
                     return QueryConstants.NULL_FLOAT;
                 }
 
                 @Override
-                public int getPrevInt(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevInt(index);
+                public int getPrevInt(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevInt(rowKey);
                     }
                     return QueryConstants.NULL_INT;
                 }
 
                 @Override
-                public long getPrevLong(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevLong(index);
+                public long getPrevLong(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevLong(rowKey);
                     }
                     return QueryConstants.NULL_LONG;
                 }
 
                 @Override
-                public short getPrevShort(long index) {
-                    if (hadParent(index)) {
-                        return parentSource.getPrevShort(index);
+                public short getPrevShort(long rowKey) {
+                    if (hadParent(rowKey)) {
+                        return parentSource.getPrevShort(rowKey);
                     }
                     return QueryConstants.NULL_SHORT;
                 }
 
                 @Override
-                public Boolean getBoolean(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getBoolean(index);
+                public Boolean getBoolean(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getBoolean(rowKey);
                     }
                     return null;
                 }
 
                 @Override
-                public byte getByte(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getByte(index);
+                public byte getByte(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getByte(rowKey);
                     }
                     return QueryConstants.NULL_BYTE;
                 }
 
                 @Override
-                public char getChar(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getChar(index);
+                public char getChar(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getChar(rowKey);
                     }
                     return QueryConstants.NULL_CHAR;
                 }
 
                 @Override
-                public double getDouble(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getDouble(index);
+                public double getDouble(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getDouble(rowKey);
                     }
                     return QueryConstants.NULL_DOUBLE;
                 }
 
                 @Override
-                public float getFloat(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getFloat(index);
+                public float getFloat(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getFloat(rowKey);
                     }
                     return QueryConstants.NULL_FLOAT;
 
                 }
 
                 @Override
-                public int getInt(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getInt(index);
+                public int getInt(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getInt(rowKey);
                     }
                     return QueryConstants.NULL_INT;
 
                 }
 
                 @Override
-                public long getLong(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getLong(index);
+                public long getLong(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getLong(rowKey);
                     }
                     return QueryConstants.NULL_LONG;
                 }
 
                 @Override
-                public short getShort(long index) {
-                    if (hasParent(index)) {
-                        return parentSource.getShort(index);
+                public short getShort(long rowKey) {
+                    if (hasParent(rowKey)) {
+                        return parentSource.getShort(rowKey);
                     }
                     return QueryConstants.NULL_SHORT;
                 }

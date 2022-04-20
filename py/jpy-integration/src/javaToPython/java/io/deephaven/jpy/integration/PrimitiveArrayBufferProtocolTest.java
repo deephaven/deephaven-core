@@ -26,7 +26,7 @@ public class PrimitiveArrayBufferProtocolTest extends PythonTest {
 
     @Before
     public void setUp() {
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
         builtins = BuiltinsModule.create();
         noop = NoopModule.create(getCreateModule());
         jpy = JpyModule.create();

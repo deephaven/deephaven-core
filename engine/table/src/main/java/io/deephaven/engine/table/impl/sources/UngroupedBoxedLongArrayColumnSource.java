@@ -33,19 +33,19 @@ public class UngroupedBoxedLongArrayColumnSource extends UngroupedColumnSource<L
     }
 
     @Override
-    public Long get(long index) {
-        final long result = getLong(index);
+    public Long get(long rowKey) {
+        final long result = getLong(rowKey);
         return (result == NULL_LONG?null:result);
     }
 
 
     @Override
-    public long getLong(long index) {
-        if (index < 0) {
+    public long getLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         Long[] array = innerSource.get(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_LONG;
@@ -55,18 +55,18 @@ public class UngroupedBoxedLongArrayColumnSource extends UngroupedColumnSource<L
 
 
     @Override
-    public Long getPrev(long index) {
-        final long result = getPrevLong(index);
+    public Long getPrev(long rowKey) {
+        final long result = getPrevLong(rowKey);
         return (result == NULL_LONG?null:result);
     }
 
     @Override
-    public long getPrevLong(long index) {
-        if (index < 0) {
+    public long getPrevLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         Long[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_LONG;

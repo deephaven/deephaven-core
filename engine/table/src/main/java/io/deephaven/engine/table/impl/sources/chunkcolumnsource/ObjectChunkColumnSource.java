@@ -47,14 +47,14 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T> implemen
     // endregion constructor
 
     @Override
-    public T get(final long index) {
-        if (index < 0 || index >= totalSize) {
+    public T get(final long rowKey) {
+        if (rowKey < 0 || rowKey >= totalSize) {
             return null;
         }
 
-        final int chunkIndex = getChunkIndex(index);
+        final int chunkIndex = getChunkIndex(rowKey);
         final long offset = firstOffsetForData.getQuick(chunkIndex);
-        return data.get(chunkIndex).get((int) (index - offset));
+        return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {

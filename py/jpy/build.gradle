@@ -5,6 +5,10 @@ plugins {
 
 evaluationDependsOn Docker.registryProject('python-dev-base')
 
+configurations {
+    pythonWheel
+}
+
 test {
     onlyIf { false } // don't run tests, it depends on python assets, which we aren't building ATM
     exclude "**/*" // make sure intellij doesn't try to use this disabled test class
@@ -17,7 +21,7 @@ dependencies {
 // For DH Community, we need to currently move fast, and will prefer to make edits directly in py/jpy.
 // These can be backported to jpy proper in the future if necessary.
 
-Docker.registerDockerTask(project, 'buildWheel') {
+def buildWheel = Docker.registerDockerTask(project, 'buildWheel') {
     copyIn {
         from(project.projectDir) {
             exclude 'build'
@@ -30,4 +34,8 @@ Docker.registerDockerTask(project, 'buildWheel') {
     copyOut {
         into 'build/deephaven-jpy-wheel'
     }
+}
+
+artifacts {
+    pythonWheel buildWheel
 }

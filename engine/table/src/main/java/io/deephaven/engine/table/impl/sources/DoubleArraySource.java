@@ -80,11 +80,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public final double getDouble(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final double getDouble(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_DOUBLE;
         }
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final double getUnsafe(long index) {
@@ -107,18 +107,18 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public Double getPrev(long index) {
-        return box(getPrevDouble(index));
+    public Double getPrev(long rowKey) {
+        return box(getPrevDouble(rowKey));
     }
 
     @Override
-    public final double getPrevDouble(long index) {
-        if (index < 0 || index > maxIndex) {
+    public final double getPrevDouble(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_DOUBLE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];

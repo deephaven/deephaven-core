@@ -71,6 +71,7 @@ public class WindowCheck {
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
@@ -418,19 +419,19 @@ public class WindowCheck {
         }
 
         @Override
-        public Boolean get(long index) {
-            final DateTime tableTimeStamp = timeStampSource.get(index);
+        public Boolean get(long rowKey) {
+            final DateTime tableTimeStamp = timeStampSource.get(rowKey);
             return computeInWindow(tableTimeStamp, currentTime);
         }
 
         @Override
-        public Boolean getPrev(long index) {
+        public Boolean getPrev(long rowKey) {
             final long currentStep = LogicalClock.DEFAULT.currentStep();
 
             final long time = (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
 
             // get the previous value from the underlying column source
-            final DateTime tableTimeStamp = timeStampSource.getPrev(index);
+            final DateTime tableTimeStamp = timeStampSource.getPrev(rowKey);
             return computeInWindow(tableTimeStamp, time);
         }
 

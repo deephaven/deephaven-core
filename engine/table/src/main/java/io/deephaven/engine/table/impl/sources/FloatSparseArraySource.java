@@ -129,36 +129,36 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     }
 
     @Override
-    public Float get(long index) {
-        return box(getFloat(index));
+    public Float get(long rowKey) {
+        return box(getFloat(rowKey));
     }
 
     @Override
-    public Float getPrev(long index) {
-        return box(getPrevFloat(index));
+    public Float getPrev(long rowKey) {
+        return box(getPrevFloat(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final float getFloat(long index) {
-        if (index < 0) {
+    public final float getFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        return getFloatFromBlock(blocks, index);
+        return getFloatFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final float getPrevFloat(long index) {
-        if (index < 0) {
+    public final float getPrevFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        if (shouldUsePrevious(index)) {
-            return getFloatFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getFloatFromBlock(prevBlocks, rowKey);
         }
 
-        return getFloatFromBlock(blocks, index);
+        return getFloatFromBlock(blocks, rowKey);
     }
 
     private float getFloatFromBlock(FloatOneOrN.Block0 blocks, long key) {

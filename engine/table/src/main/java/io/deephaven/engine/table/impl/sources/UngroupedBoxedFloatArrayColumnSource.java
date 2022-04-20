@@ -33,19 +33,19 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
     }
 
     @Override
-    public Float get(long index) {
-        final float result = getFloat(index);
+    public Float get(long rowKey) {
+        final float result = getFloat(rowKey);
         return (result == NULL_FLOAT?null:result);
     }
 
 
     @Override
-    public float getFloat(long index) {
-        if (index < 0) {
+    public float getFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         Float[] array = innerSource.get(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_FLOAT;
@@ -55,18 +55,18 @@ public class UngroupedBoxedFloatArrayColumnSource extends UngroupedColumnSource<
 
 
     @Override
-    public Float getPrev(long index) {
-        final float result = getPrevFloat(index);
+    public Float getPrev(long rowKey) {
+        final float result = getPrevFloat(rowKey);
         return (result == NULL_FLOAT?null:result);
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        if (index < 0) {
+    public float getPrevFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         Float[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_FLOAT;

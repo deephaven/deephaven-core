@@ -327,7 +327,7 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_startPython0
                 pyPathList = PySys_GetObject("path");
                 //printf(">> pyPathList=%p, len=%ld\n", pyPathList, PyList_Size(pyPathList));
                 if (pyPathList != NULL) {
-                    Py_INCREF(pyPathList);
+                    JPy_INCREF(pyPathList);
                     for (i = pathCount - 1; i >= 0; i--) {
                         jPath = (*jenv)->GetObjectArrayElement(jenv, jPathArray, i);
                         //printf(">> i=%d, jPath=%p\n", i, jPath);
@@ -339,7 +339,7 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_startPython0
                             }
                         }
                     }
-                    Py_DECREF(pyPathList);
+                    JPy_DECREF(pyPathList);
                 }
                 //printf(">> pyPathList=%p, len=%ld\n", pyPathList, PyList_Size(pyPathList));
                 //printf(">> pyPathList=%p, len=%ld (check)\n", PySys_GetObject("path"), PyList_Size(PySys_GetObject("path")));
@@ -616,7 +616,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_copyDict
     }
 
 error:
-    Py_XDECREF(copy);
+    JPy_XDECREF(copy);
     JPy_END_GIL_STATE
 
     return objectRef;
@@ -637,7 +637,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_newDict
     }
 
 error:
-    Py_XDECREF(dict);
+    JPy_XDECREF(dict);
     JPy_END_GIL_STATE
 
     return objectRef;
@@ -663,7 +663,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_pyDictKeys
     }
 
 error:
-    Py_XDECREF(keys);
+    JPy_XDECREF(keys);
     JPy_END_GIL_STATE
     return result;
 }
@@ -688,7 +688,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_pyDictValues
     }
 
 error:
-    Py_XDECREF(values);
+    JPy_XDECREF(values);
     JPy_END_GIL_STATE
     return result;
 }
@@ -800,7 +800,7 @@ PyObject *copyJavaStringObjectMapToPyDict(JNIEnv *jenv, jobject jMap) {
     return result;
 
 error:
-    Py_XDECREF(result);
+    JPy_XDECREF(result);
     return NULL;
 }
 
@@ -982,10 +982,10 @@ error:
         JPy_DIAG_PRINT(JPy_DIAG_F_EXEC, "Java_org_jpy_PyLib_executeInternal: copied back Java locals\n");
     }
     if (decGlobals) {
-        Py_XDECREF(pyGlobals);
+        JPy_XDECREF(pyGlobals);
     }
     if (decLocals) {
-        Py_XDECREF(pyLocals);
+        JPy_XDECREF(pyLocals);
     }
 
     JPy_END_GIL_STATE
@@ -1108,7 +1108,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_incRef
 
         refCount = pyObject->ob_refcnt;
         JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "Java_org_jpy_PyLib_incRef: pyObject=%p, refCount=%d, type='%s'\n", pyObject, refCount, Py_TYPE(pyObject)->tp_name);
-        Py_INCREF(pyObject);
+        JPy_INCREF(pyObject);
 
         JPy_END_GIL_STATE
     } else {
@@ -1137,7 +1137,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_decRef
             JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "Java_org_jpy_PyLib_decRef: error: refCount <= 0: pyObject=%p, refCount=%d\n", pyObject, refCount);
         } else {
             JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "Java_org_jpy_PyLib_decRef: pyObject=%p, refCount=%d, type='%s'\n", pyObject, refCount, Py_TYPE(pyObject)->tp_name);
-            Py_DECREF(pyObject);
+            JPy_DECREF(pyObject);
         }
 
         JPy_END_GIL_STATE
@@ -1160,7 +1160,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_decRefs
         JPy_BEGIN_GIL_STATE
 
         // Note: it *may* be desirable to instead force a local copy using GetLongArrayRegion, TBD.
-        // It is *not* a good idea to use a critical array here, as Py_DECREF may trigger the python
+        // It is *not* a good idea to use a critical array here, as JPy_DECREF may trigger the python
         // object destructor, which can run arbitrary code.
         buf = (*jenv)->GetLongArrayElements(jenv, objIds, &isCopy);
         for (i = 0; i < len; i++) {
@@ -1170,7 +1170,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_decRefs
                 JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "Java_org_jpy_PyLib_decRefs: error: refCount <= 0: pyObject=%p, refCount=%d\n", pyObject, refCount);
             } else {
                 JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "Java_org_jpy_PyLib_decRefs: pyObject=%p, refCount=%d, type='%s'\n", pyObject, refCount, Py_TYPE(pyObject)->tp_name);
-                Py_DECREF(pyObject);
+                JPy_DECREF(pyObject);
             }
         }
         (*jenv)->ReleaseLongArrayElements(jenv, objIds, buf, JNI_ABORT);
@@ -1362,7 +1362,7 @@ JNIEXPORT jlong JNICALL Java_org_jpy_PyLib_getType
     JPy_BEGIN_GIL_STATE
 
     pyObject = ((PyObject*) objId)->ob_type;
-    Py_INCREF(pyObject);
+    JPy_INCREF(pyObject);
 
     JPy_END_GIL_STATE
 
@@ -1702,7 +1702,7 @@ JNIEXPORT jstring JNICALL Java_org_jpy_PyLib_str
     pyStr = PyObject_Str(pyObject);
     if (pyStr != NULL) {
         jObject = (*jenv)->NewStringUTF(jenv, JPy_AS_UTF8(pyStr));
-        Py_DECREF(pyStr);
+        JPy_DECREF(pyStr);
     } else {
         jObject = NULL;
         PyLib_HandlePythonException(jenv);
@@ -1735,7 +1735,7 @@ JNIEXPORT jstring JNICALL Java_org_jpy_PyLib_repr
     pyStr = PyObject_Repr(pyObject);
     if (pyStr) {
         jObject = (*jenv)->NewStringUTF(jenv, JPy_AS_UTF8(pyStr));
-        Py_DECREF(pyStr);
+        JPy_DECREF(pyStr);
     } else {
         jObject = NULL;
     }
@@ -1804,14 +1804,16 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_eq
     */
 
     eq = PyObject_RichCompare(pyObject1, pyObject2, Py_EQ);
+    JPy_DECREF(pyObject2);
+
     if (eq == NULL) {
         PyLib_HandlePythonException(jenv);
     } else if (PyBool_Check(eq)) {
       result = (eq == Py_True) ? JNI_TRUE : JNI_FALSE;
-      Py_DECREF(eq);
+      JPy_DECREF(eq);
     } else {
       int val = PyObject_IsTrue(eq);
-      Py_DECREF(eq);
+      JPy_DECREF(eq);
       if (val == -1) {
           PyLib_HandlePythonException(jenv);
       } else {
@@ -1856,22 +1858,19 @@ JNIEXPORT jobjectArray JNICALL Java_org_jpy_PyLib_getObjectArrayValue
         for (i = 0; i < length; i++) {
             pyItem = PySequence_GetItem(pyObject, i);
             if (pyItem == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, jObject);
-                jObject = NULL;
+                JPy_DELETE_LOCAL_REF(jObject);
                 goto error;
             }
             if (JPy_AsJObject(jenv, pyItem, &jItem, JNI_FALSE) < 0) {
-                (*jenv)->DeleteLocalRef(jenv, jObject);
-                jObject = NULL;
+                JPy_DELETE_LOCAL_REF(jObject);
                 JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "Java_org_jpy_PyLib_getObjectArrayValue: error: failed to convert Python item to Java Object\n");
                 PyLib_HandlePythonException(jenv);
                 goto error;
             }
-            Py_XDECREF(pyItem);
+            JPy_XDECREF(pyItem);
             (*jenv)->SetObjectArrayElement(jenv, jObject, i, jItem);
             if ((*jenv)->ExceptionCheck(jenv)) {
-                (*jenv)->DeleteLocalRef(jenv, jObject);
-                jObject = NULL;
+                JPy_DELETE_LOCAL_REF(jObject);
                 goto error;
             }
         }
@@ -1914,7 +1913,7 @@ JNIEXPORT jlong JNICALL Java_org_jpy_PyLib_importModule
     if (pyModule == NULL) {
         PyLib_HandlePythonException(jenv);
     }
-    Py_XDECREF(pyName);
+    JPy_XDECREF(pyName);
 
 error:
     if (nameChars != NULL) {
@@ -1979,7 +1978,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_getAttributeValue
     }
 
 error:
-    Py_XDECREF(pyValue);
+    JPy_XDECREF(pyValue);
     JPy_END_GIL_STATE
 
     return jReturnValue;
@@ -2028,6 +2027,7 @@ JNIEXPORT void JNICALL Java_org_jpy_PyLib_setAttributeValue
         goto error;
     }
 
+    // PyObject_SetAttrString will increase ref count
     if (PyObject_SetAttrString(pyObject, nameChars, pyValue) < 0) {
         JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "Java_org_jpy_PyLib_setAttributeValue: error: PyObject_SetAttrString failed on attribute '%s'\n", nameChars);
         PyLib_HandlePythonException(jenv);
@@ -2038,6 +2038,8 @@ error:
     if (nameChars != NULL) {
         (*jenv)->ReleaseStringUTFChars(jenv, jName, nameChars);
     }
+
+    JPy_XDECREF(pyValue);
 
     JPy_END_GIL_STATE
 }
@@ -2193,7 +2195,7 @@ JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_callAndReturnValue
     }
 
 error:
-    Py_XDECREF(pyReturnValue);
+    JPy_XDECREF(pyReturnValue);
     JPy_END_GIL_STATE
 
     return jReturnValue;
@@ -2281,27 +2283,9 @@ PyObject* PyLib_FromJObjectForTuple(JNIEnv *jenv, jobject jArg, jclass jParamCla
         pyReturnValue = JPy_FromJObjectWithType(jenv, jArg, implicitParamType);
     }
 
-    // We must keep unchanged the reference counter when calling a Python method
-    // with a complex Python object as parameter.
-    // Per example:
-    // PyObject dt_X = kycProcessor.getDataFrame(inputColumns.toArray(new String[0]));
-    // for (DataFrameColumn column : values) {
-    //    kycProcessor.addColumn(dt_X, column.getName(), column.getValues());
-    // }
-
-    // Note: it would be better if we were able to get more information passed back from
-    // JPy_FromJObjectWithType about the specifics of the conversion. This is a bit hacky, but
-    // we can try to infer what happened based on the implicit/explicit types.
-    // This does not work for proxy types! (We'd need to use the better method.)
-    if (((implicitParamType == JPy_JPyObject || implicitParamType == JPy_JPyModule) && implicitParamType->componentType == NULL) ||
-        ((explicitParamType == JPy_JPyObject || explicitParamType == JPy_JPyModule) && explicitParamType->componentType == NULL)) {
-        JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "PyLib_FromJObjectForTuple: name='%s', arg-index=%d, increasing ref to account for tuple stealing\n", nameChars, index);
-        Py_INCREF(pyReturnValue);
-    }
-
 error:
-    Py_XDECREF(explicitParamType);
-    Py_XDECREF(implicitParamType);
+    JPy_XDECREF(explicitParamType);
+    JPy_XDECREF(implicitParamType);
     return pyReturnValue;
 }
 
@@ -2350,9 +2334,9 @@ PyObject* PyLib_CallAndReturnObject(JNIEnv *jenv, PyObject* pyObject, jboolean i
         }
         pyArg = PyLib_FromJObjectForTuple(jenv, jArg, jParamClass, nameChars, i);
         if (jParamClass != NULL) {
-            (*jenv)->DeleteLocalRef(jenv, jParamClass);
-            jParamClass = NULL;
+            JPy_DELETE_LOCAL_REF(jParamClass);
         }
+        JPy_DELETE_LOCAL_REF(jArg);
         if (pyArg == NULL) {
             JPy_DIAG_PRINT(JPy_DIAG_F_ALL, "PyLib_CallAndReturnObject: error: callable '%s': argument %d: failed to convert Java into Python object\n", nameChars, i);
             PyLib_HandlePythonException(jenv);
@@ -2373,7 +2357,7 @@ PyObject* PyLib_CallAndReturnObject(JNIEnv *jenv, PyObject* pyObject, jboolean i
             PyLib_HandlePythonException(jenv);
             goto error;
         }
-        Py_DECREF(pyCallable);
+        JPy_DECREF(pyCallable);
         pyCallable = pyMethod;
     }
     */
@@ -2389,8 +2373,8 @@ error:
     if (nameChars != NULL) {
         (*jenv)->ReleaseStringUTFChars(jenv, jName, nameChars);
     }
-    Py_XDECREF(pyCallable);
-    Py_XDECREF(pyArgs);
+    JPy_XDECREF(pyCallable);
+    JPy_XDECREF(pyArgs);
 
     return pyReturnValue;
 }
@@ -2408,7 +2392,7 @@ char* PyLib_ObjToChars(PyObject* pyObj, PyObject** pyNewRef)
                 chars = PyBytes_AsString(pyObjUtf8);
                 *pyNewRef = pyObjUtf8;
             }
-            Py_XDECREF(pyObjStr);
+            JPy_XDECREF(pyObjStr);
         }
     }
     return chars;
@@ -2497,8 +2481,8 @@ void PyLib_HandlePythonException(JNIEnv* jenv)
                 namespaceChars = PyLib_ObjToChars(PyObject_GetAttrString(pyCode, "co_name"), &pyNamespaceUtf8);
             }
         }
-        Py_XDECREF(pyCode);
-        Py_XDECREF(pyFrame);
+        JPy_XDECREF(pyCode);
+        JPy_XDECREF(pyFrame);
     }
 
     //printf("U2: typeChars=%s, valueChars=%s, linenoChars=%s, filenameChars=%s, namespaceChars=%s\n",
@@ -2542,14 +2526,14 @@ void PyLib_HandlePythonException(JNIEnv* jenv)
         (*jenv)->ThrowNew(jenv, jExceptionClass, JPY_NO_INFO_MSG);
     }
 
-    Py_XDECREF(pyType);
-    Py_XDECREF(pyValue);
-    Py_XDECREF(pyTraceback);
-    Py_XDECREF(pyTypeUtf8);
-    Py_XDECREF(pyValueUtf8);
-    Py_XDECREF(pyLinenoUtf8);
-    Py_XDECREF(pyFilenameUtf8);
-    Py_XDECREF(pyNamespaceUtf8);
+    JPy_XDECREF(pyType);
+    JPy_XDECREF(pyValue);
+    JPy_XDECREF(pyTraceback);
+    JPy_XDECREF(pyTypeUtf8);
+    JPy_XDECREF(pyValueUtf8);
+    JPy_XDECREF(pyLinenoUtf8);
+    JPy_XDECREF(pyFilenameUtf8);
+    JPy_XDECREF(pyNamespaceUtf8);
 
     PyErr_Clear();
 }
@@ -2673,7 +2657,7 @@ static PyObject *format_displayline(PyObject *filename, int lineno, PyObject *na
     }
 
     pyObjUtf8 = PyUnicode_AsEncodedString(line, "utf-8", "replace");
-    Py_DECREF(line);
+    JPy_DECREF(line);
     return pyObjUtf8;
 }
 
@@ -2689,7 +2673,7 @@ static PyObject *format_line_repeated(long cnt)
         return NULL;
     }
     PyObject* pyObjUtf8 = PyUnicode_AsEncodedString(line, "utf-8", "replace");
-    Py_DECREF(line);
+    JPy_DECREF(line);
     return pyObjUtf8;
 }
 
@@ -2703,7 +2687,7 @@ static int append_to_java_message(PyObject * pyObjUtf8, char **buf, int *bufLen 
     if (strlen(*buf) + msgLen + 1 >= *bufLen) {
         char *newBuf = PyMem_New(char, *bufLen + 64 * msgLen);
         if (newBuf == NULL) {
-            Py_DECREF(pyObjUtf8);
+            JPy_DECREF(pyObjUtf8);
             return -1;
         }
 
@@ -2715,7 +2699,7 @@ static int append_to_java_message(PyObject * pyObjUtf8, char **buf, int *bufLen 
     }
 
     strcat(*buf, msg);
-    Py_DECREF(pyObjUtf8);
+    JPy_DECREF(pyObjUtf8);
     return 0;
 }
 

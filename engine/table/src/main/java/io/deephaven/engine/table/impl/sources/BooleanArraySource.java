@@ -64,8 +64,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public Boolean get(long index) {
-        return BooleanUtils.byteAsBoolean(getByte(index));
+    public Boolean get(long rowKey) {
+        return BooleanUtils.byteAsBoolean(getByte(rowKey));
     }
 
     public Boolean getUnsafe(long index) {
@@ -92,11 +92,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public byte getByte(long index) {
-        if (index < 0 || index > maxIndex) {
+    public byte getByte(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        return getByteUnsafe(index);
+        return getByteUnsafe(rowKey);
     }
 
     private byte getByteUnsafe(long index) {
@@ -106,13 +106,13 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        if (index < 0 || index > maxIndex) {
+    public byte getPrevByte(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];
@@ -120,8 +120,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public Boolean getPrev(long index) {
-        return BooleanUtils.byteAsBoolean(getPrevByte(index));
+    public Boolean getPrev(long rowKey) {
+        return BooleanUtils.byteAsBoolean(getPrevByte(rowKey));
     }
 
     @Override
@@ -477,13 +477,13 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
 
         @Override
-        public byte getByte(long index) {
-            return BooleanArraySource.this.getByte(index);
+        public byte getByte(long rowKey) {
+            return BooleanArraySource.this.getByte(rowKey);
         }
 
         @Override
-        public byte getPrevByte(long index) {
-            return BooleanArraySource.this.getPrevByte(index);
+        public byte getPrevByte(long rowKey) {
+            return BooleanArraySource.this.getPrevByte(rowKey);
         }
 
         @Override

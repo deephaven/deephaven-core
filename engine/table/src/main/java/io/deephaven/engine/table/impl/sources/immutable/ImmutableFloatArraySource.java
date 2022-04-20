@@ -64,12 +64,12 @@ public class ImmutableFloatArraySource extends AbstractDeferredGroupingColumnSou
     // endregion allocateArray
 
     @Override
-    public final float getFloat(long index) {
-        if (index < 0 || index >= data.length) {
+    public final float getFloat(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_FLOAT;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final float getUnsafe(long index) {

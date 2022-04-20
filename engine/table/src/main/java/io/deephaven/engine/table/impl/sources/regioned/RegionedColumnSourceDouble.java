@@ -29,8 +29,8 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
     }
 
     @Override
-    public double getDouble(final long elementIndex) {
-        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
+    public double getDouble(final long rowKey) {
+        return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getDouble(rowKey);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionDouble<Values>> {
@@ -66,8 +66,8 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         }
 
         @Override
-        public double getDouble(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
+        public double getDouble(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getDouble(rowKey);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

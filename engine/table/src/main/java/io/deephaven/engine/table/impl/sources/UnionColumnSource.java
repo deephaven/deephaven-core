@@ -67,101 +67,101 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public Boolean getBoolean(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getBoolean(offset);
     }
 
     @Override
-    public byte getByte(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public byte getByte(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getByte(offset);
     }
 
     @Override
-    public char getChar(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public char getChar(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getChar(offset);
     }
 
     @Override
-    public double getDouble(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public double getDouble(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getDouble(offset);
     }
 
     @Override
-    public float getFloat(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public float getFloat(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getFloat(offset);
     }
 
     @Override
-    public int getInt(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public int getInt(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getInt(offset);
     }
 
     @Override
-    public long getLong(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public long getLong(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getLong(offset);
     }
 
     @Override
-    public short getShort(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public short getShort(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getShort(offset);
     }
 
     @Override
-    public T get(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public T get(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForIndex(index);
-        final long offset = getOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForIndex(rowKey);
+        final long offset = getOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].get(offset);
     }
 
@@ -173,101 +173,101 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public T getPrev(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public T getPrev(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrev(offset);
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public Boolean getPrevBoolean(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevBoolean(offset);
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public byte getPrevByte(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevByte(offset);
     }
 
     @Override
-    public char getPrevChar(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public char getPrevChar(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevChar(offset);
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public double getPrevDouble(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevDouble(offset);
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public float getPrevFloat(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevFloat(offset);
     }
 
     @Override
-    public int getPrevInt(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public int getPrevInt(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevInt(offset);
     }
 
     @Override
-    public long getPrevLong(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public long getPrevLong(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevLong(offset);
     }
 
     @Override
-    public short getPrevShort(long index) {
-        if (index == RowSequence.NULL_ROW_KEY) {
+    public short getPrevShort(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(index);
-        final long offset = getPrevOffset(index, tid);
-        checkPos(index, tid);
+        final int tid = unionRedirection.tidForPrevIndex(rowKey);
+        final long offset = getPrevOffset(rowKey, tid);
+        checkPos(rowKey, tid);
         return subSources[tid].getPrevShort(offset);
     }
 

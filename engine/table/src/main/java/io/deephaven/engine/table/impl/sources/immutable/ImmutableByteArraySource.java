@@ -66,12 +66,12 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
     // endregion allocateArray
 
     @Override
-    public final byte getByte(long index) {
-        if (index < 0 || index >= data.length) {
+    public final byte getByte(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_BYTE;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final byte getUnsafe(long index) {

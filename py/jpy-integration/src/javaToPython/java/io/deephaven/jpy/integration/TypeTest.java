@@ -10,7 +10,7 @@ public class TypeTest extends PythonTest {
     @Test
     public void checkReferenceCount() {
         try (
-                final ReferenceCounting ref = ReferenceCounting.create();
+                final ReferenceCounting ref = ReferenceCounting.create(getCreateModule());
                 final IdentityModule identity = IdentityModule.create(getCreateModule());
                 final PyObject pyObject = SimpleObject.create(getCreateModule());
                 final PyObject type = pyObject.getType()) {

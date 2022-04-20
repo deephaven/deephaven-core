@@ -31,7 +31,7 @@ public class IntOutTest extends PythonTest {
     @Before
     public void setUp() {
         out = IdentityOut.create(getCreateModule(), IntOut.class);
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
         jpy = JpyModule.create();
         // jpy.setFlags(EnumSet.of(Flag.ALL));
     }

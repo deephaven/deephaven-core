@@ -1,0 +1,15 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    pythonWheel
+    getByName(Dependency.DEFAULT_CONFIGURATION).extendsFrom(pythonWheel)
+}
+
+def buildWheel = Docker.buildPyWheel(project, 'buildWheel', "deephaven/${project.name}", project.projectDir.toString())
+
+artifacts {
+    pythonWheel buildWheel
+}

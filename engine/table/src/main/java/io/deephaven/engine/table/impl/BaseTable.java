@@ -1000,6 +1000,10 @@ public abstract class BaseTable extends LivenessArtifact
         protected Table getParent() {
             return parent;
         }
+
+        protected BaseTable getDependent() {
+            return dependent;
+        }
     }
 
     @Override
@@ -1352,7 +1356,7 @@ public abstract class BaseTable extends LivenessArtifact
     public Table setLayoutHints(String hints) {
         final Table result = copy();
         result.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, hints);
-        return this;
+        return result;
     }
 
     @Override
@@ -1369,7 +1373,7 @@ public abstract class BaseTable extends LivenessArtifact
         return result;
     }
 
-    public <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
+    public static <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
             String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());

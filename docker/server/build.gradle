@@ -26,16 +26,16 @@ baseMap.keySet().each {base ->
     evaluationDependsOn Docker.registryProject(base)
 }
 
-evaluationDependsOn ':deephaven-jpy'
-evaluationDependsOn ':deephaven-wheel'
-evaluationDependsOn ':deephaven2-wheel'
-
 configurations {
     serverApplicationDist
+    pythonWheel
 }
 
 dependencies {
     serverApplicationDist project(path: ':server-netty-app', configuration: 'applicationDist')
+
+    pythonWheel project(':deephaven-legacy-wheel')
+    pythonWheel project(':py-server')
 }
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
@@ -43,14 +43,6 @@ def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
 def context= project.layout.buildDirectory.dir('context')
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
-    // deephaven-jpy.whl
-    def deephavenJpyWheel = project(':deephaven-jpy').tasks.getByName('buildWheel')
-
-    // deephaven.whl
-    def deephavenWheel = project(':deephaven-wheel').tasks.getByName('buildWheel')
-
-    // deephaven2.whl
-    def deephaven2Wheel = project(':deephaven2-wheel').tasks.getByName('buildWheel')
 
     from 'src/main/docker'
     baseMap.values().each { server ->
@@ -61,15 +53,11 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     from ('src/main/configure') {
         into 'configure'
     }
-    from (deephavenJpyWheel.outputs.files) {
-        into 'deephaven-jpy-wheel'
+
+    from(configurations.pythonWheel) {
+        into 'wheels'
     }
-    from (deephavenWheel.outputs.files) {
-        into 'deephaven-wheel'
-    }
-    from (deephaven2Wheel.outputs.files) {
-        into 'deephaven2-wheel'
-    }
+
     from(configurations.serverApplicationDist) {
         into 'serverApplicationDist'
     }

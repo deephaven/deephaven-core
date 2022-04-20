@@ -70,13 +70,13 @@ public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
     }
 
     @Override
-    public ShortVector get(long index) {
-        return underlying.get(index);
+    public ShortVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public ShortVector getPrev(long index) {
-        final ShortSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public ShortVector getPrev(long rowKey) {
+        final ShortSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

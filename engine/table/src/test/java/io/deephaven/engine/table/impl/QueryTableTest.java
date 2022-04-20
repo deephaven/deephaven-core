@@ -1012,13 +1012,13 @@ public class QueryTableTest extends QueryTableTestBase {
                     public void startTrackingPrevValues() { /* nothing to do */ }
 
                     @Override
-                    public Long get(long index) {
-                        return getLong(index);
+                    public Long get(long rowKey) {
+                        return getLong(rowKey);
                     }
 
                     @Override
-                    public long getLong(long index) {
-                        return index;
+                    public long getLong(long rowKey) {
+                        return rowKey;
                     }
                 };
 
