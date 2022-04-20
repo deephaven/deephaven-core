@@ -12,21 +12,25 @@ import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.kafka.KafkaTools.TableType.Append;
+import io.deephaven.kafka.KafkaTools.TableType.Ring;
+import io.deephaven.kafka.KafkaTools.TableType.Stream;
+import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.LocalTableMap;
 import io.deephaven.engine.table.impl.StreamTableTools;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.TransformableTableMap;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -53,6 +57,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.*;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -1149,9 +1155,45 @@ public class KafkaTools {
     }
 
     /**
-     * Type enumeration for the result {@link Table} returned by stream consumers.
+     * Type for the result {@link Table} returned by kafka consumers.
      */
-    public enum TableType {
+    public interface TableType {
+        static Stream stream() {
+            return ImmutableStream.of(false);
+        }
+
+        static Stream streamMap() {
+            return ImmutableStream.of(true);
+        }
+
+        static Append append() {
+            return ImmutableAppend.of(false);
+        }
+
+        static Append appendMap() {
+            return ImmutableAppend.of(true);
+        }
+
+        static Ring ring(int capacity) {
+            return ImmutableRing.of(capacity, false);
+        }
+
+        static Ring ringMap(int capacity) {
+            return ImmutableRing.of(capacity, true);
+        }
+
+        <T, V extends Visitor<T>> T walk(V visitor);
+
+        boolean isMap();
+
+        interface Visitor<T> {
+            T visit(Stream stream);
+
+            T visit(Append append);
+
+            T visit(Ring ring);
+        }
+
         /**
          * <p>
          * Consume all partitions into a single interleaved stream table, which will present only newly-available rows
@@ -1160,46 +1202,62 @@ public class KafkaTools {
          * See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
          * {@link io.deephaven.engine.table.impl.StreamTableTools} for related tooling.
          */
-        Stream(false, false),
-        /**
-         * Consume all partitions into a single interleaved in-memory append-only table.
-         */
-        Append(true, false),
-        /**
-         * <p>
-         * As in {@link #Stream}, but each partition is mapped to a distinct stream table.
-         * <p>
-         * The resulting per-partition tables are aggregated into a single {@link TableMap} keyed by {@link Integer}
-         * partition, which is then presented as a {@link Table} proxy via
-         * {@link TransformableTableMap#asTable(boolean, boolean, boolean) asTable} with {@code strictKeys=true},
-         * {@code allowCoalesce=true}, and {@code sanityCheckJoins=true}.
-         * <p>
-         * See {@link TransformableTableMap#asTableMap()} to explicitly work with the underlying {@link TableMap} and
-         * {@link TransformableTableMap#asTable(boolean, boolean, boolean)} for alternative proxy options.
-         */
-        StreamMap(false, true),
-        /**
-         * <p>
-         * As in {@link #Append}, but each partition is mapped to a distinct in-memory append-only table.
-         * <p>
-         * The resulting per-partition tables are aggregated into a single {@link TableMap} keyed by {@link Integer}
-         * partition, which is then presented as a {@link Table} proxy via
-         * {@link TransformableTableMap#asTable(boolean, boolean, boolean) asTable} with {@code strictKeys=true},
-         * {@code allowCoalesce=true}, and {@code sanityCheckJoins=true}.
-         * <p>
-         * See {@link TransformableTableMap#asTableMap()} to explicitly work with the underlying {@link TableMap} and
-         * {@link TransformableTableMap#asTable(boolean, boolean, boolean)} for alternative proxy options.
-         */
-        AppendMap(true, true);
+        @Immutable
+        @SimpleStyle
+        abstract class Stream implements TableType {
+            @Parameter
+            public abstract boolean isMap();
 
-        private final boolean isAppend;
-        private final boolean isMap;
-
-        TableType(final boolean isAppend, final boolean isMap) {
-            this.isAppend = isAppend;
-            this.isMap = isMap;
+            @Override
+            public final <T, V extends Visitor<T>> T walk(V visitor) {
+                return visitor.visit(this);
+            }
         }
 
+        /**
+         * Consume all partitions into a single interleaved in-memory append-only table.
+         *
+         * @see StreamTableTools#streamToAppendOnlyTable(Table)
+         */
+        @Immutable
+        @SimpleStyle
+        abstract class Append implements TableType {
+            @Parameter
+            public abstract boolean isMap();
+
+            @Override
+            public final <T, V extends Visitor<T>> T walk(V visitor) {
+                return visitor.visit(this);
+            }
+        }
+
+        /**
+         * Consume all partitions into a single interleaved in-memory ring table.
+         *
+         * @see RingTableTools#of(Table, int)
+         */
+        @Immutable
+        @SimpleStyle
+        abstract class Ring implements TableType {
+            public static Ring of(int capacity) {
+                return ImmutableRing.of(capacity, false);
+            }
+
+            public static Ring map(int capacity) {
+                return ImmutableRing.of(capacity, true);
+            }
+
+            @Parameter
+            public abstract int capacity();
+
+            @Parameter
+            public abstract boolean isMap();
+
+            @Override
+            public final <T, V extends Visitor<T>> T walk(V visitor) {
+                return visitor.visit(this);
+            }
+        }
     }
 
     /**
@@ -1212,11 +1270,11 @@ public class KafkaTools {
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         // @formatter:off
         switch (typeName) {
-            case "stream"    : return TableType.Stream;
-            case "append"    : return TableType.Append;
-            case "stream_map": return TableType.StreamMap;
-            case "append_map": return TableType.AppendMap;
-            default             : return null;
+            case "stream"    : return TableType.stream();
+            case "append"    : return TableType.append();
+            case "stream_map": return TableType.streamMap();
+            case "append_map": return TableType.appendMap();
+            default          : return null;
         }
         // @formatter:on
     }
@@ -1279,7 +1337,7 @@ public class KafkaTools {
 
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
 
-        final StreamTableMap streamTableMap = resultType.isMap ? new StreamTableMap(tableDefinition) : null;
+        final StreamTableMap streamTableMap = resultType.isMap() ? new StreamTableMap(tableDefinition) : null;
         final UpdateSourceRegistrar updateSourceRegistrar =
                 streamTableMap == null ? UpdateGraphProcessor.DEFAULT : streamTableMap.refreshCombiner;
 
@@ -1312,18 +1370,17 @@ public class KafkaTools {
         };
 
         final MutableObject<KafkaIngester> kafkaIngesterHolder = new MutableObject<>();
-        final UnaryOperator<Table> tableConversion =
-                resultType.isAppend ? StreamTableTools::streamToAppendOnlyTable : UnaryOperator.identity();
         final Table result;
         final IntFunction<KafkaStreamConsumer> partitionToConsumer;
-        if (resultType.isMap) {
+        if (resultType.isMap()) {
             result = streamTableMap.asTable(true, true, true);
             partitionToConsumer = (final int partition) -> {
                 final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
                         adapterFactory.get();
                 partitionAdapterPair.getFirst().setShutdownCallback(
                         () -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
-                final Table partitionTable = tableConversion.apply(partitionAdapterPair.getFirst().table());
+                final Table streamTable = partitionAdapterPair.getFirst().table();
+                final Table partitionTable = resultType.walk(new StreamTableOperation(streamTable));
                 streamTableMap.enqueueUpdate(() -> Assert.eqNull(streamTableMap.put(partition, partitionTable),
                         "streamTableMap.put(partition, partitionTable)"));
                 return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
@@ -1331,7 +1388,8 @@ public class KafkaTools {
         } else {
             final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
                     adapterFactory.get();
-            result = tableConversion.apply(singleAdapterPair.getFirst().table());
+            final Table streamTable = singleAdapterPair.getFirst().table();
+            result = resultType.walk(new StreamTableOperation(streamTable));
             partitionToConsumer = (final int partition) -> {
                 singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
                 return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
@@ -1367,6 +1425,29 @@ public class KafkaTools {
         return new JsonKeyOrValueSerializer(
                 t, columnNames, fieldNames,
                 jsonSpec.timestampFieldName, jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
+    }
+
+    private static class StreamTableOperation implements Visitor<Table> {
+        private final Table streamTable;
+
+        public StreamTableOperation(Table streamTable) {
+            this.streamTable = Objects.requireNonNull(streamTable);
+        }
+
+        @Override
+        public Table visit(Stream stream) {
+            return streamTable;
+        }
+
+        @Override
+        public Table visit(Append append) {
+            return StreamTableTools.streamToAppendOnlyTable(streamTable);
+        }
+
+        @Override
+        public Table visit(Ring ring) {
+            return RingTableTools.of(streamTable, ring.capacity());
+        }
     }
 
     private static KeyOrValueSerializer<?> getSerializer(
