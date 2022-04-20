@@ -49,7 +49,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
 
     @Override
     public BarrageSubscription subscribe(final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
-        return new BarrageSubscriptionImpl(this, tableHandle.newRef(), options);
+        return new BarrageSubscriptionImpl(this, session.executor(), tableHandle.newRef(), options);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
 
     @Override
     public BarrageSnapshot snapshot(final TableHandle tableHandle, final BarrageSnapshotOptions options) {
-        return new BarrageSnapshotImpl(this, tableHandle.newRef(), options);
+        return new BarrageSnapshotImpl(this, session.executor(), tableHandle.newRef(), options);
     }
 
     public Channel channel() {

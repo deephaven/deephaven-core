@@ -12,6 +12,7 @@ dependencies {
     api(project(':java-client-barrage-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
+    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':open-api-lang-tools')

@@ -35,16 +35,23 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.function.LongConsumer;
 
 public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
+
+    private final LongConsumer deserializeTmConsumer;
 
     private int numAddRowsRead = 0;
     private int numModRowsRead = 0;
     private int numAddBatchesRemaining = 0;
     private int numModBatchesRemaining = 0;
     private BarrageMessage msg = null;
+
+    public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
+        this.deserializeTmConsumer = deserializeTmConsumer;
+    }
 
     @Override
     public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
@@ -53,6 +60,7 @@ public class BarrageStreamReader implements StreamReader {
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
             final InputStream stream) {
+        final long startDeserTm = System.nanoTime();
         Message header = null;
         try {
             boolean bodyParsed = false;
@@ -250,6 +258,7 @@ public class BarrageStreamReader implements StreamReader {
                 throw new IllegalStateException("Missing body tag");
             }
 
+            deserializeTmConsumer.accept(System.nanoTime() - startDeserTm);
             if (numAddBatchesRemaining + numModBatchesRemaining == 0) {
                 final BarrageMessage retval = msg;
                 msg = null;

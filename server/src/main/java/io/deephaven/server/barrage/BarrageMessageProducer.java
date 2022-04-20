@@ -33,6 +33,8 @@ import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarragePerformanceLogLogger;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -40,6 +42,7 @@ import io.deephaven.extensions.barrage.util.StreamReader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -48,7 +51,9 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.HdrHistogram.Histogram;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -110,13 +115,18 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * @param <MessageView> The sub-view type that the listener expects to receive.
      */
     public interface StreamGenerator<MessageView> extends SafeCloseable {
+        interface WriteMetricsConsumer {
+            void onWrite(long bytes, long cpuNanos);
+        }
+
         interface Factory<MessageView> {
             /**
              * Create a StreamGenerator that now owns the BarrageMessage.
              *
              * @param message the message that contains the update that we would like to propagate
+             * @param metricsConsumer a method that can be used to record write metrics
              */
-            StreamGenerator<MessageView> newGenerator(BarrageMessage message);
+            StreamGenerator<MessageView> newGenerator(BarrageMessage message, WriteMetricsConsumer metricsConsumer);
 
             /**
              * Create a MessageView of the Schema to send as the initial message to a new subscriber.
@@ -278,6 +288,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final long updateIntervalMs;
     private volatile long lastUpdateTime = 0;
 
+    private final Stats stats;
+
     private final ColumnSource<?>[] sourceColumns; // might be reinterpreted
     private final BitSet objectColumns = new BitSet();
 
@@ -372,10 +384,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
+        this.parent = parent;
+
+        final Object tableKey = parent.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+        if (scheduler.inTestMode()) {
+            // When testing do not schedule statistics, as the scheduler will never empty its work queue.
+            stats = null;
+        } else if (tableKey instanceof String) {
+            stats = new Stats((String) tableKey);
+        } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
+            stats = new Stats(parent.getDescription());
+        } else {
+            stats = null;
+        }
 
         this.propagationRowSet = RowSetFactory.empty();
-
-        this.parent = parent;
         this.updateIntervalMs = updateIntervalMs;
         this.onGetSnapshot = onGetSnapshot;
 
@@ -637,7 +660,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
                 if (shouldEnqueueDelta) {
+                    final long startTm = System.nanoTime();
                     enqueueUpdate(upstream);
+                    recordMetric(stats -> stats.enqueue, System.nanoTime() - startTm);
                     schedulePropagation();
                 }
                 parentTableSize = parent.size();
@@ -969,7 +994,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 try {
                     if (needsRun.compareAndSet(true, false)) {
+                        final long startTm = System.nanoTime();
                         updateSubscriptionsSnapshotAndPropagate();
+                        recordMetric(stats -> stats.updateJob, System.nanoTime() - startTm);
                     }
                 } catch (final Exception exception) {
                     synchronized (BarrageMessageProducer.this) {
@@ -1293,6 +1320,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 long start = System.nanoTime();
                 snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet, reverseSnapshotRowSet);
                 long elapsed = System.nanoTime() - start;
+                recordMetric(stats -> stats.snapshot, elapsed);
 
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
@@ -1336,7 +1364,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             if (!firstSubscription && deltaSplitIdx > 0) {
+                final long startTm = System.nanoTime();
                 preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
+                recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
                 preSnapRowSet = propagationRowSet.copy();
             }
 
@@ -1354,7 +1384,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
 
             if (deltaSplitIdx < pendingDeltas.size()) {
+                final long startTm = System.nanoTime();
                 postSnapshot = aggregateUpdatesInRange(deltaSplitIdx, pendingDeltas.size());
+                recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
             }
 
             // cleanup for next iteration
@@ -1373,25 +1405,31 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (preSnapshot != null) {
+            final long startTm = System.nanoTime();
             propagateToSubscribers(preSnapshot, preSnapRowSet);
+            recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             preSnapRowSet.close();
         }
 
         if (snapshot != null) {
             try (final StreamGenerator<MessageView> snapshotGenerator =
-                    streamGeneratorFactory.newGenerator(snapshot)) {
+                    streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
                         continue;
                     }
 
+                    final long startTm = System.nanoTime();
                     propagateSnapshotForSubscription(subscription, snapshotGenerator);
+                    recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
                 }
             }
         }
 
         if (postSnapshot != null) {
+            final long startTm = System.nanoTime();
             propagateToSubscribers(postSnapshot, propagationRowSet);
+            recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
         }
 
         if (deletedSubscriptions != null) {
@@ -1424,7 +1462,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
-        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(message)) {
+        try (final StreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(
+                message, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
                     continue;
@@ -2068,6 +2107,102 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         return ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
                 this, parent, columnsToSnapshot, positionsToSnapshot, reversePositionsToSnapshot,
                 snapshotControl);
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        if (stats != null) {
+            stats.stop();
+        }
+    }
+
+    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeTime, cpuNanos);
+    }
+
+    private void recordMetric(final Function<Stats, Histogram> hist, final long value) {
+        if (stats == null) {
+            return;
+        }
+        synchronized (stats) {
+            hist.apply(stats).recordValue(value);
+        }
+    }
+
+    private class Stats implements Runnable {
+        private final int NUM_SIG_FIGS = 3;
+
+        public final String tableId = Integer.toHexString(System.identityHashCode(parent));
+        public final String tableKey;
+        public final Histogram enqueue = new Histogram(NUM_SIG_FIGS);
+        public final Histogram aggregate = new Histogram(NUM_SIG_FIGS);
+        public final Histogram propagate = new Histogram(NUM_SIG_FIGS);
+        public final Histogram snapshot = new Histogram(NUM_SIG_FIGS);
+        public final Histogram updateJob = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeTime = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
+
+        private volatile boolean running = true;
+
+        public Stats(final String tableKey) {
+            this.tableKey = tableKey;
+
+            final DateTime now = scheduler.currentTime();
+            final DateTime nextRun = DateTimeUtils.plus(now,
+                    DateTimeUtils.millisToNanos(BarragePerformanceLog.CYCLE_DURATION_MILLIS));
+            scheduler.runAtTime(nextRun, this);
+        }
+
+        public void stop() {
+            running = false;
+        }
+
+        @Override
+        public synchronized void run() {
+            if (!running) {
+                return;
+            }
+
+            final DateTime now = scheduler.currentTime();
+            final DateTime nextRun = DateTimeUtils.millisToTime(
+                    now.getMillis() + BarragePerformanceLog.CYCLE_DURATION_MILLIS);
+            scheduler.runAtTime(nextRun, this);
+
+            final BarragePerformanceLogLogger logger = BarragePerformanceLog.getInstance().getLogger();
+            try {
+                // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (logger) {
+                    flush(now, logger, enqueue, "EnqueueTimeMs");
+                    flush(now, logger, aggregate, "AggregateTimeMs");
+                    flush(now, logger, propagate, "PropagateTimeMs");
+                    flush(now, logger, snapshot, "SnapshotTimeMs");
+                    flush(now, logger, updateJob, "UpdateJobTimeMs");
+                    flush(now, logger, writeTime, "WriteTimeMs");
+                    flush(now, logger, writeBits, "WriteMb");
+                }
+            } catch (IOException ioe) {
+                log.error().append(logPrefix).append("Unexpected exception while flushing barrage stats: ")
+                        .append(ioe).endl();
+            }
+        }
+
+        private void flush(final DateTime now, final BarragePerformanceLogLogger logger, final Histogram hist,
+                final String statType) throws IOException {
+            if (hist.getTotalCount() == 0) {
+                return;
+            }
+            logger.log(tableId, tableKey, statType, now,
+                    hist.getTotalCount(),
+                    hist.getValueAtPercentile(50) / 1e6,
+                    hist.getValueAtPercentile(75) / 1e6,
+                    hist.getValueAtPercentile(90) / 1e6,
+                    hist.getValueAtPercentile(95) / 1e6,
+                    hist.getValueAtPercentile(99) / 1e6,
+                    hist.getMaxValue() / 1e6);
+            hist.reset();
+        }
     }
 
     ////////////////////////////////////////////////////
