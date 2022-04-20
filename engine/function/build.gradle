@@ -20,13 +20,12 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'Base')
 }
 
-ext {
-    spotlessExcludes = []
-}
+def generatedFiles = []
+
 
 spotless {
     java {
-        targetExclude spotlessExcludes
+        targetExclude generatedFiles
     }
 }
 
@@ -34,9 +33,13 @@ spotless {
 //////////////// Code Generation ////////////////
 
 // task to clean up generated files
-task cleanGen(type:Delete)
+task cleanGen(type:Delete) {
+    delete generatedFiles
+}
 
-def gencode(name, template, output) {
+tasks.findByName('clean').dependsOn cleanGen
+
+def gencode = { name, template, output ->
 
     task(name, type: JavaExec) {
         main = 'io.deephaven.generator.primitivetemplate.CodeGenerator'
@@ -47,11 +50,7 @@ def gencode(name, template, output) {
     }
 
     compileJava.dependsOn(name)
-    spotlessExcludes.add output
-
-    cleanGen {
-        delete output
-    }
+    generatedFiles.add output
 }
 
 gencode 'GenPrimitivesBasic', 'src/templates/Basic.ftl', 'src/main/java/io/deephaven/function/Basic.java'

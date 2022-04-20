@@ -388,7 +388,7 @@ public class GroovyStaticImportGenerator {
         final String[] imports = {
                 "io.deephaven.function.Basic",
                 "io.deephaven.function.BinSearch",
-//                "io.deephaven.function.BinSearchAlgo",
+                // "io.deephaven.function.BinSearchAlgo",
                 "io.deephaven.function.Cast",
                 "io.deephaven.function.Logic",
                 "io.deephaven.function.Numeric",
