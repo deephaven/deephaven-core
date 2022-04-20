@@ -74,11 +74,13 @@ class WrapperTestCase(BaseTestCase):
         self.assertTrue(delta() == delta())
 
     def test_ne(self):
+        self.assertFalse(alpha() != alpha())
         self.assertTrue(alpha() != beta())
         self.assertTrue(alpha() != charlie())
         self.assertTrue(alpha() != delta())
 
     def test_lt(self):
+        self.assertFalse(alpha() < alpha())
         self.assertTrue(alpha() < beta())
         self.assertTrue(beta() < charlie())
         self.assertTrue(charlie() < delta())
@@ -94,6 +96,7 @@ class WrapperTestCase(BaseTestCase):
         self.assertTrue(charlie() <= delta())
 
     def test_gt(self):
+        self.assertFalse(alpha() > alpha())
         self.assertFalse(alpha() > beta())
         self.assertFalse(beta() > charlie())
         self.assertFalse(charlie() > delta())
