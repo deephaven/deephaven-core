@@ -48,7 +48,7 @@ class JObjectWrapper(ABC):
     def __eq__(self, other):
         return self.j_object == other.j_object if isinstance(other, self.__class__) else NotImplemented
 
-    def __neq__(self, other):
+    def __ne__(self, other):
         return self.j_object != other.j_object if isinstance(other, self.__class__) else NotImplemented
 
     def __lt__(self, other):
