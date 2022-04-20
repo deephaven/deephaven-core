@@ -61,7 +61,7 @@ wchar_t* JPy_AsWideCharString_PriorToPy33(PyObject* pyUnicode, Py_ssize_t* size)
 
 error:
 
-    Py_XDECREF(pyNewRef);
+    JPy_XDECREF(pyNewRef);
 
     return buffer;
 }

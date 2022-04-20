@@ -13,20 +13,10 @@ RUN set -eux; \
     python -m pip install -q --no-index --no-cache-dir -r requirements.txt; \
     rm requirements.txt
 
-COPY deephaven-jpy-wheel/ /deephaven-jpy-wheel
+COPY wheels/ /wheels
 RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven-jpy-wheel/*.whl; \
-    rm -r /deephaven-jpy-wheel
-
-COPY deephaven-wheel/ /deephaven-wheel
-RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven-wheel/*.whl; \
-    rm -r /deephaven-wheel
-
-COPY deephaven2-wheel/ /deephaven2-wheel
-RUN set -eux; \
-    python -m pip install -q --no-index --no-cache-dir /deephaven2-wheel/*.whl; \
-    rm -r /deephaven2-wheel
+    python -m pip install -q --no-index --no-cache-dir /wheels/*.whl; \
+    rm -r /wheels
 
 ARG DEEPHAVEN_VERSION
 ADD serverApplicationDist/server-${DEEPHAVEN_VERSION}.tar /opt/deephaven

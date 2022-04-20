@@ -27,101 +27,101 @@ public abstract class Formula implements ElementSource {
     }
 
     @Override
-    public abstract Object getPrev(long key);
+    public abstract Object getPrev(long rowKey);
 
     @Override
-    public abstract Object get(long key);
+    public abstract Object get(long rowKey);
 
     @Override
-    public Boolean getBoolean(long key) {
-        return (Boolean) get(key);
+    public Boolean getBoolean(long rowKey) {
+        return (Boolean) get(rowKey);
     }
 
     @Override
-    public byte getByte(long key) {
-        final Byte aByte = (Byte) get(key);
+    public byte getByte(long rowKey) {
+        final Byte aByte = (Byte) get(rowKey);
         return aByte == null ? NULL_BYTE : aByte;
     }
 
     @Override
-    public char getChar(long key) {
-        final Character character = (Character) get(key);
+    public char getChar(long rowKey) {
+        final Character character = (Character) get(rowKey);
         return character == null ? NULL_CHAR : character;
     }
 
     @Override
-    public double getDouble(long key) {
-        final Double aDouble = (Double) get(key);
+    public double getDouble(long rowKey) {
+        final Double aDouble = (Double) get(rowKey);
         return aDouble == null ? NULL_DOUBLE : aDouble;
     }
 
     @Override
-    public float getFloat(long key) {
-        final Float aFloat = (Float) get(key);
+    public float getFloat(long rowKey) {
+        final Float aFloat = (Float) get(rowKey);
         return aFloat == null ? NULL_FLOAT : aFloat;
     }
 
     @Override
-    public int getInt(long key) {
-        final Integer integer = (Integer) get(key);
+    public int getInt(long rowKey) {
+        final Integer integer = (Integer) get(rowKey);
         return integer == null ? NULL_INT : integer;
     }
 
     @Override
-    public long getLong(long key) {
-        final Long aLong = (Long) get(key);
+    public long getLong(long rowKey) {
+        final Long aLong = (Long) get(rowKey);
         return aLong == null ? NULL_LONG : aLong;
     }
 
     @Override
-    public short getShort(long key) {
-        final Short aShort = (Short) get(key);
+    public short getShort(long rowKey) {
+        final Short aShort = (Short) get(rowKey);
         return aShort == null ? NULL_SHORT : aShort;
     }
 
     @Override
-    public Boolean getPrevBoolean(long key) {
-        return (Boolean) getPrev(key);
+    public Boolean getPrevBoolean(long rowKey) {
+        return (Boolean) getPrev(rowKey);
     }
 
     @Override
-    public byte getPrevByte(long key) {
-        final Byte aByte = (Byte) getPrev(key);
+    public byte getPrevByte(long rowKey) {
+        final Byte aByte = (Byte) getPrev(rowKey);
         return aByte == null ? NULL_BYTE : aByte;
     }
 
     @Override
-    public char getPrevChar(long key) {
-        final Character character = (Character) getPrev(key);
+    public char getPrevChar(long rowKey) {
+        final Character character = (Character) getPrev(rowKey);
         return character == null ? NULL_CHAR : character;
     }
 
     @Override
-    public double getPrevDouble(long key) {
-        final Double aDouble = (Double) getPrev(key);
+    public double getPrevDouble(long rowKey) {
+        final Double aDouble = (Double) getPrev(rowKey);
         return aDouble == null ? NULL_DOUBLE : aDouble;
     }
 
     @Override
-    public float getPrevFloat(long key) {
-        final Float aFloat = (Float) getPrev(key);
+    public float getPrevFloat(long rowKey) {
+        final Float aFloat = (Float) getPrev(rowKey);
         return aFloat == null ? NULL_FLOAT : aFloat;
     }
 
-    public int getPrevInt(long key) {
-        final Integer integer = (Integer) getPrev(key);
+    public int getPrevInt(long rowKey) {
+        final Integer integer = (Integer) getPrev(rowKey);
         return integer == null ? NULL_INT : integer;
     }
 
     @Override
-    public long getPrevLong(long key) {
-        final Long aLong = (Long) getPrev(key);
+    public long getPrevLong(long rowKey) {
+        final Long aLong = (Long) getPrev(rowKey);
         return aLong == null ? NULL_LONG : aLong;
     }
 
     @Override
-    public short getPrevShort(long key) {
-        final Short aShort = (Short) getPrev(key);
+    public short getPrevShort(long rowKey) {
+        final Short aShort = (Short) getPrev(rowKey);
         return aShort == null ? NULL_SHORT : aShort;
     }
 

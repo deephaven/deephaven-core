@@ -129,36 +129,36 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
     }
 
     @Override
-    public Short get(long index) {
-        return box(getShort(index));
+    public Short get(long rowKey) {
+        return box(getShort(rowKey));
     }
 
     @Override
-    public Short getPrev(long index) {
-        return box(getPrevShort(index));
+    public Short getPrev(long rowKey) {
+        return box(getPrevShort(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final short getShort(long index) {
-        if (index < 0) {
+    public final short getShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        return getShortFromBlock(blocks, index);
+        return getShortFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final short getPrevShort(long index) {
-        if (index < 0) {
+    public final short getPrevShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        if (shouldUsePrevious(index)) {
-            return getShortFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getShortFromBlock(prevBlocks, rowKey);
         }
 
-        return getShortFromBlock(blocks, index);
+        return getShortFromBlock(blocks, rowKey);
     }
 
     private short getShortFromBlock(ShortOneOrN.Block0 blocks, long key) {

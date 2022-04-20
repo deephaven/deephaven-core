@@ -64,12 +64,12 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
     // endregion allocateArray
 
     @Override
-    public final double getDouble(long index) {
-        if (index < 0 || index >= data.length) {
+    public final double getDouble(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_DOUBLE;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final double getUnsafe(long index) {

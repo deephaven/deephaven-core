@@ -25,92 +25,92 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final T get(long index) {
-        return originalSource.getPrev(index);
+    public final T get(long rowKey) {
+        return originalSource.getPrev(rowKey);
     }
 
     @Override
-    public final Boolean getBoolean(long index) {
-        return originalSource.getPrevBoolean(index);
+    public final Boolean getBoolean(long rowKey) {
+        return originalSource.getPrevBoolean(rowKey);
     }
 
     @Override
-    public final byte getByte(long index) {
-        return originalSource.getPrevByte(index);
+    public final byte getByte(long rowKey) {
+        return originalSource.getPrevByte(rowKey);
     }
 
     @Override
-    public final char getChar(long index) {
-        return originalSource.getPrevChar(index);
+    public final char getChar(long rowKey) {
+        return originalSource.getPrevChar(rowKey);
     }
 
     @Override
-    public final double getDouble(long index) {
-        return originalSource.getPrevDouble(index);
+    public final double getDouble(long rowKey) {
+        return originalSource.getPrevDouble(rowKey);
     }
 
     @Override
-    public final float getFloat(long index) {
-        return originalSource.getPrevFloat(index);
+    public final float getFloat(long rowKey) {
+        return originalSource.getPrevFloat(rowKey);
     }
 
     @Override
-    public final int getInt(long index) {
-        return originalSource.getPrevInt(index);
+    public final int getInt(long rowKey) {
+        return originalSource.getPrevInt(rowKey);
     }
 
     @Override
-    public final long getLong(long index) {
-        return originalSource.getPrevLong(index);
+    public final long getLong(long rowKey) {
+        return originalSource.getPrevLong(rowKey);
     }
 
     @Override
-    public final short getShort(long index) {
-        return originalSource.getPrevShort(index);
+    public final short getShort(long rowKey) {
+        return originalSource.getPrevShort(rowKey);
     }
 
     @Override
-    public final T getPrev(long index) {
+    public final T getPrev(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final Boolean getPrevBoolean(long index) {
+    public final Boolean getPrevBoolean(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final byte getPrevByte(long index) {
+    public final byte getPrevByte(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final char getPrevChar(long index) {
+    public final char getPrevChar(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final double getPrevDouble(long index) {
+    public final double getPrevDouble(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final float getPrevFloat(long index) {
+    public final float getPrevFloat(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final int getPrevInt(long index) {
+    public final int getPrevInt(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final long getPrevLong(long index) {
+    public final long getPrevLong(long rowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final short getPrevShort(long index) {
+    public final short getPrevShort(long rowKey) {
         throw new UnsupportedOperationException();
     }
 

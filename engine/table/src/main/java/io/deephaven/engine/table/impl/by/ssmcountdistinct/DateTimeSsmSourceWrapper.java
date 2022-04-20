@@ -34,13 +34,13 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
     }
 
     @Override
-    public ObjectVector<DateTime> get(long index) {
-        return new ValueWrapper(underlying.getCurrentSsm(index));
+    public ObjectVector<DateTime> get(long rowKey) {
+        return new ValueWrapper(underlying.getCurrentSsm(rowKey));
     }
 
     @Override
-    public ObjectVector<DateTime> getPrev(long index) {
-        final LongVector maybePrev = underlying.getPrev(index);
+    public ObjectVector<DateTime> getPrev(long rowKey) {
+        final LongVector maybePrev = underlying.getPrev(rowKey);
         if (maybePrev == null) {
             return null;
         }

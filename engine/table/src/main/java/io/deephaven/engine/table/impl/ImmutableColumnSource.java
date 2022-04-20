@@ -9,48 +9,48 @@ import io.deephaven.engine.table.ColumnSource;
 public interface ImmutableColumnSource<DATA_TYPE> extends ColumnSource<DATA_TYPE> {
 
     @Override
-    default DATA_TYPE getPrev(final long elementIndex) {
-        return get(elementIndex);
+    default DATA_TYPE getPrev(final long rowKey) {
+        return get(rowKey);
     }
 
     @Override
-    default Boolean getPrevBoolean(final long elementIndex) {
-        return getBoolean(elementIndex);
+    default Boolean getPrevBoolean(final long rowKey) {
+        return getBoolean(rowKey);
     }
 
     @Override
-    default byte getPrevByte(final long elementIndex) {
-        return getByte(elementIndex);
+    default byte getPrevByte(final long rowKey) {
+        return getByte(rowKey);
     }
 
     @Override
-    default char getPrevChar(final long elementIndex) {
-        return getChar(elementIndex);
+    default char getPrevChar(final long rowKey) {
+        return getChar(rowKey);
     }
 
     @Override
-    default double getPrevDouble(final long elementIndex) {
-        return getDouble(elementIndex);
+    default double getPrevDouble(final long rowKey) {
+        return getDouble(rowKey);
     }
 
     @Override
-    default float getPrevFloat(final long elementIndex) {
-        return getFloat(elementIndex);
+    default float getPrevFloat(final long rowKey) {
+        return getFloat(rowKey);
     }
 
     @Override
-    default int getPrevInt(final long elementIndex) {
-        return getInt(elementIndex);
+    default int getPrevInt(final long rowKey) {
+        return getInt(rowKey);
     }
 
     @Override
-    default long getPrevLong(final long elementIndex) {
-        return getLong(elementIndex);
+    default long getPrevLong(final long rowKey) {
+        return getLong(rowKey);
     }
 
     @Override
-    default short getPrevShort(final long elementIndex) {
-        return getShort(elementIndex);
+    default short getPrevShort(final long rowKey) {
+        return getShort(rowKey);
     }
 
     @Override

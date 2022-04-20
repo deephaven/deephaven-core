@@ -15,17 +15,7 @@ public class RowIdSource extends AbstractColumnSource<Long> implements Immutable
     }
 
     @Override
-    public long getLong(long index) {
-        return index;
-    }
-
-    @Override
-    public long getPrevLong(long index) {
-        return index;
-    }
-
-    @Override
-    public boolean isImmutable() {
-        return true;
+    public long getLong(long rowKey) {
+        return rowKey;
     }
 }

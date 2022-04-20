@@ -70,13 +70,13 @@ public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
     }
 
     @Override
-    public LongVector get(long index) {
-        return underlying.get(index);
+    public LongVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public LongVector getPrev(long index) {
-        final LongSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public LongVector getPrev(long rowKey) {
+        final LongSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

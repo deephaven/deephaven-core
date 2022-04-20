@@ -76,12 +76,12 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     }
 
     @Override
-    public final int getInt(long index) {
+    public final int getInt(long rowKey) {
         return current;
     }
 
     @Override
-    public final int getPrevInt(long index) {
+    public final int getPrevInt(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

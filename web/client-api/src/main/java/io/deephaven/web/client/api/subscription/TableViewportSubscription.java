@@ -42,7 +42,6 @@ import jsinterop.base.Js;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
 import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;

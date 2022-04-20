@@ -3,11 +3,9 @@ package io.deephaven.jpy.integration;
 import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import org.jpy.PyInputMode;
-import org.jpy.PyLib;
 import org.jpy.PyObject;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,7 +24,7 @@ public class ConversionTest extends PythonTest {
     public void setUp() {
         noop = NoopModule.create(getCreateModule());
         pyOut = IdentityOut.create(getCreateModule(), PyObjectIdentityOut.class);
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
         jpy = JpyModule.create();
         // jpy.setFlags(EnumSet.of(Flag.ALL));
     }

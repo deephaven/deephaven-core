@@ -25,14 +25,14 @@ public class UngroupedBoxedDoubleObjectVectorColumnSource extends UngroupedObjec
     }
 
     @Override
-    public double getDouble(long index) {
-        final Double result = get(index);
+    public double getDouble(long rowKey) {
+        final Double result = get(rowKey);
         return result == null ? NULL_DOUBLE : result;
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        final Double result = getPrev(index);
+    public double getPrevDouble(long rowKey) {
+        final Double result = getPrev(rowKey);
         return result == null ? NULL_DOUBLE : result;
     }
 }

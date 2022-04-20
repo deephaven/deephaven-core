@@ -25,14 +25,14 @@ public class UngroupedBoxedByteObjectVectorColumnSource extends UngroupedObjectV
     }
 
     @Override
-    public byte getByte(long index) {
-        final Byte result = get(index);
+    public byte getByte(long rowKey) {
+        final Byte result = get(rowKey);
         return result == null ? NULL_BYTE : result;
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        final Byte result = getPrev(index);
+    public byte getPrevByte(long rowKey) {
+        final Byte result = getPrev(rowKey);
         return result == null ? NULL_BYTE : result;
     }
 }

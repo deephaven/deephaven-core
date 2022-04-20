@@ -1,10 +1,7 @@
 {
  "className": "io.deephaven.engine.updategraph.UpdateGraphProcessor$AccumulatedCycleStats",
  "methods": {
-  "copyTo": ":param out: io.deephaven.engine.updategraph.UpdateGraphProcessor.AccumulatedCycleStats",
-  "getTotalCycles": ":return: long",
-  "getTotalCyclesTimeNanos": ":return: long",
-  "getTotalSafePointPauseTimeMillis": ":return: long"
+  "take": ":param out: io.deephaven.engine.updategraph.UpdateGraphProcessor.AccumulatedCycleStats"
  },
  "path": "io.deephaven.engine.updategraph.UpdateGraphProcessor.AccumulatedCycleStats",
  "typeName": "class"

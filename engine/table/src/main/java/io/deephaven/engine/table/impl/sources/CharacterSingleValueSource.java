@@ -71,12 +71,12 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     }
 
     @Override
-    public final char getChar(long index) {
+    public final char getChar(long rowKey) {
         return current;
     }
 
     @Override
-    public final char getPrevChar(long index) {
+    public final char getPrevChar(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }

@@ -42,14 +42,14 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     // endregion constructor
 
     @Override
-    public char getChar(final long index) {
-        if (index < 0 || index >= totalSize) {
+    public char getChar(final long rowKey) {
+        if (rowKey < 0 || rowKey >= totalSize) {
             return QueryConstants.NULL_CHAR;
         }
 
-        final int chunkIndex = getChunkIndex(index);
+        final int chunkIndex = getChunkIndex(rowKey);
         final long offset = firstOffsetForData.getQuick(chunkIndex);
-        return data.get(chunkIndex).get((int) (index - offset));
+        return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {

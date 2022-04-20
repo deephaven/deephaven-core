@@ -42,13 +42,13 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
     public final void startTrackingPrevValues() {}
 
     @Override
-    public final SmartKey get(final long indexKey) {
-        return createTuple(indexKey);
+    public final SmartKey get(final long rowKey) {
+        return createTuple(rowKey);
     }
 
     @Override
-    public final SmartKey getPrev(final long indexKey) {
-        return createPreviousTuple(indexKey);
+    public final SmartKey getPrev(final long rowKey) {
+        return createPreviousTuple(rowKey);
     }
 
     @Override

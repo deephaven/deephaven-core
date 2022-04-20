@@ -41,93 +41,93 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public T get(long index) {
-        return innerSource.get(indexReverser.transform(index));
+    public T get(long rowKey) {
+        return innerSource.get(indexReverser.transform(rowKey));
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        return innerSource.getBoolean(indexReverser.transform(index));
+    public Boolean getBoolean(long rowKey) {
+        return innerSource.getBoolean(indexReverser.transform(rowKey));
     }
 
     @Override
-    public byte getByte(long index) {
-        return innerSource.getByte(indexReverser.transform(index));
+    public byte getByte(long rowKey) {
+        return innerSource.getByte(indexReverser.transform(rowKey));
     }
 
     @Override
-    public char getChar(long index) {
-        return innerSource.getChar(indexReverser.transform(index));
+    public char getChar(long rowKey) {
+        return innerSource.getChar(indexReverser.transform(rowKey));
     }
 
     @Override
-    public double getDouble(long index) {
-        return innerSource.getDouble(indexReverser.transform(index));
+    public double getDouble(long rowKey) {
+        return innerSource.getDouble(indexReverser.transform(rowKey));
     }
 
     @Override
-    public float getFloat(long index) {
-        return innerSource.getFloat(indexReverser.transform(index));
+    public float getFloat(long rowKey) {
+        return innerSource.getFloat(indexReverser.transform(rowKey));
     }
 
     @Override
-    public int getInt(long index) {
-        return innerSource.getInt(indexReverser.transform(index));
+    public int getInt(long rowKey) {
+        return innerSource.getInt(indexReverser.transform(rowKey));
     }
 
     @Override
-    public long getLong(long index) {
-        return innerSource.getLong(indexReverser.transform(index));
+    public long getLong(long rowKey) {
+        return innerSource.getLong(indexReverser.transform(rowKey));
     }
 
     @Override
-    public short getShort(long index) {
-        return innerSource.getShort(indexReverser.transform(index));
+    public short getShort(long rowKey) {
+        return innerSource.getShort(indexReverser.transform(rowKey));
     }
 
     @Override
-    public T getPrev(long index) {
-        return innerSource.getPrev(indexReverser.transformPrev(index));
+    public T getPrev(long rowKey) {
+        return innerSource.getPrev(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        return innerSource.getPrevBoolean(indexReverser.transformPrev(index));
+    public Boolean getPrevBoolean(long rowKey) {
+        return innerSource.getPrevBoolean(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        return innerSource.getPrevByte(indexReverser.transformPrev(index));
+    public byte getPrevByte(long rowKey) {
+        return innerSource.getPrevByte(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public char getPrevChar(long index) {
-        return innerSource.getPrevChar(indexReverser.transformPrev(index));
+    public char getPrevChar(long rowKey) {
+        return innerSource.getPrevChar(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        return innerSource.getPrevDouble(indexReverser.transformPrev(index));
+    public double getPrevDouble(long rowKey) {
+        return innerSource.getPrevDouble(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        return innerSource.getPrevFloat(indexReverser.transformPrev(index));
+    public float getPrevFloat(long rowKey) {
+        return innerSource.getPrevFloat(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public int getPrevInt(long index) {
-        return innerSource.getPrevInt(indexReverser.transformPrev(index));
+    public int getPrevInt(long rowKey) {
+        return innerSource.getPrevInt(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return innerSource.getPrevLong(indexReverser.transformPrev(index));
+    public long getPrevLong(long rowKey) {
+        return innerSource.getPrevLong(indexReverser.transformPrev(rowKey));
     }
 
     @Override
-    public short getPrevShort(long index) {
-        return innerSource.getPrevShort(indexReverser.transformPrev(index));
+    public short getPrevShort(long rowKey) {
+        return innerSource.getPrevShort(indexReverser.transformPrev(rowKey));
     }
 
     @Override

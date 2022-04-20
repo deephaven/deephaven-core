@@ -57,7 +57,7 @@ JPy_JType* JType_GetTypeForObject(JNIEnv* jenv, jobject objectRef, jboolean reso
     jclass classRef;
     classRef = (*jenv)->GetObjectClass(jenv, objectRef);
     type = JType_GetType(jenv, classRef, resolve);
-    (*jenv)->DeleteLocalRef(jenv, classRef);
+    JPy_DELETE_LOCAL_REF(classRef);
     return type;
 }
 
@@ -66,6 +66,7 @@ JPy_JType* JType_GetTypeForName(JNIEnv* jenv, const char* typeName, jboolean res
 {
     const char* resourceName;
     jclass classRef;
+    JPy_JType *result;
 
     JPy_JType* javaType = NULL;
     if (strcmp(typeName, "boolean") == 0) {
@@ -89,7 +90,7 @@ JPy_JType* JType_GetTypeForName(JNIEnv* jenv, const char* typeName, jboolean res
     }
 
     if (javaType != NULL) {
-        Py_INCREF(javaType);
+        JPy_INCREF(javaType);
         return javaType;
     }
 
@@ -124,7 +125,9 @@ JPy_JType* JType_GetTypeForName(JNIEnv* jenv, const char* typeName, jboolean res
         return NULL;
     }
 
-    return JType_GetType(jenv, classRef, resolve);
+    result = JType_GetType(jenv, classRef, resolve);
+    JPy_DELETE_LOCAL_REF(classRef);
+    return result;
 }
 
 /**
@@ -155,7 +158,7 @@ JPy_JType* JType_GetType(JNIEnv* jenv, jclass classRef, jboolean resolve)
         // Create a new type instance
         type = JType_New(jenv, classRef, resolve);
         if (type == NULL) {
-            Py_DECREF(typeKey);
+            JPy_DECREF(typeKey);
             return NULL;
         }
 
@@ -207,11 +210,11 @@ JPy_JType* JType_GetType(JNIEnv* jenv, jclass classRef, jboolean resolve)
             PyErr_Format(PyExc_RuntimeError,
                          "jpy internal error: attributes in 'jpy.%s' must be of type '%s', but found a '%s'",
                          JPy_MODULE_ATTR_NAME_TYPES, JType_Type.tp_name, Py_TYPE(typeValue)->tp_name);
-            Py_DECREF(typeKey);
+            JPy_DECREF(typeKey);
             return NULL;
         }
 
-        Py_DECREF(typeKey);
+        JPy_DECREF(typeKey);
         type = (JPy_JType*) typeValue;
     }
 
@@ -223,7 +226,7 @@ JPy_JType* JType_GetType(JNIEnv* jenv, jclass classRef, jboolean resolve)
         }
     }
     
-    Py_INCREF(type);
+    JPy_INCREF(type);
     return type;
 }
 
@@ -269,7 +272,21 @@ JPy_JType* JType_New(JNIEnv* jenv, jclass classRef, jboolean resolve)
     }
 
     type->isPrimitive = (*jenv)->CallBooleanMethod(jenv, type->classRef, JPy_Class_IsPrimitive_MID);
+    if ((*jenv)->ExceptionCheck(jenv)) {
+        (*jenv)->ExceptionClear(jenv);
+        PyMem_Del(type->javaName);
+        type->javaName = NULL;
+        metaType->tp_free(type);
+        return NULL;
+    }
     type->isInterface = (*jenv)->CallBooleanMethod(jenv, type->classRef, JPy_Class_IsInterface_MID);
+    if ((*jenv)->ExceptionCheck(jenv)) {
+        (*jenv)->ExceptionClear(jenv);
+        PyMem_Del(type->javaName);
+        type->javaName = NULL;
+        metaType->tp_free(type);
+        return NULL;
+    }
 
     JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_New: javaName=\"%s\", resolve=%d, type=%p\n", type->javaName, resolve, type);
 
@@ -306,7 +323,10 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
             return JPy_FROM_JDOUBLE(value);
         } else if (type == JPy_JPyObject || type == JPy_JPyModule) {
             jlong value = (*jenv)->CallLongMethod(jenv, objectRef, JPy_PyObject_GetPointer_MID);
-            return (PyObject*) value;
+            JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
+            PyObject* pyObj = (PyObject*) value;
+            JPy_INCREF(pyObj);
+            return pyObj;
         } else if (type == JPy_JString) {
             return JPy_FromJString(jenv, objectRef);
         } else if (type == JPy_JObject) {
@@ -324,14 +344,12 @@ PyObject* JType_ConvertJavaToPythonObject(JNIEnv* jenv, JPy_JType* type, jobject
             JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
             if (jPyObject != NULL) {
                 // We know that jPyObject is of the proper type, no need to check it.
-
                 jlong value = (*jenv)->CallLongMethod(jenv, jPyObject, JPy_PyObject_GetPointer_MID);
-
-                // TODO: should we handle exceptions here, and make sure we cleanup after exceptions?
-                // The call to getPointer() a bit earlier in this method does *NOT* handle exceptions
-
-                (*jenv)->DeleteLocalRef(jenv, jPyObject);
-                return (PyObject*) value;
+                JPy_DELETE_LOCAL_REF(jPyObject);
+                JPy_ON_JAVA_EXCEPTION_RETURN(NULL);
+                PyObject* pyObj = (PyObject*) value;
+                JPy_INCREF(pyObj);
+                return pyObj;
             }
         }
     }
@@ -509,7 +527,7 @@ int JType_CreateJavaPyObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, job
     value1.j = (jlong) pyArg;
     value2.z = JNI_TRUE;
 
-    Py_INCREF(pyArg);
+    JPy_INCREF(pyArg);
     return JType_CreateJavaObject_2(jenv, type, pyArg, type->classRef, JPy_PyObject_Init_MID, value1, value2, objectRef);
 }
 
@@ -543,7 +561,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jboolean* items = (*jenv)->GetBooleanArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -551,14 +569,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseBooleanArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JBOOLEAN(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseBooleanArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -573,7 +591,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jbyte* items = (*jenv)->GetByteArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -581,14 +599,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseByteArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JBYTE(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseByteArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -603,7 +621,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jchar* items = (*jenv)->GetCharArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -611,14 +629,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseCharArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JCHAR(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseCharArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -633,7 +651,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jshort* items = (*jenv)->GetShortArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -641,14 +659,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseShortArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JSHORT(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseShortArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -663,7 +681,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jint* items = (*jenv)->GetIntArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -671,14 +689,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseIntArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JINT(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseIntArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -693,7 +711,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jlong* items = (*jenv)->GetLongArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -701,14 +719,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseLongArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JLONG(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseLongArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -723,7 +741,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jfloat* items = (*jenv)->GetFloatArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -731,14 +749,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseFloatArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JFLOAT(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseFloatArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -753,7 +771,7 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         if (itemCount > 0) {
             jdouble* items = (*jenv)->GetDoubleArrayElements(jenv, arrayRef, NULL);
             if (items == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 PyErr_NoMemory();
                 return -1;
             }
@@ -761,14 +779,14 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
                 pyItem = PySequence_GetItem(pyArg, index);
                 if (pyItem == NULL) {
                     (*jenv)->ReleaseDoubleArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
                 items[index] = JPy_AS_JDOUBLE(pyItem);
-                Py_DECREF(pyItem);
+                JPy_DECREF(pyItem);
                 if (PyErr_Occurred()) {
                     (*jenv)->ReleaseDoubleArrayElements(jenv, arrayRef, items, 0);
-                    (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                    JPy_DELETE_LOCAL_REF(arrayRef);
                     return -1;
                 }
             }
@@ -784,19 +802,19 @@ int JType_CreateJavaArray(JNIEnv* jenv, JPy_JType* componentType, PyObject* pyAr
         for (index = 0; index < itemCount; index++) {
             pyItem = PySequence_GetItem(pyArg, index);
             if (pyItem == NULL) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
+                JPy_DELETE_LOCAL_REF(arrayRef);
                 return -1;
             }
             if (JType_ConvertPythonToJavaObject(jenv, componentType, pyItem, &jItem, allowObjectWrapping) < 0) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
-                Py_DECREF(pyItem);
+                JPy_DELETE_LOCAL_REF(arrayRef);
+                JPy_DECREF(pyItem);
                 return -1;
             }
-            Py_DECREF(pyItem);
+            JPy_DECREF(pyItem);
             (*jenv)->SetObjectArrayElement(jenv, arrayRef, index, jItem);
             if ((*jenv)->ExceptionCheck(jenv)) {
-                (*jenv)->DeleteLocalRef(jenv, arrayRef);
-                (*jenv)->DeleteLocalRef(jenv, jItem);
+                JPy_DELETE_LOCAL_REF(arrayRef);
+                JPy_DELETE_LOCAL_REF(jItem);
                 JPy_HandleJavaException(jenv);
                 return -1;
             }
@@ -830,7 +848,7 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
         jclass jobjclass = (*jenv)->GetObjectClass(jenv, jobj);
 
         if ((*jenv)->IsAssignableFrom(jenv, jobjclass, type->classRef)) {
-            (*jenv)->DeleteLocalRef(jenv, jobjclass);
+            JPy_DELETE_LOCAL_REF(jobjclass);
 
             JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ConvertPythonToJavaObject: unwrapping JObj into type->javaName=\"%s\"\n", type->javaName);
 
@@ -842,7 +860,7 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
             }
             return 0;
         }
-        (*jenv)->DeleteLocalRef(jenv, jobjclass);
+        JPy_DELETE_LOCAL_REF(jobjclass);
     }
 
     // If it is already a Java type wrapper JType, and assignable, then we are done
@@ -851,7 +869,7 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
         jclass jobjclass = (*jenv)->GetObjectClass(jenv, jobj);
 
         if ((*jenv)->IsAssignableFrom(jenv, jobjclass, type->classRef)) {
-            (*jenv)->DeleteLocalRef(jenv, jobjclass);
+            JPy_DELETE_LOCAL_REF(jobjclass);
 
             JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ConvertPythonToJavaObject: unwrapping JType into type->javaName=\"%s\"\n", type->javaName);
 
@@ -863,7 +881,7 @@ int JType_ConvertPythonToJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyA
             }
             return 0;
         }
-        (*jenv)->DeleteLocalRef(jenv, jobjclass);
+        JPy_DELETE_LOCAL_REF(jobjclass);
     }
 
     if (type->componentType != NULL) {
@@ -1040,12 +1058,14 @@ int JType_InitComponentType(JNIEnv* jenv, JPy_JType* type, jboolean resolve)
     jclass componentTypeRef;
 
     componentTypeRef = (jclass) (*jenv)->CallObjectMethod(jenv, type->classRef, JPy_Class_GetComponentType_MID);
+    JPy_ON_JAVA_EXCEPTION_RETURN(-1);
     if (componentTypeRef != NULL) {
         type->componentType = JType_GetType(jenv, componentTypeRef, resolve);
+        JPy_DELETE_LOCAL_REF(componentTypeRef);
         if (type->componentType == NULL) {
             return -1;
         }
-        Py_INCREF(type->componentType);
+        JPy_INCREF(type->componentType);
     } else {
         type->componentType = NULL;
     }
@@ -1063,12 +1083,12 @@ int JType_InitSuperType(JNIEnv* jenv, JPy_JType* type, jboolean resolve)
         if (type->superType == NULL) {
             return -1;
         }
-        Py_INCREF(type->superType);
-        (*jenv)->DeleteLocalRef(jenv, superClassRef);
+        JPy_INCREF(type->superType);
+        JPy_DELETE_LOCAL_REF(superClassRef);
     } else if (type->isInterface && JPy_JObject != NULL) {
         // This solves the problems that java.lang.Object methods can not be called on interfaces (https://github.com/bcdev/jpy/issues/57)
         type->superType = JPy_JObject;
-        Py_INCREF(type->superType);
+        JPy_INCREF(type->superType);
     } else {
         type->superType = NULL;
     }
@@ -1094,6 +1114,7 @@ int JType_ProcessClassConstructors(JNIEnv* jenv, JPy_JType* type)
     classRef = type->classRef;
     methodKey = Py_BuildValue("s", JPy_JTYPE_ATTR_NAME_JINIT);
     constructors = (*jenv)->CallObjectMethod(jenv, classRef, JPy_Class_GetDeclaredConstructors_MID);
+    JPy_ON_JAVA_EXCEPTION_RETURN(-1);
     constrCount = (*jenv)->GetArrayLength(jenv, constructors);
 
     JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ProcessClassConstructors: constrCount=%d\n", constrCount);
@@ -1101,18 +1122,20 @@ int JType_ProcessClassConstructors(JNIEnv* jenv, JPy_JType* type)
     for (i = 0; i < constrCount; i++) {
         constructor = (*jenv)->GetObjectArrayElement(jenv, constructors, i);
         modifiers = (*jenv)->CallIntMethod(jenv, constructor, JPy_Constructor_GetModifiers_MID);
+        JPy_ON_JAVA_EXCEPTION_RETURN(-1);
         isPublic = (modifiers & 0x0001) != 0;
         isVarArg = (modifiers & 0x0080) != 0;
         if (isPublic) {
             parameterTypes = (*jenv)->CallObjectMethod(jenv, constructor, JPy_Constructor_GetParameterTypes_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             mid = (*jenv)->FromReflectedMethod(jenv, constructor);
             JType_ProcessMethod(jenv, type, methodKey, JPy_JTYPE_ATTR_NAME_JINIT, NULL, parameterTypes, 1, isVarArg, mid);
-            (*jenv)->DeleteLocalRef(jenv, parameterTypes);
+            JPy_DELETE_LOCAL_REF(parameterTypes);
         }
-        (*jenv)->DeleteLocalRef(jenv, constructor);
+        JPy_DELETE_LOCAL_REF(constructor);
     }
 
-    (*jenv)->DeleteLocalRef(jenv, constructors);
+    JPy_DELETE_LOCAL_REF(constructors);
 
     return 0;
 }
@@ -1141,6 +1164,7 @@ int JType_ProcessClassFields(JNIEnv* jenv, JPy_JType* type)
     } else {
         fields = (*jenv)->CallObjectMethod(jenv, classRef, JPy_Class_GetDeclaredFields_MID);
     }
+    JPy_ON_JAVA_EXCEPTION_RETURN(-1);
     fieldCount = (*jenv)->GetArrayLength(jenv, fields);
 
     JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ProcessClassFields: fieldCount=%d\n", fieldCount);
@@ -1148,13 +1172,16 @@ int JType_ProcessClassFields(JNIEnv* jenv, JPy_JType* type)
     for (i = 0; i < fieldCount; i++) {
         field = (*jenv)->GetObjectArrayElement(jenv, fields, i);
         modifiers = (*jenv)->CallIntMethod(jenv, field, JPy_Field_GetModifiers_MID);
+        JPy_ON_JAVA_EXCEPTION_RETURN(-1);
         // see http://docs.oracle.com/javase/6/docs/api/constant-values.html#java.lang.reflect.Modifier.PUBLIC
         isPublic = (modifiers & 0x0001) != 0;
         isStatic = (modifiers & 0x0008) != 0;
         isFinal  = (modifiers & 0x0010) != 0;
         if (isPublic) {
             fieldNameStr = (*jenv)->CallObjectMethod(jenv, field, JPy_Field_GetName_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             fieldTypeObj = (*jenv)->CallObjectMethod(jenv, field, JPy_Field_GetType_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             fid = (*jenv)->FromReflectedField(jenv, field);
 
             fieldName = (*jenv)->GetStringUTFChars(jenv, fieldNameStr, NULL);
@@ -1162,17 +1189,16 @@ int JType_ProcessClassFields(JNIEnv* jenv, JPy_JType* type)
             JType_ProcessField(jenv, type, fieldKey, fieldName, fieldTypeObj, isStatic, isFinal, fid);
             (*jenv)->ReleaseStringUTFChars(jenv, fieldNameStr, fieldName);
 
-            (*jenv)->DeleteLocalRef(jenv, fieldTypeObj);
-            (*jenv)->DeleteLocalRef(jenv, fieldNameStr);
+            JPy_DELETE_LOCAL_REF(fieldTypeObj);
+            JPy_DELETE_LOCAL_REF(fieldNameStr);
         }
-        (*jenv)->DeleteLocalRef(jenv, field);
+        JPy_DELETE_LOCAL_REF(field);
     }
-    (*jenv)->DeleteLocalRef(jenv, fields);
+    JPy_DELETE_LOCAL_REF(fields);
     return 0;
 }
 
-int JType_ProcessClassMethods(JNIEnv* jenv, JPy_JType* type)
-{
+int JType_ProcessClassMethods(JNIEnv* jenv, JPy_JType* type) {
     jclass classRef;
     jobject methods;
     jobject method;
@@ -1186,20 +1212,24 @@ int JType_ProcessClassMethods(JNIEnv* jenv, JPy_JType* type)
     jboolean isVarArg;
     jboolean isPublic;
     jboolean isBridge;
-    const char* methodName;
+    const char *methodName;
     jmethodID mid;
-    PyObject* methodKey;
+    PyObject *methodKey;
 
     classRef = type->classRef;
 
     methods = (*jenv)->CallObjectMethod(jenv, classRef, JPy_Class_GetMethods_MID);
+    JPy_ON_JAVA_EXCEPTION_RETURN(-1);
     methodCount = (*jenv)->GetArrayLength(jenv, methods);
+    JPy_ON_JAVA_EXCEPTION_RETURN(-1);
 
     JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ProcessClassMethods: methodCount=%d\n", methodCount);
 
     for (i = 0; i < methodCount; i++) {
         method = (*jenv)->GetObjectArrayElement(jenv, methods, i);
         modifiers = (*jenv)->CallIntMethod(jenv, method, JPy_Method_GetModifiers_MID);
+        JPy_ON_JAVA_EXCEPTION_RETURN(-1);
+
         // see http://docs.oracle.com/javase/6/docs/api/constant-values.html#java.lang.reflect.Modifier.PUBLIC
         isPublic   = (modifiers & 0x0001) != 0;
         isStatic   = (modifiers & 0x0008) != 0;
@@ -1208,8 +1238,11 @@ int JType_ProcessClassMethods(JNIEnv* jenv, JPy_JType* type)
         // we exclude bridge methods; as covariant return types will result in bridge methods that cause ambiguity
         if (isPublic && !isBridge) {
             methodNameStr = (*jenv)->CallObjectMethod(jenv, method, JPy_Method_GetName_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             returnType = (*jenv)->CallObjectMethod(jenv, method, JPy_Method_GetReturnType_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             parameterTypes = (*jenv)->CallObjectMethod(jenv, method, JPy_Method_GetParameterTypes_MID);
+            JPy_ON_JAVA_EXCEPTION_RETURN(-1);
             mid = (*jenv)->FromReflectedMethod(jenv, method);
 
             methodName = (*jenv)->GetStringUTFChars(jenv, methodNameStr, NULL);
@@ -1217,13 +1250,13 @@ int JType_ProcessClassMethods(JNIEnv* jenv, JPy_JType* type)
             JType_ProcessMethod(jenv, type, methodKey, methodName, returnType, parameterTypes, isStatic, isVarArg, mid);
             (*jenv)->ReleaseStringUTFChars(jenv, methodNameStr, methodName);
 
-            (*jenv)->DeleteLocalRef(jenv, parameterTypes);
-            (*jenv)->DeleteLocalRef(jenv, returnType);
-            (*jenv)->DeleteLocalRef(jenv, methodNameStr);
+            JPy_DELETE_LOCAL_REF(parameterTypes);
+            JPy_DELETE_LOCAL_REF(returnType);
+            JPy_DELETE_LOCAL_REF(methodNameStr);
         }
-        (*jenv)->DeleteLocalRef(jenv, method);
+        JPy_DELETE_LOCAL_REF(method);
     }
-    (*jenv)->DeleteLocalRef(jenv, methods);
+    JPy_DELETE_LOCAL_REF(methods);
     return 0;
 }
 
@@ -1298,11 +1331,11 @@ int JType_AddFieldAttribute(JNIEnv* jenv, JPy_JType* declaringClass, PyObject* f
     } else if (fieldType == JPy_JString) {
         jstring objectRef = (*jenv)->GetStaticObjectField(jenv, declaringClass->classRef, fid);
         fieldValue = JPy_FromJString(jenv, objectRef);
-        (*jenv)->DeleteLocalRef(jenv, objectRef);
+        JPy_DELETE_LOCAL_REF(objectRef);
     } else {
         jobject objectRef = (*jenv)->GetStaticObjectField(jenv, declaringClass->classRef, fid);
         fieldValue = JPy_FromJObjectWithType(jenv, objectRef, (JPy_JType*) fieldType);
-        (*jenv)->DeleteLocalRef(jenv, objectRef);
+        JPy_DELETE_LOCAL_REF(objectRef);
     }
     PyDict_SetItem(typeDict, fieldName, fieldValue);
     return 0;
@@ -1437,7 +1470,7 @@ JPy_ReturnDescriptor* JType_CreateReturnDescriptor(JNIEnv* jenv, jclass returnCl
 
     returnDescriptor->type = type;
     returnDescriptor->paramIndex = -1;
-    Py_INCREF((PyObject*) type);
+    JPy_INCREF((PyObject*) type);
 
     JPy_DIAG_PRINT(JPy_DIAG_F_TYPE, "JType_ProcessReturnType: type->javaName=\"%s\", type=%p\n", type->javaName, type);
 
@@ -1464,12 +1497,13 @@ JPy_ParamDescriptor* JType_CreateParamDescriptors(JNIEnv* jenv, int paramCount, 
         paramDescriptor = paramDescriptors + i;
 
         type = JType_GetType(jenv, paramClass, JNI_FALSE);
+        JPy_DELETE_LOCAL_REF(paramClass);
         if (type == NULL) {
             return NULL;
         }
 
         paramDescriptor->type = type;
-        Py_INCREF((PyObject*) paramDescriptor->type);
+        JPy_INCREF((PyObject*) paramDescriptor->type);
 
         paramDescriptor->isMutable = 0;
         paramDescriptor->isOutput = 0;
@@ -1641,7 +1675,6 @@ int JType_MatchVarArgPyArgAsJObjectParam(JNIEnv* jenv, JPy_ParamDescriptor* para
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1653,15 +1686,15 @@ int JType_MatchVarArgPyArgAsJObjectParam(JNIEnv* jenv, JPy_ParamDescriptor* para
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
         int matchValue = JType_MatchPyArgAsJObject(jenv, componentType, unpack);
         if (matchValue == 0) {
             return 0;
         }
         minMatch = matchValue < minMatch ? matchValue : minMatch;
     }
+
     return minMatch;
 }
 
@@ -1671,7 +1704,6 @@ int JType_MatchVarArgPyArgAsJStringParam(JNIEnv* jenv, JPy_ParamDescriptor* para
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1683,15 +1715,15 @@ int JType_MatchVarArgPyArgAsJStringParam(JNIEnv* jenv, JPy_ParamDescriptor* para
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
         int matchValue = JType_MatchPyArgAsJStringParam(jenv, paramDescriptor, unpack);
         if (matchValue == 0) {
             return 0;
         }
         minMatch = matchValue < minMatch ? matchValue : minMatch;
     }
+
     return minMatch;
 }
 
@@ -1701,7 +1733,6 @@ int JType_MatchVarArgPyArgAsJPyObjectParam(JNIEnv* jenv, JPy_ParamDescriptor* pa
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1713,9 +1744,8 @@ int JType_MatchVarArgPyArgAsJPyObjectParam(JNIEnv* jenv, JPy_ParamDescriptor* pa
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
         int matchValue = JType_MatchPyArgAsJPyObjectParam(jenv, paramDescriptor, unpack);
         if (matchValue == 0) {
             return 0;
@@ -1731,7 +1761,6 @@ int JType_MatchVarArgPyArgAsJBooleanParam(JNIEnv *jenv, JPy_ParamDescriptor *par
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1744,9 +1773,8 @@ int JType_MatchVarArgPyArgAsJBooleanParam(JNIEnv *jenv, JPy_ParamDescriptor *par
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
 
         int matchValue;
         if (PyBool_Check(unpack)) matchValue = 100;
@@ -1789,7 +1817,6 @@ int JType_MatchVarArgPyArgIntType(const JPy_ParamDescriptor *paramDescriptor, Py
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1802,9 +1829,8 @@ int JType_MatchVarArgPyArgIntType(const JPy_ParamDescriptor *paramDescriptor, Py
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
 
         int matchValue;
         if (JPy_IS_CLONG(unpack)) matchValue = 100;
@@ -1835,7 +1861,6 @@ int JType_MatchVarArgPyArgAsFPType(const JPy_ParamDescriptor *paramDescriptor, P
     Py_ssize_t remaining = (argCount - idx);
 
     JPy_JType *componentType = paramDescriptor->type->componentType;
-    PyObject *varArgs;
     int minMatch = 100;
     int ii;
 
@@ -1848,9 +1873,8 @@ int JType_MatchVarArgPyArgAsFPType(const JPy_ParamDescriptor *paramDescriptor, P
         return 10;
     }
 
-    varArgs = PyTuple_GetSlice(pyArg, idx, argCount);
     for (ii = 0; ii < remaining; ii++) {
-        PyObject *unpack = PyTuple_GetItem(varArgs, ii);
+        PyObject *unpack = PyTuple_GetItem(pyArg, idx + ii);
 
         int matchValue;
         if (PyFloat_Check(unpack)) matchValue = floatMatch;
@@ -1898,12 +1922,14 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             pyBuffer = PyMem_New(Py_buffer, 1);
             if (pyBuffer == NULL) {
                 PyErr_NoMemory();
+                JPy_DECREF(pyArg);
                 return -1;
             }
 
             flags = paramDescriptor->isMutable ? PyBUF_WRITABLE : PyBUF_SIMPLE;
             if (PyObject_GetBuffer(pyArg, pyBuffer, flags) < 0) {
                 PyMem_Del(pyBuffer);
+                JPy_DECREF(pyArg);
                 return -1;
             }
 
@@ -1911,6 +1937,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             if (itemCount <= 0) {
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
+                JPy_DECREF(pyArg);
                 PyErr_Format(PyExc_ValueError, "illegal buffer argument: not a positive item count: %ld", itemCount);
                 return -1;
             }
@@ -1940,6 +1967,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
                 jArray = (*jenv)->NewDoubleArray(jenv, itemCount);
                 itemSize = sizeof(jdouble);
             } else {
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_SetString(PyExc_RuntimeError, "internal error: illegal primitive Java type");
@@ -1950,6 +1978,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
                 Py_ssize_t bufferLen = pyBuffer->len;
                 Py_ssize_t bufferItemSize = pyBuffer->itemsize;
                 //printf("%ld, %ld, %ld, %ld\n", pyBuffer->len , pyBuffer->itemsize, itemCount, itemSize);
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_Format(PyExc_ValueError,
@@ -1959,6 +1988,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             }
 
             if (jArray == NULL) {
+                JPy_DECREF(pyArg);
                 PyBuffer_Release(pyBuffer);
                 PyMem_Del(pyBuffer);
                 PyErr_NoMemory();
@@ -1968,6 +1998,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             if (!paramDescriptor->isOutput) {
                 arrayItems = (*jenv)->GetPrimitiveArrayCritical(jenv, jArray, NULL);
                 if (arrayItems == NULL) {
+                    JPy_DECREF(pyArg);
                     PyBuffer_Release(pyBuffer);
                     PyMem_Del(pyBuffer);
                     PyErr_NoMemory();
@@ -1984,6 +2015,7 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
         } else {
             jobject objectRef;
             if (JType_ConvertPythonToJavaObject(jenv, paramType, pyArg, &objectRef, JNI_FALSE) < 0) {
+                JPy_DECREF(pyArg);
                 return -1;
             }
             value->l = objectRef;
@@ -1991,6 +2023,8 @@ int JType_ConvertVarArgPyArgToJObjectArg(JNIEnv* jenv, JPy_ParamDescriptor* para
             disposer->DisposeArg = JType_DisposeLocalObjectRefArg;
         }
     }
+
+    JPy_DECREF(pyArg);
 
     return 0;
 }
@@ -2335,7 +2369,7 @@ void JType_DisposeLocalObjectRefArg(JNIEnv* jenv, jvalue* value, void* data)
     jobject objectRef = value->l;
     if (objectRef != NULL) {
         JPy_DIAG_PRINT(JPy_DIAG_F_MEM, "JType_DisposeLocalObjectRefArg: objectRef=%p\n", objectRef);
-        (*jenv)->DeleteLocalRef(jenv, objectRef);
+        JPy_DELETE_LOCAL_REF(objectRef);
     }
 }
 
@@ -2354,7 +2388,7 @@ void JType_DisposeReadOnlyBufferArg(JNIEnv* jenv, jvalue* value, void* data)
         PyMem_Del(pyBuffer);
     }
     if (jArray != NULL) {
-        (*jenv)->DeleteLocalRef(jenv, jArray);
+        JPy_DELETE_LOCAL_REF(jArray);
     }
 }
 
@@ -2377,14 +2411,14 @@ void JType_DisposeWritableBufferArg(JNIEnv* jenv, jvalue* value, void* data)
             memcpy(pyBuffer->buf, arrayItems, pyBuffer->len);
             (*jenv)->ReleasePrimitiveArrayCritical(jenv, jArray, arrayItems, 0);
         }
-        (*jenv)->DeleteLocalRef(jenv, jArray);
+        JPy_DELETE_LOCAL_REF(jArray);
         PyBuffer_Release(pyBuffer);
         PyMem_Del(pyBuffer);
     } else if (pyBuffer != NULL) {
         PyBuffer_Release(pyBuffer);
         PyMem_Del(pyBuffer);
     } else if (jArray != NULL) {
-        (*jenv)->DeleteLocalRef(jenv, jArray);
+        JPy_DELETE_LOCAL_REF(jArray);
     }
 }
 
@@ -2491,7 +2525,7 @@ PyObject* JType_str(JPy_JType* self)
     utfChars = (*jenv)->GetStringUTFChars(jenv, strJObj, &isCopy);
     strPyObj = JPy_FROM_FORMAT("%s", utfChars);
     (*jenv)->ReleaseStringUTFChars(jenv, strJObj, utfChars);
-    (*jenv)->DeleteLocalRef(jenv, strJObj);
+    JPy_DELETE_LOCAL_REF(strJObj);
 
     return strPyObj;
 }
@@ -2513,10 +2547,10 @@ void JType_dealloc(JPy_JType* self)
         self->classRef = NULL;
     }
 
-    Py_XDECREF(self->superType);
+    JPy_XDECREF(self->superType);
     self->superType = NULL;
 
-    Py_XDECREF(self->componentType);
+    JPy_XDECREF(self->componentType);
     self->componentType = NULL;
 
     Py_TYPE(self)->tp_free((PyObject*) self);

@@ -28,13 +28,13 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     }
 
     @Override
-    public Boolean get(final long index) {
-        return BooleanUtils.byteAsBoolean(alternateColumnSource.getByte(index));
+    public Boolean get(final long rowKey) {
+        return BooleanUtils.byteAsBoolean(alternateColumnSource.getByte(rowKey));
     }
 
     @Override
-    public Boolean getPrev(final long index) {
-        return BooleanUtils.byteAsBoolean(alternateColumnSource.getPrevByte(index));
+    public Boolean getPrev(final long rowKey) {
+        return BooleanUtils.byteAsBoolean(alternateColumnSource.getPrevByte(rowKey));
     }
 
     @Override

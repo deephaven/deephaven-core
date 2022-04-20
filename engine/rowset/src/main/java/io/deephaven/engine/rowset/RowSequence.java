@@ -142,7 +142,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * Helper to tell you if this is one contiguous range.
      */
     default boolean isContiguous() {
-        return size() == 0 || lastRowKey() - firstRowKey() == size() - 1;
+        return isEmpty() || lastRowKey() - firstRowKey() == size() - 1;
     }
 
     /**
