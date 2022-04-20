@@ -20,7 +20,6 @@ class FigureTestCase(BaseTestCase):
             with self.assertRaises(Exception) as cm:
                 figure = Figure()
                 new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b", by=['e'])
-            print(cm.exception)
             self.assertIn("NullPointerException", str(cm.exception))
 
         with self.subTest("this should work"):

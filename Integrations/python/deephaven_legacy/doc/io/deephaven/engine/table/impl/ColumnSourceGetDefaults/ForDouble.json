@@ -1,14 +1,14 @@
 {
  "className": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults$ForDouble",
  "methods": {
-  "get": ":param index: long\n:return: java.lang.Double",
-  "getBoolean": ":param index: long\n:return: java.lang.Boolean",
-  "getByte": ":param index: long\n:return: byte",
-  "getChar": ":param index: long\n:return: char",
-  "getFloat": ":param index: long\n:return: float",
-  "getInt": ":param index: long\n:return: int",
-  "getLong": ":param index: long\n:return: long",
-  "getShort": ":param index: long\n:return: short"
+  "get": ":param rowKey: long\n:return: java.lang.Double",
+  "getBoolean": ":param rowKey: long\n:return: java.lang.Boolean",
+  "getByte": ":param rowKey: long\n:return: byte",
+  "getChar": ":param rowKey: long\n:return: char",
+  "getFloat": ":param rowKey: long\n:return: float",
+  "getInt": ":param rowKey: long\n:return: int",
+  "getLong": ":param rowKey: long\n:return: long",
+  "getShort": ":param rowKey: long\n:return: short"
  },
  "path": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults.ForDouble",
  "text": "Default interface for double ColumnSource implementations.",
