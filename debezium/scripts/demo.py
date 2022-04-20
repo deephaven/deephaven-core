@@ -5,6 +5,7 @@ from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from deephaven import dtypes as dh
 from deephaven import agg as agg
 from deephaven.experimental import time_window
+from deephaven.time import lower_bin
 
 server_name = 'mysql'
 db_name='shop'
@@ -98,7 +99,7 @@ profile_views_per_minute_last_10 = \
     ).where(
         ['in_last_10min = true']
     ).update_view(
-        ['received_at_minute = lowerBin(received_at, minute_in_nanos)']
+        ['received_at_minute = (DateTime)lower_bin(received_at, minute_in_nanos)']
     ).view(
         ['user_id = target_id',
         'received_at_minute']
