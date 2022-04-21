@@ -7,6 +7,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTime;
 import io.deephaven.chunk.*;
+import io.deephaven.vector.Vector;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -32,8 +33,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final Schema schema,
             final boolean allowNulls) {
         super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldPathStr, chunkType,
-                dataType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator, chunkType,
-                        dataType));
+                dataType, componentType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator, chunkType,
+                        dataType, componentType));
     }
 
     /**
@@ -63,7 +64,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final String fieldPathStr,
             final Pattern separator,
             final ChunkType chunkType,
-            final Class<?> dataType) {
+            final Class<?> dataType,
+            final Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return new GenericRecordCharFieldCopier(fieldPathStr, separator, schema);
@@ -119,6 +121,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     throw new IllegalArgumentException(
                             "Can not map field with non matching logical type to BigDecimal: " +
                                     "field=" + fieldPathStr + ", logical type=" + logicalType);
+                }
+                if (Vector.class.isAssignableFrom(dataType)) {
+                    return new GenericRecordVectorFieldCopier(fieldPathStr, separator, schema, componentType);
                 }
                 return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
         }

@@ -39,6 +39,7 @@ import io.deephaven.kafka.publish.*;
 import io.deephaven.stream.StreamToTableAdapter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.vector.*;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -426,11 +427,40 @@ public class KafkaTools {
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, BigDecimal.class));
                     break;
                 }
-                // fallthrough
+                columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, ByteVector.class));
+                break;
+            }
+            case ARRAY: {
+                Schema elementTypeSchema = fieldSchema.getElementType();
+                Schema.Type elementTypeType = elementTypeSchema.getType();
+                if (elementTypeType.equals(Schema.Type.UNION)) {
+                    elementTypeSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, elementTypeSchema);
+                    elementTypeType = elementTypeSchema.getType();
+                }
+                switch (elementTypeType) {
+                    case INT:
+                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, IntVector.class));
+                        break;
+                    case LONG:
+                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, LongVector.class));
+                        break;
+                    case FLOAT:
+                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, FloatVector.class));
+                        break;
+                    case DOUBLE:
+                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, DoubleVector.class));
+                        break;
+                    case BOOLEAN:
+                    case ENUM:
+                    case STRING:
+                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, ObjectVector.class));
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
+                }
             }
             case MAP:
             case NULL:
-            case ARRAY:
             default:
                 throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
         }

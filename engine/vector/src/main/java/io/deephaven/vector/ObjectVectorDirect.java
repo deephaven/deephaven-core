@@ -18,6 +18,8 @@ public class ObjectVectorDirect<T> implements ObjectVector<T> {
         componentType = (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
     }
 
+    public static final ObjectVector<?> ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
+
     @Override
     public T get(long i) {
         if (i < 0 || i > data.length - 1) {
