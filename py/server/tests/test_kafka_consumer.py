@@ -70,7 +70,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                     'jts': 'Tstamp'
                 }
             ),
-            table_type=TableType.Append
+            table_type=TableType.append()
         )
 
         cols = t.columns
@@ -130,7 +130,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
                 value_spec=ck.avro_spec('share_price_record', schema_version='1'),
-                table_type=TableType.Append
+                table_type=TableType.append()
             )
 
             cols = t.columns
@@ -156,7 +156,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
                 value_spec=ck.avro_spec('share_price_record', mapping=m, mapped_only=True),
-                table_type=TableType.Append
+                table_type=TableType.append()
             )
 
             cols = t.columns
@@ -178,7 +178,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'share_price',
                 key_spec=KeyValueSpec.IGNORE,
                 value_spec=ck.avro_spec('share_price_record', mapping=m),
-                table_type=TableType.Append
+                table_type=TableType.append()
             )
 
             cols = t.columns
@@ -193,6 +193,27 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual(dtypes.int32, cols[5].data_type)
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
+
+    @unittest.skip("https://github.com/deephaven/deephaven-core/pull/2277")
+    def test_deprecated_table_types(self):
+        """
+        Tests to make sure deprecated TableTypes are equivalent
+        """
+        self.assertEqual(TableType.append(), TableType.Append)
+        self.assertEqual(TableType.appendMap(), TableType.AppendMap)
+        self.assertEqual(TableType.stream(), TableType.Stream)
+        self.assertEqual(TableType.streamMap(), TableType.StreamMap)
+
+    def test_table_types(self):
+        """
+        Tests TableType construction
+        """
+        _ = TableType.append()
+        _ = TableType.append_map()
+        _ = TableType.stream()
+        _ = TableType.stream_map()
+        _ = TableType.ring(4096)
+        _ = TableType.ring_map(4096)
 
 
 if __name__ == "__main__":
