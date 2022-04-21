@@ -145,7 +145,7 @@ high_value_users = purchases \
             agg.count_('purchases')
         ],
         'user_id'
-    )\
+    ) \
     .where(['lifetime_value > 10000']) \
     .natural_join(users, 
                   ['user_id = id'], ['email']) \
