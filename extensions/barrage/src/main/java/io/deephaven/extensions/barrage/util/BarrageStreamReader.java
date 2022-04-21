@@ -44,9 +44,10 @@ public class BarrageStreamReader implements StreamReader {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
     private long numAddRowsRead = 0;
+    private long numAddRowsTotal = 0;
     private long numModRowsRead = 0;
-    private int numAddBatchesRemaining = 0;
-    private int numModBatchesRemaining = 0;
+    private long numModRowsTotal = 0;
+
     private long lastAddStartIndex = 0;
     private long lastModStartIndex = 0;
     private BarrageMessage msg = null;
@@ -80,8 +81,8 @@ public class BarrageStreamReader implements StreamReader {
                     } else if (wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
                         if (msg != null) {
                             throw new IllegalStateException(
-                                    "Previous message was not complete; pending " + numAddBatchesRemaining
-                                            + " add batches and " + numModBatchesRemaining + " mod batches");
+                                    "Previous message was not complete; pending " + (numAddRowsTotal - numAddRowsRead)
+                                            + " add rows and " + (numModRowsTotal - numModRowsRead) + " mod rows");
                         }
 
                         final BarrageUpdateMetadata metadata =
@@ -94,14 +95,8 @@ public class BarrageStreamReader implements StreamReader {
 
                         numAddRowsRead = 0;
                         numModRowsRead = 0;
-                        numAddBatchesRemaining = metadata.numAddBatches();
-                        numModBatchesRemaining = metadata.numModBatches();
-                        if (numAddBatchesRemaining < 0 || numModBatchesRemaining < 0) {
-                            throw new IllegalStateException(
-                                    "Found negative number of record batches in barrage metadata: "
-                                            + numAddBatchesRemaining + " add batches and " + numModBatchesRemaining
-                                            + " mod batches");
-                        }
+                        lastAddStartIndex = 0;
+                        lastModStartIndex = 0;
 
                         if (msg.isSnapshot) {
                             final ByteBuffer effectiveViewport = metadata.effectiveViewportAsByteBuffer();
@@ -133,8 +128,10 @@ public class BarrageStreamReader implements StreamReader {
                             final int chunkSize = (int)(Math.min(msg.rowsIncluded.size(), TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
                             msg.addColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
                         }
+                        numAddRowsTotal = msg.rowsIncluded.size();
 
                         // if this message is a snapshot response (vs. subscription) then mod columns may be empty
+                        numModRowsTotal = 0;
                         msg.modColumnData = new BarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             msg.modColumnData[ci] = new BarrageMessage.ModColumnData();
@@ -148,6 +145,8 @@ public class BarrageStreamReader implements StreamReader {
                             // create an initial chunk of the correct size
                             final int chunkSize = (int)(Math.min(msg.modColumnData[ci].rowsModified.size(), TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
                             msg.modColumnData[ci].data.add(columnChunkTypes[ci].makeWritableChunk(chunkSize));
+
+                            numModRowsTotal = Math.max(numModRowsTotal, msg.modColumnData[ci].rowsModified.size());
                         }
                     }
 
@@ -200,7 +199,6 @@ public class BarrageStreamReader implements StreamReader {
                     msg.shifted = RowSetShiftData.EMPTY;
 
                     msg.isSnapshot = true;
-                    numAddBatchesRemaining = 1;
                 }
 
                 bodyParsed = true;
@@ -231,14 +229,10 @@ public class BarrageStreamReader implements StreamReader {
                     }
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                    final boolean isAddBatch = numAddBatchesRemaining > 0;
-                    if (isAddBatch) {
-                        --numAddBatchesRemaining;
-                    } else {
-                        --numModBatchesRemaining;
-                    }
+                    // add and mod rows are never combined in a batch. all added rows must be received before the first
+                    // mod rows will be received
 
-                    if (isAddBatch) {
+                    if (numAddRowsRead < numAddRowsTotal) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
@@ -340,7 +334,7 @@ public class BarrageStreamReader implements StreamReader {
                 throw new IllegalStateException("Missing body tag");
             }
 
-            if (numAddBatchesRemaining + numModBatchesRemaining == 0) {
+            if (numAddRowsRead == numAddRowsTotal && numModRowsRead == numModRowsTotal) {
                 final BarrageMessage retval = msg;
                 msg = null;
                 return retval;

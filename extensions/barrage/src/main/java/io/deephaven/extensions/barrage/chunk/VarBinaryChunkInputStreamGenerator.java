@@ -63,6 +63,27 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             return byteArrays.isEmpty();
         }
 
+        public long getByteOffset(int s, int e) {
+            // account for payload from s to e (inclusive)
+            final int startArrayIndex = getByteArrayIndex(s);
+            final int startOffset = offsets.get(s);
+
+            final int endArrayIndex = getByteArrayIndex(e);
+            final int endOffset = offsets.get(e + 1);
+
+            if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
+                return endOffset - startOffset;
+            } else {
+                // need to span multiple byte arrays
+                long byteCount = getByteArraySize(startArrayIndex) - startOffset;
+                for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
+                    byteCount += getByteArraySize(midArrayIndex);
+                }
+                byteCount += endOffset;
+                return byteCount;
+            }
+        }
+
         public Integer getByteArrayIndex(int pos) {
             // optimize for most common case
             if (byteArrays.size() == 1) {
@@ -82,6 +103,36 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
         public int getByteArraySize(int arrayIdx) {
             return byteArraySizes.get(arrayIdx);
+        }
+
+        public long writeByteData(LittleEndianDataOutputStream dos, int s, int e) throws IOException {
+            final int startArrayIndex = getByteArrayIndex(s);
+            final int startOffset = offsets.get(s);
+
+            final int endArrayIndex = getByteArrayIndex(e);
+            final int endOffset = offsets.get(e + 1);
+
+            long writeLen = 0;
+
+            if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
+                dos.write(byteArrays.get(startArrayIndex), startOffset, endOffset - startOffset);
+                writeLen += endOffset - startOffset;
+            } else {
+                // need to span multiple byte arrays
+                int firstSize = byteArraySizes.get(startArrayIndex) - startOffset;
+                dos.write(byteArrays.get(startArrayIndex), startOffset, firstSize);
+                writeLen += firstSize;
+
+                for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
+                    int midSize = getByteArraySize(midArrayIndex);
+                    dos.write(byteArrays.get(midArrayIndex), 0, midSize);
+                    writeLen += midSize;
+                }
+
+                dos.write(byteArrays.get(endArrayIndex), 0, endOffset);
+                writeLen += endOffset;
+            }
+            return writeLen;
         }
     };
 
@@ -207,23 +258,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
-                // account for payload, we have already int-size verified all rows in the RowSet
-                final int startArrayIndex = myByteStorage.getByteArrayIndex((int)s);
-                final int startOffset = myByteStorage.offsets.get((int) s);
-
-                final int endArrayIndex = myByteStorage.getByteArrayIndex((int)e);
-                final int endOffset = myByteStorage.offsets.get((int) e + 1);
-
-                if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-                    numPayloadBytes.add(endOffset - startOffset);
-                } else {
-                    // need to span multiple byte arrays
-                    numPayloadBytes.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
-                    for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
-                        numPayloadBytes.add(myByteStorage.getByteArraySize(midArrayIndex));
-                    }
-                    numPayloadBytes.add(endOffset);
-                }
+                numPayloadBytes.add(myByteStorage.getByteOffset((int)s, (int)e));
             });
             final long payloadExtended = numPayloadBytes.longValue() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
@@ -235,47 +270,33 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         @Override
         protected int getRawSize() {
             if (cachedSize == -1) {
-                cachedSize = 0;
+                MutableLong totalCachedSize = new MutableLong(0L);
                 if (sendValidityBuffer()) {
-                    cachedSize += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
+                    totalCachedSize.add(getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)));
                 }
 
                 // there are n+1 offsets; it is not assumed first offset is zero
                 if (!subset.isEmpty() && subset.size() == myByteStorage.offsets.size() - 1) {
-                    cachedSize += myByteStorage.offsets.size() * Integer.BYTES;
+                    totalCachedSize.add(myByteStorage.offsets.size() * Integer.BYTES);
                     for (int i = 0; i < myByteStorage.size(); i++) {
-                        cachedSize += myByteStorage.getByteArraySize(i);
+                        totalCachedSize.add(myByteStorage.getByteArraySize(i));
                     }
                 } else  {
-                    cachedSize += subset.isEmpty() ? 0 : Integer.BYTES; // account for the n+1 offset
+                    totalCachedSize.add(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset
                     subset.forAllRowKeyRanges((s, e) -> {
                         // account for offsets
-                        cachedSize += (e - s + 1) * Integer.BYTES;
+                        totalCachedSize.add((e - s + 1) * Integer.BYTES);
 
                         // account for payload
-                        final int startArrayIndex = myByteStorage.getByteArrayIndex((int)s);
-                        final int startOffset = myByteStorage.offsets.get((int) s);
-
-                        final int endArrayIndex = myByteStorage.getByteArrayIndex((int)e);
-                        final int endOffset = myByteStorage.offsets.get((int) e + 1);
-
-                        if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-                            cachedSize += endOffset - startOffset;
-                        } else {
-                            // need to span multiple byte arrays
-                            cachedSize += (myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
-                            for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
-                                cachedSize += myByteStorage.getByteArraySize(midArrayIndex);
-                            }
-                            cachedSize += endOffset;
-                        }
+                        totalCachedSize.add(myByteStorage.getByteOffset((int)s, (int)e));
                     });
                 }
 
                 if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
                     // then we must also align offset array
-                    cachedSize += Integer.BYTES;
+                    totalCachedSize.add(Integer.BYTES);
                 }
+                cachedSize = LongSizedDataStructure.intSize("SortHelper.makeAndFillValues", totalCachedSize.longValue());
             }
             return cachedSize;
         }
@@ -322,21 +343,22 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    final int startArrayIndex = myByteStorage.getByteArrayIndex((int)idx);
-                    final int startOffset = myByteStorage.offsets.get((int)idx);
-
                     // is this the last row in the chunk?
                     if (idx == chunk.size() - 1) {
+                        final int startArrayIndex = myByteStorage.getByteArrayIndex((int)idx);
+                        final int startOffset = myByteStorage.offsets.get((int)idx);
+
                         logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
                     } else {
-                        final int endArrayIndex = myByteStorage.getByteArrayIndex((int)idx + 1);
-                        final int endOffset = myByteStorage.offsets.get((int) idx + 1);
-
-                        if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-                            logicalSize.add(endOffset - startOffset);
-                        } else {
-                            logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
-                        }
+                        logicalSize.add(myByteStorage.getByteOffset((int)idx,(int)idx));
+//                        final int endArrayIndex = myByteStorage.getByteArrayIndex((int)idx + 1);
+//                        final int endOffset = myByteStorage.offsets.get((int) idx + 1);
+//
+//                        if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
+//                            logicalSize.add(endOffset - startOffset);
+//                        } else {
+//                            logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
+//                        }
                     }
                     dos.writeInt(logicalSize.intValue());
                 } catch (final IOException e) {
@@ -354,30 +376,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableLong payloadLen = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
                 try {
-                    final int startArrayIndex = myByteStorage.getByteArrayIndex((int)s);
-                    final int startOffset = myByteStorage.offsets.get((int) s);
-
-                    final int endArrayIndex = myByteStorage.getByteArrayIndex((int)e);
-                    final int endOffset = myByteStorage.offsets.get((int) e + 1);
-
-                    if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-                        dos.write(myByteStorage.byteArrays.get(startArrayIndex), startOffset, endOffset - startOffset);
-                        payloadLen.add(endOffset - startOffset);
-                    } else {
-                        // need to span multiple byte arrays
-                        int firstSize = myByteStorage.byteArraySizes.get(startArrayIndex) - startOffset;
-                        dos.write(myByteStorage.byteArrays.get(startArrayIndex), startOffset, firstSize);
-                        payloadLen.add(firstSize);
-
-                        for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
-                            int midSize = myByteStorage.getByteArraySize(midArrayIndex);
-                            dos.write(myByteStorage.byteArrays.get(midArrayIndex), 0, midSize);
-                            payloadLen.add(midSize);
-                        }
-
-                        dos.write(myByteStorage.byteArrays.get(endArrayIndex), 0, endOffset);
-                        payloadLen.add(endOffset);
-                    }
+                    payloadLen.add(myByteStorage.writeByteData(dos, (int) s, (int) e));
                 } catch (final IOException err) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }

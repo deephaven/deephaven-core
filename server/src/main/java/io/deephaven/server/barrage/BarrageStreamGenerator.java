@@ -57,6 +57,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
 public class BarrageStreamGenerator implements
@@ -299,8 +300,8 @@ public class BarrageStreamGenerator implements
         public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
-        public final long numAddBatches;
-        public final long numModBatches;
+        public final long numAddRows;
+        public final long numModRows;
         public final RowSet addRowOffsets;
         public final RowSet addRowKeys;
         public final RowSet[] modRowOffsets;
@@ -342,7 +343,7 @@ public class BarrageStreamGenerator implements
                     numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
                 }
             }
-            numModBatches = (numModRows + batchSize - 1) / batchSize;
+            this.numModRows = numModRows;
 
             if (keyspaceViewport != null) {
                 addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
@@ -356,31 +357,62 @@ public class BarrageStreamGenerator implements
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
-            // require an add batch if there are no mod batches
-            final long needsAddBatch = this.numModBatches == 0 ? 1 : 0;
-            numAddBatches = Math.max(needsAddBatch, (addRowOffsets.size() + batchSize - 1) / batchSize);
+            this.numAddRows = addRowOffsets.size();
         }
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
-            long offset = 0;
+
             // batch size is maximum, can go smaller when needed
-            final long batchSize = batchSize();
+            final int batchSize = batchSize();
 
+            // there may be multiple chunk generators and we need to ensure that a single batch rowset does not cross
+            // boundaries and that we honor the batch size requests
 
-            for (long ii = 0; ii < numAddBatches; ++ii) {
+            if (numAddRows == 0 && numModRows == 0) {
+                // we still need to send a message containing just the metadata
                 visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
-                offset += batchSize;
-                metadata = null;
-            }
-            offset = 0;
-            for (long ii = 0; ii < numModBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendModColumns));
-                offset += batchSize;
-                metadata = null;
+                        this, 0, 0, metadata, generator::appendAddColumns));
+            } else {
+                long offset = 0;
+                long chunkOffset = 0;
+
+                while (offset < numAddRows) {
+                    long effectiveBatchSize = batchSize;
+
+                    // make sure we are not about to cross a chunk boundary
+                    if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        chunkOffset = 0;
+                    }
+
+                    visitor.accept(generator.getInputStream(
+                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns));
+
+                    offset += effectiveBatchSize;
+                    chunkOffset += effectiveBatchSize;
+                    metadata = null;
+                }
+
+                offset = 0;
+                chunkOffset = 0;
+                while (offset < numModRows) {
+                    long effectiveBatchSize = batchSize;
+
+                    // make sure we are not about to cross a chunk boundary
+                    if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        chunkOffset = 0;
+                    }
+
+                    visitor.accept(generator.getInputStream(
+                            this, offset, offset + effectiveBatchSize, metadata, generator::appendModColumns));
+
+                    offset += effectiveBatchSize;
+                    chunkOffset += effectiveBatchSize;
+                    metadata = null;
+                }
             }
 
             // clean up the helper indexes
@@ -459,7 +491,7 @@ public class BarrageStreamGenerator implements
         public final boolean reverseViewport;
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
-        public final long numAddBatches;
+        public final long numAddRows;
         public final RowSet addRowOffsets;
 
         public SnapshotView(final BarrageStreamGenerator generator,
@@ -488,19 +520,39 @@ public class BarrageStreamGenerator implements
             }
 
             // require a batch to at least send the metadata
-            numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
+            numAddRows = addRowOffsets.size();
+//            numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
-            long offset = 0;
             final long batchSize = batchSize();
-            for (long ii = 0; ii < numAddBatches; ++ii) {
+
+            if (numAddRows == 0) {
+                // we still need to send a message containing just the metadata
                 visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
-                offset += batchSize;
-                metadata = null;
+                        this, 0, 0, metadata, generator::appendAddColumns));
+            } else {
+                long offset = 0;
+                long chunkOffset = 0;
+
+                while (offset < numAddRows) {
+                    long effectiveBatchSize = batchSize;
+
+                    // make sure we are not about to cross a chunk boundary
+                    if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        chunkOffset = 0;
+                    }
+
+                    visitor.accept(generator.getInputStream(
+                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns));
+
+                    offset += effectiveBatchSize;
+                    chunkOffset += effectiveBatchSize;
+                    metadata = null;
+                }
             }
 
             addRowOffsets.close();
@@ -856,10 +908,8 @@ public class BarrageStreamGenerator implements
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata,
-                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
-        BarrageUpdateMetadata.addNumModBatches(metadata,
-                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numModBatches));
+        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
+        BarrageUpdateMetadata.addNumModBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", (view.numModRows + view.batchSize() - 1) / view.batchSize()));
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
@@ -911,8 +961,7 @@ public class BarrageStreamGenerator implements
         }
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata,
-                LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddBatches));
+        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddRows + view.batchSize() - 1) / view.batchSize());
         BarrageUpdateMetadata.addNumModBatches(metadata, 0);
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
