@@ -1155,7 +1155,7 @@ class Table(JObjectWrapper):
             aggs = _to_sequence(aggs)
             by = _to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
+            return Table(j_table=self.j_table.aggBy(j_agg_list, by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
 

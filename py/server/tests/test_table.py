@@ -370,6 +370,9 @@ class TableTestCase(BaseTestCase):
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
+        result_table = self.test_table.agg_by(aggs=aggs, by=["a", "b"])
+        self.assertGreaterEqual(result_table.size, num_distinct_a)
+
     def test_agg_by_2(self):
         test_table = empty_table(10)
         test_table = test_table.update(
