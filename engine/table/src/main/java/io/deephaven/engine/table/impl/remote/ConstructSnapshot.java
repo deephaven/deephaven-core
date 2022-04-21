@@ -1318,8 +1318,6 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        //LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
         final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
@@ -1342,7 +1340,8 @@ public class ConstructSnapshot {
                 final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
-                acd.data = getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                acd.data =
+                        getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
 
@@ -1433,7 +1432,7 @@ public class ConstructSnapshot {
     }
 
     private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(final ColumnSource<T> columnSource,
-                                                            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
         long offset = 0;
         final long size = rowSet.size();
@@ -1444,12 +1443,12 @@ public class ConstructSnapshot {
             return result;
         }
 
-        while (offset < rowSet.size()) {
+        while (offset < size) {
             final int chunkSize;
             if (size - offset > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
                 chunkSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
             } else {
-                chunkSize = (int)(size - offset);
+                chunkSize = (int) (size - offset);
             }
 
             final long keyStart = rowSet.get(offset);

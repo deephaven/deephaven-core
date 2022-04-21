@@ -284,14 +284,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 totalMods.insert(column.rowsModified);
             }
 
+            // we are going to some potentially large operations, but we want to do the work in batches
             int maxChunkSize = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
 
             if (update.rowsIncluded.isNonempty()) {
-                long start = System.nanoTime();
-                long elapsed;
-
                 if (mightBeInitialSnapshot) {
-                    // ensure the data sources have at least the incoming capacity.  The sources will auto-resize but
+                    // ensure the data sources have at least the incoming capacity. The sources will auto-resize but
                     // we know the initial snapshot size and can optimize
                     capacity = update.rowsIncluded.size();
                     for (final WritableColumnSource<?> source : destSources) {
@@ -300,20 +298,17 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     freeset.insertRange(0, capacity - 1);
                 }
 
-                elapsed = System.nanoTime() - start; start = System.nanoTime();
-//                System.out.println("BT ensureCapacity (ms): " + (double)elapsed / 1_000_000.0);
-
                 // this will hold all the free rows allocated for the included rows
                 final WritableRowSet destinationRowSet = RowSetFactory.empty();
 
-                // update the rowRedirection with the rowsIncluded set
+                // update the rowRedirection with the rowsIncluded set (in manageable batch sizes)
                 try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator()) {
                     while (rowsIncludedIterator.hasMore()) {
                         final RowSequence chunkRowsToFree =
                                 rowsIncludedIterator.getNextRowSequenceWithLength(maxChunkSize);
                         try (final ChunkSink.FillFromContext redirContext =
-                                     rowRedirection.makeFillFromContext(chunkRowsToFree.intSize());
-                             final RowSet newRows = getFreeRows(chunkRowsToFree.intSize());) {
+                                rowRedirection.makeFillFromContext(chunkRowsToFree.intSize());
+                                final RowSet newRows = getFreeRows(chunkRowsToFree.intSize());) {
 
                             // Update redirection mapping:
                             rowRedirection.fillFromChunk(redirContext, newRows.asRowKeyChunk(), chunkRowsToFree);
@@ -324,9 +319,6 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     }
                 }
 
-                elapsed = System.nanoTime() - start; start = System.nanoTime();
-//                System.out.println("BT rowRedirection (ms): " + (double)elapsed / 1_000_000.0);
-
                 // update the column sources
                 for (int ii = 0; ii < update.addColumnData.length; ++ii) {
                     if (isSubscribedColumn(ii)) {
@@ -335,20 +327,16 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                         long offset = 0;
                         for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
                             final Chunk<Values> chunk = column.data.get(chunkIndex);
-                            try (final RowSet chunkRows
-                                     = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
-                                 final RowSet chunkDestSet = destinationRowSet.subSetForPositions(chunkRows);
-                                 final ChunkSink.FillFromContext ctxt =
-                                         destSources[ii].makeFillFromContext(chunkDestSet.intSize())) {
-                                    destSources[ii].fillFromChunk(ctxt, chunk, chunkDestSet);
+                            try (final RowSet chunkRows = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
+                                    final RowSet chunkDestSet = destinationRowSet.subSetForPositions(chunkRows);
+                                    final ChunkSink.FillFromContext ctxt =
+                                            destSources[ii].makeFillFromContext(chunkDestSet.intSize())) {
+                                destSources[ii].fillFromChunk(ctxt, chunk, chunkDestSet);
                             }
                             offset += chunk.size();
                         }
                     }
                 }
-
-                elapsed = System.nanoTime() - start; start = System.nanoTime();
-//                System.out.println("BT fill column data (ms): " + (double)elapsed / 1_000_000.0);
             }
 
             modifiedColumnSet.clear();
@@ -364,13 +352,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 long offset = 0;
                 for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
                     final Chunk<Values> chunk = column.data.get(chunkIndex);
-                    try (final RowSet chunkRows
-                                = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
-                        final ChunkSource.FillContext redirContext =
-                                rowRedirection.makeFillContext(chunkRows.intSize(), null);
-                        final WritableLongChunk<RowKeys> keys =
-                                WritableLongChunk.makeWritableChunk(chunkRows.intSize());
-                        final RowSet chunkKeys = column.rowsModified.subSetForPositions(chunkRows)) {
+                    try (final RowSet chunkRows = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
+                            final ChunkSource.FillContext redirContext =
+                                    rowRedirection.makeFillContext(chunkRows.intSize(), null);
+                            final WritableLongChunk<RowKeys> keys =
+                                    WritableLongChunk.makeWritableChunk(chunkRows.intSize());
+                            final RowSet chunkKeys = column.rowsModified.subSetForPositions(chunkRows)) {
 
                         // fill the key chunk with the keys from this chunk
                         rowRedirection.fillChunk(redirContext, keys, chunkKeys);
@@ -380,7 +367,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
                         // fill the column with the data from this chunk
                         try (final ChunkSink.FillFromContext ctxt =
-                                     destSources[ii].makeFillFromContext(keys.size())) {
+                                destSources[ii].makeFillFromContext(keys.size())) {
                             destSources[ii].fillFromChunkUnordered(ctxt, chunk, keys);
                         }
                     }
@@ -456,7 +443,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         final int chunkSize = (int) Math.min(rowsToFree.size(), TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
 
         try (final WritableLongChunk<OrderedRowKeys> redirectedRows = WritableLongChunk.makeWritableChunk(chunkSize);
-            final RowSequence.Iterator rowsToFreeIterator = rowsToFree.getRowSequenceIterator()) {
+                final RowSequence.Iterator rowsToFreeIterator = rowsToFree.getRowSequenceIterator()) {
 
             while (rowsToFreeIterator.hasMore()) {
 
@@ -608,9 +595,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
-//        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
-        final WritableRowRedirection rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
-//        final WritableRowRedirection rowRedirection = new LongColumnSourceWritableRowRedirection(new LongArraySource());
+        // final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
+        final WritableRowRedirection rowRedirection =
+                new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
+        // final WritableRowRedirection rowRedirection = new LongColumnSourceWritableRowRedirection(new
+        // LongArraySource());
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                 makeColumns(columns, writableSources, rowRedirection);
 

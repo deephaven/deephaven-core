@@ -63,13 +63,19 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             return byteArrays.isEmpty();
         }
 
-        public long getByteOffset(int s, int e) {
-            // account for payload from s to e (inclusive)
-            final int startArrayIndex = getByteArrayIndex(s);
-            final int startOffset = offsets.get(s);
+        /***
+         * computes the size of the payload from sPos to ePos (inclusive)
+         *
+         * @param sPos the first data item to include in this payload
+         * @param ePos the last data item to include in this payload
+         * @return number of bytes in the payload
+         */
+        public long getPayloadSize(int sPos, int ePos) {
+            final int startArrayIndex = getByteArrayIndex(sPos);
+            final int startOffset = offsets.get(sPos);
 
-            final int endArrayIndex = getByteArrayIndex(e);
-            final int endOffset = offsets.get(e + 1);
+            final int endArrayIndex = getByteArrayIndex(ePos + 1);
+            final int endOffset = offsets.get(ePos + 1);
 
             if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
                 return endOffset - startOffset;
@@ -97,20 +103,25 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             return 0;
         }
 
-        public byte[] getByteArray(int arrayIdx) {
-            return byteArrays.get(arrayIdx);
-        }
-
         public int getByteArraySize(int arrayIdx) {
             return byteArraySizes.get(arrayIdx);
         }
 
-        public long writeByteData(LittleEndianDataOutputStream dos, int s, int e) throws IOException {
-            final int startArrayIndex = getByteArrayIndex(s);
-            final int startOffset = offsets.get(s);
+        /***
+         * write payload from sPos to ePos (inclusive) to the output stream
+         *
+         * @param dos the data output stream to populate with data
+         * @param sPos the first data item to include in this payload
+         * @param ePos the last data item to include in this payload
+         * @return number of bytes written to the outputstream
+         * @throws IOException if there is a problem writing to the output stream
+         */
+        public long writePayload(LittleEndianDataOutputStream dos, int sPos, int ePos) throws IOException {
+            final int startArrayIndex = getByteArrayIndex(sPos);
+            final int startOffset = offsets.get(sPos);
 
-            final int endArrayIndex = getByteArrayIndex(e);
-            final int endOffset = offsets.get(e + 1);
+            final int endArrayIndex = getByteArrayIndex(ePos + 1);
+            final int endOffset = offsets.get(ePos + 1);
 
             long writeLen = 0;
 
@@ -171,8 +182,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     appendItem.append(baos, chunk.get(i));
                     baosSize = baos.size();
                 } catch (OutOfMemoryError ex) {
-                    // we overran the buffer on this item, the output stream probably has junk from the failed write
-                    // so we use the stored output stream size instead of querying
+                    // we overran the buffer on this item and the output stream probably has junk from the failed write
+                    // but it is no more than the size of a single data item.  We use the stored output stream size
+                    // though instead of querying the size of the output stream (since that includes junk bytes)
+
+                    // add the buffer to storage
                     byteStorage.addByteArray(baos.peekBuffer(), startIndex, baosSize);
 
                     // close the old output stream and create a new one
@@ -258,7 +272,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
-                numPayloadBytes.add(myByteStorage.getByteOffset((int)s, (int)e));
+                numPayloadBytes.add(myByteStorage.getPayloadSize((int)s, (int)e));
             });
             final long payloadExtended = numPayloadBytes.longValue() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
@@ -288,7 +302,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                         totalCachedSize.add((e - s + 1) * Integer.BYTES);
 
                         // account for payload
-                        totalCachedSize.add(myByteStorage.getByteOffset((int)s, (int)e));
+                        totalCachedSize.add(myByteStorage.getPayloadSize((int)s, (int)e));
                     });
                 }
 
@@ -350,15 +364,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
                         logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
                     } else {
-                        logicalSize.add(myByteStorage.getByteOffset((int)idx,(int)idx));
-//                        final int endArrayIndex = myByteStorage.getByteArrayIndex((int)idx + 1);
-//                        final int endOffset = myByteStorage.offsets.get((int) idx + 1);
-//
-//                        if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-//                            logicalSize.add(endOffset - startOffset);
-//                        } else {
-//                            logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
-//                        }
+                        logicalSize.add(myByteStorage.getPayloadSize((int)idx,(int)idx));
                     }
                     dos.writeInt(logicalSize.intValue());
                 } catch (final IOException e) {
@@ -376,7 +382,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableLong payloadLen = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
                 try {
-                    payloadLen.add(myByteStorage.writeByteData(dos, (int) s, (int) e));
+                    payloadLen.add(myByteStorage.writePayload(dos, (int) s, (int) e));
                 } catch (final IOException err) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }

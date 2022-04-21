@@ -198,7 +198,7 @@ public class BarrageStreamGenerator implements
             boolean firstColumnWithChunks = true;
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
 
-            // build the row sets for the add column data.  NOTE: all populated columns will have the same
+            // build the row sets for the add column data. NOTE: all populated columns will have the same
             // number of chunks and equal row counts in each chunk so we can use any to create the rowsets
             RowSet[] tmpAddChunkRowSets = new RowSet[0];
 
@@ -508,8 +508,6 @@ public class BarrageStreamGenerator implements
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
 
-            final int batchSize = batchSize();
-
             // precompute add row offsets
             if (keyspaceViewport != null) {
                 try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
@@ -521,7 +519,6 @@ public class BarrageStreamGenerator implements
 
             // require a batch to at least send the metadata
             numAddRows = addRowOffsets.size();
-//            numAddBatches = Math.max(1, (addRowOffsets.size() + batchSize - 1) / batchSize);
         }
 
         @Override
@@ -642,7 +639,7 @@ public class BarrageStreamGenerator implements
      * @return an InputStream ready to be drained by GRPC
      */
     private InputStream getInputStream(final View view, final long startRange, final long endRange,
-                final ByteBuffer metadata, final ColumnVisitor columnVisitor) throws IOException {
+            final ByteBuffer metadata, final ColumnVisitor columnVisitor) throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
 
@@ -784,7 +781,8 @@ public class BarrageStreamGenerator implements
                         // normalize this to the chunk offsets
                         adjustedOffsets.shiftInPlace(shiftAmount);
 
-//                        System.out.println("myAddedOffsets: " + myAddedOffsets + ", adjustedOffsets: " + adjustedOffsets);
+                        // System.out.println("myAddedOffsets: " + myAddedOffsets + ", adjustedOffsets: " +
+                        // adjustedOffsets);
 
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 generator.getInputStream(view.options(), adjustedOffsets);
@@ -908,8 +906,10 @@ public class BarrageStreamGenerator implements
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
-        BarrageUpdateMetadata.addNumModBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", (view.numModRows + view.batchSize() - 1) / view.batchSize()));
+        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
+                (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
+        BarrageUpdateMetadata.addNumModBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
+                (view.numModRows + view.batchSize() - 1) / view.batchSize()));
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
         BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
@@ -961,7 +961,8 @@ public class BarrageStreamGenerator implements
         }
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator", view.numAddRows + view.batchSize() - 1) / view.batchSize());
+        BarrageUpdateMetadata.addNumAddBatches(metadata, LongSizedDataStructure.intSize("BarrageStreamGenerator",
+                (view.numAddRows + view.batchSize() - 1) / view.batchSize()));
         BarrageUpdateMetadata.addNumModBatches(metadata, 0);
         BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
         BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);

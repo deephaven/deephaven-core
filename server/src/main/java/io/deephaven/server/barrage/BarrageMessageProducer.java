@@ -1859,21 +1859,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private void flipSnapshotStateForSubscriptions(
             final List<Subscription> subscriptions) {
         for (final Subscription subscription : subscriptions) {
-            if (subscription.snapshotViewport != null) {
-                final RowSet tmp = subscription.viewport;
-                subscription.viewport = subscription.snapshotViewport;
-                subscription.snapshotViewport = (WritableRowSet) tmp;
-            }
+            final RowSet tmp = subscription.viewport;
+            subscription.viewport = subscription.snapshotViewport;
+            subscription.snapshotViewport = (WritableRowSet) tmp;
 
             boolean tmpDirection = subscription.reverseViewport;
             subscription.reverseViewport = subscription.snapshotReverseViewport;
             subscription.snapshotReverseViewport = tmpDirection;
 
-            if (subscription.snapshotColumns != null) {
-                final BitSet tmp = subscription.subscribedColumns;
-                subscription.subscribedColumns = subscription.snapshotColumns;
-                subscription.snapshotColumns = tmp;
-            }
+            final BitSet tmpCols = subscription.subscribedColumns;
+            subscription.subscribedColumns = subscription.snapshotColumns;
+            subscription.snapshotColumns = tmpCols;
         }
     }
 
