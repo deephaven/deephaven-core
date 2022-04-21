@@ -215,8 +215,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     startIndex = i;
                     byteStorage.offsets.set(i, 0);
                 }
-                byteStorage.offsets.set(i + 1, baosSize);
             }
+            byteStorage.offsets.set(i + 1, baosSize);
         }
         byteStorage.addByteArray(baos.peekBuffer(), startIndex, baosSize);
         baos.close();
@@ -373,15 +373,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    // is this the last row in the chunk?
-                    if (idx == chunk.size() - 1) {
-                        final int startArrayIndex = myByteStorage.getByteArrayIndex((int)idx);
-                        final int startOffset = myByteStorage.offsets.get((int)idx);
-
-                        logicalSize.add(myByteStorage.getByteArraySize(startArrayIndex) - startOffset);
-                    } else {
-                        logicalSize.add(myByteStorage.getPayloadSize((int)idx,(int)idx));
-                    }
+                    logicalSize.add(myByteStorage.getPayloadSize((int)idx,(int)idx));
                     dos.writeInt(logicalSize.intValue());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
