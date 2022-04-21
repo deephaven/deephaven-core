@@ -318,13 +318,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 totalMods.insert(column.rowsModified);
             }
 
-            // we are going to some potentially large operations, but we want to do the work in batches
-            int maxChunkSize = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
-
             if (update.rowsIncluded.isNonempty()) {
                 if (mightBeInitialSnapshot) {
-                    // ensure the data sources have at least the incoming capacity. The sources will auto-resize but
-                    // we know the initial snapshot size and can optimize
+                    // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
+                    // we know the initial snapshot size and resize immediately
                     capacity = update.rowsIncluded.size();
                     for (final WritableColumnSource<?> source : destSources) {
                         source.ensureCapacity(capacity);
@@ -336,6 +333,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 final WritableRowSet destinationRowSet = RowSetFactory.empty();
 
                 // update the rowRedirection with the rowsIncluded set (in manageable batch sizes)
+                int maxChunkSize = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
                 try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator()) {
                     while (rowsIncludedIterator.hasMore()) {
                         final RowSequence chunkRowsToFree =
@@ -644,11 +642,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
-        // final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         final WritableRowRedirection rowRedirection =
                 new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
-        // final WritableRowRedirection rowRedirection = new LongColumnSourceWritableRowRedirection(new
-        // LongArraySource());
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                 makeColumns(columns, writableSources, rowRedirection);
 

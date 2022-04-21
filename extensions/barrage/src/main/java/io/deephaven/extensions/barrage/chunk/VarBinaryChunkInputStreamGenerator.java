@@ -41,6 +41,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         private final ArrayList<Integer> byteArraySizes;
         private final ArrayList<Integer> byteArrayStartIndex;
 
+        // low-budget memoization
+        private long lastIdx = -1;
+        private int lastIdxArrayIdx = -1;
+        private int lastIdxOffset = -1;
+
         public ByteStorage(int size) {
             offsets = WritableIntChunk.makeWritableChunk(size);
 
@@ -71,21 +76,32 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          * @return number of bytes in the payload
          */
         public long getPayloadSize(int sPos, int ePos) {
-            final int startArrayIndex = getByteArrayIndex(sPos);
-            final int startOffset = offsets.get(sPos);
+            final int startArrayIndex;
+            final int startOffset;
 
-            final int endArrayIndex = getByteArrayIndex(ePos + 1);
-            final int endOffset = offsets.get(ePos + 1);
+            // might already have these start offsets saved
+            if (sPos == lastIdx) {
+                startArrayIndex = lastIdxArrayIdx;
+                startOffset = lastIdxOffset;
+            } else {
+                startArrayIndex = getByteArrayIndex(sPos);
+                startOffset = offsets.get(sPos);
+            }
 
-            if (startArrayIndex == endArrayIndex) { // same byte array, can optimize
-                return endOffset - startOffset;
+            // store these for current and later re-use
+            lastIdx = ePos + 1;
+            lastIdxArrayIdx = getByteArrayIndex((int)lastIdx);
+            lastIdxOffset = offsets.get(ePos + 1);
+
+            if (startArrayIndex == lastIdxArrayIdx) { // same byte array, can optimize
+                return lastIdxOffset - startOffset;
             } else {
                 // need to span multiple byte arrays
                 long byteCount = getByteArraySize(startArrayIndex) - startOffset;
-                for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < endArrayIndex; midArrayIndex++) {
+                for (int midArrayIndex = startArrayIndex + 1; midArrayIndex < lastIdxArrayIdx; midArrayIndex++) {
                     byteCount += getByteArraySize(midArrayIndex);
                 }
-                byteCount += endOffset;
+                byteCount += lastIdxOffset;
                 return byteCount;
             }
         }
@@ -310,7 +326,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     // then we must also align offset array
                     totalCachedSize.add(Integer.BYTES);
                 }
-                cachedSize = LongSizedDataStructure.intSize("SortHelper.makeAndFillValues", totalCachedSize.longValue());
+                cachedSize = LongSizedDataStructure.intSize("VarBinaryChunkInputStreamGenerator.getRawSize", totalCachedSize.longValue());
             }
             return cachedSize;
         }

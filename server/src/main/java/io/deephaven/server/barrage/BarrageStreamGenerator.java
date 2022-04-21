@@ -252,11 +252,18 @@ public class BarrageStreamGenerator implements
             for (final ChunkListInputStreamGenerator in : addColumnData) {
                 in.close();
             }
+            for (final RowSet rs : addChunkRowSets) {
+                rs.close();
+            }
+
         }
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
                 mcd.rowsModified.close();
                 mcd.data.close();
+                for (final RowSet rs : mcd.modChunkRowSets) {
+                    rs.close();
+                }
             }
         }
     }
@@ -323,8 +330,6 @@ public class BarrageStreamGenerator implements
             this.reverseViewport = reverseViewport;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
-
-            final int batchSize = batchSize();
 
             if (keyspaceViewport != null) {
                 this.modRowOffsets = new WritableRowSet[generator.modColumnData.length];
@@ -776,25 +781,16 @@ public class BarrageStreamGenerator implements
         try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
             // add the add-column streams
             for (final ChunkListInputStreamGenerator chunkSetGen : addColumnData) {
-
-                if (chunkSetGen.size() == 0) {
-                    System.out.println("oops");
-                    // need to write an empty column here
-
-                }
                 // iterate through each chunk
                 for (int i = 0; i < chunkSetGen.size(); ++i) {
                     final ChunkInputStreamGenerator generator = chunkSetGen.generators[i];
 
                     final long shiftAmount = -addChunkRowSets[i].firstRowKey();
 
-                    // get an offset rowset for each chunk in the set
+                    // get an offset RowSet for each chunk in the set
                     try (final WritableRowSet adjustedOffsets = myAddedOffsets.intersect(addChunkRowSets[i])) {
                         // normalize this to the chunk offsets
                         adjustedOffsets.shiftInPlace(shiftAmount);
-
-                        // System.out.println("myAddedOffsets: " + myAddedOffsets + ", adjustedOffsets: " +
-                        // adjustedOffsets);
 
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 generator.getInputStream(view.options(), adjustedOffsets);

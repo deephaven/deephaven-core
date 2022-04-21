@@ -52,10 +52,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayDeque;
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
@@ -173,6 +170,7 @@ public class ArrowFlightUtil {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                     msg.addColumnData[ci] = acd;
+                    msg.addColumnData[ci].data = new ArrayList<>();
                     final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
                     try {
                         acd.data.add(ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
@@ -182,7 +180,7 @@ public class ArrowFlightUtil {
                         throw new UncheckedDeephavenException(unexpected);
                     }
 
-                    if (acd.data.size() != numRowsAdded) {
+                    if (acd.data.get(0).size() != numRowsAdded) {
                         throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                     }
