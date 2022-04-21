@@ -28,6 +28,8 @@ public class LongVectorDirect implements LongVector {
         this.data = data;
     }
 
+    public static final LongVector ZERO_LEN_VECTOR = new LongVectorDirect();
+
     @Override
     public long get(long i) {
         if (i < 0 || i > data.length - 1) {

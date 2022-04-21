@@ -28,6 +28,8 @@ public class FloatVectorDirect implements FloatVector {
         this.data = data;
     }
 
+    public static final FloatVector ZERO_LEN_VECTOR = new FloatVectorDirect();
+
     @Override
     public float get(long i) {
         if (i < 0 || i > data.length - 1) {

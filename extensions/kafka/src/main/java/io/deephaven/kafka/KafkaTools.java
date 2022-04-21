@@ -380,6 +380,7 @@ public class KafkaTools {
             case BOOLEAN:
                 columnsOut.add(ColumnDefinition.ofBoolean(mappedNameForColumn));
                 break;
+            // There is no "SHORT" in Avro.
             case INT:
                 columnsOut.add(ColumnDefinition.ofInt(mappedNameForColumn));
                 break;
@@ -458,6 +459,7 @@ public class KafkaTools {
                     default:
                         throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
                 }
+                break;
             }
             case MAP:
             case NULL:
