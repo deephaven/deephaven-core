@@ -112,31 +112,28 @@ class TableTestCase(BaseTestCase):
         for op in ops:
             with self.subTest(op=op):
                 result_table = op(
-                    self.test_table, formulas=["a", "c", "Sum = a + b + c + d"]
-                )
+                    self.test_table, formulas=["a", "c", "Sum = a + b + c + d"])
                 self.assertIsNotNone(result_table)
                 self.assertTrue(len(result_table.columns) >= 3)
                 self.assertLessEqual(result_table.size, self.test_table.size)
 
         for op in ops:
             with self.subTest(op=op):
-                result_table = op(
-                    self.test_table, formulas="Sum = a + b + c + d"
-                )
+                result_table = op(self.test_table, formulas="Sum = a + b + c + d")
                 self.assertIsNotNone(result_table)
                 self.assertTrue(len(result_table.columns) >= 1)
                 self.assertLessEqual(result_table.size, self.test_table.size)
 
     def test_select_distinct(self):
-        unique_table = self.test_table.select_distinct(cols=["a"])
+        unique_table = self.test_table.select_distinct(formulas=["a"])
         self.assertLessEqual(unique_table.size, self.test_table.size)
-        unique_table = self.test_table.select_distinct(cols="a")
+        unique_table = self.test_table.select_distinct(formulas="a")
         self.assertLessEqual(unique_table.size, self.test_table.size)
-        unique_table = self.test_table.select_distinct(cols=[])
+        unique_table = self.test_table.select_distinct(formulas=[])
         self.assertLessEqual(unique_table.size, self.test_table.size)
 
         with self.assertRaises(DHError) as cm:
-            unique_table = self.test_table.select_distinct(cols=123)
+            unique_table = self.test_table.select_distinct(formulas=123)
         self.assertIn("RuntimeError", cm.exception.root_cause)
 
     #
@@ -151,7 +148,7 @@ class TableTestCase(BaseTestCase):
 
     def test_where_in(self):
         unique_table = self.test_table.head(num_rows=50).select_distinct(
-            cols=["a", "c"]
+            formulas=["a", "c"]
         )
 
         with self.subTest("where-in filter"):
@@ -183,14 +180,12 @@ class TableTestCase(BaseTestCase):
     # Table operation category: Sort
     #
     def test_sort(self):
-        sorted_table = self.test_table.sort(
-            order_by=["a", "b"], order=[SortDirection.DESCENDING]
-        )
+        sorted_table = self.test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
         self.assertEqual(sorted_table.size, self.test_table.size)
-        sorted_table = self.test_table.sort(
-            order_by="a", order=SortDirection.DESCENDING
-        )
+        sorted_table = self.test_table.sort(order_by="a", order=SortDirection.DESCENDING)
         self.assertEqual(sorted_table.size, self.test_table.size)
+        sorted_table = self.test_table.sort(order_by=[], order=SortDirection.DESCENDING)
+        self.assertEqual(sorted_table, self.test_table)
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
@@ -207,16 +202,13 @@ class TableTestCase(BaseTestCase):
             order_by=["b"], order=[SortDirection.DESCENDING]
         )
         sorted_table2 = self.test_table.sort_descending(order_by=["b"])
-        self.assertEqual(
-            sorted_table.to_string(num_rows=500), sorted_table2.to_string(num_rows=500)
-        )
-        sorted_table = self.test_table.sort(
-            order_by="b", order=SortDirection.DESCENDING
-        )
+        self.assertEqual(sorted_table, sorted_table2)
+        sorted_table = self.test_table.sort(order_by="b", order=SortDirection.DESCENDING)
         sorted_table2 = self.test_table.sort_descending(order_by="b")
-        self.assertEqual(
-            sorted_table.to_string(num_rows=500), sorted_table2.to_string(num_rows=500)
-        )
+        self.assertEqual(sorted_table, sorted_table2)
+
+        with self.assertRaises(TypeError):
+            sorted_table3 = self.test_table.sort_descending()
 
     def test_reverse(self):
         reversed_table = self.test_table.reverse()
@@ -239,12 +231,15 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(cm.exception.root_cause)
 
     def test_exact_join(self):
-        left_table = self.test_table.drop_columns(["d", "e"])
-        right_table = self.test_table.drop_columns(["b", "c"])
+        left_table = self.test_table.drop_columns(["d", "e"]).group_by('a')
+        right_table = self.test_table.drop_columns(["b", "c"]).group_by('a')
+        result_table = left_table.exact_join(right_table, on='a', joins=["d", "e"])
+        self.assertEqual(result_table.size, left_table.size)
+
+        left_table = self.test_table.select_distinct().drop_columns("d")
+        right_table = self.test_table.select_distinct().drop_columns("d")
         with self.assertRaises(DHError) as cm:
-            result_table = left_table.exact_join(
-                right_table, on=["a"], joins=["d", "e"]
-            )
+            result_table = left_table.exact_join(right_table, on='a', joins=["d", "e"])
         self.assertTrue(cm.exception.root_cause)
 
     def test_cross_join(self):
@@ -262,7 +257,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.join(right_table, on=[], joins=["e"])
             self.assertTrue(result_table.size > left_table.size)
         with self.subTest("with no join keys"):
-            result_table = left_table.join(right_table, on=[], joins="e")
+            result_table = left_table.join(right_table, joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
     def test_as_of_join(self):
@@ -297,6 +292,15 @@ class TableTestCase(BaseTestCase):
                 self.assertLessEqual(result_table.size, self.test_table.size)
                 result_table1 = op(self.test_table, num_rows=1, by="a")
                 self.assertLessEqual(result_table1.size, self.test_table.size)
+                result_table = op(self.test_table, num_rows=1)
+                self.assertLessEqual(result_table.size, self.test_table.size)
+                result_table1 = op(self.test_table, num_rows=1)
+                self.assertLessEqual(result_table1.size, self.test_table.size)
+
+        for op in ops:
+            with self.subTest(op=op):
+                result_table = op(self.test_table, num_rows=1, by=[])
+                self.assertLessEqual(result_table.size, self.test_table.size)
 
     def test_group_by(self):
         with self.subTest("with some columns"):
@@ -329,13 +333,13 @@ class TableTestCase(BaseTestCase):
             Table.max_by,
         ]
 
-        num_distinct_a = self.test_table.select_distinct(cols=["a", "b"]).size
+        num_distinct_a = self.test_table.select_distinct(formulas=["a", "b"]).size
         for op in ops:
             with self.subTest(op=op):
                 result_table = op(self.test_table, by=["a", "b"])
                 self.assertEqual(result_table.size, num_distinct_a)
 
-        num_distinct_a = self.test_table.select_distinct(cols="a").size
+        num_distinct_a = self.test_table.select_distinct(formulas="a").size
         with self.subTest(op=op):
             result_table = op(self.test_table, by="a")
             self.assertEqual(result_table.size, num_distinct_a)
@@ -346,12 +350,12 @@ class TableTestCase(BaseTestCase):
                 self.assertEqual(result_table.size, 1)
 
     def test_count_by(self):
-        num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
+        num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
         result_table = self.test_table.count_by(col="b", by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
     def test_agg_by(self):
-        num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
+        num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
 
         aggs = [
             sum_(cols=["SumC=c"]),
@@ -399,15 +403,21 @@ class TableTestCase(BaseTestCase):
     def test_snapshot(self):
         with self.subTest("do_init is False"):
             t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
+                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
             )
             snapshot = t.snapshot(source_table=self.test_table)
-            self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
             self.assertEqual(0, snapshot.size)
 
         with self.subTest("do_init is True"):
             snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
+
+        with self.subTest("with cols"):
+            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
+            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_history(self):
         t = empty_table(1).update(
@@ -462,6 +472,11 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             test_table.agg_all_by(count_("aggCount"), "grp_id")
         self.assertIn("unsupported", cm.exception.root_cause)
+
+        for agg in aggs:
+            with self.subTest(agg):
+                result_table = test_table.agg_all_by(agg)
+                self.assertEqual(result_table.size, 1)
 
     def test_format_columns(self):
         t = self.test_table.format_columns(["a = YELLOW", "b = BLUE"])

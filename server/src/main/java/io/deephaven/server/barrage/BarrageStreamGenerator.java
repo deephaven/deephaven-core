@@ -88,8 +88,8 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message) {
-            return new BarrageStreamGenerator(message);
+                final BarrageMessage message, final WriteMetricsConsumer metricsConsumer) {
+            return new BarrageStreamGenerator(message, metricsConsumer);
         }
 
         @Override
@@ -160,6 +160,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
+    public final WriteMetricsConsumer writeConsumer;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -181,9 +182,11 @@ public class BarrageStreamGenerator implements
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
      *
      * @param message the generator takes ownership of the message and its internal objects
+     * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message) {
+    public BarrageStreamGenerator(final BarrageMessage message, final WriteMetricsConsumer writeConsumer) {
         this.message = message;
+        this.writeConsumer = writeConsumer;
         try {
             firstSeq = message.firstSeq;
             lastSeq = message.lastSeq;
@@ -362,6 +365,8 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
+            long bytesWritten = 0;
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
 
             // batch size is maximum, can go smaller when needed
@@ -372,8 +377,10 @@ public class BarrageStreamGenerator implements
 
             if (numAddRows == 0 && numModRows == 0) {
                 // we still need to send a message containing just the metadata
-                visitor.accept(generator.getInputStream(
-                        this, 0, 0, metadata, generator::appendAddColumns));
+                final InputStream is = generator.getInputStream(
+                        this, 0, 0, metadata, generator::appendAddColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
             } else {
                 long offset = 0;
                 long chunkOffset = 0;
@@ -387,8 +394,10 @@ public class BarrageStreamGenerator implements
                         chunkOffset = 0;
                     }
 
-                    visitor.accept(generator.getInputStream(
-                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns));
+                    final InputStream is = generator.getInputStream(
+                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns);
+                    bytesWritten += is.available();
+                    visitor.accept(is);
 
                     offset += effectiveBatchSize;
                     chunkOffset += effectiveBatchSize;
@@ -406,8 +415,10 @@ public class BarrageStreamGenerator implements
                         chunkOffset = 0;
                     }
 
-                    visitor.accept(generator.getInputStream(
-                            this, offset, offset + effectiveBatchSize, metadata, generator::appendModColumns));
+                    final InputStream is = generator.getInputStream(
+                            this, offset, offset + effectiveBatchSize, metadata, generator::appendModColumns);
+                    bytesWritten += is.available();
+                    visitor.accept(is);
 
                     offset += effectiveBatchSize;
                     chunkOffset += effectiveBatchSize;
@@ -423,6 +434,7 @@ public class BarrageStreamGenerator implements
                     modViewport.close();
                 }
             }
+            generator.writeConsumer.onWrite(bytesWritten, System.nanoTime() - startTm);
         }
 
         private int batchSize() {

@@ -36,12 +36,16 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.function.LongConsumer;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
 
 public class BarrageStreamReader implements StreamReader {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
+
+    private final LongConsumer deserializeTmConsumer;
 
     private long numAddRowsRead = 0;
     private long numAddRowsTotal = 0;
@@ -52,6 +56,10 @@ public class BarrageStreamReader implements StreamReader {
     private long lastModStartIndex = 0;
     private BarrageMessage msg = null;
 
+    public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
+        this.deserializeTmConsumer = deserializeTmConsumer;
+    }
+
     @Override
     public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
             final BitSet expectedColumns,
@@ -59,6 +67,7 @@ public class BarrageStreamReader implements StreamReader {
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
             final InputStream stream) {
+        final long startDeserTm = System.nanoTime();
         Message header = null;
         try {
             boolean bodyParsed = false;
@@ -332,6 +341,7 @@ public class BarrageStreamReader implements StreamReader {
                 throw new IllegalStateException("Missing body tag");
             }
 
+            deserializeTmConsumer.accept(System.nanoTime() - startDeserTm);
             if (numAddRowsRead == numAddRowsTotal && numModRowsRead == numModRowsTotal) {
                 final BarrageMessage retval = msg;
                 msg = null;

@@ -355,6 +355,10 @@ public final class SessionImpl extends SessionBase {
         return observer;
     }
 
+    public ScheduledExecutorService executor() {
+        return executor;
+    }
+
     public long batchCount() {
         return states.batchCount();
     }

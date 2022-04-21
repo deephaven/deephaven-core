@@ -23,11 +23,13 @@ import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.server.arrow.ArrowFlightUtil.ZERO_MOD_COLUMNS;
 
@@ -38,16 +40,20 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
+    private final ScheduledExecutorService executorService;
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
     @Inject
-    public FlightServiceGrpcImpl(final SessionService sessionService,
+    public FlightServiceGrpcImpl(
+            @Nullable final ScheduledExecutorService executorService,
+            final SessionService sessionService,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory) {
-        this.ticketRouter = ticketRouter;
+        this.executorService = executorService;
         this.sessionService = sessionService;
+        this.ticketRouter = ticketRouter;
         this.doExchangeFactory = doExchangeFactory;
     }
 
@@ -177,7 +183,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
 
                         // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, (bytes, nanos) -> {
+                        })) {
                             listener.onNext(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }
 
@@ -194,8 +201,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      */
     public StreamObserver<InputStream> doPutCustom(final StreamObserver<Flight.PutResult> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver,
-                () -> new ArrowFlightUtil.DoPutObserver(sessionService.getCurrentSession(), ticketRouter,
-                        responseObserver));
+                () -> new ArrowFlightUtil.DoPutObserver(executorService, sessionService.getCurrentSession(),
+                        ticketRouter, responseObserver));
     }
 
     /**
