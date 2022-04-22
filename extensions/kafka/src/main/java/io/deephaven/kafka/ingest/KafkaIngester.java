@@ -309,7 +309,7 @@ public class KafkaIngester {
             return true;
         } catch (Exception ex) {
             log.error().append(logPrefix).append("Exception while polling for Kafka messages:").append(ex)
-                    .append(", aborting.");
+                    .append(", aborting.").endl();
             return false;
         }
 
@@ -333,11 +333,12 @@ public class KafkaIngester {
                 streamConsumer.accept(partitionRecords);
             } catch (Exception ex) {
                 ++messagesWithErr;
-                log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex);
+                log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();
                 if (messagesWithErr > MAX_ERRS) {
                     streamConsumer.acceptFailure(ex);
                     log.error().append(logPrefix)
-                            .append("Max number of errors exceeded, aborting " + this + " consumer thread.");
+                            .append("Max number of errors exceeded, aborting " + this + " consumer thread.")
+                            .endl();
                     return false;
                 }
                 continue;
