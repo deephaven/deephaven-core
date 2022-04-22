@@ -110,7 +110,7 @@ profile_views_per_minute_last_10 = \
         ['user_id',
         'received_at_minute']
     )
-    
+
 profile_views = pageviews_stg \
     .view([
         'owner_id = target_id',
