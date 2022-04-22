@@ -10,9 +10,10 @@ import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.WireFormat;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.*;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
+import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -20,16 +21,12 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -40,6 +37,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.datastructures.SizeException;
 import io.grpc.Drainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
@@ -55,7 +53,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.BitSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
@@ -68,6 +69,10 @@ public class BarrageStreamGenerator implements
     // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
+
+    // default to 100MB to match java-client and w2w incoming limits
+    private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "messageSizeLimit", 100 * 1024 * 1024);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
@@ -383,14 +388,15 @@ public class BarrageStreamGenerator implements
             long bytesWritten = 0;
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
 
-            // batch size is maximum, can go smaller when needed
-            final int batchSize = batchSize();
+            // batch size is maximum, will write fewer when needed. If we are enforcing a message size limit, then
+            // reasonably we will require at least one byte per row and restrict rows accordingly
+            int batchSizeLimit = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
 
             // there may be multiple chunk generators and we need to ensure that a single batch rowset does not cross
             // boundaries and that we honor the batch size requests
 
             if (numAddRows == 0 && numModRows == 0) {
-                // we still need to send a message containing just the metadata
+                // we still need to send a message containing metadata when there are no rows
                 final InputStream is = generator.getInputStream(
                         this, 0, 0, metadata, generator::appendAddColumns);
                 bytesWritten += is.available();
@@ -400,43 +406,98 @@ public class BarrageStreamGenerator implements
                 long chunkOffset = 0;
 
                 while (offset < numAddRows) {
-                    long effectiveBatchSize = batchSize;
+                    long rowsRemaining = numAddRows - offset;
+
+                    int batchSize = (int) Math.min(rowsRemaining, batchSizeLimit);
 
                     // make sure we are not about to cross a chunk boundary
                     if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        batchSize = (int) (TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset);
                         chunkOffset = 0;
                     }
 
-                    final InputStream is = generator.getInputStream(
-                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns);
-                    bytesWritten += is.available();
-                    visitor.accept(is);
+                    try {
+                        final InputStream is = generator.getInputStream(
+                                this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                        int bytesToWrite = is.available();
 
-                    offset += effectiveBatchSize;
-                    chunkOffset += effectiveBatchSize;
-                    metadata = null;
+                        // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
+                        // row then we must send and let it potentially fail)
+                        if (bytesToWrite > DEFAULT_MESSAGE_SIZE_LIMIT && batchSize > 1) {
+                            // can't write this, so close the input stream and retry
+                            is.close();
+                        } else {
+                            bytesWritten += bytesToWrite;
+
+                            // let's write the data
+                            visitor.accept(is);
+
+                            offset += batchSize;
+                            chunkOffset += batchSize;
+                            metadata = null;
+                        }
+                        // recompute the batch limit for the next message (or retry)
+                        int bytesPerRow = bytesToWrite / batchSize;
+                        if (bytesPerRow > 0) {
+                            int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
+
+                            // add some margin for abnormal cell contents
+                            batchSizeLimit = Math.min(batchSize(), Math.max(1, (int) ((double) rowLimit * 0.9)));
+                        }
+                    } catch (SizeException ex) {
+                        // was an overflow in the ChunkInputStream generator (probably VarBinary). We can't compute the
+                        // correct number of rows from this failure, so cut batch size in half and try again. This may
+                        // occur multiple times until the size is restricted properly
+                        batchSizeLimit = Math.max(1, batchSizeLimit / 2);
+                    }
                 }
 
                 offset = 0;
                 chunkOffset = 0;
                 while (offset < numModRows) {
-                    long effectiveBatchSize = batchSize;
+                    long rowsRemaining = numModRows - offset;
+
+                    int batchSize = (int) Math.min(rowsRemaining, batchSizeLimit);
 
                     // make sure we are not about to cross a chunk boundary
                     if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        batchSize = (int) (TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset);
                         chunkOffset = 0;
                     }
 
-                    final InputStream is = generator.getInputStream(
-                            this, offset, offset + effectiveBatchSize, metadata, generator::appendModColumns);
-                    bytesWritten += is.available();
-                    visitor.accept(is);
+                    try {
+                        final InputStream is = generator.getInputStream(
+                                this, offset, offset + batchSize, metadata, generator::appendModColumns);
+                        int bytesToWrite = is.available();
 
-                    offset += effectiveBatchSize;
-                    chunkOffset += effectiveBatchSize;
-                    metadata = null;
+                        // treat this as a hard limit, exceeding will fail a client or w2w
+                        if (bytesToWrite > DEFAULT_MESSAGE_SIZE_LIMIT) {
+                            // can't write this, so close the input stream and retry
+                            is.close();
+                        } else {
+                            bytesWritten += bytesToWrite;
+
+                            // let's write the data
+                            visitor.accept(is);
+
+                            offset += batchSize;
+                            chunkOffset += batchSize;
+                            metadata = null;
+                        }
+                        // recompute the batch limit for the next message (or retry)
+                        int bytesPerRow = bytesToWrite / batchSize;
+                        if (bytesPerRow > 0) {
+                            int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
+
+                            // add some margin for abnormal cell contents
+                            batchSizeLimit = Math.min(batchSize(), Math.max(1, (int) ((double) rowLimit * 0.9)));
+                        }
+                    } catch (SizeException ex) {
+                        // was an overflow in the ChunkInputStream generator (probably VarBinary). We can't compute the
+                        // correct number of rows from this failure, so cut batch size in half and try again. This may
+                        // occur multiple times until the size is restricted properly
+                        batchSizeLimit = Math.max(1, batchSizeLimit / 2);
+                    }
                 }
             }
 
@@ -550,10 +611,13 @@ public class BarrageStreamGenerator implements
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
-            final long batchSize = batchSize();
+
+            // batch size is maximum, will write fewer when needed. If we are enforcing a message size limit, then
+            // reasonably we will require at least one byte per row and restrict rows accordingly
+            int batchSizeLimit = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
 
             if (numAddRows == 0) {
-                // we still need to send a message containing just the metadata
+                // we still need to send a message containing metadata when there are no rows
                 visitor.accept(generator.getInputStream(
                         this, 0, 0, metadata, generator::appendAddColumns));
             } else {
@@ -561,20 +625,48 @@ public class BarrageStreamGenerator implements
                 long chunkOffset = 0;
 
                 while (offset < numAddRows) {
-                    long effectiveBatchSize = batchSize;
+                    long rowsRemaining = numAddRows - offset;
+
+                    int batchSize = (int) Math.min(rowsRemaining, batchSizeLimit);
 
                     // make sure we are not about to cross a chunk boundary
                     if (chunkOffset + batchSize > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                        effectiveBatchSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset;
+                        batchSize = (int) (TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD - chunkOffset);
                         chunkOffset = 0;
                     }
 
-                    visitor.accept(generator.getInputStream(
-                            this, offset, offset + effectiveBatchSize, metadata, generator::appendAddColumns));
+                    try {
+                        final InputStream is = generator.getInputStream(
+                                this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                        int bytesToWrite = is.available();
 
-                    offset += effectiveBatchSize;
-                    chunkOffset += effectiveBatchSize;
-                    metadata = null;
+                        // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
+                        // row then we must send and let it potentially fail)
+                        if (bytesToWrite > DEFAULT_MESSAGE_SIZE_LIMIT && batchSize > 1) {
+                            // can't write this, so close the input stream and retry
+                            is.close();
+                        } else {
+                            // let's write the data
+                            visitor.accept(is);
+
+                            offset += batchSize;
+                            chunkOffset += batchSize;
+                            metadata = null;
+                        }
+                        // recompute the batch limit for the next message (or retry)
+                        int bytesPerRow = bytesToWrite / batchSize;
+                        if (bytesPerRow > 0) {
+                            int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
+
+                            // add some margin for abnormal cell contents
+                            batchSizeLimit = Math.min(batchSize(), Math.max(1, (int) ((double) rowLimit * 0.9)));
+                        }
+                    } catch (SizeException ex) {
+                        // was an overflow in the ChunkInputStream generator (probably VarBinary). We can't compute the
+                        // correct number of rows from this failure, so cut batch size in half and try again. This may
+                        // occur multiple times until the size is restricted properly
+                        batchSizeLimit = Math.max(1, batchSizeLimit / 2);
+                    }
                 }
             }
 
@@ -813,8 +905,6 @@ public class BarrageStreamGenerator implements
 
                             // Add the drainable last as it is allowed to immediately close a row set the visitors need
                             addStream.accept(drainableColumn);
-                        } catch (Exception ex) {
-                            System.out.println(ex.getMessage());
                         }
                         // no need to test other chunks
                         columnWritten = true;
@@ -822,7 +912,7 @@ public class BarrageStreamGenerator implements
                 }
                 // must write column data, just write an empty column
                 if (!columnWritten) {
-                    try (final RowSet empty = RowSetFactory.empty()){
+                    try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 chunkSetGen.generators[0].getInputStream(view.options(), empty);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
@@ -889,7 +979,7 @@ public class BarrageStreamGenerator implements
                 }
                 // must write column data, just write an empty column
                 if (!columnWritten) {
-                    try (final RowSet empty = RowSetFactory.empty()){
+                    try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 mcd.data.generators[0].getInputStream(view.options(), empty);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
