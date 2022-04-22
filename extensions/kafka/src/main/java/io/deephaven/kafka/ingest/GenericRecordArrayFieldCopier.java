@@ -1,10 +1,14 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.vector.*;
+import static io.deephaven.util.type.ArrayTypeUtils.*;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
@@ -13,21 +17,25 @@ import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
+public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
     private final ArrayConverter arrayConverter;
-    public GenericRecordVectorFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema, final Class<?> componentType) {
+    public GenericRecordArrayFieldCopier(
+            final String fieldPathStr,
+            final Pattern separator,
+            final Schema schema,
+            final Class<?> componentType) {
         super(fieldPathStr, separator, schema);
         arrayConverter = ArrayConverter.makeFor(componentType);
     }
 
     private interface ArrayConverter {
-        Vector<?> convert(final GenericArray<?> genericArray);
+        Object convert(final GenericArray<?> genericArray);
         static ArrayConverter makeFor(Class<?> componentType) {
             if (componentType.equals(byte.class)) {
                 return (GenericArray<?> ga) -> {
                     final int gaSize = ga.size();
                     if (gaSize == 0) {
-                        return ByteVectorDirect.ZERO_LEN_VECTOR;
+                        return EMPTY_BYTE_ARRAY;
                     }
                     final byte[] out = new byte[gaSize];
                     int i = 0;
@@ -35,7 +43,7 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                         out[i] = (o == null) ? NULL_BYTE : (byte) o;
                         ++i;
                     }
-                    return new ByteVectorDirect(out);
+                    return out;
                 };
             }
             // There is no "SHORT" in Avro.
@@ -44,7 +52,7 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                 return (GenericArray<?> ga) -> {
                     final int gaSize = ga.size();
                     if (gaSize == 0) {
-                        return IntVectorDirect.ZERO_LEN_VECTOR;
+                        return EMPTY_INT_ARRAY;
                     }
                     final int[] out = new int[gaSize];
                     int i = 0;
@@ -52,14 +60,14 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                         out[i] = (o == null) ? NULL_INT : (int) o;
                         ++i;
                     }
-                    return new IntVectorDirect(out);
+                    return out;
                 };
             }
             if (componentType.equals(long.class)) {
                 return (GenericArray<?> ga) -> {
                     final int gaSize = ga.size();
                     if (gaSize == 0) {
-                        return LongVectorDirect.ZERO_LEN_VECTOR;
+                        return EMPTY_LONG_ARRAY;
                     }
                     final long[] out = new long[gaSize];
                     int i = 0;
@@ -67,14 +75,14 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                         out[i] = (o == null) ? NULL_LONG : (long) o;
                         ++i;
                     }
-                    return new LongVectorDirect(out);
+                    return out;
                 };
             }
             if (componentType.equals(float.class)) {
                 return (GenericArray<?> ga) -> {
                     final int gaSize = ga.size();
                     if (gaSize == 0) {
-                        return FloatVectorDirect.ZERO_LEN_VECTOR;
+                        return EMPTY_FLOAT_ARRAY;
                     }
                     final float[] out = new float[gaSize];
                     int i = 0;
@@ -82,14 +90,14 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                         out[i] = (o == null) ? NULL_FLOAT : (float) o;
                         ++i;
                     }
-                    return new FloatVectorDirect(out);
+                    return out;
                 };
             }
             if (componentType.equals(double.class)) {
                 return (GenericArray<?> ga) -> {
                     final int gaSize = ga.size();
                     if (gaSize == 0) {
-                        return DoubleVectorDirect.ZERO_LEN_VECTOR;
+                        return EMPTY_DOUBLE_ARRAY;
                     }
                     final double[] out = new double[gaSize];
                     int i = 0;
@@ -97,14 +105,14 @@ public class GenericRecordVectorFieldCopier extends GenericRecordFieldCopier {
                         out[i] = (o == null) ? NULL_DOUBLE : (double) o;
                         ++i;
                     }
-                    return new DoubleVectorDirect(out);
+                    return out;
                 };
             }
             if (componentType.equals(boolean.class) || componentType.equals(String.class)) {
                 return (GenericArray<?> ga) -> {
                     final Object[] out = new Object[ga.size()];
                     ga.toArray(out);
-                    return new ObjectVectorDirect<>(out);
+                    return out;
                 };
             }
             throw new IllegalStateException("Unsupported component type " + componentType);

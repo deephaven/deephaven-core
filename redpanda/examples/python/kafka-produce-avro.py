@@ -126,7 +126,7 @@ def normalize_type(ptype: str):
     else:
         prefix = ""
     if ptype == "timestamp":
-        return ptype
+        return prefix + ptype
     if ptype == "str" or ptype == "string":
         return prefix + "str"
     if ptype == "bool" or ptype == "boolean":
@@ -139,7 +139,7 @@ def normalize_type(ptype: str):
 
 def value_from_str(ptype: str, svalue: str):
     # Strictly speaking we are calling for a python type here (eg, "str", "int", "float", "bool").
-    # We allow other type names for ease of use for us, people accostumed to Java.
+    # We allow other type names for ease of use for us, people accustumed to Java.
     if (ptype == "str"):
         return svalue
     if (ptype == "bool"):

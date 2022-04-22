@@ -11,6 +11,7 @@ import io.deephaven.vector.Vector;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
@@ -33,7 +34,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final Schema schema,
             final boolean allowNulls) {
         super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldPathStr, chunkType,
-                dataType, componentType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator, chunkType,
+                dataType, componentType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator,
+                        chunkType,
                         dataType, componentType));
     }
 
@@ -122,10 +124,12 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                             "Can not map field with non matching logical type to BigDecimal: " +
                                     "field=" + fieldPathStr + ", logical type=" + logicalType);
                 }
-                if (Vector.class.isAssignableFrom(dataType)) {
-                    return new GenericRecordVectorFieldCopier(fieldPathStr, separator, schema, componentType);
+                if (dataType.isArray()) {
+                    return new GenericRecordArrayFieldCopier(fieldPathStr, separator, schema, componentType);
                 }
-                return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
+                if (GenericContainer.class.isAssignableFrom(dataType)) {
+                    return new GenericRecordGenericContainerFieldCopier(fieldPathStr, separator, schema);
+                }
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }

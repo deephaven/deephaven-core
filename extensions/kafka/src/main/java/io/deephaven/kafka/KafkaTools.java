@@ -44,6 +44,9 @@ import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
+import org.apache.avro.generic.GenericArray;
+import org.apache.avro.generic.GenericContainer;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -406,10 +409,17 @@ public class KafkaTools {
                 break;
             case UNION: {
                 final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
-                pushColumnTypesFromAvroField(
-                        columnsOut, fieldPathToColumnNameOut,
-                        fieldNamePrefix, fieldName,
-                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
+                if (effectiveSchema == fieldSchema) {
+                    // It is an honest to god Union; we don't support them right now other than giving back
+                    // an Object column with a GenericRecord object.
+                    columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericRecord.class));
+                } else {
+                    // It was a union with null, which is simply the other unioned type in DH.
+                    pushColumnTypesFromAvroField(
+                            columnsOut, fieldPathToColumnNameOut,
+                            fieldNamePrefix, fieldName,
+                            effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
+                }
                 return;
             }
             case RECORD:
@@ -440,31 +450,37 @@ public class KafkaTools {
                 }
                 switch (elementTypeType) {
                     case INT:
-                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, IntVector.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, int[].class));
                         break;
                     case LONG:
-                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, LongVector.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
                         break;
                     case FLOAT:
-                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, FloatVector.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, float[].class));
                         break;
                     case DOUBLE:
-                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, DoubleVector.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, double[].class));
                         break;
                     case BOOLEAN:
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Boolean[].class));
+                        break;
                     case ENUM:
                     case STRING:
-                        columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, ObjectVector.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, String[].class));
                         break;
                     default:
-                        throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericArray.class));
+                        break;
                 }
                 break;
             }
             case MAP:
+                columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericRecord.class));
+                break;
             case NULL:
             default:
-                throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
+                columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericContainer.class));
+                break;
         }
         if (fieldPathToColumnNameOut != null) {
             fieldPathToColumnNameOut.put(fieldNamePrefix + fieldName, mappedNameForColumn);
