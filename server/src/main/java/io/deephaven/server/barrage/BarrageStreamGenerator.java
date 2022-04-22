@@ -11,6 +11,7 @@ import com.google.protobuf.WireFormat;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -153,7 +154,11 @@ public class BarrageStreamGenerator implements
             modChunkRowSets = new RowSet[col.data.size()];
             for (int chunkIdx = 0; chunkIdx < col.data.size(); ++chunkIdx) {
                 int chunkSize = col.data.get(chunkIdx).size();
-                modChunkRowSets[chunkIdx] = RowSetFactory.fromRange(offset, offset + chunkSize - 1);
+                if (chunkSize == 0) {
+                    modChunkRowSets[chunkIdx] = RowSetFactory.empty();
+                } else {
+                    modChunkRowSets[chunkIdx] = RowSetFactory.fromRange(offset, offset + chunkSize - 1);
+                }
                 offset += chunkSize;
             }
         }
@@ -211,7 +216,11 @@ public class BarrageStreamGenerator implements
                     tmpAddChunkRowSets = new RowSet[message.addColumnData[i].data.size()];
                     for (int chunkIdx = 0; chunkIdx < message.addColumnData[i].data.size(); ++chunkIdx) {
                         int chunkSize = message.addColumnData[i].data.get(chunkIdx).size();
-                        tmpAddChunkRowSets[chunkIdx] = RowSetFactory.fromRange(offset, offset + chunkSize - 1);
+                        if (chunkSize == 0) {
+                            tmpAddChunkRowSets[chunkIdx] = RowSetFactory.empty();
+                        } else {
+                            tmpAddChunkRowSets[chunkIdx] = RowSetFactory.fromRange(offset, offset + chunkSize - 1);
+                        }
                         offset += chunkSize;
                     }
                     firstColumnWithChunks = false;
@@ -779,30 +788,39 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
 
         try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
-            // add the add-column streams
+            // every column must write to the stream
             for (final ChunkListInputStreamGenerator chunkSetGen : addColumnData) {
-                // iterate through each chunk
-                for (int i = 0; i < chunkSetGen.size(); ++i) {
-                    final ChunkInputStreamGenerator generator = chunkSetGen.generators[i];
+                boolean columnWritten = false;
 
-                    final long shiftAmount = -addChunkRowSets[i].firstRowKey();
+                // iterate through each chunk and find the one that contains the requested data
+                for (int i = 0; i < chunkSetGen.size() && !columnWritten; ++i) {
+                    // if the set of data is empty
+                    if (addChunkRowSets[i].isEmpty() || startRange <= addChunkRowSets[i].lastRowKey()) {
+                        final ChunkInputStreamGenerator generator = chunkSetGen.generators[i];
 
-                    // get an offset RowSet for each chunk in the set
-                    try (final WritableRowSet adjustedOffsets = myAddedOffsets.intersect(addChunkRowSets[i])) {
-                        // normalize this to the chunk offsets
-                        adjustedOffsets.shiftInPlace(shiftAmount);
+                        // shift this into the chunk position space
+                        final long shiftAmount = -addChunkRowSets[i].firstRowKey();
 
-                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                generator.getInputStream(view.options(), adjustedOffsets);
-                        drainableColumn.visitFieldNodes(fieldNodeListener);
-                        drainableColumn.visitBuffers(bufferListener);
+                        // get an offset RowSet for each chunk in the set
+                        try (final WritableRowSet adjustedOffsets = myAddedOffsets.intersect(addChunkRowSets[i])) {
+                            // normalize this to the chunk offsets
+                            adjustedOffsets.shiftInPlace(shiftAmount);
 
-                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
-                        addStream.accept(drainableColumn);
-                    } catch (Exception ex) {
-                        System.out.println(ex.getMessage());
+                            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                    generator.getInputStream(view.options(), adjustedOffsets);
+                            drainableColumn.visitFieldNodes(fieldNodeListener);
+                            drainableColumn.visitBuffers(bufferListener);
+
+                            // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                            addStream.accept(drainableColumn);
+                        } catch (Exception ex) {
+                            System.out.println(ex.getMessage());
+                        }
+                        // no need to test other chunks
+                        columnWritten = true;
                     }
                 }
+                Assert.assertion(columnWritten, "appendAddColumns - range not contained in a single chunk");
             }
             return myAddedOffsets.size();
         }
@@ -833,26 +851,32 @@ public class BarrageStreamGenerator implements
             numRows = Math.max(numRows, myModOffsets.size());
 
             try {
+                boolean columnWritten = false;
                 // iterate through each chunk
-                for (int i = 0; i < mcd.data.size(); ++i) {
-                    final ChunkInputStreamGenerator generator = mcd.data.generators[i];
+                for (int i = 0; i < mcd.data.size() && !columnWritten; ++i) {
+                    if (mcd.modChunkRowSets[i].isEmpty() || startRange <= mcd.modChunkRowSets[i].lastRowKey()) {
+                        final ChunkInputStreamGenerator generator = mcd.data.generators[i];
 
-                    final long shiftAmount = -mcd.modChunkRowSets[i].firstRowKey();
+                        final long shiftAmount = -mcd.modChunkRowSets[i].firstRowKey();
 
-                    // get an offset rowset for each chunk in the set
-                    try (final WritableRowSet adjustedOffsets = myModOffsets.intersect(mcd.modChunkRowSets[i])) {
-                        // normalize this to the chunk offsets
-                        adjustedOffsets.shiftInPlace(shiftAmount);
+                        // get an offset rowset for each chunk in the set
+                        try (final WritableRowSet adjustedOffsets = myModOffsets.intersect(mcd.modChunkRowSets[i])) {
+                            // normalize this to the chunk offsets
+                            adjustedOffsets.shiftInPlace(shiftAmount);
 
-                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                generator.getInputStream(view.options(), adjustedOffsets);
-                        drainableColumn.visitFieldNodes(fieldNodeListener);
-                        drainableColumn.visitBuffers(bufferListener);
+                            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                    generator.getInputStream(view.options(), adjustedOffsets);
+                            drainableColumn.visitFieldNodes(fieldNodeListener);
+                            drainableColumn.visitBuffers(bufferListener);
 
-                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
-                        addStream.accept(drainableColumn);
+                            // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                            addStream.accept(drainableColumn);
+                        }
+                        // no need to test other chunks
+                        columnWritten = true;
                     }
                 }
+                Assert.assertion(columnWritten, "appendModColumns - range not contained in a single chunk");
             } finally {
                 myModOffsets.close();
             }
