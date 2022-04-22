@@ -30,6 +30,8 @@ public class LayoutHintBuilder {
     private Set<String> alwaysSubscribedCols;
     private Set<String> groupableColumns;
 
+    private Map<String, ColumnGroup> columnGroups;
+
     /**
      * Helper class to maintain sub-properties for auto filter columns
      */
@@ -106,6 +108,31 @@ public class LayoutHintBuilder {
 
             return new AutoFilterData(column, localFetchSize);
         }
+    }
+
+    private static class ColumnGroup {
+
+        String name;
+        final List<String> children;
+        String color;
+
+        ColumnGroup(String name, List<String> children, String color) {
+            this.name = name;
+            this.children = children;
+            this.color = color;
+        }
+
+        @NotNull
+        String serialize() {
+            StringBuilder sb = new StringBuilder("name:" + name);
+
+            sb.append("::children:" + StringUtils.joinStrings(children, ","));
+            if (color != null) {
+                sb.append("::color:" + color);
+            }
+            return sb.toString();
+        }
+
     }
 
     private LayoutHintBuilder() {
@@ -279,6 +306,26 @@ public class LayoutHintBuilder {
         }
 
         hiddenCols.addAll(cols);
+
+        return this;
+    }
+
+    @ScriptApi
+    public LayoutHintBuilder group(String name, List<String> cols) {
+        return group(name, cols, null);
+    }
+
+    @ScriptApi
+    public LayoutHintBuilder group(String name, List<String> children, String style) {
+        if (columnGroups == null) {
+            columnGroups = new HashMap<>();
+        }
+
+        if (children.size() == 0) {
+            columnGroups.remove(name);
+        } else {
+            columnGroups.put(name, new ColumnGroup(name, children, style));
+        }
 
         return this;
     }
@@ -480,6 +527,10 @@ public class LayoutHintBuilder {
 
         if (groupableColumns != null && !groupableColumns.isEmpty()) {
             sb.append("groupable=").append(String.join(",", groupableColumns)).append(';');
+        }
+
+        if (columnGroups != null && !columnGroups.isEmpty()) {
+            columnGroups.values().forEach(g -> sb.append("group=").append(g.serialize()).append(';'));
         }
 
         return sb.toString();
