@@ -794,14 +794,14 @@ public class BarrageStreamGenerator implements
 
                 // iterate through each chunk and find the one that contains the requested data
                 for (int i = 0; i < chunkSetGen.size() && !columnWritten; ++i) {
-                    // if the set of data is empty
-                    if (addChunkRowSets[i].isEmpty() || startRange <= addChunkRowSets[i].lastRowKey()) {
+                    // if the set of data is empty or the requested rows start in this chunk
+                    if (startRange <= addChunkRowSets[i].lastRowKey()) {
                         final ChunkInputStreamGenerator generator = chunkSetGen.generators[i];
 
                         // shift this into the chunk position space
                         final long shiftAmount = -addChunkRowSets[i].firstRowKey();
 
-                        // get an offset RowSet for each chunk in the set
+                        // get an offset RowSet for each row in this chunk
                         try (final WritableRowSet adjustedOffsets = myAddedOffsets.intersect(addChunkRowSets[i])) {
                             // normalize this to the chunk offsets
                             adjustedOffsets.shiftInPlace(shiftAmount);
@@ -820,7 +820,18 @@ public class BarrageStreamGenerator implements
                         columnWritten = true;
                     }
                 }
-                Assert.assertion(columnWritten, "appendAddColumns - range not contained in a single chunk");
+                // must write column data, just write an empty column
+                if (!columnWritten) {
+                    try (final RowSet empty = RowSetFactory.empty()){
+                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                chunkSetGen.generators[0].getInputStream(view.options(), empty);
+                        drainableColumn.visitFieldNodes(fieldNodeListener);
+                        drainableColumn.visitBuffers(bufferListener);
+
+                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                        addStream.accept(drainableColumn);
+                    }
+                }
             }
             return myAddedOffsets.size();
         }
@@ -852,14 +863,14 @@ public class BarrageStreamGenerator implements
 
             try {
                 boolean columnWritten = false;
-                // iterate through each chunk
+                // iterate through each chunk and find the one that contains the requested data
                 for (int i = 0; i < mcd.data.size() && !columnWritten; ++i) {
-                    if (mcd.modChunkRowSets[i].isEmpty() || startRange <= mcd.modChunkRowSets[i].lastRowKey()) {
+                    if (startRange <= mcd.modChunkRowSets[i].lastRowKey()) {
                         final ChunkInputStreamGenerator generator = mcd.data.generators[i];
 
                         final long shiftAmount = -mcd.modChunkRowSets[i].firstRowKey();
 
-                        // get an offset rowset for each chunk in the set
+                        // get an offset rowset for each row in this chunk
                         try (final WritableRowSet adjustedOffsets = myModOffsets.intersect(mcd.modChunkRowSets[i])) {
                             // normalize this to the chunk offsets
                             adjustedOffsets.shiftInPlace(shiftAmount);
@@ -876,7 +887,18 @@ public class BarrageStreamGenerator implements
                         columnWritten = true;
                     }
                 }
-                Assert.assertion(columnWritten, "appendModColumns - range not contained in a single chunk");
+                // must write column data, just write an empty column
+                if (!columnWritten) {
+                    try (final RowSet empty = RowSetFactory.empty()){
+                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                                mcd.data.generators[0].getInputStream(view.options(), empty);
+                        drainableColumn.visitFieldNodes(fieldNodeListener);
+                        drainableColumn.visitBuffers(bufferListener);
+
+                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                        addStream.accept(drainableColumn);
+                    }
+                }
             } finally {
                 myModOffsets.close();
             }
