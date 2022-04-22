@@ -21,6 +21,6 @@ public interface FieldCopier {
                    int sourceOffset, int destOffset, int length);
 
     interface Factory {
-        FieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType);
+        FieldCopier make(String fieldName, ChunkType chunkType, Class<?> dataType, Class<?> componentType);
     }
 }

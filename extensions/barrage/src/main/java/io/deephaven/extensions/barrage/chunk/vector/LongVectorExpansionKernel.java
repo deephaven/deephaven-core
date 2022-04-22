@@ -24,8 +24,9 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.LongVectorDirect.ZERO_LEN_VECTOR;
+
 public class LongVectorExpansionKernel implements VectorExpansionKernel {
-    private final static LongVector ZERO_LEN_VECTOR = new LongVectorDirect();
     public final static LongVectorExpansionKernel INSTANCE = new LongVectorExpansionKernel();
 
     @Override

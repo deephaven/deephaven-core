@@ -19,8 +19,9 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.CharVectorDirect.ZERO_LEN_VECTOR;
+
 public class CharVectorExpansionKernel implements VectorExpansionKernel {
-    private final static CharVector ZERO_LEN_VECTOR = new CharVectorDirect();
     public final static CharVectorExpansionKernel INSTANCE = new CharVectorExpansionKernel();
 
     @Override
