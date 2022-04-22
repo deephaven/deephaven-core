@@ -72,7 +72,7 @@ public class BarrageStreamGenerator implements
 
     // default to 100MB to match java-client and w2w incoming limits
     private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "messageSizeLimit", 100 * 1024 * 1024);
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 100 * 1024 * 1024);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
