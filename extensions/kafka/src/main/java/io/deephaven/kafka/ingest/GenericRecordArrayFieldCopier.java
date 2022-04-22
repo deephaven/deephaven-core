@@ -13,6 +13,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 
+import java.lang.reflect.Array;
 import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -26,6 +27,20 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
             final Class<?> componentType) {
         super(fieldPathStr, separator, schema);
         arrayConverter = ArrayConverter.makeFor(componentType);
+    }
+
+    private static <T> T[] convertObjectArray(final GenericArray<?> ga, final T[] emptyArray, final Class<T> componentType) {
+        final int gaSize = ga.size();
+        if (gaSize == 0) {
+            return emptyArray;
+        }
+        final T[] out = (T[]) Array.newInstance(componentType, ga.size());
+        int i = 0;
+        for (Object o : ga) {
+            out[i] = componentType.cast(o);
+            ++i;
+        }
+        return out;
     }
 
     private interface ArrayConverter {
@@ -108,12 +123,11 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
                     return out;
                 };
             }
-            if (componentType.equals(boolean.class) || componentType.equals(String.class)) {
-                return (GenericArray<?> ga) -> {
-                    final Object[] out = new Object[ga.size()];
-                    ga.toArray(out);
-                    return out;
-                };
+            if (componentType.equals(boolean.class)) {
+                return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_BOOLEANBOXED_ARRAY, boolean.class);
+            }
+            if (componentType.equals(String.class)) {
+                return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_STRING_ARRAY, String.class);
             }
             throw new IllegalStateException("Unsupported component type " + componentType);
         }

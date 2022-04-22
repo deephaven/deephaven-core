@@ -133,7 +133,7 @@ def normalize_type(ptype: str):
         return prefix + "bool"
     if ptype == "double" or ptype == "float":
         return prefix + "float"
-    if ptype == "long" or ptype == "short":
+    if ptype == "long" or ptype == "short" or ptype == "int":
         return prefix + "int"
     raise "Unhandled type"
 
@@ -144,11 +144,7 @@ def value_from_str(ptype: str, svalue: str):
         return svalue
     if (ptype == "bool"):
         return (svalue == "true" or svalue == "True")
-    if ptype == "double":
-        ptype = "float"
-    elif ptype == "long" or ptype == "short":
-        ptype = "int"
-    elif ptype == "timestamp":
+    if ptype == "timestamp":
         if svalue == "now":
             return datetime.datetime.now(tz=datetime.timezone.utc)
         raise "Unsupported timestamp."
