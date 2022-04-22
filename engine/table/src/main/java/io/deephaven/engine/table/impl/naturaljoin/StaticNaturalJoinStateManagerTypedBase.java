@@ -161,6 +161,9 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     @Override
     public void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, LongArraySource leftHashSlots) {
+        if (leftTable.isEmpty()) {
+            return;
+        }
         try (final BuildContext bc = makeBuildContext(leftSources, leftTable.size())) {
             buildTable(bc, leftTable.getRowSet(), leftSources, new LeftBuildHandler(leftHashSlots));
         }
@@ -171,6 +174,9 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     @Override
     public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
+        if (rightTable.isEmpty()) {
+            return;
+        }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
             buildTable(bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide);
         }
@@ -180,6 +186,9 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     @Override
     public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+        if (leftRowSet.isEmpty()) {
+            return;
+        }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(leftRedirections));
         }
@@ -190,6 +199,9 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     @Override
     public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
+        if (rightTable.isEmpty()) {
+            return;
+        }
         try (final ProbeContext pc = makeProbeContext(rightSources, rightTable.size())) {
             probeTable(pc, rightTable.getRowSet(), false, rightSources, this::decorateWithRightSide);
         }
@@ -301,6 +313,6 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
-        throw new UnsupportedOperationException();
+        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize, (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices, redirectionType);
     }
 }
