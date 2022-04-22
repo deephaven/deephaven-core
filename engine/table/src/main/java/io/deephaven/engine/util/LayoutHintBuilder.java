@@ -135,8 +135,7 @@ public class LayoutHintBuilder {
 
     }
 
-    private LayoutHintBuilder() {
-    }
+    private LayoutHintBuilder() {}
 
     // region Builder Methods
 
@@ -321,6 +320,8 @@ public class LayoutHintBuilder {
             columnGroups = new HashMap<>();
         }
 
+        NameValidator.validateColumnName(name);
+
         if (children.size() == 0) {
             columnGroups.remove(name);
         } else {
@@ -374,7 +375,7 @@ public class LayoutHintBuilder {
      * Set the default initial number of rows to fetch for columns that have been marked as
      * {@link LayoutHintBuilder#autoFilter(Collection) AutoFilter} columns.
      *
-     * @param col  the column to set the fetch size for
+     * @param col the column to set the fetch size for
      * @param size the number of rows to fetch initially
      * @return this LayoutHintBuilder
      */
@@ -513,7 +514,7 @@ public class LayoutHintBuilder {
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                            StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
+                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
                     .append(';');
         }
 
@@ -530,7 +531,11 @@ public class LayoutHintBuilder {
         }
 
         if (columnGroups != null && !columnGroups.isEmpty()) {
-            columnGroups.values().forEach(g -> sb.append("group=").append(g.serialize()).append(';'));
+            sb.append("groups=");
+            List<String> groupStrings =
+                    columnGroups.values().stream().map(ColumnGroup::serialize).collect(Collectors.toList());
+            sb.append(String.join("|", groupStrings)).append(';');
+            // columnGroups.values().forEach(g -> sb.append("group=").append(g.serialize()).append(';'));
         }
 
         return sb.toString();
