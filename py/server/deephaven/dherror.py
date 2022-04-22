@@ -22,11 +22,9 @@ class DHError(Exception):
     """
 
     def __init__(self, cause=None, message=""):
-        super().__init__(cause, message)
         self._message = message
         self._traceback = traceback.format_exc()
         self._cause = cause
-
         tb_lines = self._traceback.splitlines()
         self._root_cause = ""
         self._compact_tb = []
@@ -69,6 +67,4 @@ class DHError(Exception):
         return "\n".join(self._compact_tb)
 
     def __str__(self):
-        causes = [line.replace("caused by ", "") for line in self._compact_tb if line.startswith("caused by")]
-        causes = "\n       ".join(causes)
-        return f"{self._message} : {self._root_cause} \n       {causes}"
+        return f"{self._message} : {self._root_cause}\n{self._traceback}"
