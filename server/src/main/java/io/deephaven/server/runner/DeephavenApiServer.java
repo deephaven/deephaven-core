@@ -103,8 +103,6 @@ public class DeephavenApiServer {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
-        MemoryTableLoggers.maybeStartStatsCollection();
-
         log.info().append("Creating/Clearing Script Cache...").endl();
         AbstractScriptSession.createScriptCache();
 
@@ -114,6 +112,8 @@ public class DeephavenApiServer {
 
         log.info().append("Starting UGP...").endl();
         ugp.start();
+
+        MemoryTableLoggers.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
