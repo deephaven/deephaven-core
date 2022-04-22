@@ -8,7 +8,9 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+
 import static io.deephaven.util.type.ArrayTypeUtils.*;
+
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
@@ -129,7 +131,7 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
             if (componentType.equals(String.class)) {
                 return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_STRING_ARRAY, String.class);
             }
-            throw new IllegalStateException("Unsupported component type " + componentType);
+            return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_OBJECT_ARRAY, Object.class);
         }
     }
 

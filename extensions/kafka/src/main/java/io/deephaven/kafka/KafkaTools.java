@@ -413,13 +413,13 @@ public class KafkaTools {
                     // It is an honest to god Union; we don't support them right now other than giving back
                     // an Object column with a GenericRecord object.
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericRecord.class));
-                } else {
-                    // It was a union with null, which is simply the other unioned type in DH.
-                    pushColumnTypesFromAvroField(
-                            columnsOut, fieldPathToColumnNameOut,
-                            fieldNamePrefix, fieldName,
-                            effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
+                    break;
                 }
+                // It was a union with null, which is simply the other unioned type in DH.
+                pushColumnTypesFromAvroField(
+                        columnsOut, fieldPathToColumnNameOut,
+                        fieldNamePrefix, fieldName,
+                        effectiveSchema, mappedNameForColumn, effectiveSchema.getType(), fieldPathToColumnName);
                 return;
             }
             case RECORD:
@@ -453,7 +453,13 @@ public class KafkaTools {
                         columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, int[].class));
                         break;
                     case LONG:
-                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
+                        final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
+                        if (LogicalTypes.timestampMicros().equals(logicalType) ||
+                                LogicalTypes.timestampMillis().equals(logicalType)) {
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, DateTime[].class));
+                        } else {
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
+                        }
                         break;
                     case FLOAT:
                         columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, float[].class));
@@ -469,7 +475,7 @@ public class KafkaTools {
                         columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, String[].class));
                         break;
                     default:
-                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericArray.class));
+                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Object[].class));
                         break;
                 }
                 break;
