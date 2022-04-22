@@ -26,6 +26,8 @@ _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 
+T = TypeVar('T')
+ValueOrArray = Union[T, List[T]]
 
 class SortDirection(Enum):
     """An enum defining the sorting orders."""
@@ -1261,16 +1263,16 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
-                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None) -> Table:
+    def layout_hints(self, front: ValueOrArray[str] = None, back: ValueOrArray[str] = None,
+                     freeze: ValueOrArray[str] = None, hide: ValueOrArray[str] = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
-            front (Union[str, List[str]]): the columns to show at the front
-            back (Union[str, List[str]]): the columns to show at the back
-            freeze (Union[str, List[str]]): the columns to freeze to the front.
+            front (ValueOrArray[str]): the columns to show at the front
+            back (ValueOrArray[str]): the columns to show at the back
+            freeze (ValueOrArray[str]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Union[str, List[str]]): the columns to hide
+            hide (ValueOrArray[str]): the columns to hide
 
         Returns:
             a new table with the layout hints set
@@ -1280,34 +1282,19 @@ class Table(JObjectWrapper):
         """
         try:
             _j_layout_hint_builder = _JLayoutHintBuilder.get()
-        except Exception as e:
-            raise DHError(e, "failed to create LayoutHint") from e
 
-        try:
             if front is not None:
                 _j_layout_hint_builder.atFront(_to_sequence(front))
-        except Exception as e:
-            raise DHError(e, "invalid value for front") from e
 
-        try:
             if back is not None:
                 _j_layout_hint_builder.atEnd(_to_sequence(back))
-        except Exception as e:
-            raise DHError(e, "invalid value for back") from e
 
-        try:
             if freeze is not None:
                 _j_layout_hint_builder.freeze(_to_sequence(freeze))
-        except Exception as e:
-            raise DHError(e, "invalid value for freeze") from e
 
-        try:
             if hide is not None:
                 _j_layout_hint_builder.hide(_to_sequence(hide))
-        except Exception as e:
-            raise DHError(e, "invalid value for hide") from e
 
-        try:
             return Table(j_table=self.j_table.setLayoutHints(_j_layout_hint_builder.build()))
         except Exception as e:
             raise DHError(e, "failed to set layout hints on table") from e

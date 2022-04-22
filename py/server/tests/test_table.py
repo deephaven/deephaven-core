@@ -515,6 +515,11 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.layout_hints()
         self.assertIsNotNone(t)
 
+        with self.assertRaises(DHError) as cm:
+            t = self.test_table.layout_hints(front=["e"], back=True)
+        self.assertTrue(cm.exception.root_cause)
+        self.assertIn("RuntimeError", cm.exception.compact_traceback)
+
 
 if __name__ == "__main__":
     unittest.main()
