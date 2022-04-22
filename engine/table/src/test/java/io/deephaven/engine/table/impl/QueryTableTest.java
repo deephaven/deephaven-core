@@ -536,6 +536,16 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", TableTools.diff(sortedResult, sortedSource, source.size()));
     }
 
+    public void testStaticSelectIntermediateColumn() {
+        final Table et = emptyTable(3);
+        final Table result = et.select("A = i").join(et).select("B = A", "C = A + B");
+        assertTrue(result.isFlat());
+        final Table viewResult = et.select("A = i").join(et).view("B = A", "C = A + B");
+        TableTools.showWithRowSet(result);
+        TableTools.showWithRowSet(viewResult);
+        assertEquals("", TableTools.diff(result, viewResult, result.size()));
+    }
+
     public void testDropColumns() {
         final List<String> colNames = Arrays.asList("String", "Int", "Double");
         final List<ColumnSource<?>> colSources =
