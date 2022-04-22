@@ -71,12 +71,12 @@ public class Immutable2DCharArraySource extends AbstractDeferredGroupingColumnSo
     // endregion allocateArray
 
     @Override
-    public final char getChar(long index) {
-        if (index < 0 || index >= size) {
+    public final char getChar(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return NULL_CHAR;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {

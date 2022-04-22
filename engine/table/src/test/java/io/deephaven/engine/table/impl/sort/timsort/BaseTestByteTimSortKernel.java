@@ -91,13 +91,13 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             columnSource = new AbstractColumnSource.DefaultedImmutable<Byte>(byte.class) {
                 // region tuple column source
                 @Override
-                public Byte get(long index) {
-                    return getByte(index);
+                public Byte get(long rowKey) {
+                    return getByte(rowKey);
                 }
 
                 @Override
-                public byte getByte(long index) {
-                    return javaTuples.get(((int)index) / 10).getFirstElement();
+                public byte getByte(long rowKey) {
+                    return javaTuples.get(((int) rowKey) / 10).getFirstElement();
                 }
                 // endregion tuple column source
             };
@@ -171,14 +171,14 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
             secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
                 @Override
-                public Long get(long index) {
-                    final long result = getLong(index);
+                public Long get(long rowKey) {
+                    final long result = getLong(rowKey);
                     return result == QueryConstants.NULL_LONG ? null : result;
                 }
 
                 @Override
-                public long getLong(long index) {
-                    final ByteLongLongTuple byteLongLongTuple = javaTuples.get((int) (index / 10));
+                public long getLong(long rowKey) {
+                    final ByteLongLongTuple byteLongLongTuple = javaTuples.get((int) (rowKey / 10));
                     return byteLongLongTuple.getSecondElement();
                 }
             };

@@ -88,53 +88,53 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public T get(long index) {
-        return (T) delegate.get(index);
+    public T get(long rowKey) {
+        return (T) delegate.get(rowKey);
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        return delegate.getBoolean(index);
+    public Boolean getBoolean(long rowKey) {
+        return delegate.getBoolean(rowKey);
     }
 
     @Override
-    public byte getByte(long index) {
-        return delegate.getByte(index);
+    public byte getByte(long rowKey) {
+        return delegate.getByte(rowKey);
     }
 
     @Override
-    public char getChar(long index) {
-        return delegate.getChar(index);
+    public char getChar(long rowKey) {
+        return delegate.getChar(rowKey);
     }
 
     @Override
-    public double getDouble(long index) {
-        return delegate.getDouble(index);
+    public double getDouble(long rowKey) {
+        return delegate.getDouble(rowKey);
     }
 
     @Override
-    public float getFloat(long index) {
-        return delegate.getFloat(index);
+    public float getFloat(long rowKey) {
+        return delegate.getFloat(rowKey);
     }
 
     @Override
-    public int getInt(long index) {
-        return delegate.getInt(index);
+    public int getInt(long rowKey) {
+        return delegate.getInt(rowKey);
     }
 
     @Override
-    public long getLong(long index) {
-        return delegate.getLong(index);
+    public long getLong(long rowKey) {
+        return delegate.getLong(rowKey);
     }
 
     @Override
-    public short getShort(long index) {
-        return delegate.getShort(index);
+    public short getShort(long rowKey) {
+        return delegate.getShort(rowKey);
     }
 
     @Override
-    public T getPrev(long index) {
-        return (T) delegate.getPrev(index);
+    public T getPrev(long rowKey) {
+        return (T) delegate.getPrev(rowKey);
     }
 
     @Override
@@ -160,43 +160,43 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        return delegate.getPrevBoolean(index);
+    public Boolean getPrevBoolean(long rowKey) {
+        return delegate.getPrevBoolean(rowKey);
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        return delegate.getPrevByte(index);
+    public byte getPrevByte(long rowKey) {
+        return delegate.getPrevByte(rowKey);
     }
 
     @Override
-    public char getPrevChar(long index) {
-        return delegate.getPrevChar(index);
+    public char getPrevChar(long rowKey) {
+        return delegate.getPrevChar(rowKey);
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        return delegate.getPrevDouble(index);
+    public double getPrevDouble(long rowKey) {
+        return delegate.getPrevDouble(rowKey);
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        return delegate.getPrevFloat(index);
+    public float getPrevFloat(long rowKey) {
+        return delegate.getPrevFloat(rowKey);
     }
 
     @Override
-    public int getPrevInt(long index) {
-        return delegate.getPrevInt(index);
+    public int getPrevInt(long rowKey) {
+        return delegate.getPrevInt(rowKey);
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return delegate.getPrevLong(index);
+    public long getPrevLong(long rowKey) {
+        return delegate.getPrevLong(rowKey);
     }
 
     @Override
-    public short getPrevShort(long index) {
-        return delegate.getPrevShort(index);
+    public short getPrevShort(long rowKey) {
+        return delegate.getPrevShort(rowKey);
     }
 
     @Override

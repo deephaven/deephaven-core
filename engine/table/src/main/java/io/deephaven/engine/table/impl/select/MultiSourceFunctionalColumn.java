@@ -144,13 +144,13 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
             @Override
-            public Object getPrev(long key) {
-                return function.apply(key, prevSources);
+            public Object getPrev(long rowKey) {
+                return function.apply(rowKey, prevSources);
             }
 
             @Override
-            public Object get(long key) {
-                return function.apply(key, sourceColumns);
+            public Object get(long rowKey) {
+                return function.apply(rowKey, sourceColumns);
             }
 
             @Override

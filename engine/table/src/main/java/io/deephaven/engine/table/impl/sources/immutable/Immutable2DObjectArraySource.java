@@ -75,12 +75,12 @@ public class Immutable2DObjectArraySource<T> extends AbstractDeferredGroupingCol
     // endregion allocateArray
 
     @Override
-    public final T get(long index) {
-        if (index < 0 || index >= size) {
+    public final T get(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return null;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {

@@ -134,36 +134,36 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
 
     @Override
-    public Boolean get(long index) {
-        return BooleanUtils.byteAsBoolean(getByte(index));
+    public Boolean get(long rowKey) {
+        return BooleanUtils.byteAsBoolean(getByte(rowKey));
     }
 
     @Override
-    public Boolean getPrev(long index) {
-        return BooleanUtils.byteAsBoolean(getPrevByte(index));
+    public Boolean getPrev(long rowKey) {
+        return BooleanUtils.byteAsBoolean(getPrevByte(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final byte getByte(long index) {
-        if (index < 0) {
+    public final byte getByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        return getByteFromBlock(blocks, index);
+        return getByteFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final byte getPrevByte(long index) {
-        if (index < 0) {
+    public final byte getPrevByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BOOLEAN_AS_BYTE;
         }
-        if (shouldUsePrevious(index)) {
-            return getByteFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getByteFromBlock(prevBlocks, rowKey);
         }
 
-        return getByteFromBlock(blocks, index);
+        return getByteFromBlock(blocks, rowKey);
     }
 
     private byte getByteFromBlock(ByteOneOrN.Block0 blocks, long key) {
@@ -834,13 +834,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public byte getByte(long rowSet) {
-            return wrapped.getByte(rowSet);
+        public byte getByte(long rowKey) {
+            return wrapped.getByte(rowKey);
         }
 
         @Override
-        public byte getPrevByte(long rowSet) {
-            return wrapped.getPrevByte(rowSet);
+        public byte getPrevByte(long rowKey) {
+            return wrapped.getPrevByte(rowKey);
         }
 
         @Override

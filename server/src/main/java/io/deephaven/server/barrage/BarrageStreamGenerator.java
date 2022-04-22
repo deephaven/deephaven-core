@@ -76,8 +76,6 @@ public class BarrageStreamGenerator implements
 
         StreamReaderOptions options();
 
-        RowSet keyspaceViewport();
-
         RowSet addRowOffsets();
 
         RowSet modRowOffsets(int col);
@@ -91,8 +89,8 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message) {
-            return new BarrageStreamGenerator(message);
+                final BarrageMessage message, final WriteMetricsConsumer metricsConsumer) {
+            return new BarrageStreamGenerator(message, metricsConsumer);
         }
 
         @Override
@@ -118,6 +116,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
+    public final WriteMetricsConsumer writeConsumer;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -137,9 +136,11 @@ public class BarrageStreamGenerator implements
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
      *
      * @param message the generator takes ownership of the message and its internal objects
+     * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message) {
+    public BarrageStreamGenerator(final BarrageMessage message, final WriteMetricsConsumer writeConsumer) {
         this.message = message;
+        this.writeConsumer = writeConsumer;
         try {
             firstSeq = message.firstSeq;
             lastSeq = message.lastSeq;
@@ -243,6 +244,7 @@ public class BarrageStreamGenerator implements
         public final long numAddBatches;
         public final long numModBatches;
         public final RowSet addRowOffsets;
+        public final RowSet addRowKeys;
         public final RowSet[] modRowOffsets;
 
         public SubView(final BarrageStreamGenerator generator,
@@ -284,15 +286,15 @@ public class BarrageStreamGenerator implements
             }
             numModBatches = (numModRows + batchSize - 1) / batchSize;
 
-            // precompute add row offsets
             if (keyspaceViewport != null) {
-                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
-                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
-                }
+                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
+                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
             } else {
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
@@ -303,30 +305,38 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
+            long bytesWritten = 0;
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
             offset = 0;
             for (long ii = 0; ii < numModBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendModColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendModColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
 
             // clean up the helper indexes
             addRowOffsets.close();
+            addRowKeys.close();
             if (modRowOffsets != null) {
                 for (final RowSet modViewport : modRowOffsets) {
                     modViewport.close();
                 }
             }
+            generator.writeConsumer.onWrite(bytesWritten, System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -345,11 +355,6 @@ public class BarrageStreamGenerator implements
         @Override
         public StreamReaderOptions options() {
             return options;
-        }
-
-        @Override
-        public RowSet keyspaceViewport() {
-            return keyspaceViewport;
         }
 
         @Override
@@ -466,11 +471,6 @@ public class BarrageStreamGenerator implements
         }
 
         @Override
-        public final RowSet keyspaceViewport() {
-            return keyspaceViewport;
-        }
-
-        @Override
         public RowSet addRowOffsets() {
             return addRowOffsets;
         }
@@ -503,11 +503,6 @@ public class BarrageStreamGenerator implements
 
         @Override
         public StreamReaderOptions options() {
-            return null;
-        }
-
-        @Override
-        public RowSet keyspaceViewport() {
             return null;
         }
 
@@ -663,7 +658,7 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
 
-        // Added Chunk Data:
+
         try (final RowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange)) {
             // add the add-column streams
             for (final ChunkInputStreamGenerator col : addColumnData) {
@@ -747,15 +742,17 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.isViewport()) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+
+        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
         }
 
         // now add mod-column streams, and write the mod column indexes
         TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
         for (final ModColumnData mcd : modColumnData) {
             final int myModRowOffset;
-            if (view.isViewport()) {
+            if (view.keyspaceViewport != null) {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(view.keyspaceViewport, metadata);
             } else {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);

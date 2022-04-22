@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.tablelogger.ServerStateLog",
+ "methods": {
+  "getColumnNames": ":return: java.lang.String[]",
+  "getDefaultTableName": ":return: java.lang.String",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "log": "*Overload 1*  \n  :param intervalStartTime: long\n  :param intervalDurationMicros: int\n  :param totalMemoryMiB: int\n  :param freeMemoryMiB: int\n  :param intervalCollections: short\n  :param intervalCollectionTimeMicros: int\n  :param intervalUGPCyclesOnBudget: short\n  :param intervalUGPCyclesTimeMicros: int[]\n  :param intervalUGPCyclesSafePoints: short\n  :param intervalUGPCyclesSafePointTimeMicros: int\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param intervalStartTime: long\n  :param intervalDurationMicros: int\n  :param totalMemoryMiB: int\n  :param freeMemoryMiB: int\n  :param intervalCollections: short\n  :param intervalCollectionTimeMicros: int\n  :param intervalUGPCyclesOnBudget: short\n  :param intervalUGPCyclesTimeMicros: int[]\n  :param intervalUGPCyclesSafePoints: short\n  :param intervalUGPCyclesSafePointTimeMicros: int"
+ },
+ "path": "io.deephaven.engine.tablelogger.ServerStateLog",
+ "typeName": "class"
+}

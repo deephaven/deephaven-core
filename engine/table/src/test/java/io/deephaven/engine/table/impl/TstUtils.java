@@ -12,6 +12,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetTstUtils;
+import io.deephaven.engine.table.ElementSource;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -43,6 +45,8 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TstUtils {
     public static boolean SHORT_TESTS = Configuration.getInstance()
@@ -2161,6 +2165,52 @@ public class TstUtils {
     public static void assertTableEquals(@NotNull final Table expected, @NotNull final Table actual,
             final TableDiff.DiffItems... itemsToSkip) {
         assertTableEquals("", expected, actual, itemsToSkip);
+    }
+
+    public static void assertEqualsByElements(Table actual, Table expected) {
+        final Map<String, ? extends ColumnSource<?>> mapActual = actual.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> mapExpected = expected.getColumnSourceMap();
+        assertThat(mapActual.keySet()).containsExactlyInAnyOrderElementsOf(mapExpected.keySet());
+        for (String key : mapActual.keySet()) {
+            final ColumnSource<?> srcActual = mapActual.get(key);
+            final ColumnSource<?> srcExpected = mapExpected.get(key);
+            // noinspection unchecked,rawtypes
+            assertEquals(
+                    actual.getRowSet(), (ElementSource) srcActual,
+                    expected.getRowSet(), (ElementSource) srcExpected);
+        }
+    }
+
+    public static <T> void assertEquals(
+            RowSet rowsActual, ElementSource<T> srcActual,
+            RowSet rowsExpected, ElementSource<T> srcExpected) {
+        assertThat(rowsActual.size()).isEqualTo(rowsExpected.size());
+        try (
+                final RowSet.Iterator itActual = rowsActual.iterator();
+                final RowSet.Iterator itExpected = rowsExpected.iterator()) {
+            while (itActual.hasNext()) {
+                if (!itExpected.hasNext()) {
+                    throw new IllegalStateException();
+                }
+                assertThat(srcActual.get(itActual.nextLong())).isEqualTo(srcExpected.get(itExpected.nextLong()));
+            }
+            if (itExpected.hasNext()) {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    /**
+     * Equivalent to {@code input.getSubTable(RowSetTstUtils.subset(input.getRowSet(), dutyOn, dutyOff).toTracking())}.
+     *
+     * @param input the input table
+     * @param dutyOn the duty-on size
+     * @param dutyOff the duty-off size
+     * @return a duty-limited subset
+     * @see RowSetTstUtils#subset(RowSet, int, int)
+     */
+    public static Table subset(Table input, int dutyOn, int dutyOff) {
+        return input.getSubTable(RowSetTstUtils.subset(input.getRowSet(), dutyOn, dutyOff).toTracking());
     }
 
     public static void assertTableEquals(final String context, @NotNull final Table expected,

@@ -27,17 +27,28 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarragePerformanceLogLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
+import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
 
 /**
  * A client side {@link Table} that mirrors an upstream/server side {@code Table}.
@@ -53,8 +64,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
     private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
+    private final ScheduledExecutorService executorService;
 
     private final PerformanceEntry refreshEntry;
+
+    private final Stats stats;
 
     /** the capacity that the destSources been set to */
     private int capacity = 0;
@@ -112,17 +126,34 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
     protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
+            @Nullable final ScheduledExecutorService executorService,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
+            final Map<String, String> attributes,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
+        attributes.forEach(this::setAttribute);
+
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
+        this.executorService = executorService;
 
         this.rowRedirection = rowRedirection;
-        this.refreshEntry = UpdatePerformanceTracker.getInstance()
-                .getEntry("BarrageTable run " + System.identityHashCode(this));
+
+        final Object tableKey = getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+        if (executorService == null) {
+            stats = null;
+        } else if (tableKey instanceof String) {
+            stats = new Stats((String) tableKey);
+        } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
+            stats = new Stats(getDescription());
+        } else {
+            stats = null;
+        }
+
+        this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
+                "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
 
         if (isViewPort) {
             serverViewport = RowSetFactory.empty();
@@ -166,6 +197,21 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return Arrays.stream(destSources).map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
     }
 
+    @VisibleForTesting
+    public RowSet getServerViewport() {
+        return serverViewport;
+    }
+
+    @VisibleForTesting
+    public boolean getServerReverseViewport() {
+        return serverReverseViewport;
+    }
+
+    @VisibleForTesting
+    public BitSet getServerColumns() {
+        return serverColumns;
+    }
+
     /**
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
      *
@@ -174,6 +220,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      */
     public synchronized void sealTable(final Runnable onSealRunnable, final Runnable onSealFailure) {
         // TODO (core#803): sealing of static table data acquired over flight/barrage
+        if (stats != null) {
+            stats.stop();
+        }
         setRefreshing(false);
         sealed = true;
         this.onSealRunnable = onSealRunnable;
@@ -217,7 +266,13 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             beginLog(LogLevel.INFO).append(": Processing delta updates ")
                     .append(update.firstSeq).append("-").append(update.lastSeq)
-                    .append(" update=").append(up).endl();
+                    .append(" update=").append(up)
+                    .append(" included=").append(update.rowsIncluded)
+                    .append(" rowset=").append(this.getRowSet())
+                    .append(" isSnapshot=").append(update.isSnapshot)
+                    .append(" snapshotRowSet=").append(update.snapshotRowSet)
+                    .append(" snapshotRowSetIsReversed=").append(update.snapshotRowSetIsReversed)
+                    .endl();
             mods.close();
         }
 
@@ -392,7 +447,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     public void run() {
         refreshEntry.onUpdateStart();
         try {
+            final long startTm = System.nanoTime();
             realRefresh();
+            recordMetric(stats -> stats.refresh, System.nanoTime() - startTm);
         } catch (Exception e) {
             beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
             notifyListenersOnError(e, null);
@@ -433,8 +490,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         UpdateCoalescer coalescer = null;
         for (final BarrageMessage update : localPendingUpdates) {
+            final long startTm = System.nanoTime();
             coalescer = processUpdate(update, coalescer);
             update.close();
+            recordMetric(stats -> stats.processUpdate, System.nanoTime() - startTm);
         }
         localPendingUpdates.clear();
 
@@ -503,20 +562,31 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     /**
      * Set up a replicated table from the given proxy, id and columns. This is intended for internal use only.
      *
+     *
+     * @param executorService an executor service used to flush stats
      * @param tableDefinition the table definition
+     * @param attributes Key-Value pairs of attributes to forward to the QueryTable's metadata
      * @param isViewPort true if the table will be a viewport.
      *
      * @return a properly initialized {@link BarrageTable}
      */
     @InternalUseOnly
-    public static BarrageTable make(final TableDefinition tableDefinition, final boolean isViewPort) {
-        return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, tableDefinition, isViewPort);
+    public static BarrageTable make(
+            @Nullable final ScheduledExecutorService executorService,
+            final TableDefinition tableDefinition,
+            final Map<String, String> attributes,
+            final boolean isViewPort) {
+        return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, executorService, tableDefinition,
+                attributes, isViewPort);
     }
 
     @VisibleForTesting
-    public static BarrageTable make(final UpdateSourceRegistrar registrar,
+    public static BarrageTable make(
+            final UpdateSourceRegistrar registrar,
             final NotificationQueue queue,
+            @Nullable final ScheduledExecutorService executor,
             final TableDefinition tableDefinition,
+            final Map<String, String> attributes,
             final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
@@ -524,8 +594,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                 makeColumns(columns, writableSources, rowRedirection);
 
-        final BarrageTable table =
-                new BarrageTable(registrar, queue, finalColumns, writableSources, rowRedirection, isViewPort);
+        final BarrageTable table = new BarrageTable(
+                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isViewPort);
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.
@@ -589,5 +659,85 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      */
     private LogEntry beginLog(LogLevel level) {
         return log.getEntry(level).append(System.identityHashCode(this));
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        if (stats != null) {
+            stats.stop();
+        }
+    }
+
+    public LongConsumer getDeserializationTmConsumer() {
+        if (stats == null) {
+            return ignored -> {
+            };
+        }
+        return value -> recordMetric(stats -> stats.deserialize, value);
+    }
+
+    private void recordMetric(final Function<Stats, Histogram> hist, final long value) {
+        if (stats == null) {
+            return;
+        }
+        synchronized (stats) {
+            hist.apply(stats).recordValue(value);
+        }
+    }
+
+    private class Stats implements Runnable {
+        private final int NUM_SIG_FIGS = 3;
+
+        public final String tableId = Integer.toHexString(System.identityHashCode(BarrageTable.this));
+        public final String tableKey;
+        public final Histogram deserialize = new Histogram(NUM_SIG_FIGS);
+        public final Histogram processUpdate = new Histogram(NUM_SIG_FIGS);
+        public final Histogram refresh = new Histogram(NUM_SIG_FIGS);
+        public final ScheduledFuture<?> runFuture;
+
+        public Stats(final String tableKey) {
+            this.tableKey = tableKey;
+            runFuture = executorService.scheduleWithFixedDelay(this, BarragePerformanceLog.CYCLE_DURATION_MILLIS,
+                    BarragePerformanceLog.CYCLE_DURATION_MILLIS, TimeUnit.MILLISECONDS);
+        }
+
+        public void stop() {
+            runFuture.cancel(false);
+        }
+
+        @Override
+        public void run() {
+            final DateTime now = DateTime.now();
+
+            final BarragePerformanceLogLogger logger = BarragePerformanceLog.getInstance().getLogger();
+            try {
+                // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (logger) {
+                    flush(now, logger, deserialize, "DeserializationTimeMs");
+                    flush(now, logger, processUpdate, "ProcessUpdateTimeMs");
+                    flush(now, logger, refresh, "RefreshTimeMs");
+                }
+            } catch (IOException ioe) {
+                beginLog(LogLevel.ERROR).append("Unexpected exception while flushing barrage stats: ")
+                        .append(ioe).endl();
+            }
+        }
+
+        private void flush(final DateTime now, final BarragePerformanceLogLogger logger, final Histogram hist,
+                final String statType) throws IOException {
+            if (hist.getTotalCount() == 0) {
+                return;
+            }
+            logger.log(tableId, tableKey, statType, now,
+                    hist.getTotalCount(),
+                    hist.getValueAtPercentile(50) / 1e6,
+                    hist.getValueAtPercentile(75) / 1e6,
+                    hist.getValueAtPercentile(90) / 1e6,
+                    hist.getValueAtPercentile(95) / 1e6,
+                    hist.getValueAtPercentile(99) / 1e6,
+                    hist.getMaxValue() / 1e6);
+            hist.reset();
+        }
     }
 }

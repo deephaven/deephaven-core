@@ -30,7 +30,7 @@ public class StringOutTest extends PythonTest {
     @Before
     public void setUp() {
         out = IdentityOut.create(getCreateModule(), StringOut.class);
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
         jpy = JpyModule.create();
         // jpy.setFlags(EnumSet.of(Flag.ALL));
     }

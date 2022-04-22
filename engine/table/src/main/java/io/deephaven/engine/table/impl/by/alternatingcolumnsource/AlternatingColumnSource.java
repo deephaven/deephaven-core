@@ -200,111 +200,111 @@ public class AlternatingColumnSource<DATA_TYPE> extends AbstractColumnSource<DAT
     }
 
     @Override
-    public final DATA_TYPE get(final long index) {
-        return isAlternate(index) ? alternateSource.get(innerLocation(index))
-                : mainSource.get(index);
+    public final DATA_TYPE get(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.get(innerLocation(rowKey))
+                : mainSource.get(rowKey);
     }
 
     @Override
-    public final Boolean getBoolean(final long index) {
-        return isAlternate(index) ? alternateSource.getBoolean(innerLocation(index))
-                : mainSource.getBoolean(index);
+    public final Boolean getBoolean(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getBoolean(innerLocation(rowKey))
+                : mainSource.getBoolean(rowKey);
     }
 
     @Override
-    public final byte getByte(final long index) {
-        return isAlternate(index) ? alternateSource.getByte(innerLocation(index))
-                : mainSource.getByte(index);
+    public final byte getByte(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getByte(innerLocation(rowKey))
+                : mainSource.getByte(rowKey);
     }
 
     @Override
-    public final char getChar(final long index) {
-        return isAlternate(index) ? alternateSource.getChar(innerLocation(index))
-                : mainSource.getChar(index);
+    public final char getChar(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getChar(innerLocation(rowKey))
+                : mainSource.getChar(rowKey);
     }
 
     @Override
-    public final double getDouble(final long index) {
-        return isAlternate(index) ? alternateSource.getDouble(innerLocation(index))
-                : mainSource.getDouble(index);
+    public final double getDouble(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getDouble(innerLocation(rowKey))
+                : mainSource.getDouble(rowKey);
     }
 
     @Override
-    public final float getFloat(final long index) {
-        return isAlternate(index) ? alternateSource.getFloat(innerLocation(index))
-                : mainSource.getFloat(index);
+    public final float getFloat(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getFloat(innerLocation(rowKey))
+                : mainSource.getFloat(rowKey);
     }
 
     @Override
-    public final int getInt(final long index) {
-        return isAlternate(index) ? alternateSource.getInt(innerLocation(index))
-                : mainSource.getInt(index);
+    public final int getInt(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getInt(innerLocation(rowKey))
+                : mainSource.getInt(rowKey);
     }
 
     @Override
-    public final long getLong(final long index) {
-        return isAlternate(index) ? alternateSource.getLong(innerLocation(index))
-                : mainSource.getLong(index);
+    public final long getLong(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getLong(innerLocation(rowKey))
+                : mainSource.getLong(rowKey);
     }
 
     @Override
-    public final short getShort(final long index) {
-        return isAlternate(index) ? alternateSource.getShort(innerLocation(index))
-                : mainSource.getShort(index);
+    public final short getShort(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getShort(innerLocation(rowKey))
+                : mainSource.getShort(rowKey);
     }
 
     @Override
-    public final DATA_TYPE getPrev(final long index) {
-        return isAlternate(index) ? alternateSource.getPrev(innerLocation(index))
-                : mainSource.getPrev(index);
+    public final DATA_TYPE getPrev(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrev(innerLocation(rowKey))
+                : mainSource.getPrev(rowKey);
     }
 
     @Override
-    public final Boolean getPrevBoolean(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevBoolean(innerLocation(index))
-                : mainSource.getPrevBoolean(index);
+    public final Boolean getPrevBoolean(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevBoolean(innerLocation(rowKey))
+                : mainSource.getPrevBoolean(rowKey);
     }
 
     @Override
-    public final byte getPrevByte(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevByte(innerLocation(index))
-                : mainSource.getPrevByte(index);
+    public final byte getPrevByte(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevByte(innerLocation(rowKey))
+                : mainSource.getPrevByte(rowKey);
     }
 
     @Override
-    public final char getPrevChar(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevChar(innerLocation(index))
-                : mainSource.getPrevChar(index);
+    public final char getPrevChar(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevChar(innerLocation(rowKey))
+                : mainSource.getPrevChar(rowKey);
     }
 
     @Override
-    public final double getPrevDouble(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevDouble(innerLocation(index))
-                : mainSource.getPrevDouble(index);
+    public final double getPrevDouble(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevDouble(innerLocation(rowKey))
+                : mainSource.getPrevDouble(rowKey);
     }
 
     @Override
-    public final float getPrevFloat(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevFloat(innerLocation(index))
-                : mainSource.getPrevFloat(index);
+    public final float getPrevFloat(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevFloat(innerLocation(rowKey))
+                : mainSource.getPrevFloat(rowKey);
     }
 
     @Override
-    public final int getPrevInt(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevInt(innerLocation(index))
-                : mainSource.getPrevInt(index);
+    public final int getPrevInt(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevInt(innerLocation(rowKey))
+                : mainSource.getPrevInt(rowKey);
     }
 
     @Override
-    public final long getPrevLong(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevLong(innerLocation(index))
-                : mainSource.getPrevLong(index);
+    public final long getPrevLong(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevLong(innerLocation(rowKey))
+                : mainSource.getPrevLong(rowKey);
     }
 
     @Override
-    public final short getPrevShort(final long index) {
-        return isAlternate(index) ? alternateSource.getPrevShort(innerLocation(index))
-                : mainSource.getPrevShort(index);
+    public final short getPrevShort(final long rowKey) {
+        return isAlternate(rowKey) ? alternateSource.getPrevShort(innerLocation(rowKey))
+                : mainSource.getPrevShort(rowKey);
     }
 
     @Override

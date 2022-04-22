@@ -231,111 +231,111 @@ public class HashTableColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_
     }
 
     @Override
-    public final DATA_TYPE get(final long index) {
-        return isOverflowLocation(index) ? overflowSource.get(hashLocationToOverflowLocation(index))
-                : mainSource.get(index);
+    public final DATA_TYPE get(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.get(hashLocationToOverflowLocation(rowKey))
+                : mainSource.get(rowKey);
     }
 
     @Override
-    public final Boolean getBoolean(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getBoolean(hashLocationToOverflowLocation(index))
-                : mainSource.getBoolean(index);
+    public final Boolean getBoolean(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getBoolean(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getBoolean(rowKey);
     }
 
     @Override
-    public final byte getByte(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getByte(hashLocationToOverflowLocation(index))
-                : mainSource.getByte(index);
+    public final byte getByte(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getByte(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getByte(rowKey);
     }
 
     @Override
-    public final char getChar(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getChar(hashLocationToOverflowLocation(index))
-                : mainSource.getChar(index);
+    public final char getChar(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getChar(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getChar(rowKey);
     }
 
     @Override
-    public final double getDouble(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getDouble(hashLocationToOverflowLocation(index))
-                : mainSource.getDouble(index);
+    public final double getDouble(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getDouble(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getDouble(rowKey);
     }
 
     @Override
-    public final float getFloat(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getFloat(hashLocationToOverflowLocation(index))
-                : mainSource.getFloat(index);
+    public final float getFloat(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getFloat(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getFloat(rowKey);
     }
 
     @Override
-    public final int getInt(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getInt(hashLocationToOverflowLocation(index))
-                : mainSource.getInt(index);
+    public final int getInt(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getInt(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getInt(rowKey);
     }
 
     @Override
-    public final long getLong(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getLong(hashLocationToOverflowLocation(index))
-                : mainSource.getLong(index);
+    public final long getLong(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getLong(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getLong(rowKey);
     }
 
     @Override
-    public final short getShort(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getShort(hashLocationToOverflowLocation(index))
-                : mainSource.getShort(index);
+    public final short getShort(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getShort(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getShort(rowKey);
     }
 
     @Override
-    public final DATA_TYPE getPrev(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrev(hashLocationToOverflowLocation(index))
-                : mainSource.getPrev(index);
+    public final DATA_TYPE getPrev(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrev(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrev(rowKey);
     }
 
     @Override
-    public final Boolean getPrevBoolean(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevBoolean(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevBoolean(index);
+    public final Boolean getPrevBoolean(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevBoolean(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevBoolean(rowKey);
     }
 
     @Override
-    public final byte getPrevByte(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevByte(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevByte(index);
+    public final byte getPrevByte(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevByte(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevByte(rowKey);
     }
 
     @Override
-    public final char getPrevChar(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevChar(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevChar(index);
+    public final char getPrevChar(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevChar(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevChar(rowKey);
     }
 
     @Override
-    public final double getPrevDouble(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevDouble(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevDouble(index);
+    public final double getPrevDouble(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevDouble(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevDouble(rowKey);
     }
 
     @Override
-    public final float getPrevFloat(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevFloat(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevFloat(index);
+    public final float getPrevFloat(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevFloat(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevFloat(rowKey);
     }
 
     @Override
-    public final int getPrevInt(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevInt(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevInt(index);
+    public final int getPrevInt(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevInt(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevInt(rowKey);
     }
 
     @Override
-    public final long getPrevLong(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevLong(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevLong(index);
+    public final long getPrevLong(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevLong(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevLong(rowKey);
     }
 
     @Override
-    public final short getPrevShort(final long index) {
-        return isOverflowLocation(index) ? overflowSource.getPrevShort(hashLocationToOverflowLocation(index))
-                : mainSource.getPrevShort(index);
+    public final short getPrevShort(final long rowKey) {
+        return isOverflowLocation(rowKey) ? overflowSource.getPrevShort(hashLocationToOverflowLocation(rowKey))
+                : mainSource.getPrevShort(rowKey);
     }
 
     @Override

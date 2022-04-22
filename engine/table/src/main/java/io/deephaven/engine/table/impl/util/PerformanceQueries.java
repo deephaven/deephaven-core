@@ -51,8 +51,8 @@ public class PerformanceQueries {
                         "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d", // How long this query ran for, in
                                                                                  // seconds
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange",
-                        "QueryMemUsed = TotalMemoryUsed - TotalMemoryFree", // Memory in use by the query. (Only
-                                                                            // includes active heap memory.)
+                        "QueryMemUsed = TotalMemory - FreeMemory", // Memory in use by the query. (Only
+                                                                   // includes active heap memory.)
                         "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of max heap
                                                                            // size (-Xmx)
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed" // Remaining memory until the query runs into the
@@ -147,8 +147,8 @@ public class PerformanceQueries {
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         "Ratio = EntryIntervalUsage / IntervalDurationNanos", // % of time during this interval that the
                                                                               // operation was using CPU
-                        "QueryMemUsed = TotalMemoryUsed - TotalMemoryFree", // Memory in use by the query. (Only
-                                                                            // includes active heap memory.)
+                        "QueryMemUsed = MaxTotalMemory - MinFreeMemory", // Memory in use by the query. (Only
+                                                                         // includes active heap memory.)
                         "QueryMemUsedPct = QueryMemUsed / WorkerHeapSize", // Memory usage as a percenage of the max
                                                                            // heap size (-Xmx)
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed", // Remaining memory until the query runs into
@@ -266,37 +266,54 @@ public class PerformanceQueries {
     }
 
     /**
-     * A user friendly view with basic memory and GC data samples for the current engine process.
+     * A user friendly view with basic memory, UGP and GC stats samples for the current engine process, collected on a
+     * periodic basis.
      *
      * @return a view on ProcessMemoryLog.
      */
     @ScriptApi
-    public static Table processMemory() {
+    public static Table serverState() {
         final long maxMemoryBytes = RuntimeMemory.getInstance().getMaxMemory();
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
-        final Table maxMem = TableTools.newTable(TableTools.intCol("MaxMemMiB", maxMemoryMiB));
-        final Table pml = TableLoggers.processMemoryLog().naturalJoin(maxMem, "");
-        Table pm = pml.updateView(
-                "TotalMemMiB = (int) Math.ceil(TotalMemory / (1024 * 1024.0))",
-                "FreeMemMiB = (int) Math.ceil(FreeMemory / (1024 * 1024.0))");
-        pm = pm.view(
+        final Table pml = TableLoggers.serverStateLog().updateView("MaxMemMiB = " + maxMemoryMiB);
+        Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
-                "IntervalSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
-                "UsedMemMiB = TotalMemMiB - FreeMemMiB",
-                "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
+                "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
+                "UsedMemMiB = TotalMemoryMiB - FreeMemoryMiB",
+                "AvailMemMiB = MaxMemMiB - TotalMemoryMiB + FreeMemoryMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
-                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeMicros, IntervalDurationMicros)",
+                "UGPCycles = count(IntervalUGPCyclesTimeMicros)",
+                "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesOnBudget, IntervalUGPCyclesTimeMicros.length)",
+                "UGPCycleMaxSecs = max(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleMedianSecs = median(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleMeanSecs = avg(IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPCycleP90Secs = percentile(0.9, IntervalUGPCyclesTimeMicros) / (1000 * 1000.0)",
+                "UGPTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(sum(IntervalUGPCyclesTimeMicros), IntervalDurationMicros)",
+                "UGPSafePointTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalUGPCyclesSafePointTimeMicros, IntervalDurationMicros)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
                 "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
                         "((AvailMemRatio < 0.10) ? PALE_REDPURPLE : " +
                         "((AvailMemRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPOnBudgetRatio=Decimal(`#0.0%`)",
+                "UGPTimeRatio=Decimal(`#0.0%`)",
+                "UGPSafePointTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=Decimal(`#0.0%`)",
                 "GcTimeRatio=(GcTimeRatio >= 0.75) ? PALE_RED : " +
                         "((GcTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
                         "((GcTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
-                "IntervalSeconds=Decimal(`#0.000`)");
+                "UGPOnBudgetRatio=(UGPOnBudgetRatio < 0.05) ? PALE_RED : " +
+                        "((UGPOnBudgetRatio < 0.10) ? PALE_REDPURPLE : " +
+                        "((UGPOnBudgetRatio < 0.20) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPTimeRatio=(UGPTimeRatio >= 0.99) ? PALE_RED : " +
+                        "((UGPTimeRatio >= 0.95) ? PALE_REDPURPLE : " +
+                        "((UGPTimeRatio > 0.90) ? PALE_PURPLE : NO_FORMATTING))",
+                "UGPSafePointTimeRatio=(UGPSafePointTimeRatio >= 0.75) ? PALE_RED : " +
+                        "((UGPSafePointTimeRatio >= 0.50) ? PALE_REDPURPLE : " +
+                        "((UGPSafePointTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
+                "IntervalSecs=Decimal(`#0.000`)");
         return pm;
     }
 

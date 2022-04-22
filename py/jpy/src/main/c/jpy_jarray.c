@@ -140,7 +140,7 @@ int JArray_GetBufferProc(JPy_JArray* self, Py_buffer* view, int flags, char java
 
     // Step 4/5
     view->obj = (PyObject*) self;
-    Py_INCREF(view->obj);
+    JPy_INCREF(view->obj);
 
     // Step 5/5
     return 0;

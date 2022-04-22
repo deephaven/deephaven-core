@@ -199,9 +199,9 @@ public class HashSetBackedTableFactory {
         }
 
         @Override
-        public String get(long index) {
+        public String get(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                SmartKey row = indexToValueMap.get(index);
+                SmartKey row = indexToValueMap.get(rowKey);
                 if (row == null)
                     return null;
                 return (String) row.values_[columnIndex];
@@ -209,15 +209,15 @@ public class HashSetBackedTableFactory {
         }
 
         @Override
-        public String getPrev(long index) {
+        public String getPrev(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                if (indexToPreviousClock.get(index) == LogicalClock.DEFAULT.currentStep()) {
-                    SmartKey row = indexToPreviousMap.get(index);
+                if (indexToPreviousClock.get(rowKey) == LogicalClock.DEFAULT.currentStep()) {
+                    SmartKey row = indexToPreviousMap.get(rowKey);
                     if (row == null)
                         return null;
                     return (String) row.values_[columnIndex];
                 } else {
-                    return get(index);
+                    return get(rowKey);
                 }
             }
         }

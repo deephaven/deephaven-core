@@ -33,19 +33,19 @@ public class UngroupedBoxedDoubleArrayColumnSource extends UngroupedColumnSource
     }
 
     @Override
-    public Double get(long index) {
-        final double result = getDouble(index);
+    public Double get(long rowKey) {
+        final double result = getDouble(rowKey);
         return (result == NULL_DOUBLE?null:result);
     }
 
 
     @Override
-    public double getDouble(long index) {
-        if (index < 0) {
+    public double getDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         Double[] array = innerSource.get(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_DOUBLE;
@@ -55,18 +55,18 @@ public class UngroupedBoxedDoubleArrayColumnSource extends UngroupedColumnSource
 
 
     @Override
-    public Double getPrev(long index) {
-        final double result = getPrevDouble(index);
+    public Double getPrev(long rowKey) {
+        final double result = getPrevDouble(rowKey);
         return (result == NULL_DOUBLE?null:result);
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        if (index < 0) {
+    public double getPrevDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         Double[] array = innerSource.getPrev(segment);
         if (array == null || offset >= array.length || array[offset] == null) {
             return NULL_DOUBLE;

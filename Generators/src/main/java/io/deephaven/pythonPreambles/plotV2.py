@@ -23,7 +23,7 @@ from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape,
     SelectableDataSet
 from deephaven.table import Table
 from deephaven.calendar import BusinessCalendar
-from deephaven._jcompat import j_function
+from deephaven.jcompat import j_function
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
@@ -45,6 +45,15 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
     if not isinstance(obj, types_no_subscript):
         supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
         raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
+
+
+def _no_convert_j(name: str, obj: Any, types: List) -> Any:
+    if obj is None:
+        return None
+
+    _assert_type(name, obj, types)
+
+    return obj
 
 
 def _convert_j(name: str, obj: Any, types: List) -> Any:
@@ -78,6 +87,7 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         else:
             return obj.value
     elif isinstance(obj, Sequence):
+        # to avoid JPY's 'too many matching overloads' error
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)

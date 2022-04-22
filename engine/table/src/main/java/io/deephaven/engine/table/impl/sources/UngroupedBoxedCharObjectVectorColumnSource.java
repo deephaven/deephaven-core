@@ -20,14 +20,14 @@ public class UngroupedBoxedCharObjectVectorColumnSource extends UngroupedObjectV
     }
 
     @Override
-    public char getChar(long index) {
-        final Character result = get(index);
+    public char getChar(long rowKey) {
+        final Character result = get(rowKey);
         return result == null ? NULL_CHAR : result;
     }
 
     @Override
-    public char getPrevChar(long index) {
-        final Character result = getPrev(index);
+    public char getPrevChar(long rowKey) {
+        final Character result = getPrev(rowKey);
         return result == null ? NULL_CHAR : result;
     }
 }

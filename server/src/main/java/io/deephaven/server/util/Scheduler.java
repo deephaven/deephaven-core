@@ -44,6 +44,13 @@ public interface Scheduler extends TimeProvider {
      */
     void runSerially(@NotNull Runnable command);
 
+    /**
+     * @return whether this scheduler is being run for tests.
+     */
+    default boolean inTestMode() {
+        return false;
+    }
+
     class DelegatingImpl implements Scheduler {
 
         private final ExecutorService serialDelegate;

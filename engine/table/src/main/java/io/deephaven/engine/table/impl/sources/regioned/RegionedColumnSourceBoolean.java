@@ -34,8 +34,8 @@ final class RegionedColumnSourceBoolean
     }
 
     @Override
-    public Boolean get(long elementIndex) {
-        return elementIndex == RowSequence.NULL_ROW_KEY ? null :
-                BooleanUtils.byteAsBoolean(lookupRegion(elementIndex).getReferencedRegion().getByte(elementIndex));
+    public Boolean get(long rowKey) {
+        return rowKey == RowSequence.NULL_ROW_KEY ? null :
+                BooleanUtils.byteAsBoolean(lookupRegion(rowKey).getReferencedRegion().getByte(rowKey));
     }
 }

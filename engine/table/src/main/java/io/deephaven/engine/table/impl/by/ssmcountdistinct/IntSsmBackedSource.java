@@ -70,13 +70,13 @@ public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
     }
 
     @Override
-    public IntVector get(long index) {
-        return underlying.get(index);
+    public IntVector get(long rowKey) {
+        return underlying.get(rowKey);
     }
 
     @Override
-    public IntVector getPrev(long index) {
-        final IntSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
+    public IntVector getPrev(long rowKey) {
+        final IntSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 

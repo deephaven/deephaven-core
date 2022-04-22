@@ -130,24 +130,24 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region primitive get
     @Override
-    public final T get(long index) {
-        if (index < 0) {
+    public final T get(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return getFromBlock(blocks, index);
+        return getFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final T getPrev(long index) {
-        if (index < 0) {
+    public final T getPrev(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        if (shouldUsePrevious(index)) {
-            return getFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getFromBlock(prevBlocks, rowKey);
         }
 
-        return getFromBlock(blocks, index);
+        return getFromBlock(blocks, rowKey);
     }
 
     private T getFromBlock(ObjectOneOrN.Block0<T> blocks, long key) {

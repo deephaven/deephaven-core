@@ -24,10 +24,10 @@ public class LongArraySource extends AbstractLongArraySource<Long> {
     }
 
     @Override
-    public Long get(long index) { return box(getLong(index)); }
+    public Long get(long rowKey) { return box(getLong(rowKey)); }
 
     @Override
-    public Long getPrev(long index) {
-        return box(getPrevLong(index));
+    public Long getPrev(long rowKey) {
+        return box(getPrevLong(rowKey));
     }
 }

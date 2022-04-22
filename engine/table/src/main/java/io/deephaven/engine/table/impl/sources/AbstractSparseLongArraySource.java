@@ -126,24 +126,24 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region primitive get
     @Override
-    public final long getLong(long index) {
-        if (index < 0) {
+    public final long getLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        return getLongFromBlock(blocks, index);
+        return getLongFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final long getPrevLong(long index) {
-        if (index < 0) {
+    public final long getPrevLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        if (shouldUsePrevious(index)) {
-            return getLongFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getLongFromBlock(prevBlocks, rowKey);
         }
 
-        return getLongFromBlock(blocks, index);
+        return getLongFromBlock(blocks, rowKey);
     }
 
     private long getLongFromBlock(LongOneOrN.Block0 blocks, long key) {

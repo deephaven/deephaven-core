@@ -21,8 +21,8 @@ public class BitSetColumnSource extends AbstractColumnSource<Boolean>
     }
 
     @Override
-    public Boolean get(long index) {
-        return theSet.get((int) index);
+    public Boolean get(long rowKey) {
+        return theSet.get((int) rowKey);
     }
 
     @Override

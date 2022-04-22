@@ -47,7 +47,8 @@ public class StreamTableTools {
             ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(),
                     (boolean usePrev, long beforeClockValue) -> {
                         final Map<String, ArrayBackedColumnSource<?>> columns = new LinkedHashMap<>();
-                        final Map<String, ? extends ColumnSource<?>> columnSourceMap = streamTable.getColumnSourceMap();
+                        final Map<String, ? extends ColumnSource<?>> columnSourceMap =
+                                baseStreamTable.getColumnSourceMap();
                         final int columnCount = columnSourceMap.size();
                         final ColumnSource<?>[] sourceColumns = new ColumnSource[columnCount];
                         final WritableColumnSource<?>[] destColumns = new WritableColumnSource[columnCount];
@@ -89,7 +90,7 @@ public class StreamTableTools {
                         resultHolder.setValue(result);
 
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
-                                streamTable, result) {
+                                baseStreamTable, result) {
                             @Override
                             public void onUpdate(TableUpdate upstream) {
                                 if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {

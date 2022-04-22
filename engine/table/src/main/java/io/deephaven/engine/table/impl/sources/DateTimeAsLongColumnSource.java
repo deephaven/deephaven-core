@@ -28,13 +28,13 @@ public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> imple
     }
 
     @Override
-    public long getLong(final long index) {
-        return DateTimeUtils.nanos(alternateColumnSource.get(index));
+    public long getLong(final long rowKey) {
+        return DateTimeUtils.nanos(alternateColumnSource.get(rowKey));
     }
 
     @Override
-    public long getPrevLong(final long index) {
-        return DateTimeUtils.nanos(alternateColumnSource.getPrev(index));
+    public long getPrevLong(final long rowKey) {
+        return DateTimeUtils.nanos(alternateColumnSource.getPrev(rowKey));
     }
 
     @Override

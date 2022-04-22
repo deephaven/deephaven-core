@@ -59,12 +59,12 @@ public class ImmutableCharArraySource extends AbstractDeferredGroupingColumnSour
     // endregion allocateArray
 
     @Override
-    public final char getChar(long index) {
-        if (index < 0 || index >= data.length) {
+    public final char getChar(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return NULL_CHAR;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final char getUnsafe(long index) {

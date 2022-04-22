@@ -39,147 +39,147 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     public void startTrackingPrevValues() {}
 
     @Override
-    public T get(long index) {
-        if (index < 0) {
+    public T get(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.get(shiftState.getShifted(index));
+        return innerSource.get(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public Boolean getBoolean(long index) {
-        if (index < 0) {
+    public Boolean getBoolean(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getBoolean(shiftState.getShifted(index));
+        return innerSource.getBoolean(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public byte getByte(long index) {
-        if (index < 0) {
+    public byte getByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        return innerSource.getByte(shiftState.getShifted(index));
+        return innerSource.getByte(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public char getChar(long index) {
-        if (index < 0) {
+    public char getChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        return innerSource.getChar(shiftState.getShifted(index));
+        return innerSource.getChar(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public double getDouble(long index) {
-        if (index < 0) {
+    public double getDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        return innerSource.getDouble(shiftState.getShifted(index));
+        return innerSource.getDouble(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public float getFloat(long index) {
-        if (index < 0) {
+    public float getFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        return innerSource.getFloat(shiftState.getShifted(index));
+        return innerSource.getFloat(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public int getInt(long index) {
-        if (index < 0) {
+    public int getInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        return innerSource.getInt(shiftState.getShifted(index));
+        return innerSource.getInt(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public long getLong(long index) {
-        if (index < 0) {
+    public long getLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        return innerSource.getLong(shiftState.getShifted(index));
+        return innerSource.getLong(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public short getShort(long index) {
-        if (index < 0) {
+    public short getShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        return innerSource.getShort(shiftState.getShifted(index));
+        return innerSource.getShort(shiftState.getShifted(rowKey));
     }
 
     @Override
-    public T getPrev(long index) {
-        if (index < 0) {
+    public T getPrev(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getPrev(shiftState.getPrevShifted(index));
+        return innerSource.getPrev(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
-        if (index < 0) {
+    public Boolean getPrevBoolean(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        return innerSource.getPrevBoolean(shiftState.getPrevShifted(index));
+        return innerSource.getPrevBoolean(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public byte getPrevByte(long index) {
-        if (index < 0) {
+    public byte getPrevByte(long rowKey) {
+        if (rowKey < 0) {
             return NULL_BYTE;
         }
-        return innerSource.getPrevByte(shiftState.getPrevShifted(index));
+        return innerSource.getPrevByte(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public char getPrevChar(long index) {
-        if (index < 0) {
+    public char getPrevChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        return innerSource.getPrevChar(shiftState.getPrevShifted(index));
+        return innerSource.getPrevChar(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public double getPrevDouble(long index) {
-        if (index < 0) {
+    public double getPrevDouble(long rowKey) {
+        if (rowKey < 0) {
             return NULL_DOUBLE;
         }
-        return innerSource.getPrevDouble(shiftState.getPrevShifted(index));
+        return innerSource.getPrevDouble(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public float getPrevFloat(long index) {
-        if (index < 0) {
+    public float getPrevFloat(long rowKey) {
+        if (rowKey < 0) {
             return NULL_FLOAT;
         }
-        return innerSource.getPrevFloat(shiftState.getPrevShifted(index));
+        return innerSource.getPrevFloat(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public int getPrevInt(long index) {
-        if (index < 0) {
+    public int getPrevInt(long rowKey) {
+        if (rowKey < 0) {
             return NULL_INT;
         }
-        return innerSource.getPrevInt(shiftState.getPrevShifted(index));
+        return innerSource.getPrevInt(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public long getPrevLong(long index) {
-        if (index < 0) {
+    public long getPrevLong(long rowKey) {
+        if (rowKey < 0) {
             return NULL_LONG;
         }
-        return innerSource.getPrevLong(shiftState.getPrevShifted(index));
+        return innerSource.getPrevLong(shiftState.getPrevShifted(rowKey));
     }
 
     @Override
-    public short getPrevShort(long index) {
-        if (index < 0) {
+    public short getPrevShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
-        return innerSource.getPrevShort(shiftState.getPrevShifted(index));
+        return innerSource.getPrevShort(shiftState.getPrevShifted(rowKey));
     }
 
     @Override

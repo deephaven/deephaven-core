@@ -83,17 +83,6 @@ def processInfo(processInfoId, type, key):
 
 
 @_passThrough
-def processMemory():
-    """
-    A user friendly view with basic memory and GC data samples for the current engine process.
-    
-    :return: (io.deephaven.engine.table.Table) a view on ProcessMemoryLog.
-    """
-    
-    return _java_type_.processMemory()
-
-
-@_passThrough
 def queryOperationPerformance(evaluationNumber):
     """
     Takes in a query evaluation number and returns a view for that query's individual operations's performance data.
@@ -188,3 +177,15 @@ def queryUpdatePerformanceMap(evaluationNumber):
     """
     
     return _java_type_.queryUpdatePerformanceMap(evaluationNumber)
+
+
+@_passThrough
+def serverState():
+    """
+    A user friendly view with basic memory, UGP and GC stats samples for the current engine process, collected on a
+     periodic basis.
+    
+    :return: (io.deephaven.engine.table.Table) a view on ProcessMemoryLog.
+    """
+    
+    return _java_type_.serverState()
