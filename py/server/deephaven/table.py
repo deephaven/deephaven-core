@@ -1282,7 +1282,10 @@ class Table(JObjectWrapper):
         """
         try:
             _j_layout_hint_builder = _JLayoutHintBuilder.get()
+        except Exception as e:
+            raise DHError(e, "failed to init layout hint builder") from e
 
+        try:
             if front is not None:
                 _j_layout_hint_builder.atFront(_to_sequence(front))
 
@@ -1294,7 +1297,10 @@ class Table(JObjectWrapper):
 
             if hide is not None:
                 _j_layout_hint_builder.hide(_to_sequence(hide))
+        except Exception as e:
+            raise DHError(e, "invalid parameter type for layout hints") from e
 
+        try:
             return Table(j_table=self.j_table.setLayoutHints(_j_layout_hint_builder.build()))
         except Exception as e:
             raise DHError(e, "failed to set layout hints on table") from e
