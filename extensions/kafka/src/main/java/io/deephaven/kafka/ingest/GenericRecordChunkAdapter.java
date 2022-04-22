@@ -72,7 +72,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
         return logicalType;
     }
 
-    private static LogicalType getArrayTypeLogicalType(final Schema schema, final String fieldPathStr, Pattern separator) {
+    private static LogicalType getArrayTypeLogicalType(final Schema schema, final String fieldPathStr,
+            Pattern separator) {
         final Schema fieldSchema = getFieldSchema(schema, fieldPathStr, separator);
         final LogicalType logicalType = fieldSchema.getElementType().getLogicalType();
         return logicalType;
@@ -147,7 +148,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                                     "Can not map field without a logical type to DateTime[]: field=" + fieldPathStr);
                         }
                         if (logicalType instanceof LogicalTypes.TimestampMillis) {
-                            return new GenericRecordDateTimeArrayFieldCopier(fieldPathStr, separator, schema, 1000_000L);
+                            return new GenericRecordDateTimeArrayFieldCopier(fieldPathStr, separator, schema,
+                                    1000_000L);
                         }
                         if (logicalType instanceof LogicalTypes.TimestampMicros) {
                             return new GenericRecordDateTimeArrayFieldCopier(fieldPathStr, separator, schema, 1000L);
@@ -159,7 +161,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     }
                     return new GenericRecordArrayFieldCopier(fieldPathStr, separator, schema, componentType);
                 }
-                // The GenericContainer.class.isAssignableFrom(dataType) case is also covered by the generic object field copier.
+                // The GenericContainer.class.isAssignableFrom(dataType) case is also covered by the generic object
+                // field copier.
                 return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
