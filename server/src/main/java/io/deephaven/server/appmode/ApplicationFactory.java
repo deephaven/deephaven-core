@@ -19,19 +19,19 @@ import java.util.Objects;
 
 public class ApplicationFactory implements ApplicationConfig.Visitor {
 
-    public static ApplicationState create(Path applicationDir, ApplicationConfig config, ScriptSession scriptSession,
+    public static ApplicationState create(Path applicationDir, ApplicationConfig config, ScriptSession<?> scriptSession,
             ApplicationState.Listener appStateListener) {
         return config.walk(new ApplicationFactory(applicationDir, scriptSession, appStateListener)).out();
     }
 
     private final Path applicationDir;
-    private final ScriptSession scriptSession;
+    private final ScriptSession<?> scriptSession;
     private final ApplicationState.Listener appStateListener;
 
     private ApplicationState out;
 
     private ApplicationFactory(final Path applicationDir,
-            final ScriptSession scriptSession,
+            final ScriptSession<?> scriptSession,
             final ApplicationState.Listener appStateListener) {
         this.applicationDir = Objects.requireNonNull(applicationDir);
         this.scriptSession = scriptSession;

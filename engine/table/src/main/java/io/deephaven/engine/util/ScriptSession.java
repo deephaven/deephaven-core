@@ -9,6 +9,7 @@ import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
 /**
  * Interface for interactive console script sessions.
  */
-public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
+public interface ScriptSession<S extends ScriptSession.Snapshot> extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Retrieve a variable from the script session's bindings.
@@ -55,6 +56,10 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      */
     VariableProvider getVariableProvider();
 
+    interface Snapshot extends SafeCloseable {
+
+    }
+
     class Changes {
         public RuntimeException error = null;
 
@@ -70,7 +75,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     }
 
     interface Listener {
-        void onScopeChanges(ScriptSession scriptSession, Changes changes);
+        void onScopeChanges(ScriptSession<?> scriptSession, Changes changes);
     }
 
     /**

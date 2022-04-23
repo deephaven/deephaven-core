@@ -17,7 +17,7 @@ import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.util.AbstractScriptSession.Snapshot;
+import io.deephaven.engine.util.ScriptSession.Snapshot;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.SafeCloseable;
@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -40,7 +39,7 @@ import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
 public abstract class AbstractScriptSession<S extends Snapshot> extends LivenessScope
-        implements ScriptSession, VariableProvider {
+        implements ScriptSession<S>, VariableProvider {
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
@@ -106,10 +105,6 @@ public abstract class AbstractScriptSession<S extends Snapshot> extends Liveness
 
     protected synchronized void publishInitial() {
         applyDiff(emptySnapshot(), takeSnapshot(), null);
-    }
-
-    interface Snapshot {
-
     }
 
     protected abstract S emptySnapshot();
@@ -297,9 +292,9 @@ public abstract class AbstractScriptSession<S extends Snapshot> extends Liveness
     // -----------------------------------------------------------------------------------------------------------------
 
     private abstract static class ScriptSessionQueryScope extends QueryScope {
-        final ScriptSession scriptSession;
+        final ScriptSession<?> scriptSession;
 
-        private ScriptSessionQueryScope(ScriptSession scriptSession) {
+        private ScriptSessionQueryScope(ScriptSession<?> scriptSession) {
             this.scriptSession = scriptSession;
         }
 
@@ -310,7 +305,7 @@ public abstract class AbstractScriptSession<S extends Snapshot> extends Liveness
     }
 
     public static class SynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
-        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
+        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession<?> scriptSession) {
             super(scriptSession);
         }
 
@@ -349,7 +344,7 @@ public abstract class AbstractScriptSession<S extends Snapshot> extends Liveness
     }
 
     public static class UnsynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
-        public UnsynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
+        public UnsynchronizedScriptSessionQueryScope(@NotNull final ScriptSession<?> scriptSession) {
             super(scriptSession);
         }
 

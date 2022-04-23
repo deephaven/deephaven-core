@@ -10,13 +10,14 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.TimeoutException;
 
 @Module
 public class PythonConsoleSessionModule {
     @Provides
     @IntoMap
     @StringKey("python")
-    ScriptSession bindScriptSession(PythonDeephavenSession pythonSession) {
+    ScriptSession<?> bindScriptSession(PythonDeephavenSession pythonSession) {
         return pythonSession;
     }
 
@@ -27,6 +28,8 @@ public class PythonConsoleSessionModule {
         } catch (IOException e) {
             // can't happen since we pass false
             throw new UncheckedIOException(e);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new IllegalStateException("Unable to start JPY", e);
         }
     }
 }

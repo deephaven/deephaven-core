@@ -20,7 +20,6 @@ import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.arrow.FlightServiceGrpcBinding;
-import io.deephaven.server.console.GlobalSessionProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.session.SessionService;
@@ -74,10 +73,8 @@ public abstract class FlightMessageRoundTripTest {
         }
 
         @Provides
-        AbstractScriptSession createGlobalScriptSession(GlobalSessionProvider sessionProvider) {
-            final AbstractScriptSession scriptSession = new NoLanguageDeephavenSession("non-script-session");
-            sessionProvider.initializeGlobalScriptSession(scriptSession);
-            return scriptSession;
+        AbstractScriptSession createGlobalScriptSession() {
+            return new NoLanguageDeephavenSession("non-script-session");
         }
 
         @Provides

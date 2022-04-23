@@ -55,7 +55,7 @@ import java.util.stream.StreamSupport;
 /**
  * Groovy {@link ScriptSession}. Not safe for concurrent use.
  */
-public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot> implements ScriptSession {
+public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot> {
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
@@ -663,6 +663,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         public GroovySnapshot(Map<String, Object> existingScope) {
             this.scope = Objects.requireNonNull(existingScope);
+        }
+
+        @Override
+        public void close() {
+
         }
     }
 
