@@ -60,34 +60,65 @@ class DType:
 
 
 bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
+"""Boolean type"""
 byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
+"""Signed byte integer type"""
 int8 = byte
+"""Signed byte integer type"""
 short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
+"""Signed short integer type"""
 int16 = short
+"""Signed short integer type"""
 char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
+"""Character type"""
 int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
+"""Signed 32bit integer type"""
 long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
+"""Signed 64bit integer type"""
 int64 = long
+"""Signed 64bit integer type"""
 int_ = long
+"""Signed 64bit integer type"""
 float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
+"""Single-precision floating-point number type"""
 single = float32
+"""Single-precision floating-point number type"""
 float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
+"""Double-precision floating-point number type"""
 double = float64
+"""Double-precision floating-point number type"""
 float_ = float64
+"""Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
+"""Java String type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
+"""Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
+"""Deephaven StringSet type"""
 DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
+"""Deephaven DateTime type"""
 Period = DType(j_name="io.deephaven.time.Period")
+"""Deephaven time period type"""
 PyObject = DType(j_name="org.jpy.PyObject")
+"""JPY PyObject type"""
 JObject = DType(j_name="java.lang.Object")
+"""JPY Java Object type"""
 byte_array = DType(j_name='[B')
+"""Byte array type"""
 short_array = DType(j_name='[S')
+"""Short array type"""
 int_array = DType(j_name='[I')
+"""32bit integer array type"""
 long_array = DType(j_name='[J')
+"""64bit integer array type"""
 float_array = DType(j_name='[S')
+"""Single-precision floating-point array type"""
 double_array = DType(j_name='[D')
+"""Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
+"""Java String array type"""
+datetime_array = DType(j_name='[Lio.deephaven.time.DateTime;')
+"""Deephaven DateTime array type"""
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
