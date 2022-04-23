@@ -7,7 +7,7 @@ charset-normalizer==2.0.12
 dill==0.3.4
 flatbuffers==2.0
 gast==0.4.0
-google-auth==2.6.3
+google-auth==2.6.5
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 grpcio==1.44.0
@@ -20,7 +20,7 @@ libclang==13.0.0
 llvmlite==0.38.0
 Markdown==3.3.6
 numba==0.55.1
-numpy==1.21.5
+numpy==1.21.6
 oauthlib==3.2.0
 opt-einsum==3.3.0
 pandas==1.3.5
@@ -40,7 +40,7 @@ tensorflow==2.7.1
 tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.24.0
 termcolor==1.1.0
-typing_extensions==4.1.1
+typing_extensions==4.2.0
 urllib3==1.26.9
 Werkzeug==2.1.1
 wrapt==1.14.0
