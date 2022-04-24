@@ -5,16 +5,16 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Union, TypeVar, Sequence, List
+from typing import Union, Sequence, List
 
 import jpy
 
 from deephaven import DHError, dtypes
-from deephaven.jcompat import j_array_list
-from deephaven._wrapper import JObjectWrapper, unwrap
+from deephaven._wrapper import JObjectWrapper
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
+from deephaven.jcompat import j_array_list, to_sequence
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -42,18 +42,6 @@ class AsOfMatchRule(Enum):
     LESS_THAN = _JAsOfMatchRule.LESS_THAN
     GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
     GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
-
-
-T = TypeVar("T")
-
-
-def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
-    if not v:
-        return ()
-    if not isinstance(v, Sequence) or isinstance(v, str):
-        return (unwrap(v),)
-    else:
-        return tuple((unwrap(o) for o in v))
 
 
 class Table(JObjectWrapper):
@@ -142,7 +130,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return _JTableTools.string(self.j_table, num_rows, *cols)
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
@@ -169,7 +157,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
         except Exception as e:
             raise DHError(message="failed to create a snapshot table.") from e
@@ -218,7 +206,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.dropColumns(*cols))
         except Exception as e:
             raise DHError(e, "table drop_columns operation failed.") from e
@@ -237,7 +225,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumns(idx, *cols))
         except Exception as e:
             raise DHError(e, "table move_columns operation failed.") from e
@@ -256,7 +244,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
@@ -275,7 +263,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
@@ -293,7 +281,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
@@ -311,7 +299,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
@@ -329,7 +317,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
@@ -347,7 +335,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e
@@ -365,7 +353,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
@@ -386,7 +374,7 @@ class Table(JObjectWrapper):
         try:
             if not formulas:
                 return Table(j_table=self.j_table.select())
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
@@ -406,7 +394,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
@@ -433,7 +421,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = _to_sequence(filters)
+            filters = to_sequence(filters)
             return Table(j_table=self.j_table.where(*filters))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
@@ -453,7 +441,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
@@ -473,7 +461,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
@@ -492,7 +480,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = _to_sequence(filters)
+            filters = to_sequence(filters)
             return Table(
                 j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
             )
@@ -584,7 +572,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return self.j_table.restrictSortTo(*cols)
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
@@ -603,7 +591,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            order_by = _to_sequence(order_by)
+            order_by = to_sequence(order_by)
             return Table(j_table=self.j_table.sortDescending(*order_by))
         except Exception as e:
             raise DHError(e, "table sort_descending operation failed.") from e
@@ -647,8 +635,8 @@ class Table(JObjectWrapper):
             )
 
         try:
-            order_by = _to_sequence(order_by)
-            order = _to_sequence(order)
+            order_by = to_sequence(order_by)
+            order = to_sequence(order)
             if order:
                 sort_columns = [
                     sort_column(col, dir_) for col, dir_ in zip(order_by, order)
@@ -687,8 +675,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.naturalJoin(
@@ -722,8 +710,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.exactJoin(
@@ -757,8 +745,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             if joins:
                 return Table(
                     j_table=self.j_table.join(
@@ -793,8 +781,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             if on:
                 on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
@@ -827,10 +815,10 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             if on:
                 on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
             if joins:
@@ -858,7 +846,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             return Table(j_table=self.j_table.headBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
@@ -877,7 +865,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             return Table(j_table=self.j_table.tailBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
@@ -896,7 +884,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.groupBy(*by))
             else:
@@ -919,7 +907,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             if cols:
                 return Table(j_table=self.j_table.ungroup(*cols))
             else:
@@ -940,7 +928,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.firstBy(*by))
             else:
@@ -961,7 +949,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.lastBy(*by))
             else:
@@ -982,7 +970,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.sumBy(*by))
             else:
@@ -1003,7 +991,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.avgBy(*by))
             else:
@@ -1024,7 +1012,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.stdBy(*by))
             else:
@@ -1045,7 +1033,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.varBy(*by))
             else:
@@ -1066,7 +1054,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.medianBy(*by))
             else:
@@ -1087,7 +1075,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.minBy(*by))
             else:
@@ -1108,7 +1096,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.maxBy(*by))
             else:
@@ -1130,7 +1118,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.countBy(col, *by))
             else:
@@ -1153,8 +1141,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            aggs = _to_sequence(aggs)
-            by = _to_sequence(by)
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
@@ -1178,7 +1166,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
         except Exception as e:
             raise DHError(e, "table agg_all_by operation failed.") from e
@@ -1198,7 +1186,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             return self.j_table.partitionBy(*by)
         except Exception as e:
             raise DHError(e, "failed to create a TableMap.") from e
@@ -1217,7 +1205,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return Table(j_table=self.j_table.formatColumns(formulas))
         except Exception as e:
             raise DHError(e, "failed to color format columns.") from e
@@ -1282,16 +1270,16 @@ class Table(JObjectWrapper):
             _j_layout_hint_builder = _JLayoutHintBuilder.get()
 
             if front is not None:
-                _j_layout_hint_builder.atFront(_to_sequence(front))
+                _j_layout_hint_builder.atFront(to_sequence(front))
 
             if back is not None:
-                _j_layout_hint_builder.atEnd(_to_sequence(back))
+                _j_layout_hint_builder.atEnd(to_sequence(back))
 
             if freeze is not None:
-                _j_layout_hint_builder.freeze(_to_sequence(freeze))
+                _j_layout_hint_builder.freeze(to_sequence(freeze))
 
             if hide is not None:
-                _j_layout_hint_builder.hide(_to_sequence(hide))
+                _j_layout_hint_builder.hide(to_sequence(hide))
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
