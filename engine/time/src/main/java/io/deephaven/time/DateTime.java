@@ -49,8 +49,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return new DateTime(DateTimeUtils.nanos(instant));
     }
 
-    public static final DateTime[] EMPTY_DATETIME_ARRAY = new DateTime[0];
-
     /**
      * Create a new DateTime initialized to the epoch.
      */
