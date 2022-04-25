@@ -24,8 +24,11 @@ class ApplicationState(JObjectWrapper):
     def __init__(self, j_app_state):
         self.j_app_state = j_app_state
 
-    def __str__(self):
+    def __repr__(self):
         return f"id: {self.j_app_state.id()}, name: {self.j_app_state.name()}"
+
+    def __str__(self):
+        return repr(self)
 
     def __getitem__(self, item):
         item = str(item)

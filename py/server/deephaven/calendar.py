@@ -71,8 +71,11 @@ class BusinessPeriod(JObjectWrapper):
     def __init__(self, j_business_period):
         self.j_business_period = j_business_period
 
-    def __str__(self):
+    def __repr__(self):
         return f"[{self.start_time}, {self.end_time}]"
+
+    def __str__(self):
+        return repr(self)
 
     @property
     def j_object(self) -> jpy.JType:

@@ -70,14 +70,17 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
 
-    def __str__(self):
-        default_str = super().__str__()
+    def __repr__(self):
+        default_repr = super().__repr__()
         column_dict = {col.name: col.data_type for col in self.columns[:10]}
-        str_str = (
-            f"{default_str[:-2]}, num_rows = {self.size}, columns = {column_dict}"
+        repr_str = (
+            f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
         )
-        str_str = str_str[:115] + "...}>" if len(str_str) > 120 else str_str
-        return str_str
+        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str
+        return repr_str
+
+    def __str__(self):
+        return repr(self)
 
     @property
     def size(self) -> int:
