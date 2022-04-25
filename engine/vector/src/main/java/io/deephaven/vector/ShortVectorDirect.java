@@ -28,6 +28,8 @@ public class ShortVectorDirect implements ShortVector {
         this.data = data;
     }
 
+    public static final ShortVector ZERO_LEN_VECTOR = new ShortVectorDirect();
+
     @Override
     public short get(long i) {
         if (i < 0 || i > data.length - 1) {

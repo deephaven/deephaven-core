@@ -15,8 +15,9 @@ public class KafkaSchemaUtils {
             throw new IllegalArgumentException("empty union " + fieldName);
         }
         if (unionSize != 2) {
-            throw new UnsupportedOperationException(
-                    "Union " + fieldName + " with more than 2 fields not supported");
+            // For unions of more than 2 we will just give generic records back;
+            // the caller can detect this happened by checking the output schema is same as input.
+            return fieldSchema;
         }
         final Schema unionField0 = unionTypes.get(0);
         final Schema unionField1 = unionTypes.get(1);
@@ -28,7 +29,8 @@ public class KafkaSchemaUtils {
         if (unionType0 == Schema.Type.NULL) {
             return unionField1;
         }
-        throw new UnsupportedOperationException(
-                "Union " + fieldName + " not supported; only unions with NULL are supported at this time.");
+        // For unions of 2 that are not simple allowing nulls we want to give generic records back;
+        // the caller can detect this happened by checking the output schema is same as input.
+        return fieldSchema;
     }
 }

@@ -1,0 +1,11 @@
+{ "type" : "record",
+  "namespace" : "io.deephaven.examples",
+  "name" : "more_types",
+  "fields" : [
+      { "name" : "OneMap",    "type" : { "type" : "map", "values" : "long" } },
+      { "name" : "OneUnion",  "type" : [ "string", "int", "double" ] },
+      { "name" : "OneEnum",   "type" : { "type" : "enum", "name" : "Suit", "symbols" : ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"] } },
+      { "name" : "OneArray",  "type" : { "type" : "array",  "items" : { "type" : "array", "items" : "int" } } },
+      { "name" : "AnotherArray",  "type" : { "type" : "array",  "items" : { "type" : "long", "logicalType" : "timestamp-millis" } } }
+  ]
+}
