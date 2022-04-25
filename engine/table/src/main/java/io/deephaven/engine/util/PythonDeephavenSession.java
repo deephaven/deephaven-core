@@ -73,6 +73,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
+     * @throws InterruptedException if the current thread is interrupted while starting JPY
+     * @throws TimeoutException if jpy times out while obtaining configuration details
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
