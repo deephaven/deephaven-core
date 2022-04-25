@@ -10,13 +10,15 @@ import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerComponent;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.Main;
+import io.deephaven.server.util.Scheduler;
+import org.jpy.PyDictWrapper;
+import org.jpy.PyObject;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class EmbeddedServer {
@@ -38,11 +40,13 @@ public class EmbeddedServer {
     @Inject
     DeephavenApiServer server;
     @Inject
-    Map<String, Provider<ScriptSession>> scriptSessions;
+    Scheduler scheduler;
+    @Inject
+    Provider<ScriptSession> scriptSession;
 
-    public EmbeddedServer(int port) throws IOException {
+    public EmbeddedServer(int port, PyObject dict) throws IOException {
         final Configuration config = Main.init(new String[0], EmbeddedServer.class);
-//        dict.asDict();
+        PyDictWrapper pyConfig = dict.asDict();
 
         int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
         int httpPort = port;
@@ -64,8 +68,9 @@ public class EmbeddedServer {
     public void start() throws Exception {
         new Thread(() -> {
             try {
+                checkGlobals(scriptSession.get(), null);
                 server.run();
-                System.out.println("Server running on port " + server.server().getPort());
+//                System.out.println("Server running on port " + server.server().getPort());
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
@@ -78,12 +83,16 @@ public class EmbeddedServer {
         }).start();
     }
 
-    public void stop() {
-        server.server().stopWithTimeout(10, TimeUnit.SECONDS);
+    private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {
+//        System.out.println(lastSnapshot);
+        final ScriptSession.SnapshotScope nextSnapshot = scriptSession.snapshot(lastSnapshot);
+        scheduler.runAfterDelay(100, () -> {
+            checkGlobals(scriptSession, nextSnapshot);
+        });
     }
 
     public void bind(String name, Object value) {
-        scriptSessions.get("python").get().setVariable(name, value);
+        scriptSession.get().setVariable(name, value);
     }
 
 }
