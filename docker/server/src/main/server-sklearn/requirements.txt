@@ -1,4 +1,6 @@
+deephaven-plugin==0.1.0
 dill==0.3.4
+importlib-metadata==4.11.3
 joblib==1.1.0
 llvmlite==0.38.0
 numba==0.55.1
@@ -10,4 +12,6 @@ scikit-learn==0.24.2
 scipy==1.7.3
 six==1.16.0
 threadpoolctl==3.1.0
+typing_extensions==4.2.0
 wrapt==1.14.0
+zipp==3.8.0
