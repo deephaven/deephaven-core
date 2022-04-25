@@ -52,6 +52,11 @@ public class DelegatingScriptSession implements ScriptSession {
         return diff;
     }
 
+    @Override
+    public SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent) {
+        return delegate.snapshot(previousIfPresent);
+    }
+
     @NotNull
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
