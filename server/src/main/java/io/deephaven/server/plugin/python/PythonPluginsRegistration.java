@@ -24,7 +24,7 @@ public final class PythonPluginsRegistration implements Registration {
 
     @Override
     public void registerInto(Callback callback) {
-        if (!scriptSessionProvider.get().scriptType().equals("python")) {
+        if (!scriptSessionProvider.get().scriptType().equalsIgnoreCase("python")) {
             return;
         }
         try (final Deephaven2ServerPluginModule module = Deephaven2ServerPluginModule.of()) {

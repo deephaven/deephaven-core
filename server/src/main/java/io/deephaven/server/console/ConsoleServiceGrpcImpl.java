@@ -104,7 +104,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 // TODO (#702): initially show all console types; the first console determines the global console type
                 // thereafter
                 responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
-                        .addConsoleTypes(scriptSessionProvider.get().scriptType())
+                        .addConsoleTypes(scriptSessionProvider.get().scriptType().toLowerCase())
                         .build());
             }
             responseObserver.onCompleted();
@@ -127,7 +127,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO (#702): initially global session will be null; set it here if applicable
 
             final String sessionType = request.getSessionType();
-            if (!scriptSessionProvider.get().scriptType().equals(sessionType)) {
+            if (!scriptSessionProvider.get().scriptType().equalsIgnoreCase(sessionType)) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "session type '" + sessionType + "' is not supported");
             }
