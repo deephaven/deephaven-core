@@ -21,6 +21,19 @@ import java.util.function.Function;
 public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
     /**
+     * Interface for proxies created by {@link #proxy()}.
+     */
+    interface Proxy extends TableOperations<Proxy, TableOperations> {
+
+        /**
+         * Get the PartitionedTable instance underlying this proxy.
+         *
+         * @return The underlying PartitionedTable instance
+         */
+        PartitionedTable target();
+    }
+
+    /**
      * Get the "raw" {@link Table partitioned table} underlying this PartitionedTable.
      *
      * @return The underlying {@link Table partitioned table}
@@ -30,7 +43,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     /**
      * <p>
      * Make a proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of this
-     * PartitionedTable
+     * PartitionedTable.
      * <p>
      * Each operation thus applied will produce a new PartitionedTable with the results as in
      * {@link #transform(Function)} or {@link #partitionedTransform(PartitionedTable, BiFunction)}, and return a new
@@ -39,7 +52,7 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
      *         this PartitionedTable
      */
-    TableOperations<? extends TableOperations, ? extends TableOperations> proxy();
+    Proxy proxy();
 
     /**
      * Make a new {@link Table} that contains the rows from all the constituent tables of this PartitionedTable, in the
@@ -61,8 +74,11 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     PartitionedTable filter(Collection<? extends Filter> filters);
 
     /**
+     * <p>
      * Apply {@code transformer} to all constituent {@link Table tables}, and produce a new PartitionedTable containing
      * the results.
+     * <p>
+     * {@code transformer} must be stateless and safe for concurrent use.
      *
      * @param transformer The {@link Function} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
@@ -70,8 +86,11 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     PartitionedTable transform(@NotNull Function<Table, Table> transformer);
 
     /**
+     * <p>
      * Apply {@code transformer} to all constituent {@link Table tables} found in {@code this} and {@code other} with
      * the same key column values, and produce a new PartitionedTable containing the results.
+     * <p>
+     * {@code transformer} must be stateless and safe for concurrent use.
      *
      * @param other The other PartitionedTable to find constituents in
      * @param transformer The {@link Function} to apply to all pairs of constituent {@link Table tables}

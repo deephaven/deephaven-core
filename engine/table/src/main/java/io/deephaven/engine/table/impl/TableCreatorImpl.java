@@ -34,6 +34,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     INSTANCE;
 
+    @SuppressWarnings("unused")
     @AutoService(TableFactory.TableCreatorProvider.class)
     public static final class TableCreatorProvider implements TableFactory.TableCreatorProvider {
 

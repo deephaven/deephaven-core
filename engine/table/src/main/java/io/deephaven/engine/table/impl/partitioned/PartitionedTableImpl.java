@@ -6,6 +6,9 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationHandler;
@@ -13,11 +16,15 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * {@link PartitionedTable} implementation.
  */
 public class PartitionedTableImpl extends LivenessArtifact implements PartitionedTable {
+
+
 
     private final Table table;
     private final Set<String> keyColumnNames;
@@ -44,8 +51,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public TableOperations<? extends TableOperations, ? extends TableOperations> proxy() {
-
+    public PartitionedTable.Proxy proxy() {
+        return PartitionedTableProxyHandler.proxyFor(this);
     }
 
     @Override
@@ -55,7 +62,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public PartitionedTable filter(@NotNull final Collection<? extends Filter> filters) {
-
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final boolean invalidFilter = Arrays.stream(whereFilters).flatMap((final WhereFilter filter) -> {
+            filter.init(table.getDefinition());
+            return Stream.concat(filter.getColumns().stream(), filter.getColumnArrays().stream());
+        }).anyMatch((final String columnName) -> columnName.equals(constituentColumnName));
+        if (invalidFilter) {
+            throw new IllegalArgumentException("Unsupported filter against constituent column " + constituentColumnName
+                    + " found in filters: " + filters);
+        }
+        return new PartitionedTableImpl(table.where(whereFilters),
+                keyColumnNames, constituentColumnName, constituentDefinition);
     }
 
     @Override
@@ -76,78 +93,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     //     support.
 
     /**
-     * {@link TableOperations} that proxies methods to the component tables of a partitioned table via
-     * {@link Table#update}.
-     * <p>
-     * For example, an operation like {@code where(ColumnA=ValueB)} against a proxy with a component table column named
-     * {@code Components} is implemented equivalently to:
-     *
-     * <pre>
-     * Proxy.of(getUnderlyingPartitionedTable().update("Components=Components.where(ColumnA=ValueB)"), "Components")
-     * </pre>
-     * <p>
-     * Note that the result partitioned table can be retrieved using {@link #getUnderlyingPartitionedTable()}.
+     * {@link SelectColumn} implementation to wrap transformer functions for {@link #transform(Function)} and
+     * {@link #partitionedTransform(PartitionedTable, BiFunction)}.
      */
-    public interface Proxy extends TableOperations<Proxy, Table> {
+    private abstract class BaseTableTransformation implements SelectColumn {
 
-        static Proxy of(@NotNull final Table underlying, @NotNull final String componentColumnname) {
-            return (Proxy) java.lang.reflect.Proxy.newProxyInstance(
-                    Proxy.class.getClassLoader(),
-                    new Class[] {Proxy.class},
-                    new ProxyHandler(underlying, componentColumnname));
-        }
-
-        /**
-         * @return The underlying partitioned table
-         */
-        Table getUnderlyingPartitionedTable();
-    }
-
-    private static class ProxyHandler extends LivenessArtifact implements InvocationHandler {
-
-        private final Table underlying;
-        private final String componentColumnName;
-
-        private final String description;
-
-        public ProxyHandler(@NotNull final Table underlying, @NotNull final String componentColumnName) {
-            this.underlying = underlying;
-            this.componentColumnName = componentColumnName;
-            checkPartitionTable(underlying, componentColumnName);
-            description = "PartitionedTable{" + underlying + ',' + componentColumnName + '}';
-            manage(underlying);
-        }
-
-        public Table getUnderlyingPartitionedTable() {
-            return underlying;
+        private BaseTableTransformation() {
         }
 
         @Override
-        public String toString() {
-            return description;
+        public final List<String> initInputs(@NotNull final Table table) {
+            return initInputs(table.getRowSet(), table.getColumnSourceMap());
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            return null;
-        }
-    }
-
-    private static class TableTransformation implements SelectColumn {
-
-        private final Method method;
-
-        private TableTransformation(@NotNull final Method method) {
-            this.method = method;
-        }
-
-        @Override
-        public List<String> initInputs(Table table) {
-            return null;
-        }
-
-        @Override
-        public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        public List<String> initInputs(@NotNull final TrackingRowSet rowSet,
+                                       @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
             return null;
         }
 
@@ -157,8 +118,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         @Override
-        public Class<?> getReturnedType() {
-            return null;
+        public final Class<?> getReturnedType() {
+            return Table.class;
         }
 
         @Override
@@ -167,8 +128,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         @Override
-        public List<String> getColumnArrays() {
-            return null;
+        public final List<String> getColumnArrays() {
+            return Collections.emptyList();
         }
 
         @NotNull
@@ -194,13 +155,13 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         @Override
-        public WritableColumnSource<?> newDestInstance(long size) {
-            return null;
+        public WritableColumnSource<?> newDestInstance(final long size) {
+            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
         }
 
         @Override
-        public WritableColumnSource<?> newFlatDestInstance(long size) {
-            return null;
+        public WritableColumnSource<?> newFlatDestInstance(final long size) {
+            return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
         }
 
         @Override

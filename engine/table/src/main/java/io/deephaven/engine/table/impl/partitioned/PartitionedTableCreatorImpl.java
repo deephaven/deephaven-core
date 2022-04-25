@@ -19,12 +19,14 @@ import java.util.stream.Collectors;
 /**
  * Engine-specific implementation of {@link PartitionedTableFactory.Creator}.
  */
+@SuppressWarnings("unused")
 public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creator {
 
     INSTANCE;
 
+    @SuppressWarnings("unused")
     @AutoService(PartitionedTableFactory.CreatorProvider.class)
-    public static final class Provider implements PartitionedTableFactory.CreatorProvider {
+    public static final class ProviderImpl implements PartitionedTableFactory.CreatorProvider {
 
         @Override
         public PartitionedTableFactory.Creator get() {
