@@ -15,10 +15,10 @@ import javax.inject.Provider;
  */
 public final class PythonPluginsRegistration implements Registration {
 
-    private final Provider<ScriptSession<?>> scriptSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
 
     @Inject
-    public PythonPluginsRegistration(Provider<ScriptSession<?>> scriptSessionProvider) {
+    public PythonPluginsRegistration(Provider<ScriptSession> scriptSessionProvider) {
         this.scriptSessionProvider = scriptSessionProvider;
     }
 

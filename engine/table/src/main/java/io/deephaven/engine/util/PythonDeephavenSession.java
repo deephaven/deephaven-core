@@ -19,6 +19,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -195,7 +196,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         return Collections.unmodifiableMap(scope.getEntriesMap());
     }
 
-    protected static class PythonSnapshot implements Snapshot {
+    protected static class PythonSnapshot implements Snapshot, SafeCloseable {
 
         private final PyDictWrapper dict;
 

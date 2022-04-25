@@ -37,7 +37,7 @@ public class DeephavenApiServer {
     private final GrpcServer server;
     private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
-    private final Provider<ScriptSession<?>> scriptSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
     private final ApplicationInjector applicationInjector;
     private final UriResolvers uriResolvers;
@@ -48,7 +48,7 @@ public class DeephavenApiServer {
             final GrpcServer server,
             final UpdateGraphProcessor ugp,
             final LogInit logInit,
-            final Provider<ScriptSession<?>> scriptSessionProvider,
+            final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,

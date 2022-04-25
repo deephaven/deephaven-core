@@ -22,13 +22,13 @@ public class ApplicationInjector {
     private static final Logger log = LoggerFactory.getLogger(ApplicationInjector.class);
 
     private final AppMode appMode;
-    private final Provider<ScriptSession<?>> scriptSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
     private final ApplicationTicketResolver ticketResolver;
     private final ApplicationState.Listener applicationListener;
 
     @Inject
     public ApplicationInjector(final AppMode appMode,
-            final Provider<ScriptSession<?>> scriptSessionProvider,
+            final Provider<ScriptSession> scriptSessionProvider,
             final ApplicationTicketResolver ticketResolver,
             final ApplicationState.Listener applicationListener) {
         this.appMode = appMode;

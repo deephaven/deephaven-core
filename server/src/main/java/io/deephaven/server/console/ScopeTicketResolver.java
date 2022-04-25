@@ -34,10 +34,10 @@ import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
 
-    private final Provider<ScriptSession<?>> scriptSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
 
     @Inject
-    public ScopeTicketResolver(final Provider<ScriptSession<?>> globalSessionProvider) {
+    public ScopeTicketResolver(final Provider<ScriptSession> globalSessionProvider) {
         super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
         this.scriptSessionProvider = globalSessionProvider;
     }
@@ -54,7 +54,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         final String scopeName = nameForDescriptor(descriptor, logId);
 
         final Flight.FlightInfo flightInfo = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession<?> gss = scriptSessionProvider.get();
+            final ScriptSession gss = scriptSessionProvider.get();
             Object scopeVar = gss.getVariable(scopeName, null);
             if (scopeVar == null) {
                 throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
@@ -97,7 +97,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             @Nullable final SessionState session, final String scopeName, final String logId) {
         // if we are not attached to a session, check the scope for a variable right now
         final T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession<?> gss = scriptSessionProvider.get();
+            final ScriptSession gss = scriptSessionProvider.get();
             // noinspection unchecked
             T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
             if (scopeVar == null) {
@@ -138,7 +138,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 .requiresSerialQueue()
                 .require(resultExport)
                 .submit(() -> {
-                    final ScriptSession<?> gss = scriptSessionProvider.get();
+                    final ScriptSession gss = scriptSessionProvider.get();
                     gss.setVariable(varName, resultExport.get());
                 });
 

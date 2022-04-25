@@ -17,7 +17,7 @@ public class PythonConsoleSessionModule {
     @Provides
     @IntoMap
     @StringKey("python")
-    ScriptSession<?> bindScriptSession(PythonDeephavenSession pythonSession) {
+    ScriptSession bindScriptSession(PythonDeephavenSession pythonSession) {
         return pythonSession;
     }
 

@@ -664,11 +664,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         public GroovySnapshot(Map<String, Object> existingScope) {
             this.scope = Objects.requireNonNull(existingScope);
         }
-
-        @Override
-        public void close() {
-
-        }
     }
 
     public Set<String> getVariableNames() {

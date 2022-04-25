@@ -27,10 +27,10 @@ public final class QueryScopeResolver implements UriResolver {
         return UriResolversInstance.get().find(QueryScopeResolver.class).get();
     }
 
-    private final Provider<ScriptSession<?>> globalSessionProvider;
+    private final Provider<ScriptSession> globalSessionProvider;
 
     @Inject
-    public QueryScopeResolver(Provider<ScriptSession<?>> globalSessionProvider) {
+    public QueryScopeResolver(Provider<ScriptSession> globalSessionProvider) {
         this.globalSessionProvider = Objects.requireNonNull(globalSessionProvider);
     }
 

@@ -83,7 +83,7 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public ScriptSession<?> provideScriptSession(Map<String, Provider<ScriptSession<?>>> scriptTypes) {
+    public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
         String scriptSessionType = Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);

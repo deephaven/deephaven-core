@@ -19,11 +19,11 @@ import java.util.function.Supplier;
  * Changes to the QueryScope so that any modifications that are being seen for the first time by the api-client come
  * across as new entries and not as modified entries.
  */
-public class DelegatingScriptSession<S extends ScriptSession.Snapshot> implements ScriptSession<S> {
-    private final ScriptSession<?> delegate;
+public class DelegatingScriptSession implements ScriptSession {
+    private final ScriptSession delegate;
     private final Set<String> knownVariables = new HashSet<>();
 
-    public DelegatingScriptSession(final ScriptSession<?> delegate) {
+    public DelegatingScriptSession(final ScriptSession delegate) {
         this.delegate = delegate;
     }
 

@@ -73,7 +73,7 @@ public abstract class FlightMessageRoundTripTest {
         }
 
         @Provides
-        AbstractScriptSession createGlobalScriptSession() {
+        AbstractScriptSession<?> createGlobalScriptSession() {
             return new NoLanguageDeephavenSession("non-script-session");
         }
 
@@ -117,7 +117,7 @@ public abstract class FlightMessageRoundTripTest {
 
         SessionService sessionService();
 
-        AbstractScriptSession scriptSession();
+        AbstractScriptSession<?> scriptSession();
 
         GrpcServer server();
     }
@@ -130,7 +130,7 @@ public abstract class FlightMessageRoundTripTest {
     SessionService sessionService;
     private UUID sessionToken;
     private SessionState currentSession;
-    private AbstractScriptSession scriptSession;
+    private AbstractScriptSession<?> scriptSession;
 
     @Before
     public void setup() throws IOException {

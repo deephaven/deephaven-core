@@ -19,7 +19,7 @@ import java.util.concurrent.ForkJoinPool;
  */
 public class CompletionLookups {
 
-    private static final WeakHashMap<ScriptSession<?>, CompletionLookups> lookups = new WeakHashMap<>();
+    private static final WeakHashMap<ScriptSession, CompletionLookups> lookups = new WeakHashMap<>();
 
     private final Lazy<QueryLibrary> ql;
     private final Lazy<Collection<Class<?>>> statics;
@@ -38,7 +38,7 @@ public class CompletionLookups {
         pool.execute(statics::get);
     }
 
-    public static CompletionLookups preload(ScriptSession<?> session) {
+    public static CompletionLookups preload(ScriptSession session) {
         return lookups.computeIfAbsent(session, s -> new CompletionLookups());
     }
 

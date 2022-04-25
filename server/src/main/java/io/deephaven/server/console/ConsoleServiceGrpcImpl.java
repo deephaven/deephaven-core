@@ -9,10 +9,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
-import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
-import io.deephaven.engine.util.jpy.JpyInit;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
@@ -61,11 +59,9 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -74,8 +70,6 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
-
-    private static final String PYTHON_TYPE = "python";
 
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
@@ -89,13 +83,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     private final Map<SessionState, CompletionParser> parsers = new ConcurrentHashMap<>();
 
-    private final Provider<ScriptSession<?>> scriptSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
 
     @Inject
     public ConsoleServiceGrpcImpl(final TicketRouter ticketRouter,
             final SessionService sessionService,
             final LogBuffer logBuffer,
-            final Provider<ScriptSession<?>> scriptSessionProvider) {
+            final Provider<ScriptSession> scriptSessionProvider) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
@@ -141,7 +135,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             session.newExport(request.getResultId(), "resultId")
                     .onError(responseObserver)
                     .submit(() -> {
-                        final ScriptSession<?> scriptSession = new DelegatingScriptSession<>(scriptSessionProvider.get());
+                        final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
 
                         safelyExecute(() -> {
                             responseObserver.onNext(StartConsoleResponse.newBuilder()
@@ -182,14 +176,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
             }
 
-            SessionState.ExportObject<ScriptSession<?>> exportedConsole =
+            SessionState.ExportObject<ScriptSession> exportedConsole =
                     ticketRouter.resolve(session, consoleId, "consoleId");
             session.nonExport()
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
                     .submit(() -> {
-                        ScriptSession<?> scriptSession = exportedConsole.get();
+                        ScriptSession scriptSession = exportedConsole.get();
                         ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
                         ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
                         FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
@@ -238,7 +232,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
             }
             final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, tableId, "tableId");
-            final SessionState.ExportObject<ScriptSession<?>> exportedConsole;
+            final SessionState.ExportObject<ScriptSession> exportedConsole;
 
             ExportBuilder<?> exportBuilder = session.nonExport()
                     .requiresSerialQueue()
@@ -253,7 +247,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             exportBuilder.submit(() -> {
-                ScriptSession<?> scriptSession =
+                ScriptSession scriptSession =
                         exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
                 Table table = exportedTable.get();
                 scriptSession.setVariable(request.getVariableName(), table);
@@ -303,7 +297,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         }
                         case GET_COMPLETION_ITEMS: {
                             GetCompletionItemsRequest request = value.getGetCompletionItems();
-                            SessionState.ExportObject<ScriptSession<?>> exportedConsole =
+                            SessionState.ExportObject<ScriptSession> exportedConsole =
                                     session.getExport(request.getConsoleId(), "consoleId");
                             session.nonExport()
                                     .require(exportedConsole)
@@ -342,11 +336,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     private void getCompletionItems(GetCompletionItemsRequest request,
-            SessionState.ExportObject<ScriptSession<?>> exportedConsole, CompletionParser parser,
+            SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
         try {
             final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            ScriptSession<?> scriptSession = exportedConsole.get();
+            ScriptSession scriptSession = exportedConsole.get();
             final VariableProvider vars = scriptSession.getVariableProvider();
             final CompletionLookups h = CompletionLookups.preload(scriptSession);
             // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached

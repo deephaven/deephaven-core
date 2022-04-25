@@ -17,7 +17,7 @@ public class GroovyConsoleSessionModule {
     @Provides
     @IntoMap
     @StringKey("groovy")
-    ScriptSession<?> bindScriptSession(final GroovyDeephavenSession groovySession) {
+    ScriptSession bindScriptSession(final GroovyDeephavenSession groovySession) {
         return groovySession;
     }
 
