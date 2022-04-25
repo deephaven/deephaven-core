@@ -427,8 +427,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             final ExecutorService executorService = getTransformationExecutorService();
 
             if (executorService != null) {
-                final boolean doCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(true);
-                UpdateGraphProcessor.DEFAULT.setCheckTableOperations(doCheck);
+                final boolean doCheck = UpdateGraphProcessor.DEFAULT.getCheckTableOperations();
                 final boolean hasUgp = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
                         || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();

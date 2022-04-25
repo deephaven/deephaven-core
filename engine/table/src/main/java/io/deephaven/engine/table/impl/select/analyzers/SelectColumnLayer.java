@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -183,14 +184,18 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         copyPreviousValues(upstream);
 
+        final boolean checkTableOperations =
+                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
+                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
         final AtomicInteger divisions = new AtomicInteger(splitUpdates.size());
 
         long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
             jobScheduler.submit(
-                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion, divisions,
-                            fdest),
+                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
+                            checkTableOperations, divisions, fdest),
                     SelectColumnLayer.this, onError);
             if (flattenedResult) {
                 destinationOffset += splitUpdate.added().size();
@@ -213,8 +218,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
-            final AtomicInteger divisions, final long startOffset) {
-        doApplyUpdate(upstream, helper, liveResultOwner, startOffset);
+            final boolean checkTableOperations, final AtomicInteger divisions, final long startOffset) {
+        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        try {
+            doApplyUpdate(upstream, helper, liveResultOwner, startOffset);
+        } finally {
+            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+        }
         upstream.release();
 
         if (divisions.decrementAndGet() == 0) {
