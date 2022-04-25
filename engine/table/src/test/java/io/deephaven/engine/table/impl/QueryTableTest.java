@@ -544,8 +544,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final List<String> exNames = Arrays.asList("B", "C");
         final List<ColumnSource<?>> exSources = Arrays.asList(
                 TableTools.colSource(0, 0, 0, 1, 1, 1, 2, 2, 2),
-                TableTools.colSource(0, 0, 0, 2, 2, 2, 4, 4, 4)
-        );
+                TableTools.colSource(0, 0, 0, 2, 2, 2, 4, 4, 4));
         final Table expected = newTable(9, exNames, exSources);
         assertTableEquals(expected, result);
     }
