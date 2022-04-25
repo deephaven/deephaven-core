@@ -388,7 +388,7 @@ public class BarrageStreamGenerator implements
             long bytesWritten = 0;
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
 
-            // batch size is maximum, will write fewer when needed. If we are enforcing a message size limit, then
+            // batch size is maximum, will write fewer rows when needed. If we are enforcing a message size limit, then
             // reasonably we will require at least one byte per row and restrict rows accordingly
             int batchSizeLimit = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
 
@@ -436,7 +436,7 @@ public class BarrageStreamGenerator implements
                             chunkOffset += batchSize;
                             metadata = null;
                         }
-                        // recompute the batch limit for the next message (or retry)
+                        // recompute the batch limit for the next message
                         int bytesPerRow = bytesToWrite / batchSize;
                         if (bytesPerRow > 0) {
                             int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
@@ -484,7 +484,7 @@ public class BarrageStreamGenerator implements
                             chunkOffset += batchSize;
                             metadata = null;
                         }
-                        // recompute the batch limit for the next message (or retry)
+                        // recompute the batch limit for the next message
                         int bytesPerRow = bytesToWrite / batchSize;
                         if (bytesPerRow > 0) {
                             int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
@@ -612,7 +612,7 @@ public class BarrageStreamGenerator implements
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
 
-            // batch size is maximum, will write fewer when needed. If we are enforcing a message size limit, then
+            // batch size is maximum, will write fewer rows when needed. If we are enforcing a message size limit, then
             // reasonably we will require at least one byte per row and restrict rows accordingly
             int batchSizeLimit = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
 
@@ -653,7 +653,7 @@ public class BarrageStreamGenerator implements
                             chunkOffset += batchSize;
                             metadata = null;
                         }
-                        // recompute the batch limit for the next message (or retry)
+                        // recompute the batch limit for the next message
                         int bytesPerRow = bytesToWrite / batchSize;
                         if (bytesPerRow > 0) {
                             int rowLimit = DEFAULT_MESSAGE_SIZE_LIMIT / bytesPerRow;
