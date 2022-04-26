@@ -1742,7 +1742,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
@@ -1971,7 +1973,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
