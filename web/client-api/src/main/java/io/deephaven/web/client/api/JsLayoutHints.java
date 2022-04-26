@@ -7,7 +7,6 @@ import elemental2.core.JsObject;
 import jsinterop.annotations.JsProperty;
 
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -62,8 +61,6 @@ public class JsLayoutHints {
 
         final Map<String, String> options = Arrays.stream(hints.split(";"))
                 .map(hint -> hint.split("="))
-                // .collect(Collectors.groupingBy((parts -> parts[0]), Collectors.mapping(parts -> parts.length == 2 ?
-                // parts[1] : "", Collectors.toList())));
                 .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : ""));
 
 
