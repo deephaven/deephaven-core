@@ -49,13 +49,12 @@ public class EmbeddedServer {
         PyDictWrapper pyConfig = dict.asDict();
 
         int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
-        int httpPort = port;
         int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
         int maxInboundMessageSize = config.getIntegerWithDefault("grpc.maxInboundMessageSize", 100 * 1024 * 1024);
 
         DaggerEmbeddedServer_PythonServerComponent
                 .builder()
-                .withPort(httpPort)
+                .withPort(port)
                 .withSchedulerPoolSize(schedulerPoolSize)
                 .withSessionTokenExpireTmMs(httpSessionExpireMs)
                 .withMaxInboundMessageSize(maxInboundMessageSize)
@@ -66,25 +65,19 @@ public class EmbeddedServer {
     }
 
     public void start() throws Exception {
+        server.run();
+        System.out.println("Server started on port " + server.server().getPort());
         new Thread(() -> {
             try {
                 checkGlobals(scriptSession.get(), null);
-                server.run();
-//                System.out.println("Server running on port " + server.server().getPort());
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                server.join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (TimeoutException e) {
                 e.printStackTrace();
             }
         }).start();
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {
-//        System.out.println(lastSnapshot);
         final ScriptSession.SnapshotScope nextSnapshot = scriptSession.snapshot(lastSnapshot);
         scheduler.runAfterDelay(100, () -> {
             checkGlobals(scriptSession, nextSnapshot);
