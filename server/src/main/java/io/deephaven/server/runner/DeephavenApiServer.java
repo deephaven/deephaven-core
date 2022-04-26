@@ -81,9 +81,8 @@ public class DeephavenApiServer {
      * @throws IOException thrown in event of an error with logging, finding and running an application, and starting
      *         the gRPC service.
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
-     * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
      */
-    public void run() throws IOException, ClassNotFoundException, InterruptedException, TimeoutException {
+    public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 () -> server.stopWithTimeout(10, TimeUnit.SECONDS));
@@ -131,8 +130,19 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
+        log.info().append("Server started on port ").append(server.getPort()).endl();
+
+        return this;
+    }
+
+    /**
+     * Blocks until the server exits.
+     * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
+     */
+    public void join() throws InterruptedException {
         server.join();
     }
+
 
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();

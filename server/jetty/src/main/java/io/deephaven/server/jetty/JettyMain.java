@@ -28,6 +28,7 @@ public class JettyMain extends Main {
                 .withErr(PrintStreamGlobals.getErr())
                 .build()
                 .getServer()
-                .run();
+                .run()
+                .join();
     }
 }
