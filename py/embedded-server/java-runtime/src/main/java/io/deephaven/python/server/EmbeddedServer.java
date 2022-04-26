@@ -78,9 +78,22 @@ public class EmbeddedServer {
     }
 
     private void checkGlobals(ScriptSession scriptSession, @Nullable ScriptSession.SnapshotScope lastSnapshot) {
-        final ScriptSession.SnapshotScope nextSnapshot = scriptSession.snapshot(lastSnapshot);
+        ScriptSession.SnapshotScope nextSnapshot;
+        try {
+            nextSnapshot = scriptSession.snapshot(lastSnapshot);
+        } catch (IllegalStateException e) {
+            if (e.getMessage().startsWith("Expected transition from=")) {
+                // We are limited in how we can track external changes, and the web IDE has made this change and
+                // already applied it.
+                // Take a fresh snapshot right away to continue polling
+                nextSnapshot = scriptSession.snapshot();
+            } else {
+                throw e;
+            }
+        }
+        ScriptSession.SnapshotScope s = nextSnapshot;
         scheduler.runAfterDelay(100, () -> {
-            checkGlobals(scriptSession, nextSnapshot);
+            checkGlobals(scriptSession, s);
         });
     }
 
