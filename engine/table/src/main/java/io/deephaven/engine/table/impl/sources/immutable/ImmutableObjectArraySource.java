@@ -75,6 +75,12 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
         return (T)data[(int)index];
     }
 
+    public final Object getAndSetUnsafe(long index, Object newValue) {
+        Object oldValue = data[(int)index];
+        data[(int)index] = newValue;
+        return oldValue;
+    }
+
     @Override
     public final void set(long key, Object value) {
         data[(int)key] = value;

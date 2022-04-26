@@ -129,10 +129,15 @@ class NaturalJoinHelper {
                     return result;
                 } else {
                     // right is live, left is static
-                    final RightIncrementalChunkedNaturalJoinStateManager jsm =
-                            new RightIncrementalChunkedNaturalJoinStateManager(
+                    final RightIncrementalNaturalJoinStateManager jsm = USE_TYPED_STATE_MANAGER
+                            ? TypedHasherFactory.make(RightIncrementalNaturalJoinStateManagerTypedBase.class,
+                                    bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
+                                    control.getMaximumLoadFactor(), control.getTargetLoadFactor())
+                            : new RightIncrementalChunkedNaturalJoinStateManager(
                                     bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
                                     bucketingContext.originalLeftSources);
+
+                    RightIncrementalNaturalJoinStateManager.InitialBuildContext initialBuildContext = jsm.makeInitialBuildContext(leftTable);
 
                     final ObjectArraySource<WritableRowSet> rowSetSource;
                     final MutableInt groupingSize = new MutableInt();
@@ -153,10 +158,10 @@ class NaturalJoinHelper {
                                 Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
 
                         final ColumnSource<?>[] groupedSourceArray = {groupSource};
-                        jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
-                        jsm.convertLeftGroups(groupingSize.intValue(), leftHashSlots, rowSetSource);
+                        jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, initialBuildContext);
+                        jsm.convertLeftGroups(groupingSize.intValue(), initialBuildContext, rowSetSource);
                     } else {
-                        jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
+                        jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, initialBuildContext);
                         rowSetSource = null;
                     }
 
@@ -164,10 +169,10 @@ class NaturalJoinHelper {
 
                     if (bucketingContext.useLeftGrouping) {
                         rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
-                                groupingSize.intValue(), exactMatch, leftHashSlots,
+                                groupingSize.intValue(), exactMatch, initialBuildContext,
                                 control.getRedirectionType(leftTable));
                     } else {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
+                        rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, initialBuildContext,
                                 control.getRedirectionType(leftTable));
                     }
 
@@ -584,7 +589,7 @@ class NaturalJoinHelper {
     private static class RightTickingListener extends BaseTable.ListenerImpl {
         private final QueryTable result;
         private final WritableRowRedirection rowRedirection;
-        private final RightIncrementalChunkedNaturalJoinStateManager jsm;
+        private final RightIncrementalNaturalJoinStateManager jsm;
         private final ColumnSource<?>[] rightSources;
         private final boolean exactMatch;
         private final ModifiedColumnSet allRightColumns;
@@ -594,7 +599,7 @@ class NaturalJoinHelper {
 
         RightTickingListener(String description, QueryTable rightTable, MatchPair[] columnsToMatch,
                 MatchPair[] columnsToAdd, QueryTable result, WritableRowRedirection rowRedirection,
-                RightIncrementalChunkedNaturalJoinStateManager jsm, ColumnSource<?>[] rightSources,
+                RightIncrementalNaturalJoinStateManager jsm, ColumnSource<?>[] rightSources,
                 boolean exactMatch) {
             super(description, rightTable, result);
             this.result = result;
@@ -622,8 +627,7 @@ class NaturalJoinHelper {
                 return;
             }
 
-            try (final RightIncrementalChunkedNaturalJoinStateManager.ProbeContext pc =
-                    jsm.makeProbeContext(rightSources, maxSize)) {
+            try (final Context pc = jsm.makeProbeContext(rightSources, maxSize)) {
                 final RowSet modifiedPreShift;
 
                 final boolean rightKeysChanged = upstream.modifiedColumnSet().containsAny(rightKeyColumns);

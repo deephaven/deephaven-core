@@ -26,6 +26,7 @@ public class HasherConfig<T> {
     final String emptyStateName;
     final Class<?> stateType;
     final Consumer<CodeBlock.Builder> moveMain;
+    final Consumer<CodeBlock.Builder> rehashFullSetup;
     final boolean includeOriginalSources;
     final boolean supportRehash;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
@@ -40,6 +41,7 @@ public class HasherConfig<T> {
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain,
+            Consumer<CodeBlock.Builder> rehashFullSetup,
             List<ProbeSpec> probes,
             List<BuildSpec> builds,
             List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods) {
@@ -57,6 +59,7 @@ public class HasherConfig<T> {
         this.emptyStateName = emptyStateName;
         this.stateType = stateType;
         this.moveMain = moveMain;
+        this.rehashFullSetup = rehashFullSetup;
         this.probes = probes;
         this.builds = builds;
         this.extraMethods = extraMethods;
@@ -70,8 +73,9 @@ public class HasherConfig<T> {
         final Consumer<CodeBlock.Builder> missing;
         final ParameterSpec[] params;
 
-        public ProbeSpec(String name, String stateValueName, boolean requiresRowKeyChunk, Consumer<CodeBlock.Builder> found,
-                         Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
+        public ProbeSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
+                Consumer<CodeBlock.Builder> found,
+                Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
@@ -89,8 +93,9 @@ public class HasherConfig<T> {
         final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
         final ParameterSpec[] params;
 
-        public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk, BiConsumer<HasherConfig<?>, CodeBlock.Builder> found,
-                         BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
+        public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
+                BiConsumer<HasherConfig<?>, CodeBlock.Builder> found,
+                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
@@ -115,6 +120,7 @@ public class HasherConfig<T> {
         private String emptyStateName;
         private Class<?> stateType;
         private Consumer<CodeBlock.Builder> moveMain;
+        private Consumer<CodeBlock.Builder> rehashFullSetup;
         private final List<ProbeSpec> probes = new ArrayList<>();
         private final List<BuildSpec> builds = new ArrayList<>();
         private final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods = new ArrayList<>();
@@ -191,6 +197,11 @@ public class HasherConfig<T> {
             return this;
         }
 
+        public Builder<T> rehashFullSetup(Consumer<CodeBlock.Builder> rehashFullSetup) {
+            this.rehashFullSetup = rehashFullSetup;
+            return this;
+        }
+
         public Builder<T> addProbe(ProbeSpec probe) {
             probes.add(probe);
             return this;
@@ -220,7 +231,7 @@ public class HasherConfig<T> {
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
                     openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
                     overflowOrAlternateStateName, emptyStateName,
-                    stateType, moveMain, probes, builds, extraMethods);
+                    stateType, moveMain, rehashFullSetup, probes, builds, extraMethods);
         }
     }
 }

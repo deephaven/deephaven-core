@@ -170,7 +170,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-                                     LongArraySource leftHashSlots, int hashSlotOffset);
+            LongArraySource leftHashSlots, int hashSlotOffset);
 
     @Override
     public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
@@ -195,7 +195,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-                                    LongArraySource leftRedirections, int hashSlotOffset);
+            LongArraySource leftRedirections, int hashSlotOffset);
 
     @Override
     public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
@@ -304,15 +304,22 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return contexts;
     }
 
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch, position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+            LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+        return buildRowRedirection(leftTable, exactMatch,
+                position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 
-    public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
-        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize, (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices, redirectionType);
+    public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
+            long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
+            JoinControl.RedirectionType redirectionType) {
+        return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
+                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,
+                redirectionType);
     }
 }
