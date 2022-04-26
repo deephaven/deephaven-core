@@ -30,14 +30,14 @@ class ReplayTestCase(BaseTestCase):
         replayer = TableReplayer(start_time, end_time)
         replay_table = replayer.add_table(hist_table, "DateTime")
         replay_table2 = replayer.add_table(hist_table2, "DateTime")
-        self.assertEqual(replay_table, replay_table2)
+        self.assert_table_equals(replay_table, replay_table2)
 
         replayer.start()
         self.assertTrue(replay_table.is_refreshing)
         self.assertTrue(replay_table2.is_refreshing)
         self.wait_ticking_table_update(replay_table, row_count=3, timeout=60)
         self.wait_ticking_table_update(replay_table2, row_count=3, timeout=60)
-        self.assertEqual(replay_table, replay_table2)
+        self.assert_table_equals(replay_table, replay_table2)
         replayer.shutdown()
 
         with self.subTest("replayer can't be reused after shutdown."):

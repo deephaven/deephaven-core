@@ -38,7 +38,7 @@ class FilterTestCase(BaseTestCase):
         filtered_table = self.test_table.where(filters)
         filter_and = and_(filters)
         filtered_table_and = self.test_table.where(filter_and)
-        self.assertEqual(filtered_table, filtered_table_and)
+        self.assert_table_equals(filtered_table, filtered_table_and)
 
         filter_or = or_(filters)
         filtered_table_or = self.test_table.where(filter_or)

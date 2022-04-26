@@ -68,14 +68,8 @@ class Table(JObjectWrapper):
         repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str
         return repr_str
 
-    def __eq__(self, table: Table) -> bool:
-        try:
-            if _JTableTools.diff(self.j_table, table.j_table, 1):
-                return False
-            else:
-                return True
-        except Exception as e:
-            raise DHError(e, "table equality test failed.") from e
+    def __str__(self):
+        return repr(self)
 
     @property
     def size(self) -> int:
