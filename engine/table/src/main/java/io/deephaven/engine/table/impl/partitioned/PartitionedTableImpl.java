@@ -73,7 +73,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public PartitionedTable.Proxy proxy(final boolean requireMatchingKeys, final boolean sanityCheckJoinOperations) {
-        return PartitionedTableProxyHandler.proxyFor(this, requireMatchingKeys, sanityCheckJoinOperations);
+        return PartitionedTableProxyImpl.of(this, requireMatchingKeys, sanityCheckJoinOperations);
     }
 
     @Override
