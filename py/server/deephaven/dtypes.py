@@ -102,7 +102,7 @@ Period = DType(j_name="io.deephaven.time.Period")
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
-"""JPY Java Object type"""
+"""Java Object type"""
 byte_array = DType(j_name='[B')
 """Byte array type"""
 short_array = DType(j_name='[S')
