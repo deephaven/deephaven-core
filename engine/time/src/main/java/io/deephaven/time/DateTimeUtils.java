@@ -22,6 +22,7 @@ import org.joda.time.DurationFieldType;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
@@ -1977,6 +1978,11 @@ public class DateTimeUtils {
      * @return A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
      */
     public static DateTime convertDateTimeQuiet(final String s) {
+        try {
+            return DateTime.of(Instant.parse(s));
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
         try {
             TimeZone timeZone = null;
             String dateTimeString = null;
