@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.base.StringUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.gui.color.Color;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -54,7 +55,7 @@ public class LayoutHintBuilder {
          * @return a string of the format column(:param&value)+
          */
         @NotNull
-        String forBuilder() {
+        String serialize() {
             if (fetchSize > 0) {
                 return column + ":" + AFD_FETCH_PARAM + "&" + fetchSize;
             }
@@ -63,7 +64,7 @@ public class LayoutHintBuilder {
         }
 
         /**
-         * Convert a string of the format defined by {@link #forBuilder()} into a proper AutoFilterData object
+         * Convert a string of the format defined by {@link #serialize()} into a proper AutoFilterData object
          *
          * @param string the string to parse
          * @return an AutoFilterData instance
@@ -114,12 +115,18 @@ public class LayoutHintBuilder {
 
         String name;
         final List<String> children;
-        String color;
+        Color color;
 
-        ColumnGroup(String name, List<String> children, String color) {
+        ColumnGroup(String name, List<String> children, Color color) {
+            NameValidator.validateColumnName(name);
+            children.forEach(c -> NameValidator.validateColumnName(c));
+
             this.name = name;
             this.children = children;
-            this.color = color;
+
+            if (color != null) {
+                this.color = color;
+            }
         }
 
         @NotNull
@@ -128,11 +135,33 @@ public class LayoutHintBuilder {
 
             sb.append("::children:" + StringUtils.joinStrings(children, ","));
             if (color != null) {
-                sb.append("::color:" + color);
+                sb.append("::color:" + "#" + Integer.toHexString(color.javaColor().getRGB()).substring(2));
             }
             return sb.toString();
         }
 
+        /**
+         * Convert a string of the format defined by {@link #serialize()} into a proper ColumnGroup object
+         *
+         * @param string the string to parse
+         * @return a ColumnGroup instance
+         */
+        @NotNull
+        static ColumnGroup fromString(String string) {
+            final Map<String, String> options = Arrays.stream(string.split("::"))
+                    .map(option -> option.split(":"))
+                    .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : ""));
+
+            final String name = options.get("name");
+            final List<String> children = Arrays.asList(options.get("children").split(","));
+            final String color = options.get("color");
+
+            if (color == null || color.length() == 0) {
+                return new ColumnGroup(name, children, null);
+            }
+
+            return new ColumnGroup(name, children, new Color(color));
+        }
     }
 
     private LayoutHintBuilder() {}
@@ -195,6 +224,14 @@ public class LayoutHintBuilder {
         if (groupableStr != null && !groupableStr.isEmpty()) {
             final String[] groupableColumns = groupableStr.split(",");
             lhb.groupableColumns(groupableColumns);
+        }
+
+        final String groupsStr = options.get("groups");
+        if (groupsStr != null && !groupsStr.isEmpty()) {
+            Arrays.stream(groupsStr.split("\\|"))
+                    .filter(s -> s != null && !s.isEmpty())
+                    .map(ColumnGroup::fromString)
+                    .forEach(lhb::addGroupData);
         }
 
         return lhb;
@@ -309,26 +346,54 @@ public class LayoutHintBuilder {
         return this;
     }
 
+    /**
+     * @see LayoutHintBuilder#group(String, List, Color)
+     */
     @ScriptApi
-    public LayoutHintBuilder group(String name, List<String> cols) {
-        return group(name, cols, null);
+    public LayoutHintBuilder group(String name, List<String> children) {
+        return group(name, children, (Color) null);
     }
 
+    /**
+     * @see LayoutHintBuilder#group(String, List, Color)
+     */
     @ScriptApi
-    public LayoutHintBuilder group(String name, List<String> children, String style) {
+    public LayoutHintBuilder group(String name, List<String> children, String color) {
+        if (color == null || color.length() == 0) {
+            return group(name, children, (Color) null);
+        }
+        return group(name, children, new Color(color));
+    }
+
+    /**
+     * Create a named group of columns in the UI
+     *
+     * @param name the column group name. Must be a valid Deephaven column name
+     * @param children the columns and other groups belonging to this group
+     * @param color the background color for the group in the UI
+     * @return this LayoutHintBuilder
+     */
+    @ScriptApi
+    public LayoutHintBuilder group(String name, List<String> children, Color color) {
         if (columnGroups == null) {
             columnGroups = new HashMap<>();
         }
 
-        NameValidator.validateColumnName(name);
-
         if (children.size() == 0) {
             columnGroups.remove(name);
         } else {
-            columnGroups.put(name, new ColumnGroup(name, children, style));
+            columnGroups.put(name, new ColumnGroup(name, children, color));
         }
 
         return this;
+    }
+
+    private void addGroupData(ColumnGroup group) {
+        if (columnGroups == null) {
+            columnGroups = new HashMap<>();
+        }
+
+        columnGroups.put(group.name, group);
     }
 
     /**
@@ -514,7 +579,7 @@ public class LayoutHintBuilder {
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
             sb.append("autofilter=").append(
-                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
+                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::serialize), ","))
                     .append(';');
         }
 
@@ -535,7 +600,6 @@ public class LayoutHintBuilder {
             List<String> groupStrings =
                     columnGroups.values().stream().map(ColumnGroup::serialize).collect(Collectors.toList());
             sb.append(String.join("|", groupStrings)).append(';');
-            // columnGroups.values().forEach(g -> sb.append("group=").append(g.serialize()).append(';'));
         }
 
         return sb.toString();
@@ -640,6 +704,25 @@ public class LayoutHintBuilder {
      */
     public @NotNull Set<String> getGroupableColumns() {
         return groupableColumns == null ? Collections.emptySet() : Collections.unmodifiableSet(groupableColumns);
+    }
+
+    /**
+     * Get the map of column groups for the UI.
+     *
+     * @return the map of column groups
+     */
+    public @NotNull Map<String, ColumnGroup> getGroups() {
+        return columnGroups == null ? Collections.emptyMap() : Collections.unmodifiableMap(columnGroups);
+    }
+
+    /**
+     * Get the column group for the specified name.
+     *
+     * @param name the name of the column group
+     * @return the column group if it exists
+     */
+    public @NotNull ColumnGroup getGroup(String name) {
+        return columnGroups == null ? null : columnGroups.get(name);
     }
     // endregion
 }
