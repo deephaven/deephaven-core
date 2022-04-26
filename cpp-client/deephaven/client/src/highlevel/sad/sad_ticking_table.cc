@@ -1,6 +1,8 @@
 #include "deephaven/client/highlevel/sad/sad_ticking_table.h"
 
+#include <optional>
 #include <utility>
+
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::utility::streamf;

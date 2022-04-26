@@ -3,6 +3,8 @@
  */
 #include <iostream>
 #include <set>
+#include <thread>
+
 #include "deephaven/client/highlevel/client.h"
 #include "deephaven/client/highlevel/ticking.h"
 #include "deephaven/client/highlevel/sad/chunk_maker.h"
