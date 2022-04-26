@@ -1,18 +1,20 @@
 package io.deephaven.engine.table.impl.partitioned;
 
-import io.deephaven.api.TableOperations;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -24,7 +26,7 @@ import java.util.stream.Stream;
  */
 public class PartitionedTableImpl extends LivenessArtifact implements PartitionedTable {
 
-
+    private static final ColumnName RHS_CONSTITUENT = ColumnName.of("__RHS_CONSTITUENT__");
 
     private final Table table;
     private final Set<String> keyColumnNames;
@@ -35,12 +37,16 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
      * @see io.deephaven.engine.table.PartitionedTableFactory#of(Table, Set, String, TableDefinition) Factory method
      *      that delegates to this method
      */
-    PartitionedTableImpl(@NotNull final Table table,
+    PartitionedTableImpl(
+            @NotNull final Table table,
             @NotNull final Collection<String> keyColumnNames,
             @NotNull final String constituentColumnName,
             @NotNull final TableDefinition constituentDefinition) {
+        if (table.isRefreshing()) {
+            manage(table);
+        }
         this.table = table;
-        this.keyColumnNames = new LinkedHashSet<>(keyColumnNames);
+        this.keyColumnNames = Collections.unmodifiableSet(new LinkedHashSet<>(keyColumnNames));
         this.constituentColumnName = constituentColumnName;
         this.constituentDefinition = constituentDefinition;
     }
@@ -51,13 +57,28 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
-    public PartitionedTable.Proxy proxy() {
-        return PartitionedTableProxyHandler.proxyFor(this);
+    public Set<String> keyColumnNames() {
+        return keyColumnNames;
+    }
+
+    @Override
+    public String constituentColumnName() {
+        return constituentColumnName;
+    }
+
+    @Override
+    public TableDefinition constituentDefinition() {
+        return constituentDefinition;
+    }
+
+    @Override
+    public PartitionedTable.Proxy proxy(final boolean requireMatchingKeys, final boolean sanityCheckJoinOperations) {
+        return PartitionedTableProxyHandler.proxyFor(this, requireMatchingKeys, sanityCheckJoinOperations);
     }
 
     @Override
     public Table merge() {
-
+        throw new UnsupportedOperationException("TODO-RWC");
     }
 
     @Override
@@ -71,117 +92,129 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             throw new IllegalArgumentException("Unsupported filter against constituent column " + constituentColumnName
                     + " found in filters: " + filters);
         }
-        return new PartitionedTableImpl(table.where(whereFilters),
-                keyColumnNames, constituentColumnName, constituentDefinition);
+        return new PartitionedTableImpl(
+                table.where(whereFilters),
+                keyColumnNames,
+                constituentColumnName,
+                constituentDefinition);
     }
 
     @Override
     public PartitionedTable transform(@NotNull final Function<Table, Table> transformer) {
+        final LivenessScope operationScope = new LivenessScope();
+        final Table resultTable;
+        final TableDefinition resultConstituentDefinition;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(operationScope, false)) {
+            // Perform the transformation
+            resultTable = table.update(new TableTransformationColumn(constituentColumnName, transformer));
 
+            // Make sure we have a valid result constituent definition
+            final Table emptyConstituent = emptyConstituent(constituentDefinition);
+            final Table resultEmptyConstituent = transformer.apply(emptyConstituent);
+            resultConstituentDefinition = resultEmptyConstituent.getDefinition();
+
+            // Ensure that we don't unnecessarily keep the empty constituents around
+            operationScope.unmanage(emptyConstituent);
+            operationScope.unmanage(resultEmptyConstituent);
+        }
+        operationScope.transferTo(LivenessScopeStack.peek());
+
+        // Build the result partitioned table
+        return new PartitionedTableImpl(
+                resultTable,
+                keyColumnNames,
+                constituentColumnName,
+                resultConstituentDefinition);
     }
 
     @Override
     public PartitionedTable partitionedTransform(
             @NotNull final PartitionedTable other,
             @NotNull final BiFunction<Table, Table, Table> transformer) {
+        // Validate join compatibility
+        validateJoinKeys(this, other);
 
+        final LivenessScope operationScope = new LivenessScope();
+        final Table resultTable;
+        final TableDefinition resultConstituentDefinition;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(operationScope, false)) {
+            // Perform the transformation
+            final Table joined = table.join(
+                    other.table(),
+                    JoinMatch.from(keyColumnNames),
+                    List.of(JoinAddition.of(RHS_CONSTITUENT,
+                            ColumnName.of(other.constituentColumnName()))));
+            resultTable = joined.update(new BiTableTransformationColumn(
+                    constituentColumnName, RHS_CONSTITUENT.name(), transformer));
+
+            // Make sure we have a valid result constituent definition
+            final Table emptyConstituent1 = emptyConstituent(constituentDefinition);
+            final Table emptyConstituent2 = emptyConstituent(other.constituentDefinition());
+            final Table resultEmptyConstituent = transformer.apply(emptyConstituent1, emptyConstituent2);
+            resultConstituentDefinition = resultEmptyConstituent.getDefinition();
+
+            // Ensure that we don't unnecessarily keep the empty constituents around
+            operationScope.unmanage(emptyConstituent1);
+            operationScope.unmanage(emptyConstituent2);
+            operationScope.unmanage(resultEmptyConstituent);
+        }
+        operationScope.transferTo(LivenessScopeStack.peek());
+
+        // Build the result partitioned table
+        return new PartitionedTableImpl(
+                resultTable,
+                keyColumnNames,
+                constituentColumnName,
+                resultConstituentDefinition);
+    }
+
+    /**
+     * Validate that {@code lhs} and {@code rhs} have compatible (same name, same type) key columns, allowing
+     * {@link #partitionedTransform(PartitionedTable, BiFunction)}.
+     *
+     * @param lhs The first partitioned table
+     * @param rhs The second partitioned table
+     * @throws IllegalArgumentException If the key columns are mismatched
+     */
+    static void validateJoinKeys(@NotNull final PartitionedTable lhs, @NotNull final PartitionedTable rhs) {
+        final Map<String, ColumnDefinition<?>> lhsKeyColumnDefinitions = keyColumnDefinitions(lhs);
+        final Map<String, ColumnDefinition<?>> rhsKeyColumnDefinitions = keyColumnDefinitions(rhs);
+        if (!lhs.keyColumnNames().equals(rhs.keyColumnNames())) {
+            throw new IllegalArgumentException("Incompatible partitioned table input for partitioned transform; "
+                    + "key column sets don't contain the same names: "
+                    + "first has " + lhsKeyColumnDefinitions.values()
+                    + ", second has " + rhsKeyColumnDefinitions.values());
+        }
+        final String typeMismatches = lhsKeyColumnDefinitions.values().stream()
+                .filter(cd -> !cd.isCompatible(rhsKeyColumnDefinitions.get(cd.getName())))
+                .map(cd -> cd.describeForCompatibility() + " doesn't match "
+                        + rhsKeyColumnDefinitions.get(cd.getName()).describeForCompatibility())
+                .collect(Collectors.joining(", "));
+        if (!typeMismatches.isEmpty()) {
+            throw new IllegalArgumentException("Incompatible partitioned table input for partitioned transform; "
+                    + "key column definitions don't match: " + typeMismatches);
+        }
+    }
+
+    private static Table emptyConstituent(@NotNull final TableDefinition constituentDefinition) {
+        // noinspection resource
+        return new QueryTable(
+                constituentDefinition,
+                RowSetFactory.empty().toTracking(),
+                NullValueColumnSource.createColumnSourceMap(constituentDefinition));
+    }
+
+    private static Map<String, ColumnDefinition<?>> keyColumnDefinitions(
+            @NotNull final PartitionedTable partitionedTable) {
+        final Set<String> keyColumnNames = partitionedTable.keyColumnNames();
+        return partitionedTable.table().getDefinition().getColumnStream()
+                .filter(cd -> keyColumnNames.contains(cd.getName()))
+                .collect(Collectors.toMap(ColumnDefinition::getName, Function.identity()));
     }
 
     // TODO-RWC: Add ticket for this
     // TODO (insert ticket here): Support "PartitionedTable withCombinedKeys(String keyColumnName)" for combining
-    //     multiple key columns into a compound key column using the tuple library, and then add "transformWithKeys"
-    //     support.
+    // multiple key columns into a compound key column using the tuple library, and then add "transformWithKeys"
+    // support.
 
-    /**
-     * {@link SelectColumn} implementation to wrap transformer functions for {@link #transform(Function)} and
-     * {@link #partitionedTransform(PartitionedTable, BiFunction)}.
-     */
-    private abstract class BaseTableTransformation implements SelectColumn {
-
-        private BaseTableTransformation() {
-        }
-
-        @Override
-        public final List<String> initInputs(@NotNull final Table table) {
-            return initInputs(table.getRowSet(), table.getColumnSourceMap());
-        }
-
-        @Override
-        public List<String> initInputs(@NotNull final TrackingRowSet rowSet,
-                                       @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
-            return null;
-        }
-
-        @Override
-        public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-            return null;
-        }
-
-        @Override
-        public final Class<?> getReturnedType() {
-            return Table.class;
-        }
-
-        @Override
-        public List<String> getColumns() {
-            return null;
-        }
-
-        @Override
-        public final List<String> getColumnArrays() {
-            return Collections.emptyList();
-        }
-
-        @NotNull
-        @Override
-        public ColumnSource<?> getDataView() {
-            return null;
-        }
-
-        @NotNull
-        @Override
-        public ColumnSource<?> getLazyView() {
-            return null;
-        }
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public MatchPair getMatchPair() {
-            return null;
-        }
-
-        @Override
-        public WritableColumnSource<?> newDestInstance(final long size) {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
-        }
-
-        @Override
-        public WritableColumnSource<?> newFlatDestInstance(final long size) {
-            return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
-        }
-
-        @Override
-        public boolean isRetain() {
-            return false;
-        }
-
-        @Override
-        public boolean disallowRefresh() {
-            return false;
-        }
-
-        @Override
-        public boolean isStateless() {
-            return true;
-        }
-
-        @Override
-        public SelectColumn copy() {
-            return this;
-        }
-    }
 }

@@ -4,9 +4,11 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -41,6 +43,40 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
     Table table();
 
     /**
+     * Get the names of all "key" columns that are part of {@code table().getDefinition()}. If there are no key columns,
+     * the result will be empty.
+     *
+     * @return The key column names
+     */
+    Set<String> keyColumnNames();
+
+    /**
+     * Get the name of the "constituent" column of {@link Table tables}.
+     *
+     * @return The constituent column name
+     */
+    String constituentColumnName();
+
+    /**
+     * Get the {@link TableDefinition definition} shared by all constituent {@link Table tables}.
+     *
+     * @return The constituent definition
+     */
+    TableDefinition constituentDefinition();
+
+    /**
+     * Same as {@code proxy(true, true)}.
+     *
+     * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
+     *         this PartitionedTable
+     * @see #proxy(boolean, boolean)
+     */
+    @FinalDefault
+    default Proxy proxy() {
+        return proxy(true, true);
+    }
+
+    /**
      * <p>
      * Make a proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of this
      * PartitionedTable.
@@ -49,10 +85,16 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * {@link #transform(Function)} or {@link #partitionedTransform(PartitionedTable, BiFunction)}, and return a new
      * proxy to that PartitionedTable.
      *
+     * @param requireMatchingKeys Whether to ensure that both partitioned tables have all the same keys present when a
+     *        proxied operation uses {@code this} and another {@link PartitionedTable} as inputs for a
+     *        {@link #partitionedTransform(PartitionedTable, BiFunction) partitioned transform}
+     * @param sanityCheckJoinOperations Whether to check that proxied join operations will only find a given key in one
+     *        constituent table for {@code this} and the {@link Table table} argument if it is a
+     *        {@link PartitionedTable.Proxy proxy}
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
      *         this PartitionedTable
      */
-    Proxy proxy();
+    Proxy proxy(boolean requireMatchingKeys, boolean sanityCheckJoinOperations);
 
     /**
      * Make a new {@link Table} that contains the rows from all the constituent tables of this PartitionedTable, in the
@@ -78,7 +120,8 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * Apply {@code transformer} to all constituent {@link Table tables}, and produce a new PartitionedTable containing
      * the results.
      * <p>
-     * {@code transformer} must be stateless and safe for concurrent use.
+     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for an empty
+     * input table.
      *
      * @param transformer The {@link Function} to apply to all constituent {@link Table tables}
      * @return The new PartitionedTable containing the resulting constituents
@@ -90,7 +133,8 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * Apply {@code transformer} to all constituent {@link Table tables} found in {@code this} and {@code other} with
      * the same key column values, and produce a new PartitionedTable containing the results.
      * <p>
-     * {@code transformer} must be stateless and safe for concurrent use.
+     * {@code transformer} must be stateless, safe for concurrent use, and able to return a valid result for empty input
+     * tables.
      *
      * @param other The other PartitionedTable to find constituents in
      * @param transformer The {@link Function} to apply to all pairs of constituent {@link Table tables}
