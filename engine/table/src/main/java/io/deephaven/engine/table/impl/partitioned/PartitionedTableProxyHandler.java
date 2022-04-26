@@ -1,12 +1,15 @@
 package io.deephaven.engine.table.impl.partitioned;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.TimeZone;
@@ -15,17 +18,41 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * {@link PartitionedTable.Proxy} {@link java.lang.reflect.InvocationHandler} implementation.
  */
+@SuppressWarnings("SuspiciousInvocationHandlerImplementation")
 public class PartitionedTableProxyHandler extends LivenessArtifact implements InvocationHandler {
 
     private static final ColumnName FOUND_IN = ColumnName.of("__FOUND_IN__");
     private static final ColumnName ENCLOSING_CONSTITUENT = ColumnName.of("__ENCLOSING_CONSTITUENT__");
+
+    private static final Map<Method, InvocationHandler> DIRECT_DELEGATIONS;
+    static {
+        final Map<Method, InvocationHandler> directDelegations = new HashMap<>();
+        try {
+            directDelegations.put(PartitionedTable.Proxy.class.getMethod("target"),
+                    (proxy, method, args) -> ((PartitionedTableProxyHandler) Proxy.getInvocationHandler(proxy)).target);
+            directDelegations.put(Object.class.getMethod("hashCode"),
+                    (proxy, method, args) -> Proxy.getInvocationHandler(proxy).hashCode());
+            directDelegations.put(Object.class.getMethod("equals"),
+                    (proxy, method, args) -> Proxy.getInvocationHandler(proxy).equals(args[0]));
+            directDelegations.put(Object.class.getMethod("toString"),
+                    (proxy, method, args) -> Proxy.getInvocationHandler(proxy).toString());
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("Missing expected method", e);
+        }
+        DIRECT_DELEGATIONS = Collections.unmodifiableMap(directDelegations);
+    }
+
+    private static final Set<String> JOIN_METHOD_NAMES = Set.of("join", "naturalJoin", "exactJoin", "aj", "raj");
+    private static final Set<String> INEXACT_JOIN_METHOD_NAMES = Set.of("aj", "raj");
 
     /**
      * The underlying target {@link PartitionedTable}.
@@ -41,6 +68,30 @@ public class PartitionedTableProxyHandler extends LivenessArtifact implements In
         this.target = target;
         this.requireMatchingKeys = requireMatchingKeys;
         this.sanityCheckJoins = sanityCheckJoins;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final PartitionedTableProxyHandler that = (PartitionedTableProxyHandler) other;
+        return requireMatchingKeys == that.requireMatchingKeys
+                && sanityCheckJoins == that.sanityCheckJoins
+                && target.equals(that.target);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(target, requireMatchingKeys, sanityCheckJoins);
+    }
+
+    @Override
+    public String toString() {
+        return "PartitionedTable.Proxy for " + target.table().getDescription();
     }
 
     /**
@@ -66,6 +117,46 @@ public class PartitionedTableProxyHandler extends LivenessArtifact implements In
             @NotNull final Object proxy,
             @NotNull final Method method,
             @Nullable final Object[] args) throws Throwable {
+        final InvocationHandler directHandler = DIRECT_DELEGATIONS.get(method);
+        if (directHandler != null) {
+            return directHandler.invoke(proxy, method, args);
+        }
+
+        if (method.getDeclaringClass() != TableOperations.class) {
+            throw new UnsupportedOperationException("Unexpected declaring class for method " + method);
+        }
+        if (method.getReturnType() != TableOperations.class) {
+            throw new UnsupportedOperationException("Unexpected return type for method " + method);
+        }
+
+        int tableArgumentIndex = -1;
+        final Class<?>[] parameterTypes = method.getParameterTypes();
+        for (int ii = 0; ii < parameterTypes.length; ii++) {
+            if (TableOperations.class.isAssignableFrom(parameterTypes[ii])) {
+                if (tableArgumentIndex >= 0) {
+                    throw new UnsupportedOperationException(
+                            "Unexpected method with multiple TableOperations arguments: " + method);
+                }
+                tableArgumentIndex = ii;
+            }
+        }
+        final PartitionedTable.Proxy proxyArg =
+                args == null || tableArgumentIndex < 0 || !(args[tableArgumentIndex] instanceof PartitionedTable.Proxy)
+                        ? null
+                        : (PartitionedTable.Proxy) args[tableArgumentIndex];
+
+        if (proxyArg == null) {
+            return QueryPerformanceRecorder.withNugget("PartitionedTableProxyHandler-" + method.getName(), () -> {
+                final PartitionedTable resultTarget = target.transform(table -> {
+                    try {
+                        return (Table) method.invoke(table, args);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new UncheckedDeephavenException(e);
+                    }
+                });
+                return proxyFor(resultTarget, requireMatchingKeys, sanityCheckJoins);
+            });
+        }
         throw new UnsupportedOperationException("TODO-RWC");
     }
 
