@@ -7,11 +7,13 @@ import jpyutil
 DEFAULT_JVM_PROPERTIES = {
     # Allow jpy to clean up its py objects from java on a separate java thread
     'PyObject.cleanup_on_thread': 'true',
-    # Disable any java UI
-    #TODO this is probably no longer required
-    'java.awt.headless': 'true',
+    # # Disable any java UI
+    # #TODO this is probably no longer required
+    # 'java.awt.headless': 'true',
     #TODO probably should be disabled by default, as it is from the JVM?
     'MetricsManager.enabled': 'true',
+    # Default to no init scripts, the built-in py init script will prevent using python stdin
+    'PythonDeephavenSession.initScripts': '',
 }
 DEFAULT_JVM_ARGS = [
     # # Ask the JVM to optimize more aggressively
@@ -22,6 +24,8 @@ DEFAULT_JVM_ARGS = [
     '-XX:MaxGCPauseMillis=100',
     # G1GC: Try to deduplicate strings on the Java heap
     '-XX:+UseStringDeduplication',
+    # Disable the JVM's signal handling for interactive python consoles
+    '-Xrs',
 ]
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
@@ -65,8 +69,6 @@ def start_jvm(
         # TODO package, append compiler directives
         # '-XX:+UnlockDiagnosticVMOptions',
         # '-XX:CompilerDirectivesFile=dh-compiler-directives.txt',
-        # Disable the JVM's signal handling for interactive python consoles
-        '-Xrs',
     ]
     jvm_args.extend(REQUIRED_JVM_ARGS)
 
