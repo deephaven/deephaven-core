@@ -10,8 +10,7 @@ import javax.inject.Provider;
 
 /**
  * Registers all {@link io.deephaven.plugin.Plugin} found via python method "deephaven.plugin:register_all_into". See
- * the deephaven-plugin python package for more information, if {@link ScriptSession#scriptType()} is
- * {@code python}.
+ * the deephaven-plugin python package for more information, if {@link ScriptSession#scriptType()} is {@code python}.
  */
 public final class PythonPluginsRegistration implements Registration {
 

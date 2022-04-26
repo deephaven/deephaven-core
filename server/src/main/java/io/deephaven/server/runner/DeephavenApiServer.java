@@ -11,7 +11,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.appmode.ApplicationInjector;
-import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.log.LogInit;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;

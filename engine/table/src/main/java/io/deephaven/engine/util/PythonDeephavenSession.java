@@ -82,9 +82,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             throws IOException, InterruptedException, TimeoutException {
         super(objectTypeLookup, listener, isDefaultScriptSession);
 
-        //TODO in the py init code that would call in here, we should read the jpy system properties
-        //     (see introspect.py for the list) and set jvm sysprops _before_ starting the jvm
-        //     PyLibInitializer.initPyLib(...)
+        // Start Jpy, if not already running from the python instance
         JpyInit.init(log);
 
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
