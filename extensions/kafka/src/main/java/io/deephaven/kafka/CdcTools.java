@@ -303,7 +303,7 @@ public class CdcTools {
                 KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING,
                 KafkaTools.Consume.avroSpec(keySchema),
                 KafkaTools.Consume.avroSpec(valueSchema),
-                KafkaTools.TableType.Stream);
+                KafkaTools.TableType.stream());
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
         List<String> allDroppedColumns = null;
         if (dropColumns != null && dropColumns.size() > 0) {

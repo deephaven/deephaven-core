@@ -44,6 +44,7 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.Nullable;
 
 import javax.validation.constraints.NotNull;
 import java.io.Closeable;
@@ -55,6 +56,7 @@ import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
@@ -72,6 +74,7 @@ public class ArrowFlightUtil {
     public static class DoPutObserver extends SingletonLivenessManager
             implements StreamObserver<InputStream>, Closeable {
 
+        private final ScheduledExecutorService executorService;
         private final SessionState session;
         private final TicketRouter ticketRouter;
         private final StreamObserver<Flight.PutResult> observer;
@@ -87,9 +90,11 @@ public class ArrowFlightUtil {
         private BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
 
         public DoPutObserver(
+                @Nullable final ScheduledExecutorService executorService,
                 final SessionState session,
                 final TicketRouter ticketRouter,
                 final StreamObserver<Flight.PutResult> observer) {
+            this.executorService = executorService;
             this.session = session;
             this.ticketRouter = ticketRouter;
             this.observer = observer;
@@ -264,7 +269,7 @@ public class ArrowFlightUtil {
             }
 
             final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
-            resultTable = BarrageTable.make(result.tableDef, false);
+            resultTable = BarrageTable.make(executorService, result.tableDef, result.attributes, false);
             columnConversionFactors = result.conversionFactors;
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
@@ -525,7 +530,9 @@ public class ArrowFlightUtil {
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg);
+                                try (final BarrageStreamGenerator bsg =
+                                        new BarrageStreamGenerator(msg, (bytes, nanos) -> {
+                                        });
                                         final RowSet keySpaceViewport =
                                                 hasViewport
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)

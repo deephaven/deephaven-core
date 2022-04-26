@@ -307,12 +307,12 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
             jstring v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
             jobject v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 0, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
 
     } else {
@@ -365,12 +365,12 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
             jstring v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
             jobject v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 1, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
     }
 

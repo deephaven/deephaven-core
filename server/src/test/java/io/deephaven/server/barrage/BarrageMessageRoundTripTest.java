@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Deque;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -191,14 +192,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.barrageMessageProducer = barrageMessageProducer;
 
             this.barrageTable = BarrageTable.make(updateSourceCombiner, UpdateGraphProcessor.DEFAULT,
-                    barrageMessageProducer.getTableDefinition(), viewport != null);
+                    null, barrageMessageProducer.getTableDefinition(), new HashMap<>(), viewport != null);
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageMarshaller marshaller = new BarrageMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(), new BarrageStreamReader());
+                    barrageTable.getWireComponentTypes(),
+                    new BarrageStreamReader(barrageTable.getDeserializationTmConsumer()));
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {

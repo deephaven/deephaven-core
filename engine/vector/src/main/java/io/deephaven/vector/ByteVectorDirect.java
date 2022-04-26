@@ -28,6 +28,8 @@ public class ByteVectorDirect implements ByteVector {
         this.data = data;
     }
 
+    public static final ByteVector ZERO_LEN_VECTOR = new ByteVectorDirect();
+
     @Override
     public byte get(long i) {
         if (i < 0 || i > data.length - 1) {

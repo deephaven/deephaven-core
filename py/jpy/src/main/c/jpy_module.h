@@ -30,7 +30,7 @@ extern "C" {
 
 #include "jpy_compat.h"
 
-#if true
+#if 1
 #define JPy_DECREF(x) Py_DECREF(x)
 #define JPy_INCREF(x) Py_INCREF(x)
 #define JPy_XDECREF(x) Py_XDECREF(x)
@@ -100,6 +100,9 @@ void JPy_ClearGlobalVars(JNIEnv* jenv);
  */
 void JPy_HandleJavaException(JNIEnv* jenv);
 
+#define JPy_DELETE_LOCAL_REF(VALUE) \
+    (*jenv)->DeleteLocalRef(jenv, VALUE); \
+    VALUE = NULL;
 
 #define JPy_ON_JAVA_EXCEPTION_GOTO(LABEL) \
     if ((*jenv)->ExceptionCheck(jenv)) { \

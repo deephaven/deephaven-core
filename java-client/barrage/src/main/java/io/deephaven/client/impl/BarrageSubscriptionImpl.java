@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
@@ -64,24 +65,28 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * Represents a BarrageSubscription.
      *
      * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush stats
      * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
      */
     public BarrageSubscriptionImpl(
-            final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+            final BarrageSession session, final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
         this.options = options;
         this.tableHandle = tableHandle;
 
-        final TableDefinition tableDefinition = BarrageUtil.convertArrowSchema(tableHandle.response()).tableDef;
-        resultTable = BarrageTable.make(tableDefinition, false);
+        final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
+        final TableDefinition tableDefinition = schema.tableDef;
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(), new BarrageStreamReader());
+                        resultTable.getWireComponentTypes(),
+                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a

@@ -409,6 +409,10 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Join,
                 CopyAttributeOperation.WouldMatch));
 
+        tempMap.put(BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Flatten, // add flatten for now because web flattens all views
+                CopyAttributeOperation.Preview));
+
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 

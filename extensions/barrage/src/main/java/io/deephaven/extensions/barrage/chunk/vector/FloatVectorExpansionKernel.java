@@ -24,8 +24,9 @@ import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.FloatVectorDirect.ZERO_LEN_VECTOR;
+
 public class FloatVectorExpansionKernel implements VectorExpansionKernel {
-    private final static FloatVector ZERO_LEN_VECTOR = new FloatVectorDirect();
     public final static FloatVectorExpansionKernel INSTANCE = new FloatVectorExpansionKernel();
 
     @Override

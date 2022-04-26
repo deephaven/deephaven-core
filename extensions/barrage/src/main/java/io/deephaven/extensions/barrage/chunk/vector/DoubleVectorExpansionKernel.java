@@ -24,8 +24,9 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.DoubleVectorDirect.ZERO_LEN_VECTOR;
+
 public class DoubleVectorExpansionKernel implements VectorExpansionKernel {
-    private final static DoubleVector ZERO_LEN_VECTOR = new DoubleVectorDirect();
     public final static DoubleVectorExpansionKernel INSTANCE = new DoubleVectorExpansionKernel();
 
     @Override

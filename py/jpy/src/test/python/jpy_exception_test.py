@@ -27,13 +27,18 @@ class TestExceptions(unittest.TestCase):
         fixture = self.Fixture()
         self.assertEqual(fixture.throwAioobeIfIndexIsNotZero(0), 101)
 
-        with  self.assertRaises(RuntimeError, msg='Java ArrayIndexOutOfBoundsException expected') as e:
+        with self.assertRaises(RuntimeError, msg='Java ArrayIndexOutOfBoundsException expected') as e:
             fixture.throwAioobeIfIndexIsNotZero(1)
-        self.assertEqual(str(e.exception), 'java.lang.ArrayIndexOutOfBoundsException: 1')
+        exceptText = str(e.exception)
+        if not exceptText == "java.lang.ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1":
+            print("Except Text", exceptText)
+            self.assertEqual(str(e.exception), 'java.lang.ArrayIndexOutOfBoundsException: 1')
 
-        with  self.assertRaises(RuntimeError, msg='Java ArrayIndexOutOfBoundsException expected') as e:
+        with self.assertRaises(RuntimeError, msg='Java ArrayIndexOutOfBoundsException expected') as e:
             fixture.throwAioobeIfIndexIsNotZero(-1)
-        self.assertEqual(str(e.exception), 'java.lang.ArrayIndexOutOfBoundsException: -1')
+        exceptText = str(e.exception)
+        if not exceptText == "java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 1":
+            self.assertEqual(str(e.exception), 'java.lang.ArrayIndexOutOfBoundsException: -1')
 
 
     def test_RuntimeException(self):

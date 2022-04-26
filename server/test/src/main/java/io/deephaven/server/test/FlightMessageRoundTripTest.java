@@ -29,13 +29,8 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
@@ -46,6 +41,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,8 +54,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -106,6 +102,12 @@ public abstract class FlightMessageRoundTripTest {
         @Named("grpc.maxInboundMessageSize")
         int provideMaxInboundMessageSize() {
             return 1024 * 1024;
+        }
+
+        @Provides
+        @Nullable
+        ScheduledExecutorService provideExecutorService() {
+            return null;
         }
     }
 

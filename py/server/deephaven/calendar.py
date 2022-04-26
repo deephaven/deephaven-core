@@ -305,12 +305,7 @@ class BusinessCalendar(Calendar):
         open and close times. """
 
         default_business_periods = self.j_calendar.getDefaultBusinessPeriods()
-        b_periods = []
-        for i in range(default_business_periods.size()):
-            p = default_business_periods.get(i)
-            b_periods.append(p)
-
-        return b_periods
+        return list(default_business_periods.toArray())
 
     @property
     def standard_business_day_length(self) -> int:

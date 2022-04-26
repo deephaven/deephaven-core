@@ -28,6 +28,8 @@ public class ArrayTypeUtils {
     public static final float[] EMPTY_FLOAT_ARRAY = new float[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+    public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    public static final Boolean[] EMPTY_BOOLEANBOXED_ARRAY = new Boolean[0];
 
     public static ArrayAccessor getArrayAccessor(Object array) {
         final Class<?> c = array.getClass();
