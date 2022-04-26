@@ -1333,15 +1333,22 @@ class Table(JObjectWrapper):
             raise DHError(e, "failed to color format rows conditionally.") from e
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
-                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None) -> Table:
+                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
+                     groups: List[dict] = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
-            front (Union[str, List[str]]): the columns to show at the front
-            back (Union[str, List[str]]): the columns to show at the back
+            front (Union[str, List[str]]): the columns to show at the front.
+            back (Union[str, List[str]]): the columns to show at the back.
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Union[str, List[str]]): the columns to hide
+            hide (Union[str, List[str]]): the columns to hide.
+            groups (List[ColumnGroup]): A list of dicts specifying which columns should be grouped in the UI
+                The dicts can specify the following:
+
+                name (str): The group name
+                children (List[str]): The
+                color (Optional[Union[str, Color]]): The color name, hex string, or color object from deephaven.plot
 
         Returns:
             a new table with the layout hints set
@@ -1356,13 +1363,18 @@ class Table(JObjectWrapper):
                 _j_layout_hint_builder.atFront(to_sequence(front))
 
             if back is not None:
-                _j_layout_hint_builder.atEnd(to_sequence(back))
+                _j_layout_hint_builder.atBack(to_sequence(back))
 
             if freeze is not None:
                 _j_layout_hint_builder.freeze(to_sequence(freeze))
 
             if hide is not None:
                 _j_layout_hint_builder.hide(to_sequence(hide))
+
+            if groups is not None:
+                for group in groups:
+                    _j_layout_hint_builder.group(group.get("name"), j_array_list(group.get("children")),
+                                                 group.get("color", ""))
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
