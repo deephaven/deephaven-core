@@ -40,7 +40,7 @@
 #
 # From the web IDE, run:
 #
-#    > t = kc.consume({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_spec=kc.avro_spec('share_price_record'), table_type=TableType.Append)
+#    > t = kc.consume({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value_spec=kc.avro_spec('share_price_record'), table_type=TableType.append())
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 # Run this script on the host (not on a docker image) to generate one row:
