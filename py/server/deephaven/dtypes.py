@@ -90,7 +90,7 @@ double = float64
 float_ = float64
 """Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
-"""Java String type"""
+"""String type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
