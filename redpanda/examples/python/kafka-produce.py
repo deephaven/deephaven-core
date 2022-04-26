@@ -43,7 +43,7 @@
 # == Example (2)  Simple String Key and simple long Value
 #
 # From web UI do:
-#    > t2 = ck.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type=TableType.append())
+#    > t2 = kc.consume({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type=TableType.append())
 #
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
@@ -55,8 +55,8 @@
 #
 # From web UI do:
 #
-#    > import deephaven_legacy.Types as dh
-#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_), ('UserName', dh.string), ('UserId', dh.int_) ], mapping = { '/User/Name' : 'UserName', '/User/Id' : 'UserId'}), table_type=TableType.append())
+#    > from deephaven import dtypes as dh
+#    > t3 = kc.consume({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value_spec=kc.json_spec([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_), ('UserName', dh.string), ('UserId', dh.int_) ], mapping = { '/User/Name' : 'UserName', '/User/Id' : 'UserId'}), table_type=TableType.append())
 #
 # Run this script on the host (not on a docker image) to produce one row:
 #
