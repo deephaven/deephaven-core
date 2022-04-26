@@ -49,6 +49,9 @@ public class ApplicationInjector {
             configs = ApplicationConfig.find();
         } catch (final NoSuchFileException ignored) {
             configs = Collections.emptyList();
+        } catch (final RuntimeException error) {
+            log.error().append("Failed to read application config(s): ").append(error).endl();
+            throw error;
         }
 
         if (configs.isEmpty()) {
