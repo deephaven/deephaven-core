@@ -100,7 +100,7 @@ DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime
 Period = DType(j_name="io.deephaven.time.Period")
 """Deephaven time period type"""
 PyObject = DType(j_name="org.jpy.PyObject")
-"""JPY PyObject type"""
+"""Python object type"""
 JObject = DType(j_name="java.lang.Object")
 """JPY Java Object type"""
 byte_array = DType(j_name='[B')
