@@ -158,9 +158,9 @@ class TableFactoryTestCase(BaseTestCase):
             col_defs = {
                 "ByteArray": dtypes.byte_array,
                 "ShortArray": dtypes.short_array,
-                "IntArray": dtypes.int_array,
+                "Int32Array": dtypes.int32_array,
                 "LongArray": dtypes.long_array,
-                "FloatArray": dtypes.float_array,
+                "Float32Array": dtypes.float32_array,
                 "DoubleArray": dtypes.double_array,
                 "StringArray": dtypes.string_array,
             }

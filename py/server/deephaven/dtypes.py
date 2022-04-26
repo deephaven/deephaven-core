@@ -105,15 +105,29 @@ JObject = DType(j_name="java.lang.Object")
 """Java Object type"""
 byte_array = DType(j_name='[B')
 """Byte array type"""
+int8_array = byte_array
+"""Byte array type"""
 short_array = DType(j_name='[S')
 """Short array type"""
-int_array = DType(j_name='[I')
+int16_array = short_array
+"""Short array type"""
+int32_array = DType(j_name='[I')
 """32bit integer array type"""
 long_array = DType(j_name='[J')
 """64bit integer array type"""
-float_array = DType(j_name='[S')
+int64_array = long_array
+"""64bit integer array type"""
+int_array = long_array
+"""64bit integer array type"""
+single_array = DType(j_name='[S')
+"""Single-precision floating-point array type"""
+float32_array = single_array
 """Single-precision floating-point array type"""
 double_array = DType(j_name='[D')
+"""Double-precision floating-point array type"""
+float64_array = double_array
+"""Double-precision floating-point array type"""
+float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
