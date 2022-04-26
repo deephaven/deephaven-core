@@ -416,7 +416,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     @Override
-    public TableMap transformTablesWithMap(TableMap other, BiFunction<Table, Table, Table> function) {
+    public TableMap transformTablesWithMap(TableMap other, BinaryOperator<Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
 
         try {

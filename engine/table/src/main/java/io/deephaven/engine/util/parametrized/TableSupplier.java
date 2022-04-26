@@ -451,7 +451,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
 
         @Override
-        public TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function) {
+        public TableMap transformTablesWithMap(TableMap otherMap, BinaryOperator<Table> function) {
             throw new UnsupportedOperationException("TableSupplierMap does not support transformTablesWithMap");
         }
 

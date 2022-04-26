@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -17,8 +17,8 @@ import java.util.function.Function;
  * Interface for working with partitioned tables.
  * <p>
  * A partitioned table is a {@link Table} with one or more columns containing non-null, like-defined constituent tables,
- * optionally with "key" columns defined to allow {@link #partitionedTransform(PartitionedTable, BiFunction)} or proxied
- * joins with other like-keyed partitioned tables.
+ * optionally with "key" columns defined to allow {@link #partitionedTransform(PartitionedTable, BinaryOperator)} or
+ * proxied joins with other like-keyed partitioned tables.
  */
 public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
 
@@ -82,14 +82,14 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * PartitionedTable.
      * <p>
      * Each operation thus applied will produce a new PartitionedTable with the results as in
-     * {@link #transform(Function)} or {@link #partitionedTransform(PartitionedTable, BiFunction)}, and return a new
+     * {@link #transform(Function)} or {@link #partitionedTransform(PartitionedTable, BinaryOperator)}, and return a new
      * proxy to that PartitionedTable.
      *
      * @param requireMatchingKeys Whether to ensure that both partitioned tables have all the same keys present when a
      *        proxied operation uses {@code this} and another {@link PartitionedTable} as inputs for a
-     *        {@link #partitionedTransform(PartitionedTable, BiFunction) partitioned transform}
-     * @param sanityCheckJoinOperations Whether to check that proxied join operations will only find a given key in one
-     *        constituent table for {@code this} and the {@link Table table} argument if it is a
+     *        {@link #partitionedTransform(PartitionedTable, BinaryOperator) partitioned transform}
+     * @param sanityCheckJoinOperations Whether to check that proxied join operations will only find a given join key in
+     *        one constituent table for {@code this} and the {@link Table table} argument if it is also a
      *        {@link PartitionedTable.Proxy proxy}
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
      *         this PartitionedTable
@@ -142,5 +142,5 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      */
     PartitionedTable partitionedTransform(
             @NotNull PartitionedTable other,
-            @NotNull BiFunction<Table, Table, Table> transformer);
+            @NotNull BinaryOperator<Table> transformer);
 }

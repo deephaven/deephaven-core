@@ -8,7 +8,10 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -16,20 +19,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link SelectColumn} implementation to assign a constant value.
+ * {@link SelectColumn} implementation to assign a constant {@code long} value.
  */
-class ConstantColumn<TYPE> extends BaseTableTransformationColumn {
+class LongConstantColumn implements SelectColumn {
 
     private final String outputColumnName;
-    private final Class<TYPE> outputType;
-    private final TYPE outputValue;
+    private final long outputValue;
 
-    ConstantColumn(
+    LongConstantColumn(
             @NotNull final String outputColumnName,
-            @NotNull final Class<TYPE> outputType,
-            final TYPE outputValue) {
+            final long outputValue) {
         this.outputColumnName = outputColumnName;
-        this.outputType = outputType;
         this.outputValue = outputValue;
     }
 
@@ -63,7 +63,58 @@ class ConstantColumn<TYPE> extends BaseTableTransformationColumn {
 
     @Override
     public SelectColumn copy() {
-        return new ConstantColumn<>(outputColumnName, outputType, outputValue);
+        return new LongConstantColumn(outputColumnName, outputValue);
+    }
+
+    @Override
+    public final List<String> initInputs(@NotNull final Table table) {
+        return initInputs(table.getRowSet(), table.getColumnSourceMap());
+    }
+
+    @Override
+    public final Class<?> getReturnedType() {
+        return Table.class;
+    }
+
+    @Override
+    public final List<String> getColumnArrays() {
+        return Collections.emptyList();
+    }
+
+    @NotNull
+    @Override
+    public final ColumnSource<?> getLazyView() {
+        return getDataView();
+    }
+
+    @Override
+    public final MatchPair getMatchPair() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final WritableColumnSource<?> newDestInstance(final long size) {
+        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Table.class);
+    }
+
+    @Override
+    public final WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return InMemoryColumnSource.getImmutableMemoryColumnSource(size, Table.class, null);
+    }
+
+    @Override
+    public final boolean isRetain() {
+        return false;
+    }
+
+    @Override
+    public final boolean disallowRefresh() {
+        return false;
+    }
+
+    @Override
+    public final boolean isStateless() {
+        return true;
     }
 
     private static final class OutputFormulaFillContext implements Formula.FillContext {
@@ -80,13 +131,23 @@ class ConstantColumn<TYPE> extends BaseTableTransformationColumn {
         }
 
         @Override
-        public Object get(final long rowKey) {
+        public Long get(final long rowKey) {
+            return TypeUtils.box(outputValue);
+        }
+
+        @Override
+        public Long getPrev(final long rowKey) {
+            return get(rowKey);
+        }
+
+        @Override
+        public long getLong(long rowKey) {
             return outputValue;
         }
 
         @Override
-        public Object getPrev(final long rowKey) {
-            return outputValue;
+        public long getPrevLong(long rowKey) {
+            return getLong(rowKey);
         }
 
         @Override
@@ -105,7 +166,7 @@ class ConstantColumn<TYPE> extends BaseTableTransformationColumn {
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final RowSequence rowSequence) {
             destination.setSize(rowSequence.intSize());
-            destination.asWritableObjectChunk().fillWithValue(0, destination.size(), outputValue);
+            destination.asWritableLongChunk().fillWithValue(0, destination.size(), outputValue);
         }
 
         @Override

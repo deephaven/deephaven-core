@@ -16,7 +16,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -130,7 +130,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTable partitionedTransform(
             @NotNull final PartitionedTable other,
-            @NotNull final BiFunction<Table, Table, Table> transformer) {
+            @NotNull final BinaryOperator<Table> transformer) {
         // Validate join compatibility
         validateJoinKeys(this, other);
 
@@ -170,7 +170,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     /**
      * Validate that {@code lhs} and {@code rhs} have compatible (same name, same type) key columns, allowing
-     * {@link #partitionedTransform(PartitionedTable, BiFunction)}.
+     * {@link #partitionedTransform(PartitionedTable, BinaryOperator)}.
      *
      * @param lhs The first partitioned table
      * @param rhs The second partitioned table

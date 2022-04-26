@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -25,7 +25,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
 
     private final String inputOutputColumnName;
     private final String secondInputColumnName;
-    private final BiFunction<Table, Table, Table> transformer;
+    private final BinaryOperator<Table> transformer;
 
     private ColumnSource<Table> inputColumnSource1;
     private ColumnSource<Table> inputColumnSource2;
@@ -33,7 +33,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
     BiTableTransformationColumn(
             @NotNull final String inputOutputColumnName,
             @NotNull final String secondInputColumnName,
-            @NotNull final BiFunction<Table, Table, Table> transformer) {
+            @NotNull final BinaryOperator<Table> transformer) {
         this.inputOutputColumnName = inputOutputColumnName;
         this.secondInputColumnName = secondInputColumnName;
         this.transformer = transformer;

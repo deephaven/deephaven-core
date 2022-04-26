@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -164,7 +165,7 @@ public class TableMapSupplier implements TableMap {
     }
 
     @Override
-    public TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function) {
+    public TableMap transformTablesWithMap(TableMap otherMap, BinaryOperator<Table> function) {
         throw new UnsupportedOperationException("TableSupplierMap does not support transformTablesWithMap");
     }
 

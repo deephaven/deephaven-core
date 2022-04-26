@@ -10,7 +10,6 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.TimeZone;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * {@link PartitionedTable.Proxy} {@link java.lang.reflect.InvocationHandler} implementation.
@@ -171,17 +171,14 @@ public class PartitionedTableProxyHandler extends LivenessArtifact implements In
     private static Table uniqueKeysTable(
             @NotNull final PartitionedTable lhs,
             @NotNull final PartitionedTable rhs) {
-        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
-
         final Table lhsKeys = lhs.table()
-                .selectDistinct(lhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
-                .updateView(new ConstantColumn<>(FOUND_IN.name(), String.class, "first"));
+                .selectDistinct(lhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         final Table rhsKeys = rhs.table()
-                .selectDistinct(rhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
-                .updateView(new ConstantColumn<>(FOUND_IN.name(), String.class, "second"));
+                .selectDistinct(rhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
-        final Table unionedKeysWithUniqueAgg = unionedKeys.aggAllBy(AggSpec.unique(), lhs.keyColumnNames());
-        return unionedKeysWithUniqueAgg.where(Filter.isNotNull(FOUND_IN));
+        final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
+        final Table uniqueKeys = countedKeys.where(FOUND_IN.name() + " != 2");
+        return uniqueKeys.dropColumns(FOUND_IN.name());
         // if (!uniqueKeys.isEmpty()) {
         // throw formatUniqueKeysException(uniqueKeys);
         // }
@@ -220,18 +217,21 @@ public class PartitionedTableProxyHandler extends LivenessArtifact implements In
      * Get a table of join keys that are found in more than one constituent table in {@code input}.
      *
      * @param input The input partitioned table
-     * @param keyColumnNames The exact match key column names for the join operation
+     * @param joinKeyColumnNames The exact match key column names for the join operation
      * @return A table of join keys that are found in more than one constituent table in {@code input}
      */
     private static Table overlappingJoinKeysTable(
             @NotNull final PartitionedTable input,
-            @NotNull final String[] keyColumnNames) {
+            @NotNull final String[] joinKeyColumnNames) {
+        // NB: At the moment, we are assuming that constituents appear only once per partitioned table in scenarios
+        //     where overlapping join keys are concerning.
+        final AtomicLong sequenceCounter = new AtomicLong(0);
         final PartitionedTable stamped = input.transform(table -> table
-                .updateView(new ConstantColumn<>(ENCLOSING_CONSTITUENT.name(), Table.class, table)));
+                .updateView(new LongConstantColumn(ENCLOSING_CONSTITUENT.name(), sequenceCounter.getAndIncrement())));
         final Table merged = stamped.merge();
-        final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), keyColumnNames);
+        final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
         final Table overlappingKeys = mergedWithUniqueAgg.where(Filter.isNull(ENCLOSING_CONSTITUENT));
-        return overlappingKeys.view(keyColumnNames);
+        return overlappingKeys.view(joinKeyColumnNames);
     }
 
     private static class JoinSanityEnforcementListener extends InstrumentedTableUpdateListenerAdapter {
