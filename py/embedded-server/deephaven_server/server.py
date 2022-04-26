@@ -1,3 +1,7 @@
+#
+#  Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
 from typing import Dict, List
 
 from .start_jvm import start_jvm

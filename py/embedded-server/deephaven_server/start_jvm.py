@@ -1,30 +1,35 @@
+#
+#  Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+#
+
 import os
 import re
 from glob import glob
 import jpyutil
 
 DEFAULT_JVM_PROPERTIES = {
-    # Allow jpy to clean up its py objects from java on a separate java thread
-    'PyObject.cleanup_on_thread': 'true',
-    # # Disable any java UI
-    # #TODO this is probably no longer required
-    # 'java.awt.headless': 'true',
-    #TODO probably should be disabled by default, as it is from the JVM?
-    'MetricsManager.enabled': 'true',
     # Default to no init scripts, the built-in py init script will prevent using python stdin
     'PythonDeephavenSession.initScripts': '',
+    # TODO (deephaven-core#XXXX) this doesn't work yet
+    # # Disable the browser console by default, this is not yet well supported
+    # 'deephaven.console.disable': 'true',
 }
 DEFAULT_JVM_ARGS = [
-    # # Ask the JVM to optimize more aggressively
-    # '-server',
     # Uee the G1 GC
     '-XX:+UseG1GC',
     # G1GC: Set a goal for the max duration of a GC pause
     '-XX:MaxGCPauseMillis=100',
     # G1GC: Try to deduplicate strings on the Java heap
     '-XX:+UseStringDeduplication',
-    # Disable the JVM's signal handling for interactive python consoles
+
+    # Disable the JVM's signal handling for interactive python consoles - if python will
+    # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
+    # remove for a small performance gain.
     '-Xrs',
+
+    # Disable JIT in certain cases
+    '-XX:+UnlockDiagnosticVMOptions',
+    '-XX:CompilerDirectivesFile=' + os.path.join(os.path.dirname(__file__), 'jars', 'dh-compiler-directives.txt'),
 ]
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
@@ -41,7 +46,6 @@ def start_jvm(
     Script session. """
 
     if propfile is None:
-        # TODO make this absolute inside the wheel to be unambiguous
         propfile = 'dh-defaults.prop'
 
     # Build jvm system properties starting with defaults we accept as args
@@ -65,9 +69,6 @@ def start_jvm(
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
         # Allow our hotspotImpl project to access internals
         '--add-opens=java.management/sun.management=ALL-UNNAMED',
-        # TODO package, append compiler directives
-        # '-XX:+UnlockDiagnosticVMOptions',
-        # '-XX:CompilerDirectivesFile=dh-compiler-directives.txt',
     ]
     if (jvm_args is None):
         jvm_args = REQUIRED_JVM_ARGS

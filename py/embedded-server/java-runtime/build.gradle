@@ -28,6 +28,7 @@ dependencies {
 def serverClasspath = tasks.register('serverClasspath', Sync) {
     from configurations.runtimeClasspath
     from jar
+    from tasks.named('createCompilerDirectives')
     into layout.buildDirectory.dir('classpath')
 }
 
