@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -48,6 +49,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
@@ -72,9 +74,15 @@ public abstract class FlightMessageRoundTripTest {
             return resolver;
         }
 
+        @Singleton
         @Provides
-        AbstractScriptSession<?> createGlobalScriptSession() {
+        AbstractScriptSession<?> provideAbstractScriptSession() {
             return new NoLanguageDeephavenSession("non-script-session");
+        }
+
+        @Provides
+        ScriptSession provideScriptSession(AbstractScriptSession<?> scriptSession) {
+            return scriptSession;
         }
 
         @Provides
