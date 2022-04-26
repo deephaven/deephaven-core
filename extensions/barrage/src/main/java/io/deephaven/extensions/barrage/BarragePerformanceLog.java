@@ -43,13 +43,18 @@ public class BarragePerformanceLog {
     }
 
     private final MemoryTableLogger<BarragePerformanceLogLogger> barragePerformanceLogger;
+    private final MemoryTableLogger<BarrageStaticPerformanceLogLogger> barrageStaticPerformanceLogger;
 
     private BarragePerformanceLog() {
         final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
         barragePerformanceLogger = new MemoryTableLogger<>(
                 log, new BarragePerformanceLogLogger(), BarragePerformanceLogLogger.getTableDefinition());
         barragePerformanceLogger.getQueryTable().setAttribute(
-                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, "BarragePerformanceLog");
+                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarragePerformanceLogLogger.getDefaultTableName());
+        barrageStaticPerformanceLogger = new MemoryTableLogger<>(
+                log, new BarrageStaticPerformanceLogLogger(), BarrageStaticPerformanceLogLogger.getTableDefinition());
+        barrageStaticPerformanceLogger.getQueryTable().setAttribute(
+                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageStaticPerformanceLogLogger.getDefaultTableName());
     }
 
     public QueryTable getTable() {
@@ -58,5 +63,13 @@ public class BarragePerformanceLog {
 
     public BarragePerformanceLogLogger getLogger() {
         return barragePerformanceLogger.getTableLogger();
+    }
+
+    public QueryTable getStaticTable() {
+        return barrageStaticPerformanceLogger.getQueryTable();
+    }
+
+    public BarrageStaticPerformanceLogLogger getStaticLogger() {
+        return barrageStaticPerformanceLogger.getTableLogger();
     }
 }

@@ -439,17 +439,22 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
+            long bytesWritten = 0;
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
             long offset = 0;
             final long batchSize = batchSize();
             for (long ii = 0; ii < numAddBatches; ++ii) {
-                visitor.accept(generator.getInputStream(
-                        this, offset, offset + batchSize, metadata, generator::appendAddColumns));
+                final InputStream is = generator.getInputStream(
+                        this, offset, offset + batchSize, metadata, generator::appendAddColumns);
+                bytesWritten += is.available();
+                visitor.accept(is);
                 offset += batchSize;
                 metadata = null;
             }
 
             addRowOffsets.close();
+            generator.writeConsumer.onWrite(bytesWritten, System.nanoTime() - startTm);
         }
 
         private int batchSize() {
