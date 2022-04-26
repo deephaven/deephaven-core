@@ -69,6 +69,8 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateBarrageUtils', 'io.deephaven.replicators.ReplicateBarrageUtils')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateKafka', 'io.deephaven.replicators.ReplicateKafka')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateRingChunkSources', 'io.deephaven.replicators.ReplicateRingChunkSources')
 }
 
 // These replicators need manual fix-up post replication and should not be run without supervision

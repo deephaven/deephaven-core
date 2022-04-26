@@ -15,8 +15,11 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -37,6 +40,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implements BarrageSubscription {
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
@@ -48,6 +53,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private BarrageTable resultTable;
 
+    private volatile Condition completedCondition;
+    private volatile boolean completed = false;
+    private volatile Throwable exceptionWhileCompleting = null;
+    private InstrumentedTableUpdateListener listener = null;
+
     private boolean subscribed = false;
     private volatile boolean connected = true;
 
@@ -55,24 +65,28 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
      * Represents a BarrageSubscription.
      *
      * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush stats
      * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
      */
     public BarrageSubscriptionImpl(
-            final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
+            final BarrageSession session, final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
         this.options = options;
         this.tableHandle = tableHandle;
 
-        final TableDefinition tableDefinition = BarrageUtil.convertArrowSchema(tableHandle.response()).tableDef;
-        resultTable = BarrageTable.make(tableDefinition, false);
+        final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
+        final TableDefinition tableDefinition = schema.tableDef;
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(), new BarrageStreamReader());
+                        resultTable.getWireComponentTypes(),
+                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -133,40 +147,129 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
-    public BarrageTable entireTable() {
-        return partialTable(null, null, false);
+    public boolean isCompleted() {
+        return completed;
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns) {
-        return partialTable(viewport, columns, false);
+    public BarrageTable entireTable() throws InterruptedException {
+        return entireTable(true);
     }
 
     @Override
-    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport) {
+    public BarrageTable entireTable(boolean blockUntilComplete) throws InterruptedException {
+        return partialTable(null, null, false, blockUntilComplete);
+    }
+
+    @Override
+    public BarrageTable partialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return partialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
+        return partialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public synchronized BarrageTable partialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+            boolean blockUntilComplete) throws InterruptedException {
         if (!connected) {
             throw new UncheckedDeephavenException(
                     this + " is no longer an active subscription and cannot be retained further");
         }
-        if (!subscribed) {
+        if (subscribed) {
+            throw new UncheckedDeephavenException(
+                    "BarrageSubscription objects cannot be reused.");
+        } else {
+            // test lock conditions
+            if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+                throw new UnsupportedOperationException(
+                        "Cannot create subscription while holding the UpdateGraphProcessor shared lock");
+            }
+
+            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+                completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+            }
+
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
                     .setAppMetadata(
                             ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                     .build());
             subscribed = true;
+
+            // use a listener to decide when the table is complete
+            listener = new InstrumentedTableUpdateListener("example-listener") {
+                @Override
+                protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+                    exceptionWhileCompleting = originalException;
+                    if (completedCondition != null) {
+                        UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                    } else {
+                        synchronized (BarrageSubscriptionImpl.this) {
+                            BarrageSubscriptionImpl.this.notifyAll();
+                        }
+                    }
+                }
+
+                @Override
+                public void onUpdate(final TableUpdate upstream) {
+                    // test to see if the viewport matches the requested
+                    if (viewport == null && resultTable.getServerViewport() == null) {
+                        completed = true;
+                    } else if (viewport != null && resultTable.getServerViewport() != null
+                            && reverseViewport == resultTable.getServerReverseViewport()) {
+                        completed = viewport.subsetOf(resultTable.getServerViewport());
+                    } else {
+                        completed = false;
+                    }
+
+                    if (completed) {
+                        if (completedCondition != null) {
+                            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                        } else {
+                            synchronized (BarrageSubscriptionImpl.this) {
+                                BarrageSubscriptionImpl.this.notifyAll();
+                            }
+                        }
+
+                        // no longer need to listen for completion
+                        resultTable.removeUpdateListener(this);
+                        listener = null;
+                    }
+                }
+            };
+
+            resultTable.listenForUpdates(listener);
+
+            if (blockUntilComplete) {
+                while (!completed && exceptionWhileCompleting == null) {
+                    // handle the condition where this function may have the exclusive lock
+                    if (completedCondition != null) {
+                        completedCondition.await();
+                    } else {
+                        wait(); // barragesubscriptionimpl lock
+                    }
+                }
+            }
         }
 
-        return resultTable;
+        if (exceptionWhileCompleting == null) {
+            return resultTable;
+        } else {
+            throw new UncheckedDeephavenException("Error while handling subscription:", exceptionWhileCompleting);
+        }
     }
 
     @Override
-    protected synchronized void destroy() {
+    protected void destroy() {
         super.destroy();
         close();
     }
 
-    private synchronized void handleDisconnect() {
+    private void handleDisconnect() {
         if (!connected) {
             return;
         }
@@ -200,6 +303,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             @Nullable final BitSet columns,
             boolean reverseViewport,
             @Nullable BarrageSubscriptionOptions options) {
+
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
         int colOffset = 0;

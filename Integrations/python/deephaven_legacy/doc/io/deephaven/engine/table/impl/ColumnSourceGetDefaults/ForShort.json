@@ -1,14 +1,14 @@
 {
  "className": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults$ForShort",
  "methods": {
-  "get": ":param index: long\n:return: java.lang.Short",
-  "getBoolean": ":param index: long\n:return: java.lang.Boolean",
-  "getByte": ":param index: long\n:return: byte",
-  "getChar": ":param index: long\n:return: char",
-  "getDouble": ":param index: long\n:return: double",
-  "getFloat": ":param index: long\n:return: float",
-  "getInt": ":param index: long\n:return: int",
-  "getLong": ":param index: long\n:return: long"
+  "get": ":param rowKey: long\n:return: java.lang.Short",
+  "getBoolean": ":param rowKey: long\n:return: java.lang.Boolean",
+  "getByte": ":param rowKey: long\n:return: byte",
+  "getChar": ":param rowKey: long\n:return: char",
+  "getDouble": ":param rowKey: long\n:return: double",
+  "getFloat": ":param rowKey: long\n:return: float",
+  "getInt": ":param rowKey: long\n:return: int",
+  "getLong": ":param rowKey: long\n:return: long"
  },
  "path": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults.ForShort",
  "text": "Default interface for short ColumnSource implementations.",

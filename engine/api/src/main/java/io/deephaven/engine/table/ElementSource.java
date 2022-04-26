@@ -2,39 +2,39 @@ package io.deephaven.engine.table;
 
 public interface ElementSource<T> {
 
-    T get(long index);
+    T get(long rowKey);
 
-    Boolean getBoolean(long index);
+    Boolean getBoolean(long rowKey);
 
-    byte getByte(long index);
+    byte getByte(long rowKey);
 
-    char getChar(long index);
+    char getChar(long rowKey);
 
-    double getDouble(long index);
+    double getDouble(long rowKey);
 
-    float getFloat(long index);
+    float getFloat(long rowKey);
 
-    int getInt(long index);
+    int getInt(long rowKey);
 
-    long getLong(long index);
+    long getLong(long rowKey);
 
-    short getShort(long index);
+    short getShort(long rowKey);
 
-    T getPrev(long index);
+    T getPrev(long rowKey);
 
-    Boolean getPrevBoolean(long index);
+    Boolean getPrevBoolean(long rowKey);
 
-    byte getPrevByte(long index);
+    byte getPrevByte(long rowKey);
 
-    char getPrevChar(long index);
+    char getPrevChar(long rowKey);
 
-    double getPrevDouble(long index);
+    double getPrevDouble(long rowKey);
 
-    float getPrevFloat(long index);
+    float getPrevFloat(long rowKey);
 
-    int getPrevInt(long index);
+    int getPrevInt(long rowKey);
 
-    long getPrevLong(long index);
+    long getPrevLong(long rowKey);
 
-    short getPrevShort(long index);
+    short getPrevShort(long rowKey);
 }

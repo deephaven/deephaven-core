@@ -47,14 +47,14 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     // endregion constructor
 
     @Override
-    public double getDouble(final long index) {
-        if (index < 0 || index >= totalSize) {
+    public double getDouble(final long rowKey) {
+        if (rowKey < 0 || rowKey >= totalSize) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        final int chunkIndex = getChunkIndex(index);
+        final int chunkIndex = getChunkIndex(rowKey);
         final long offset = firstOffsetForData.getQuick(chunkIndex);
-        return data.get(chunkIndex).get((int) (index - offset));
+        return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {

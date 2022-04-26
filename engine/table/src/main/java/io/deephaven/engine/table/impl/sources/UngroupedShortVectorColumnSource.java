@@ -32,12 +32,12 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
     }
 
     @Override
-    public Short get(long index) {
-        if (index < 0) {
+    public Short get(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         final Short result;
         if (isUngroupable) {
             result = (Short)((UngroupableColumnSource)innerSource).getUngrouped(segment, offset);
@@ -52,13 +52,13 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
 
 
     @Override
-    public short getShort(long index) {
-        if (index < 0) {
+    public short getShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
 
-        long segment = index>>base;
-        int offset = (int) (index & ((1<<base) - 1));
+        long segment = rowKey >>base;
+        int offset = (int) (rowKey & ((1<<base) - 1));
         if (isUngroupable) {
             return ((UngroupableColumnSource)innerSource).getUngroupedShort(segment, offset);
         }
@@ -69,13 +69,13 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
 
 
     @Override
-    public Short getPrev(long index) {
-        if (index < 0) {
+    public Short getPrev(long rowKey) {
+        if (rowKey < 0) {
             return null;
         }
 
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
         final Short result;
         if (isUngroupable) {
             result = (Short)((UngroupableColumnSource)innerSource).getUngroupedPrev(segment, offset);
@@ -91,13 +91,13 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
     }
 
     @Override
-    public short getPrevShort(long index) {
-        if (index < 0) {
+    public short getPrevShort(long rowKey) {
+        if (rowKey < 0) {
             return NULL_SHORT;
         }
 
-        long segment = index>> getPrevBase();
-        int offset = (int) (index & ((1<< getPrevBase()) - 1));
+        long segment = rowKey >> getPrevBase();
+        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
 
         if (isUngroupable) {
             return ((UngroupableColumnSource)innerSource).getUngroupedPrevShort(segment, offset);

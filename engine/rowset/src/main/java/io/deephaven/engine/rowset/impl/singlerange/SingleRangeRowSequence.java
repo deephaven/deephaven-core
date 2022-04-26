@@ -24,7 +24,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
         return rangeEnd;
     }
 
-    SingleRangeRowSequence(final long rangeStart, final long rangeEnd) {
+    public SingleRangeRowSequence(final long rangeStart, final long rangeEnd) {
         this.rangeStart = rangeStart;
         this.rangeEnd = rangeEnd;
     }

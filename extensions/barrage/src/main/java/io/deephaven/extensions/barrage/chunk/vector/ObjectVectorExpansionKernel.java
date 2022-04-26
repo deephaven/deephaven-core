@@ -21,7 +21,6 @@ import io.deephaven.vector.Vector;
 import java.lang.reflect.Array;
 
 public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
-    private final static ObjectVector<?> ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
     private final Class<T> componentType;
 
     public ObjectVectorExpansionKernel(final Class<T> componentType) {
@@ -84,7 +83,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel {
         for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(outOffset + i, ZERO_LEN_VECTOR);
+                result.set(outOffset + i, ObjectVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 // noinspection unchecked
                 final T[] row = (T[]) Array.newInstance(componentType, ROW_LEN);

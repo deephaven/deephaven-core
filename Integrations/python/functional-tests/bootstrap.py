@@ -15,7 +15,6 @@ def build_py_session():
             'devroot': DEFAULT_DEVROOT,
             'verbose': False,
             'propfile': DEFAULT_PROPFILE,
-            'java_home': os.environ.get('JDK_HOME', None),
             'jvm_properties': {},
             'jvm_options': {'-Djava.awt.headless=true',
                             '-Xms1g',

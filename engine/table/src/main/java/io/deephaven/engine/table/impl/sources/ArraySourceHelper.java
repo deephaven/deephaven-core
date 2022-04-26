@@ -43,6 +43,11 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         FillContext(ChunkType chunkType) {
             this.copyKernel = CopyKernel.makeCopyKernel(chunkType);
         }
+
+        @Override
+        public boolean supportsUnboundedFill() {
+            return true;
+        }
     }
 
     @Override

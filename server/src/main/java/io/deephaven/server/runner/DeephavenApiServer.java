@@ -3,14 +3,14 @@ package io.deephaven.server.runner;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
-import io.deephaven.engine.table.impl.util.ProcessMemoryTracker;
+import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.plugin.PluginRegistration;
 import io.deephaven.server.appmode.ApplicationInjector;
-import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.log.LogInit;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
@@ -21,6 +21,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -35,7 +36,7 @@ public class DeephavenApiServer {
     private final GrpcServer server;
     private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
-    private final ConsoleServiceGrpcImpl consoleService;
+    private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
     private final ApplicationInjector applicationInjector;
     private final UriResolvers uriResolvers;
@@ -46,7 +47,7 @@ public class DeephavenApiServer {
             final GrpcServer server,
             final UpdateGraphProcessor ugp,
             final LogInit logInit,
-            final ConsoleServiceGrpcImpl consoleService,
+            final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
@@ -54,7 +55,7 @@ public class DeephavenApiServer {
         this.server = server;
         this.ugp = ugp;
         this.logInit = logInit;
-        this.consoleService = consoleService;
+        this.scriptSessionProvider = scriptSessionProvider;
         this.pluginRegistration = pluginRegistration;
         this.applicationInjector = applicationInjector;
         this.uriResolvers = uriResolvers;
@@ -108,7 +109,7 @@ public class DeephavenApiServer {
         AbstractScriptSession.createScriptCache();
 
         log.info().append("Initializing Script Session...").endl();
-        consoleService.initializeGlobalScriptSession();
+        scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
         log.info().append("Starting UGP...").endl();
@@ -118,7 +119,7 @@ public class DeephavenApiServer {
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
         UpdatePerformanceTracker.start();
-        ProcessMemoryTracker.start();
+        ServerStateTracker.start();
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();

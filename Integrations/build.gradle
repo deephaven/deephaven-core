@@ -104,8 +104,6 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'JDK_HOME', '/usr/lib/jvm/zulu8/jre/'
-            environmentVariable 'JAVA_VERSION', '1.8'
             environmentVariable 'DEEPHAVEN_VERSION', project.version
 
             workingDir '/python'
@@ -133,20 +131,26 @@ Closure composeConfig = { task ->
     task.containerDependencies.finalizedBy = dockerCompose.downTask
 }
 
-def pyTest = runInDocker("test-py-37", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
-def pyFunctionalTest = runInDocker('py-functional-test', 'python', ['/bin/bash', 'run-functional-tests.sh'])
-def pyTest2 = runInDocker('test-py-deephaven2', '../pyintegration', ['python3', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report'], composeConfig)
+def pyTestLegacy = runInDocker("test-py-37-legacy", 'python', ['python3', '-m', 'xmlrunner', 'discover', '-v', '-o', '/out/report'], composeConfig)
+def pyFunctionalTestLegacy = runInDocker('py-functional-test-legacy', 'python', ['/bin/bash', 'run-functional-tests.sh'])
+def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
+def pyTestIntegration = runInDocker('test-py-deephaven-integration', '../py/server', ['/bin/bash', '-c', 'PYTHONPATH=/python integration-tests/run-tests.sh'], composeConfig)
+pyTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyTestLegacy)
+
+pyFunctionalTestLegacy.configure({
+    onlyIf { TestTools.shouldRunTests(project) }
+})
+tasks.getByName('check').dependsOn(pyFunctionalTestLegacy)
+
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
 tasks.getByName('check').dependsOn(pyTest)
 
-pyFunctionalTest.configure({
+pyTestIntegration.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-tasks.getByName('check').dependsOn(pyFunctionalTest)
-
-pyTest2.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-tasks.getByName('check').dependsOn(pyTest2)
+tasks.getByName('check').dependsOn(pyTestIntegration)

@@ -9,6 +9,7 @@ import io.deephaven.web.shared.data.DeltaUpdates;
 import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
@@ -45,7 +46,7 @@ public class TableSubscription extends HasEventHandling {
         }));
 
         this.columns = columns;
-        Integer rowStyleColumn = existingTable.state().getRowFormatColumn() == null ? null
+        Integer rowStyleColumn = existingTable.state().getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
                 : existingTable.state().getRowFormatColumn().getIndex();
         this.data = new SubscriptionTableData(columns, rowStyleColumn, this);
 

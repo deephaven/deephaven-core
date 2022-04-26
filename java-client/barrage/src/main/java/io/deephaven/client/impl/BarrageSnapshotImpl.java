@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.Condition;
 
 public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements BarrageSnapshot {
@@ -63,24 +64,28 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
      * Represents a BarrageSnapshot.
      *
      * @param session the Deephaven session that this export belongs to
+     * @param executorService an executor service used to flush metrics when enabled
      * @param tableHandle the tableHandle to snapshot (ownership is transferred to the snapshot)
      * @param options the transport level options for this snapshot
      */
     public BarrageSnapshotImpl(
-            final BarrageSession session, final TableHandle tableHandle, final BarrageSnapshotOptions options) {
+            final BarrageSession session, @Nullable final ScheduledExecutorService executorService,
+            final TableHandle tableHandle, final BarrageSnapshotOptions options) {
         super(false);
 
         this.logName = tableHandle.exportId().toString();
         this.options = options;
         this.tableHandle = tableHandle;
 
-        final TableDefinition tableDefinition = BarrageUtil.convertArrowSchema(tableHandle.response()).tableDef;
-        resultTable = BarrageTable.make(tableDefinition, false);
+        final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
+        final TableDefinition tableDefinition = schema.tableDef;
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, resultTable.getWireChunkTypes(), resultTable.getWireTypes(),
-                        resultTable.getWireComponentTypes(), new BarrageStreamReader());
+                        resultTable.getWireComponentTypes(),
+                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -208,7 +213,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileSealing);
         }
     }
-
 
     @Override
     protected void destroy() {

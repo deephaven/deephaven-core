@@ -124,36 +124,36 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     @Override
-    public Character get(long index) {
-        return box(getChar(index));
+    public Character get(long rowKey) {
+        return box(getChar(rowKey));
     }
 
     @Override
-    public Character getPrev(long index) {
-        return box(getPrevChar(index));
+    public Character getPrev(long rowKey) {
+        return box(getPrevChar(rowKey));
     }
     // endregion boxed methods
 
     // region primitive get
     @Override
-    public final char getChar(long index) {
-        if (index < 0) {
+    public final char getChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        return getCharFromBlock(blocks, index);
+        return getCharFromBlock(blocks, rowKey);
     }
 
 
     @Override
-    public final char getPrevChar(long index) {
-        if (index < 0) {
+    public final char getPrevChar(long rowKey) {
+        if (rowKey < 0) {
             return NULL_CHAR;
         }
-        if (shouldUsePrevious(index)) {
-            return getCharFromBlock(prevBlocks, index);
+        if (shouldUsePrevious(rowKey)) {
+            return getCharFromBlock(prevBlocks, rowKey);
         }
 
-        return getCharFromBlock(blocks, index);
+        return getCharFromBlock(blocks, rowKey);
     }
 
     private char getCharFromBlock(CharOneOrN.Block0 blocks, long key) {

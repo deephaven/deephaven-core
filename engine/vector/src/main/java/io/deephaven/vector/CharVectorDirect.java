@@ -23,6 +23,8 @@ public class CharVectorDirect implements CharVector {
         this.data = data;
     }
 
+    public static final CharVector ZERO_LEN_VECTOR = new CharVectorDirect();
+
     @Override
     public char get(long i) {
         if (i < 0 || i > data.length - 1) {

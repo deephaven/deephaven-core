@@ -8,7 +8,7 @@ def verifyAllProjectsRegistered = project.tasks.register('verifyAllProjectsRegis
     task.doLast {
         project.allprojects { Project p ->
             if (!ProjectType.isRegistered(p)) {
-                throw new IllegalStateException("Project '${project.name}' has not registered. Please apply the plugin 'io.deephaven.project.register'.")
+                throw new IllegalStateException("Project '${p.name}' has not registered. Please apply the plugin 'io.deephaven.project.register'.")
             }
         }
     }

@@ -68,11 +68,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    final public T get(long index) {
-        if (index < 0 || index > maxIndex) {
+    final public T get(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return null;
         }
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     final public T getUnsafe(long index) {
@@ -98,13 +98,13 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public T getPrev(long index) {
-        if (index < 0 || index > maxIndex) {
+    public T getPrev(long rowKey) {
+        if (rowKey < 0 || rowKey > maxIndex) {
             return null;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
-        if (shouldUsePrevious(index)) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
+        if (shouldUsePrevious(rowKey)) {
             return prevBlocks[blockIndex][indexWithinBlock];
         } else {
             return blocks[blockIndex][indexWithinBlock];

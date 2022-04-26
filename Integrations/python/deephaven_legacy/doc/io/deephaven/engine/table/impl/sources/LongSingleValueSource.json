@@ -3,8 +3,8 @@
  "methods": {
   "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data rowSequence\n:param rowSequence: (io.deephaven.engine.rowset.RowSequence) - An RowSequence representing the keys to be written",
   "fillFromChunkUnordered": "Fills the ChunkSink with data from the source, with data corresponding to the keys from the given key chunk.\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - The source of the data RowSequence\n:param keys: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - A LongChunk representing the keys to be written",
-  "getLong": ":param index: long\n:return: long",
-  "getPrevLong": ":param index: long\n:return: long",
+  "getLong": ":param rowKey: long\n:return: long",
+  "getPrevLong": ":param rowKey: long\n:return: long",
   "set": "*Overload 1*  \n  :param value: java.lang.Long\n  \n*Overload 2*  \n  :param value: long\n  \n*Overload 3*  \n  :param key: long\n  :param value: long"
  },
  "path": "io.deephaven.engine.table.impl.sources.LongSingleValueSource",

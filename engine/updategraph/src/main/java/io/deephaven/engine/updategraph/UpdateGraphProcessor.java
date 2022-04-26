@@ -134,7 +134,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     private long suppressedCycles = 0;
     private long suppressedCyclesTotalNanos = 0;
-    private long suppressedCyclesTotalSafePontTimeMillis = 0;
+    private long suppressedCyclesTotalSafePointTimeMillis = 0;
 
     /**
      * Accumulated UGP exclusive lock waits for the current cycle (or previous, if idle).
@@ -147,8 +147,70 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     /**
      * Accumulated delays due to intracycle sleeps for the current cycle (or previous, if idle).
      */
-
     private long currentCycleSleepTotalNanos = 0L;
+
+    public static class AccumulatedCycleStats {
+        /**
+         * Number of cycles run.
+         */
+        public int cycles = 0;
+        /**
+         * Number of cycles run not exceeding their time budget.
+         */
+        public int cyclesOnBudget = 0;
+        /**
+         * Accumulated safepoints over all cycles.
+         */
+        public int safePoints = 0;
+        /**
+         * Accumulated safepoint time over all cycles.
+         */
+        public long safePointPauseTimeMillis = 0L;
+
+        public int[] cycleTimesMicros = new int[32];
+        public static final int MAX_DOUBLING_LEN = 1024;
+
+        synchronized void accumulate(
+                final long targetCycleDurationMillis,
+                final long cycleTimeNanos,
+                final long safePoints,
+                final long safePointPauseTimeMillis) {
+            final boolean onBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
+            if (onBudget) {
+                ++cyclesOnBudget;
+            }
+            this.safePoints += safePoints;
+            this.safePointPauseTimeMillis += safePointPauseTimeMillis;
+            if (cycles >= cycleTimesMicros.length) {
+                final int newLen;
+                if (cycleTimesMicros.length < MAX_DOUBLING_LEN) {
+                    newLen = cycleTimesMicros.length * 2;
+                } else {
+                    newLen = cycleTimesMicros.length + MAX_DOUBLING_LEN;
+                }
+                cycleTimesMicros = Arrays.copyOf(cycleTimesMicros, newLen);
+            }
+            cycleTimesMicros[cycles] = (int) ((cycleTimeNanos + 500) / 1_000);
+            ++cycles;
+        }
+
+        public synchronized void take(final AccumulatedCycleStats out) {
+            out.cycles = cycles;
+            out.cyclesOnBudget = cyclesOnBudget;
+            out.safePoints = safePoints;
+            out.safePointPauseTimeMillis = safePointPauseTimeMillis;
+            if (out.cycleTimesMicros.length < cycleTimesMicros.length) {
+                out.cycleTimesMicros = new int[cycleTimesMicros.length];
+            }
+            System.arraycopy(cycleTimesMicros, 0, out.cycleTimesMicros, 0, cycles);
+            cycles = 0;
+            cyclesOnBudget = 0;
+            safePoints = 0;
+            safePointPauseTimeMillis = 0;
+        }
+    }
+
+    public final AccumulatedCycleStats accumulatedCycleStats = new AccumulatedCycleStats();
 
     /**
      * Abstracts away the processing of non-terminal notifications.
@@ -1503,7 +1565,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             }
             jvmIntrospectionContext.endSample();
             final long cycleTimeNanos = System.nanoTime() - startTimeNanos;
-            logCycle(cycleTimeNanos);
+            computeStatsAndLogCycle(cycleTimeNanos);
         }
 
         if (interCycleYield) {
@@ -1513,7 +1575,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         waitForNextCycle(startTime, sched);
     }
 
-    private void logCycle(final long cycleTimeNanos) {
+    private void computeStatsAndLogCycle(final long cycleTimeNanos) {
+        final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+        accumulatedCycleStats.accumulate(
+                getTargetCycleDurationMillis(),
+                cycleTimeNanos,
+                jvmIntrospectionContext.deltaSafePointPausesCount(),
+                safePointPauseTimeMillis);
         if (cycleTimeNanos >= minimumCycleDurationToLogNanos) {
             if (suppressedCycles > 0) {
                 logSuppressedCycles();
@@ -1522,7 +1590,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             LogEntry entry = log.info()
                     .append("Update Graph Processor cycleTime=").appendDouble(cycleTimeMillis, 3);
             if (jvmIntrospectionContext.hasSafePointData()) {
-                final long safePointPauseTimeMillis = jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
                 final long safePointSyncTimeMillis = jvmIntrospectionContext.deltaSafePointSyncTimeMillis();
                 entry = entry
                         .append("ms, safePointTime=")
@@ -1548,7 +1615,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         if (cycleTimeNanos > 0) {
             ++suppressedCycles;
             suppressedCyclesTotalNanos += cycleTimeNanos;
-            suppressedCyclesTotalSafePontTimeMillis += jvmIntrospectionContext.deltaSafePointPausesTimeMillis();
+            suppressedCyclesTotalSafePointTimeMillis += safePointPauseTimeMillis;
             if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
                 logSuppressedCycles();
             }
@@ -1566,12 +1633,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         if (jvmIntrospectionContext.hasSafePointData()) {
             entry = entry
                     .append(", safePointTime=")
-                    .append(suppressedCyclesTotalSafePontTimeMillis)
+                    .append(suppressedCyclesTotalSafePointTimeMillis)
                     .append("ms");
         }
         entry.endl();
         suppressedCycles = suppressedCyclesTotalNanos = 0;
-        suppressedCyclesTotalSafePontTimeMillis = 0;
+        suppressedCyclesTotalSafePointTimeMillis = 0;
     }
 
     /**

@@ -281,13 +281,13 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         @Override
-        public Boolean get(long index) {
-            return source.find(index) >= 0;
+        public Boolean get(long rowKey) {
+            return source.find(rowKey) >= 0;
         }
 
         @Override
-        public Boolean getPrev(long index) {
-            return source.findPrev(index) >= 0;
+        public Boolean getPrev(long rowKey) {
+            return source.findPrev(rowKey) >= 0;
         }
 
         @Override

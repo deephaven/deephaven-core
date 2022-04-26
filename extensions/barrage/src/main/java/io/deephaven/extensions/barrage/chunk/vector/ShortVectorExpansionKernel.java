@@ -24,8 +24,9 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 import io.deephaven.vector.Vector;
 
+import static io.deephaven.vector.ShortVectorDirect.ZERO_LEN_VECTOR;
+
 public class ShortVectorExpansionKernel implements VectorExpansionKernel {
-    private final static ShortVector ZERO_LEN_VECTOR = new ShortVectorDirect();
     public final static ShortVectorExpansionKernel INSTANCE = new ShortVectorExpansionKernel();
 
     @Override

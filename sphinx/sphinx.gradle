@@ -8,10 +8,16 @@ plugins {
 description = 'Generates docs for the python libraries provided in Deephaven Core'
 
 evaluationDependsOn ':docker-server'
-evaluationDependsOn ':pyclient'
+
+configurations {
+    pythonWheel
+}
+dependencies {
+    pythonWheel project(':py-client')
+}
 
 def copyPyClientWhl = tasks.register('copyPyClientWhl', Sync) {
-    from project(':pyclient').tasks.named('buildPyClient').get().outputs.files
+    from configurations.pythonWheel
     into layout.buildDirectory.file('sphinx-image/wheel/')
 }
 
@@ -28,7 +34,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     copyFile "./wheel", "/wheel"
     copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
 
-    environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server-${project.version}/lib/*:/opt/deephaven/server-${project.version}/lib/"
+    environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*.jar"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'
     environmentVariable 'DEEPHAVEN_DEVROOT', '/tmp/devroot'
     environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
@@ -126,8 +132,8 @@ project.tasks.named('pythonDocsPrepareDocker').configure {
 }
 
 makePyDocTask('pydeephavenDocs', 'pydeephaven', [
-        ("$rootDir/pyclient/docs/source".toString()):'source',
-        ("$rootDir/pyclient/pydeephaven".toString()):'pydeephaven'
+        ("$rootDir/py/client/docs/source".toString()):'source',
+        ("$rootDir/py/client/pydeephaven".toString()):'pydeephaven'
 ], "$buildDir/pyclient-docs")
 
 

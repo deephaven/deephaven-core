@@ -340,13 +340,8 @@ public class ColumnsToRowsTransform {
         }
 
         @Override
-        public String get(final long index) {
-            return getLabel(index);
-        }
-
-        @Override
-        public String getPrev(final long elementIndex) {
-            return getLabel(elementIndex);
+        public String get(final long rowKey) {
+            return getLabel(rowKey);
         }
 
         private String getLabel(final long index) {
@@ -390,130 +385,130 @@ public class ColumnsToRowsTransform {
         }
 
         @Override
-        public T get(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public T get(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             // noinspection unchecked
             return (T) transposeColumns[sourceColumn].get(sourceIndex);
         }
 
         @Override
-        public Boolean getBoolean(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public Boolean getBoolean(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getBoolean(sourceIndex);
         }
 
         @Override
-        public byte getByte(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public byte getByte(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getByte(sourceIndex);
         }
 
         @Override
-        public char getChar(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public char getChar(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getChar(sourceIndex);
         }
 
         @Override
-        public double getDouble(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public double getDouble(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getDouble(sourceIndex);
         }
 
         @Override
-        public float getFloat(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public float getFloat(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getFloat(sourceIndex);
         }
 
         @Override
-        public int getInt(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public int getInt(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getInt(sourceIndex);
         }
 
         @Override
-        public long getLong(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public long getLong(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getLong(sourceIndex);
         }
 
         @Override
-        public short getShort(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public short getShort(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getShort(sourceIndex);
         }
 
         @Override
-        public T getPrev(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public T getPrev(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             // noinspection unchecked
             return (T) transposeColumns[sourceColumn].getPrev(sourceIndex);
         }
 
         @Override
-        public Boolean getPrevBoolean(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public Boolean getPrevBoolean(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevBoolean(sourceIndex);
         }
 
         @Override
-        public byte getPrevByte(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public byte getPrevByte(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevByte(sourceIndex);
         }
 
         @Override
-        public char getPrevChar(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public char getPrevChar(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevChar(sourceIndex);
         }
 
         @Override
-        public double getPrevDouble(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public double getPrevDouble(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevDouble(sourceIndex);
         }
 
         @Override
-        public float getPrevFloat(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public float getPrevFloat(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevFloat(sourceIndex);
         }
 
         @Override
-        public int getPrevInt(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public int getPrevInt(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevInt(sourceIndex);
         }
 
         @Override
-        public long getPrevLong(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public long getPrevLong(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevLong(sourceIndex);
         }
 
         @Override
-        public short getPrevShort(final long index) {
-            final int sourceColumn = (int) (index & mask);
-            final long sourceIndex = index >> bits;
+        public short getPrevShort(final long rowKey) {
+            final int sourceColumn = (int) (rowKey & mask);
+            final long sourceIndex = rowKey >> bits;
             return transposeColumns[sourceColumn].getPrevShort(sourceIndex);
         }
 

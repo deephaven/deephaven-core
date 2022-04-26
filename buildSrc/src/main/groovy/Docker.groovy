@@ -249,9 +249,13 @@ class Docker {
             sync.into dockerWorkspaceContents
 
             if (cfg.dockerfileFile) {
-                sync.from cfg.dockerfileFile
+                sync.from(cfg.dockerfileFile) { CopySpec dockerfileCopy ->
+                    dockerfileCopy.include(cfg.dockerfileFile.name)
+                }
             } else if (cfg.dockerfileAction) {
-                sync.from dockerfileTask.get().outputs.files
+                sync.from(dockerfileTask.get().outputs.files) { CopySpec dockerfileCopy ->
+                    dockerfileCopy.include('Dockerfile')
+                }
             }
         }
 
@@ -403,6 +407,25 @@ class Docker {
                     // we must manually delete this first, since docker cp will error if trying to overwrite
                     project.delete(dockerCopyLocation)
                 }
+                doLast {
+                    if (cfg.entrypoint && containerFinished.get().exitCode != 0) {
+                        // The entrypoing existed and failed. Since we rely on the Sync task (right after this one,
+                        // returned from this method) to communicate that failure, we need to create some noop file
+                        // if no other file was copied.
+
+                        // since we rely on the Sync task to communicate failure (as it is returned), we need to
+                        // make some noop file if no other files were copied
+                        def copyLoc = new File(dockerCopyLocation)
+                        if (!copyLoc.exists() || copyLoc.list().length == 0) {
+                            copyLoc.mkdirs()
+                            // make a new file, ensure it is always fresh
+                            def nonce = new File(copyLoc, 'no-contents.txt')
+                            nonce.createNewFile()
+                            nonce.write("Empty marker file, since no output was copied from the entrypoint's failure (${new Date()})")
+                        }
+
+                    }
+                }
             }
         }
 
@@ -511,6 +534,7 @@ class Docker {
         return registerDockerTask(project, taskName) { DockerTaskConfig config ->
             config.copyIn { Sync sync ->
                 sync.from(sourcePath) { CopySpec copySpec ->
+                    copySpec.exclude 'build', 'dist'
                     copySpec.into 'src'
                 }
             }

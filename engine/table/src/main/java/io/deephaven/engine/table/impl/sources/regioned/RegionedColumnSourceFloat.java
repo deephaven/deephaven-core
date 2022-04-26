@@ -29,8 +29,8 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
     }
 
     @Override
-    public float getFloat(final long elementIndex) {
-        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getFloat(elementIndex);
+    public float getFloat(final long rowKey) {
+        return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getFloat(rowKey);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionFloat<Values>> {
@@ -66,8 +66,8 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         }
 
         @Override
-        public float getFloat(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getFloat(elementIndex);
+        public float getFloat(final long rowKey) {
+            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getFloat(rowKey);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

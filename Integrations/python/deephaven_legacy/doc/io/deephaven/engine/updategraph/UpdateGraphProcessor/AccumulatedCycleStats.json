@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateGraphProcessor$AccumulatedCycleStats",
+ "methods": {
+  "take": ":param out: io.deephaven.engine.updategraph.UpdateGraphProcessor.AccumulatedCycleStats"
+ },
+ "path": "io.deephaven.engine.updategraph.UpdateGraphProcessor.AccumulatedCycleStats",
+ "typeName": "class"
+}

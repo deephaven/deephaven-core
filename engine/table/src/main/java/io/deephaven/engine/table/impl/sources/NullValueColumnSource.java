@@ -69,92 +69,92 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     }
 
     @Override
-    public T get(long index) {
+    public T get(long rowKey) {
         return null;
     }
 
     @Override
-    public Boolean getBoolean(long index) {
+    public Boolean getBoolean(long rowKey) {
         return null;
     }
 
     @Override
-    public byte getByte(long index) {
+    public byte getByte(long rowKey) {
         return QueryConstants.NULL_BYTE;
     }
 
     @Override
-    public char getChar(long index) {
+    public char getChar(long rowKey) {
         return QueryConstants.NULL_CHAR;
     }
 
     @Override
-    public double getDouble(long index) {
+    public double getDouble(long rowKey) {
         return QueryConstants.NULL_DOUBLE;
     }
 
     @Override
-    public float getFloat(long index) {
+    public float getFloat(long rowKey) {
         return QueryConstants.NULL_FLOAT;
     }
 
     @Override
-    public int getInt(long index) {
+    public int getInt(long rowKey) {
         return QueryConstants.NULL_INT;
     }
 
     @Override
-    public long getLong(long index) {
+    public long getLong(long rowKey) {
         return QueryConstants.NULL_LONG;
     }
 
     @Override
-    public short getShort(long index) {
+    public short getShort(long rowKey) {
         return QueryConstants.NULL_SHORT;
     }
 
     @Override
-    public T getPrev(long index) {
+    public T getPrev(long rowKey) {
         return null;
     }
 
     @Override
-    public Boolean getPrevBoolean(long index) {
+    public Boolean getPrevBoolean(long rowKey) {
         return null;
     }
 
     @Override
-    public byte getPrevByte(long index) {
+    public byte getPrevByte(long rowKey) {
         return QueryConstants.NULL_BYTE;
     }
 
     @Override
-    public char getPrevChar(long index) {
+    public char getPrevChar(long rowKey) {
         return QueryConstants.NULL_CHAR;
     }
 
     @Override
-    public double getPrevDouble(long index) {
+    public double getPrevDouble(long rowKey) {
         return QueryConstants.NULL_DOUBLE;
     }
 
     @Override
-    public float getPrevFloat(long index) {
+    public float getPrevFloat(long rowKey) {
         return QueryConstants.NULL_FLOAT;
     }
 
     @Override
-    public int getPrevInt(long index) {
+    public int getPrevInt(long rowKey) {
         return QueryConstants.NULL_INT;
     }
 
     @Override
-    public long getPrevLong(long index) {
+    public long getPrevLong(long rowKey) {
         return QueryConstants.NULL_LONG;
     }
 
     @Override
-    public short getPrevShort(long index) {
+    public short getPrevShort(long rowKey) {
         return QueryConstants.NULL_SHORT;
     }
 

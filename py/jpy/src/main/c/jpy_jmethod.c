@@ -47,8 +47,8 @@ JPy_JMethod* JMethod_New(JPy_JType* declaringClass,
     method->isVarArgs = isVarArgs;
     method->mid = mid;
 
-    Py_INCREF(declaringClass);
-    Py_INCREF(method->name);
+    JPy_INCREF(declaringClass);
+    JPy_INCREF(method->name);
 
     return method;
 }
@@ -61,16 +61,16 @@ void JMethod_dealloc(JPy_JMethod* self)
 {
     JNIEnv* jenv;
 
-    Py_DECREF(self->declaringClass);
-    Py_DECREF(self->name);
+    JPy_DECREF(self->declaringClass);
+    JPy_DECREF(self->name);
 
     jenv = JPy_GetJNIEnv();
     if (jenv != NULL) {
         int i;
         for (i = 0; i < self->paramCount; i++) {
-            Py_DECREF((self->paramDescriptors + i)->type);
+            JPy_DECREF((self->paramDescriptors + i)->type);
         }
-        Py_DECREF((self->returnDescriptor + i)->type);
+        JPy_DECREF((self->returnDescriptor + i)->type);
     }
 
     PyMem_Del(self->paramDescriptors);
@@ -231,7 +231,7 @@ PyObject* JMethod_FromJObject(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyArg
         //printf("JMethod_FromJObject: paramIndex=%d, jArg=%p, isNone=%d\n", paramIndex, jArg, pyReturnArg == Py_None);
         if ((JObj_Check(pyReturnArg) || PyObject_CheckBuffer(pyReturnArg))
             && (*jenv)->IsSameObject(jenv, jReturnValue, jArg)) {
-             Py_INCREF(pyReturnArg);
+             JPy_INCREF(pyReturnArg);
              return pyReturnArg;
         }
     }
@@ -307,12 +307,12 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
             jstring v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
             jobject v = (*jenv)->CallStaticObjectMethodA(jenv, classRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 0, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
 
     } else {
@@ -365,12 +365,12 @@ PyObject* JMethod_InvokeMethod(JNIEnv* jenv, JPy_JMethod* method, PyObject* pyAr
             jstring v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JPy_FromJString(jenv, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         } else {
             jobject v = (*jenv)->CallObjectMethodA(jenv, objectRef, method->mid, jArgs);
             JPy_ON_JAVA_EXCEPTION_GOTO(error);
             returnValue = JMethod_FromJObject(jenv, method, pyArgs, jArgs, 1, returnType, v);
-            (*jenv)->DeleteLocalRef(jenv, v);
+            JPy_DELETE_LOCAL_REF(v);
         }
     }
 
@@ -507,7 +507,7 @@ PyObject* JMethod_repr(JPy_JMethod* self)
 
 PyObject* JMethod_str(JPy_JMethod* self)
 {
-    Py_INCREF(self->name);
+    JPy_INCREF(self->name);
     return self->name;
 }
 
@@ -536,7 +536,7 @@ PyObject* JMethod_get_param_type(JPy_JMethod* self, PyObject* args)
     }
     JMethod_CHECK_PARAMETER_INDEX(self, index);
     type = (PyObject*) self->paramDescriptors[index].type;
-    Py_INCREF(type);
+    JPy_INCREF(type);
     return type;
 }
 
@@ -868,9 +868,9 @@ JPy_JOverloadedMethod* JOverloadedMethod_New(JPy_JType* declaringClass, PyObject
     overloadedMethod->name = name;
     overloadedMethod->methodList = PyList_New(0);
 
-    Py_INCREF((PyObject*) overloadedMethod->declaringClass);
-    Py_INCREF((PyObject*) overloadedMethod->name);
-    Py_INCREF((PyObject*) overloadedMethod);
+    JPy_INCREF((PyObject*) overloadedMethod->declaringClass);
+    JPy_INCREF((PyObject*) overloadedMethod->name);
+    JPy_INCREF((PyObject*) overloadedMethod);
 
     JOverloadedMethod_AddMethod(overloadedMethod, method);
 
@@ -907,9 +907,9 @@ int JOverloadedMethod_AddMethod(JPy_JOverloadedMethod* overloadedMethod, JPy_JMe
  */
 void JOverloadedMethod_dealloc(JPy_JOverloadedMethod* self)
 {
-    Py_DECREF((PyObject*) self->declaringClass);
-    Py_DECREF((PyObject*) self->name);
-    Py_DECREF((PyObject*) self->methodList);
+    JPy_DECREF((PyObject*) self->declaringClass);
+    JPy_DECREF((PyObject*) self->name);
+    JPy_DECREF((PyObject*) self->methodList);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
@@ -962,7 +962,7 @@ static PyMemberDef JOverloadedMethod_members[] =
  */
 PyObject* JOverloadedMethod_str(JPy_JOverloadedMethod* self)
 {
-    Py_INCREF(self->name);
+    JPy_INCREF(self->name);
     return self->name;
 }
 

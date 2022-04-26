@@ -55,92 +55,92 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
     }
 
     @Override
-    public Object get(final long k) {
-        return getHandler.apply(k, false);
+    public Object get(final long rowKey) {
+        return getHandler.apply(rowKey, false);
     }
 
     @Override
-    public Object getPrev(final long k) {
-        return getHandler.apply(k, true);
+    public Object getPrev(final long rowKey) {
+        return getHandler.apply(rowKey, true);
     }
 
     @Override
-    public Boolean getBoolean(final long k) {
-        return handleGetBoolean(k, false);
+    public Boolean getBoolean(final long rowKey) {
+        return handleGetBoolean(rowKey, false);
     }
 
     @Override
-    public byte getByte(final long k) {
-        return handleGetByte(k, false);
+    public byte getByte(final long rowKey) {
+        return handleGetByte(rowKey, false);
     }
 
     @Override
-    public char getChar(final long k) {
-        return handleGetChar(k, false);
+    public char getChar(final long rowKey) {
+        return handleGetChar(rowKey, false);
     }
 
     @Override
-    public double getDouble(final long k) {
-        return handleGetDouble(k, false);
+    public double getDouble(final long rowKey) {
+        return handleGetDouble(rowKey, false);
     }
 
     @Override
-    public float getFloat(final long k) {
-        return handleGetFloat(k, false);
+    public float getFloat(final long rowKey) {
+        return handleGetFloat(rowKey, false);
     }
 
     @Override
-    public int getInt(final long k) {
-        return handleGetInt(k, false);
+    public int getInt(final long rowKey) {
+        return handleGetInt(rowKey, false);
     }
 
-    public long getLong(final long k) {
-        return handleGetLong(k, false);
-    }
-
-    @Override
-    public short getShort(final long k) {
-        return handleGetShort(k, false);
+    public long getLong(final long rowKey) {
+        return handleGetLong(rowKey, false);
     }
 
     @Override
-    public Boolean getPrevBoolean(final long k) {
-        return handleGetBoolean(k, true);
+    public short getShort(final long rowKey) {
+        return handleGetShort(rowKey, false);
     }
 
     @Override
-    public byte getPrevByte(final long k) {
-        return handleGetByte(k, true);
+    public Boolean getPrevBoolean(final long rowKey) {
+        return handleGetBoolean(rowKey, true);
     }
 
     @Override
-    public char getPrevChar(final long k) {
-        return handleGetChar(k, true);
+    public byte getPrevByte(final long rowKey) {
+        return handleGetByte(rowKey, true);
     }
 
     @Override
-    public double getPrevDouble(final long k) {
-        return handleGetDouble(k, true);
+    public char getPrevChar(final long rowKey) {
+        return handleGetChar(rowKey, true);
     }
 
     @Override
-    public float getPrevFloat(final long k) {
-        return handleGetFloat(k, true);
+    public double getPrevDouble(final long rowKey) {
+        return handleGetDouble(rowKey, true);
     }
 
     @Override
-    public int getPrevInt(final long k) {
-        return handleGetInt(k, true);
+    public float getPrevFloat(final long rowKey) {
+        return handleGetFloat(rowKey, true);
     }
 
     @Override
-    public long getPrevLong(final long k) {
-        return handleGetLong(k, true);
+    public int getPrevInt(final long rowKey) {
+        return handleGetInt(rowKey, true);
     }
 
     @Override
-    public short getPrevShort(final long k) {
-        return handleGetShort(k, true);
+    public long getPrevLong(final long rowKey) {
+        return handleGetLong(rowKey, true);
+    }
+
+    @Override
+    public short getPrevShort(final long rowKey) {
+        return handleGetShort(rowKey, true);
     }
 
     private Object handleGetObject(final long k, boolean usePrev) {

@@ -63,12 +63,12 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     // endregion allocateArray
 
     @Override
-    public final T get(long index) {
-        if (index < 0 || index >= data.length) {
+    public final T get(long rowKey) {
+        if (rowKey < 0 || rowKey >= data.length) {
             return null;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     public final T getUnsafe(long index) {

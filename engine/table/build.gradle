@@ -28,7 +28,8 @@ dependencies {
             project(':engine-stringset'),
             project(':engine-base'),
             project(':deephaven-jpy'),
-            project(':deephaven-jpy-ext')
+            project(':deephaven-jpy-ext'),
+            project(':hotspot')
 
     implementation project(':CompilerTools'),
             project(':DHProcess'),
@@ -58,6 +59,7 @@ dependencies {
             TestTools.projectDependency(project, 'Util'),
             TestTools.projectDependency(project, 'engine-chunk'),
             TestTools.projectDependency(project, 'engine-rowset'),
+            project(':Base'),
             project(':BenchmarkSupport'),
             project(':extensions-csv'),
             project(':extensions-parquet-table'),

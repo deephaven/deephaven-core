@@ -24,7 +24,7 @@ public class GeneratePyV2FigureAPI {
     private static final String INDENT = "    ";
     private static final String JCLASS = "io.deephaven.plot.Figure";
     private static final String PYPREAMBLE = "/Generators/src/main/java/io/deephaven/pythonPreambles/plotV2.py";
-    private static final String PYMODUlE = "/pyintegration/deephaven/plot/figure.py";
+    private static final String PYMODUlE = "/py/server/deephaven/plot/figure.py";
     private static String figureWrapperPreamble;
     private static String devroot;
     private static boolean assertNoChange;
@@ -1013,7 +1013,7 @@ public class GeneratePyV2FigureAPI {
         rst.put("nbins", new PyArg(22, "nbins", taInt, "number of bins", null));
         rst.put("multiSeriesKey", new PyArg(23, "multi_series_key", taMultiSeriesKey,
                 "multi-series keys or a column name containing keys.", null));
-        rst.put("byColumns", new PyArg(24, "by", taStrs, "columns that hold grouping data", null));
+        rst.put("byColumns", new PyArg(24, "by", taStrs, "columns that hold grouping data", "_no_convert_j"));
         rst.put("hasXTimeAxis", new PyArg(25, "x_time_axis", taBool, "whether to treat the x-values as times", null));
         rst.put("hasYTimeAxis", new PyArg(26, "y_time_axis", taBool, "whether to treat the y-values as times", null));
         rst.put("path", new PyArg(27, "path", taStr, "output path.", null));

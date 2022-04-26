@@ -13,7 +13,7 @@ public class DictTest extends PythonTest {
     @Before
     public void setUp() {
         builtins = BuiltinsModule.create();
-        ref = ReferenceCounting.create();
+        ref = ReferenceCounting.create(getCreateModule());
     }
 
     @After

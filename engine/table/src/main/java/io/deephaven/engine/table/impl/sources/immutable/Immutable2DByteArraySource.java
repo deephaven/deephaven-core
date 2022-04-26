@@ -78,12 +78,12 @@ public class Immutable2DByteArraySource extends AbstractDeferredGroupingColumnSo
     // endregion allocateArray
 
     @Override
-    public final byte getByte(long index) {
-        if (index < 0 || index >= size) {
+    public final byte getByte(long rowKey) {
+        if (rowKey < 0 || rowKey >= size) {
             return NULL_BYTE;
         }
 
-        return getUnsafe(index);
+        return getUnsafe(rowKey);
     }
 
     private int keyToSegment(long index) {

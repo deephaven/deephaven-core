@@ -28,6 +28,8 @@ public class IntVectorDirect implements IntVector {
         this.data = data;
     }
 
+    public static final IntVector ZERO_LEN_VECTOR = new IntVectorDirect();
+
     @Override
     public int get(long i) {
         if (i < 0 || i > data.length - 1) {

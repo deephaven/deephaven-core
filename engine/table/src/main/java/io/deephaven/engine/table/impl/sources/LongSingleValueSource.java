@@ -76,12 +76,12 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     }
 
     @Override
-    public final long getLong(long index) {
+    public final long getLong(long rowKey) {
         return current;
     }
 
     @Override
-    public final long getPrevLong(long index) {
+    public final long getPrevLong(long rowKey) {
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }
