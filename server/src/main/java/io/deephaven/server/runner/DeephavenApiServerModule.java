@@ -4,7 +4,9 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.appmode.AppMode;
@@ -29,8 +31,10 @@ import io.grpc.ServerInterceptor;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -75,6 +79,16 @@ public class DeephavenApiServerModule {
     @Singleton
     public static AppMode provideAppMode() {
         return AppMode.currentMode();
+    }
+
+    @Provides
+    @Singleton
+    public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
+        String scriptSessionType = Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
+        if (!scriptTypes.containsKey(scriptSessionType)) {
+            throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
+        }
+        return scriptTypes.get(scriptSessionType).get();
     }
 
     @Provides

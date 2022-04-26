@@ -3,12 +3,13 @@ package io.deephaven.server.appmode;
 import io.deephaven.appmode.ApplicationConfig;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.server.console.GlobalSessionProvider;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -21,17 +22,17 @@ public class ApplicationInjector {
     private static final Logger log = LoggerFactory.getLogger(ApplicationInjector.class);
 
     private final AppMode appMode;
-    private final GlobalSessionProvider globalSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
     private final ApplicationTicketResolver ticketResolver;
     private final ApplicationState.Listener applicationListener;
 
     @Inject
     public ApplicationInjector(final AppMode appMode,
-            final GlobalSessionProvider globalSessionProvider,
+            final Provider<ScriptSession> scriptSessionProvider,
             final ApplicationTicketResolver ticketResolver,
             final ApplicationState.Listener applicationListener) {
         this.appMode = appMode;
-        this.globalSessionProvider = Objects.requireNonNull(globalSessionProvider);
+        this.scriptSessionProvider = Objects.requireNonNull(scriptSessionProvider);
         this.ticketResolver = ticketResolver;
         this.applicationListener = applicationListener;
     }
@@ -74,7 +75,7 @@ public class ApplicationInjector {
         log.info().append("Starting application '").append(config.toString()).append('\'').endl();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final ApplicationState app = ApplicationFactory.create(applicationDir, config,
-                    globalSessionProvider.getGlobalSession(), applicationListener);
+                    scriptSessionProvider.get(), applicationListener);
 
             int numExports = app.listFields().size();
             log.info().append("\tfound ").append(numExports).append(" exports").endl();
