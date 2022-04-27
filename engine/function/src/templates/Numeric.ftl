@@ -2115,48 +2115,48 @@ public class Numeric {
     }
 
     /**
-     * Returns {@code true} if the value is normal, where "normal" is defined as not infinite, not NaN, and not null.
+     * Returns {@code true} if the value is fine, where "finite" is defined as not infinite, not NaN, and not null.
      *
      * @param value value.
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
      */
-    static public boolean isNormal(${pt.boxed} value) {
-        return isNormal(castDouble(value));
+    static public boolean isFinite(${pt.boxed} value) {
+        return isFinite(castDouble(value));
     }
 
     /**
-     * Returns {@code true} if the value is normal, where "normal" is defined as not infinite, not NaN, and not null.
+     * Returns {@code true} if the value is finite, where "finite" is defined as not infinite, not NaN, and not null.
      *
      * @param value value.
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
      */
-    static public boolean isNormal(${pt.primitive} value) {
+    static public boolean isFinite(${pt.primitive} value) {
         return !${pt.boxed}.isInfinite(value) && !${pt.boxed}.isNaN(value) && !isNull(value);
     }
 
     /**
-     * Returns {@code true} if the values contains any non-normal value, where "normal" is defined as
+     * Returns {@code true} if the values contains any non-finite value, where "finite" is defined as
      * not infinite, not NaN, and not null.
      *
      * @param values values.
-     * @return {@code true} if any value is not {@link #isNormal(${pt.primitive}) normal}; {@code false} otherwise.
-     * @see #isNormal(${pt.primitive})
+     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) finite}; {@code false} otherwise.
+     * @see #isFinite(${pt.primitive})
      */
-    static public boolean containsNonNormal(${pt.boxed}[] values) {
-        return containsNonNormal(unbox(values));
+    static public boolean containsNonFinite(${pt.boxed}[] values) {
+        return containsNonFinite(unbox(values));
     }
 
     /**
-     * Returns {@code true} if the values contains any non-normal value, where "normal" is defined as
+     * Returns {@code true} if the values contains any non-finite value, where "finite" is defined as
      * not infinite, not NaN, and not null.
      *
      * @param values values.
-     * @return {@code true} if any value is not {@link #isNormal(${pt.primitive}) normal}; {@code false} otherwise.
-     * @see #isNormal(${pt.primitive})
+     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) normal}; {@code false} otherwise.
+     * @see #isFinite(${pt.primitive})
      */
-    static public boolean containsNonNormal(${pt.primitive}... values) {
+    static public boolean containsNonFinite(${pt.primitive}... values) {
         for (${pt.primitive} v1 : values) {
-            if (!isNormal(v1)) {
+            if (!isFinite(v1)) {
                 return true;
             }
         }
@@ -2252,6 +2252,46 @@ public class Numeric {
         return result;
     }
 
+    /**
+     * Replaces values that are not finite according to Deephaven convention with a specified value.
+     *
+     * @param value value.
+     * @param replacement replacement to use when value is not finite according to Deephaven convention.
+     * @return value, if value is finite according to Deephaven convention, replacement otherwise.
+     */
+    static public ${pt.primitive} replaceIfNonFinite(${pt.primitive} value, ${pt.primitive} replacement) {
+        return isFinite(value) ? value : replacement;
+    }
+
+    /**
+     * Replaces values that are not finite according to Deephaven convention with a specified value.
+     *
+     * @param values the values.
+     * @param replacement replacement to use when value is not finite according to Deephaven convention.
+     * @return array containing value, if value is finite according to Deephaven convention, replacement otherwise.
+     */
+    static public ${pt.primitive}[] replaceIfNonFinite(${pt.primitive}[] values, ${pt.primitive} replacement) {
+        return replaceIfNonFinite(new ${pt.dbArrayDirect}(values), replacement);
+    }
+
+    /**
+     * Replaces values that are not finite according to Deephaven convention with a specified value.
+     *
+     * @param values the values.
+     * @param replacement replacement to use when value is not finite according to Deephaven convention.
+     * @return array containing value, if value is finite according to Deephaven convention, replacement otherwise.
+     */
+    static public ${pt.primitive}[] replaceIfNonFinite(${pt.dbArray} values, ${pt.primitive} replacement) {
+        final int n = values.intSize("replaceIfNonFinite");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        for (int i = 0; i < n; i++) {
+            result[i] = replaceIfNonFinite(values.get(i), replacement);
+        }
+
+        return result;
+    }
+
     <#else>
 
     /**
@@ -2295,34 +2335,34 @@ public class Numeric {
     }
 
     /**
-     * Returns {@code true} if the value is normal, where "normal" is defined as not infinite, not NaN, and not null.
+     * Returns {@code true} if the value is finite, where "finite" is defined as not infinite, not NaN, and not null.
      *
      * @param value value.
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
      */
-    static public boolean isNormal(${pt.boxed} value) {
+    static public boolean isFinite(${pt.boxed} value) {
         return !isNull(value);
     }
 
     /**
-     * Returns {@code true} if the value is normal, where "normal" is defined as not infinite, not NaN, and not null.
+     * Returns {@code true} if the value is finite, where "finite" is defined as not infinite, not NaN, and not null.
      *
      * @param value value.
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
      */
-    static public boolean isNormal(${pt.primitive} value) {
+    static public boolean isFinite(${pt.primitive} value) {
         return !isNull(value);
     }
 
     /**
-     * Returns {@code true} if the values contains any non-normal value, where "normal" is defined as
+     * Returns {@code true} if the values contains any non-finite value, where "finite" is defined as
      * not infinite, not NaN, and not null.
      *
      * @param values values.
-     * @return {@code true} if any value is not {@link #isNormal(${pt.primitive}) normal}; {@code false} otherwise.
-     * @see #isNormal(${pt.primitive})
+     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) finite}; {@code false} otherwise.
+     * @see #isFinite(${pt.primitive})
      */
-    static public boolean containsNonNormal(${pt.boxed}[] values) {
+    static public boolean containsNonFinite(${pt.boxed}[] values) {
         for (${pt.boxed} v1 : values) {
             if (isNull(v1)) {
                 return true;
@@ -2333,14 +2373,14 @@ public class Numeric {
     }
 
     /**
-     * Returns {@code true} if the values contains any non-normal value, where "normal" is defined as
+     * Returns {@code true} if the values contains any non-finite value, where "finite" is defined as
      * not infinite, not NaN, and not null.
      *
      * @param values values.
-     * @return {@code true} if any value is not {@link #isNormal(${pt.primitive}) normal}; {@code false} otherwise.
-     * @see #isNormal(${pt.primitive})
+     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) finite}; {@code false} otherwise.
+     * @see #isFinite(${pt.primitive})
      */
-    static public boolean containsNonNormal(${pt.primitive}... values) {
+    static public boolean containsNonFinite(${pt.primitive}... values) {
         for (${pt.primitive} v1 : values) {
             if (isNull(v1)) {
                 return true;

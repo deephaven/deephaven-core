@@ -986,7 +986,7 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}IsNan(){
         assertTrue(isNaN(${pt.boxed}.NaN));
-        assertFalse(isNan((${pt.boxed})null);
+        assertFalse(isNaN((${pt.boxed})null));
         assertFalse(isNaN((${pt.primitive})3.0));
     }
 
@@ -997,37 +997,37 @@ public class TestNumeric extends BaseArrayTestCase {
         assertFalse(isInf((${pt.primitive})3.0));
     }
 
-    public void test${pt.boxed}IsNormal() {
-        assertTrue(isNormal((${pt.primitive})0));
-        assertTrue(isNormal((${pt.primitive})1));
-        assertTrue(isNormal((${pt.primitive})-1));
-        assertFalse(isNormal(${pt.boxed}.POSITIVE_INFINITY));
-        assertFalse(isNormal(${pt.boxed}.NEGATIVE_INFINITY));
-        assertFalse(isNormal(${pt.boxed}.NaN));
-        assertFalse(isNormal(${pt.null}));
+    public void test${pt.boxed}IsFinite() {
+        assertTrue(isFinite((${pt.primitive})0));
+        assertTrue(isFinite((${pt.primitive})1));
+        assertTrue(isFinite((${pt.primitive})-1));
+        assertFalse(isFinite(${pt.boxed}.POSITIVE_INFINITY));
+        assertFalse(isFinite(${pt.boxed}.NEGATIVE_INFINITY));
+        assertFalse(isFinite(${pt.boxed}.NaN));
+        assertFalse(isFinite(${pt.null}));
     }
 
-    public void test${pt.boxed}ContainsNonNormal() {
-        assertFalse(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0));
-        assertFalse(containsNonNormal((${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1));
-        assertTrue(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY));
-        assertTrue(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY));
-        assertTrue(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN));
-        assertTrue(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, ${pt.null}));
+    public void test${pt.boxed}ContainsNonFinite() {
+        assertFalse(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0));
+        assertFalse(containsNonFinite((${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1));
+        assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY));
+        assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY));
+        assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN));
+        assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.null}));
 
-        assertFalse(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
-        assertFalse(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
-        assertTrue(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY}));
-        assertTrue(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY}));
-        assertTrue(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN}));
-        assertTrue(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
+        assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+        assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+        assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY}));
+        assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN}));
+        assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
 
-        assertFalse(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
-        assertFalse(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
-        assertTrue(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY}));
-        assertTrue(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY}));
-        assertTrue(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN}));
-        assertTrue(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
+        assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+        assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+        assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.POSITIVE_INFINITY}));
+        assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.boxed}.NaN}));
+        assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
     }
 
     public void test${pt.boxed}ReplaceIfNaNScalar() {
@@ -1052,6 +1052,20 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNullNaN(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}, (${pt.primitive}) 7));
     }
 
+    public void test${pt.boxed}ReplaceIfNonFiniteScalar() {
+        assertEquals((${pt.primitive}) 3, replaceIfNonFinite((${pt.primitive}) 3, (${pt.primitive}) 7));
+        assertEquals((${pt.primitive}) 7, replaceIfNonFinite(${pt.boxed}.NaN, (${pt.primitive}) 7));
+        assertEquals((${pt.primitive}) 7, replaceIfNonFinite(${pt.boxed}.POSITIVE_INFINITY, (${pt.primitive}) 7));
+        assertEquals((${pt.primitive}) 7, replaceIfNonFinite(${pt.null}, (${pt.primitive}) 7));
+    }
+
+    public void test${pt.boxed}ReplaceIfNonFiniteArray() {
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNonFinite(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.boxed}.NaN, (${pt.primitive}) 11}), (${pt.primitive}) 7));
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNonFinite(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.boxed}.NaN, (${pt.primitive}) 11}, (${pt.primitive}) 7));
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNonFinite(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.boxed}.POSITIVE_INFINITY, (${pt.primitive}) 11}, (${pt.primitive}) 7));
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNonFinite(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}, (${pt.primitive}) 7));
+    }
+
     <#else>
 
     public void test${pt.boxed}IsNan(){
@@ -1064,30 +1078,30 @@ public class TestNumeric extends BaseArrayTestCase {
         assertFalse(isInf(new ${pt.boxed}((${pt.primitive})3.0)));
     }
 
-    public void test${pt.boxed}IsNormal() {
-        assertTrue(isNormal((${pt.primitive})0));
-        assertTrue(isNormal((${pt.primitive})1));
-        assertTrue(isNormal((${pt.primitive})-1));
-        assertFalse(isNormal(${pt.null}));
+    public void test${pt.boxed}IsFinite() {
+        assertTrue(isFinite((${pt.primitive})0));
+        assertTrue(isFinite((${pt.primitive})1));
+        assertTrue(isFinite((${pt.primitive})-1));
+        assertFalse(isFinite(${pt.null}));
 
-        assertTrue(isNormal(new ${pt.boxed}((${pt.primitive})0)));
-        assertTrue(isNormal(new ${pt.boxed}((${pt.primitive})1)));
-        assertTrue(isNormal(new ${pt.boxed}((${pt.primitive})-1)));
-        assertFalse(isNormal((${pt.boxed})null));
+        assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})0)));
+        assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})1)));
+        assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})-1)));
+        assertFalse(isFinite((${pt.boxed})null));
     }
 
-    public void test${pt.boxed}ContainsNonNormal() {
-        assertFalse(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0));
-        assertFalse(containsNonNormal((${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1));
-        assertTrue(containsNonNormal((${pt.primitive})0, (${pt.primitive})0, ${pt.null}));
+    public void test${pt.boxed}ContainsNonFinite() {
+        assertFalse(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0));
+        assertFalse(containsNonFinite((${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1));
+        assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.null}));
 
-        assertFalse(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
-        assertFalse(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
-        assertTrue(containsNonNormal(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
+        assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+        assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+        assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
 
-        assertFalse(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
-        assertFalse(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
-        assertTrue(containsNonNormal(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
+        assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+        assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+        assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
     }
 
     </#if>
