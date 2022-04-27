@@ -707,7 +707,7 @@ public class Basic {
     <#if !pt.valueType.isBoolean >
 
     /**
-     * Unboxes a array of values.
+     * Unboxes an array of values.
      *
      * @param values values.
      * @return unboxed array of values.
