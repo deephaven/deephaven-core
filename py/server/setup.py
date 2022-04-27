@@ -52,8 +52,7 @@ setup(name='deephaven',
                         'numba;python_version>"3.0"',
                         'enum34;python_version<"3.4"'
                         ],
-      entry_points='''
-          [deephaven.plugin]
-          registration_cls = deephaven.pandasplugin:PandasPluginRegistration
-      '''
+      entry_points={
+          'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
+      },
       )
