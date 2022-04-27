@@ -143,8 +143,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     private void recomputeRange(final double xmin, final double xmax, final int npoints) {
         final double dx = (xmax - xmin) / (npoints - 1);
 
-        if (!Numeric.isNormal(xmin) || !Numeric.isNormal(xmax)
-                || !Numeric.isNormal(dx)) {
+        if (!Numeric.isNormal(xmin) || !Numeric.isNormal(xmax) || !Numeric.isNormal(dx)) {
             log.info("XYDataSeriesFunction: abnormal range: xmin=" + xmin + " xmax=" + xmax + " dx=" + dx + " npoints="
                     + npoints);
             return;
