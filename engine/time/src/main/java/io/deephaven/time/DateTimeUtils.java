@@ -22,6 +22,7 @@ import org.joda.time.DurationFieldType;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
@@ -1741,7 +1742,10 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>
+     * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
@@ -1970,13 +1974,21 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>
+     * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
      * @return A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
      */
     public static DateTime convertDateTimeQuiet(final String s) {
+        try {
+            return DateTime.of(Instant.parse(s));
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
         try {
             TimeZone timeZone = null;
             String dateTimeString = null;
