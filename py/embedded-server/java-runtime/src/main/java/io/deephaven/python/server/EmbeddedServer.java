@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 public class EmbeddedServer {
     @Singleton
-        @Component(modules = {
+    @Component(modules = {
             DeephavenApiServerModule.class,
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
@@ -34,6 +34,7 @@ public class EmbeddedServer {
         interface Builder extends DeephavenApiServerComponent.Builder<PythonServerComponent.Builder> {
             PythonServerComponent build();
         }
+
         void injectFields(EmbeddedServer instance);
     }
 

@@ -667,7 +667,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         @Override
         public void close() {
-            //no-op
+            // no-op
         }
     }
 

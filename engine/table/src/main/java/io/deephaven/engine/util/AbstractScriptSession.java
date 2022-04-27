@@ -153,7 +153,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
             final QueryScope prevQueryScope = QueryScope.getScope();
 
-            // retain any objects which are created in the executed code, we'll release them when the script session closes
+            // retain any objects which are created in the executed code, we'll release them when the script session
+            // closes
             try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
                 // point query scope static state to our session's state
                 QueryScope.setScope(queryScope);

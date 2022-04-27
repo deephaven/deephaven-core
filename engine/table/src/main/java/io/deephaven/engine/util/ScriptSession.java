@@ -77,8 +77,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Tracks changes in the script session bindings until the SnapshotScope is closed.
      *
-     * @return a new SnapshotScope, so that the caller can control when to stop tracking
-     * changes to bindings.
+     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
      */
     default SnapshotScope snapshot() {
         return snapshot(null);
@@ -87,14 +86,13 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Tracks changes in the script session bindings until the SnapshotScope is closed.
      *
-     * @param previousIfPresent if non-null, will be closed atomically with the new scope
-     *                          being opened.
-     * @return a new SnapshotScope, so that the caller can control when to stop tracking
-     * changes to bindings.
+     * @param previousIfPresent if non-null, will be closed atomically with the new scope being opened.
+     * @return a new SnapshotScope, so that the caller can control when to stop tracking changes to bindings.
      */
     SnapshotScope snapshot(@Nullable SnapshotScope previousIfPresent);
 
-    interface SnapshotScope extends SafeCloseable {}
+    interface SnapshotScope extends SafeCloseable {
+    }
 
     /**
      * Evaluates the script and manages liveness of objects that are exported to the user. This method should be called

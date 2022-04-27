@@ -137,6 +137,7 @@ public class DeephavenApiServer {
 
     /**
      * Blocks until the server exits.
+     * 
      * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
      */
     public void join() throws InterruptedException {
