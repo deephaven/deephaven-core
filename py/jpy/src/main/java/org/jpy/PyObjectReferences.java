@@ -81,33 +81,30 @@ class PyObjectReferences {
     }
 
     private int cleanupOnlyUseFromGIL(long[] buffer) {
-        if (!PyLib.hasGil()) {
-            throw new IllegalStateException(
-                "We should only be calling PyObjectReferences.cleanupOnlyUseFromGIL if we have the GIL!");
-        }
-
-        int index = 0;
-        while (index < buffer.length) {
-            final Reference<? extends PyObject> reference = referenceQueue.poll();
-            if (reference == null) {
-                break;
+        return PyLib.ensureGil(() -> {
+            int index = 0;
+            while (index < buffer.length) {
+                final Reference<? extends PyObject> reference = referenceQueue.poll();
+                if (reference == null) {
+                    break;
+                }
+                index = appendIfNotClosed(buffer, index, reference);
             }
-            index = appendIfNotClosed(buffer, index, reference);
-        }
-        if (index == 0) {
-            return 0;
-        }
+            if (index == 0) {
+                return 0;
+            }
 
-        // We really really really want to make sure we *already* have the GIL lock at this point in
-        // time. Otherwise, we block here until the GIL is available for us, and stall all cleanup
-        // related to our PyObjects.
+            // We really really really want to make sure we *already* have the GIL lock at this point in
+            // time. Otherwise, we block here until the GIL is available for us, and stall all cleanup
+            // related to our PyObjects.
 
-        if (index == 1) {
-            PyLib.decRef(buffer[0]);
-            return 1;
-        }
-        PyLib.decRefs(buffer, index);
-        return index;
+            if (index == 1) {
+                PyLib.decRef(buffer[0]);
+                return 1;
+            }
+            PyLib.decRefs(buffer, index);
+            return index;
+        });
     }
 
     private int appendIfNotClosed(long[] buffer, int index, Reference<? extends PyObject> reference) {

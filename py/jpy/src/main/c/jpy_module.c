@@ -244,6 +244,10 @@ jmethodID JPy_Throwable_getCause_MID = NULL;
 // stack trace element
 jclass JPy_StackTraceElement_JClass = NULL;
 
+// java.util.function.Supplier
+jclass JPy_Supplier_JClass = NULL;
+jmethodID JPy_Supplier_get_MID = NULL;
+
 // }}}
 
 
@@ -953,6 +957,9 @@ int JPy_InitGlobalVars(JNIEnv* jenv)
     DEFINE_OBJECT_TYPE(JPy_JStackTraceElement, JPy_StackTraceElement_JClass);
     DEFINE_METHOD(JPy_Throwable_getCause_MID, JPy_Throwable_JClass, "getCause", "()Ljava/lang/Throwable;");
     DEFINE_METHOD(JPy_Throwable_getStackTrace_MID, JPy_Throwable_JClass, "getStackTrace", "()[Ljava/lang/StackTraceElement;");
+
+    DEFINE_CLASS(JPy_Supplier_JClass, "java/util/function/Supplier");
+    DEFINE_METHOD(JPy_Supplier_get_MID, JPy_Supplier_JClass, "get", "()Ljava/lang/Object;")
 
     // JType_AddClassAttribute is actually called from within JType_GetType(), but not for
     // JPy_JObject and JPy_JClass for an obvious reason. So we do it now:
