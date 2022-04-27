@@ -11,7 +11,7 @@ public class Logic {
      * Ands all of the values in the array together.
      *
      * @param values values.
-     * @return logical and of all the values in the array.
+     * @return logical and of all the values in the array.  By convention, returns true if the array is empty.
      */
     static public Boolean and(Boolean... values) {
         for (Boolean b : values) {
@@ -27,7 +27,7 @@ public class Logic {
      * Ands all of the values in the array together.
      *
      * @param values values.
-     * @return logical and of all the values in the array.
+     * @return logical and of all the values in the array.  By convention, returns true if the array is empty.
      */
     static public Boolean and(boolean... values) {
         for (Boolean b : values) {
@@ -43,7 +43,7 @@ public class Logic {
      * Ands all of the values in the array together.
      *
      * @param values values.
-     * @return logical and of all the values in the array.
+     * @return logical and of all the values in the array.  By convention, returns true if the array is empty.
      */
     static public Boolean and(BooleanVector values) {
         for (int ii = 0; ii < values.size(); ++ii) {
@@ -61,7 +61,7 @@ public class Logic {
      *
      * @param values values.
      * @param nullValue value to use in place of null values.
-     * @return logical and of all the values in the array.
+     * @return logical and of all the values in the array.  By convention, returns true if the array is empty.
      */
     static public Boolean and(Boolean[] values, Boolean nullValue) {
         for (Boolean b : values) {
@@ -80,7 +80,7 @@ public class Logic {
      *
      * @param values values.
      * @param nullValue value to use in place of null values.
-     * @return logical and of all the values in the array.
+     * @return logical and of all the values in the array.  By convention, returns true if the array is empty.
      */
     static public Boolean and(BooleanVector values, Boolean nullValue) {
         for (int ii = 0; ii < values.size(); ++ii) {
@@ -99,7 +99,7 @@ public class Logic {
      * Ors all of the values in the array together.
      *
      * @param values values.
-     * @return logical or of all the values in the array.
+     * @return logical or of all the values in the array.  By convention, returns false if the array is empty.
      */
     static public Boolean or(Boolean... values) {
         for (Boolean b : values) {
@@ -115,7 +115,7 @@ public class Logic {
      * Ors all of the values in the array together.
      *
      * @param values values.
-     * @return logical or of all the values in the array.
+     * @return logical or of all the values in the array.  By convention, returns false if the array is empty.
      */
     static public Boolean or(boolean... values) {
         for (Boolean b : values) {
@@ -132,7 +132,7 @@ public class Logic {
      *
      * @param values values.
      * @param nullValue value to use in place of null values.
-     * @return logical or of all the values in the array.
+     * @return logical or of all the values in the array.  By convention, returns false if the array is empty.
      */
     static public Boolean or(Boolean[] values, Boolean nullValue) {
         for (Boolean b : values) {
