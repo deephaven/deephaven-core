@@ -920,7 +920,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @Override
         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            ((BaseTable) dependent).notifyListeners(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
+            dependent.notifyListeners(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 
@@ -982,7 +982,7 @@ public abstract class BaseTable extends LivenessArtifact
             } else {
                 downstream = upstream.acquire();
             }
-            ((BaseTable) dependent).notifyListeners(downstream);
+            dependent.notifyListeners(downstream);
         }
 
         @Override
@@ -1348,7 +1348,6 @@ public abstract class BaseTable extends LivenessArtifact
                 }
 
                 result.setValue(resultTable);
-
                 return true;
             });
 
@@ -1420,7 +1419,7 @@ public abstract class BaseTable extends LivenessArtifact
      *
      * @param result the table derived from this table
      */
-    void propagateFlatness(QueryTable result) {
+    public void propagateFlatness(QueryTable result) {
         if (isFlat()) {
             result.setFlat();
         }

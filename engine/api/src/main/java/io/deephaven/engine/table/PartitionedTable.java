@@ -33,6 +33,18 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
          * @return The underlying PartitionedTable instance
          */
         PartitionedTable target();
+
+        /**
+         * @return Whether this Proxy ensures matching partition keys for implicit joins of partitioned tables
+         * @see PartitionedTable#proxy(boolean, boolean)
+         */
+        boolean requiresMatchingKeys();
+
+        /**
+         * @return Whether this Proxy ensures non-overlapping join keys in constituent tables for proxied joins
+         * @see PartitionedTable#proxy(boolean, boolean)
+         */
+        boolean sanityChecksJoins();
     }
 
     /**

@@ -4,11 +4,17 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.TimeZone;
 import org.jetbrains.annotations.NotNull;
@@ -19,10 +25,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -110,6 +113,16 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
         return target;
     }
 
+    @Override
+    public boolean requiresMatchingKeys() {
+        return requireMatchingKeys;
+    }
+
+    @Override
+    public boolean sanityChecksJoins() {
+        return sanityCheckJoins;
+    }
+
     private PartitionedTable.Proxy basicTransform(@NotNull final Function<Table, Table> transformer) {
         return new PartitionedTableProxyImpl(
                 target.transform(transformer),
@@ -123,12 +136,48 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
-            return basicTransform(ct -> transformer.apply(ct, otherTable));
+            if (target.table().isRefreshing() || otherTable.isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            }
+
+            final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
+                    ? overlappingLhsJoinKeysValidation(target, joinMatches)
+                    : null;
+            final Table validatedLhsTable = validated(target.table(), overlappingLhsJoinKeys);
+            final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
+
+            return new PartitionedTableProxyImpl(
+                    lhsToUse.transform(ct -> transformer.apply(ct, otherTable)),
+                    requireMatchingKeys,
+                    sanityCheckJoins);
         }
         if (other instanceof PartitionedTable.Proxy) {
-            final PartitionedTable otherPartitionedTable = ((PartitionedTable.Proxy) other).target();
+            final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
+            final PartitionedTable otherTarget = otherProxy.target();
+
+            if (target.table().isRefreshing() || otherTarget.table().isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            }
+
+            PartitionedTableImpl.validateJoinKeys(target, otherTarget);
+
+            final DependentValidation uniqueKeys = requireMatchingKeys
+                    ? uniqueKeysValidation(target, otherTarget)
+                    : null;
+            final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
+                    ? overlappingLhsJoinKeysValidation(target, joinMatches)
+                    : null;
+            final DependentValidation overlappingRhsJoinKeys = otherProxy.sanityChecksJoins() && joinMatches != null
+                    ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
+                    : null;
+
+            final Table validatedLhsTable = validated(target.table(), uniqueKeys, overlappingLhsJoinKeys);
+            final Table validatedRhsTable = validated(otherTarget.table(), uniqueKeys, overlappingRhsJoinKeys);
+            final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
+            final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
+
             return new PartitionedTableProxyImpl(
-                    target.partitionedTransform(otherPartitionedTable, transformer),
+                    lhsToUse.partitionedTransform(rhsToUse, transformer),
                     requireMatchingKeys,
                     sanityCheckJoins);
         }
@@ -153,60 +202,125 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
         return Arrays.stream(split).limit(split.length - 1).map(JoinMatch::parse).collect(Collectors.toList());
     }
 
-    /**
-     * Get a table of keys that are uniquely in only {@code lhs} or {@code rhs}, with an additional column identifying
-     * the table where the key was encountered.
-     *
-     * @param lhs The left-hand-side (first) partitioned table
-     * @param rhs The right-hand-side (second) partitioned table
-     * @return A table of keys that are uniquely in only one of the input partitioned tables
-     */
-    private static Table uniqueKeysTable(
-            @NotNull final PartitionedTable lhs,
-            @NotNull final PartitionedTable rhs) {
-        final Table lhsKeys = lhs.table()
-                .selectDistinct(lhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        final Table rhsKeys = rhs.table()
-                .selectDistinct(rhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
-        final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
-        final Table uniqueKeys = countedKeys.where(FOUND_IN.name() + " != 2");
-        return uniqueKeys.dropColumns(FOUND_IN.name());
-    }
+    private static class DependentValidation extends LivenessArtifact
+            implements Runnable, NotificationQueue.Dependency {
 
-    private static class MatchingKeysEnforcementListener extends InstrumentedTableUpdateListenerAdapter {
-        private final Table uniqueKeys;
+        private final NotificationQueue.Dependency parent;
+        private final Runnable validation;
 
-        public MatchingKeysEnforcementListener(
-                @NotNull final PartitionedTable lhs,
-                @NotNull final PartitionedTable rhs,
-                @NotNull final Table uniqueKeys) {
-            super("Matching keys enforcement listener for " + lhs.table().getDescription()
-                    + ", and " + rhs.table().getDescription(), uniqueKeys, false);
-            this.uniqueKeys = uniqueKeys;
+        private DependentValidation(
+                @NotNull final Table parent,
+                @NotNull final Runnable validation) {
+            this.parent = parent;
+            this.validation = validation;
+            if (parent.isRefreshing()) {
+                manage(parent);
+            }
         }
 
         @Override
-        public void onUpdate(@NotNull final TableUpdate upstream) {
-            if (!uniqueKeys.isEmpty()) {
-                throw formatUniqueKeysException(uniqueKeys);
-            }
+        public LogOutput append(@NotNull final LogOutput logOutput) {
+            return parent.append(logOutput);
+        }
+
+        @Override
+        public boolean satisfied(final long step) {
+            return parent.satisfied(step);
+        }
+
+        @Override
+        public void run() {
+            validation.run();
         }
     }
 
-    private static IllegalArgumentException formatUniqueKeysException(@NotNull final Table uniqueKeys) {
-        return new IllegalArgumentException("Partitioned table arguments have unique keys:\n"
-                + tableToString(uniqueKeys, 10));
+    private static Table validated(
+            @NotNull final Table parent,
+            @NotNull final DependentValidation... dependentValidationsIn) {
+        if (dependentValidationsIn.length == 0) {
+            return parent;
+        }
+        final DependentValidation[] dependentValidations =
+                Arrays.stream(dependentValidationsIn).filter(Objects::isNull).toArray(DependentValidation[]::new);
+        if (dependentValidations.length == 0) {
+            return parent;
+        }
+        // NB: All callers call checkInitiateTableOperation first, so we can dispense with snapshots and swap listeners
+        final QueryTable coalescedParent = (QueryTable) parent.coalesce();
+        final QueryTable child = coalescedParent.getSubTable(
+                coalescedParent.getRowSet(),
+                coalescedParent.getModifiedColumnSetForUpdates(),
+                (Object[]) dependentValidations);
+        coalescedParent.propagateFlatness(child);
+        coalescedParent.copyAttributes(child, a -> true);
+        coalescedParent.listenForUpdates(
+                new BaseTable.ListenerImpl("Validating copy listener", coalescedParent, child) {
+                    @Override
+                    public void onUpdate(@NotNull final TableUpdate upstream) {
+                        for (final Runnable dependentValidation : dependentValidations) {
+                            dependentValidation.run();
+                        }
+                        child.notifyListeners(upstream.acquire());
+                    }
+                });
+        return child;
     }
 
     /**
-     * Get a table of join keys that are found in more than one constituent table in {@code input}.
+     * Make and run a dependent validation checking for keys that are uniquely in only {@code lhs} or {@code rhs}.
+     *
+     * @param lhs The left-hand-side (first) partitioned table
+     * @param rhs The right-hand-side (second) partitioned table
+     * @return A dependent validation checking for keys that are uniquely in only one of the input partitioned tables
+     */
+    private static DependentValidation uniqueKeysValidation(
+            @NotNull final PartitionedTable lhs,
+            @NotNull final PartitionedTable rhs) {
+        final String[] keyColumnNames = lhs.keyColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final Table lhsKeys = lhs.table().selectDistinct(keyColumnNames);
+        final Table rhsKeys = rhs.table().selectDistinct(keyColumnNames);
+        final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
+        final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
+        final Table uniqueKeys = countedKeys.where(new MatchFilter(FOUND_IN.name(), 1));
+        final Table uniqueKeysOnly = uniqueKeys.view(keyColumnNames);
+        final DependentValidation result = new DependentValidation(uniqueKeysOnly,
+                () -> checkUniqueKeys(uniqueKeysOnly));
+        result.run();
+        return result;
+    }
+
+    private static void checkUniqueKeys(@NotNull final Table uniqueKeys) {
+        if (!uniqueKeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Partitioned table arguments have non-matching keys; re-assess your input data or create a proxy with requireMatchingKeys=false:\n"
+                            + tableToString(uniqueKeys, 10));
+        }
+    }
+
+    private static DependentValidation overlappingLhsJoinKeysValidation(
+            @NotNull final PartitionedTable lhs,
+            @NotNull final Collection<? extends JoinMatch> joinMatches) {
+        return overlappingJoinKeysValidation(lhs,
+                joinMatches.stream().map(jm -> jm.left().name()).toArray(String[]::new));
+    }
+
+    private static DependentValidation overlappingRhsJoinKeysValidation(
+            @NotNull final PartitionedTable rhs,
+            @NotNull final Collection<? extends JoinMatch> joinMatches) {
+        return overlappingJoinKeysValidation(rhs,
+                joinMatches.stream().map(jm -> jm.right().name()).toArray(String[]::new));
+    }
+
+    /**
+     * Make and run dependent validation checking join keys that are found in more than one constituent table in
+     * {@code input}.
      *
      * @param input The input partitioned table
      * @param joinKeyColumnNames The exact match key column names for the join operation
-     * @return A table of join keys that are found in more than one constituent table in {@code input}
+     * @return A dependent validation checking for join keys that are found in more than one constituent table in
+     *         {@code input}
      */
-    private static Table overlappingJoinKeysTable(
+    private static DependentValidation overlappingJoinKeysValidation(
             @NotNull final PartitionedTable input,
             @NotNull final String[] joinKeyColumnNames) {
         // NB: At the moment, we are assuming that constituents appear only once per partitioned table in scenarios
@@ -217,39 +331,26 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
         final Table merged = stamped.merge();
         final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
         final Table overlappingJoinKeys = mergedWithUniqueAgg.where(Filter.isNull(ENCLOSING_CONSTITUENT));
-        return overlappingJoinKeys.view(joinKeyColumnNames);
+        final Table overlappingJoinKeysOnly = overlappingJoinKeys.view(joinKeyColumnNames);
+        final DependentValidation result = new DependentValidation(overlappingJoinKeysOnly,
+                () -> checkOverlappingJoinKeys(input, overlappingJoinKeysOnly));
+        result.run();
+        return result;
     }
 
-    private static class JoinSanityEnforcementListener extends InstrumentedTableUpdateListenerAdapter {
-
-        private final String inputTableDescription;
-        private final Table overlappingJoinKeys;
-
-        public JoinSanityEnforcementListener(
-                @NotNull final PartitionedTable input,
-                @NotNull final Table overlappingJoinKeys) {
-            super("Join sanity enforcement listener for " + input.table().getDescription(), overlappingJoinKeys, false);
-            inputTableDescription = input.table().getDescription();
-            this.overlappingJoinKeys = overlappingJoinKeys;
-        }
-
-        @Override
-        public void onUpdate(@NotNull final TableUpdate upstream) {
-            if (!overlappingJoinKeys.isEmpty()) {
-                throw formatOverlappingJoinKeysException(inputTableDescription, overlappingJoinKeys);
-            }
+    private static void checkOverlappingJoinKeys(
+            @NotNull final PartitionedTable input,
+            @NotNull final Table overlappingJoinKeys) {
+        if (!overlappingJoinKeys.isEmpty()) {
+            throw new IllegalArgumentException("Partitioned table \"" + input.table().getDescription()
+                    + "\" has join keys found in multiple constituents; re-assess your input data or create a proxy with sanityCheckJoinOperations=false:\n"
+                    + tableToString(overlappingJoinKeys, 10));
         }
     }
 
-    private static IllegalArgumentException formatOverlappingJoinKeysException(
-            @NotNull final String inputDescription,
-            @NotNull final Table overlappingKeys) {
-        return new IllegalArgumentException("Partitioned table \"" + inputDescription
-                + "\" has join keys found in multiple constituents:\n"
-                + tableToString(overlappingKeys, 10));
-    }
-
-    private static String tableToString(@NotNull final Table table, final int maximumRows) {
+    private static String tableToString(
+            @NotNull final Table table,
+            @SuppressWarnings("SameParameterValue") final int maximumRows) {
         try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 final PrintStream printStream = new PrintStream(bytes, true, StandardCharsets.UTF_8)) {
             TableTools.show(table, maximumRows, TimeZone.TZ_DEFAULT, printStream);
@@ -258,6 +359,12 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static PartitionedTable maybeRewrap(@NotNull final Table table, @NotNull final PartitionedTable existing) {
+        return table == existing.table() ? existing
+                : new PartitionedTableImpl(table,
+                        existing.keyColumnNames(), existing.constituentColumnName(), existing.constituentDefinition());
     }
 
     // region TableOperations Implementation

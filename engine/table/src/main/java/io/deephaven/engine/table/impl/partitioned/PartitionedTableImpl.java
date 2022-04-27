@@ -52,6 +52,28 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     }
 
     @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final PartitionedTableImpl that = (PartitionedTableImpl) other;
+        return table.equals(that.table);
+    }
+
+    @Override
+    public int hashCode() {
+        return table.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "PartitionedTable for " + table.getDescription();
+    }
+
+    @Override
     public Table table() {
         return table;
     }
