@@ -1788,6 +1788,9 @@ public class Numeric {
         return Math.tan(value);
     }
 
+
+    <#if pt.valueType.isFloat >
+
     /**
      * Returns the lower bound of the bin containing the value.
      *
@@ -1800,9 +1803,27 @@ public class Numeric {
             return ${pt.null};
         }
 
-        final double r = ((double) value) / ((double) interval);
-        return (${pt.primitive}) (interval * ((${pt.primitive}) Math.floor(r)));
+        return (${pt.primitive}) (interval * Math.floor(value / interval));
     }
+
+    <#else>
+
+    /**
+     * Returns the lower bound of the bin containing the value.
+     *
+     * @param value value.
+     * @param interval bin width.
+     * @return lower bound of the bin containing the value.
+     */
+    public static ${pt.primitive} lowerBin(${pt.primitive} value, ${pt.primitive} interval) {
+        if (value == ${pt.null} || interval == ${pt.null}) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) (interval * (value / interval));
+    }
+
+    </#if>
 
     /**
      * Returns the lower bound of the bin containing the value.
@@ -1820,6 +1841,8 @@ public class Numeric {
         return (${pt.primitive})(lowerBin((${pt.primitive})(value-offset),interval) + offset);
     }
 
+    <#if pt.valueType.isFloat >
+
     /**
      * Returns the upper bound of the bin containing the value.
      *
@@ -1832,14 +1855,41 @@ public class Numeric {
             return ${pt.null};
         }
 
-        final double r = ((double) value) / ((double) interval);
+        final double r = value / interval;
+        final double f = Math.floor(r);
 
-        if (r == Math.round(r)) {
+        if (r == f) {
+            return (${pt.primitive}) (interval * f);
+        }
+
+        return (${pt.primitive}) (interval * (f + 1));
+    }
+
+    <#else>
+
+    /**
+     * Returns the upper bound of the bin containing the value.
+     *
+     * @param value value.
+     * @param interval bin width.
+     * @return upper bound of the bin containing the value.
+     */
+    public static ${pt.primitive} upperBin(${pt.primitive} value, ${pt.primitive} interval) {
+        if (value == ${pt.null} || interval == ${pt.null}) {
+            return ${pt.null};
+        }
+
+        final long r = value / interval;
+        final long m = value % interval;
+
+        if (m == 0) {
             return (${pt.primitive}) (interval * r);
         }
 
-        return (${pt.primitive}) (interval * ((${pt.primitive}) Math.floor(r + 1)));
+        return (${pt.primitive}) (interval * (r+1));
     }
+
+    </#if>
 
     /**
      * Returns the upper bound of the bin containing the value.
