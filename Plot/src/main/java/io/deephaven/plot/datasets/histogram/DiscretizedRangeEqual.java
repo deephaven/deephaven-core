@@ -46,7 +46,7 @@ public class DiscretizedRangeEqual implements DiscretizedRange, Serializable {
 
     @Override
     public long index(double value) {
-        if (!Numeric.isNormal(value) || value < min || value > max) {
+        if (!Numeric.isFinite(value) || value < min || value > max) {
             return NULL_LONG;
         }
 

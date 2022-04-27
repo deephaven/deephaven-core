@@ -446,30 +446,30 @@ public class GroovyStaticImports {
     public static  short[] concat( short[][] values ) {return Basic.concat( values );}
     /** @see io.deephaven.function.Basic#concat(io.deephaven.vector.ObjectVector[]) */
     public static <T> T[] concat( io.deephaven.vector.ObjectVector<T>[] values ) {return Basic.concat( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(byte[]) */
-    public static  boolean containsNonNormal( byte[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(double[]) */
-    public static  boolean containsNonNormal( double[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(float[]) */
-    public static  boolean containsNonNormal( float[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(int[]) */
-    public static  boolean containsNonNormal( int[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(long[]) */
-    public static  boolean containsNonNormal( long[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Byte[]) */
-    public static  boolean containsNonNormal( java.lang.Byte[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Double[]) */
-    public static  boolean containsNonNormal( java.lang.Double[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Float[]) */
-    public static  boolean containsNonNormal( java.lang.Float[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Integer[]) */
-    public static  boolean containsNonNormal( java.lang.Integer[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Long[]) */
-    public static  boolean containsNonNormal( java.lang.Long[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(java.lang.Short[]) */
-    public static  boolean containsNonNormal( java.lang.Short[] values ) {return Numeric.containsNonNormal( values );}
-    /** @see io.deephaven.function.Numeric#containsNonNormal(short[]) */
-    public static  boolean containsNonNormal( short[] values ) {return Numeric.containsNonNormal( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(byte[]) */
+    public static  boolean containsNonFinite( byte[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(double[]) */
+    public static  boolean containsNonFinite( double[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(float[]) */
+    public static  boolean containsNonFinite( float[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(int[]) */
+    public static  boolean containsNonFinite( int[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(long[]) */
+    public static  boolean containsNonFinite( long[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Byte[]) */
+    public static  boolean containsNonFinite( java.lang.Byte[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Double[]) */
+    public static  boolean containsNonFinite( java.lang.Double[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Float[]) */
+    public static  boolean containsNonFinite( java.lang.Float[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Integer[]) */
+    public static  boolean containsNonFinite( java.lang.Integer[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Long[]) */
+    public static  boolean containsNonFinite( java.lang.Long[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Short[]) */
+    public static  boolean containsNonFinite( java.lang.Short[] values ) {return Numeric.containsNonFinite( values );}
+    /** @see io.deephaven.function.Numeric#containsNonFinite(short[]) */
+    public static  boolean containsNonFinite( short[] values ) {return Numeric.containsNonFinite( values );}
     /** @see io.deephaven.function.Numeric#cor(byte[],byte[]) */
     public static  double cor( byte[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
     /** @see io.deephaven.function.Numeric#cor(byte[],double[]) */
@@ -1614,6 +1614,30 @@ public class GroovyStaticImports {
     public static <T extends java.lang.Comparable<T>> long indexOfMinObj( T[] values ) {return Numeric.indexOfMinObj( values );}
     /** @see io.deephaven.function.Numeric#indexOfMinObj(io.deephaven.vector.ObjectVector) */
     public static <T extends java.lang.Comparable<T>> long indexOfMinObj( io.deephaven.vector.ObjectVector<T> values ) {return Numeric.indexOfMinObj( values );}
+    /** @see io.deephaven.function.Numeric#isFinite(byte) */
+    public static  boolean isFinite( byte value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Byte) */
+    public static  boolean isFinite( java.lang.Byte value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Double) */
+    public static  boolean isFinite( java.lang.Double value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Float) */
+    public static  boolean isFinite( java.lang.Float value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Integer) */
+    public static  boolean isFinite( java.lang.Integer value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Long) */
+    public static  boolean isFinite( java.lang.Long value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Short) */
+    public static  boolean isFinite( java.lang.Short value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(double) */
+    public static  boolean isFinite( double value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(float) */
+    public static  boolean isFinite( float value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(int) */
+    public static  boolean isFinite( int value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(long) */
+    public static  boolean isFinite( long value ) {return Numeric.isFinite( value );}
+    /** @see io.deephaven.function.Numeric#isFinite(short) */
+    public static  boolean isFinite( short value ) {return Numeric.isFinite( value );}
     /** @see io.deephaven.function.Numeric#isInf(byte) */
     public static  boolean isInf( byte value ) {return Numeric.isInf( value );}
     /** @see io.deephaven.function.Numeric#isInf(java.lang.Byte) */
@@ -1662,30 +1686,6 @@ public class GroovyStaticImports {
     public static  boolean isNaN( long value ) {return Numeric.isNaN( value );}
     /** @see io.deephaven.function.Numeric#isNaN(short) */
     public static  boolean isNaN( short value ) {return Numeric.isNaN( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(byte) */
-    public static  boolean isNormal( byte value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Byte) */
-    public static  boolean isNormal( java.lang.Byte value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Double) */
-    public static  boolean isNormal( java.lang.Double value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Float) */
-    public static  boolean isNormal( java.lang.Float value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Integer) */
-    public static  boolean isNormal( java.lang.Integer value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Long) */
-    public static  boolean isNormal( java.lang.Long value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(java.lang.Short) */
-    public static  boolean isNormal( java.lang.Short value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(double) */
-    public static  boolean isNormal( double value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(float) */
-    public static  boolean isNormal( float value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(int) */
-    public static  boolean isNormal( int value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(long) */
-    public static  boolean isNormal( long value ) {return Numeric.isNormal( value );}
-    /** @see io.deephaven.function.Numeric#isNormal(short) */
-    public static  boolean isNormal( short value ) {return Numeric.isNormal( value );}
     /** @see io.deephaven.function.Basic#isNull(T) */
     public static <T> boolean isNull( T value ) {return Basic.isNull( value );}
     /** @see io.deephaven.function.Basic#isNull(byte) */
@@ -2166,6 +2166,18 @@ public class GroovyStaticImports {
     public static  double[] replaceIfNaN( io.deephaven.vector.DoubleVector values, double replacement ) {return Numeric.replaceIfNaN( values, replacement );}
     /** @see io.deephaven.function.Numeric#replaceIfNaN(io.deephaven.vector.FloatVector,float) */
     public static  float[] replaceIfNaN( io.deephaven.vector.FloatVector values, float replacement ) {return Numeric.replaceIfNaN( values, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(double[],double) */
+    public static  double[] replaceIfNonFinite( double[] values, double replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(float[],float) */
+    public static  float[] replaceIfNonFinite( float[] values, float replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(double,double) */
+    public static  double replaceIfNonFinite( double value, double replacement ) {return Numeric.replaceIfNonFinite( value, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(float,float) */
+    public static  float replaceIfNonFinite( float value, float replacement ) {return Numeric.replaceIfNonFinite( value, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(io.deephaven.vector.DoubleVector,double) */
+    public static  double[] replaceIfNonFinite( io.deephaven.vector.DoubleVector values, double replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
+    /** @see io.deephaven.function.Numeric#replaceIfNonFinite(io.deephaven.vector.FloatVector,float) */
+    public static  float[] replaceIfNonFinite( io.deephaven.vector.FloatVector values, float replacement ) {return Numeric.replaceIfNonFinite( values, replacement );}
     /** @see io.deephaven.function.Basic#replaceIfNull(T,T) */
     public static <T> T replaceIfNull( T value, T replacement ) {return Basic.replaceIfNull( value, replacement );}
     /** @see io.deephaven.function.Basic#replaceIfNull(T[],T) */

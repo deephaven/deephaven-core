@@ -2131,7 +2131,7 @@ public class Numeric {
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
      */
     static public boolean isFinite(${pt.primitive} value) {
-        return !${pt.boxed}.isInfinite(value) && !${pt.boxed}.isNaN(value) && !isNull(value);
+        return ${pt.boxed}.isFinite(value) && !isNull(value);
     }
 
     /**
@@ -2151,7 +2151,7 @@ public class Numeric {
      * not infinite, not NaN, and not null.
      *
      * @param values values.
-     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) normal}; {@code false} otherwise.
+     * @return {@code true} if any value is not {@link #isFinite(${pt.primitive}) finite}; {@code false} otherwise.
      * @see #isFinite(${pt.primitive})
      */
     static public boolean containsNonFinite(${pt.primitive}... values) {

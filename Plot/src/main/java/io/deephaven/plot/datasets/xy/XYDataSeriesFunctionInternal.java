@@ -22,7 +22,7 @@ public interface XYDataSeriesFunctionInternal extends XYDataSeriesFunction {
      * Sets the data range and number of points for this series if the user did not set funcRange.
      *
      * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
-     *         must be normal. See {@link Numeric#isNormal} {@code npoints} must non-negative
+     *         must be finite. See {@link Numeric#isFinite} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points

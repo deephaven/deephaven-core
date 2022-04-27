@@ -143,7 +143,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     private void recomputeRange(final double xmin, final double xmax, final int npoints) {
         final double dx = (xmax - xmin) / (npoints - 1);
 
-        if (!Numeric.isNormal(xmin) || !Numeric.isNormal(xmax) || !Numeric.isNormal(dx)) {
+        if (!Numeric.isFinite(xmin) || !Numeric.isFinite(xmax) || !Numeric.isFinite(dx)) {
             log.info("XYDataSeriesFunction: abnormal range: xmin=" + xmin + " xmax=" + xmax + " dx=" + dx + " npoints="
                     + npoints);
             return;
@@ -156,10 +156,10 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     }
 
     private void computeY(final double x) {
-        if (Numeric.isNormal(x)) {
+        if (Numeric.isFinite(x)) {
             buffer.computeIfAbsent(x, val -> {
                 double y = function.applyAsDouble(x);
-                if (!Numeric.isNormal(y)) {
+                if (!Numeric.isFinite(y)) {
                     log.info("XYDataSeriesFunction: abnormal y value: x=" + x + " y=" + y + " xmin=" + xmin + " xmax="
                             + xmax + " npoints=" + npoints);
                     y = Double.NaN;
@@ -230,7 +230,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * Sets the data range for this series.
      *
      * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
-     *         must be normal. See {@link Numeric#isNormal} {@code npoints} must non-negative
+     *         must be finite. See {@link Numeric#isFinite} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
@@ -308,7 +308,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * @return this series
      */
     private XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax, int npoints, boolean isUser) {
-        if (!Numeric.isNormal(xmin) || !Numeric.isNormal(xmax)) {
+        if (!Numeric.isFinite(xmin) || !Numeric.isFinite(xmax)) {
             throw new PlotIllegalArgumentException("Abnormal range value.  xmin=" + xmin + " xmax=" + xmax, this);
         }
 
