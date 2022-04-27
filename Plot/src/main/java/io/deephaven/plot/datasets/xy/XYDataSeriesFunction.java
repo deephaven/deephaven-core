@@ -24,8 +24,8 @@ public interface XYDataSeriesFunction extends XYDataSeries {
     /**
      * Sets the data range for this series.
      *
-     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
-     *         must be normal. See {@link Numeric#isNormal} {@code npoints} must non-negative
+     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax}. {@code xmin} and {@code xmax}
+     *         must be normal. See {@link Numeric#isNormal}. {@code npoints} must non-negative.
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
