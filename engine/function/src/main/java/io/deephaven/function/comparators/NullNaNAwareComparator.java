@@ -24,9 +24,9 @@ public class NullNaNAwareComparator<T extends Comparable<? super T>> implements 
 
     private static <T> boolean isNanVal(T v) {
         if (v instanceof Float) {
-            return isNaN((Float) v);
+            return Float.isNaN((Float)v);
         } else if (v instanceof Double) {
-            return isNaN((Double) v);
+            return Double.isNaN((Double) v);
         } else {
             return false;
         }
