@@ -2081,7 +2081,7 @@ public class Numeric {
      * @return {@code true} if the value is NaN and {@code false} otherwise.
      */
     static public boolean isNaN(${pt.boxed} value) {
-        return isNaN(castDouble(value));
+        return value != null && ${pt.boxed}.isNaN(value);
     }
 
     /**
@@ -2101,7 +2101,7 @@ public class Numeric {
      * @return {@code true} if the value is infinite and {@code false} otherwise.
      */
     static public boolean isInf(${pt.boxed} value) {
-        return isNaN(castDouble(value));
+        return value != null && ${pt.boxed}.isInfinite(value);
     }
 
     /**

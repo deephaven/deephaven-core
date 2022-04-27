@@ -986,12 +986,14 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}IsNan(){
         assertTrue(isNaN(${pt.boxed}.NaN));
+        assertFalse(isNan((${pt.boxed})null);
         assertFalse(isNaN((${pt.primitive})3.0));
     }
 
     public void test${pt.boxed}IsInf(){
         assertTrue(isInf(${pt.boxed}.POSITIVE_INFINITY));
         assertTrue(isInf(${pt.boxed}.NEGATIVE_INFINITY));
+        assertFalse(isInf((${pt.boxed})null));
         assertFalse(isInf((${pt.primitive})3.0));
     }
 
