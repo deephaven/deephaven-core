@@ -53,7 +53,7 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals((double)9007199254740993L, castDouble(9007199254740993L, false));
 
         try{
-            castDouble(Long.MAX_VALUE);
+            castDouble(Long.MAX_VALUE-1);
             fail("Should throw an exception");
         }catch(CastDoesNotPreserveValue ignored){
         }

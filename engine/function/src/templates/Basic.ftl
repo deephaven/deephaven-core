@@ -722,7 +722,7 @@ public class Basic {
         for(int i=0; i<values.length; i++){
             ${pt.boxed} v = values[i];
 
-            if(v == null || isNull(v)) {
+            if(v == null || isNull(v.${pt.primitive}Value())) {
                 result[i] = QueryConstants.${pt.null};
             } else {
                 result[i] = v;
