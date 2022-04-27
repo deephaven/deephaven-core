@@ -160,6 +160,15 @@ public class KafkaTools {
     }
 
     /**
+     * Create an Avro schema object for a String containing a JSON encoded Avro schema definition.
+     * @param avroSchemaAsJsonString The JSON Avro schema definition
+     * @return an Avro schema object
+     */
+    public static Schema getAvroSchema(final String avroSchemaAsJsonString) {
+        return new Schema.Parser().parse(avroSchemaAsJsonString);
+    }
+
+    /**
      * Push an Avro schema from a Confluent compatible Schema Server.
      *
      * @param schema An Avro schema

@@ -230,7 +230,9 @@ def avro_spec(
     """Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        schema (str): the name for a schema registered in a Confluent compatible Schema Server. The associated
+        schema (str): Either a JSON encoded Avro schema definition string, or
+            the name for a schema registered in a Confluent compatible Schema Server.
+             If the name for a schema in Schema Server, the associated
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
@@ -250,14 +252,26 @@ def avro_spec(
         if mapping is not None:
             mapping = _dict_to_j_func(mapping, mapped_only)
 
-        if mapping:
-            return KeyValueSpec(
-                j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version, mapping)
-            )
+        if schema.strip().startswith("{"):
+            jschema = _JKafkaTools.getAvroSchema(schema);
+            if mapping:
+                return KeyValueSpec(
+                    j_spec=_JKafkaTools_Consume.avroSpec(jschema, mapping)
+                )
+            else:
+                return KeyValueSpec(
+                    j_spec=_JKafkaTools_Consume.avroSpec(jschema)
+                )
+
         else:
-            return KeyValueSpec(
-                j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version)
-            )
+            if mapping:
+                return KeyValueSpec(
+                    j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version, mapping)
+                )
+            else:
+                return KeyValueSpec(
+                    j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version)
+                )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
