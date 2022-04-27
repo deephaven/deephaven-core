@@ -53,12 +53,11 @@ setup(name='deephaven_legacy',
       keywords='Deephaven Development',
       packages=find_packages(exclude=['docs', 'test']),
       install_requires=['deephaven-jpy=={}'.format(__normalized_version__),
-                        'deephaven-plugin',
                         'numpy',
                         'dill>=0.2.8',
                         'wrapt',
                         'pandas',
                         'numba;python_version>"3.0"',
-                        'enum34;python_version<"3.4"'
+                        'enum34;python_version<"3.4"',
                         ],
       )

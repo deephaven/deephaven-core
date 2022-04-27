@@ -1,4 +1,4 @@
-from deephaven.python_to_java import dataFrameToTable
+from deephaven.pandas import to_table
 from deephaven.plugin.object import Exporter, ObjectType
 from pandas import DataFrame
 
@@ -14,5 +14,5 @@ class PandasDataFrameSerializer(ObjectType):
         return isinstance(object, DataFrame)
 
     def to_bytes(self, exporter: Exporter, data_frame: DataFrame):
-        exporter.reference(dataFrameToTable(data_frame))
+        exporter.reference(to_table(data_frame))
         return b''
