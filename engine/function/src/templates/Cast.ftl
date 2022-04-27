@@ -80,6 +80,10 @@ public class Cast {
             return NULL_INT;
         }
 
+        if (checkFidelity && value == NULL_INT) {
+            throw new CastDoesNotPreserveValue("Casting is not supported because the value, " + value + ", represents the null integer sentinel and therefore cannot be cast to int.");
+        }
+
         if(checkFidelity && (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)) {
             throw new CastDoesNotPreserveValue("Casting is not supported because the value, " + value + ", overflows while being cast to int.");
         }
