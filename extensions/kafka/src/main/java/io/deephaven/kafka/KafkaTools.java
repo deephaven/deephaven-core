@@ -161,6 +161,7 @@ public class KafkaTools {
 
     /**
      * Create an Avro schema object for a String containing a JSON encoded Avro schema definition.
+     * 
      * @param avroSchemaAsJsonString The JSON Avro schema definition
      * @return an Avro schema object
      */
