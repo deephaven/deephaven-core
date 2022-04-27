@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 
 public class JsonNodeDateTimeFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;
@@ -23,8 +25,8 @@ public class JsonNodeDateTimeFieldCopier implements FieldCopier {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
-            final long valueAsLong = JsonNodeUtil.getLong(node, fieldPointer, true, true);
-            output.set(ii + destOffset, DateTimeUtils.autoEpochToNanos(valueAsLong));
+            final DateTime dateTime = JsonNodeUtil.getDateTime(node, fieldPointer, true, true);
+            output.set(ii + destOffset, dateTime == null ? QueryConstants.NULL_LONG : dateTime.getNanos());
         }
     }
 }
