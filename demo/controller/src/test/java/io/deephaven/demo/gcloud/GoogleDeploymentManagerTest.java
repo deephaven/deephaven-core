@@ -38,15 +38,18 @@ public class GoogleDeploymentManagerTest {
         long afterHealthy = System.currentTimeMillis();
         // we survived! The machine is working!
 
-        // TODO: use this machine to do some testing of live system.  Perhaps better moved to a @ClassRule?
+        // TODO: use this machine to do some testing of live system. Perhaps better moved to a @ClassRule?
 
         // NOW DESTROY IT! :-)
         ctrl.getDeploymentManager().destroyCluster(machine);
         long afterDestroy = System.currentTimeMillis();
 
-        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(beforeHealthy - beforeRequest) + "s to get " + machine);
-        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(afterHealthy - beforeHealthy) + "s until seeing a healthy " + machine);
-        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(afterDestroy - afterHealthy) + "s to destroy " + machine);
+        System.out.println(
+                "Waited " + TimeUnit.MILLISECONDS.toSeconds(beforeHealthy - beforeRequest) + "s to get " + machine);
+        System.out.println("Waited " + TimeUnit.MILLISECONDS.toSeconds(afterHealthy - beforeHealthy)
+                + "s until seeing a healthy " + machine);
+        System.out.println(
+                "Waited " + TimeUnit.MILLISECONDS.toSeconds(afterDestroy - afterHealthy) + "s to destroy " + machine);
 
     }
 
@@ -61,7 +64,7 @@ public class GoogleDeploymentManagerTest {
         Machine.useImages = false;
         // you can change this machine name to whatever machine name you want
         final Machine testNode = ctrl.requestMachine("test-jxn", true);
-//        testNode.setController(true); // feel free to use this to get a controller to test.
+        // testNode.setController(true); // feel free to use this to get a controller to test.
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode, deploy.getIpPool());
         }
@@ -74,9 +77,10 @@ public class GoogleDeploymentManagerTest {
         if ("true".equals(System.getProperty("noClean"))) {
             System.out.println("-DnoClean=true detected, leaving " + testNode.getHost() + " alive;\n" +
                     "Web: https://" + testNode.getDomainName() + "\n" +
-                    "ssh " + testNode.getDomainName() + " # Only if you've opened port 22, which you should NOT on public internet\n" +
-                    "gcloud compute ssh " + testNode.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject()
-            );
+                    "ssh " + testNode.getDomainName()
+                    + " # Only if you've opened port 22, which you should NOT on public internet\n" +
+                    "gcloud compute ssh " + testNode.getHost() + " --project "
+                    + GoogleDeploymentManager.getGoogleProject());
         } else {
             System.out.println("You did not set sysprop -DnoClean=true, so deleting " + testNode.getHost());
             deploy.destroyCluster(Collections.singletonList(testNode), "");

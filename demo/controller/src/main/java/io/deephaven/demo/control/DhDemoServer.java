@@ -51,14 +51,14 @@ public class DhDemoServer implements QuarkusApplication {
     }
 
     public static void main(String... args)
-        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
 
         final InputStream res = DhDemoServer.class.getResourceAsStream("index.html");
 
         demoHtml = new BufferedReader(
                 new InputStreamReader(res, StandardCharsets.UTF_8))
-                .lines()
-                .collect(Collectors.joining("\n")).split("__URI__");
+                        .lines()
+                        .collect(Collectors.joining("\n")).split("__URI__");
         Quarkus.run(DhDemoServer.class, args);
     }
 
@@ -67,7 +67,7 @@ public class DhDemoServer implements QuarkusApplication {
         System.out.println("Setting up Deephaven Demo Server!");
         Thread.setDefaultUncaughtExceptionHandler((thread, fail) -> {
             System.err.println(
-                "Unhandled failure on thread " + thread.getName() + " (" + thread.getId() + ")");
+                    "Unhandled failure on thread " + thread.getName() + " (" + thread.getId() + ")");
             fail.printStackTrace();
         });
 
@@ -76,17 +76,17 @@ public class DhDemoServer implements QuarkusApplication {
         controller = new ClusterController(new GoogleDeploymentManager("/tmp"), CONTROLLER);
         router.get("/health").handler(rc -> {
             LOG.info("Health check! " + rc.request().uri() + " : " +
-                rc.request().headers().get("User-Agent") + " ( "
-                + rc.request().headers().get("host") + " ) ");
+                    rc.request().headers().get("User-Agent") + " ( "
+                    + rc.request().headers().get("host") + " ) ");
 
             // TODO: real health check
-            //    for workers, grpcurl is on cli, or we can use grpc client here in java
-            //    for controllers, we should check if we have fresh metadata and no fatal errors.
+            // for workers, grpcurl is on cli, or we can use grpc client here in java
+            // for controllers, we should check if we have fresh metadata and no fatal errors.
             // TODO: handle built-in quarkus health check
 
             // enable cors to work on the main url, and the specific subdomain demo-candidate.demo.deephaven.app
             String allowedOrigin = "https://" + DOMAIN;
-            if (("https://controller-" + VERSION_MANGLE + "." + DOMAIN) .equals(rc.request().getHeader("Origin"))) {
+            if (("https://controller-" + VERSION_MANGLE + "." + DOMAIN).equals(rc.request().getHeader("Origin"))) {
                 allowedOrigin = "https://controller-" + VERSION_MANGLE + "." + DOMAIN;
             }
             LOG.infof("Request from origin %s allowed: %s", rc.request().getHeader("Origin"), allowedOrigin);
@@ -97,8 +97,8 @@ public class DhDemoServer implements QuarkusApplication {
         });
         router.get("/robots.txt").handler(rc -> {
             LOG.info("ROBOT DETECTED! " + rc.request().uri() + " : " +
-                rc.request().headers().get("User-Agent") + " ( "
-                + rc.request().headers().get("host") + " ) ");
+                    rc.request().headers().get("User-Agent") + " ( "
+                    + rc.request().headers().get("host") + " ) ");
             rc.response()
                     .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
                     .putHeader("Access-Control-Allow-Methods", "GET")
@@ -107,24 +107,11 @@ public class DhDemoServer implements QuarkusApplication {
                             "Disallow: /");
         });
         router.get().handler(req -> {
-            // for now, ssl redirects are handled by envoy
-//            if (!req.request().isSSL()) {
-//                System.out.println("Redirecting non-ssl request " + req.normalizedPath());
-//                String domain = req.request().uri();
-//                String uri = domain.contains(":") ? domain : "https://" + domain;
-//                req.response()
-//                    .putHeader("Location", uri)
-//                    .setStatusCode(302)
-//                    .end("<!html><html><body>" +
-//                            "You are being redirected to a secure protocol: <a href=\"" + uri + "\">" + uri + "</a>" +
-//                            "</body></html>");
-//                return;
-//            }
             String userAgent = req.request().headers().get("User-Agent");
             // We've seen Nimbostratus and SlackBot in logs; pre-emptively using "Bot" to cover more than SlackBot
             if (userAgent == null || userAgent.contains("Bot") || userAgent.contains("Nimbostratus")) {
                 LOG.info("Rejecting bot: " + userAgent);
-                req.request().headers().entries().forEach(e->{
+                req.request().headers().entries().forEach(e -> {
                     LOG.info("Header: " + e.getKey() + " = " + e.getValue());
                 });
                 req.end();
@@ -192,7 +179,8 @@ public class DhDemoServer implements QuarkusApplication {
             // devMode can skip cookies
             req.redirect(uri);
         } else {
-            // always send user to interstitial page, so we can record our cookie before sending them along to their machine.
+            // always send user to interstitial page,
+            // so we can record our cookie before sending them along to their machine.
             String cookieDomain = System.getenv("COOKIE_DOMAIN");
             if (cookieDomain == null) {
                 cookieDomain = DOMAIN + "; secure";
@@ -206,7 +194,9 @@ public class DhDemoServer implements QuarkusApplication {
             req.response()
                     .putHeader("content-type", "text/html")
                     .putHeader("x-frame-options", "DENY")
-                    .putHeader("Set-Cookie", COOKIE_NAME + "=" + machine.getDomainName().split("[.]")[0] + "; Max-Age=2400; domain=" + cookieDomain + "; HttpOnly")
+                    .putHeader("Set-Cookie",
+                            COOKIE_NAME + "=" + machine.getDomainName().split("[.]")[0] + "; Max-Age=2400; domain="
+                                    + cookieDomain + "; HttpOnly")
                     .setChunked(true)
                     .setStatusCode(200)
                     .end(html);

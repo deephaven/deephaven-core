@@ -19,10 +19,13 @@ import static io.deephaven.demo.manager.NameConstants.*;
 /**
  * ImageDeployer:
  * <p>
- * <p> This class is responsible for building new worker/controller images.
  * <p>
- * <p> It starts with a blank machine, applies our setup scripts, then turn the machine
- * <p> off and creates a new image of the harddrive, so we can easily spin up N pre-setup copies.
+ * This class is responsible for building new worker/controller images.
+ * <p>
+ * <p>
+ * It starts with a blank machine, applies our setup scripts, then turn the machine
+ * <p>
+ * off and creates a new image of the harddrive, so we can easily spin up N pre-setup copies.
  *
  */
 public class ImageDeployer {
@@ -32,7 +35,7 @@ public class ImageDeployer {
     }
     private static final Logger LOG = Logger.getLogger(ImageDeployer.class);
 
-    public static void main(String ... args) throws IOException, InterruptedException {
+    public static void main(String... args) throws IOException, InterruptedException {
         final ImageDeployer deployer = new ImageDeployer();
         if (args.length == 0) {
             deployer.deploy(VERSION, "ancestor");
@@ -65,10 +68,12 @@ public class ImageDeployer {
                 LOG.infof("Machine %s already existed, updating startup script", workerName);
                 // update the startup script url, and then kick the machine over.
                 File startupScript = new File(localDir, "prepare-worker.sh");
-                Execute.bashQuiet("update_init", "sed -i -e s/AVOID_INIT=true/AVOID_INIT=false/ " + startupScript.getAbsolutePath());
+                Execute.bashQuiet("update_init",
+                        "sed -i -e s/AVOID_INIT=true/AVOID_INIT=false/ " + startupScript.getAbsolutePath());
                 GoogleDeploymentManager.gcloud(false,
                         "instances", "add-metadata", workerName,
-                        "--metadata-from-file=startup-script=" + new File(localDir, "prepare-worker.sh").getAbsolutePath());
+                        "--metadata-from-file=startup-script="
+                                + new File(localDir, "prepare-worker.sh").getAbsolutePath());
                 // turn the machine off, so its startup script will rerun!
                 GoogleDeploymentManager.gcloud(false,
                         "instances", "stop", workerName);
@@ -89,7 +94,7 @@ public class ImageDeployer {
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
         ClusterController ctrl = new ClusterController(manager, false, true);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
-        String workerBox = prefix + "worker-" + VERSION_MANGLE; //ancestor-worker
+        String workerBox = prefix + "worker-" + VERSION_MANGLE; // ancestor-worker
         String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor=controller
         String baseBox = manager.getBaseImageName();
         manager.setBaseImageName(baseBox);
@@ -101,7 +106,8 @@ public class ImageDeployer {
             // for now, we are NOT going to allow stomping worker images w/o explicit -Pforce=true
             result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
             if (result.code == 0) {
-                throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
+                throw new IllegalStateException(
+                        "Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
             }
         }
 
@@ -124,8 +130,10 @@ public class ImageDeployer {
                 manager.waitForSsh(base, -1, TimeUnit.MINUTES.toMillis(15));
                 // wait until we can get a finish-setup.sh "we are done" log messages.
                 ctrl.waitUntilHealthy(base);
-                // must delete the vm-startup.log link, otherwise a later worker or controller image might accidentally think it is already done setup!
-                // basically, .waitUntilHealthy polls this log for a finished message, so we do NOT want that in the base image (it will cause race conditions).
+                // must delete the vm-startup.log link, otherwise a later worker or controller image might accidentally
+                // think it is already done setup!
+                // basically, .waitUntilHealthy polls this log for a finished message, so we do NOT want that in the
+                // base image (it will cause race conditions).
                 Execute.ssh(false, base.getDomainName(), "sudo rm /var/log/vm-startup.log");
                 // deploy the base image.
                 finishDeploy("Base", base, manager);
@@ -137,23 +145,23 @@ public class ImageDeployer {
             controller = null;
         } else {
             controller = ctrl.findMachine(controllerBox, true, true);
-            LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
+            LOG.info("Deleting old boxes " + workerBox + " and " + controllerBox + " if they exist");
             // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
-            Execute.setTimer("Delete " + controllerBox, ()-> {
+            Execute.setTimer("Delete " + controllerBox, () -> {
                 GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q",
-    //                    "controller-" + VERSION_MANGLE
-                        controllerBox
-                );
+                        // "controller-" + VERSION_MANGLE
+                        controllerBox);
                 controller.getIp().setDomain(new DomainMapping(controllerBox, DOMAIN));
-                // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
+                // The manager itself has code to select our prepare-controller.sh script as machine startup script
+                // based on these bools:
                 controller.setController(true);
                 controller.setSnapshotCreate(true);
 
                 return "";
             });
         }
-//        // no need to offthread, the next "expensive" operation we do is to create a clean box.
-//        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
+        // no need to offthread, the next "expensive" operation we do is to create a clean box.
+        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
 
 
@@ -167,9 +175,11 @@ public class ImageDeployer {
         manager.assignDns(ctrl, Stream.of(worker));
         // even if we're just going to shut the machine down, wait until ssh is responsive
         manager.waitForSsh(worker, -1, TimeUnit.MINUTES.toMillis(15));
-        // wait until we can reach /health, so we know the system setup is complete and the server is in a running state.
+        // wait until we can reach /health,
+        // so we know the system setup is complete and the server is in a running state.
         ctrl.waitUntilHealthy(worker);
-        // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules are persisting across restarts
+        // TODO: have a test to turn machine off and on, wait again until /health works, to verify that iptables rules
+        // are persisting across restarts
 
         finishDeploy("Worker", worker, manager);
 
@@ -210,12 +220,16 @@ public class ImageDeployer {
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
 
-        LOG.infof("Done deployment!\n\nTest https://%s.%s and promote to leader by updating DNS for %s to point to %s\n\n",
-                newCtrl.getHost(), newCtrl.domain().getDomainRoot(), newCtrl.domain().getDomainRoot(), newCtrl.getIp().getIp());
+        LOG.infof(
+                "Done deployment!\n\nTest https://%s.%s and promote to leader by updating DNS for %s to point to %s\n\n",
+                newCtrl.getHost(), newCtrl.domain().getDomainRoot(), newCtrl.domain().getDomainRoot(),
+                newCtrl.getIp().getIp());
     }
 
-    private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager) throws IOException, InterruptedException {
-        boolean doDeploy = "true".equals(System.getProperty("deployImage")) || "true".equals(System.getenv("DEPLOY_IMAGE"));
+    private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager)
+            throws IOException, InterruptedException {
+        boolean doDeploy =
+                "true".equals(System.getProperty("deployImage")) || "true".equals(System.getenv("DEPLOY_IMAGE"));
         LOG.info("Finishing deploy for " + machine);
         final String typeLower = type.toLowerCase();
         final String typeUpper = type.toUpperCase();
@@ -223,8 +237,8 @@ public class ImageDeployer {
         if (doDeploy) {
             LOG.infof("Creating new %s image %s", typeLower, snapName);
             manager.turnOff(machine);
-            GoogleDeploymentManager.gcloud(true, false,"images", "delete", "-q", snapName);
-            GoogleDeploymentManager.gcloud(false, false,"images", "create", snapName,
+            GoogleDeploymentManager.gcloud(true, false, "images", "delete", "-q", snapName);
+            GoogleDeploymentManager.gcloud(false, false, "images", "create", snapName,
                     "--source-disk", machine.getHost(), "--source-disk-zone", GoogleDeploymentManager.getGoogleZone());
             LOG.infof("Done creating new %s image %s", typeLower, snapName);
 
@@ -233,8 +247,10 @@ public class ImageDeployer {
             if (LOG.isInfoEnabled()) {
                 LOG.info(type + " is ready to be tested and converted to an image. You can test this machine here:\n" +
                         "Web: https://" + machine.getDomainName() + "\n" +
-                        "ssh " + machine.getDomainName() + " # Only if you've opened port 22, which you should NOT do on public internet\n" +
-                        "gcloud compute ssh " + machine.getHost() + " --project " + GoogleDeploymentManager.getGoogleProject());
+                        "ssh " + machine.getDomainName()
+                        + " # Only if you've opened port 22, which you should NOT do on public internet\n" +
+                        "gcloud compute ssh " + machine.getHost() + " --project "
+                        + GoogleDeploymentManager.getGoogleProject());
             }
         }
     }

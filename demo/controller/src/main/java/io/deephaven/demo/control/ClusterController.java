@@ -26,10 +26,13 @@ import static io.deephaven.demo.gcloud.GoogleDeploymentManager.*;
 /**
  * DomainController:
  * <p>
- * <p> The brains enforcing our cluster management policies via live machine-to-dns-to-ip mappings.
  * <p>
- * <p> This class reads in data from google, and uses that to glue together a set of IP addresses {@link IpPool},
- * <p> to DNS records
+ * The brains enforcing our cluster management policies via live machine-to-dns-to-ip mappings.
+ * <p>
+ * <p>
+ * This class reads in data from google, and uses that to glue together a set of IP addresses {@link IpPool},
+ * <p>
+ * to DNS records
  * <p>
  * Created by James X. Nelson (James@WeTheInter.net) on 25/09/2021 @ 2:25 a.m..
  */
@@ -50,13 +53,17 @@ public class ClusterController implements IClusterController {
     public ClusterController() {
         this(new GoogleDeploymentManager("/tmp"));
     }
+
     public ClusterController(@NotNull final GoogleDeploymentManager manager) {
         this(manager, true, true);
     }
+
     public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadData) {
         this(manager, loadData, loadData);
     }
-    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines, boolean loadIpsAndDns) {
+
+    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines,
+            boolean loadIpsAndDns) {
         this.manager = manager;
         this.client = new OkHttpClient();
         latch = new CountDownLatch(loadMachines ? 4 : 3);
@@ -71,7 +78,8 @@ public class ClusterController implements IClusterController {
         // Test if we have gcloud login and print useful messages
         Exception sentinel = new Exception();
         try {
-            final Execute.ExecutionResult result = Execute.executeQuiet("gcloud", "config", "list", "account", "--format", "value(core.account)");
+            final Execute.ExecutionResult result =
+                    Execute.executeQuiet("gcloud", "config", "list", "account", "--format", "value(core.account)");
             if (result.code == 0) {
                 LOG.infof("Running cluster controller as %s:\nLoading machines? %s\nLoading ipsAndDns? %s)",
                         result.out.trim(), loadMachines, loadIpsAndDns);
@@ -88,7 +96,7 @@ public class ClusterController implements IClusterController {
         }
 
         // resolve the leader off-thread, since there's no need to block now
-        Execute.setTimer("Leader Check", ()-> {
+        Execute.setTimer("Leader Check", () -> {
             if (leader.get()) {
                 LOG.info("We are the leader!");
             } else {
@@ -96,34 +104,36 @@ public class ClusterController implements IClusterController {
             }
         });
         if (loadIpsAndDns) {
-            Execute.setTimer("Load Used IPs", this::loadIpsUsedInitial); // load used first, so we can figure out machine IPs
+            // load used first, so we can figure out machine IPs
+            Execute.setTimer("Load Used IPs", this::loadIpsUsedInitial);
             Execute.setTimer("Load Unused IPs", this::loadIpsUnusedInitial);
             Execute.setTimer("Load Domains", this::loadDomainsInitial);
         }
         if (loadMachines) {
-            // don't load machines or start any other controller threads if we are manually creating machines (ImageDeployer)
+            // don't load machines or start any other controller threads if we are manually creating machines
             Execute.setTimer("Load Machines", this::loadMachinesInitial);
         }
     }
 
     private void resetLeader() {
-        leader = new Lazy<>(()->{
+        leader = new Lazy<>(() -> {
             try {
                 final Execute.ExecutionResult result = Execute.execute("bash", "-c",
-                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] && echo leader || echo follower");
+                        "[[ $(dig +short " + DOMAIN + ") == $(dig +short $(hostname)." + DOMAIN + ") ]] " +
+                                "&& echo leader || echo follower");
                 return "leader".equals(result.out.trim());
             } catch (IOException | InterruptedException e) {
                 LOG.error("Unable to tell if we are leader", e);
                 return false;
             }
-//            return true;
+            // return true;
         });
     }
 
     private void monitorLoop() {
         final Vertx vx = Vertx.vertx();
-        vx.setTimer(TimeUnit.MINUTES.toMillis(checkLatency), t->{
-            Execute.setTimer("Monitor Loop", ()->{
+        vx.setTimer(TimeUnit.MINUTES.toMillis(checkLatency), t -> {
+            Execute.setTimer("Monitor Loop", () -> {
                 try {
                     checkState();
                 } finally {
@@ -151,9 +161,11 @@ public class ClusterController implements IClusterController {
             if (machine.isOnline()) {
                 if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
                     if (isValidVersion(machine)) {
-                        LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine, System.currentTimeMillis() - machine.getExpiry());
+                        LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine,
+                                System.currentTimeMillis() - machine.getExpiry());
                     }
-                    // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
+                    // machine is past expiry...
+                    // lets turn this box off, unless it's version is old, in which case, delete it
                     turnOff(machine, true);
                     offlineMachines.add(machine);
                 } else {
@@ -185,7 +197,7 @@ public class ClusterController implements IClusterController {
             LOG.info("We are not the leader, refusing to alter the machine pool");
             return;
         }
-        if (numRunning < poolSize){
+        if (numRunning < poolSize) {
             // not enough nodes are running... turn some on!
             for (Machine next : offlineMachines) {
                 if (!next.isOnline()) {
@@ -208,7 +220,8 @@ public class ClusterController implements IClusterController {
             int limit = 3;
             while (numRunning < poolSize) {
                 if (numRunning >= getMaxPoolSize()) {
-                    LOG.error("There are already " + numRunning + " running instances, and max size is " + getMaxPoolSize());
+                    LOG.error("There are already " + numRunning + " running instances, " +
+                            "and max size is " + getMaxPoolSize());
                     break;
                 } else {
                     LOG.warn("Only " + numRunning + " machines, but want " + poolSize + "; adding a new machine");
@@ -226,7 +239,8 @@ public class ClusterController implements IClusterController {
         if (availableMachines.size() < numBuffer) {
             int limit = 3;
             while (availableMachines.size() < numBuffer) {
-                LOG.warn("Only " + availableMachines.size() + " machines are running and unusued, but want " + getPoolBuffer() + " available machines; adding a new machine");
+                LOG.warn("Only " + availableMachines.size() + " machines are running and unusued, but want "
+                        + getPoolBuffer() + " available machines; adding a new machine");
                 final Machine newMachine = requestMachine(NameGen.newName(), false);
                 availableMachines.add(newMachine);
                 runningMachines.add(newMachine);
@@ -236,7 +250,8 @@ public class ClusterController implements IClusterController {
                 }
             }
         } else if (numRunning > poolSize) {
-            LOG.info(numRunning + " running machines > " + poolSize + " preferred pool size; trying to shut down extra machines");
+            LOG.info(numRunning + " running machines > " + poolSize
+                    + " preferred pool size; trying to shut down extra machines");
             // if more than needed nodes are running, turn off any nodes not servicing clients
             int numShut = 0;
             Set<Machine> notInUse = new TreeSet<>(MachinePool.CMP);
@@ -247,10 +262,13 @@ public class ClusterController implements IClusterController {
                 if (next.isInUse()) {
                     final long millis = next.getExpiry() - System.currentTimeMillis();
                     final long minutes = TimeUnit.MILLISECONDS.toMinutes(millis); // rounds millis into minutes
-                    LOG.infof("%s (%s) expires in %s minutes", next.getHost(), next.getDomainName(), 1 + minutes); // +1 b/c we rounded down already
+                    LOG.infof("%s (%s) expires in %s minutes", next.getHost(), next.getDomainName(),
+                            // +1 b/c we rounded down already
+                            1 + minutes);
                     if (millis > getSessionTtl()) {
                         // this should not happen once we get all existing machine labels fixed up
-                        LOG.errorf("%s has an expiry (%s minutes) greater than session TTL (%s minutes)!", next.getHost(), minutes, TimeUnit.MILLISECONDS.toMinutes(getSessionTtl()));
+                        LOG.errorf("%s has an expiry (%s minutes) greater than session TTL (%s minutes)!",
+                                next.getHost(), minutes, TimeUnit.MILLISECONDS.toMinutes(getSessionTtl()));
                         fixLease(next);
                     }
                 } else {
@@ -259,8 +277,10 @@ public class ClusterController implements IClusterController {
             }
             // leave a buffer of unused machines running, even if we've exceeded pool size
             for (Machine next : notInUse) {
-                if (next.getExpiry() > 0 && next.getExpiry() < System.currentTimeMillis() && availableMachines.size() > getPoolBuffer()) {
-                    LOG.infof("Turning off unneeded machine %s, expired %s minutes ago", next.toStringShort(), TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - next.getExpiry()));
+                if (next.getExpiry() > 0 && next.getExpiry() < System.currentTimeMillis()
+                        && availableMachines.size() > getPoolBuffer()) {
+                    LOG.infof("Turning off unneeded machine %s, expired %s minutes ago", next.toStringShort(),
+                            TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - next.getExpiry()));
                     numRunning--;
                     numShut++;
                     availableMachines.remove(next);
@@ -295,7 +315,8 @@ public class ClusterController implements IClusterController {
                     retired++;
                     LOG.infof("Retiring machine %s as it has been on too long (%s minutes) since being used / started",
                             available.toStringShort(), TimeUnit.MILLISECONDS.toMinutes(aliveFor));
-                    // this machine has been online for 3 hours after it was last used, or 3 hour + sessionTTL w/o being used.
+                    // this machine has been online for 3 hours after it was last used,
+                    // or 3 hour + sessionTTL w/o being used.
                     // turn this machine off...
                     turnOff(available, true);
                     // and request a new machine
@@ -316,19 +337,20 @@ public class ClusterController implements IClusterController {
         if (machines.getNumberOfflineMachines() <= getMaxOfflineSize()) {
             return;
         }
-        LOG.infof("Attempting to reduce offline machines from %s to %s", machines.getNumberOfflineMachines(), getMaxOfflineSize());
+        LOG.infof("Attempting to reduce offline machines from %s to %s", machines.getNumberOfflineMachines(),
+                getMaxOfflineSize());
         String expiredHourAgo = toTime(System.currentTimeMillis() - getSessionTtl() - TimeUnit.HOURS.toMillis(1));
-        final Execute.ExecutionResult allAncients = gcloudQuiet(true, false,"instances", "list",
+        // TODO: hide all gcloud executions behind DeploymentManager
+        final Execute.ExecutionResult allAncients = gcloudQuiet(true, false, "instances", "list",
                 "-q",
                 "--format", getMachineFormatFlag(),
                 "--filter",
-                    "( labels." + LABEL_LEASE + " < " + expiredHourAgo + " OR NOT labels." + LABEL_LEASE + " )"
+                "( labels." + LABEL_LEASE + " < " + expiredHourAgo + " OR NOT labels." + LABEL_LEASE + " )"
                         + " AND " +
                         "labels." + LABEL_PURPOSE + " <= " + PURPOSE_WORKER
-                        // ridiculous <=, >= needed to represent = because = actually means contains, not equals...  ...oh google...
+                        // ridiculous <=, >= needed to represent = because = actually means contains, not equals...
                         + " AND " +
-                        "labels." + LABEL_PURPOSE + " >= " + PURPOSE_WORKER
-        );
+                        "labels." + LABEL_PURPOSE + " >= " + PURPOSE_WORKER);
         if (allAncients.code == 0) {
             for (String machine : allAncients.out.split("\n")) {
                 final Machine mach = updateMachineFromCsv(machine);
@@ -341,7 +363,8 @@ public class ClusterController implements IClusterController {
                 }
             }
         } else {
-            LOG.errorf("Failed(%s) to read in old, offline machines: %s", allAncients.code, allAncients.getSourceCode());
+            LOG.errorf("Failed(%s) to read in old, offline machines: %s", allAncients.code,
+                    allAncients.getSourceCode());
             warnResult(allAncients);
         }
     }
@@ -352,7 +375,8 @@ public class ClusterController implements IClusterController {
         if (!validVersion) {
             synchronized (hasLogged) {
                 if (null == hasLogged.put(machine, true)) {
-                    LOG.infof("Incorrect version %s (!= our version %s) detected for machine %s", machine.getVersion(), VERSION_MANGLE, machine);
+                    LOG.infof("Incorrect version %s (!= our version %s) detected for machine %s", machine.getVersion(),
+                            VERSION_MANGLE, machine);
                 }
             }
             // immediately remove this machine from rotation, so we don't consider it beyond the scope of this method.
@@ -361,14 +385,15 @@ public class ClusterController implements IClusterController {
             machine.setInUse(true);
         }
         // get off the fork-join pool to do IO:
-        Execute.setTimer("Decommission " + machine.getHost(), ()-> {
+        Execute.setTimer("Decommission " + machine.getHost(), () -> {
             try {
                 // TODO: ping the machine and have a procedure that warns the user this is going to happen:
-                //  also, we should be hooking up a new DNS name to the machine and deleting the one that is in use
+                // also, we should be hooking up a new DNS name to the machine and deleting the one that is in use
                 if (validVersion) {
 
                     machine.setOnline(false);
-                    boolean keep = revive && machines.getNumberOfflineMachines() <= getMaxOfflineSize() && machine.getLastOnline() > (System.currentTimeMillis() - getDeletionTtl());
+                    boolean keep = revive && machines.getNumberOfflineMachines() <= getMaxOfflineSize()
+                            && machine.getLastOnline() > (System.currentTimeMillis() - getDeletionTtl());
                     if (keep) {
                         if (leader.get()) {
                             machines.clearExpiry(machine);
@@ -389,7 +414,8 @@ public class ClusterController implements IClusterController {
                         // if we're the leader, kill the box
                         if (leader.get()) {
                             manager.deleteMachine(machine.getHost());
-                            // setup new DNS for next user (we delete the machine, but still want fresh DNS for the IP we are releasing)
+                            // setup new DNS for next user
+                            // (we delete the machine, but still want fresh DNS for the IP we are releasing)
                             manager.replaceDNS(this, machine);
                         }
                     }
@@ -397,7 +423,8 @@ public class ClusterController implements IClusterController {
                     // only the leader gets to delete instances.
                     if (leader.get()) {
                         if (allowedToDelete(machine)) {
-                            // only delete versions older than ourselves. we don't want an old controller to touch new machines,
+                            // only delete versions older than ourselves.
+                            // we don't want an old controller to touch new machines,
                             // but we do want new controllers to delete old machines!
                             machine.setDestroyed(true);
                             manager.deleteMachine(machine.getHost());
@@ -434,6 +461,7 @@ public class ClusterController implements IClusterController {
 
     /**
      * The maximum number of machines to allow at one time (prevents creating new machines)
+     * 
      * @return 150 during business hours, 75 otherwise.
      */
     private int getMaxPoolSize() {
@@ -450,6 +478,7 @@ public class ClusterController implements IClusterController {
         }
         return 75;
     }
+
     private int getMaxOfflineSize() {
         String poolSize = System.getenv("MAX_OFFLINE_SIZE");
         if (poolSize != null) {
@@ -484,9 +513,9 @@ public class ClusterController implements IClusterController {
     }
 
     /**
-     * @return The desired size of the "always on" pool of machines.
-     * During business hours, we keep 20 machines always available, only 5 afterhours.
-     * We start adding new machines to keep at least {@link #getPoolBuffer()} (15 biz | 5 afterhours) machines available.
+     * @return The desired size of the "always on" pool of machines. During business hours, we keep 20 machines always
+     *         available, only 5 afterhours. We will start adding new machines to keep at least {@link #getPoolBuffer()}
+     *         (15 biz | 5 afterhours) machines available
      */
     private int getPoolSize() {
         String poolSize = System.getenv("POOL_SIZE");
@@ -508,10 +537,10 @@ public class ClusterController implements IClusterController {
         try {
             loadMachines();
             latch.countDown();
-            Execute.setTimer("Wait until loaded", ()->{
+            Execute.setTimer("Wait until loaded", () -> {
                 waitUntilReady();
                 // a little extra delay: give user a chance to request a machine before we possibly clean it up!
-                Execute.setTimer("Refresh state", ()-> {
+                Execute.setTimer("Refresh state", () -> {
                     try {
                         Thread.sleep(250);
                     } catch (InterruptedException e) {
@@ -532,6 +561,7 @@ public class ClusterController implements IClusterController {
             throw t;
         }
     }
+
     private void loadMachines() {
         if (shutdown) {
             return;
@@ -543,17 +573,15 @@ public class ClusterController implements IClusterController {
             final Execute.ExecutionResult result;
             result = gcloudQuiet(true, false, "instances", "list",
                     "--filter",
-                        // so annoying... google prints a warning about = operator changing;
-                        // for whatever terrible reason, key<=val && key>=val is how to express key=val,
-                        // because key=val is deprecated form of contains(), see `gcloud topic filters`
-                        "labels." + LABEL_PURPOSE + "<=" + PURPOSE_WORKER +
-                        " AND " +
-                        "labels." + LABEL_PURPOSE + ">=" + PURPOSE_WORKER
-                    ,
+                    // so annoying... google prints a warning about = operator changing;
+                    // for whatever terrible reason, key<=val && key>=val is how to express key=val,
+                    // because key=val is deprecated form of contains(), see `gcloud topic filters`
+                    "labels." + LABEL_PURPOSE + "<=" + PURPOSE_WORKER +
+                            " AND " +
+                            "labels." + LABEL_PURPOSE + ">=" + PURPOSE_WORKER,
                     "--format", getMachineFormatFlag(),
                     "--page-size", Integer.toString(getMaxPoolSize() * 2),
-                    "-q"
-            );
+                    "-q");
             rawOut = result.out;
             if (rawOut.contains("Quota exceeded")) {
                 checkLatency = checkLatency + 1;
@@ -591,7 +619,8 @@ public class ClusterController implements IClusterController {
                 if (m.getMark() < mark) {
                     // this machine has disappeared! ...forget about it!
                     if (isValidVersion(m)) {
-                        LOG.infof("Machine %s seems to have disappeared! (perhaps another controller has removed it?)", m.getHost());
+                        LOG.infof("Machine %s seems to have disappeared! (perhaps another controller has removed it?)",
+                                m.getHost());
                     }
                     machines.removeMachine(m);
                 }
@@ -618,8 +647,8 @@ public class ClusterController implements IClusterController {
         if (bits[getIndexStatus()].length() > 0) {
             online =
                     "RUNNING".equals(bits[getIndexStatus()]) ||
-                    "STAGING".equals(bits[getIndexStatus()]) ||
-                    "PROVISIONING".equals(bits[getIndexStatus()]);
+                            "STAGING".equals(bits[getIndexStatus()]) ||
+                            "PROVISIONING".equals(bits[getIndexStatus()]);
         }
         final String ipAddr, ipName;
         if (bits[getIndexIp()].length() > 0) {
@@ -631,7 +660,8 @@ public class ClusterController implements IClusterController {
         String version = bits[getIndexVersion()];
         boolean needsVersionUpdate = false;
         if (!isValidVersion(version)) {
-            LOG.infof("Found invalid version; our version %s, machine version: %s, all data: %s", VERSION_MANGLE, bits[getIndexVersion()], line);
+            LOG.infof("Found invalid version; our version %s, machine version: %s, all data: %s", VERSION_MANGLE,
+                    bits[getIndexVersion()], line);
             if (version.contains("_") && VERSION_MANGLE.contains("_")) {
                 // a user's custom machine based on git branch name, lets allow version changes
                 needsVersionUpdate = true;
@@ -660,7 +690,8 @@ public class ClusterController implements IClusterController {
             manager.addLabel(mach, LABEL_VERSION, VERSION_MANGLE);
         }
         if (bits[getIndexHostname()].length() > 0) {
-            // we aren't really setting a string field, rather we're selecting an existing DomainMapping from the object.
+            // we aren't really setting a string field,
+            // rather we're selecting an existing DomainMapping from the object.
             String domain = mach.domain() == null ? DOMAIN : mach.domain().getDomainRoot();
             mach.setDomainName(bits[getIndexHostname()].trim() + "." + domain);
         }
@@ -669,7 +700,7 @@ public class ClusterController implements IClusterController {
         mach.setVersion(version);
         if (isValidVersion(mach)) {
             machines.addMachine(mach);
-        } else if (!mach.isInUse()){
+        } else if (!mach.isInUse()) {
             // never turn off unexpired machines.
             if (mach.getExpiry() <= System.currentTimeMillis()) {
                 if (leader.get()) {
@@ -714,14 +745,15 @@ public class ClusterController implements IClusterController {
         return mach;
     }
 
-    private void maybeRemove(final String name, final String version, final String ip, final String hostname, final String lease, String debugString) {
+    private void maybeRemove(final String name, final String version, final String ip, final String hostname,
+            final String lease, String debugString) {
         if (!leader.get()) {
             // only the leader gets to delete things
             return;
         }
         final Long expiry = lease == null || lease.isEmpty() ? null : parseTime(lease, debugString);
         if (allowedToDelete(version, debugString, expiry)) {
-            Execute.setTimer("Delete " + name + "@" + version, ()->{
+            Execute.setTimer("Delete " + name + "@" + version, () -> {
                 try {
                     LOG.infof("Deleting old machine %s; debug info: %s", name, debugString);
                     manager.deleteMachine(name);
@@ -730,9 +762,8 @@ public class ClusterController implements IClusterController {
                 }
                 if (hostname != null && hostname.length() > 0) {
                     DomainMapping mapping = new DomainMapping(hostname, DOMAIN);
-                    // final Execute.ExecutionResult dnsResult = manager.checkDns(mapping.getDomainQualified(), DNS_QUAD9);
                     LOG.infof("Purging old DNS record %s for machine %s (%s)", mapping, name, debugString);
-                    manager.dns().tx(change-> change.removeRecord(mapping, ip));
+                    manager.dns().tx(change -> change.removeRecord(mapping, ip));
                 }
             });
         }
@@ -740,16 +771,16 @@ public class ClusterController implements IClusterController {
 
     private void fixLease(final Machine mach) {
         // TODO: instead of committing a label-add operation and hoping it doesn't randomly fail,
-        //   we should instead submit a job to apply this label, and let it fail up to N times (~4)
+        // we should instead submit a job to apply this label, and let it fail up to N times (~4)
         final String expiry = toTime(System.currentTimeMillis() + getSessionTtl());
-            LOG.infof("Fixing broken lease; expiry was %sms on %s", mach.getExpiry(), mach);
-            manager.addLabel(mach, LABEL_LEASE, expiry, (r, e)-> {
-                if (e == null) {
-                    LOG.infof("Successfully renewed lease of %s (%s) to %s", mach.getHost(), mach.getDomainName(), expiry);
-                } else {
-                    LOG.errorf(e, "Unable to clear lease for machine %s", mach);
-                }
-            });
+        LOG.infof("Fixing broken lease; expiry was %sms on %s", mach.getExpiry(), mach);
+        manager.addLabel(mach, LABEL_LEASE, expiry, (r, e) -> {
+            if (e == null) {
+                LOG.infof("Successfully renewed lease of %s (%s) to %s", mach.getHost(), mach.getDomainName(), expiry);
+            } else {
+                LOG.errorf(e, "Unable to clear lease for machine %s", mach);
+            }
+        });
     }
 
     private boolean isValidVersion(final Machine machine) {
@@ -762,7 +793,7 @@ public class ClusterController implements IClusterController {
 
     private String getMachineFormatFlag() {
         return "csv[box,no-heading](" +
-                // if you change the order of these arguments, please update the getIndex*() methods below too.
+        // if you change the order of these arguments, please update the getIndex*() methods below too.
                 "name," +
                 "labels." + LABEL_DOMAIN + "," +
                 "labels." + LABEL_USER + "," +
@@ -772,28 +803,59 @@ public class ClusterController implements IClusterController {
                 "labels." + LABEL_IP_NAME + "," +
                 "labels." + LABEL_VERSION + "," +
                 "status" + // status is never empty, so it's best to keep this the last item in this response.
-        ")";
+                ")";
     }
-    private int getIndexName() { return 0; }
-    private int getIndexHostname() { return 1; }
-    private int getIndexUser() { return 2; }
-    private int getIndexIp() { return 3; }
-    private int getIndexPurpose() { return 4; }
-    private int getIndexLease() { return 5; }
-    private int getIndexIpName() { return 6; }
-    private int getIndexVersion() { return 7; }
+
+    private int getIndexName() {
+        return 0;
+    }
+
+    private int getIndexHostname() {
+        return 1;
+    }
+
+    private int getIndexUser() {
+        return 2;
+    }
+
+    private int getIndexIp() {
+        return 3;
+    }
+
+    private int getIndexPurpose() {
+        return 4;
+    }
+
+    private int getIndexLease() {
+        return 5;
+    }
+
+    private int getIndexIpName() {
+        return 6;
+    }
+
+    private int getIndexVersion() {
+        return 7;
+    }
+
     private int getIndexStatus() {
-        return 8; // The last item in our csv response should be non-empty, so String.split() gives accurate sized arrays
+        // The last item in our csv response should be non-empty, so String.split() gives accurate sized arrays
+        return 8;
     }
-    // STOP! Make sure that new indices are added above, and that getIndexLength(), below, is the total number of indices
-    // STOP MORE: The last item in this list should be never-empty, or semantics around length-checking the split() csv line may fail.
-    private int getIndexLength() { return 9; }
+
+    // STOP!
+    // Make sure that new indices are added above, and that getIndexLength(), below, is the total number of indices
+    // STOP MORE:
+    // The last item in this list should be never-empty, or semantics around length-checking split() csv line may fail.
+    private int getIndexLength() {
+        return 9;
+    }
 
     private void loadDomainsInitial() {
         try {
             loadDomains();
             latch.countDown();
-            Execute.setTimer("Cleanup DNS", ()->{
+            Execute.setTimer("Cleanup DNS", () -> {
                 waitUntilReady();
                 waitUntilIpsCreated();
                 // now! map all our known domains to known IP addresses, and delete anything left hanging
@@ -845,6 +907,7 @@ public class ClusterController implements IClusterController {
             throw t;
         }
     }
+
     private void loadIpsUnused() {
         if (shutdown) {
             return;
@@ -854,8 +917,7 @@ public class ClusterController implements IClusterController {
             Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",
                     "--filter", "region:" + REGION + " AND status:reserved",
                     "--format", "csv[box,no-heading](name,ADDRESS)",
-                    "-q"
-            );
+                    "-q");
             if (result.out.contains("Quota exceeded")) {
                 checkLatency = checkLatency + 1;
                 return;
@@ -874,7 +936,8 @@ public class ClusterController implements IClusterController {
             }
             LOG.info("Found " + ips.getNumUnused() + " unused IP addresses");
         } catch (Exception e) {
-            System.err.println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
+            System.err
+                    .println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
             e.printStackTrace();
         }
     }
@@ -889,6 +952,7 @@ public class ClusterController implements IClusterController {
             throw t;
         }
     }
+
     private void loadIpsUsed() {
         if (shutdown) {
             return;
@@ -896,11 +960,10 @@ public class ClusterController implements IClusterController {
         String[] ipBits = null;
         try {
             Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",
-                   // TODO: label our addresses so we can filter more correctly:
+                    // TODO: label our addresses so we can filter more correctly:
                     "--filter", "region:" + REGION + " AND status:in_use",
                     "--format", "csv[box,no-heading](name,ADDRESS)",
-                    "-q"
-            );
+                    "-q");
             if (result.out.contains("Quota exceeded")) {
                 checkLatency = checkLatency + 1;
                 return;
@@ -920,7 +983,8 @@ public class ClusterController implements IClusterController {
             }
             LOG.info("Found " + ips.getNumUsed() + " used IP addresses");
         } catch (Exception e) {
-            System.err.println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
+            System.err
+                    .println("Unable to load IPs! Last seen item: " + (ipBits == null ? null : Arrays.asList(ipBits)));
             e.printStackTrace();
         }
     }
@@ -946,9 +1010,11 @@ public class ClusterController implements IClusterController {
     public Machine requestMachine() {
         return requestMachine(true);
     }
+
     public Machine requestMachine(boolean reserve) {
         return requestMachine(reserve, true);
     }
+
     public Machine requestMachine(boolean reserve, boolean useExisting) {
         waitUntilReady();
         if (useExisting) {
@@ -970,6 +1036,7 @@ public class ClusterController implements IClusterController {
     public Machine requestMachine(String name, boolean reserve) {
         return requestMachine(name, reserve, true);
     }
+
     public Machine requestMachine(String name, boolean reserve, boolean multiDomain) {
         // reserve an IP while getting a machine going.
         final Machine machine = machines.createMachine(this, name, multiDomain);
@@ -983,7 +1050,7 @@ public class ClusterController implements IClusterController {
     }
 
     /**
-     * Handles all the work to make sure a worker we believe to be runnable is actually online and correctly routed to DNS.
+     * Handles making sure a worker we believe to be runnable is actually online and correctly routed to DNS.
      *
      * @param machine The machine to turn on
      * @param reserve Whether or not to actually claim the machine, or just turn it on and let it idle.
@@ -997,17 +1064,16 @@ public class ClusterController implements IClusterController {
             // if we aren't reserving this machine, still update the expiry, so machines will gradually rotate
             machine.keepAlive();
         }
-        Execute.setTimer("Move to running state", ()->{
+        Execute.setTimer("Move to running state", () -> {
             Execute.ExecutionResult result = null;
             IpMapping machineIp = machine.getIp();
             try {
-                String purpose = machine.isController() ? PURPOSE_CONTROLLER :
-                                 machine.isSnapshotCreate() ?
-                                         machine.isController() ? PURPOSE_CREATOR_CONTROLLER :
-                                         PURPOSE_CREATOR_WORKER :
-                                PURPOSE_WORKER;
+                String purpose = machine.isController() ? PURPOSE_CONTROLLER
+                        : machine.isSnapshotCreate()
+                                ? machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER
+                                : PURPOSE_WORKER;
                 int tries = 5;
-                while (tries --> 0) {
+                while (tries-- > 0) {
                     result = gcloud(true, true, "instances",
                             "describe", machine.getHost(),
                             "-q",
@@ -1023,9 +1089,11 @@ public class ClusterController implements IClusterController {
                 if (result.code != 0) {
                     // check if this was a "not found" message
                     if (resultString.contains("not found")) {
-                        // yikes! the machine doesn't exist... maybe create one w/ the specified ip address (by name, so it is stable!)
+                        // yikes! the machine doesn't exist... maybe create one w/ the specified ip address
+                        // (by name, so it is stable!)
                         if (machines.getNumberMachines() > getMaxPoolSize()) {
-                            LOG.error("Refusing to create more than " + getMaxPoolSize() + " machines (currently " + machines.getNumberMachines() + ")");
+                            LOG.error("Refusing to create more than " + getMaxPoolSize() + " machines (currently "
+                                    + machines.getNumberMachines() + ")");
                             // serious error... send slack ping!
                         } else if (isAllowUnexpectedMachines()) {
                             manager.createMachine(machine, ips);
@@ -1041,24 +1109,29 @@ public class ClusterController implements IClusterController {
 
                 final Machine updated = updateMachineFromCsv(resultString);
                 if (machine.isController()) {
-                    LOG.warn("Instance " + machine.getHost() + " had label '" + machine.getPurpose() + "' instead of " + purpose + "; forgetting this instance");
+                    LOG.warn("Instance " + machine.getHost() + " had label '" + machine.getPurpose() + "' instead of "
+                            + purpose + "; forgetting this instance");
                     machines.removeMachine(machine);
                 } else {
                     if (updated == null) {
-                        LOG.errorf("INVALID GCLOUD RESPONSE, %s got result: %s ", machine.toStringShort(), resultString);
+                        LOG.errorf("INVALID GCLOUD RESPONSE, %s got result: %s ", machine.toStringShort(),
+                                resultString);
                         // this is a serious state error, we should slack-nag in #demo
                     } else {
                         if (!updated.isOnline()) {
                             manager.turnOn(updated);
                         }
                         if (reserve) {
-                            assert updated == machine : "Somehow got " + updated + " from pool using supplied " + machine;
+                            assert updated == machine
+                                    : "Somehow got " + updated + " from pool using supplied " + machine;
                             final String expiry = toTime(machine.getExpiry());
                             manager.addLabel(machine, LABEL_LEASE, expiry, (r, e) -> {
                                 if (e == null) {
-                                    LOG.infof("Updated lease for machine %s label %s=%s", machine.toStringShort(), LABEL_LEASE, expiry);
+                                    LOG.infof("Updated lease for machine %s label %s=%s", machine.toStringShort(),
+                                            LABEL_LEASE, expiry);
                                 } else {
-                                    LOG.errorf(e, "Failed to renew lease for machine %s label %s=%s", machine.toStringShort(), LABEL_LEASE, expiry);
+                                    LOG.errorf(e, "Failed to renew lease for machine %s label %s=%s",
+                                            machine.toStringShort(), LABEL_LEASE, expiry);
                                 }
                             });
                         }
@@ -1068,10 +1141,11 @@ public class ClusterController implements IClusterController {
                     LOG.warnf("Replaced IP %s with %s", machineIp, machine.getIp());
                 }
             } catch (Exception e) {
-                LOG.errorf(e,"Unable to move machine %s to running state", machine);
+                LOG.errorf(e, "Unable to move machine %s to running state", machine);
             }
             // machine (should be) alive, make sure it has DNS!
-            // We check DNS with google; nobody is listening to this method, so we don't care if public DNS resolves yet!
+            // We check DNS with google; nobody is listening to this method,
+            // so we don't care if public DNS resolves yet!
             final Execute.ExecutionResult dnsCheck = manager.checkDns(machine.getDomainName(), DNS_GOOGLE);
             if (dnsCheck.code == 0 && dnsCheck.out.trim().equals(machineIp.getIp())) {
                 // machine is alive, DNS is all good.
@@ -1081,12 +1155,13 @@ public class ClusterController implements IClusterController {
                     return;
                 }
                 // machine is not alive, yet... glue on some ad-hoc DNS
-                LOG.warn("DNS does not resolve correctly for " + machine.getDomainName() + " @ " + machine.getIp() + "; setting up DNS records");
+                LOG.warn("DNS does not resolve correctly for " + machine.getDomainName() + " @ " + machine.getIp()
+                        + "; setting up DNS records");
                 try {
                     setupDns(machine);
                     LOG.warnf("DNS setup requested for %s @ %s", machine.toStringShort(), machine.getIp());
                 } catch (Exception e) {
-                    LOG.errorf(e,"Unable to setup DNS for machine %s", machine);
+                    LOG.errorf(e, "Unable to setup DNS for machine %s", machine);
                 }
             }
 
@@ -1113,8 +1188,8 @@ public class ClusterController implements IClusterController {
     }
 
     private void ensureAccessConfig(final Machine machine, final IpMapping mapping) {
-//                // TODO: make sure this ip mapping has the correct access-config to the machine:
-//                //    https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address#IP_assign
+        // TODO: make sure this ip mapping has the correct access-config to the machine:
+        // https://cloud.google.com/compute/docs/ip-addresses/reserve-static-external-ip-address#IP_assign
 
     }
 
@@ -1157,10 +1232,10 @@ public class ClusterController implements IClusterController {
     public void waitUntilHealthy(final Machine machine) throws IOException, InterruptedException {
         final String key = "finished code: ";
         final String failed = "ran out of tries";
-        final Execute.ExecutionResult result = Execute.ssh(true, machine.getDomainName(), //"bash", "-c",
-//        GoogleDeploymentManager.gcloud(false, true, "ssh", machine.getHost(),
-//                "--command",
-                        "function watch_logs() {\n" +
+        final Execute.ExecutionResult result = Execute.ssh(true, machine.getDomainName(), // "bash", "-c",
+                // GoogleDeploymentManager.gcloud(false, true, "ssh", machine.getHost(),
+                // "--command",
+                "function watch_logs() {\n" +
                         "  echo Watching log file /var/log/vm-startup.log\n" +
                         "  while ! test -f /var/log/vm-startup.log ; do sleep 1 ; done\n" +
                         "  tail -f /var/log/vm-startup.log\n" +
@@ -1172,7 +1247,7 @@ public class ClusterController implements IClusterController {
                         "  watch_logs &\n" +
                         "  pid=$!\n" +
                         "  while (( tries > 0 )) && \n" +
-                                "! grep -q InitialDeephavenSetupComplete /var/log/vm-startup.log 2> /dev/null; do\n" +
+                        "    ! grep -q InitialDeephavenSetupComplete /var/log/vm-startup.log 2> /dev/null; do\n" +
                         "    tries=$((tries-1))\n" +
                         "    (( tries%10 )) || echo \"start-monitor tries remaining: $tries\"\n" +
                         "    sleep 1\n" +
@@ -1189,13 +1264,13 @@ public class ClusterController implements IClusterController {
                         "  fi\n" +
                         "} ; TIMEFORMAT='\n" +
                         "wait_til_ready exited after: %3Rs\n' ; time wait_til_ready ; code=$? ; " +
-                        "sleep 1 ; echo '\n'" + key + "${code}'\n' ; echo ; sleep 1 ; kill $PPID "
-        );
+                        "sleep 1 ; echo '\n'" + key + "${code}'\n' ; echo ; sleep 1 ; kill $PPID ");
         int realCodeLoc = result.out.lastIndexOf(key);
         if (result.out.contains(failed)) {
             throw new IllegalStateException("wait_til_ready failed:\n\n" + result.out);
         }
-        String code = result.out.substring(realCodeLoc + key.length(), result.out.indexOf('\n', realCodeLoc + key.length()));
+        String code =
+                result.out.substring(realCodeLoc + key.length(), result.out.indexOf('\n', realCodeLoc + key.length()));
         if (!"0".equals(code)) {
             throw new IllegalStateException("wait_til_ready returned code " + code);
         }
