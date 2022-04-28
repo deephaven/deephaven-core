@@ -65,7 +65,7 @@ class Table(JObjectWrapper):
         repr_str = (
             f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
         )
-        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str
+        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str + ">"
         return repr_str
 
     def __str__(self):
