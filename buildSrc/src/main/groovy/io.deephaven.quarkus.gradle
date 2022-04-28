@@ -15,3 +15,8 @@ dependencies {
     implementation enforcedPlatform("${quarkusGroup}:${quarkusArtifact}:${quarkusVersion}")
     implementation enforcedPlatform("${quarkusGroup}:quarkus-google-cloud-services-bom:${quarkusVersion}")
 }
+
+tasks.withType(Test).configureEach {
+    Test t ->
+        t.systemProperty('dh-version', project.ext.machineVersion)
+}

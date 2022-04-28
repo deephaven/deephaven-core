@@ -42,13 +42,13 @@ public class ClusterControllerTest {
         machines.addMachine(a);
         machines.addMachine(b);
         List<Machine> machineList = machines.getAllMachines().collect(Collectors.toList());
-        Assert.assertEquals(machineList, Arrays.asList(a, b));
+        Assert.assertEquals(Arrays.asList(a, b), machineList);
 
-        // now, expire b w/ a value older than b
-        machines.expireInMillis(a, -1000);
-        machines.expireInMillis(b, 1000);
+        // now, expire b w/ `a` value larger (newer) than `b` value
+        machines.expireInMillis(a, 1000);
+        machines.expireInMillis(b, -1000);
         machineList = machines.getAllMachines().collect(Collectors.toList());
-        Assert.assertEquals(machineList, Arrays.asList(b, a));
+        Assert.assertEquals(Arrays.asList(b, a), machineList);
 
 
     }
