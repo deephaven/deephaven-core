@@ -68,7 +68,8 @@ class Table(JObjectWrapper):
         repr_str = (
             f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
         )
-        repr_str = repr_str[:116] + "...}))" if len(repr_str) > 120 else repr_str + "))"
+        # We need to add the two brackets back, and also truncate it to be 120 char total (118 + two brackets)
+        repr_str = repr_str[:114] + "...}))" if len(repr_str) > 118 else repr_str + "))"
         return repr_str
 
     def __str__(self):
