@@ -61,11 +61,14 @@ class Table(JObjectWrapper):
 
     def __repr__(self):
         default_repr = super().__repr__()
+        # default_repr is in a format like so:
+        # deephaven.table.Table(io.deephaven.engine.table.Table(objectRef=0x7f07e4890518))
+        # We take the last two brackets off, add a few more details about the table, then add the necessary brackets back
         column_dict = {col.name: col.data_type for col in self.columns[:10]}
         repr_str = (
             f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
         )
-        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str + ">"
+        repr_str = repr_str[:115] + "...}))" if len(repr_str) > 120 else repr_str + "))"
         return repr_str
 
     def __str__(self):
