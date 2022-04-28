@@ -289,8 +289,7 @@ public class UnionSourceManager {
                     }
                 } else {
                     // If the shiftDelta is non-zero we have already updated the RowSet above (because we used the new
-                    // RowSet),
-                    // otherwise we need to apply the removals (adjusted by the table's starting key)
+                    // RowSet), otherwise we need to apply the removals (adjusted by the table's starting key)
                     updateRemovedBuilder.appendRowSequenceWithOffset(listener.getRemoved(),
                             unionRedirection.prevStartOfIndices[tableId]);
                 }

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,6 +21,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * {@link PartitionedTable} implementation.
@@ -100,6 +102,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public Table merge() {
+        if (!table.isRefreshing()) {
+            final Iterator<Table> constituents = table.objectColumnIterator(constituentColumnName);
+            return TableTools.merge(StreamSupport.stream(Spliterators.spliterator(
+                            constituents, table.size(), Spliterator.ORDERED), false)
+                    .toArray(Table[]::new));
+        }
         throw new UnsupportedOperationException("TODO-RWC");
     }
 

@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 /**
@@ -52,11 +52,12 @@ public class PartitionedTableFactory {
     /**
      * Construct a PartitionedTable.
      *
-     * @param table The "raw" {@link Table table} of {@link Table tables}
+     * @param table The "raw" {@link Table table} of {@link Table tables}. Should be {@link Table#isRefreshing()
+     *        refreshing} if any constituents are.
      * @param keyColumnNames The "key" column names from {@code table}. Key columns are used in
      *        {@link PartitionedTable#transform(Function)} to validate the safety and correctness of join operations and
-     *        in {@link PartitionedTable#partitionedTransform(PartitionedTable, BiFunction)} to correlate tables that
-     *        should be transformed together.
+     *        in {@link PartitionedTable#partitionedTransform(PartitionedTable, BinaryOperator)} to correlate tables
+     *        that should be transformed together.
      * @param constituentColumnName The "constituent" column name from {@code table}. The constituent column contains
      *        the underlying {@link Table tables} that make up this PartitionedTable.
      * @param constituentDefinition The {@link TableDefinition} expected for all rows in the "constituent" column of
