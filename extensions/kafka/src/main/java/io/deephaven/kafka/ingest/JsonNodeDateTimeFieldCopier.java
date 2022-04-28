@@ -6,7 +6,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 
 public class JsonNodeDateTimeFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;
@@ -26,7 +25,7 @@ public class JsonNodeDateTimeFieldCopier implements FieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
             final DateTime dateTime = JsonNodeUtil.getDateTime(node, fieldPointer, true, true);
-            output.set(ii + destOffset, dateTime == null ? QueryConstants.NULL_LONG : dateTime.getNanos());
+            output.set(ii + destOffset, DateTimeUtils.nanos(dateTime));
         }
     }
 }
