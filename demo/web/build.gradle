@@ -4,6 +4,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 plugins {
     id 'base'
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
 }
 
 evaluationDependsOn ':web-client-ide'
