@@ -31,8 +31,7 @@ String[] mods = [
         'python-engine-test',
         'server',
         'table-api',
-        'qst',
-        'demo'
+        'qst'
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -321,14 +320,26 @@ file("${rootDir}/docker/registry").list().each { name ->
     }
 }
 
-include(':demo-web')
-project(':demo-web').projectDir = file('demo/web')
+include(':demo-api')
+project(':demo-api').projectDir = file('demo/api')
+
+include(':demo-gcloud')
+project(':demo-gcloud').projectDir = file('demo/gcloud')
+
+include(':demo-controller')
+project(':demo-controller').projectDir = file('demo/controller')
+
+include(':demo-deploy')
+project(':demo-deploy').projectDir = file('demo/deploy')
 
 include(':demo-certs')
 project(':demo-certs').projectDir = file('demo/certs')
 
 include(':demo-server')
 project(':demo-server').projectDir = file('demo/server')
+
+include(':demo-web')
+project(':demo-web').projectDir = file('demo/web')
 
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir

@@ -1,0 +1,25 @@
+
+// we don't want to get a manually-deployed machine confused with a controller-issued "customer" machine,
+// so we're going to append the git branch name to the worker's version when -Phostname is specified.
+// this value will be inserted into the project's extension object, accessible via project.ext.machineVersion
+String machineVersion = findProperty('version')
+project.ext.set 'machineVersion', machineVersion
+
+// if an explicit hostname is specified, only consider explicit -Pversion if it doesn't match gradle project version.
+// this is to prevent running controllers from trying to manage and share developer-created machines.
+String hostName = findProperty('hostname')
+if (hostName) {
+    if (!machineVersion || machineVersion == version) {
+        // if user does not specify custom -Pversion= flag, we'll make sure to prefix with, by default, sanitized git branch name
+        String versionSuffix = findProperty('versionSuffix') ?: System.getenv('BRANCH_NAME') ?: [ 'git', 'rev-parse', '--abbrev-ref', 'HEAD' ].execute().text.trim() ?: hostName
+        String typeSuffix = findProperty('serverType')
+        if (typeSuffix && ! typeSuffix.startsWith("-")) {
+            typeSuffix = "-$typeSuffix"
+        }
+        // replace any non-alphanumeric characters w/ -
+        versionSuffix = versionSuffix.replaceAll("[^\\p{Alnum}]", "-").replaceAll("[-]+", "-")
+        machineVersion = version + "_" + versionSuffix + typeSuffix
+        project.ext.set 'machineVersion', machineVersion
+        project.ext.set 'quarkus.application.version', machineVersion
+    }
+}

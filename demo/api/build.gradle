@@ -1,0 +1,16 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+dependencies {
+    api project(':Base')
+
+    // might as well make logging dependency api level, since we want all modules to use logging,
+    // and it's annoying to set the enforcedPlatform just to take logging module
+    api 'org.jboss.logging:jboss-logging'
+
+    // add the bits of quarkus / vertx used in the api layer
+    implementation 'io.quarkus:quarkus-vertx-core'
+    implementation 'io.quarkus:quarkus-mutiny'
+    implementation 'commons-io:commons-io'
+}

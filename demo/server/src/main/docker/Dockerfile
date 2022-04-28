@@ -1,4 +1,5 @@
-FROM deephaven/server-all-ai:local-build
+ARG SERVER_TYPE=-all-ai
+FROM deephaven/server$SERVER_TYPE:local-build
 
 # Add the extra libraries to the classpath
 COPY libs/ /app/libs

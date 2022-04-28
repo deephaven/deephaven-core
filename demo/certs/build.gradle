@@ -69,7 +69,7 @@ def untagCerts = tasks.register('untagCerts', DockerRemoveImage) {
     }
 }
 
-def pushCertsTask = tasks.register('pushAll', DockerPushImage) {
+def pushCertsTask = tasks.register('pushCerts', DockerPushImage) {
     DockerPushImage p ->
         p.images.set([
                 "${certsRepository}:${certsTag}",

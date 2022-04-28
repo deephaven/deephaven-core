@@ -11,6 +11,7 @@ enum ProjectType {
 
     BASIC(false, 'io.deephaven.project.basic'),
     DOCKER_REGISTRY(false, 'io.deephaven.project.docker-registry'),
+    QUARKUS(true, 'io.deephaven.project.quarkus'),
     JAVA_EXTERNAL(true, 'io.deephaven.project.java-external'),
     JAVA_LOCAL(false, 'io.deephaven.project.java-local'),
     JAVA_PUBLIC(true, 'io.deephaven.project.java-public'),

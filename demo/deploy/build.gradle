@@ -1,0 +1,119 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn ':demo-server'
+evaluationDependsOn ':demo-web'
+
+dependencies {
+    implementation project(':demo-controller')
+    implementation project(':demo-gcloud')
+
+    implementation 'commons-io:commons-io'
+}
+
+String grpcApiRepository = project.property('grpcApiRepository')
+String grpcApiTag = project.ext.machineVersion
+
+String webRepository = project.property('webRepository')
+String webTag = project.ext.machineVersion
+
+def tagDemoWorkerTask = tasks.register('tagDemoWorker', DockerTagImage) {
+    DockerTagImage t ->
+        def demoGrpcApi = project(':demo-server')
+        t.imageId.set demoGrpcApi.property('image') as String
+        t.repository.set grpcApiRepository
+        t.tag.set grpcApiTag
+        t.force.set true
+        t.dependsOn demoGrpcApi.tasks.findByName('buildImage')
+}
+
+def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
+    DockerTagImage t ->
+        def demoWeb = project(':demo-web')
+        t.imageId.set demoWeb.property('image') as String
+        t.repository.set webRepository
+        t.tag.set webTag
+        t.force.set true
+        t.dependsOn demoWeb.tasks.findByName('buildImage')
+}
+
+def tagAll = tasks.register('tagAll') {
+    it.dependsOn tagDemoWorkerTask, tagWebTask
+}
+
+def untagDemoWorker = tasks.register('untagDemoWorker', DockerRemoveImage) {
+    it.imageId.set "${grpcApiRepository}:${grpcApiTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+def untagWeb = tasks.register('untagWeb', DockerRemoveImage) {
+    it.imageId.set "${webRepository}:${webTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
+tasks.register('cleanDocker') {
+    it.dependsOn untagDemoWorker, untagWeb
+}
+
+def pushAllTask = tasks.register('pushAll', DockerPushImage) {
+    DockerPushImage p ->
+        p.inputs.property("version", project.ext.machineVersion ?: version)
+        p.inputs.property("serverType", findProperty('serverType') ?: '')
+        p.images.set([
+                "${grpcApiRepository}:${grpcApiTag}",
+                "${webRepository}:${webTag}",
+        ] as Set)
+        p.dependsOn tagAll
+}
+
+tasks.register('deployDemo', JavaExec) {
+    JavaExec exe ->
+        exe.dependsOn(pushAllTask, ':demo-controller:quarkusBuild')
+        exe.main('io.deephaven.demo.deploy.ImageDeployer')
+        exe.classpath(sourceSets.main.runtimeClasspath)
+        exe.systemProperty('deployImage', 'true')
+        exe.systemProperty('useImages', 'true')
+        exe.systemProperty('dh-version', version)
+        // workerOnly for deployDemo defaults to false, so we check for explicit true conditions only:
+        exe.systemProperty('workerOnly', "true" == findProperty('workerOnly') || "1" == findProperty("wO"))
+        exe.systemProperty('force', "true" == findProperty('force'))
+}
+
+tasks.register('deployMachine', JavaExec) {
+    JavaExec exe ->
+        exe.dependsOn(pushAllTask, ':demo-controller:quarkusBuild')
+        String machineName = findProperty("hostname")
+        if (!machineName) {
+            exe.doFirst {
+                throw new IllegalStateException("Cannot run $exe.path without passing -Phostname=my-machine-name")
+            }
+            logger.info("No -Phostname found, not configuring $exe.path")
+            return
+        }
+        exe.main('io.deephaven.demo.deploy.ImageDeployer')
+        exe.args("--worker", machineName)
+        exe.classpath(sourceSets.main.runtimeClasspath)
+        exe.systemProperty('deployImage', 'false')
+        // workerOnly for deployMachine defaults to true, so we check for explicit false conditions only:
+        exe.systemProperty('workerOnly', "false" == findProperty('workerOnly') || "0" == findProperty("wO"))
+        boolean force = "true" == findProperty('force')
+        exe.systemProperty('force', force)
+        exe.systemProperty('rebuildWorker', findProperty('rebuildWorker') ?: force)
+        exe.systemProperty('dh-version', project.ext.machineVersion)
+        // we still want to use our base image snapshot... if it exists...
+        exe.systemProperty('DH_SNAPSHOT_NAME', "deephaven-app-${version.replaceAll("[.]", "-")}")
+        exe.systemProperty('useImages', 'false')
+        logger.quiet "Setting machine {} to use version {}", machineName, project.ext.machineVersion
+}

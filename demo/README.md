@@ -1,7 +1,15 @@
 # Deephaven Demo
 
 The Deephaven demo system  
-uses a pre-baked "server-all" image  
+consists of a controller machine  
+running at [https://demo.deephaven.app](https://demo.deephaven.app)  
+which hands out pre-provisioned workers  
+to each client who visits the demo URL.  
+
+Each worker is tagged with lease metadata  
+and is decommissioned after 45 minutes.
+
+These workers use a pre-baked "server-all" image  
 which contains many popular python frameworks  
 and multiple example notebooks detailing their use.
 

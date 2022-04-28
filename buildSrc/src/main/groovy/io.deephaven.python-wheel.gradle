@@ -1,5 +1,6 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.machine-version'
     id 'io.deephaven.project.register'
 }
 

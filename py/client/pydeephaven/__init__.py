@@ -29,4 +29,4 @@ from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
 from .query import Query
 
-__version__ = "0.12.12"
+__version__ = "0.12.13"

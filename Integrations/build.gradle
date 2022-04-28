@@ -1,6 +1,7 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.machine-version'
     id 'com.avast.gradle.docker-compose'
     id 'idea'
 }
@@ -104,7 +105,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             environmentVariable 'DEEPHAVEN_WORKSPACE', '/workspace'
             environmentVariable 'DEEPHAVEN_DEVROOT', '/python'
             environmentVariable 'DEEPHAVEN_PROPFILE', 'dh-defaults.prop'
-            environmentVariable 'DEEPHAVEN_VERSION', project.version
+            environmentVariable 'DEEPHAVEN_VERSION', project.ext.machineVersion
 
             workingDir '/python'
 

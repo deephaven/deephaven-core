@@ -24,17 +24,17 @@ be sure to first set `PYTHON_CONFIGURE_OPTS="--enabled-shared"`.
     ```shell
     $ python -m pip install --upgrade pip # First upgrade pip
     $ pip install wheel
-    $ export DEEPHAVEN_VERSION=0.12.12 # this should match the current version of your git repo
+    $ export DEEPHAVEN_VERSION=0.12.13 # this should match the current version of your git repo
 
     $ cd py/jpy
     $ export JAVA_HOME=/path/to/your/java/home # Customize this to fit your computer
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven_jpy-0.12.12-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
+    $ pip install dist/deephaven_jpy-0.12.13-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
     $ cd -
 
     $ cd Integrations/python
     $ python setup.py bdist_wheel
-    $ pip install dist/deephaven-0.12.12-py2.py3-none-any.whl
+    $ pip install dist/deephaven-0.12.13-py2.py3-none-any.whl
     $ cd -
     ```
 

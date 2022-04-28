@@ -3,7 +3,8 @@ import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
-    id 'io.deephaven.project.register'}
+    id 'io.deephaven.project.register'
+}
 
 evaluationDependsOn ':docker-server'
 
@@ -33,8 +34,27 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 }
 
 def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
-    def grpcApiImage = project(':docker-server').tasks.findByName('buildDocker-server-all-ai')
+    // we'll make the default server type "-all-ai" in our deployDemo, deployMachine tasks.
+    String serverType = findProperty("serverType") as String
+    if (serverType == null) { // only replace null, empty -PserverType= is valid (base image only)
+        logger.quiet("Using default serverType of all-ai (which is VERY large)")
+        logger.quiet("Consider setting -PserverType= to empty string, or a single server-type")
+        serverType = "-all-ai"
+    } else if (!serverType.isEmpty()) {
+        if (!serverType.startsWith('-')) {
+            serverType = "-$serverType"
+        }
+        File serverDir = new File(project.rootDir, "docker/server/src/main")
+        Collection validChoices = serverDir.listFiles().findResults { it.name.startsWith('server-') ? it.name.replace('server', '') : null}
+        if (!validChoices.contains(serverType)) {
+            logger.error("Invalid -PserverType={}", serverType)
+            logger.error("Valid choices are {} or empty string", validChoices.join(", "))
+            throw new GradleException("Illegal -PserverType=" + serverType)
+        }
+    }
+    def grpcApiImage = project(':docker-server').tasks.findByName("buildDocker-server$serverType")
     it.dependsOn prepareDocker, grpcApiImage
+    it.buildArgs.put("SERVER_TYPE", serverType)
     it.inputs.files grpcApiImage.outputs.files
     it.inputDir.set dockerfileDir
     it.imageIdFile.set imageIdFile
@@ -58,4 +78,7 @@ project.tasks.register('cleanDocker') {
     it.dependsOn deleteImage
 }
 
-assemble.dependsOn buildImage
+if (!System.getProperty('idea.jre.check')) {
+    // only make assemble depend on our images when not running in intellij
+    assemble.dependsOn buildImage
+}
