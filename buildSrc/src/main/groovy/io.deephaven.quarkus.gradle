@@ -5,14 +5,8 @@ plugins {
     id 'io.deephaven.machine-version'
     id 'io.deephaven.java-common-conventions'
     id 'io.deephaven.java-test-conventions'
-    // *Not* setting java-coding-conventions to keep external code as un-modified as possible.
-    id 'io.deephaven.java-publishing-conventions'
     id 'io.deephaven.default-description'
 }
-
-project.tasks
-        .getByName('quick')
-        .dependsOn JavaDependencies.verifyRuntimeClasspathIsPublicTask(project)
 
 dependencies {
     String quarkusGroup = findProperty('quarkusPlatformGroupId')

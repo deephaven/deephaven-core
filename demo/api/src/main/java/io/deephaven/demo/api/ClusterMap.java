@@ -5,8 +5,7 @@ import java.util.List;
 /**
  * ClusterMap:
  * <p>
- * <p>
- * Created by James X. Nelson (James@WeTheInter.net) on 20/09/2021 @ 5:14 p.m..
+ * <p> A container for 1 or more Machines that we want to operate on.
  */
 public class ClusterMap {
     private List<Machine> allNodes;
