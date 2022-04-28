@@ -1348,7 +1348,7 @@ class Table(JObjectWrapper):
 
                 name (str): The group name
                 children (List[str]): The
-                color (Optional[Union[str, Color]]): The color name, hex string, or color object from deephaven.plot
+                color (Optional[str]): The hex color string or Deephaven color name
 
         Returns:
             a new table with the layout hints set
