@@ -564,6 +564,11 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             case "Sym":
                 return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".minObj("
                         + col + ")";
+            case "boolCol":
+            case "bigI":
+            case "bigD":
+            case "dt":
+                return GroovyStaticImports.class.getCanonicalName() + ".minObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".min(" + col + ")";
         }
@@ -579,6 +584,11 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             case "Sym":
                 return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".maxObj("
                         + col + ")";
+            case "boolCol":
+            case "bigI":
+            case "bigD":
+            case "dt":
+                return GroovyStaticImports.class.getCanonicalName() + ".maxObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".max(" + col + ")";
         }
