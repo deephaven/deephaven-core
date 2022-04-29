@@ -3,101 +3,162 @@
 #
 import time
 import unittest
+from pprint import pprint
+from types import SimpleNamespace
+from typing import List, Dict, Union
+
+import numpy
+from deephaven.experimental import time_window
 
 from deephaven import time_table
+from deephaven.jcompat import to_sequence
 from deephaven.table_listener import listen, TableListener
-
 from tests.testbase import BaseTestCase
 
 
 class TableListenerTestCase(BaseTestCase):
+
     def setUp(self) -> None:
         with self.ugp_lock_exclusive():
-            self.table = time_table("00:00:01").update(["X=i"]).tail(5)
-        self.table_change_processed = None
+            self.test_table = time_table("00:00:00.001").update(["X=i%2"]).sort("X").tail(16)
+            source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 6, bool_col="InWindow")
 
-    def test_shift_oblivious_listener_obj(self):
+    def tearDown(self) -> None:
+        self.test_table = None
+        self.test_table2 = None
+
+    def check_result(self, changes: List[Dict[str, numpy.ndarray]], cols: Union[str, List[str]] = None):
+        if not changes:
+            return
+        cols = to_sequence(cols)
+        for change in changes:
+            self.assertTrue(isinstance(change, dict))
+            if not cols:
+                cols = [col.name for col in self.test_table.columns]
+            for col in cols:
+                self.assertIn(col, change.keys())
+                self.assertTrue(isinstance(change[col], numpy.ndarray))
+                self.assertEqual(change[col].ndim, 1)
+                # print(change[col])
+
+    def test_listener_obj(self):
         class ListenerClass(TableListener):
             def __init__(self):
-                self.table_change_added = None
-                self.table_change_removed = None
-                self.table_change_modified = None
+                self.table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
+                                                    Shifted=None)
 
-            def onUpdate(self, added, removed, modified):
-                self.table_change_added = added
-                self.table_change_removed = removed
-                self.table_change_modified = modified
+            def onUpdate(self, is_replay, update):
+                update.chunk_size = 4
+                self.table_update.added = []
+                for chunk in update.added("X"):
+                    self.table_update.added.append(chunk)
 
-            def has_table_changed(self):
-                return (
-                    self.table_change_removed
-                    or self.table_change_modified
-                    or self.table_change_added
-                )
+                self.table_update.removed = []
+                for chunk in update.removed():
+                    self.table_update.removed.append(chunk)
 
-        listener = ListenerClass()
-        table_listener_handle = listen(self.table, listener)
-        time.sleep(2)
-        self.assertTrue(listener.has_table_changed())
-        table_listener_handle.deregister()
+                self.table_update.modified = []
+                for chunk in update.modified():
+                    self.table_update.modified.append(chunk)
 
-    def test_shift_oblivious_listener_func(self):
-        def listener_func(added, removed, modified):
-            added_iterator = added.iterator()
-            while added_iterator.hasNext():
-                idx = added_iterator.nextLong()
-                ts = self.table.j_table.getColumnSource("Timestamp").get(idx)
-                x = self.table.j_table.getColumnSource("X").get(idx)
-                self.table_change_processed = ts or x
+                self.table_update.modified_prev = []
+                for chunk in update.modified_prev():
+                    self.table_update.modified_prev.append(chunk)
 
-            removed_iterator = removed.iterator()
-            while removed_iterator.hasNext():
-                idx = removed_iterator.nextLong()
-                ts = self.table.j_table.getColumnSource("Timestamp").getPrev(idx)
-                x = self.table.j_table.getColumnSource("X").getPrev(idx)
-                self.table_change_processed = ts or x
-
-        table_listener_handle = listen(self.table, listener_func)
-        time.sleep(2)
-        self.assertTrue(self.table_change_processed)
-        table_listener_handle.deregister()
-
-    def test_shift_aware_listener_obj(self):
-        class ListenerClass(TableListener):
-            def __init__(self):
-                self.table_update = None
-
-            def onUpdate(self, update):
-                self.table_update = update
-
-            def has_table_changed(self):
-                return self.table_update
+                # self.table_update.shifted = update.shifted
 
         listener = ListenerClass()
-        table_listener_handle = listen(self.table, listener)
-        time.sleep(2)
-        self.assertTrue(listener.has_table_changed())
+
+        table_listener_handle = listen(self.test_table, listener, replay_initial=False)
+        time.sleep(1)
+        pprint(listener.table_update.added)
+        pprint("----" * 10)
+        pprint(listener.table_update.removed)
+        self.check_result(listener.table_update.added, cols="X")
+        self.check_result(listener.table_update.removed)
+        self.check_result(listener.table_update.modified)
+        self.check_result(listener.table_update.modified_prev)
+
         table_listener_handle.deregister()
 
-    def test_shift_aware_listener_func(self):
-        def listener_func(update):
-            added_iterator = update.added.iterator()
-            while added_iterator.hasNext():
-                idx = added_iterator.nextLong()
-                ts = self.table.j_table.getColumnSource("Timestamp").get(idx)
-                x = self.table.j_table.getColumnSource("X").get(idx)
-                self.table_change_processed = ts or x
+    def test_listener_func(self):
+        replay_recorder = []
+        table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
+                                       Shifted=None)
 
-            removed_iterator = update.removed.iterator()
-            while removed_iterator.hasNext():
-                idx = removed_iterator.nextLong()
-                ts = self.table.j_table.getColumnSource("Timestamp").getPrev(idx)
-                x = self.table.j_table.getColumnSource("X").getPrev(idx)
-                self.table_change_processed = ts or x
+        def listener_func(is_replay, update):
+            update.chunk_size = 128
+            table_update.added = []
+            for chunk in update.added():
+                table_update.added.append(chunk)
 
-        table_listener_handle = listen(self.table, listener_func)
+            table_update.removed = []
+            for chunk in update.removed():
+                table_update.removed.append(chunk)
+
+            table_update.modified = []
+            for chunk in update.modified():
+                table_update.modified.append(chunk)
+
+            table_update.modified_prev = []
+            for chunk in update.modified_prev():
+                table_update.modified_prev.append(chunk)
+
+            replay_recorder.append(is_replay)
+
+        table_listener_handle = listen(self.test_table, listener_func, replay_initial=True)
+        time.sleep(1)
+        # pprint(table_update.added)
+        self.assertGreaterEqual(len(table_update.added), 1)
+        self.check_result(table_update.added)
+        self.check_result(table_update.removed)
+        self.check_result(table_update.modified)
+        self.check_result(table_update.modified_prev)
+        self.assertFalse(all(replay_recorder))
+
+        table_listener_handle.deregister()
+
+    def test_listener_func_modified(self):
+        replay_recorder = []
+        table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
+                                       Shifted=None)
+        cols = "InWindow"
+
+        def listener_func(is_replay, update):
+            update.chunk_size = 1000
+            table_update.added = []
+            for chunk in update.added(cols):
+                table_update.added.append(chunk)
+
+            table_update.removed = []
+            for chunk in update.removed(cols):
+                table_update.removed.append(chunk)
+
+            table_update.modified = []
+            for chunk in update.modified(cols):
+                table_update.modified.append(chunk)
+
+            table_update.modified_prev = []
+            for chunk in update.modified_prev(cols):
+                table_update.modified_prev.append(chunk)
+
+            replay_recorder.append(is_replay)
+
+        table_listener_handle = listen(self.test_table2, listener=listener_func, replay_initial=True)
         time.sleep(2)
-        self.assertTrue(self.table_change_processed)
+        pprint(table_update.added)
+        pprint("------" * 10)
+        pprint(table_update.modified)
+        pprint("------" * 10)
+        pprint(table_update.modified_prev)
+        self.assertGreaterEqual(len(table_update.added), 1)
+        self.check_result(table_update.added, cols)
+        self.check_result(table_update.removed, cols)
+        self.check_result(table_update.modified, cols)
+        self.check_result(table_update.modified_prev, cols)
+        self.assertFalse(all(replay_recorder))
+
         table_listener_handle.deregister()
 
 

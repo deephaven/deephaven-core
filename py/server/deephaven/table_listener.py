@@ -4,14 +4,111 @@
 """ This module provides utilities for listening to table changes. """
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
+from functools import wraps
 from inspect import signature
-from typing import Callable, Union, Type
+from typing import Callable, Union, Type, Sequence, List
 
 import jpy
 
 from deephaven import DHError
+from deephaven._wrapper import JObjectWrapper
+from deephaven.column import Column
+from deephaven.jcompat import to_sequence
+from deephaven.numpy import column_to_numpy_array
 from deephaven.table import Table
+
+_JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
+_JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
+_JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
+_JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
+DEFAULT_CHUNK_SIZE = 4096
+
+
+def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int):
+    row_sequence_iterator = row_set.getRowSequenceIterator()
+    col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
+
+    j_reader_context = _JTableUpdateDataReader.makeContext(chunk_size, *col_sources)
+    while row_sequence_iterator.hasMore():
+        chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
+
+        j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources)
+
+        col_dict = {}
+        for i, col_def in enumerate(col_defs):
+            np_array = column_to_numpy_array(col_def, j_array[i])
+            col_dict[col_def.name] = np_array
+
+        yield col_dict
+
+    j_reader_context.close()
+    row_sequence_iterator.close()
+
+
+def _col_defs(table: Table, cols: Union[str, List[str]]):
+    if not cols:
+        col_defs = table.columns
+    else:
+        cols = to_sequence(cols)
+        col_defs = [col for col in table.columns if col.name in cols]
+
+    return col_defs
+
+
+class TableUpdate(JObjectWrapper):
+    j_object_type = _JTableUpdate
+
+    def __init__(self, table: Table, j_table_update):
+        self.table = table
+        self.j_table_update = j_table_update
+        self.chunk_size = DEFAULT_CHUNK_SIZE
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_update
+
+    def added(self, cols: Union[str, List[str]] = None):
+        if not self.j_table_update.added:
+            return (_ for _ in ())
+        col_defs = _col_defs(table=self.table, cols=cols)
+        return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.added.asRowSet(),
+                                 chunk_size=self.chunk_size)
+
+    def removed(self, cols: Union[str, List[str]] = None):
+        if not self.j_table_update.added:
+            return (_ for _ in ())
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.removed.asRowSet(),
+                                 chunk_size=self.chunk_size)
+
+    def modified(self, cols: Union[str, List[str]] = None):
+        if not self.j_table_update.modified:
+            return (_ for _ in ())
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
+                                 chunk_size=self.chunk_size)
+
+    def modified_prev(self, cols: Union[str, List[str]] = None):
+        if not self.j_table_update.getModifiedPreShift():
+            return (_ for _ in ())
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.getModifiedPreShift().asRowSet(),
+                                 chunk_size=self.chunk_size)
+
+    @property
+    def shifted(self):
+        # return self.j_table_update.shifted
+        raise NotImplemented("shifts are not supported yet.")
+
+    @property
+    def modified_columns(self) -> List[str]:
+        # TODO
+        ...
 
 
 class TableListenerHandle:
@@ -87,31 +184,6 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
         raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
 
 
-def _nargs_listener(listener) -> int:
-    """Returns the number of arguments the listener takes.
-
-    Args:
-        listener: listener
-
-    Returns:
-        the number of arguments the listener takes
-
-    Raises:
-        ValueError, NotImplementedError
-    """
-
-    if callable(listener):
-        f = listener
-    elif hasattr(listener, "onUpdate"):
-        f = listener.onUpdate
-    else:
-        raise ValueError(
-            "ShiftObliviousListener is neither callable nor has an 'onUpdate' method"
-        )
-
-    return len(signature(f).parameters)
-
-
 class TableListener(ABC):
     """An abstract table listener class that should be subclassed by any user Table listener class."""
 
@@ -120,15 +192,66 @@ class TableListener(ABC):
         ...
 
 
+def listener_wrapper(table: Table):
+    def decorator(listener: Callable):
+        @wraps(listener)
+        def wrapper(*args):
+            sig = inspect.signature(listener)
+            n_params = len(sig.parameters)
+            j_update = args[1] if n_params == 2 else args[0]
+            t_update = TableUpdate(table=table, j_table_update=j_update)
+
+            if n_params == 2:
+                is_replay = args[0]
+                listener(is_replay, t_update)
+            else:
+                listener(t_update)
+
+        return wrapper
+
+    return decorator
+
+
+def _wrap_listener_func(t: Table, description: str, listener: Callable, replay_initial: bool, retain: bool):
+    n_params = len(signature(listener).parameters)
+
+    if n_params not in {1, 2}:
+        raise ValueError("listener must take 1 (update) or 2 (isReplay, update) arguments.")
+    if n_params == 1 and replay_initial:
+        raise ValueError(f"Listener does not support replay: nargs={n_params}")
+
+    listener = listener_wrapper(table=t)(listener)
+
+    if n_params == 1:
+        return _JPythonListenerAdapter(description, t.j_table, retain, listener)
+    else:
+        return _JPythonReplayListenerAdapter(description, t.j_table, retain, listener)
+
+
+def _wrap_listener_obj(t: Table, description: str, listener: TableListener, replay_initial: bool, retain: bool):
+    n_params = len(signature(listener.onUpdate).parameters)
+
+    if n_params not in {1, 2}:
+        raise ValueError(f"listener must take 1 (update) or 2 (isReplay, update) arguments.")
+    if n_params == 1 and replay_initial:
+        raise ValueError(f"Listener does not support replay: nargs={n_params}")
+
+    listener.onUpdate = listener_wrapper(table=t)(listener.onUpdate)
+    if n_params == 1:
+        return _JPythonListenerAdapter(description, t.j_table, retain, listener)
+    else:
+        return _JPythonReplayListenerAdapter(description, t.j_table, retain, listener)
+
+
 def listen(
-    t: Table,
-    listener: Union[Callable, Type[TableListener]],
-    description: str = None,
-    retain: bool = True,
-    listener_type: str = "auto",
-    start_listening: bool = True,
-    replay_initial: bool = False,
-    lock_type: str = "shared",
+        t: Table,
+        listener: Union[Callable, Type[TableListener]],
+        description: str = None,
+        *,
+        retain: bool = True,
+        start_listening: bool = True,
+        replay_initial: bool = False,
+        lock_type: str = "shared",
 ) -> TableListenerHandle:
     """Listen to table changes.
 
@@ -137,13 +260,9 @@ def listen(
         (2) an object that provides an "onUpdate" method.
     In either case, the method must have one of the following signatures.
 
-    * (added, removed, modified): shift_oblivious
-    * (isReplay, added, removed, modified): shift_oblivious + replay
     * (update): shift-aware
     * (isReplay, update): shift-aware + replay
-
-    For shift-oblivious listeners, 'added', 'removed', and 'modified' are the indices of the rows which changed.
-    For shift-aware listeners, 'update' is an object that describes the table update.
+    'update' is an object that describes the table update.
 
     Listeners that support replaying the initial table snapshot have an additional parameter, 'isReplay', which is
     true when replaying the initial snapshot and false during normal updates.
@@ -158,11 +277,6 @@ def listen(
         description (str): description for the UpdatePerformanceTracker to append to the listener's entry description
         retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
             collected, default is True
-        listener_type (str): listener type, valid values are "auto", "shift_oblivious", and "shift_aware"
-            "auto" (default) uses inspection to automatically determine the type of input listener
-            "shift_oblivious" is for a shift_oblivious listener, which takes three (added, removed, modified) or four
-                (isReplay, added, removed, modified) arguments
-            "shift_aware" is for a shift-aware listener, which takes one (update) or two (isReplay, update) arguments
         start_listening (bool): True to create the listener and register the listener with the table. The listener will
             see updates. False to create the listener, but do not register the listener with the table. The listener
             will not see updates. Default is True
@@ -186,79 +300,12 @@ def listen(
                 "start_listening=True)."
             )
 
-        nargs = _nargs_listener(listener)
-
-        if listener_type is None or listener_type == "auto":
-            if nargs == 1 or nargs == 2:
-                listener_type = "shift_aware"
-            elif nargs == 3 or nargs == 4:
-                listener_type = "shift_oblivious"
-            else:
-                raise ValueError(
-                    f"Unable to autodetect listener type. ShiftObliviousListener does not take an expected number of "
-                    f"arguments. args={nargs}."
-                )
-
-        if listener_type == "shift_oblivious":
-            if nargs == 3:
-                if replay_initial:
-                    raise ValueError(
-                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(
-                            listener_type, nargs
-                        )
-                    )
-
-                listener_adapter = jpy.get_type(
-                    "io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter"
-                )
-                listener_adapter = listener_adapter(
-                    description, t.j_table, retain, listener
-                )
-            elif nargs == 4:
-                listener_adapter = jpy.get_type(
-                    "io.deephaven.integrations.python"
-                    ".PythonReplayShiftObliviousListenerAdapter"
-                )
-                listener_adapter = listener_adapter(
-                    description, t.j_table, retain, listener
-                )
-            else:
-                raise ValueError(
-                    "Legacy listener must take 3 (added, removed, modified) or 4 (isReplay, added, removed, modified) "
-                    "arguments."
-                )
-
-        elif listener_type == "shift_aware":
-            if nargs == 1:
-                if replay_initial:
-                    raise ValueError(
-                        "ShiftObliviousListener does not support replay: ltype={} nargs={}".format(
-                            listener_type, nargs
-                        )
-                    )
-
-                listener_adapter = jpy.get_type(
-                    "io.deephaven.integrations.python.PythonListenerAdapter"
-                )
-                listener_adapter = listener_adapter(
-                    description, t.j_table, retain, listener
-                )
-            elif nargs == 2:
-                listener_adapter = jpy.get_type(
-                    "io.deephaven.integrations.python.PythonReplayListenerAdapter"
-                )
-                listener_adapter = listener_adapter(
-                    description, t.j_table, retain, listener
-                )
-            else:
-                raise ValueError(
-                    "Shift-aware listener must take 1 (update) or 2 (isReplay, update) arguments."
-                )
-
+        if callable(listener):
+            listener_adapter = _wrap_listener_func(t, description, listener, replay_initial, retain)
+        elif isinstance(listener, TableListener):
+            listener_adapter = _wrap_listener_obj(t, description, listener, replay_initial, retain)
         else:
-            raise ValueError(
-                "Unsupported listener type: ltype={}".format(listener_type)
-            )
+            raise ValueError("listener is neither callable nor TableListener object")
 
         handle = TableListenerHandle(t, listener_adapter)
 
@@ -276,4 +323,4 @@ def listen(
 
         return handle
     except Exception as e:
-        raise DHError(e, "failed to listen to the table.") from e
+        raise DHError(e, "failed to listen to the table changes.") from e

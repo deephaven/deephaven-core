@@ -33,7 +33,7 @@ def _to_column_name(name: str) -> str:
     return re.sub(r"\s+", "_", tmp_name)
 
 
-def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
+def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition. """
     try:
         if col_def.data_type.is_primitive:
@@ -73,7 +73,7 @@ def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np
         else:
             np_arrays = []
             for j_array in j_arrays:
-                np_arrays.append(_column_to_numpy_array(col_def=col_def, j_array=j_array))
+                np_arrays.append(column_to_numpy_array(col_def=col_def, j_array=j_array))
             return np.stack(np_arrays, axis=1)
     except DHError:
         raise
