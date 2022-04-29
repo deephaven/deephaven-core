@@ -245,7 +245,7 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
-                            final int lastChunkIndex = acd.data.size() - 1;
+                            int lastChunkIndex = acd.data.size() - 1;
 
                             // need to add the batch row data to the column chunks
                             WritableChunk<Values> chunk = (WritableChunk) acd.data.get(lastChunkIndex);
@@ -264,6 +264,7 @@ public class BarrageStreamReader implements StreamReader {
                                 acd.data.add(chunk);
 
                                 chunkOffset = 0;
+                                ++lastChunkIndex;
                             } else {
                                 chunkOffset = (int) rowOffset;
                             }
@@ -279,7 +280,7 @@ public class BarrageStreamReader implements StreamReader {
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
-                            final int lastChunkIndex = mcd.data.size() - 1;
+                            int lastChunkIndex = mcd.data.size() - 1;
 
                             // need to add the batch row data to the column chunks
                             WritableChunk<Values> chunk = (WritableChunk) mcd.data.get(lastChunkIndex);
@@ -298,6 +299,7 @@ public class BarrageStreamReader implements StreamReader {
                                 mcd.data.add(chunk);
 
                                 chunkOffset = 0;
+                                ++lastChunkIndex;
                             } else {
                                 chunkOffset = (int) rowOffset;
                             }

@@ -793,7 +793,7 @@ public class BarrageStreamGenerator implements
         if (addChunkRowOffsets.length > 1) {
             chunkIdx = Arrays.binarySearch(addChunkRowOffsets, startRange);
             if (chunkIdx < 0) {
-                chunkIdx = -(chunkIdx) - 1;
+                chunkIdx = -(chunkIdx) - 2; // point to the chunk that contains this (offset < startRange)
             }
             // assert the startRange value lies within the selected chunk
             Assert.assertion(startRange >= 0 && chunkIdx < addChunkRowOffsets.length - 1,
@@ -847,7 +847,7 @@ public class BarrageStreamGenerator implements
                 // identify the chunk that holds this startRange
                 chunkIdx = Arrays.binarySearch(mcd.modChunkRowOffsets, startRange);
                 if (chunkIdx < 0) {
-                    chunkIdx = -(chunkIdx) - 1;
+                    chunkIdx = -(chunkIdx) - 2; // point to the chunk that contains this (offset < startRange)
                 }
                 // assert the startRange value lies within the selected chunk
                 Assert.assertion(startRange >= 0 && chunkIdx < mcd.modChunkRowOffsets.length - 1,
