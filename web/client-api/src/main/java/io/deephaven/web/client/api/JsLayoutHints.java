@@ -52,7 +52,7 @@ public class JsLayoutHints {
     private String[] hiddenColumns;
     private String[] frozenColumns;
 
-    private Object[] columnGroups;
+    private ColumnGroup[] columnGroups;
 
     public JsLayoutHints parse(String hints) {
         if (hints == null || hints.isEmpty()) {
@@ -91,9 +91,10 @@ public class JsLayoutHints {
         final String groupsStr = options.get("groups");
         if (groupsStr != null && !groupsStr.isEmpty()) {
             List<ColumnGroup> groups =
-                    Arrays.stream(groupsStr.split("\\|")).map(ColumnGroup::new).collect(Collectors.toList());
+                    Arrays.stream(groupsStr.split("\\|")).map(ColumnGroup::new).map(JsObject::freeze)
+                            .collect(Collectors.toList());
 
-            columnGroups = JsObject.freeze(groups.toArray());
+            columnGroups = JsObject.freeze(groups.toArray(new ColumnGroup[0]));
         }
 
         return this;

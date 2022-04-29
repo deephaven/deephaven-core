@@ -113,24 +113,21 @@ public class LayoutHintBuilder {
 
     private static class ColumnGroup {
 
-        String name;
-        final List<String> children;
-        Color color;
+        private final String name;
+        private final List<String> children;
+        private final Color color;
 
-        ColumnGroup(String name, List<String> children, Color color) {
+        public ColumnGroup(String name, List<String> children, Color color) {
             NameValidator.validateColumnName(name);
             children.forEach(c -> NameValidator.validateColumnName(c));
 
             this.name = name;
             this.children = children;
-
-            if (color != null) {
-                this.color = color;
-            }
+            this.color = color;
         }
 
         @NotNull
-        String serialize() {
+        public String serialize() {
             StringBuilder sb = new StringBuilder("name:" + name);
 
             sb.append("::children:" + StringUtils.joinStrings(children, ","));
@@ -147,16 +144,16 @@ public class LayoutHintBuilder {
          * @return a ColumnGroup instance
          */
         @NotNull
-        static ColumnGroup fromString(String string) {
+        public static ColumnGroup fromString(String string) {
             final Map<String, String> options = Arrays.stream(string.split("::"))
                     .map(option -> option.split(":"))
-                    .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : ""));
+                    .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : null));
 
             final String name = options.get("name");
             final List<String> children = Arrays.asList(options.get("children").split(","));
             final String color = options.get("color");
 
-            if (color == null || color.length() == 0) {
+            if (color == null) {
                 return new ColumnGroup(name, children, null);
             }
 
@@ -376,7 +373,7 @@ public class LayoutHintBuilder {
     @ScriptApi
     public LayoutHintBuilder group(String name, List<String> children, Color color) {
         if (columnGroups == null) {
-            columnGroups = new HashMap<>();
+            columnGroups = new LinkedHashMap<>();
         }
 
         if (children.size() == 0) {
@@ -390,7 +387,7 @@ public class LayoutHintBuilder {
 
     private void addGroupData(ColumnGroup group) {
         if (columnGroups == null) {
-            columnGroups = new HashMap<>();
+            columnGroups = new LinkedHashMap<>();
         }
 
         columnGroups.put(group.name, group);
