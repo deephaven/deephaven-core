@@ -898,8 +898,8 @@ public class BarrageStreamGenerator implements
                     final ChunkInputStreamGenerator generator = mcd.data.generators[chunkIdx];
 
                     // normalize to the chunk offsets
-                    try (final WritableRowSet adjustedOffsets = chunkIdx == 0 ? myModOffsets.copy() :
-                            myModOffsets.shift(-mcd.modChunkRowOffsets[chunkIdx])) {
+                    try (final WritableRowSet adjustedOffsets = chunkIdx == 0 ? myModOffsets.copy()
+                            : myModOffsets.shift(-mcd.modChunkRowOffsets[chunkIdx])) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 generator.getInputStream(view.options(), adjustedOffsets);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
