@@ -7,6 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * {@link PartitionedTable.Proxy} implementation.
  */
-class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
+class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedTable.Proxy {
 
     /**
      * Make a {@link PartitionedTable.Proxy proxy} to the supplied {@code target}.
@@ -75,6 +76,9 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
             @NotNull final PartitionedTable target,
             final boolean requireMatchingKeys,
             final boolean sanityCheckJoins) {
+        if (target.table().isRefreshing()) {
+            manage(target);
+        }
         this.target = target;
         this.requireMatchingKeys = requireMatchingKeys;
         this.sanityCheckJoins = sanityCheckJoins;
@@ -136,7 +140,7 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
-            if (target.table().isRefreshing() || otherTable.isRefreshing()) {
+            if ((target.table().isRefreshing() || otherTable.isRefreshing()) && joinMatches != null) {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
 
@@ -159,7 +163,7 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
                 UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
 
-            PartitionedTableImpl.validateJoinKeys(target, otherTarget);
+            PartitionedTableImpl.checkMatchingKeyColumns(target, otherTarget);
 
             final DependentValidation uniqueKeys = requireMatchingKeys
                     ? uniqueKeysValidation(target, otherTarget)
@@ -237,7 +241,7 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
     private static Table validated(
             @NotNull final Table parent,
             @NotNull final DependentValidation... dependentValidationsIn) {
-        if (dependentValidationsIn.length == 0) {
+        if (dependentValidationsIn.length == 0 || !parent.isRefreshing()) {
             return parent;
         }
         final DependentValidation[] dependentValidations =
@@ -245,25 +249,48 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
         if (dependentValidations.length == 0) {
             return parent;
         }
-        // NB: All callers call checkInitiateTableOperation first, so we can dispense with snapshots and swap listeners
+        // NB: All code paths that pass non-null validations for refreshing parents call checkInitiateTableOperation
+        // first, so we can dispense with snapshots and swap listeners.
         final QueryTable coalescedParent = (QueryTable) parent.coalesce();
         final QueryTable child = coalescedParent.getSubTable(
                 coalescedParent.getRowSet(),
-                coalescedParent.getModifiedColumnSetForUpdates(),
-                (Object[]) dependentValidations);
+                coalescedParent.getModifiedColumnSetForUpdates());
         coalescedParent.propagateFlatness(child);
         coalescedParent.copyAttributes(child, a -> true);
-        coalescedParent.listenForUpdates(
-                new BaseTable.ListenerImpl("Validating copy listener", coalescedParent, child) {
-                    @Override
-                    public void onUpdate(@NotNull final TableUpdate upstream) {
-                        for (final Runnable dependentValidation : dependentValidations) {
-                            dependentValidation.run();
-                        }
-                        child.notifyListeners(upstream.acquire());
-                    }
-                });
+        coalescedParent.listenForUpdates(new ValidatingCopyListener(coalescedParent, child, dependentValidations));
         return child;
+    }
+
+    private static final class ValidatingCopyListener extends BaseTable.ListenerImpl {
+
+        private final DependentValidation[] dependentValidations;
+
+        private ValidatingCopyListener(@NotNull final QueryTable parent, @NotNull final QueryTable child,
+                @NotNull final DependentValidation[] dependentValidations) {
+            super("Validating copy listener", parent, child);
+            this.dependentValidations = dependentValidations;
+            for (final LivenessReferent referent : dependentValidations) {
+                manage(referent);
+            }
+        }
+
+        @Override
+        public boolean canExecute(final long step) {
+            for (final NotificationQueue.Dependency dependency : dependentValidations) {
+                if (!dependency.satisfied(step)) {
+                    return false;
+                }
+            }
+            return super.canExecute(step);
+        }
+
+        @Override
+        public void onUpdate(@NotNull final TableUpdate upstream) {
+            for (final Runnable validation : dependentValidations) {
+                validation.run();
+            }
+            super.onUpdate(upstream);
+        }
     }
 
     /**
@@ -312,7 +339,7 @@ class PartitionedTableProxyImpl implements PartitionedTable.Proxy {
     }
 
     /**
-     * Make and run dependent validation checking join keys that are found in more than one constituent table in
+     * Make and run a dependent validation checking join keys that are found in more than one constituent table in
      * {@code input}.
      *
      * @param input The input partitioned table

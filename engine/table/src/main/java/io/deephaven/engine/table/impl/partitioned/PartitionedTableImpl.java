@@ -12,6 +12,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -161,8 +162,13 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public PartitionedTable partitionedTransform(
             @NotNull final PartitionedTable other,
             @NotNull final BinaryOperator<Table> transformer) {
+        // Check safety before doing any extra work
+        if (table.isRefreshing() || other.table().isRefreshing()) {
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        }
+
         // Validate join compatibility
-        validateJoinKeys(this, other);
+        checkMatchingKeyColumns(this, other);
 
         final LivenessScope operationScope = new LivenessScope();
         final Table resultTable;
@@ -206,7 +212,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
      * @param rhs The second partitioned table
      * @throws IllegalArgumentException If the key columns are mismatched
      */
-    static void validateJoinKeys(@NotNull final PartitionedTable lhs, @NotNull final PartitionedTable rhs) {
+    static void checkMatchingKeyColumns(@NotNull final PartitionedTable lhs, @NotNull final PartitionedTable rhs) {
         final Map<String, ColumnDefinition<?>> lhsKeyColumnDefinitions = keyColumnDefinitions(lhs);
         final Map<String, ColumnDefinition<?>> rhsKeyColumnDefinitions = keyColumnDefinitions(rhs);
         if (!lhs.keyColumnNames().equals(rhs.keyColumnNames())) {
