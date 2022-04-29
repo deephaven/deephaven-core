@@ -1,7 +1,9 @@
 package io.deephaven.integrations.python;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
@@ -51,11 +53,9 @@ public class PythonListenerTableUpdateDataReader {
 
     public static Object[] readChunkColumnMajor(@NotNull final io.deephaven.engine.table.Context context,
             final RowSequence rowSeq,
-            final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources, final boolean prev) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
-        // final Object[] arrays = Arrays.stream(columnSources).map(cs ->
-        // cs.getChunkType().makeArray(rowSeq.intSize())).toArray(Object[]::new);
         final Object[] arrays = Arrays.stream(columnSources).map(cs -> {
             final ChunkType chunkType = cs.getChunkType();
             if (chunkType == ChunkType.Object) {
@@ -73,7 +73,11 @@ public class PythonListenerTableUpdateDataReader {
             final ColumnSource<?> colSrc = columnSources[ci];
 
             // noinspection unchecked
-            colSrc.fillChunk(fillContext, chunk, rowSeq);
+            if (prev) {
+                colSrc.fillPrevChunk(fillContext, chunk, rowSeq);
+            } else {
+                colSrc.fillChunk(fillContext, chunk, rowSeq);
+            }
             chunk.clear();
         }
         typedContext.sharedContext.reset();

@@ -22,7 +22,7 @@ class TableListenerTestCase(BaseTestCase):
         with self.ugp_lock_exclusive():
             self.test_table = time_table("00:00:00.001").update(["X=i%2"]).sort("X").tail(16)
             source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
-            self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 6, bool_col="InWindow")
+            self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
 
     def tearDown(self) -> None:
         self.test_table = None

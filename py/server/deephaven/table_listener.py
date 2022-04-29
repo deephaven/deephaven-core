@@ -26,7 +26,7 @@ _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonL
 DEFAULT_CHUNK_SIZE = 4096
 
 
-def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int):
+def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int, prev: bool = False):
     row_sequence_iterator = row_set.getRowSequenceIterator()
     col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
 
@@ -34,7 +34,7 @@ def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size:
     while row_sequence_iterator.hasMore():
         chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
 
-        j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources)
+        j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources, prev)
 
         col_dict = {}
         for i, col_def in enumerate(col_defs):
@@ -82,7 +82,7 @@ class TableUpdate(JObjectWrapper):
 
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.removed.asRowSet(),
-                                 chunk_size=self.chunk_size)
+                                 chunk_size=self.chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None):
         if not self.j_table_update.modified:
@@ -97,8 +97,9 @@ class TableUpdate(JObjectWrapper):
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
-        return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.getModifiedPreShift().asRowSet(),
-                                 chunk_size=self.chunk_size)
+        return _changes_to_numpy(self.table, col_defs=col_defs,
+                                 row_set=self.j_table_update.getModifiedPreShift().asRowSet(),
+                                 chunk_size=self.chunk_size, prev=True)
 
     @property
     def shifted(self):
