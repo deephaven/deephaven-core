@@ -26,6 +26,9 @@ public interface SourceTypeMap {
     @JsProperty(name = "HIGH")
     int getHIGH();
 
+    @JsProperty(name = "HOVER_TEXT")
+    int getHOVER_TEXT();
+
     @JsProperty(name = "LABEL")
     int getLABEL();
 
@@ -34,6 +37,9 @@ public interface SourceTypeMap {
 
     @JsProperty(name = "OPEN")
     int getOPEN();
+
+    @JsProperty(name = "PARENT")
+    int getPARENT();
 
     @JsProperty(name = "SHAPE")
     int getSHAPE();
@@ -74,6 +80,9 @@ public interface SourceTypeMap {
     @JsProperty(name = "HIGH")
     void setHIGH(int HIGH);
 
+    @JsProperty(name = "HOVER_TEXT")
+    void setHOVER_TEXT(int HOVER_TEXT);
+
     @JsProperty(name = "LABEL")
     void setLABEL(int LABEL);
 
@@ -82,6 +91,9 @@ public interface SourceTypeMap {
 
     @JsProperty(name = "OPEN")
     void setOPEN(int OPEN);
+
+    @JsProperty(name = "PARENT")
+    void setPARENT(int PARENT);
 
     @JsProperty(name = "SHAPE")
     void setSHAPE(int SHAPE);
