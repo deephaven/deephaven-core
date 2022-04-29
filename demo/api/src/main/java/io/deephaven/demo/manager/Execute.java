@@ -1,6 +1,7 @@
 package io.deephaven.demo.manager;
 
 
+import io.smallrye.common.constraint.NotNull;
 import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
@@ -12,7 +13,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- *
+ * The Execute class is responsible for executing native processes and returning results.
+ * <p>
+ * Currently, the gcloud* methods in this class *should* be moved to the gcloud module.
  */
 public class Execute {
 
@@ -21,7 +24,7 @@ public class Execute {
     private static final Executor exec = Executors.newCachedThreadPool(new ThreadFactory() {
         private final ThreadFactory realFactory = Executors.defaultThreadFactory();
         @Override
-        public Thread newThread(@org.jetbrains.annotations.NotNull final Runnable r) {
+        public Thread newThread(@NotNull final Runnable r) {
             final Thread thread = realFactory.newThread(r);
             // we don't want to block the jvm on our background tasks
             thread.setDaemon(true);
@@ -319,11 +322,11 @@ result.err);
     }
     static Appendable logWrap(String logPrefix, StringBuffer out, Consumer<CharSequence> log) {
         return new Appendable() {
-            // annoying trick to convince Groovy to let us reference `this` in anonymous
+            // annoying trick to convince Groovy to let us reference `this` in anonymous classes
             private Appendable me = this;
 
             @Override
-            public Appendable append(CharSequence csq) throws IOException {
+            public Appendable append(CharSequence csq) {
                 out.append(csq);
                 if (!csq.toString().trim().isEmpty()) {
                     log.accept(logPrefix + " " + csq);
@@ -332,7 +335,7 @@ result.err);
             }
 
             @Override
-            public Appendable append(CharSequence csq, int start, int end) throws IOException {
+            public Appendable append(CharSequence csq, int start, int end) {
                 out.append(csq, start, end);
                 CharSequence sub = csq.subSequence(start, end);
                 if (!sub.toString().trim().isEmpty()) {
@@ -342,7 +345,7 @@ result.err);
             }
 
             @Override
-            public Appendable append(char c) throws IOException {
+            public Appendable append(char c) {
                 out.append(c);
                 if (!Character.isWhitespace(c)) {
                     log.accept(logPrefix + " " + c);

@@ -73,7 +73,7 @@ RUN echo " \
 CLOUDSDK_CONFIG=/root/.config/gcloud \
 " > /etc/environment ;
 
-# We make four distinct layers so if there are application changes the library layers can be re-used
+# We make distinct layers here so if there are application changes the library layers can be re-used
 COPY --chown=1001 build/quarkus-app/lib/ /deployments/lib/
 COPY --chown=1001 build/quarkus-app/*.jar /deployments/
 COPY --chown=1001 build/quarkus-app/app/ /deployments/app/

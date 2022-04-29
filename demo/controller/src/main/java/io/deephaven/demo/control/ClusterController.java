@@ -32,9 +32,18 @@ import static io.deephaven.demo.gcloud.GoogleDeploymentManager.*;
  * <p>
  * This class reads in data from google, and uses that to glue together a set of IP addresses {@link IpPool},
  * <p>
- * to DNS records
+ * to DNS records {@link DomainPool}, and to keep tabs on all {@link Machine} objects.
  * <p>
- * Created by James X. Nelson (James@WeTheInter.net) on 25/09/2021 @ 2:25 a.m..
+ * <p>
+ * This class will discard any Machine that is not a version we should be controlling.
+ * <p>
+ * <p>
+ * Only the "leader" will be allowed to turn off / delete old machines.
+ * <p>
+ * The leader is determined by checking "my IP address" == "IP address of public controller".
+ * <p>
+ * The "public controller" is the {@link io.deephaven.demo.manager.NameConstants#DOMAIN}, demo.deephaven.app
+ * <p>
  */
 public class ClusterController implements IClusterController {
 
@@ -998,7 +1007,7 @@ public class ClusterController implements IClusterController {
             return;
         }
         try {
-            latch.await(30, TimeUnit.SECONDS);
+            latch.await(120, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             String msg = "Interrupted waiting for controller to read metadata; check for error logs!";
             System.err.println(msg);
@@ -1021,12 +1030,13 @@ public class ClusterController implements IClusterController {
             Optional<Machine> machine = machines.maybeGetMachine(reserve, this::isValidVersion);
             if (machine.isPresent()) {
                 final Machine mach = machine.get();
+                // once a machine is selected, we'll want to make sure it's turned on and update its lease.
+                // however, we don't want to make the user request wait,
+                // we'll offthread the startup and send user to interstitial page.
                 moveToRunningState(mach, reserve);
                 LOG.info("Sending user to pre-existing machine " + mach);
                 return mach;
             }
-            // hm... we should probably send user to interstitial page immediately...
-            // no need to have them wait until machine spins up to see "you gonna have to wait" screen.
         }
         String newName = NameGen.newName();
         LOG.info("Sending user to new machine " + newName);
@@ -1044,11 +1054,6 @@ public class ClusterController implements IClusterController {
         return machine;
     }
 
-    void reloadMetadata(Machine machine) {
-        // unless this machine is currently running a metadata reload, start one.
-
-    }
-
     /**
      * Handles making sure a worker we believe to be runnable is actually online and correctly routed to DNS.
      *
@@ -1064,7 +1069,7 @@ public class ClusterController implements IClusterController {
             // if we aren't reserving this machine, still update the expiry, so machines will gradually rotate
             machine.keepAlive();
         }
-        Execute.setTimer("Move to running state", () -> {
+        Execute.setTimer("Move " + machine.getHost() + " to running state", () -> {
             Execute.ExecutionResult result = null;
             IpMapping machineIp = machine.getIp();
             try {
@@ -1072,6 +1077,7 @@ public class ClusterController implements IClusterController {
                         : machine.isSnapshotCreate()
                                 ? machine.isController() ? PURPOSE_CREATOR_CONTROLLER : PURPOSE_CREATOR_WORKER
                                 : PURPOSE_WORKER;
+                // gcloud can sometimes throw errors if we try to read metadata right after machine is created
                 int tries = 5;
                 while (tries-- > 0) {
                     result = gcloud(true, true, "instances",
@@ -1089,8 +1095,8 @@ public class ClusterController implements IClusterController {
                 if (result.code != 0) {
                     // check if this was a "not found" message
                     if (resultString.contains("not found")) {
-                        // yikes! the machine doesn't exist... maybe create one w/ the specified ip address
-                        // (by name, so it is stable!)
+                        // yikes! the machine doesn't exist... conditionally create one w/ the specified ip address
+                        // (by name, so it is stable!); only done if env var DH_ALLOW_ANY_MACHINE=true
                         if (machines.getNumberMachines() > getMaxPoolSize()) {
                             LOG.error("Refusing to create more than " + getMaxPoolSize() + " machines (currently "
                                     + machines.getNumberMachines() + ")");
@@ -1102,7 +1108,7 @@ public class ClusterController implements IClusterController {
                     }
                 }
                 if (result.code != 0) {
-                    LOG.errorf("Unable to describe to machine %s", machine.toStringShort());
+                    LOG.errorf("Unable to describe machine %s", machine.toStringShort());
                     GoogleDeploymentManager.warnResult(result);
                     return;
                 }
@@ -1229,12 +1235,25 @@ public class ClusterController implements IClusterController {
         return manager;
     }
 
+    /**
+     * Waits until a machine reports healthy by completing full initialization.
+     * <p>
+     * <p>
+     * This method can block for a very long time, and is only used when setting up new workers/controllers.
+     * <p>
+     * Production workers and controls are created from pre-primed images,
+     * <p>
+     * So they would never call this long, slow polling method.
+     * <p>
+     *
+     * @param machine The machine whose startup logs we should monitor to see if it online
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void waitUntilHealthy(final Machine machine) throws IOException, InterruptedException {
         final String key = "finished code: ";
         final String failed = "ran out of tries";
-        final Execute.ExecutionResult result = Execute.ssh(true, machine.getDomainName(), // "bash", "-c",
-                // GoogleDeploymentManager.gcloud(false, true, "ssh", machine.getHost(),
-                // "--command",
+        final Execute.ExecutionResult result = Execute.ssh(true, machine.getDomainName(),
                 "function watch_logs() {\n" +
                         "  echo Watching log file /var/log/vm-startup.log\n" +
                         "  while ! test -f /var/log/vm-startup.log ; do sleep 1 ; done\n" +
@@ -1252,11 +1271,16 @@ public class ClusterController implements IClusterController {
                         "    (( tries%10 )) || echo \"start-monitor tries remaining: $tries\"\n" +
                         "    sleep 1\n" +
                         "  done\n" +
+                        // kill the watch_logs function, if we got here, we don't need more logs
                         "  kill $pid\n" +
                         "  if (( tries > 0 )); then\n" +
                         "    if curl -k https://localhost:10000/health &> /dev/null; then\n" +
                         "        echo \"localhost:10000 is responsive; $(hostname) is alive!\"\n" +
                         "    else\n" +
+                                // the startup script does not block until the server comes online.
+                                // For now, we're going to ignore "server not responding yet",
+                                // but we should probably poll a few 10s of seconds for server to come up
+                                // so we can consider "server not working" a failure case.
                         "        echo \"localhost:10000 is not-responsive on $(hostname)\"\n" +
                         "    fi\n" +
                         "  else\n" +

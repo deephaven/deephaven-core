@@ -8,12 +8,6 @@ plugins {
 
 evaluationDependsOn ':docker-server'
 
-dependencies {
-    // To be provided by the DH environment
-    //compileOnly 'io.deephaven:deephaven-table-api:0.5.0'
-    //compileOnly 'io.deephaven:deephaven-qst:0.5.0'
-}
-
 def dockerfileDir = project.layout.buildDirectory.dir('prepareDocker')
 def imageIdFile = project.layout.buildDirectory.file('.docker/imageId.txt').get().asFile
 def imageId = imageIdFile.exists() ? imageIdFile.text : null

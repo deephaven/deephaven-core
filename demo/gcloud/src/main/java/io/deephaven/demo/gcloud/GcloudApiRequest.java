@@ -38,7 +38,8 @@ abstract class GcloudApiRequest {
         return started;
     }
 
-    public void addDoneCallback(final BiConsumer<Execute.ExecutionResult, Throwable> callback) {
+    void addDoneCallback(final BiConsumer<Execute.ExecutionResult, Throwable> callback) {
+        // synchonization on this array list modification is done by our caller (thus, this method is package-protected)
         doneList.add(callback);
     }
 
@@ -86,6 +87,7 @@ abstract class GcloudApiRequest {
     private void succeed(final String[] args, final Execute.ExecutionResult result) {
         final BiConsumer<Execute.ExecutionResult, Throwable>[] items;
         if (result.code == 0) {
+            // just synchronizing here to load finalized doneList into our thread, there's only ever one caller here
             synchronized (doneList) {
                 //noinspection unchecked
                 items = doneList.toArray(new BiConsumer[0]);

@@ -23,9 +23,9 @@ import static io.deephaven.demo.manager.NameConstants.*;
  * This class is responsible for building new worker/controller images.
  * <p>
  * <p>
- * It starts with a blank machine, applies our setup scripts, then turn the machine
+ * It starts with a blank machine, applies our setup scripts, then turns the machine off,
  * <p>
- * off and creates a new image of the harddrive, so we can easily spin up N pre-setup copies.
+ * and creates a new image of the harddrive, so we can easily spin up N pre-setup copies.
  *
  */
 public class ImageDeployer {
@@ -38,7 +38,7 @@ public class ImageDeployer {
     public static void main(String... args) throws IOException, InterruptedException {
         final ImageDeployer deployer = new ImageDeployer();
         if (args.length == 0) {
-            deployer.deploy(VERSION, "ancestor");
+            deployer.deployController(VERSION, "ancestor");
         } else {
             if ("-w".equals(args[0]) || "--worker".equals(args[0])) {
                 if (args.length < 2) {
@@ -47,7 +47,7 @@ public class ImageDeployer {
                 String workerName = args[1];
                 deployer.deploySingleWorker(workerName);
             } else {
-                deployer.deploy(args[0], args.length > 1 ? args[1] : "ancestor");
+                deployer.deployController(args[0], args.length > 1 ? args[1] : "ancestor");
             }
         }
     }
@@ -68,13 +68,16 @@ public class ImageDeployer {
                 LOG.infof("Machine %s already existed, updating startup script", workerName);
                 // update the startup script url, and then kick the machine over.
                 File startupScript = new File(localDir, "prepare-worker.sh");
+                // replace AVOID_INIT=true with AVOID_INIT=false; only production workers skip reinstalling on boot up
                 Execute.bashQuiet("update_init",
                         "sed -i -e s/AVOID_INIT=true/AVOID_INIT=false/ " + startupScript.getAbsolutePath());
+                // replace the startup script
                 GoogleDeploymentManager.gcloud(false,
                         "instances", "add-metadata", workerName,
                         "--metadata-from-file=startup-script="
                                 + new File(localDir, "prepare-worker.sh").getAbsolutePath());
                 // turn the machine off, so its startup script will rerun!
+                // This includes re-pulling docker images before starting the server
                 GoogleDeploymentManager.gcloud(false,
                         "instances", "stop", workerName);
             }
@@ -83,19 +86,19 @@ public class ImageDeployer {
         ctrl.waitUntilReady();
         final Machine machine = ctrl.requestMachine(workerName, true, false);
         manager.waitForSsh(machine);
-        // we need to explicitly invoke the startup script, and make sure it re-pulls images.
+        // wait until the server completes initialization and reports it is online.
         ctrl.waitUntilHealthy(machine);
         LOG.infof("\n\nYour machine %s is healthy!", machine.getDomainName());
-        LOG.infof("Visit it on the web: https://%s\n\n", machine.getDomainName());
+        LOG.infof("Visit it on the web: https://%s\n\n\n", machine.getDomainName());
     }
 
-    private void deploy(final String version, String machinePrefix) throws IOException, InterruptedException {
+    private void deployController(final String version, String machinePrefix) throws IOException, InterruptedException {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + version;
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
         ClusterController ctrl = new ClusterController(manager, false, true);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
         String workerBox = prefix + "worker-" + VERSION_MANGLE; // ancestor-worker
-        String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor=controller
+        String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor-controller
         String baseBox = manager.getBaseImageName();
         manager.setBaseImageName(baseBox);
         final boolean workerOnly = "true".equals(System.getProperty("workerOnly"));
@@ -114,7 +117,8 @@ public class ImageDeployer {
         // we'll want the IP address information to be uptodate before we start loading machine metadata
         ctrl.waitUntilReady();
         if (!workerOnly) {
-            // workers _can_ create themselves w/o a base image.
+            // workers _can_ create themselves w/o a base image,
+            // so we'll only check-and-create a base image when -PworkerOnly!=true
             result = GoogleDeploymentManager.gcloudQuiet(true, false,
                     "images", "describe", baseBox);
             if (result.code != 0) {
@@ -148,9 +152,8 @@ public class ImageDeployer {
             LOG.info("Deleting old boxes " + workerBox + " and " + controllerBox + " if they exist");
             // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
             Execute.setTimer("Delete " + controllerBox, () -> {
-                GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q",
-                        // "controller-" + VERSION_MANGLE
-                        controllerBox);
+                GoogleDeploymentManager.gcloud(true,
+                        "instances", "delete", "-q", controllerBox);
                 controller.getIp().setDomain(new DomainMapping(controllerBox, DOMAIN));
                 // The manager itself has code to select our prepare-controller.sh script as machine startup script
                 // based on these bools:
@@ -161,7 +164,9 @@ public class ImageDeployer {
             });
         }
         // no need to offthread, the next "expensive" operation we do is to create a clean box.
-        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
+        // if we later create a different -base image for worker and controller,
+        // we would offthread the create-a-worker, and do the controller baseBox in this thread.
+
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
 
 
@@ -187,7 +192,7 @@ public class ImageDeployer {
             LOG.info("Done deploying new worker image only, exiting early.");
             return;
         }
-        // worker is done, create the controller (we already setup DNS for it above)
+        // worker is done, create the controller
         LOG.info("Creating new controller template box");
         manager.createMachine(controller, manager.getIpPool());
         manager.assignDns(ctrl, Stream.of(controller));

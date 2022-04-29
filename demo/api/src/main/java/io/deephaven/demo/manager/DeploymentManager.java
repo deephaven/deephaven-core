@@ -16,9 +16,11 @@ import java.util.stream.Stream;
 
 /**
  * A DeploymentManager is responsible for creating and interacting with real VMs.
- *
+ * <p>
  * We are using this abstraction layer to push ALL google-cloud-specific code into a single box,
  * so that it can be replaced with alternate implementations when (and if) a customer ever uses this code.
+ * <p>
+ * Note: there is still some direct usage of Execute.gcloud methods that need to be hidden behind this interface.
  */
 public interface DeploymentManager {
 
@@ -41,7 +43,6 @@ public interface DeploymentManager {
     void waitForSsh(Machine node);
 
     Collection<IpMapping> requestNewIps(int i);
-
 
     void waitUntilIpsCreated();
 

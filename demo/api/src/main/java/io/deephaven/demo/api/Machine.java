@@ -12,10 +12,31 @@ import java.util.Objects;
 import static io.deephaven.demo.manager.NameConstants.*;
 
 /**
- * DhNode:
+ * Machine:
  * <p>
  * <p>
- * Created by James X. Nelson (James@WeTheInter.net) on 20/09/2021 @ 5:13 p.m..
+ *     Represents all state related to a given machine.
+ * <p>
+ *     Each machine will have one {@link IpMapping} that is assigned before the machine is created
+ *     which itself contains ~5 {@link DomainMapping} which are DNS records pointing to the given IpMapping.
+ * <p>
+ * <p>
+ *     When a machine is turned off, we simply mark the machine as offline but keep it around,
+ * <p>
+ *     as it is faster to revive an existing machine than to start up a new one.
+ * <p>
+ * <p>
+ *     When a machine is destroyed, we throw away all related information.
+ * <p>
+ *     The IP->domain mapping will be reassigned to a new machine which inherits our old IpMapping.
+ * <p>
+ * <p>
+ *     Note that information about when a machine's lease expires is stored in this object,
+ * <p>
+ *     however the definitive source of truth is a label on the gcloud VM instance.
+ * <p>
+ *     The controller will scan gcloud metadata and update Machine information every minute or so.
+ * <p>
  */
 public class Machine {
 

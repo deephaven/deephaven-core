@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * DomainPool:
  * <p>
  * <p>
- * <p> A pool which maps from a {@link IpMapping} to a {@link DomainMapping}.
+ * <p> A pool which maps from a String domain name to a {@link DomainMapping} object.
  * <p>
  */
 public class DomainPool {

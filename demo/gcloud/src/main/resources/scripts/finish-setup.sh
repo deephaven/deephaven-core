@@ -39,7 +39,7 @@ sudo iptables -t nat -L | grep -q "${PORT}" || {
 
 if [ "$AVOID_INIT" == false ]; then
     # when we are rebuilding a node, we'll set AVOID_INIT=false to make sure we don't quit early.
-    # this ensures that we'll restart the dh stack after we've pulled fresh images
+    # so, in this case, we need to explicitly knock docker-compose over, so any updated images will be used.
     sudo systemctl restart dh
 fi
 

@@ -24,8 +24,8 @@ follow the [Deployment Guide](deploy/README.md).
 
 If you are a contributor looking for interesting code,  
 have a look at the [controller code](controller),  
-in particular the [ClusterController](src/main/java/io/deephaven/demo/ClusterController.java) class.  
+in particular the [ClusterController](controller/src/main/java/io/deephaven/demo/control/ClusterController.java) class.  
 
 For [deployment code](deploy),  
-start with the [ImageDeployer] class  
-and see how it is used in the [gradle script].
+start with the [ImageDeployer](deploy/src/main/java/io/deephaven/demo/deploy/ImageDeployer.java) class  
+and see how it is used in the [gradle script](deploy/build.gradle).

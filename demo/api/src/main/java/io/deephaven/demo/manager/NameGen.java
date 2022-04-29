@@ -5,7 +5,7 @@ import io.vertx.core.impl.ConcurrentHashSet;
 import java.util.*;
 
 /**
- * NameSources: a set of adjectives and nouns that can be combined to make
+ * NameSources: a set of adjectives and nouns that can be combined to make "nice" unique names
  */
 public class NameGen {
 

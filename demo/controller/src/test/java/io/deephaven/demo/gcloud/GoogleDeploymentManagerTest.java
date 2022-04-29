@@ -63,7 +63,8 @@ public class GoogleDeploymentManagerTest {
 
         Machine.useImages = false;
         // you can change this machine name to whatever machine name you want
-        final Machine testNode = ctrl.requestMachine("test-jxn", true);
+        String machineName = "test-machine-" + System.currentTimeMillis();
+        final Machine testNode = ctrl.requestMachine(machineName, true);
         // testNode.setController(true); // feel free to use this to get a controller to test.
         if (!deploy.checkExists(testNode)) {
             deploy.createNew(testNode, deploy.getIpPool());
@@ -75,6 +76,8 @@ public class GoogleDeploymentManagerTest {
         Assert.assertNotEquals("", ipAddr);
 
         if ("true".equals(System.getProperty("noClean"))) {
+            // this test tries hard to let you keep an old machine around,
+            // because ./gradlew deployMachine did not exist when it was created.
             System.out.println("-DnoClean=true detected, leaving " + testNode.getHost() + " alive;\n" +
                     "Web: https://" + testNode.getDomainName() + "\n" +
                     "ssh " + testNode.getDomainName()

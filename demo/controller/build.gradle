@@ -27,6 +27,12 @@ tasks.withType(JavaExec).configureEach {
         exe.systemProperty("dh-helm-mode", "generate")
         exe.systemProperty("dh-helm-target", new File(buildDir, "helm").absolutePath)
         exe.environment("IS_CONTROLLER", System.getenv("IS_CONTROLLER") ?: "true")
+        if (org.gradle.internal.os.OperatingSystem.current().macOsX) {
+            // these not-supported-by-mac properties default to true in application.properties
+            exe.systemProperty("quarkus.http.tcp-quick-ack", "false")
+            exe.systemProperty("quarkus.http.tcp-cork", "false")
+            exe.systemProperty("quarkus.http.tcp-fast-open", "false")
+        }
 }
 
 dependencies {
@@ -86,6 +92,7 @@ cd /deployments
         }
 }
 
+// We'll copy all .proto files into our executable, so we can run grpcurl / talk protobuf to worker
 String protoSyncName = 'protoSync'
 tasks.register(protoSyncName, Sync).configure{
     Sync t ->
@@ -98,7 +105,6 @@ tasks.register(protoSyncName, Sync).configure{
         }
 }
 
-// TODO: forcibly test that a few toolchains can compile + run our code...
 quarkusBuild {
     // don't realize the task just to put this dependsOn in place
     dependsOn "$project.path:$protoSyncName", "$project.path:$launchScript"

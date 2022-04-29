@@ -9,6 +9,7 @@ plugins {
 }
 
 dependencies {
+    // Set all versions to "whatever quarkus is using for dependencies" (bom)
     String quarkusGroup = findProperty('quarkusPlatformGroupId')
     String quarkusArtifact = findProperty('quarkusPlatformArtifactId')
     String quarkusVersion = findProperty('quarkusPlatformVersion')

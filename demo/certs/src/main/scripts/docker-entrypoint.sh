@@ -55,6 +55,9 @@ fi
 # We only need service account json keys when the kubernetes service account does not have a proper workload identity setup.
 # You can test the workload identity setup by setting DEBUG=true (in Dockerfile or k8 yaml) and viewing logs.
 [ -f "$SVC_ACT_KEY" ] && MAYBE_SVC_JSON="--dns-google-credentials ${SVC_ACT_KEY}" || MAYBE_SVC_JSON=
+# If you don't have workload identity setup correctly, then you will need a service account json, SVC_ACT_KEY,
+# to be able to authenticate with google; even if you have google service account setup correctly,
+# use of the gcloud service account in kube containers requires hostNetwork: true, which gke autopilot disallows.
 
 cd $HOME
 certbot certonly \
@@ -67,15 +70,16 @@ certbot certonly \
   --dns-google-propagation-seconds 60 \
   ${MAYBE_SVC_JSON} \
   -d "$DOMAINS"
-# --dns-google-credentials, above, is hacky, but needed:
-# We need a service account json, SVC_ACT_KEY, to be able to run locally even though kubernetes should have service account provide access...
-# unfortunately, when running in autopilot mode, we can't use hostNetwork, which is where the service account gets its auth
 
 # Find where the cert lives
 CERTPATH=/etc/letsencrypt/live/$(echo "${DOMAINS//\*./}" | cut -f1 -d',')
 
 ls $CERTPATH || exit 1
 
+# let's not print secrets into logs.
+# If this script is failing below, and you want to manually recover cert+key,
+# then you can remove this set +o xtrace to scrape keys from logs.
+set +o xtrace
 # Copy cert contents into our json patch template
 cat /rx/secret-patch-template.json | \
 	sed "s/NAMESPACE/${NAMESPACE}/" | \
@@ -83,6 +87,7 @@ cat /rx/secret-patch-template.json | \
 	sed "s/TLSCERT/$(cat ${CERTPATH}/fullchain.pem | base64 | tr -d '\n')/" | \
 	sed "s/TLSKEY/$(cat ${CERTPATH}/privkey.pem |  base64 | tr -d '\n')/" \
 	> /tmp/secret-patch.json
+set -o xtrace
 
 # Only list the patch, don't render it to logs: it contains private key now!
 ls /tmp/secret-patch.json || exit 1

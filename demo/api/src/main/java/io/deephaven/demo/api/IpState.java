@@ -9,7 +9,7 @@ package io.deephaven.demo.api;
  */
 public enum IpState {
     /**
-     * This IP address is a freshly created that has not even requested changed to google DNS yet.
+     * This IP address is a freshly created that has not even requested creation from google yet.
      */
     Unverified,
     /**

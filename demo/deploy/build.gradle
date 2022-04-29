@@ -81,6 +81,29 @@ def pushAllTask = tasks.register('pushAll', DockerPushImage) {
 
 tasks.register('deployDemo', JavaExec) {
     JavaExec exe ->
+        exe.group '~Deephaven Demo'
+        exe.description """Deploy a new production controller machine
+
+URL will be https://controller-0-1-2.demo.deephaven.app, where 0-1-2 is your gradle version.
+
+Pass -PworkerOnly=true to only rebuild a worker image
+Pass -Pforce=true to forcibly overwrite worker/controller images and rebuild a controller
+DO NOT USE -Pforce=true for a currently deployed production version.
+
+It is up to you to update DNS for demo.deephaven.app to promote a controller.
+Change the A record to point to the IP of your controller (dig +short controller-1-2-3.demo.deephaven.app):
+https://console.cloud.google.com/net-services/dns/zones/deephaven-app/rrsets/demo.deephaven.app./A/view?project=deephaven-oss
+Test the controller by visiting its URL _before_ you promote it.
+It can take a minute for new machines, as non-leader controllers do not pre-allocate workers.
+
+You should ssh into the controller and monitor the logs:
+ssh controller-1-2-3.demo.deephaven.app
+cd /dh ; sudo docker-compose logs -f
+
+Make sure to turn off the old controller once new controller logs report that it is the leader.
+https://console.cloud.google.com/compute/instances?project=deephaven-oss
+(old controllers won't touch newer machines, but it's wasteful to leave them running).
+"""
         exe.dependsOn(pushAllTask, ':demo-controller:quarkusBuild')
         exe.main('io.deephaven.demo.deploy.ImageDeployer')
         exe.classpath(sourceSets.main.runtimeClasspath)
@@ -94,6 +117,19 @@ tasks.register('deployDemo', JavaExec) {
 
 tasks.register('deployMachine', JavaExec) {
     JavaExec exe ->
+        exe.group '~Deephaven Demo'
+        List<String> options = new File(rootDir, "docker/server/src/main")
+                .listFiles({ it.name.startsWith('server-')} as FileFilter)
+                .collect({ it.name.substring('server-'.length())})
+        exe.description """Create a new long-lived worker machine.
+
+[Required] -Phostname=name-of-machine URL will be name-of-machine.demo.deephaven.app
+[Optional] -PserverType= One of ${options.join(", ")} or empty string
+The default -PserverType matches production, -all-ai, which is very large and slow to build/rebuild.
+You should pick a slimmer image, -PserverType= if you don't need any extra python frameworks.
+
+Pass -PrebuildWorker=true to delete and recreate the worker (mostly just needed to test install scripts)
+"""
         exe.dependsOn(pushAllTask, ':demo-controller:quarkusBuild')
         String machineName = findProperty("hostname")
         if (!machineName) {

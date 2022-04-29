@@ -256,12 +256,12 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
         // We should probably translate this into a Machine object, and stuff some state in there,
         // so we know if we should try to update DNS (and warn caller that they may have issues w/
-        // cached DNS resolution making machine-name-reuse volatile.
+        // cached DNS resolution making machine-name-reuse volatile).
         // Automated test systems can alter /etc/hosts, or otherwise apply sane DNS.
 
         // We are purposely NOT using gcloud deployments deployment-manager,
         // as we want to simulate a "bare metal" experience,
-        // so we don't accidentally rely on any kind of deployment-manager magic.
+        // so we don't lose portability by relying on any kind of deployment-manager magic.
     }
 
     @Override
@@ -306,7 +306,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
             }
         }
         if (System.currentTimeMillis() >= maxWait) {
-            LOG.errorf("DNS transaction did in directory %s not complete within 30s", dnsDir);
+            LOG.errorf("DNS transaction done in directory %s not complete within 30s", dnsDir);
         }
         FileUtils.deleteDirectory(new File(localDir));
         LOG.info("\n\nDone cleanup.  You may resume taking errors seriously.\n\n");
@@ -354,6 +354,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 String snap = node.getHost() + "-" + snapshotName;
                 String diskName = diskPrefix + node.getHost();
                 System.out.println("Rolling back " + node.getHost() + " to " + snap);
+                    // stop the machine
                     try {
                         gcloud(false, "instances", "stop", node.getHost());
                     } catch (IOException | InterruptedException e) {
@@ -361,6 +362,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
                         e.printStackTrace();
                     }
                     long timeout = System.currentTimeMillis() + 30_000;
+                // wait until machine reports it is stopped
                 while (true) {
                     try {
                         if (execute( Arrays.asList("gcloud", "compute", "instances", "list",
@@ -377,44 +379,51 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 throw new IllegalStateException("Waited 30 seconds, but " + node.getHost() + " does not report a TERMINATED status running gcloud compute instances list --filter=name=($node.host)");
             }
         }
+        // detach current disk (so we can delete it)
         try {
             gcloud(false, "instances", "detach-disk", node.getHost(), "--disk", diskName);
         } catch(Exception e) {
             System.err.println("Unable to detach and disks, perhaps machine was left in inconsistent state?");
             e.printStackTrace();
         }
+        // delete unattached disk
         try {
             gcloud(false, "disks", "delete", diskName, "-q");
         } catch(Exception e) {
             System.err.println("Unable to delete old disks, perhaps machine was left in inconsistent state?");
             e.printStackTrace();
         }
-                    try {
-                        gcloud(false, "disks", "create", diskName, "--source-snapshot", snap);
-                    } catch (IOException | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        gcloud(false, "instances", "attach-disk", "--boot", node.getHost(), "--disk", diskName);
-                    } catch (IOException | InterruptedException e) {
-                        System.err.println("Unknown error attaching boot disk " + diskName + " to " + node.getHost());
-                        e.printStackTrace();
-                    }
-                    if (restart) {
-                        try {
-                            gcloud(false, "instances", "start", node.getHost());
-                        } catch (IOException | InterruptedException e) {
-                            System.err.println("Unknown error starting instance " + node.getHost());
-                            e.printStackTrace();
-                        }
-                    }
+        // create new disk from snapshot
+        try {
+            gcloud(false, "disks", "create", diskName, "--source-snapshot", snap);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        // attach new disk as boot disk
+        try {
+            gcloud(false, "instances", "attach-disk", "--boot", node.getHost(), "--disk", diskName);
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Unknown error attaching boot disk " + diskName + " to " + node.getHost());
+            e.printStackTrace();
+        }
+        // turn on the machine
+        if (restart) {
+            try {
+                gcloud(false, "instances", "start", node.getHost());
+            } catch (IOException | InterruptedException e) {
+                System.err.println("Unknown error starting instance " + node.getHost());
+                e.printStackTrace();
+            }
+        }
         });
     }
 
     @Override
     public void waitForSsh(Machine node) {
-        // note: the TTL for our DNS records is 300s, or 5 minutes.  Thus, we'll wait at least 9 minutes the update to propagate
-        waitForSsh(node, TimeUnit.MINUTES.toMillis(3), TimeUnit.MINUTES.toMillis(9));
+        // note: the TTL for our DNS records is 300s, or 5 minutes.
+        // Thus, we'll wait 7 minutes before rebooting the machine,
+        // and at least 9 minutes for any DNS updates to propagate.
+        waitForSsh(node, TimeUnit.MINUTES.toMillis(7), TimeUnit.MINUTES.toMillis(10));
     }
 
     public void waitForSsh(Machine node, long rebootTimeoutMillis, long totalTimeoutMillis) {
@@ -454,7 +463,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 break;
             } catch(Exception e) {
                 last_fail = e;
-                // increase latency from 1s to 5s by .1s intervals (in reality, ssh trying to connect is often slow)
+                // increase latency from 1s to 5s by .1s intervals
+                // (in reality, ssh trying to connect is often slow, so most latency will be from ssh itself)
                 delay = Math.min(delay + 100, 5000);
                 try {
                     Thread.sleep(delay);
@@ -535,63 +545,25 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     /**
-     * Creates a new google cloud machine from a given DhNode configuration object.
-     * <p><p>
-     * If you wish to create a new machine in your shell, some bash that creates machines in a similar way would be:
-     * <code><pre>
-
-     # You can choose to either set hosts= here to a space-separated list, and copy this whole while loop / code block
-     hosts="vm-name-1 vm-name-2"
-     while read -r host || [ -n "$host" ]; do
-     # ...or, you can set a host= variable here, and just copy below this comment, and up to the "dns transaction execute" part
-     #host=vm-name
-
-
-     PROJECT_ID=illumon-eng-170715
-
-     # create machine
-     gcloud compute instances create $host \
-     --image centos-7-v20200910 \
-     --image-project centos-cloud \
-     --zone us-central1-f \
-     --boot-disk-size 20G \
-     --boot-disk-type pd-standard \
-     --boot-disk-device-name $host \
-     --machine-type n1-standard-4 \
-     --no-address --tags=no-ip
-
-     # find ip
-     ip_addr="$(gcloud compute instances describe $host --format "value(networkInterfaces[0].networkIP)")"
-
-
-     # setup dns
-     dns_val=${host}.int.illumon.com.
-     if [ ! -f transaction.yaml ]; then
-     gcloud dns record-sets transaction start --zone=internal-illumon
-     fi
-     gcloud dns --project "${PROJECT_ID}" record-sets transaction add "$ip_addr" \
-     --name="$dns_val" --ttl=300 --type=A --zone=internal-illumon
-     # technically we could call 'dns transaction execute' outside the while/done loop, but you'll get first dns resolved faster this way
-     gcloud dns --project "${PROJECT_ID}" record-sets transaction execute --zone=internal-illumon
-
-
-
-     # Do not copy this if you are just setting up a single host at a time
-     done < <(echo $hosts)
-
-
-     </pre></code>
+     * Creates a new google cloud machine from a given Machine configuration object.
+     * <p>
+     * <p>
+     * Machine setup is based on the {@link Machine#isController()} and {@link Machine#isSnapshotCreate()} methods.
+     * <p>
+     * Production controllers and workers will be created from base worker- or controller- images,
+     * <p>
+     * while the "snapshot create" machines that are used to bake said images, will created from a base image.
+     * <p>
+     * The base image is a bare-metal ubuntu 20.04 boxes, and is created for each minor version bump:
+     * <p>
+     * base-0-12 image is used to create deephaven-app-0-12-1-worker, deephaven-app-0-12-8-controller, and so forth.
+     * <p>
      *
-     * @param machine An instance of DhNode which describes the machine we are about to create.
-     * @param ips
+     * @param machine An instance of Machine which describes the machine we are about to create.
+     * @param ips The IP pool to grab addresses from
      * @return true if we successfully created the machine.
      */
     boolean createNew(Machine machine, final IpPool ips) throws IOException, InterruptedException {
-        // create a new, empty centos 7 / ubuntu 20.04 machine.
-        // in the future, we'll add snapshots or source images to duplicate effort,
-        // but for now our goal is to deliver a complete list of all operations needed
-        // to transform a clean centos 7 / ubuntu box into a deephaven installation,
-        // so we're purposely avoiding a "free lunch" from our polluted BHS images.
 
         createdNewMachine = true;
         // create a command list w/ common cli arguments
@@ -608,7 +580,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
         ));
         String extraLabel = "";
         if (machine.isNoStableIP()) {
-            // don't use the --no-address flag, that gets us no-external-IP. We just want an ephemeral, one-shot throwaway IP
+            // don't use the --no-address flag, that gets us no-external-IP.
+            // We just want an ephemeral, one-shot, throwaway IP
             LOG.info("Machine " + machine.getHost() + " will get a new ephemeral IP address");
         } else {
             IpMapping ip = machine.getIp();
@@ -682,7 +655,6 @@ public class GoogleDeploymentManager implements DeploymentManager {
                 cmds.add("dh-worker@" + getGoogleProject() + ".iam.gserviceaccount.com");
                 cmds.add("--image");
                 cmds.add(SNAPSHOT_NAME + "-worker");
-//                cmds.add("--metadata=startup-script=while ! curl -k https://localhost:10000/health &> /dev/null; do echo 'Waiting for dh stack to come up'; done ; sudo iptables -A PREROUTING -t nat -p tcp --dport 443 -j REDIRECT --to-port 10000 ; sudo iptables -A PREROUTING -t nat -p tcp --dport 80 -j REDIRECT --to-port 10000");
             } else {
                 // can't setup a worker w/o extended permissions. This should only be used for testing new worker scripts
                 // TODO: have an "extended worker" service account that is able to pull docker images, but not much else...
@@ -701,14 +673,14 @@ public class GoogleDeploymentManager implements DeploymentManager {
             warnResult(res);
             throw new IllegalStateException("Failed to create node " + machine.getHost());
         }
-        // when a machine doesn't have a stable IP, we need to parse the ephemeral IP out of this response
+        // when a machine doesn't have a stable IP, we need to parse the ephemeral IP out of calls to gcloud APIs
         if (machine.isNoStableIP()) {
             final String realIp = getGcloudIp(machine);
             machine.getIp().setIp(realIp);
             ips.reserveIp(this, machine);
         }
         if (!machine.isController()) {
-            Execute.setTimer("Attach Data Disk", ()->{
+            Execute.setTimer("Attach Data Disk To " + machine.getHost(), ()->{
                 try {
                     while (gcloudQuiet(true, true, "instances", "describe", machine.getHost(), "--format=value(name)").code != 0) {
                         Thread.sleep(1000);
@@ -737,20 +709,20 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     private void addStartupScript(final List<String> cmds, final String scriptName) throws IOException {
-        if (!new File(localDir, scriptName).exists()) {
+        File startupScript = new File(localDir, scriptName);
+        if (!startupScript.exists()) {
             final String prepareSnapshotPath = "/scripts/" + scriptName;
             final InputStream prepareSnapshotScript = GoogleDeploymentManager.class.getResourceAsStream(prepareSnapshotPath);
             if (prepareSnapshotScript == null) {
                 System.err.println("No " + prepareSnapshotPath + " found in classloader, bailing!");
                 System.exit(98);
             }
-            final File scriptFile = new File(localDir, scriptName);
-            final CharSink dest = Files.asCharSink(scriptFile, StandardCharsets.UTF_8);
+            final CharSink dest = Files.asCharSink(startupScript, StandardCharsets.UTF_8);
             dest.writeFrom(new InputStreamReader(prepareSnapshotScript));
-            scriptFile.setExecutable(true);
+            startupScript.setExecutable(true);
         }
         // set the startup script as the machine startup-script
-        cmds.add("--metadata-from-file=startup-script=" + new File(localDir, scriptName).getAbsolutePath());
+        cmds.add("--metadata-from-file=startup-script=" + startupScript.getAbsolutePath());
     }
 
     @Override
@@ -823,7 +795,8 @@ public class GoogleDeploymentManager implements DeploymentManager {
 
     public void waitForDns(Collection<Machine> nodes, String dnsServer) throws InterruptedException, TimeoutException {
         if (dnsServer == null) {
-            // if no DNS server specified, check w/ a public DNS service, as google DNS resolves faster than non-google-dns clients
+            // if no DNS server specified, check w/ a public DNS service;
+            // google DNS resolves faster than non-google-dns clients, but we prefer to wait until client can see DNS
             dnsServer = DNS_QUAD9;
         }
         List<Machine> changed = new ArrayList<>(nodes);
@@ -1180,7 +1153,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
     }
 
     public String getBaseImageName() {
-        return baseImageName == null ? "base-" + (VERSION_MANGLE.replaceFirst("^([0-9]+[-][0-9]+).*$", "$1")) : baseImageName;
+        return baseImageName == null ? "base-" + (VERSION_MANGLE.split("_")[0].replaceFirst("^([0-9]+[-][0-9]+).*$", "$1")) : baseImageName;
     }
 
     public void setBaseImageName(final String baseImageName) {

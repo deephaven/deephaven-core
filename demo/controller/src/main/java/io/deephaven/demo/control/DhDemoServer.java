@@ -1,7 +1,7 @@
 package io.deephaven.demo.control;
 
-import io.deephaven.demo.gcloud.GoogleDeploymentManager;
 import io.deephaven.demo.api.Machine;
+import io.deephaven.demo.gcloud.GoogleDeploymentManager;
 import io.deephaven.demo.manager.Execute;
 import io.deephaven.demo.manager.NameConstants;
 import io.quarkus.runtime.Quarkus;
@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.deephaven.demo.manager.NameConstants.*;
@@ -29,12 +27,12 @@ import static io.deephaven.demo.manager.NameConstants.*;
  * DhDemoServer:
  * <p>
  * <p>
- * Runs a simple vert.x frontend which acts as a controller for a given kubernetes cluster.
+ * Runs a simple vert.x frontend which acts as a controller for a given deephaven cluster.
  * <p>
  * <p>
  * This server will host the static deephaven demo server,
  * <p>
- * and handle spinning up / connecting to a running worker.
+ * and handle spinning up / sending users to a running worker.
  *
  */
 @QuarkusMain
@@ -64,10 +62,9 @@ public class DhDemoServer implements QuarkusApplication {
 
     @Override
     public int run(final String... args) throws Exception {
-        System.out.println("Setting up Deephaven Demo Server!");
+        LOG.info("Setting up Deephaven Demo Server!");
         Thread.setDefaultUncaughtExceptionHandler((thread, fail) -> {
-            System.err.println(
-                    "Unhandled failure on thread " + thread.getName() + " (" + thread.getId() + ")");
+            LOG.errorf("Unhandled failure on thread %s (%s)", thread.getName(), thread.getId());
             fail.printStackTrace();
         });
 
@@ -79,17 +76,12 @@ public class DhDemoServer implements QuarkusApplication {
                     rc.request().headers().get("User-Agent") + " ( "
                     + rc.request().headers().get("host") + " ) ");
 
-            // TODO: real health check
-            // for workers, grpcurl is on cli, or we can use grpc client here in java
-            // for controllers, we should check if we have fresh metadata and no fatal errors.
-            // TODO: handle built-in quarkus health check
-
             // enable cors to work on the main url, and the specific subdomain demo-candidate.demo.deephaven.app
             String allowedOrigin = "https://" + DOMAIN;
             if (("https://controller-" + VERSION_MANGLE + "." + DOMAIN).equals(rc.request().getHeader("Origin"))) {
                 allowedOrigin = "https://controller-" + VERSION_MANGLE + "." + DOMAIN;
             }
-            LOG.infof("Request from origin %s allowed: %s", rc.request().getHeader("Origin"), allowedOrigin);
+            LOG.infof("Request from origin %s. Allowed: %s", rc.request().getHeader("Origin"), allowedOrigin);
             rc.response()
                     .putHeader("Access-Control-Allow-Origin", allowedOrigin)
                     .putHeader("Access-Control-Allow-Methods", "GET")
@@ -125,8 +117,8 @@ public class DhDemoServer implements QuarkusApplication {
                 return;
             }
             // getting or creating a worker could take a while.
-            // for now, we're going to let the browser window hang while we wait :'(
-            // get off the vert.x event queue...
+            // we'll send user to interstitial page as soon as possible,
+            // but, we first need to get off the vert.x event queue...
             LOG.info("Sending user off-thread to complete new machine request.");
             Cookie cookie = req.getCookie(NameConstants.COOKIE_NAME);
             Execute.setTimer("Claim Machine", () -> {
@@ -176,7 +168,7 @@ public class DhDemoServer implements QuarkusApplication {
         // if we can reach /health immediately, the machine is ready, we should send user straight there
         final boolean isDev = "true".equals(System.getProperty("devMode"));
         if (isDev && controller.isMachineReady(machine.getDomainName())) {
-            // devMode can skip cookies
+            // devMode can (should) skip cookies, as we reload the server a lot
             req.redirect(uri);
         } else {
             // always send user to interstitial page,

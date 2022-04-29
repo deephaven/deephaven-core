@@ -20,13 +20,15 @@ gcloud container clusters get-credentials "${CLUSTER_NAME}" \
 
 kubectl config use-context "${K8S_CONTEXT}"
 
-# Cannot be run from node, but you may need to change the service account if you didn't create your machine correctly
+# Code below cannot be run from this-node,
+# but you may need to change the service account if you didn't create your machine correctly:
 #gcloud compute instances set-service-account YOUR_MACHINE_NAME_HERE \
 #    --service-account dh-controller@deephaven-oss.iam.gserviceaccount.com
 #    --scopes https://www.googleapis.com/auth/cloud-platform
 
 
 # Pull certificates out of kubectl
+
 test -s "$DH_SSL_DIR/tls.key" ||
     { kubectl get secret deephaven-app-cert -o go-template='{{index .data "tls.key" | base64decode}}' | sudo tee "$DH_SSL_DIR/tls.key" > /dev/null ; }
 test -s "$DH_SSL_DIR/tls.key.pk8" ||
