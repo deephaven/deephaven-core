@@ -32,7 +32,7 @@ public class Cast {
     }
 
     private static boolean isLosingPrecisionDouble(final long v) {
-        return v != (long)(double)v;
+        return v > 9007199254740992L || v < -9007199254740992L;
     }
 
     /**
