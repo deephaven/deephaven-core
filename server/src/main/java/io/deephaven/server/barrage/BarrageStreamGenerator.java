@@ -135,10 +135,6 @@ public class BarrageStreamGenerator implements
                     mcd.chunkType, mcd.type, mcd.componentType, mcd.chunkType.getEmptyChunk());
         }
 
-        public int size() {
-            return generators.length;
-        }
-
         @Override
         public void close() {
             for (int i = 0; i < generators.length; i++) {
@@ -152,21 +148,10 @@ public class BarrageStreamGenerator implements
     public static class ModColumnData {
         public final RowSetGenerator rowsModified;
         public final ChunkListInputStreamGenerator data;
-        public final long[] modChunkRowOffsets;
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
             data = new ChunkListInputStreamGenerator(col);
-
-            // build the row offsets for this column chunks
-            long offset = 0;
-            modChunkRowOffsets = new long[col.data.size() + 1];
-            for (int chunkIdx = 0; chunkIdx < col.data.size(); ++chunkIdx) {
-                modChunkRowOffsets[chunkIdx] = offset;
-                int chunkSize = col.data.get(chunkIdx).size();
-                offset += chunkSize;
-            }
-            modChunkRowOffsets[modChunkRowOffsets.length - 1] = offset;
         }
     }
 
@@ -185,9 +170,8 @@ public class BarrageStreamGenerator implements
     public final RowSetShiftDataGenerator shifted;
 
     public final ChunkListInputStreamGenerator[] addColumnData;
+    public int addGeneratorCount = 0;
     public final ModColumnData[] modColumnData;
-
-    public final long[] addChunkRowOffsets;
 
     /**
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
@@ -209,28 +193,12 @@ public class BarrageStreamGenerator implements
             rowsRemoved = new RowSetGenerator(message.rowsRemoved);
             shifted = new RowSetShiftDataGenerator(message.shifted);
 
-            boolean firstColumnWithChunks = true;
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
 
-            // build the row offsets for the add column data. NOTE: all populated columns will have the same
-            // number of chunks and equal row counts in each chunk so we can use any to create the row offsets
-            long[] tmpAddChunkRowOffsets = new long[0];
-
             for (int i = 0; i < message.addColumnData.length; ++i) {
-                if (firstColumnWithChunks && message.addColumnData[i].data.size() > 0) {
-                    long offset = 0;
-                    tmpAddChunkRowOffsets = new long[message.addColumnData[i].data.size() + 1];
-                    for (int chunkIdx = 0; chunkIdx < message.addColumnData[i].data.size(); ++chunkIdx) {
-                        tmpAddChunkRowOffsets[chunkIdx] = offset;
-                        int chunkSize = message.addColumnData[i].data.get(chunkIdx).size();
-                        offset += chunkSize;
-                    }
-                    tmpAddChunkRowOffsets[tmpAddChunkRowOffsets.length - 1] = offset;
-                    firstColumnWithChunks = false;
-                }
                 addColumnData[i] = new ChunkListInputStreamGenerator(message.addColumnData[i]);
+                addGeneratorCount = Math.max(addGeneratorCount, addColumnData[i].generators.length);
             }
-            addChunkRowOffsets = tmpAddChunkRowOffsets;
 
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
@@ -788,29 +756,26 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         long endRange = startRange + targetBatchSize;
 
-        // identify the chunk that holds this startRange (NOTE: will be same for all columns)
         int chunkIdx = 0;
-        if (addChunkRowOffsets.length > 1) {
-            chunkIdx = Arrays.binarySearch(addChunkRowOffsets, startRange);
-            if (chunkIdx < 0) {
-                chunkIdx = -(chunkIdx) - 2; // point to the chunk that contains this (offset < startRange)
-            }
-            // assert the startRange value lies within the selected chunk
-            Assert.assertion(startRange >= 0 && chunkIdx < addChunkRowOffsets.length - 1,
-                    "appendAddColumns - chunk lookup failed");
+        if (addGeneratorCount > 0) {
+            // identify the chunk that holds this startRange (NOTE: will be same for all columns)
+            chunkIdx = (int) (startRange / TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+            // verify the selected chunk index is valid
+            Assert.assertion(chunkIdx >= 0 && chunkIdx < addGeneratorCount, "appendAddColumns - chunk lookup failed");
             // adjust the batch size if we would cross a chunk boundary
-            endRange = Math.min(addChunkRowOffsets[chunkIdx] + TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
+            endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
         }
+
         try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange);
-                final RowSet adjustedOffsets = chunkIdx == 0 ? myAddedOffsets.copy()
-                        : myAddedOffsets.shift(-addChunkRowOffsets[chunkIdx])) {
+                final RowSet adjustedOffsets =
+                        myAddedOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
             // every column must write to the stream
-            for (final ChunkListInputStreamGenerator chunkSetGen : addColumnData) {
-                if (myAddedOffsets.isEmpty() || chunkSetGen.generators.length == 0) {
+            for (final ChunkListInputStreamGenerator data : addColumnData) {
+                if (myAddedOffsets.isEmpty() || data.generators.length == 0) {
                     // use an empty generator to publish the column data
                     try (final RowSet empty = RowSetFactory.empty()) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                chunkSetGen.emptyGenerator.getInputStream(view.options(), empty);
+                                data.emptyGenerator.getInputStream(view.options(), empty);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
 
@@ -818,7 +783,7 @@ public class BarrageStreamGenerator implements
                         addStream.accept(drainableColumn);
                     }
                 } else {
-                    final ChunkInputStreamGenerator generator = chunkSetGen.generators[chunkIdx];
+                    final ChunkInputStreamGenerator generator = data.generators[chunkIdx];
                     final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                             generator.getInputStream(view.options(), adjustedOffsets);
                     drainableColumn.visitFieldNodes(fieldNodeListener);
@@ -842,20 +807,9 @@ public class BarrageStreamGenerator implements
         // for each column identify the chunk that holds this startRange
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnData mcd = modColumnData[ii];
-            int chunkIdx = 0;
-            if (mcd.modChunkRowOffsets.length > 1) {
-                // identify the chunk that holds this startRange
-                chunkIdx = Arrays.binarySearch(mcd.modChunkRowOffsets, startRange);
-                if (chunkIdx < 0) {
-                    chunkIdx = -(chunkIdx) - 2; // point to the chunk that contains this (offset < startRange)
-                }
-                // assert the startRange value lies within the selected chunk
-                Assert.assertion(startRange >= 0 && chunkIdx < mcd.modChunkRowOffsets.length - 1,
-                        "appendModColumns - chunk lookup failed");
-                // shorten the batch size if we would cross a chunk boundary
-                endRange =
-                        Math.min(mcd.modChunkRowOffsets[chunkIdx] + TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
-            }
+            int chunkIdx = (int) (startRange / TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+            // adjust the batch size if we would cross a chunk boundary
+            endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
             columnChunkIdx[ii] = chunkIdx;
         }
 
@@ -898,8 +852,8 @@ public class BarrageStreamGenerator implements
                     final ChunkInputStreamGenerator generator = mcd.data.generators[chunkIdx];
 
                     // normalize to the chunk offsets
-                    try (final WritableRowSet adjustedOffsets = chunkIdx == 0 ? myModOffsets.copy()
-                            : myModOffsets.shift(-mcd.modChunkRowOffsets[chunkIdx])) {
+                    try (final WritableRowSet adjustedOffsets =
+                            myModOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 generator.getInputStream(view.options(), adjustedOffsets);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
