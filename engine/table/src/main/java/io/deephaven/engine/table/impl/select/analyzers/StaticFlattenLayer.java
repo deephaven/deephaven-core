@@ -50,7 +50,6 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
     @Override
     void setBaseBits(BitSet bitset) {
         inner.setBaseBits(bitset);
-        bitset.set(getLayerIndex());
     }
 
     @Override
@@ -106,6 +105,9 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
 
     @Override
     int getLayerIndexFor(String column) {
+        if (overriddenColumns.containsKey(column)) {
+            return getLayerIndex();
+        }
         return inner.getLayerIndexFor(column);
     }
 
