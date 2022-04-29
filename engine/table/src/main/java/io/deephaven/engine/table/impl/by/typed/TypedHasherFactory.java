@@ -564,8 +564,12 @@ public class TypedHasherFactory {
             builder.addStatement("final $T[] destKeyArray$L = new $T[tableSize]", elementType(chunkTypes[ii]), ii,
                     elementType(chunkTypes[ii]));
         }
-        builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType,
-                hasherConfig.stateType);
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.addStatement("final $T[] destState = new $T[tableSize]", hasherConfig.stateType,
+                    hasherConfig.stateType);
+        } else {
+            builder.addStatement("final Object[] destState = new Object[tableSize]");
+        }
         builder.addStatement("$T.fill(destState, $L)", Arrays.class, hasherConfig.emptyStateName);
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -577,9 +581,7 @@ public class TypedHasherFactory {
             builder.addStatement("final $T [] originalStateArray = $L.getArray()", hasherConfig.stateType,
                     hasherConfig.mainStateName);
         } else {
-            builder.addStatement("final $T [] originalStateArray = ($T[])$L.getArray()", hasherConfig.stateType,
-                    hasherConfig.stateType,
-                    hasherConfig.mainStateName);
+            builder.addStatement("final Object [] originalStateArray = (Object[])$L.getArray()", hasherConfig.mainStateName);
         }
         builder.addStatement("$L.setArray(destState)", hasherConfig.mainStateName);
 
@@ -589,7 +591,11 @@ public class TypedHasherFactory {
 
 
         builder.beginControlFlow("for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket)");
-        builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]", hasherConfig.stateType);
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.addStatement("final $T currentStateValue = originalStateArray[sourceBucket]", hasherConfig.stateType);
+        } else {
+            builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]", hasherConfig.stateType, hasherConfig.stateType);
+        }
         builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
         builder.addStatement("continue");
         builder.endControlFlow();

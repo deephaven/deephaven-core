@@ -17,7 +17,7 @@ public abstract class StaticNaturalJoinStateManager {
     public static final long DUPLICATE_RIGHT_VALUE = -2;
     public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 
-    final ColumnSource<?>[] keySourcesForErrorMessages;
+    protected final ColumnSource<?>[] keySourcesForErrorMessages;
 
     protected StaticNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         this.keySourcesForErrorMessages = keySourcesForErrorMessages;
@@ -31,7 +31,7 @@ public abstract class StaticNaturalJoinStateManager {
     }
 
     // produce a pretty key for error messages
-    private String extractKeyStringFromSourceTable(long leftKey) {
+    protected String extractKeyStringFromSourceTable(long leftKey) {
         if (keySourcesForErrorMessages.length == 1) {
             return Objects.toString(keySourcesForErrorMessages[0].get(leftKey));
         }

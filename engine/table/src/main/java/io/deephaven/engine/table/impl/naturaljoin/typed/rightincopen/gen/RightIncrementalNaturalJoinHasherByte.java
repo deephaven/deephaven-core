@@ -53,6 +53,8 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
                     mainKeySource0.set(tableLocation, k0);
                     final long leftRowKey = rowKeyChunk.get(chunkPosition);
                     leftRowSet.set(tableLocation, RowSetFactory.fromKeys(leftRowKey));
+                    rightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                    modifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long leftRowKey = rowKeyChunk.get(chunkPosition);
@@ -81,7 +83,8 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long rightRowKeyForState = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
                     if (rightRowKeyForState != RowSet.NULL_ROW_KEY && rightRowKeyForState != QueryConstants.NULL_LONG) {
-                        throw new IllegalArgumentException("Duplicate right hand side row for state (TODO: WHAT STATE?)");
+                        final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
+                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
                     }
                     found = true;
                     break;
@@ -138,7 +141,8 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
                     if (oldRightRow != RowSet.NULL_ROW_KEY && oldRightRow != QueryConstants.NULL_LONG) {
-                        throw new IllegalArgumentException("Duplicate right hand side row for state (TODO: WHAT STATE?)");
+                        final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
+                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
                     }
                     modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     found = true;
@@ -195,7 +199,7 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
             while ((leftRowSetForState = leftRowSet.getUnsafe(tableLocation)) != null) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
-                    Assert.eq(oldRightRow - shiftDelta, "oldRightRow - shiftDelta", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
+                    Assert.eq(oldRightRow + shiftDelta, "oldRightRow + shiftDelta", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
                     modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
                     found = true;
                     break;
@@ -216,20 +220,20 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final byte[] destKeyArray0 = new byte[tableSize];
-        final RowSet[] destState = new RowSet[tableSize];
+        final Object[] destState = new Object[tableSize];
         Arrays.fill(destState, null);
         final byte [] originalKeyArray0 = mainKeySource0.getArray();
         mainKeySource0.setArray(destKeyArray0);
-        final RowSet [] originalStateArray = (RowSet[])leftRowSet.getArray();
+        final Object [] originalStateArray = (Object[])leftRowSet.getArray();
         leftRowSet.setArray(destState);
         final long [] oldRightRowKey = rightRowKey.getArray();
         final long [] destRightRowKey = new long[tableSize];
         rightRowKey.setArray(destRightRowKey);
         final long [] oldModifiedCookie = modifiedTrackerCookieSource.getArray();
         final long [] destModifiedCookie = new long[tableSize];
-        rightRowKey.setArray(destModifiedCookie);
+        modifiedTrackerCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            final RowSet currentStateValue = originalStateArray[sourceBucket];
+            final RowSet currentStateValue = (RowSet)originalStateArray[sourceBucket];
             if (currentStateValue == null) {
                 continue;
             }

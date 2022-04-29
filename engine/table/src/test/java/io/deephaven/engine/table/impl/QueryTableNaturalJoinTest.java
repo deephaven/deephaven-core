@@ -339,23 +339,31 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 new IntGenerator(1, 10));
         final QueryTable rightTable = getTable(true, rightSize, random, rightColumnInfos);
 
-        System.out.println("Left:");
-        TableTools.showWithRowSet(leftTable);
-        System.out.println("Right:");
-        TableTools.showWithRowSet(rightTable);
+        System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
+
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Left:");
+            TableTools.showWithRowSet(leftTable);
+            System.out.println("Right:");
+            TableTools.showWithRowSet(rightTable);
+        }
 
         final Table result = leftTable.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
 
-        System.out.println("Result:");
-        TableTools.showWithRowSet(result);
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Result:");
+            TableTools.showWithRowSet(result);
+        }
 
-        final Table ungroupedResult = leftTable.update("I1=I1*10")
+        final Table noGroupingResult = leftTable.update("I1=I1*10")
                 .naturalJoin(rightTable.update("I1=I1*10"), "I1", "LC1=C1,LC2=C2").update("I1=(int)(I1/10)");
 
-        System.out.println("Ungrouped Result:");
-        TableTools.showWithRowSet(ungroupedResult);
+        if (RefreshingTableTestCase.printTableUpdates) {
+            System.out.println("Ungrouped Result:");
+            TableTools.showWithRowSet(noGroupingResult);
+        }
 
-        assertTableEquals(ungroupedResult, result);
+        assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
@@ -365,7 +373,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
-        assertTableEquals(ungroupedResult, resultFlat);
+        assertTableEquals(noGroupingResult, resultFlat);
 
         for (int step = 0; step < steps; ++step) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -384,8 +392,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 TableTools.showWithRowSet(result);
             }
 
-            assertTableEquals(ungroupedResult, result);
-            assertTableEquals(ungroupedResult, resultFlat);
+            assertTableEquals(noGroupingResult, result);
+            assertTableEquals(noGroupingResult, resultFlat);
         }
     }
 

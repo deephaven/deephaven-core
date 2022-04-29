@@ -292,14 +292,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources) {
+        if (rightRowSet.isEmpty()) {
+            return;
+        }
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
         try (ProbeContext pc = new ProbeContext(rightSources, chunkSize)) {
-            probeTable(pc, rightRowSet, false, rightSources, new ProbeHandler() {
-                @Override
-                public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-                    addRightSide(chunkOk, sourceKeyChunks);
-                }
-            });
+            probeTable(pc, rightRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
         }
     }
 
@@ -323,11 +321,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState == QueryConstants.NULL_LONG) {
-                            leftRowSet.forAllRowKeys(pos -> innerIndex[(int)pos] = RowSet.NULL_ROW_KEY);
-                        } else {
-                            leftRowSet.forAllRowKeys(pos -> innerIndex[(int)pos] = rightRowKeyForState);
-                        }
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int)pos] = rightRowKeyForState);
                     }
                 }
 
@@ -339,7 +333,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        }
                     }
                 }
                 return new LongColumnSourceWritableRowRedirection(sparseRedirections);
@@ -350,7 +346,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != QueryConstants.NULL_LONG) {
+                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
                         }
                     }
@@ -366,7 +362,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
             ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
-        throw new UnsupportedOperationException();
+        return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
     }
 
     @Override
