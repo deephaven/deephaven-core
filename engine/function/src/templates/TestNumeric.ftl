@@ -682,6 +682,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(${pt.null}, lowerBin(value, ${pt.null}));
 
         assertEquals(lowerBin(value, (${pt.primitive}) 5), lowerBin(lowerBin(value, (${pt.primitive}) 5), (${pt.primitive}) 5));
+
+        for(int i=-10; i<10; i++) {
+           assertEquals(lowerBin((double)value, (double) 3), (double) lowerBin((${pt.primitive})value, (${pt.primitive}) 3));
+        }
     }
 
     public void test${pt.boxed}LowerBinWithOffset() {
@@ -707,6 +711,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(${pt.null}, upperBin(value, ${pt.null}));
 
         assertEquals(upperBin(value, (${pt.primitive}) 5), upperBin(upperBin(value, (${pt.primitive}) 5), (${pt.primitive}) 5));
+
+        for(int i=-10; i<10; i++) {
+            assertEquals(upperBin((double)value, (double) 3), (double) upperBin((${pt.primitive})value, (${pt.primitive}) 3));
+        }
     }
 
     public void test${pt.boxed}UpperBinWithOffset() {

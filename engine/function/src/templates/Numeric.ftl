@@ -1855,14 +1855,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        final double r = value / interval;
-        final double f = Math.floor(r);
-
-        if (r == f) {
-            return (${pt.primitive}) (interval * f);
-        }
-
-        return (${pt.primitive}) (interval * (f + 1));
+        return (${pt.primitive}) (interval * Math.ceil(value / interval));
     }
 
     <#else>
@@ -1882,11 +1875,7 @@ public class Numeric {
         final long r = value / interval;
         final long m = value % interval;
 
-        if (m == 0) {
-            return (${pt.primitive}) (interval * r);
-        }
-
-        return (${pt.primitive}) (interval * (r+1));
+        return m == 0 ? (${pt.primitive}) (interval * r) : (${pt.primitive}) (interval * (r+1));
     }
 
     </#if>
