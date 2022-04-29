@@ -1815,12 +1815,19 @@ public class Numeric {
      * @param interval bin width.
      * @return lower bound of the bin containing the value.
      */
-    public static ${pt.primitive} lowerBin(${pt.primitive} value, ${pt.primitive} interval) {
+   public static ${pt.primitive} lowerBin(${pt.primitive} value, ${pt.primitive} interval) {
         if (value == ${pt.null} || interval == ${pt.null}) {
             return ${pt.null};
         }
 
-        return (${pt.primitive}) (interval * (value / interval));
+        if ( interval <= 0 ) {
+            throw new IllegalArgumentException("Interval is not positive: " + interval);
+        }
+
+        final long d = ((long)value) / ((long)interval);
+        final long m = ((long)value) % ((long)interval);
+        final long r = (m != 0 && value < 0) ? d - 1 : d;
+        return (${pt.primitive}) (interval * r);
     }
 
     </#if>
@@ -1872,10 +1879,12 @@ public class Numeric {
             return ${pt.null};
         }
 
-        final long r = value / interval;
-        final long m = value % interval;
+        if ( interval <= 0 ) {
+            throw new IllegalArgumentException("Interval is not positive: " + interval);
+        }
 
-        return m == 0 ? (${pt.primitive}) (interval * r) : (${pt.primitive}) (interval * (r+1));
+        final long r = ((long)value) / ((long)interval) + (value % interval > 0 ? 1 : 0);
+        return (${pt.primitive}) (interval * r);
     }
 
     </#if>

@@ -683,8 +683,14 @@ public class TestNumeric extends BaseArrayTestCase {
 
         assertEquals(lowerBin(value, (${pt.primitive}) 5), lowerBin(lowerBin(value, (${pt.primitive}) 5), (${pt.primitive}) 5));
 
+        try {
+            lowerBin(value, (${pt.primitive}) -5);
+        } catch( IllegalArgumentException e ){
+            // pass
+        }
+
         for(int i=-10; i<10; i++) {
-           assertEquals(lowerBin((double)value, (double) 3), (double) lowerBin((${pt.primitive})value, (${pt.primitive}) 3));
+            assertEquals((double) lowerBin((double)i, (double) 3), (double) lowerBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
         }
     }
 
@@ -712,8 +718,14 @@ public class TestNumeric extends BaseArrayTestCase {
 
         assertEquals(upperBin(value, (${pt.primitive}) 5), upperBin(upperBin(value, (${pt.primitive}) 5), (${pt.primitive}) 5));
 
+        try {
+            upperBin(value, (${pt.primitive}) -5);
+        } catch( IllegalArgumentException e ){
+            // pass
+        }
+
         for(int i=-10; i<10; i++) {
-            assertEquals(upperBin((double)value, (double) 3), (double) upperBin((${pt.primitive})value, (${pt.primitive}) 3));
+            assertEquals((double) upperBin((double)i, (double) 3), (double) upperBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
         }
     }
 
