@@ -1344,6 +1344,7 @@ public class ConstructSnapshot {
                         getSnapshotDataAsChunkList(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
+                acd.chunkType = columnSource.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
@@ -1351,6 +1352,7 @@ public class ConstructSnapshot {
                 mcd.data = getSnapshotDataAsChunkList(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
+                mcd.chunkType = columnSource.getChunkType();
             }
         }
 
@@ -1438,27 +1440,17 @@ public class ConstructSnapshot {
         final long size = rowSet.size();
         final ArrayList<Chunk<Values>> result = new ArrayList<>();
 
-        if (rowSet.size() == 0) {
-            result.add(sourceToUse.getChunkType().getEmptyChunk());
+        if (size == 0) {
             return result;
         }
 
-        while (offset < size) {
-            final int chunkSize;
-            if (size - offset > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
-                chunkSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
-            } else {
-                chunkSize = (int) (size - offset);
-            }
+        final int initialChunkSize = (int) Math.min(size, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
 
-            final long keyStart = rowSet.get(offset);
-            final long keyEnd = rowSet.get(offset + chunkSize - 1);
-
-            try (final ColumnSource.FillContext context = sharedContext != null
-                    ? sourceToUse.makeFillContext(chunkSize, sharedContext)
-                    : sourceToUse.makeFillContext(chunkSize);
-                    final WritableRowSet reducedRowSet = rowSet.subSetByKeyRange(keyStart, keyEnd)) {
-
+        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(initialChunkSize, sharedContext);
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            int chunkSize = initialChunkSize;
+            while (it.hasMore()) {
+                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
                 final ChunkType chunkType = sourceToUse.getChunkType();
 
                 // create a new chunk
@@ -1475,6 +1467,13 @@ public class ConstructSnapshot {
 
                 // increment the offset for the next chunk (using the actual values written)
                 offset += currentChunk.size();
+
+                // recompute the size of the next chunk
+                if (size - offset > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+                    chunkSize = TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD;
+                } else {
+                    chunkSize = (int) (size - offset);
+                }
             }
         }
         return result;

@@ -241,7 +241,7 @@ public class BarrageStreamReader implements StreamReader {
                     // add and mod rows are never combined in a batch. all added rows must be received before the first
                     // mod rows will be received
 
-                    if (numAddRowsRead < numAddRowsTotal) {
+                    if (numAddRowsRead < numAddRowsTotal || (numAddRowsTotal == 0 && numModRowsTotal == 0)) {
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             final BarrageMessage.AddColumnData acd = msg.addColumnData[ci];
 
@@ -252,36 +252,27 @@ public class BarrageStreamReader implements StreamReader {
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;
-                            if (chunkSize == 0) {
+                            long rowOffset = numAddRowsRead - lastAddStartIndex;
+                            // reading the rows from this batch might overflow the existing chunk
+                            if (rowOffset + batch.length() > chunkSize) {
+                                lastAddStartIndex += chunkSize;
+
+                                // create a new chunk before trying to write again
+                                chunkSize = (int) (Math.min(msg.rowsIncluded.size() - numAddRowsRead,
+                                        TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                acd.data.add(chunk);
+
                                 chunkOffset = 0;
                             } else {
-                                long rowOffset = numAddRowsRead - lastAddStartIndex;
-                                // reading the rows from this batch might overflow the existing chunk
-                                if (rowOffset + batch.length() > chunkSize) {
-                                    lastAddStartIndex += chunkSize;
-
-                                    // create a new chunk before trying to write again
-                                    chunkSize = (int) (Math.min(msg.rowsIncluded.size() - numAddRowsRead,
-                                            TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
-                                    chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
-                                    acd.data.add(chunk);
-
-                                    chunkOffset = 0;
-                                } else {
-                                    chunkOffset = (int) rowOffset;
-                                }
+                                chunkOffset = (int) rowOffset;
                             }
 
-                            // fill the chunk, but catch overrun exceptions
-                            try {
-                                chunk = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                        columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                        bufferInfoIter, ois, chunk,
-                                        chunkOffset, chunkSize);
-                            } catch (Exception ex) {
-                                // Should never happen, might be able to remove this exception handler
-                                System.out.println(ex.toString());
-                            }
+                            // fill the chunk with data and assign back into the array
+                            acd.data.set(lastChunkIndex,
+                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                            chunk, chunkOffset, chunkSize));
                         }
                         numAddRowsRead += batch.length();
                     } else {
@@ -295,37 +286,27 @@ public class BarrageStreamReader implements StreamReader {
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;
-                            if (chunkSize == 0) {
+                            long remaining = mcd.rowsModified.size() - numModRowsRead;
+                            long rowOffset = numModRowsRead - lastModStartIndex;
+                            // this batch might overflow the chunk
+                            if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {
+                                lastModStartIndex += chunkSize;
+
+                                // create a new chunk before trying to write again
+                                chunkSize = (int) (Math.min(remaining, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
+                                chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                                mcd.data.add(chunk);
+
                                 chunkOffset = 0;
                             } else {
-                                long remaining = mcd.rowsModified.size() - numModRowsRead;
-                                long rowOffset = numModRowsRead - lastModStartIndex;
-                                // this batch might overflow the chunk
-                                if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {
-                                    lastModStartIndex += chunkSize;
-
-                                    // create a new chunk before trying to write again
-                                    chunkSize = (int) (Math.min(remaining, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
-                                    chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
-                                    mcd.data.add(chunk);
-
-                                    chunkOffset = 0;
-                                } else {
-                                    chunkOffset = (int) rowOffset;
-                                }
+                                chunkOffset = (int) rowOffset;
                             }
 
-                            // fill the chunk, but catch overrun exceptions
-                            try {
-                                chunk = ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                        columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                                        bufferInfoIter, ois, chunk,
-                                        chunkOffset, chunkSize);
-
-                            } catch (Exception ex) {
-                                // Should never happen, might be able to remove this exception handler
-                                System.out.println(ex.toString());
-                            }
+                            // fill the chunk with data and assign back into the array
+                            mcd.data.set(lastChunkIndex,
+                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                            chunk, chunkOffset, chunkSize));
                         }
                         numModRowsRead += batch.length();
                     }

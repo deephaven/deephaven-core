@@ -318,10 +318,14 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 totalMods.insert(column.rowsModified);
             }
 
+            // perform the addition operations in batches for efficiency
+            final int addBatchSize = (int) Math.min(update.rowsIncluded.size(),
+                    1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
+
             if (update.rowsIncluded.isNonempty()) {
                 if (mightBeInitialSnapshot) {
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
-                    // we know the initial snapshot size and resize immediately
+                    // we know the initial snapshot size and can resize immediately
                     capacity = update.rowsIncluded.size();
                     for (final WritableColumnSource<?> source : destSources) {
                         source.ensureCapacity(capacity);
@@ -332,40 +336,44 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 // this will hold all the free rows allocated for the included rows
                 final WritableRowSet destinationRowSet = RowSetFactory.empty();
 
-                // update the rowRedirection with the rowsIncluded set (in manageable batch sizes)
-                int maxChunkSize = 1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
-                try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator()) {
+                // update the table with the rowsIncluded set (in manageable batch sizes)
+                try (final RowSequence.Iterator rowsIncludedIterator = update.rowsIncluded.getRowSequenceIterator();
+                        final ChunkSink.FillFromContext redirContext =
+                                rowRedirection.makeFillFromContext(addBatchSize)) {
                     while (rowsIncludedIterator.hasMore()) {
-                        final RowSequence chunkRowsToFree =
-                                rowsIncludedIterator.getNextRowSequenceWithLength(maxChunkSize);
-                        try (final ChunkSink.FillFromContext redirContext =
-                                rowRedirection.makeFillFromContext(chunkRowsToFree.intSize());
-                                final RowSet newRows = getFreeRows(chunkRowsToFree.intSize());) {
-
+                        final RowSequence rowsToRedirect =
+                                rowsIncludedIterator.getNextRowSequenceWithLength(addBatchSize);
+                        try (final RowSet newRows = getFreeRows(rowsToRedirect.intSize())) {
                             // Update redirection mapping:
-                            rowRedirection.fillFromChunk(redirContext, newRows.asRowKeyChunk(), chunkRowsToFree);
-
+                            rowRedirection.fillFromChunk(redirContext, newRows.asRowKeyChunk(), rowsToRedirect);
                             // add these rows to the final destination set
                             destinationRowSet.insert(newRows);
                         }
                     }
                 }
 
-                // update the column sources
+                // update the column sources (in manageable batch sizes)
                 for (int ii = 0; ii < update.addColumnData.length; ++ii) {
                     if (isSubscribedColumn(ii)) {
                         final BarrageMessage.AddColumnData column = update.addColumnData[ii];
-                        // grab the matching rows from each chunk
-                        long offset = 0;
-                        for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
-                            final Chunk<Values> chunk = column.data.get(chunkIndex);
-                            try (final RowSet chunkRows = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
-                                    final RowSet chunkDestSet = destinationRowSet.subSetForPositions(chunkRows);
-                                    final ChunkSink.FillFromContext ctxt =
-                                            destSources[ii].makeFillFromContext(chunkDestSet.intSize())) {
-                                destSources[ii].fillFromChunk(ctxt, chunk, chunkDestSet);
+                        try (final ChunkSink.FillFromContext fillContext =
+                                destSources[ii].makeFillFromContext(addBatchSize);
+                                final RowSequence.Iterator destIterator = destinationRowSet.getRowSequenceIterator()) {
+                            // grab the matching rows from each chunk
+                            for (final Chunk<Values> chunk : column.data) {
+                                // track where we are in the current chunk
+                                int chunkOffset = 0;
+                                while (chunkOffset < chunk.size()) {
+                                    // don't overrun the chunk boundary
+                                    int effectiveBatchSize = Math.min(addBatchSize, chunk.size() - chunkOffset);
+                                    final RowSequence chunkKeys =
+                                            destIterator.getNextRowSequenceWithLength(effectiveBatchSize);
+                                    Chunk<Values> slicedChunk = chunk.slice(chunkOffset, effectiveBatchSize);
+                                    destSources[ii].fillFromChunk(fillContext, slicedChunk, chunkKeys);
+                                    chunkOffset += effectiveBatchSize;
+                                }
                             }
-                            offset += chunk.size();
+                            Assert.assertion(!destIterator.hasMore(), "not all rowsIncluded were processed");
                         }
                     }
                 }
@@ -378,32 +386,34 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     continue;
                 }
 
+                // perform the modification operations in batches for efficiency
+                final int modBatchSize = (int) Math.min(column.rowsModified.size(),
+                        1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
                 modifiedColumnSet.setColumnWithIndex(ii);
 
-                // grab the matching rows from each chunk
-                long offset = 0;
-                for (int chunkIndex = 0; chunkIndex < column.data.size(); ++chunkIndex) {
-                    final Chunk<Values> chunk = column.data.get(chunkIndex);
-                    try (final RowSet chunkRows = RowSetFactory.fromRange(offset, offset + chunk.size() - 1);
-                            final ChunkSource.FillContext redirContext =
-                                    rowRedirection.makeFillContext(chunkRows.intSize(), null);
-                            final WritableLongChunk<RowKeys> keys =
-                                    WritableLongChunk.makeWritableChunk(chunkRows.intSize());
-                            final RowSet chunkKeys = column.rowsModified.subSetForPositions(chunkRows)) {
+                try (final ChunkSource.FillContext redirContext = rowRedirection.makeFillContext(modBatchSize, null);
+                        final ChunkSink.FillFromContext fillContext = destSources[ii].makeFillFromContext(modBatchSize);
+                        final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(modBatchSize);
+                        final RowSequence.Iterator destIterator = column.rowsModified.getRowSequenceIterator()) {
 
-                        // fill the key chunk with the keys from this chunk
-                        rowRedirection.fillChunk(redirContext, keys, chunkKeys);
-                        for (int i = 0; i < keys.size(); ++i) {
-                            Assert.notEquals(keys.get(i), "keys[i]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
-                        }
+                    // grab the matching rows from each chunk
+                    for (final Chunk<Values> chunk : column.data) {
+                        // track where we are in the current chunk
+                        int chunkOffset = 0;
+                        while (chunkOffset < chunk.size()) {
+                            // don't overrun the chunk boundary
+                            int effectiveBatchSize = Math.min(modBatchSize, chunk.size() - chunkOffset);
+                            final RowSequence chunkKeys = destIterator.getNextRowSequenceWithLength(effectiveBatchSize);
+                            // fill the key chunk with the keys from this rowset
+                            rowRedirection.fillChunk(redirContext, keys, chunkKeys);
+                            Chunk<Values> slicedChunk = chunk.slice(chunkOffset, effectiveBatchSize);
 
-                        // fill the column with the data from this chunk
-                        try (final ChunkSink.FillFromContext ctxt =
-                                destSources[ii].makeFillFromContext(keys.size())) {
-                            destSources[ii].fillFromChunkUnordered(ctxt, chunk, keys);
+                            destSources[ii].fillFromChunkUnordered(fillContext, slicedChunk, keys);
+
+                            chunkOffset += effectiveBatchSize;
                         }
                     }
-                    offset += chunk.size();
+                    Assert.assertion(!destIterator.hasMore(), "not all rowsModified were processed");
                 }
             }
 
@@ -438,15 +448,15 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         if (size <= 0) {
             return RowSetFactory.empty();
         }
-
         boolean needsResizing = false;
         if (capacity == 0) {
-            capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
+            capacity = Long.highestOneBit(Math.max(size * 2, 8));
             freeset = RowSetFactory.flat(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
-            int usedSlots = (int) (capacity - freeset.size());
+            long usedSlots = capacity - freeset.size();
             long prevCapacity = capacity;
+
             do {
                 capacity *= 2;
             } while ((capacity - usedSlots) < size);
@@ -460,7 +470,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             }
         }
 
-        final RowSet result = freeset.subSetByPositionRange(0, (int) size);
+        final RowSet result = freeset.subSetByPositionRange(0, size);
         Assert.assertion(result.size() == size, "result.size() == size");
         freeset.removeRange(0, result.lastRowKey());
         return result;
