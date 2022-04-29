@@ -2276,13 +2276,15 @@ public class QueryTableAggregationTest {
         final String[] minQueryStrings = Arrays.stream(queryTable.getColumns())
                 .map(DataColumn::getName)
                 .filter(name -> !name.equals("Sym"))
-                .map(name -> name.equals("Timestamp") || name.equals("boolCol") ? name + " = minObj(" + name + ")" : name + " = min(" + name + ")")
+                .map(name -> name.equals("Timestamp") || name.equals("boolCol") ? name + " = minObj(" + name + ")"
+                        : name + " = min(" + name + ")")
                 .toArray(String[]::new);
 
         final String[] maxQueryStrings = Arrays.stream(queryTable.getColumns())
                 .map(DataColumn::getName)
                 .filter(name -> !name.equals("Sym"))
-                .map(name -> name.equals("Timestamp")  || name.equals("boolCol") ? name + " = maxObj(" + name + ")" : name + " = max(" + name + ")")
+                .map(name -> name.equals("Timestamp") || name.equals("boolCol") ? name + " = maxObj(" + name + ")"
+                        : name + " = max(" + name + ")")
                 .toArray(String[]::new);
 
         if (RefreshingTableTestCase.printTableUpdates) {

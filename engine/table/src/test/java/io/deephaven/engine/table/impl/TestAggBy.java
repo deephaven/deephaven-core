@@ -733,20 +733,20 @@ public class TestAggBy extends RefreshingTableTestCase {
      * @return the single unique value in the array, or null.
      */
     public static int uniqueValue(final IntVector arr, boolean countNull) {
-        if(arr == null || arr.isEmpty()) {
+        if (arr == null || arr.isEmpty()) {
             return NULL_INT;
         }
 
-        if(arr.size() == 1) {
+        if (arr.size() == 1) {
             return arr.get(0);
         }
 
         final TIntSet keys = new TIntHashSet();
-        for(int ii = 0; ii < arr.size(); ii++) {
+        for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
 
-        if(!countNull) {
+        if (!countNull) {
             keys.remove(NULL_INT);
         }
 
@@ -761,20 +761,20 @@ public class TestAggBy extends RefreshingTableTestCase {
      * @return the single unique value in the array, or null.
      */
     public static double uniqueValue(final DoubleVector arr, boolean countNull) {
-        if(arr == null || arr.isEmpty()) {
+        if (arr == null || arr.isEmpty()) {
             return NULL_DOUBLE;
         }
 
-        if(arr.size() == 1) {
+        if (arr.size() == 1) {
             return arr.get(0);
         }
 
         final TDoubleSet keys = new TDoubleHashSet();
-        for(int ii = 0; ii < arr.size(); ii++) {
+        for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
 
-        if(!countNull) {
+        if (!countNull) {
             keys.remove(NULL_DOUBLE);
         }
 
