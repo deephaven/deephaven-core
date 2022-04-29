@@ -1794,6 +1794,8 @@ public class Numeric {
     /**
      * Returns the lower bound of the bin containing the value.
      *
+     * The lower bound of the bin containing the value is equal to <code>interval * floor(value / interval)</code>.
+     *
      * @param value value.
      * @param interval bin width.
      * @return lower bound of the bin containing the value.
@@ -1814,6 +1816,8 @@ public class Numeric {
 
     /**
      * Returns the lower bound of the bin containing the value.
+     *
+     * The lower bound of the bin containing the value is equal to <code>interval * floor(value / interval)</code>.
      *
      * @param value value.
      * @param interval bin width.
@@ -1839,6 +1843,8 @@ public class Numeric {
     /**
      * Returns the lower bound of the bin containing the value.
      *
+     * The lower bound of the bin containing the value is equal to <code>interval * floor((value-offset) / interval) + offset</code>.
+     *
      * @param value value.
      * @param interval bin width.
      * @param offset interval offset
@@ -1856,6 +1862,8 @@ public class Numeric {
 
     /**
      * Returns the upper bound of the bin containing the value.
+     *
+     * The upper bound of the bin containing the value is equal to <code>interval * ceil(value / interval)</code>.
      *
      * @param value value.
      * @param interval bin width.
@@ -1878,6 +1886,8 @@ public class Numeric {
     /**
      * Returns the upper bound of the bin containing the value.
      *
+     * The upper bound of the bin containing the value is equal to <code>interval * ceil(value / interval)</code>.
+     *
      * @param value value.
      * @param interval bin width.
      * @return upper bound of the bin containing the value.
@@ -1899,6 +1909,8 @@ public class Numeric {
 
     /**
      * Returns the upper bound of the bin containing the value.
+     *
+     * The upper bound of the bin containing the value is equal to <code>interval * ceil((value-offset) / interval) + offset</code>.
      *
      * @param value value.
      * @param interval bin width.
