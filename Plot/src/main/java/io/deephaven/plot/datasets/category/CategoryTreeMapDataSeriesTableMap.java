@@ -29,6 +29,17 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
         this.hoverTextColumn = hoverTextColumn;
     }
 
+    public CategoryTreeMapDataSeriesTableMap(CategoryTreeMapDataSeriesTableMap series, AxesImpl axes) {
+        super(series, axes);
+        this.tableHandle = series.getTableHandle();
+        this.idColumn = series.getCategoryCol();
+        this.parentColumn = series.getParentColumn();
+        this.labelColumn = series.getLabelColumn();
+        this.valueColumn = series.getValueCol();
+        this.colorColumn = series.getColorColumn();
+        this.hoverTextColumn = series.getHoverTextColumn();
+    }
+
     @Override
     public int size() {
         throw new UnsupportedOperationException("size()");
@@ -71,17 +82,7 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
 
     @Override
     public CategoryDataSeriesInternal copy(AxesImpl axes) {
-        return new CategoryTreeMapDataSeriesTableMap(
-                axes,
-                id(),
-                name(),
-                tableHandle,
-                idColumn, parentColumn,
-                labelColumn,
-                valueColumn,
-                colorColumn,
-                hoverTextColumn
-        );
+        return new CategoryTreeMapDataSeriesTableMap(this, axes);
     }
 
     @Override

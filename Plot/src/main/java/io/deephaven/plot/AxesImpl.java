@@ -1891,7 +1891,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     @Override
     public CategoryDataSeries treeMapPlot(Comparable seriesName, Table t, String values, String ids, String parents, @Nullable String labels, @Nullable String text, @Nullable String color, @Nullable String hoverText) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, values, hoverText, text, color, hoverText);
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, new String[] { ids }, values, parents, labels, text, color, hoverText);
         return treeMapPlot(new CategoryTreeMapDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, ids, parents, labels, values, color, hoverText), new TableHandle[]{h}, null);
     }
 

@@ -234,6 +234,7 @@ message FigureDescriptor {
             CATEGORY = 3;
             XYZ = 4;
             CATEGORY_3D = 5;
+            TREEMAP = 6;
         }
         int32 colspan = 1;
         int32 rowspan = 2;
