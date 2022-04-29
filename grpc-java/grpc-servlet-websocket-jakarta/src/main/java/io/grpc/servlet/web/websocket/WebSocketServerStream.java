@@ -11,7 +11,6 @@ import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.StatsTraceContext;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
@@ -25,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
 
@@ -36,6 +37,8 @@ import static io.grpc.internal.GrpcUtil.TIMEOUT_KEY;
  */
 @ServerEndpoint(value = "/{service}/{method}", subprotocols = "grpc-websockets")
 public class WebSocketServerStream {
+    private static final Logger logger = Logger.getLogger(WebSocketServerStream.class.getName());
+
     private final ServerTransportListener transportListener;
     private final List<? extends ServerStreamTracer.Factory> streamTracerFactories;
     private final int maxInboundMessageSize;
@@ -133,7 +136,7 @@ public class WebSocketServerStream {
             // ignore this for now
             // TODO need to understand why this is happening
         } else {
-            error.printStackTrace();
+            logger.log(Level.SEVERE, "Error from websocket", error);
         }
     }
 
