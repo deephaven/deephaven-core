@@ -2165,7 +2165,7 @@ public class Numeric {
     }
 
     /**
-     * Returns {@code true} if the value is fine, where "finite" is defined as not infinite, not NaN, and not null.
+     * Returns {@code true} if the value is finite, where "finite" is defined as not infinite, not NaN, and not null.
      *
      * @param value value.
      * @return {@code true} if the value is not infinite, NaN, nor null; {@code false} otherwise
