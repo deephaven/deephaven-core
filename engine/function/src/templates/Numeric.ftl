@@ -1803,6 +1803,10 @@ public class Numeric {
             return ${pt.null};
         }
 
+        if ( interval <= 0 ) {
+            throw new IllegalArgumentException("Interval is not positive: " + interval);
+        }
+
         return (${pt.primitive}) (interval * Math.floor(value / interval));
     }
 
@@ -1860,6 +1864,10 @@ public class Numeric {
     public static ${pt.primitive} upperBin(${pt.primitive} value, ${pt.primitive} interval) {
         if (value == ${pt.null} || interval == ${pt.null}) {
             return ${pt.null};
+        }
+
+        if ( interval <= 0 ) {
+            throw new IllegalArgumentException("Interval is not positive: " + interval);
         }
 
         return (${pt.primitive}) (interval * Math.ceil(value / interval));
