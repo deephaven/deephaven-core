@@ -1201,6 +1201,84 @@ class Figure(JObjectWrapper):
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
+    def plot_tree_map(
+        self,
+        t: Union[Table, SelectableDataSet],
+        ids: str,
+        ids: str,
+        ids: str,
+        ids: str,
+        ids: str,
+        series_name: str = None,
+        values: str = None,
+        color: Union[str, int, Color] = None,
+    ) -> Figure:
+        """
+
+        Args:
+            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            ids (str): 
+            ids (str): 
+            ids (str): 
+            ids (str): 
+            ids (str): 
+            series_name (str): name of the data series
+            values (str): 
+            color (Union[str, int, Color]): color
+
+        Returns:
+            a new Figure
+
+        Raises:
+            DHError
+        """
+        if not t:
+            raise DHError("required parameter is not set: t")
+        if not ids:
+            raise DHError("required parameter is not set: ids")
+        if not ids:
+            raise DHError("required parameter is not set: ids")
+        if not ids:
+            raise DHError("required parameter is not set: ids")
+        if not ids:
+            raise DHError("required parameter is not set: ids")
+        if not ids:
+            raise DHError("required parameter is not set: ids")
+        non_null_args = set()
+
+        if t is not None:
+            non_null_args.add("t")
+            t = _convert_j("t", t, [Table, SelectableDataSet])
+        if ids is not None:
+            non_null_args.add("ids")
+            ids = _convert_j("ids", ids, [str])
+        if ids is not None:
+            non_null_args.add("ids")
+            ids = _convert_j("ids", ids, [str])
+        if ids is not None:
+            non_null_args.add("ids")
+            ids = _convert_j("ids", ids, [str])
+        if ids is not None:
+            non_null_args.add("ids")
+            ids = _convert_j("ids", ids, [str])
+        if ids is not None:
+            non_null_args.add("ids")
+            ids = _convert_j("ids", ids, [str])
+        if series_name is not None:
+            non_null_args.add("series_name")
+            series_name = _convert_j("series_name", series_name, [str])
+        if values is not None:
+            non_null_args.add("values")
+            values = _convert_j("values", values, [str])
+        if color is not None:
+            non_null_args.add("color")
+            color = _convert_j("color", color, [str, int, Color])
+
+        if non_null_args == {"series_name", "t", "values", "ids", "ids", "ids", "ids", "color", "ids"}:
+            return Figure(self.j_figure.treeMapPlot(series_name, t, values, ids, ids, ids, ids, color, ids))
+        else:
+            raise DHError(f"unsupported parameter combination: {non_null_args}")
+
     def plot_xy(
         self,
         series_name: str,

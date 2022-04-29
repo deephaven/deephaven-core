@@ -18,6 +18,7 @@ import io.deephaven.plot.datasets.category.AbstractCategoryDataSeries;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesSwappableTableMap;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesTableMap;
+import io.deephaven.plot.datasets.category.CategoryTreeMapDataSeriesTableMap;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataSwappableTable;
 import io.deephaven.plot.datasets.data.IndexableNumericDataTable;
@@ -354,6 +355,15 @@ public class FigureWidgetTranslator {
                                             makeSourceDescriptor(series.getSwappableTable(), series.getNumericCol(),
                                                     numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
 
+                                } else if (s instanceof CategoryTreeMapDataSeriesTableMap) {
+                                    CategoryTreeMapDataSeriesTableMap series = (CategoryTreeMapDataSeriesTableMap) s;
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getCategoryCol(), catAxis == xAxis ? SourceType.X : SourceType.Y, catAxis));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getValueCol(), numAxis == xAxis ? SourceType.X : SourceType.Y, numAxis));
+
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getParentColumn(), SourceType.PARENT, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getLabelColumn(), SourceType.LABEL, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getColorColumn(), SourceType.COLOR, null));
+                                    clientAxes.add(makeSourceDescriptor(series.getTableHandle(), series.getHoverTextColumn(), SourceType.HOVER_TEXT, null));
                                 } else if (s instanceof CategoryDataSeriesMap) {// bar and plot from constant data
                                     errorList.add("OpenAPI presently does not support series of type " + s.getClass());
                                 }
@@ -672,7 +682,7 @@ public class FigureWidgetTranslator {
 
         source.setColumnName(columnName);
         source.setTableId(tablePositionMap.get(tableHandle));
-        source.setAxisId(axis.getId());
+        source.setAxisId(axis == null ? "-1" : axis.getId());
         source.setType(sourceType);
 
         return source.build();

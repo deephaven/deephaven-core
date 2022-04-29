@@ -73,8 +73,10 @@ public enum PlotStyle {
      *
      * Points are not displayed by default.
      */
-    ERROR_BAR;
+    ERROR_BAR,
 
+
+    TREEMAP;
 
     /**
      * Returns the requested plot style.

@@ -21,10 +21,16 @@ public enum ChartType {
     /**
      * Open-high-low-close chart.
      */
+    @Deprecated
     OHLC,
 
     /**
      * Has one discrete axis.
      */
-    CATEGORY
+    CATEGORY,
+
+    /**
+     * A category axis for hierarchy, and a numeric axis for values.
+     */
+    TREEMAP,
 }

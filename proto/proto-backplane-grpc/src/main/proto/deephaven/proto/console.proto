@@ -267,6 +267,7 @@ message FigureDescriptor {
         SCATTER = 8;
         STEP = 9;
         ERROR_BAR = 10;
+        TREEMAP = 11;
     }
 
     message SeriesDescriptor {
@@ -440,6 +441,8 @@ message FigureDescriptor {
         SIZE = 13;
         LABEL = 14;
         COLOR = 15;
+        PARENT = 16;
+        HOVER_TEXT = 17;
     }
     message SourceDescriptor {
         string axis_id = 1;

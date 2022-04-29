@@ -1095,6 +1095,12 @@ public class GeneratePyV2FigureAPI {
         rst.put("pointSizes", rst.get("pointSize"));
         rst.put("pointLabelFormat", new PyArg(84, "label_format", taStr, "point label format.", null));
         rst.put("visible", new PyArg(85, "visible", taInt, "true to draw the design element; false otherwise.", null));
+        rst.put("values", new PyArg(10, "values", taStr, "", null));
+        rst.put("ids", new PyArg(10, "ids", taStr, "", null));
+        rst.put("parents", new PyArg(10, "ids", taStr, "", null));
+        rst.put("labels", new PyArg(10, "ids", taStr, "", null));
+        rst.put("text", new PyArg(10, "ids", taStr, "", null));
+        rst.put("hoverText", new PyArg(10, "ids", taStr, "", null));
 
         ////////////////////////////////////////////////////////////////
 
@@ -1203,6 +1209,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("plot_ohlc", SINGLETON, new String[] {"ohlcPlot", "ohlcPlotBy"},
                 new String[] {"series_name"},
                 "Creates an open-high-low-close plot."));
+        rst.add(new PyFunc("plot_tree_map", SINGLETON, new String[] {"treeMapPlot"}, new String[] {"t", "ids", "parents"}, ""));
 
         ////////////////////////////////////////////////////////////////
 
