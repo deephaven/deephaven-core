@@ -2272,9 +2272,25 @@ public class QueryTableAggregationTest {
                         new BooleanGenerator(0.4, 0.2),
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
+
+        final String[] minQueryStrings = Arrays.stream(queryTable.getColumns())
+                .map(DataColumn::getName)
+                .filter(name -> !name.equals("Sym"))
+                .map(name -> name.equals("Timestamp") || name.equals("boolCol") ? name + " = minObj(" + name + ")"
+                        : name + " = min(" + name + ")")
+                .toArray(String[]::new);
+
+        final String[] maxQueryStrings = Arrays.stream(queryTable.getColumns())
+                .map(DataColumn::getName)
+                .filter(name -> !name.equals("Sym"))
+                .map(name -> name.equals("Timestamp") || name.equals("boolCol") ? name + " = maxObj(" + name + ")"
+                        : name + " = max(" + name + ")")
+                .toArray(String[]::new);
+
         if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithRowSet(queryTable);
         }
+
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.Sorted.from(() -> queryTable.maxBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.sort("Sym").maxBy("Sym")),
@@ -2297,9 +2313,9 @@ public class QueryTableAggregationTest {
                         .sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").minBy("Sym").sort("Sym")),
                 new TableComparator(queryTable.maxBy("Sym").sort("Sym"),
-                        queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
+                        queryTable.groupBy("Sym").update(maxQueryStrings).sort("Sym")),
                 new TableComparator(queryTable.minBy("Sym").sort("Sym"),
-                        queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
+                        queryTable.groupBy("Sym").update(minQueryStrings).sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {

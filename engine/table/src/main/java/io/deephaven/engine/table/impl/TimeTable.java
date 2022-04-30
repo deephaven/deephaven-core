@@ -9,7 +9,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -24,7 +23,7 @@ import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.function.LongNumericPrimitives;
+import io.deephaven.function.Numeric;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
@@ -147,7 +146,7 @@ public class TimeTable extends QueryTable implements Runnable {
             if (columnSource.startTime == null) {
                 lastIndex = 0;
                 columnSource.startTime = new DateTime(
-                        LongNumericPrimitives.lowerBin(dateTime.getNanos(), columnSource.period));
+                        Numeric.lowerBin(dateTime.getNanos(), columnSource.period));
             } else if (dateTime.compareTo(columnSource.startTime) >= 0) {
                 lastIndex = Math.max(lastIndex,
                         DateTimeUtils.minus(dateTime, columnSource.startTime) / columnSource.period);

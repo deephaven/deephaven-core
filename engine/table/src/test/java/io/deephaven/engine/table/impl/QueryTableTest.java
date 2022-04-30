@@ -2310,9 +2310,10 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
                 DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
-        show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
+        show(queryTable.update("TimeinSeconds=round((maxObj(Timestamp_)-minObj(Timestamp_))/1000000000)"));
         show(queryTable.groupBy("Sym").view("Sym", "x = Timestamp[0]"));
-        show(queryTable.groupBy("Sym").view("Sym", "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
+        show(queryTable.groupBy("Sym").view("Sym",
+                "TimeinSeconds=round((maxObj(Timestamp)-minObj(Timestamp))/1000000000)"));
     }
 
     public void testUngroupingAgnostic() {

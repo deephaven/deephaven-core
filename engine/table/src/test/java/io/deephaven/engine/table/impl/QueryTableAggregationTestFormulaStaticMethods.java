@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.function.*;
+import io.deephaven.function.Numeric;
 import io.deephaven.vector.*;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
@@ -15,7 +15,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static ByteVector abs(ByteVector values) {
         final byte[] result = new byte[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = ByteNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new ByteVectorDirect(result);
     }
@@ -23,7 +23,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static ShortVector abs(ShortVector values) {
         final short[] result = new short[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = ShortNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new ShortVectorDirect(result);
     }
@@ -31,7 +31,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static IntVector abs(IntVector values) {
         final int[] result = new int[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = IntegerNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new IntVectorDirect(result);
     }
@@ -39,7 +39,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static LongVector abs(LongVector values) {
         final long[] result = new long[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = LongNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new LongVectorDirect(result);
     }
@@ -47,7 +47,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static FloatVector abs(FloatVector values) {
         final float[] result = new float[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = FloatNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new FloatVectorDirect(result);
     }
@@ -55,7 +55,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     public static DoubleVector abs(DoubleVector values) {
         final double[] result = new double[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
-            result[ii] = DoubleNumericPrimitives.abs(values.get(ii));
+            result[ii] = Numeric.abs(values.get(ii));
         }
         return new DoubleVectorDirect(result);
     }
@@ -564,6 +564,11 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             case "Sym":
                 return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".minObj("
                         + col + ")";
+            case "boolCol":
+            case "bigI":
+            case "bigD":
+            case "dt":
+                return GroovyStaticImports.class.getCanonicalName() + ".minObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".min(" + col + ")";
         }
@@ -579,6 +584,11 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             case "Sym":
                 return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".maxObj("
                         + col + ")";
+            case "boolCol":
+            case "bigI":
+            case "bigD":
+            case "dt":
+                return GroovyStaticImports.class.getCanonicalName() + ".maxObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".max(" + col + ")";
         }
