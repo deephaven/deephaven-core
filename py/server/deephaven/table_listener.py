@@ -23,28 +23,28 @@ _JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonL
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
-DEFAULT_CHUNK_SIZE = 4096
 
 
 def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int, prev: bool = False):
     row_sequence_iterator = row_set.getRowSequenceIterator()
     col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
-
+    chunk_size = row_set.size() if not chunk_size else chunk_size
     j_reader_context = _JTableUpdateDataReader.makeContext(chunk_size, *col_sources)
-    while row_sequence_iterator.hasMore():
-        chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
+    try:
+        while row_sequence_iterator.hasMore():
+            chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
 
-        j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources, prev)
+            j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources, prev)
 
-        col_dict = {}
-        for i, col_def in enumerate(col_defs):
-            np_array = column_to_numpy_array(col_def, j_array[i])
-            col_dict[col_def.name] = np_array
+            col_dict = {}
+            for i, col_def in enumerate(col_defs):
+                np_array = column_to_numpy_array(col_def, j_array[i])
+                col_dict[col_def.name] = np_array
 
-        yield col_dict
-
-    j_reader_context.close()
-    row_sequence_iterator.close()
+            yield col_dict
+    finally:
+        j_reader_context.close()
+        row_sequence_iterator.close()
 
 
 def _col_defs(table: Table, cols: Union[str, List[str]]):
@@ -63,7 +63,7 @@ class TableUpdate(JObjectWrapper):
     def __init__(self, table: Table, j_table_update):
         self.table = table
         self.j_table_update = j_table_update
-        self.chunk_size = DEFAULT_CHUNK_SIZE
+        self.chunk_size = None
 
     @property
     def j_object(self) -> jpy.JType:
@@ -72,12 +72,13 @@ class TableUpdate(JObjectWrapper):
     def added(self, cols: Union[str, List[str]] = None):
         if not self.j_table_update.added:
             return (_ for _ in ())
+
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.added.asRowSet(),
                                  chunk_size=self.chunk_size)
 
     def removed(self, cols: Union[str, List[str]] = None):
-        if not self.j_table_update.added:
+        if not self.j_table_update.removed:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
@@ -93,12 +94,11 @@ class TableUpdate(JObjectWrapper):
                                  chunk_size=self.chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None):
-        if not self.j_table_update.getModifiedPreShift():
+        if not self.j_table_update.modified:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
-        return _changes_to_numpy(self.table, col_defs=col_defs,
-                                 row_set=self.j_table_update.getModifiedPreShift().asRowSet(),
+        return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
                                  chunk_size=self.chunk_size, prev=True)
 
     @property
@@ -108,8 +108,9 @@ class TableUpdate(JObjectWrapper):
 
     @property
     def modified_columns(self) -> List[str]:
-        # TODO
-        ...
+        cols = self.j_table_update.modifiedColumnSet.dirtyColumnNames()
+
+        return list(cols) if cols else []
 
 
 class TableListenerHandle:

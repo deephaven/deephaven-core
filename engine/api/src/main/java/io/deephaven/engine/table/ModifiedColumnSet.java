@@ -8,6 +8,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 
 import java.util.BitSet;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * Data structure to represent a subset of columns, used for propagating modifications via {@link TableUpdate}
@@ -430,6 +431,15 @@ public class ModifiedColumnSet {
      */
     public int numColumns() {
         return columns.size();
+    }
+
+    /**
+     * @return the names of the dirty columns in this set
+     */
+    public String[] dirtyColumnNames() {
+        return dirtyColumns.stream().mapToObj(ci -> columnNames[ci]).toArray(String[]::new);
+        // return IntStream.range(0, columnNames.length).filter(i -> dirtyColumns.get(i)).mapToObj(i ->
+        // columnNames[i]).toArray(String[]::new);
     }
 
     /**

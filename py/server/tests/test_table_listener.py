@@ -46,7 +46,7 @@ class TableListenerTestCase(BaseTestCase):
         class ListenerClass(TableListener):
             def __init__(self):
                 self.table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                                    Shifted=None)
+                                                    Shifted=None, modified_columns=None)
 
             def onUpdate(self, is_replay, update):
                 update.chunk_size = 4
@@ -85,7 +85,7 @@ class TableListenerTestCase(BaseTestCase):
     def test_listener_func(self):
         replay_recorder = []
         table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                       Shifted=None)
+                                       Shifted=None, modified_columns=None)
 
         def listener_func(is_replay, update):
             update.chunk_size = 128
@@ -122,10 +122,13 @@ class TableListenerTestCase(BaseTestCase):
     def test_listener_func_modified(self):
         replay_recorder = []
         table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
-                                       Shifted=None)
+                                       Shifted=None, modified_columns=None)
         cols = "InWindow"
+        table_update.modified_columns_list = []
 
         def listener_func(is_replay, update):
+            table_update.modified_columns_list.append(update.modified_columns)
+
             update.chunk_size = 1000
             table_update.added = []
             for chunk in update.added(cols):
@@ -145,13 +148,14 @@ class TableListenerTestCase(BaseTestCase):
 
             replay_recorder.append(is_replay)
 
-        table_listener_handle = listen(self.test_table2, listener=listener_func, replay_initial=True)
+        table_listener_handle = listen(self.test_table2, listener=listener_func, replay_initial=False)
         time.sleep(2)
-        pprint(table_update.added)
-        pprint("------" * 10)
+        pprint("-----modified-----")
         pprint(table_update.modified)
-        pprint("------" * 10)
+        pprint("------modified-prev------")
         pprint(table_update.modified_prev)
+        pprint("------modified-columns-list------")
+        pprint(table_update.modified_columns_list)
         self.assertGreaterEqual(len(table_update.added), 1)
         self.check_result(table_update.added, cols)
         self.check_result(table_update.removed, cols)
