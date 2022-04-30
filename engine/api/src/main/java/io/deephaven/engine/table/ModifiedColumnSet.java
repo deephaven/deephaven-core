@@ -438,8 +438,6 @@ public class ModifiedColumnSet {
      */
     public String[] dirtyColumnNames() {
         return dirtyColumns.stream().mapToObj(ci -> columnNames[ci]).toArray(String[]::new);
-        // return IntStream.range(0, columnNames.length).filter(i -> dirtyColumns.get(i)).mapToObj(i ->
-        // columnNames[i]).toArray(String[]::new);
     }
 
     /**
