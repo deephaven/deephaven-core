@@ -21,7 +21,7 @@ class PythonUtils {
      * @throws IllegalArgumentException python listener object is not a valid listener.
      */
     static PyObject pyListenerFunc(final PyObject pyObject) {
-        return pyCallable(pyObject, "onUpdate");
+        return pyCallable(pyObject, "on_update");
     }
 
 

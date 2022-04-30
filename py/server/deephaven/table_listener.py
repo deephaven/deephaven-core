@@ -8,9 +8,10 @@ import inspect
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, Type, Sequence, List
+from typing import Callable, Union, Type, Sequence, List, Generator, Dict
 
 import jpy
+import numpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
@@ -25,7 +26,8 @@ _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
 
 
-def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int, prev: bool = False):
+def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size: int, prev: bool = False) -> Generator[
+    Dict[str, numpy.ndarray], None, None]:
     row_sequence_iterator = row_set.getRowSequenceIterator()
     col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
     chunk_size = row_set.size() if not chunk_size else chunk_size
@@ -47,7 +49,7 @@ def _changes_to_numpy(table: Table, col_defs: List[Column], row_set, chunk_size:
         row_sequence_iterator.close()
 
 
-def _col_defs(table: Table, cols: Union[str, List[str]]):
+def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
     if not cols:
         col_defs = table.columns
     else:
@@ -69,7 +71,19 @@ class TableUpdate(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table_update
 
-    def added(self, cols: Union[str, List[str]] = None):
+    def added(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        if not self.j_table_update.added:
+            return {}
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        try:
+            return next(
+                _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.added.asRowSet(),
+                                  chunk_size=None))
+        except StopIteration:
+            return {}
+
+    def added_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
         if not self.j_table_update.added:
             return (_ for _ in ())
 
@@ -77,7 +91,19 @@ class TableUpdate(JObjectWrapper):
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.added.asRowSet(),
                                  chunk_size=self.chunk_size)
 
-    def removed(self, cols: Union[str, List[str]] = None):
+    def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        if not self.j_table_update.removed:
+            return {}
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        try:
+            return next(
+                _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.removed.asRowSet(),
+                                  chunk_size=None, prev=True))
+        except StopIteration:
+            return {}
+
+    def removed_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
@@ -85,7 +111,19 @@ class TableUpdate(JObjectWrapper):
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.removed.asRowSet(),
                                  chunk_size=self.chunk_size, prev=True)
 
-    def modified(self, cols: Union[str, List[str]] = None):
+    def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        if not self.j_table_update.modified:
+            return {}
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        try:
+            return next(
+                _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
+                                  chunk_size=None))
+        except StopIteration:
+            return {}
+
+    def modified_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
@@ -93,7 +131,20 @@ class TableUpdate(JObjectWrapper):
         return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
                                  chunk_size=self.chunk_size)
 
-    def modified_prev(self, cols: Union[str, List[str]] = None):
+    def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        if not self.j_table_update.modified:
+            return {}
+
+        col_defs = _col_defs(table=self.table, cols=cols)
+        try:
+            return next(
+                _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
+                                  chunk_size=None, prev=True))
+        except StopIteration:
+            return {}
+
+    def modified_prev_chunks(self, cols: Union[str, List[str]] = None) -> Generator[
+        Dict[str, numpy.ndarray], None, None]:
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
@@ -190,22 +241,20 @@ class TableListener(ABC):
     """An abstract table listener class that should be subclassed by any user Table listener class."""
 
     @abstractmethod
-    def onUpdate(self, *args, **kwargs) -> None:
+    def on_update(self, update, is_replay: bool = None) -> None:
         ...
 
 
 def listener_wrapper(table: Table):
     def decorator(listener: Callable):
         @wraps(listener)
-        def wrapper(*args):
+        def wrapper(j_update, *args):
             sig = inspect.signature(listener)
             n_params = len(sig.parameters)
-            j_update = args[1] if n_params == 2 else args[0]
             t_update = TableUpdate(table=table, j_table_update=j_update)
 
             if n_params == 2:
-                is_replay = args[0]
-                listener(is_replay, t_update)
+                listener(t_update, args[0])
             else:
                 listener(t_update)
 
@@ -231,14 +280,14 @@ def _wrap_listener_func(t: Table, description: str, listener: Callable, replay_i
 
 
 def _wrap_listener_obj(t: Table, description: str, listener: TableListener, replay_initial: bool, retain: bool):
-    n_params = len(signature(listener.onUpdate).parameters)
+    n_params = len(signature(listener.on_update).parameters)
 
     if n_params not in {1, 2}:
         raise ValueError(f"listener must take 1 (update) or 2 (isReplay, update) arguments.")
     if n_params == 1 and replay_initial:
         raise ValueError(f"Listener does not support replay: nargs={n_params}")
 
-    listener.onUpdate = listener_wrapper(table=t)(listener.onUpdate)
+    listener.on_update = listener_wrapper(table=t)(listener.on_update)
     if n_params == 1:
         return _JPythonListenerAdapter(description, t.j_table, retain, listener)
     else:
@@ -263,7 +312,7 @@ def listen(
     In either case, the method must have one of the following signatures.
 
     * (update): shift-aware
-    * (isReplay, update): shift-aware + replay
+    * (update, is_replay): shift-aware + replay
     'update' is an object that describes the table update.
 
     Listeners that support replaying the initial table snapshot have an additional parameter, 'isReplay', which is

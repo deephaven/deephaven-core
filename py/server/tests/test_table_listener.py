@@ -33,6 +33,8 @@ class TableListenerTestCase(BaseTestCase):
             return
         cols = to_sequence(cols)
         for change in changes:
+            if not change:
+                continue
             self.assertTrue(isinstance(change, dict))
             if not cols:
                 cols = [col.name for col in self.test_table.columns]
@@ -48,23 +50,18 @@ class TableListenerTestCase(BaseTestCase):
                 self.table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
                                                     Shifted=None, modified_columns=None)
 
-            def onUpdate(self, is_replay, update):
-                update.chunk_size = 4
+            def on_update(self, update, is_replay):
                 self.table_update.added = []
-                for chunk in update.added("X"):
-                    self.table_update.added.append(chunk)
+                self.table_update.added.append(update.added())
 
                 self.table_update.removed = []
-                for chunk in update.removed():
-                    self.table_update.removed.append(chunk)
+                self.table_update.removed.append(update.removed())
 
                 self.table_update.modified = []
-                for chunk in update.modified():
-                    self.table_update.modified.append(chunk)
+                self.table_update.modified.append(update.modified())
 
                 self.table_update.modified_prev = []
-                for chunk in update.modified_prev():
-                    self.table_update.modified_prev.append(chunk)
+                self.table_update.modified_prev.append(update.modified_prev())
 
                 # self.table_update.shifted = update.shifted
 
@@ -82,27 +79,27 @@ class TableListenerTestCase(BaseTestCase):
 
         table_listener_handle.deregister()
 
-    def test_listener_func(self):
+    def test_listener_func_chunk(self):
         replay_recorder = []
         table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
                                        Shifted=None, modified_columns=None)
 
-        def listener_func(is_replay, update):
+        def listener_func(update, is_replay):
             update.chunk_size = 128
             table_update.added = []
-            for chunk in update.added():
+            for chunk in update.added_chunks():
                 table_update.added.append(chunk)
 
             table_update.removed = []
-            for chunk in update.removed():
+            for chunk in update.removed_chunks():
                 table_update.removed.append(chunk)
 
             table_update.modified = []
-            for chunk in update.modified():
+            for chunk in update.modified_chunks():
                 table_update.modified.append(chunk)
 
             table_update.modified_prev = []
-            for chunk in update.modified_prev():
+            for chunk in update.modified_prev_chunks():
                 table_update.modified_prev.append(chunk)
 
             replay_recorder.append(is_replay)
@@ -119,31 +116,31 @@ class TableListenerTestCase(BaseTestCase):
 
         table_listener_handle.deregister()
 
-    def test_listener_func_modified(self):
+    def test_listener_func_modified_chunk(self):
         replay_recorder = []
         table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
                                        Shifted=None, modified_columns=None)
         cols = "InWindow"
         table_update.modified_columns_list = []
 
-        def listener_func(is_replay, update):
+        def listener_func(update, is_replay):
             table_update.modified_columns_list.append(update.modified_columns)
 
             update.chunk_size = 1000
             table_update.added = []
-            for chunk in update.added(cols):
+            for chunk in update.added_chunks(cols):
                 table_update.added.append(chunk)
 
             table_update.removed = []
-            for chunk in update.removed(cols):
+            for chunk in update.removed_chunks(cols):
                 table_update.removed.append(chunk)
 
             table_update.modified = []
-            for chunk in update.modified(cols):
+            for chunk in update.modified_chunks(cols):
                 table_update.modified.append(chunk)
 
             table_update.modified_prev = []
-            for chunk in update.modified_prev(cols):
+            for chunk in update.modified_prev_chunks(cols):
                 table_update.modified_prev.append(chunk)
 
             replay_recorder.append(is_replay)
@@ -162,6 +159,46 @@ class TableListenerTestCase(BaseTestCase):
         self.check_result(table_update.modified, cols)
         self.check_result(table_update.modified_prev, cols)
         self.assertFalse(all(replay_recorder))
+
+        table_listener_handle.deregister()
+
+    def test_listener_obj_chunk(self):
+        class ListenerClass(TableListener):
+            def __init__(self):
+                self.table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
+                                                    Shifted=None, modified_columns=None)
+
+            def on_update(self, update):
+                update.chunk_size = 4
+                self.table_update.added = []
+                for chunk in update.added_chunks("X"):
+                    self.table_update.added.append(chunk)
+
+                self.table_update.removed = []
+                for chunk in update.removed_chunks():
+                    self.table_update.removed.append(chunk)
+
+                self.table_update.modified = []
+                for chunk in update.modified_chunks():
+                    self.table_update.modified.append(chunk)
+
+                self.table_update.modified_prev = []
+                for chunk in update.modified_prev_chunks():
+                    self.table_update.modified_prev.append(chunk)
+
+                # self.table_update.shifted = update.shifted
+
+        listener = ListenerClass()
+
+        table_listener_handle = listen(self.test_table, listener)
+        time.sleep(1)
+        pprint(listener.table_update.added)
+        pprint("----" * 10)
+        pprint(listener.table_update.removed)
+        self.check_result(listener.table_update.added, cols="X")
+        self.check_result(listener.table_update.removed)
+        self.check_result(listener.table_update.modified)
+        self.check_result(listener.table_update.modified_prev)
 
         table_listener_handle.deregister()
 
