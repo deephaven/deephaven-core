@@ -18,14 +18,18 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
     private final String colorColumn;
     private final String hoverTextColumn;
 
+    private final String textColumn;
+
     public CategoryTreeMapDataSeriesTableMap(AxesImpl axes, int id, Comparable name, TableHandle h, String idColumn,
-            String parentColumn, String labelColumn, String valueColumn, String colorColumn, String hoverTextColumn) {
+            String parentColumn, String labelColumn, String valueColumn, String textColumn, String colorColumn,
+            String hoverTextColumn) {
         super(axes, id, name, null);
         this.tableHandle = h;
         this.idColumn = idColumn;
         this.parentColumn = parentColumn;
         this.labelColumn = labelColumn;
         this.valueColumn = valueColumn;
+        this.textColumn = textColumn;
         this.colorColumn = colorColumn;
         this.hoverTextColumn = hoverTextColumn;
     }
@@ -37,6 +41,7 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
         this.parentColumn = series.getParentColumn();
         this.labelColumn = series.getLabelColumn();
         this.valueColumn = series.getValueCol();
+        this.textColumn = series.getTextColumn();
         this.colorColumn = series.getColorColumn();
         this.hoverTextColumn = series.getHoverTextColumn();
     }
@@ -63,6 +68,10 @@ public class CategoryTreeMapDataSeriesTableMap extends AbstractTableBasedCategor
     @Override
     public String getValueCol() {
         return valueColumn;
+    }
+
+    public String getTextColumn() {
+        return textColumn;
     }
 
     public String getParentColumn() {

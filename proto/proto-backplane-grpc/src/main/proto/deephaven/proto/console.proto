@@ -443,6 +443,7 @@ message FigureDescriptor {
         COLOR = 15;
         PARENT = 16;
         HOVER_TEXT = 17;
+        TEXT = 18;
     }
     message SourceDescriptor {
         string axis_id = 1;
