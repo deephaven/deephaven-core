@@ -72,6 +72,7 @@ class TableUpdate(JObjectWrapper):
         return self.j_table_update
 
     def added(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        """TODO"""
         if not self.j_table_update.added:
             return {}
 
@@ -84,6 +85,7 @@ class TableUpdate(JObjectWrapper):
             return {}
 
     def added_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
+        """TODO"""
         if not self.j_table_update.added:
             return (_ for _ in ())
 
@@ -92,6 +94,7 @@ class TableUpdate(JObjectWrapper):
                                  chunk_size=self.chunk_size)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        """TODO"""
         if not self.j_table_update.removed:
             return {}
 
@@ -104,6 +107,7 @@ class TableUpdate(JObjectWrapper):
             return {}
 
     def removed_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
+        """TODO"""
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
@@ -112,6 +116,7 @@ class TableUpdate(JObjectWrapper):
                                  chunk_size=self.chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        """TODO"""
         if not self.j_table_update.modified:
             return {}
 
@@ -124,6 +129,7 @@ class TableUpdate(JObjectWrapper):
             return {}
 
     def modified_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
+        """TODO"""
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
@@ -132,6 +138,7 @@ class TableUpdate(JObjectWrapper):
                                  chunk_size=self.chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+        """TODO"""
         if not self.j_table_update.modified:
             return {}
 
@@ -144,7 +151,8 @@ class TableUpdate(JObjectWrapper):
             return {}
 
     def modified_prev_chunks(self, cols: Union[str, List[str]] = None) -> Generator[
-        Dict[str, numpy.ndarray], None, None]:
+            Dict[str, numpy.ndarray], None, None]:
+        """TODO"""
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
@@ -159,6 +167,7 @@ class TableUpdate(JObjectWrapper):
 
     @property
     def modified_columns(self) -> List[str]:
+        """The list of dirty columns in this update."""
         cols = self.j_table_update.modifiedColumnSet.dirtyColumnNames()
 
         return list(cols) if cols else []
@@ -238,20 +247,28 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
 
 
 class TableListener(ABC):
-    """An abstract table listener class that should be subclassed by any user Table listener class."""
+    """An abstract table listener class that should be subclassed by any user table listener class."""
 
     @abstractmethod
-    def on_update(self, update, is_replay: bool = None) -> None:
+    def on_update(self, update: TableUpdate) -> None:
+        ...
+
+
+class TableReplayListener(ABC):
+    """An abstract table replay listener class that should be subclassed by any user table replay listener class."""
+
+    @abstractmethod
+    def on_update(self, update: TableUpdate, is_replay: bool) -> None:
         ...
 
 
 def listener_wrapper(table: Table):
     def decorator(listener: Callable):
         @wraps(listener)
-        def wrapper(j_update, *args):
+        def wrapper(update, *args):
             sig = inspect.signature(listener)
             n_params = len(sig.parameters)
-            t_update = TableUpdate(table=table, j_table_update=j_update)
+            t_update = TableUpdate(table=table, j_table_update=update)
 
             if n_params == 2:
                 listener(t_update, args[0])
@@ -296,7 +313,7 @@ def _wrap_listener_obj(t: Table, description: str, listener: TableListener, repl
 
 def listen(
         t: Table,
-        listener: Union[Callable, Type[TableListener]],
+        listener: Union[Callable, Type[TableListener], Type[TableReplayListener]],
         description: str = None,
         *,
         retain: bool = True,
@@ -308,23 +325,19 @@ def listen(
 
     Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
-        (2) an object that provides an "onUpdate" method.
-    In either case, the method must have one of the following signatures.
+        (2) an instance of either TableListener or TableReplayListener type which provides an "on_update" method.
 
-    * (update): shift-aware
-    * (update, is_replay): shift-aware + replay
-    'update' is an object that describes the table update.
+    The callable or the on_update method must have one of the following two signatures.
+        * (update: TableUpdate): receive only normal table updates
+        * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
 
-    Listeners that support replaying the initial table snapshot have an additional parameter, 'isReplay', which is
-    true when replaying the initial snapshot and false during normal updates.
-
-    See the Deephaven listener documentation for details on processing update events.  This documentation covers the
-    details of the added, removed, and modified row sets; row shift information; as well as the details of how to apply
-    the update object.  It also has examples on how to access current and previous-tick table values.
+        The 'update' parameter is an object that describes the table update;
+        The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
+            snapshot and 'false' during normal updates.
 
     Args:
         t (Table): table to listen to
-        listener (Callable): listener for table changes
+        listener (Union[Callable, Type[TableListener], Type[TableReplayListener]]): listener for table changes
         description (str): description for the UpdatePerformanceTracker to append to the listener's entry description
         retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
             collected, default is True
@@ -353,10 +366,10 @@ def listen(
 
         if callable(listener):
             listener_adapter = _wrap_listener_func(t, description, listener, replay_initial, retain)
-        elif isinstance(listener, TableListener):
+        elif isinstance(listener, (TableListener, TableReplayListener)):
             listener_adapter = _wrap_listener_obj(t, description, listener, replay_initial, retain)
         else:
-            raise ValueError("listener is neither callable nor TableListener object")
+            raise ValueError("listener is neither callable nor TableListener nor TableReplayListener object")
 
         handle = TableListenerHandle(t, listener_adapter)
 

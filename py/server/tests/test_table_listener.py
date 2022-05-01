@@ -12,7 +12,7 @@ from deephaven.experimental import time_window
 
 from deephaven import time_table
 from deephaven.jcompat import to_sequence
-from deephaven.table_listener import listen, TableListener
+from deephaven.table_listener import listen, TableListener, TableReplayListener
 from tests.testbase import BaseTestCase
 
 
@@ -45,7 +45,7 @@ class TableListenerTestCase(BaseTestCase):
                 # print(change[col])
 
     def test_listener_obj(self):
-        class ListenerClass(TableListener):
+        class ListenerClass(TableReplayListener):
             def __init__(self):
                 self.table_update = SimpleNamespace(added=None, removed=None, modified=None, modified_prev=None,
                                                     Shifted=None, modified_columns=None)
