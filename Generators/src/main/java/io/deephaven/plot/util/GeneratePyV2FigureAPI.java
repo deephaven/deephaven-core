@@ -1095,12 +1095,12 @@ public class GeneratePyV2FigureAPI {
         rst.put("pointSizes", rst.get("pointSize"));
         rst.put("pointLabelFormat", new PyArg(84, "label_format", taStr, "point label format.", null));
         rst.put("visible", new PyArg(85, "visible", taInt, "true to draw the design element; false otherwise.", null));
-        rst.put("values", new PyArg(10, "values", taStr, "", null));
-        rst.put("ids", new PyArg(10, "ids", taStr, "", null));
-        rst.put("parents", new PyArg(10, "ids", taStr, "", null));
-        rst.put("labels", new PyArg(10, "ids", taStr, "", null));
-        rst.put("text", new PyArg(10, "ids", taStr, "", null));
-        rst.put("hoverText", new PyArg(10, "ids", taStr, "", null));
+        rst.put("values", new PyArg(10, "values_column", taStr, "", null));
+        rst.put("ids", new PyArg(10, "ids_column", taStr, "", null));
+        rst.put("parents", new PyArg(10, "parents_column", taStr, "", null));
+        rst.put("labels", new PyArg(10, "labels_column", taStr, "", null));
+        rst.put("text", new PyArg(10, "text_column", taStr, "", null));
+        rst.put("hoverText", new PyArg(10, "hover_text_column", taStr, "", null));
 
         ////////////////////////////////////////////////////////////////
 
