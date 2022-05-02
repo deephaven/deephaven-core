@@ -71,9 +71,9 @@ public class BarrageStreamGenerator implements
     private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "initialBatchSize", 4096);
 
-    // default to 99MB to match 100MB java-client and w2w default incoming limits and compensate for GRPC overhead
+    // default to 100MB to match 100MB java-client and w2w default incoming limits
     private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 99 * 1024 * 1024);
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 100 * 1024 * 1024);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
