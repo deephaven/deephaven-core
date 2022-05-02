@@ -223,7 +223,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
 
-                if (rehashRequired(nextChunkSize)) {
+                if (exceedsCapacity(nextChunkSize)) {
                     throw new IllegalStateException(
                             "Static naturalJoin does not permit rehashing, table must be allocated with sufficient size at the beginning of initialization.");
                 }
@@ -273,8 +273,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks);
     }
 
-    public boolean rehashRequired(int nextChunkSize) {
-        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+    public boolean exceedsCapacity(int nextChunkSize) {
+        return (numEntries + nextChunkSize) >= (tableSize);
     }
 
     private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
