@@ -68,9 +68,12 @@ public class BarrageStreamGenerator implements
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "batchSize", Integer.MAX_VALUE);
 
-    // default to 100MB to match java-client and w2w incoming limits
+    private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "initialBatchSize", 4096);
+
+    // default to 99MB to match 100MB java-client and w2w default incoming limits and compensate for GRPC overhead
     private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 100 * 1024 * 1024);
+            .getIntegerForClassWithDefault(BarrageStreamGenerator.class, "maxOutboundMessageSize", 99 * 1024 * 1024);
 
     public interface View {
         void forEachStream(Consumer<InputStream> visitor) throws IOException;
@@ -347,9 +350,8 @@ public class BarrageStreamGenerator implements
             ByteBuffer metadata = generator.getSubscriptionMetadata(this);
             MutableLong bytesWritten = new MutableLong(0L);
 
-            // batch size is maximum, will write fewer rows when needed. If we are enforcing a message size limit, then
-            // reasonably we will require at least one byte per row and restrict rows accordingly
-            int maxBatchSize = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
+            // batch size is maximum, will write fewer rows when needed
+            int maxBatchSize = batchSize();
 
             final MutableInt actualBatchSize = new MutableInt();
 
@@ -483,9 +485,8 @@ public class BarrageStreamGenerator implements
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
             MutableLong bytesWritten = new MutableLong(0L);
 
-            // batch size is maximum, will write fewer rows when needed. If we are enforcing a message size limit, then
-            // reasonably we will require at least one byte per row and restrict rows accordingly
-            int maxBatchSize = Math.min(DEFAULT_MESSAGE_SIZE_LIMIT, batchSize());
+            // batch size is maximum, will write fewer rows when needed
+            int maxBatchSize = batchSize();
             final MutableInt actualBatchSize = new MutableInt();
 
             if (numAddRows == 0) {
@@ -712,7 +713,8 @@ public class BarrageStreamGenerator implements
             final ColumnVisitor columnVisitor, final MutableLong bytesWritten) throws IOException {
         long offset = 0;
         MutableInt actualBatchSize = new MutableInt();
-        int batchSize = maxBatchSize;
+
+        int batchSize = DEFAULT_INITIAL_BATCH_SIZE;
 
         while (offset < numRows) {
             try {
@@ -722,17 +724,16 @@ public class BarrageStreamGenerator implements
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (bytesToWrite > DEFAULT_MESSAGE_SIZE_LIMIT && batchSize > 1) {
-                    // can't write this, so close the input stream and retry
-                    is.close();
-                } else {
-                    bytesWritten.add(bytesToWrite);
-
+                if (bytesToWrite < DEFAULT_MESSAGE_SIZE_LIMIT || batchSize == 1) {
                     // let's write the data
                     visitor.accept(is);
 
+                    bytesWritten.add(bytesToWrite);
                     offset += actualBatchSize.intValue();
                     metadata = null;
+                } else {
+                    // can't write this, so close the input stream and retry
+                    is.close();
                 }
                 // recompute the batch limit for the next message
                 int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
@@ -755,7 +756,6 @@ public class BarrageStreamGenerator implements
             final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         long endRange = startRange + targetBatchSize;
-
         int chunkIdx = 0;
         if (addGeneratorCount > 0) {
             // identify the chunk that holds this startRange (NOTE: will be same for all columns)
@@ -765,7 +765,6 @@ public class BarrageStreamGenerator implements
             // adjust the batch size if we would cross a chunk boundary
             endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
         }
-
         try (final WritableRowSet myAddedOffsets = view.addRowOffsets().subSetByPositionRange(startRange, endRange);
                 final RowSet adjustedOffsets =
                         myAddedOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
@@ -788,7 +787,6 @@ public class BarrageStreamGenerator implements
                             generator.getInputStream(view.options(), adjustedOffsets);
                     drainableColumn.visitFieldNodes(fieldNodeListener);
                     drainableColumn.visitBuffers(bufferListener);
-
                     // Add the drainable last as it is allowed to immediately close a row set the visitors need
                     addStream.accept(drainableColumn);
                 }
@@ -803,7 +801,6 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         long endRange = startRange + targetBatchSize;
         int[] columnChunkIdx = new int[modColumnData.length];
-
         // for each column identify the chunk that holds this startRange
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnData mcd = modColumnData[ii];
@@ -812,7 +809,6 @@ public class BarrageStreamGenerator implements
             endRange = Math.min((long) (chunkIdx + 1) * TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD, endRange);
             columnChunkIdx[ii] = chunkIdx;
         }
-
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (int ii = 0; ii < modColumnData.length; ++ii) {
@@ -832,25 +828,20 @@ public class BarrageStreamGenerator implements
                 }
             }
             numRows = Math.max(numRows, myModOffsets.size());
-
             try {
                 if (myModOffsets.isEmpty() || mcd.data.generators.length == 0) {
                     // use the empty generator to publish the column data
                     try (final RowSet empty = RowSetFactory.empty()) {
-
                         final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                                 mcd.data.emptyGenerator.getInputStream(view.options(), empty);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
-
                         // Add the drainable last as it is allowed to immediately close a row set the visitors need
                         addStream.accept(drainableColumn);
                     }
                 } else {
-
                     final int chunkIdx = columnChunkIdx[ii];
                     final ChunkInputStreamGenerator generator = mcd.data.generators[chunkIdx];
-
                     // normalize to the chunk offsets
                     try (final WritableRowSet adjustedOffsets =
                             myModOffsets.shift((long) chunkIdx * -TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD)) {
@@ -858,7 +849,6 @@ public class BarrageStreamGenerator implements
                                 generator.getInputStream(view.options(), adjustedOffsets);
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
-
                         // Add the drainable last as it is allowed to immediately close a row set the visitors need
                         addStream.accept(drainableColumn);
                     }

@@ -1444,11 +1444,11 @@ public class ConstructSnapshot {
             return result;
         }
 
-        final int initialChunkSize = (int) Math.min(size, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
+        final int maxChunkSize = (int) Math.min(size, TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD);
 
-        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(initialChunkSize, sharedContext);
+        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(maxChunkSize, sharedContext);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            int chunkSize = initialChunkSize;
+            int chunkSize = maxChunkSize;
             while (it.hasMore()) {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
                 final ChunkType chunkType = sourceToUse.getChunkType();

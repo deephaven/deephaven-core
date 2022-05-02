@@ -318,11 +318,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 totalMods.insert(column.rowsModified);
             }
 
-            // perform the addition operations in batches for efficiency
-            final int addBatchSize = (int) Math.min(update.rowsIncluded.size(),
-                    1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
-
             if (update.rowsIncluded.isNonempty()) {
+                // perform the addition operations in batches for efficiency
+                final int addBatchSize = (int) Math.min(update.rowsIncluded.size(),
+                        1 << ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY);
+
                 if (mightBeInitialSnapshot) {
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
                     // we know the initial snapshot size and can resize immediately

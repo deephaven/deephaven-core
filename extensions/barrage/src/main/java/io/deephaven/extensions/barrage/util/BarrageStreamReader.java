@@ -248,7 +248,7 @@ public class BarrageStreamReader implements StreamReader {
                             int lastChunkIndex = acd.data.size() - 1;
 
                             // need to add the batch row data to the column chunks
-                            WritableChunk<Values> chunk = (WritableChunk) acd.data.get(lastChunkIndex);
+                            WritableChunk<Values> chunk = (WritableChunk<Values>) acd.data.get(lastChunkIndex);
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;
@@ -258,7 +258,7 @@ public class BarrageStreamReader implements StreamReader {
                                 lastAddStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
-                                chunkSize = (int) (Math.min(msg.rowsIncluded.size() - numAddRowsRead,
+                                chunkSize = (int) (Math.min(numAddRowsTotal - numAddRowsRead,
                                         TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD));
                                 chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
                                 acd.data.add(chunk);
@@ -283,7 +283,7 @@ public class BarrageStreamReader implements StreamReader {
                             int lastChunkIndex = mcd.data.size() - 1;
 
                             // need to add the batch row data to the column chunks
-                            WritableChunk<Values> chunk = (WritableChunk) mcd.data.get(lastChunkIndex);
+                            WritableChunk<Values> chunk = (WritableChunk<Values>) mcd.data.get(lastChunkIndex);
                             int chunkSize = chunk.size();
 
                             final int chunkOffset;

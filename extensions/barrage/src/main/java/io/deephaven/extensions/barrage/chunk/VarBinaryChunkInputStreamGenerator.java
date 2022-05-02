@@ -69,7 +69,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          * @param   b   the byte to be written.
          */
         public synchronized void write(int b) throws IOException {
-            if (baos.size() + 1 > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+            if ((long) baos.size() + 1 > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
                 // close the current stream and add to the
                 finish();
                 // create a new output stream
@@ -94,7 +94,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          * {@code b.length - off}
          */
         public synchronized void write(byte b[], int off, int len) throws IOException {
-            if (baos.size() + len > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+            if ((long) baos.size() + len > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
                 finish();
                 // create a new output stream
                 baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
@@ -118,7 +118,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
          * @since   11
          */
         public void writeBytes(byte b[]) throws IOException {
-            if (baos.size() + b.length > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
+            if ((long) baos.size() + b.length > TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD) {
                 finish();
                 // create a new output stream
                 baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
