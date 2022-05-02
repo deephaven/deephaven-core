@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
 import io.deephaven.engine.table.impl.sources.*;
@@ -181,6 +182,50 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::rightIncrementalMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     modifiedSlotTrackerParam));
+        } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
+            builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
+                    .packageMiddle("incopen")
+                    .openAddressedAlternate(true)
+                    .stateType(long.class).mainStateName("rightRowKey")
+                    .emptyStateName("EMPTY_RIGHT_STATE")
+                    .includeOriginalSources(true)
+                    .supportRehash(true)
+                    .moveMain(TypedNaturalJoinFactory::incrementalMoveMain)
+                    .alwaysMoveMain(true)
+                    .rehashFullSetup(TypedNaturalJoinFactory::incrementalRehashSetup);
+
+//            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "leftRowSetForState",
+//                    true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
+//                    TypedNaturalJoinFactory::rightIncrementalBuildLeftInsert));
+//
+//            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
+//                    TypedNaturalJoinFactory::rightIncrementalRightFound,
+//                    TypedNaturalJoinFactory::rightIncrementalMissing));
+//
+//
+//            final TypeName modifiedSlotTracker = TypeName.get(NaturalJoinModifiedSlotTracker.class);
+//            final ParameterSpec modifiedSlotTrackerParam = ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
+//
+//            builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "leftRowSetForState", true,
+//                    TypedNaturalJoinFactory::rightIncrementalRemoveFound,
+//                    TypedNaturalJoinFactory::rightIncrementalMissing,
+//                    modifiedSlotTrackerParam));
+//
+//            builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", "leftRowSetForState", true,
+//                    TypedNaturalJoinFactory::rightIncrementalAddFound,
+//                    TypedNaturalJoinFactory::rightIncrementalMissing,
+//                    modifiedSlotTrackerParam));
+//
+//            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "leftRowSetForState", true,
+//                    TypedNaturalJoinFactory::rightIncrementalModify,
+//                    TypedNaturalJoinFactory::rightIncrementalMissing,
+//                    modifiedSlotTrackerParam));
+//
+//            builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "leftRowSetForState", true,
+//                    TypedNaturalJoinFactory::rightIncrementalShift,
+//                    TypedNaturalJoinFactory::rightIncrementalMissing,
+//                    ParameterSpec.builder(long.class, "shiftDelta").build(),
+//                    modifiedSlotTrackerParam));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }

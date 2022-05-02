@@ -6,7 +6,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;

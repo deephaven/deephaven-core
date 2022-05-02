@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 
-interface IncrementalNaturalJoinStateManager {
+public interface IncrementalNaturalJoinStateManager {
     long getRightIndex(long slot);
     RowSet getLeftIndex(long slot);
     String keyString(long slot);
