@@ -518,6 +518,18 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamR
   return getManager().createFlightWrapper().getFlightStreamReader(*this);
 }
 
+void TableHandle::subscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->subscribe(std::move(callback));
+}
+
+void TableHandle::unsubscribe(std::shared_ptr<TickingCallback> callback) {
+  impl_->unsubscribe(std::move(callback));
+}
+
+const std::string &TableHandle::getTicketAsString() const {
+  return impl_->ticket().ticket();
+}
+
 namespace internal {
 TableHandleStreamAdaptor::TableHandleStreamAdaptor(TableHandle table, bool wantHeaders) :
     table_(std::move(table)), wantHeaders_(wantHeaders) {}
@@ -555,7 +567,7 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
       break;
     }
     const auto *data = chunk.data.get();
-    const auto &columns = chunk.data->columns();
+    const auto &columns = data->columns();
     for (int64_t rowNum = 0; rowNum < data->num_rows(); ++rowNum) {
       if (rowNum != 0) {
         s << '\n';
