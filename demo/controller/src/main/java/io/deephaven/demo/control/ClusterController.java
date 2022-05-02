@@ -1277,10 +1277,10 @@ public class ClusterController implements IClusterController {
                         "    if curl -k https://localhost:10000/health &> /dev/null; then\n" +
                         "        echo \"localhost:10000 is responsive; $(hostname) is alive!\"\n" +
                         "    else\n" +
-                                // the startup script does not block until the server comes online.
-                                // For now, we're going to ignore "server not responding yet",
-                                // but we should probably poll a few 10s of seconds for server to come up
-                                // so we can consider "server not working" a failure case.
+                        // the startup script does not block until the server comes online.
+                        // For now, we're going to ignore "server not responding yet",
+                        // but we should probably poll a few 10s of seconds for server to come up
+                        // so we can consider "server not working" a failure case.
                         "        echo \"localhost:10000 is not-responsive on $(hostname)\"\n" +
                         "    fi\n" +
                         "  else\n" +

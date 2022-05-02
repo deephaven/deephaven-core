@@ -92,7 +92,7 @@ public class DeephavenApiServer {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 () -> {
-                    healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.NOT_SERVING);
+                    healthStatusManager.enterTerminalState();
                     server.stopWithTimeout(10, TimeUnit.SECONDS);
                 });
 
