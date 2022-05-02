@@ -14,12 +14,12 @@ import io.deephaven.time.DateTime;
 
 import java.io.IOException;
 
-public class BarragePerformanceLogLogger
-        extends TableLoggerImpl2<BarragePerformanceLogLogger.ISetter> {
+public class BarrageSubscriptionPerformanceLogger
+        extends TableLoggerImpl2<BarrageSubscriptionPerformanceLogger.ISetter> {
 
-    private static final String TABLE_NAME = "BarragePerformanceLog";
+    private static final String TABLE_NAME = "BarrageSubscriptionPerformanceLog";
 
-    public BarragePerformanceLogLogger() {
+    public BarrageSubscriptionPerformanceLogger() {
         super(TABLE_NAME);
     }
 

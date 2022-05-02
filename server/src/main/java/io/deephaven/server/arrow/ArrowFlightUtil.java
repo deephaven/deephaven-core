@@ -36,7 +36,6 @@ import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.barrage.BarrageStreamGenerator;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -468,12 +467,6 @@ public class ArrowFlightUtil {
         private class SnapshotRequestHandler
                 implements Handler {
 
-            private final DateTime requestTm = DateTime.now();
-            private String tableId;
-            private String tableKey;
-            private long queueTm;
-            private long snapshotTm;
-
             public SnapshotRequestHandler() {}
 
             @Override
@@ -492,21 +485,18 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<BaseTable> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
+                    final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                            new BarragePerformanceLog.SnapshotMetricsHelper();
+
                     final long queueStartTm = System.nanoTime();
                     session.nonExport()
                             .require(parent)
                             .onError(listener)
                             .submit(() -> {
-                                queueTm = System.nanoTime() - queueStartTm;
+                                metrics.queueNanos = System.nanoTime() - queueStartTm;
                                 final BaseTable table = parent.get();
-                                tableId = Integer.toHexString(System.identityHashCode(table));
-
-                                final Object tableKey = table.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
-                                if (tableKey instanceof String) {
-                                    this.tableKey = (String) tableKey;
-                                } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
-                                    this.tableKey = table.getDescription();
-                                }
+                                metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                                metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                                 // Send Schema wrapped in Message
                                 final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -546,12 +536,11 @@ public class ArrowFlightUtil {
                                     msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
                                             columns, viewport, null);
                                 }
-                                snapshotTm = System.nanoTime() - snapshotStartTm;
+                                metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg =
-                                        new BarrageStreamGenerator(msg, this::flushMetrics);
+                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
                                         final RowSet keySpaceViewport =
                                                 hasViewport
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
@@ -569,19 +558,6 @@ public class ArrowFlightUtil {
             @Override
             public void close() {
                 // no work to do for DoGetRequest close
-            }
-
-            private void flushMetrics(long bytesWritten, long writeTm) {
-                if (tableKey == null) {
-                    // metrics for this request are not to be reported
-                    return;
-                }
-
-                try {
-                    BarragePerformanceLog.getInstance().getStaticLogger()
-                            .log(tableId, tableKey, requestTm, queueTm, snapshotTm, writeTm, bytesWritten);
-                } catch (IOException ignored) {
-                }
             }
         }
 

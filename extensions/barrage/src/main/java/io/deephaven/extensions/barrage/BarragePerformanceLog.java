@@ -5,11 +5,16 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.DateTime;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
 
 /**
  * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.enableAll} configuration property, or
@@ -42,34 +47,80 @@ public class BarragePerformanceLog {
         return INSTANCE;
     }
 
-    private final MemoryTableLogger<BarragePerformanceLogLogger> barragePerformanceLogger;
-    private final MemoryTableLogger<BarrageStaticPerformanceLogLogger> barrageStaticPerformanceLogger;
+    /**
+     * Return the performance key for the provided table.
+     *
+     * @param table the table that will be logged
+     * @return the table key or null if no entry should not be logged
+     */
+    @Nullable
+    public static String getKeyFor(Table table) {
+        final Object tableKey = table.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+
+        if (tableKey instanceof String) {
+            return (String) tableKey;
+        } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
+            return table.getDescription();
+        }
+
+        return null;
+    }
+
+    private final MemoryTableLogger<BarrageSubscriptionPerformanceLogger> barrageSubscriptionPerformanceLogger;
+    private final MemoryTableLogger<BarrageSnapshotPerformanceLogger> barrageSnapshotPerformanceLogger;
 
     private BarragePerformanceLog() {
         final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
-        barragePerformanceLogger = new MemoryTableLogger<>(
-                log, new BarragePerformanceLogLogger(), BarragePerformanceLogLogger.getTableDefinition());
-        barragePerformanceLogger.getQueryTable().setAttribute(
-                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarragePerformanceLogLogger.getDefaultTableName());
-        barrageStaticPerformanceLogger = new MemoryTableLogger<>(
-                log, new BarrageStaticPerformanceLogLogger(), BarrageStaticPerformanceLogLogger.getTableDefinition());
-        barrageStaticPerformanceLogger.getQueryTable().setAttribute(
-                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageStaticPerformanceLogLogger.getDefaultTableName());
+        barrageSubscriptionPerformanceLogger = new MemoryTableLogger<>(
+                log, new BarrageSubscriptionPerformanceLogger(),
+                BarrageSubscriptionPerformanceLogger.getTableDefinition());
+        barrageSubscriptionPerformanceLogger.getQueryTable().setAttribute(
+                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
+                BarrageSubscriptionPerformanceLogger.getDefaultTableName());
+        barrageSnapshotPerformanceLogger = new MemoryTableLogger<>(
+                log, new BarrageSnapshotPerformanceLogger(), BarrageSnapshotPerformanceLogger.getTableDefinition());
+        barrageSnapshotPerformanceLogger.getQueryTable().setAttribute(
+                BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageSnapshotPerformanceLogger.getDefaultTableName());
     }
 
-    public QueryTable getTable() {
-        return barragePerformanceLogger.getQueryTable();
+    public QueryTable getSubscriptionTable() {
+        return barrageSubscriptionPerformanceLogger.getQueryTable();
     }
 
-    public BarragePerformanceLogLogger getLogger() {
-        return barragePerformanceLogger.getTableLogger();
+    public BarrageSubscriptionPerformanceLogger getSubscriptionLogger() {
+        return barrageSubscriptionPerformanceLogger.getTableLogger();
     }
 
-    public QueryTable getStaticTable() {
-        return barrageStaticPerformanceLogger.getQueryTable();
+    public QueryTable getSnapshotTable() {
+        return barrageSnapshotPerformanceLogger.getQueryTable();
     }
 
-    public BarrageStaticPerformanceLogLogger getStaticLogger() {
-        return barrageStaticPerformanceLogger.getTableLogger();
+    public BarrageSnapshotPerformanceLogger getSnapshotLogger() {
+        return barrageSnapshotPerformanceLogger.getTableLogger();
+    }
+
+    public interface WriteMetricsConsumer {
+        void onWrite(long bytes, long cpuNanos);
+    }
+
+    public static class SnapshotMetricsHelper implements WriteMetricsConsumer {
+        private final DateTime requestTm = DateTime.now();
+        public String tableId;
+        public String tableKey;
+        public long queueNanos;
+        public long snapshotNanos;
+
+        public void onWrite(long bytesWritten, long writeNanos) {
+            if (tableKey == null) {
+                // metrics for this request are not to be reported
+                return;
+            }
+
+            try {
+                BarragePerformanceLog.getInstance().getSnapshotLogger()
+                        .log(tableId, tableKey, requestTm, queueNanos, snapshotNanos, writeNanos, bytesWritten);
+            } catch (IOException ignored) {
+            }
+        }
     }
 }

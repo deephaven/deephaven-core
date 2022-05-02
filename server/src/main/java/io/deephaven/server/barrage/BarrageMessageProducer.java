@@ -34,7 +34,7 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarragePerformanceLogLogger;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -115,9 +115,6 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * @param <MessageView> The sub-view type that the listener expects to receive.
      */
     public interface StreamGenerator<MessageView> extends SafeCloseable {
-        interface WriteMetricsConsumer {
-            void onWrite(long bytes, long cpuNanos);
-        }
 
         interface Factory<MessageView> {
             /**
@@ -126,7 +123,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
              * @param message the message that contains the update that we would like to propagate
              * @param metricsConsumer a method that can be used to record write metrics
              */
-            StreamGenerator<MessageView> newGenerator(BarrageMessage message, WriteMetricsConsumer metricsConsumer);
+            StreamGenerator<MessageView> newGenerator(
+                    BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
 
             /**
              * Create a MessageView of the Schema to send as the initial message to a new subscriber.
@@ -386,16 +384,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.parent = parent;
 
-        final Object tableKey = parent.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
-        if (scheduler.inTestMode()) {
+        final String tableKey = BarragePerformanceLog.getKeyFor(parent);
+        if (scheduler.inTestMode() || tableKey == null) {
             // When testing do not schedule statistics, as the scheduler will never empty its work queue.
             stats = null;
-        } else if (tableKey instanceof String) {
-            stats = new Stats((String) tableKey);
-        } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
-            stats = new Stats(parent.getDescription());
         } else {
-            stats = null;
+            stats = new Stats(tableKey);
         }
 
         this.propagationRowSet = RowSetFactory.empty();
@@ -2166,7 +2160,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     now.getMillis() + BarragePerformanceLog.CYCLE_DURATION_MILLIS);
             scheduler.runAtTime(nextRun, this);
 
-            final BarragePerformanceLogLogger logger = BarragePerformanceLog.getInstance().getLogger();
+            final BarrageSubscriptionPerformanceLogger logger =
+                    BarragePerformanceLog.getInstance().getSubscriptionLogger();
             try {
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (logger) {
@@ -2184,7 +2179,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
         }
 
-        private void flush(final DateTime now, final BarragePerformanceLogLogger logger, final Histogram hist,
+        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
                 final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;
