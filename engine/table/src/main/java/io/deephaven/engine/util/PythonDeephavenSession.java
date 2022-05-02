@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -193,7 +194,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     @Override
     public Map<String, Object> getVariables() {
-        return Collections.unmodifiableMap(scope.getEntriesMap());
+        final Map<String, Object> outMap = new LinkedHashMap<>();
+        scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
+        return outMap;
     }
 
     protected static class PythonSnapshot implements Snapshot, SafeCloseable {
@@ -242,6 +245,13 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             }
             return diff;
         }
+    }
+
+    private Object maybeUnwrap(Object o) {
+        if (o instanceof PyObject) {
+            return maybeUnwrap((PyObject) o);
+        }
+        return o;
     }
 
     private Object maybeUnwrap(PyObject o) {
