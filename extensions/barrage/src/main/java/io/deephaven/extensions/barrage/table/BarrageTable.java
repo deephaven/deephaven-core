@@ -11,11 +11,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -39,6 +36,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,6 +104,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     private boolean serverReverseViewport;
     private BitSet serverColumns;
 
+    /** the size of the initial viewport requested from the server (-1 implies full subscription) */
+    private long initialSnapshotViewportRowCount;
+    /** have we completed the initial snapshot */
+    private boolean initialSnapshotReceived;
 
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
@@ -134,7 +136,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
             final Map<String, String> attributes,
-            final boolean isViewPort) {
+            final long initialViewPortRows) {
         super(RowSetFactory.empty().toTracking(), columns);
         attributes.forEach(this::setAttribute);
 
@@ -158,11 +160,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         this.refreshEntry = UpdatePerformanceTracker.getInstance().getEntry(
                 "BarrageTable(" + System.identityHashCode(this) + (stats != null ? ") " + stats.tableKey : ")"));
 
-        if (isViewPort) {
-            serverViewport = RowSetFactory.empty();
-        } else {
+        if (initialViewPortRows == -1) {
             serverViewport = null;
+        } else {
+            serverViewport = RowSetFactory.empty();
         }
+        this.initialSnapshotViewportRowCount = initialViewPortRows;
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
@@ -215,6 +218,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         return serverColumns;
     }
 
+    public void setInitialSnapshotViewportRowCount(long rowCount) {
+        initialSnapshotViewportRowCount = rowCount;
+    }
+
     /**
      * Invoke sealTable to prevent further updates from being processed and to mark this source table as static.
      *
@@ -230,6 +237,42 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         sealed = true;
         this.onSealRunnable = onSealRunnable;
         this.onSealFailure = onSealFailure;
+
+        // remove all unpopulated rows
+        if (this.serverViewport != null) {
+            WritableRowSet currentRowSet = getRowSet().writableCast();
+            try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
+                currentRowSet.retain(populated);
+            }
+        }
+
+        // flatten the result
+        if (!isFlat()) {
+            MutableLong idx = new MutableLong(0L);
+            getRowSet().forAllRowKeyRanges( (s,e) -> {
+                long size = e - s + 1;
+                if (idx.longValue() == s) {
+                    // whole range is already flattened
+                    idx.add(size);
+                } else {
+                    // rewrite the rowRedirection
+                    for (long i = s; i <= e; i++) {
+                        this.rowRedirection.putVoid(idx.longValue(), rowRedirection.get(i));
+                        // remove if outside the final range (0 to size() -1)
+                        if (i > getRowSet().size()) {
+                            this.rowRedirection.removeVoid(i);
+                        }
+                        idx.add(1);
+                    }
+                }
+            });
+            // clear and regenerate a flattened rowset
+            WritableRowSet currentRowSet = getRowSet().writableCast();
+            long size = currentRowSet.size();
+            currentRowSet.clear();
+            currentRowSet.insertRange(0, size - 1);
+        }
+
         doWakeup();
     }
 
@@ -325,8 +368,13 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
                 if (mightBeInitialSnapshot) {
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
-                    // we know the initial snapshot size and can resize immediately
-                    capacity = update.rowsIncluded.size();
+                    // we know the initial snapshot size and resize immediately
+                    if (this.initialSnapshotViewportRowCount == -1) {
+                        // might as well reserve it all now
+                        capacity = update.rowsAdded.size();
+                    } else {
+                        capacity = Math.max(this.initialSnapshotViewportRowCount, update.rowsIncluded.size());
+                    }
                     for (final WritableColumnSource<?> source : destSources) {
                         source.ensureCapacity(capacity);
                     }
@@ -426,10 +474,32 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
             }
 
-            if (update.isSnapshot && !mightBeInitialSnapshot) {
-                // This applies to viewport or subscribed column changes; after the first snapshot later snapshots can't
-                // change the RowSet. In this case, we apply the data from the snapshot to local column sources but
-                // otherwise cannot communicate this change to listeners.
+            // test whether we have received the initial snapshot completely
+            if (update.isSnapshot && !initialSnapshotReceived) {
+                boolean isComplete = false;
+
+                if (initialSnapshotViewportRowCount == -1) {
+                    isComplete = serverViewport == null;
+                } else {
+                    isComplete = serverViewport != null && serverViewport.size() >= initialSnapshotViewportRowCount;
+                }
+
+                if (isComplete) {
+                    // create a custom message that wraps up the current rows from the set into a single update with
+                    // no mods/shifts/removes
+                    initialSnapshotReceived = true;
+
+                    final TableUpdate downstream = new TableUpdateImpl(
+                            this.getRowSet().copy(), RowSetFactory.empty(), RowSetFactory.empty(),
+                            RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                    return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
+                            : coalescer.update(downstream);
+
+                }
+            }
+
+            // block all messages from propagation until the full snapshot is received
+            if (!initialSnapshotReceived) {
                 return coalescer;
             }
 
@@ -628,7 +698,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      * @param executorService an executor service used to flush stats
      * @param tableDefinition the table definition
      * @param attributes Key-Value pairs of attributes to forward to the QueryTable's metadata
-     * @param isViewPort true if the table will be a viewport.
+     * @param initialViewPortRows the number of rows in the intial viewport (-1 if the table will be a full sub)
      *
      * @return a properly initialized {@link BarrageTable}
      */
@@ -637,9 +707,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             @Nullable final ScheduledExecutorService executorService,
             final TableDefinition tableDefinition,
             final Map<String, String> attributes,
-            final boolean isViewPort) {
+            final long initialViewPortRows) {
         return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, executorService, tableDefinition,
-                attributes, isViewPort);
+                attributes, initialViewPortRows);
     }
 
     @VisibleForTesting
@@ -649,7 +719,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             @Nullable final ScheduledExecutorService executor,
             final TableDefinition tableDefinition,
             final Map<String, String> attributes,
-            final boolean isViewPort) {
+            final long initialViewPortRows) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
         final WritableRowRedirection rowRedirection =
@@ -658,7 +728,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 makeColumns(columns, writableSources, rowRedirection);
 
         final BarrageTable table = new BarrageTable(
-                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isViewPort);
+                registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, initialViewPortRows);
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.

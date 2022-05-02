@@ -55,11 +55,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private volatile Condition completedCondition;
     private volatile boolean completed = false;
+    private volatile long rowsReceived = 0L;
     private volatile Throwable exceptionWhileCompleting = null;
     private InstrumentedTableUpdateListener listener = null;
 
     private boolean subscribed = false;
     private volatile boolean connected = true;
+    private boolean performSnapshot = false;
 
     /**
      * Represents a BarrageSubscription.
@@ -80,7 +82,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
@@ -122,6 +124,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 if (!connected || listener == null) {
                     return;
                 }
+
+                rowsReceived += barrageMessage.rowsIncluded.size();
+
                 listener.handleBarrageMessage(barrageMessage);
             }
         }
@@ -149,6 +154,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     @Override
     public boolean isCompleted() {
         return completed;
+    }
+
+    @Override
+    public long getRowsReceived() {
+        return rowsReceived;
     }
 
     @Override
@@ -193,6 +203,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
             }
 
+            // update the viewport size for initial snapshot completion
+            resultTable.setInitialSnapshotViewportRows(viewport == null ? -1 : viewport.size());
+
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
                     .setAppMetadata(
@@ -216,22 +229,43 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
+                    boolean isComplete = false;
+
                     // test to see if the viewport matches the requested
                     if (viewport == null && resultTable.getServerViewport() == null) {
-                        completed = true;
+                        isComplete = true;
                     } else if (viewport != null && resultTable.getServerViewport() != null
                             && reverseViewport == resultTable.getServerReverseViewport()) {
-                        completed = viewport.subsetOf(resultTable.getServerViewport());
-                    } else {
-                        completed = false;
+                        isComplete = viewport.subsetOf(resultTable.getServerViewport());
                     }
 
-                    if (completed) {
-                        if (completedCondition != null) {
-                            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                    if (isComplete) {
+                        if (performSnapshot) {
+//                            // stop future updates
+//                            observer.onCompleted();
+
+                            resultTable.sealTable(() -> {
+                                // once sealed, notify the waiters
+                                completed = true;
+
+                                if (completedCondition != null) {
+                                    UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                                } else {
+                                    synchronized (BarrageSubscriptionImpl.this) {
+                                        BarrageSubscriptionImpl.this.notifyAll();
+                                    }
+                                }
+                            }, () -> {
+                                exceptionWhileCompleting = new Exception();
+                            });
                         } else {
-                            synchronized (BarrageSubscriptionImpl.this) {
-                                BarrageSubscriptionImpl.this.notifyAll();
+                            completed = true;
+                            if (completedCondition != null) {
+                                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+                            } else {
+                                synchronized (BarrageSubscriptionImpl.this) {
+                                    BarrageSubscriptionImpl.this.notifyAll();
+                                }
                             }
                         }
 
@@ -264,6 +298,35 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     @Override
+    public BarrageTable snapshotEntireTable() throws InterruptedException {
+        return snapshotEntireTable(true);
+    }
+
+    @Override
+    public BarrageTable snapshotEntireTable(boolean blockUntilComplete) throws InterruptedException {
+        return snapshotPartialTable(null, null, false, blockUntilComplete);
+    }
+
+    @Override
+    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns) throws InterruptedException {
+        return snapshotPartialTable(viewport, columns, false, true);
+    }
+
+    @Override
+    public BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport)
+            throws InterruptedException {
+        return snapshotPartialTable(viewport, columns, reverseViewport, true);
+    }
+
+    @Override
+    public synchronized BarrageTable snapshotPartialTable(RowSet viewport, BitSet columns, boolean reverseViewport,
+                                                  boolean blockUntilComplete) throws InterruptedException {
+        performSnapshot = true;
+
+        return partialTable(viewport, columns, reverseViewport, blockUntilComplete);
+    }
+
+    @Override
     protected void destroy() {
         super.destroy();
         close();
@@ -282,7 +345,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
-        observer.onCompleted();
+        try {
+            observer.onCompleted();
+        } catch (Exception ex) {
+            // ignore exceptions here
+        }
         cleanup();
     }
 

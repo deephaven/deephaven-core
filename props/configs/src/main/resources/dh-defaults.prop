@@ -50,3 +50,14 @@ server.timezone=America/New_York
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
 OperationInitializationThreadPool.threads=1
+
+BarrageMessageProducer.subscriptionGrowthEnabled=true
+#BarrageMessageProducer.targetSnapshotPercentage=0.1
+#BarrageMessageProducer.minSnapshotCellCount=5000
+#BarrageMessageProducer.maxSnapshotCellCount=10000000
+
+#BarrageStreamGenerator.batchSize=100000
+#BarrageStreamGenerator.maxOutboundMessageSize = 50000000
+
+#BarrageTableResolver.maxInboundMessageSize=2000000000
+

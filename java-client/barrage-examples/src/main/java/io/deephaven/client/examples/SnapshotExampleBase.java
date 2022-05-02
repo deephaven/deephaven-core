@@ -49,8 +49,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.entireTable();
 
+            System.out.println("Requesting all rows, all columns");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #2 - reading all columns, but only subset of rows starting with 0
@@ -61,8 +66,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final RowSet viewport = RowSetFactory.fromRange(0, 5); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
+            System.out.println("Requesting rows 0-5, all columns");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #3 - reading all columns, but only subset of rows starting at >0
@@ -73,8 +83,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final RowSet viewport = RowSetFactory.fromRange(6, 10); // range inclusive
             final BarrageTable table = snapshot.partialTable(viewport, null);
 
+            System.out.println("Requesting rows 6-10, all columns");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #4 - reading some columns but all rows
@@ -87,8 +102,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final BarrageTable table = snapshot.partialTable(null, columns);
 
+            System.out.println("Requesting all rows, columns 0-1");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #5 - reading some columns and only some rows
@@ -102,8 +122,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final BarrageTable table = snapshot.partialTable(viewport, columns);
 
+            System.out.println("Requesting rows 100-150, columns 0-1");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #6 - reverse viewport, all columns
@@ -115,8 +140,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.partialTable(viewport, null, true);
 
+            System.out.println("Requesting rows from end 0-4, all columns");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         // example #7 - reverse viewport, some columns
@@ -131,8 +161,13 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             // expect this to block until all reading complete
             final BarrageTable table = snapshot.partialTable(viewport, columns, true);
 
+            System.out.println("Requesting rows from end 0-4, columns 0-1");
             System.out.println("Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
             TableTools.show(table);
+            System.out.println("");
+            System.out.println("");
+
+            table.close();
         }
 
         System.out.println("End of Snapshot examples");

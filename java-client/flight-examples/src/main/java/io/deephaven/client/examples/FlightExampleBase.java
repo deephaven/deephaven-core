@@ -41,6 +41,8 @@ abstract class FlightExampleBase implements Callable<Void> {
         try {
             try {
                 execute(flightSession);
+            } catch (Exception ex) {
+                System.out.println();
             } finally {
                 flightSession.close();
             }

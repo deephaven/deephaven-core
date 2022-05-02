@@ -335,7 +335,7 @@ public class BarrageStreamGenerator implements
             } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
                 addRowKeys = generator.rowsAdded.original.copy();
-                addRowOffsets = generator.rowsIncluded.original.invert(generator.rowsAdded.original);
+                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else {
                 addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
@@ -451,6 +451,7 @@ public class BarrageStreamGenerator implements
         public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final long numAddRows;
+        public final RowSet addRowKeys;
         public final RowSet addRowOffsets;
 
         public SnapshotView(final BarrageStreamGenerator generator,
@@ -469,14 +470,13 @@ public class BarrageStreamGenerator implements
 
             // precompute add row offsets
             if (keyspaceViewport != null) {
-                try (WritableRowSet intersect = keyspaceViewport.intersect(generator.rowsIncluded.original)) {
-                    addRowOffsets = generator.rowsIncluded.original.invert(intersect);
-                }
+                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
+                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
             } else {
+                addRowKeys = generator.rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
             }
 
-            // require a batch to at least send the metadata
             numAddRows = addRowOffsets.size();
         }
 
@@ -500,6 +500,7 @@ public class BarrageStreamGenerator implements
             }
 
             addRowOffsets.close();
+            addRowKeys.close();
         }
 
         private int batchSize() {
@@ -964,8 +965,9 @@ public class BarrageStreamGenerator implements
 
         // Added Chunk Data:
         int addedRowsIncludedOffset = 0;
-        if (view.isViewport()) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.keyspaceViewport, metadata);
+        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
+            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
         }
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);

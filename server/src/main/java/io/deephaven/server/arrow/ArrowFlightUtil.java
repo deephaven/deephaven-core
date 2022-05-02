@@ -17,11 +17,13 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -56,6 +58,9 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
+import static io.deephaven.server.arrow.FlightServiceGrpcImpl.DEFAULT_SNAPSHOT_DESER_OPTIONS;
+import static io.deephaven.server.barrage.BarrageMessageProducer.*;
+import static io.deephaven.server.barrage.BarrageMessageProducer.TARGET_SNAPSHOT_PERCENTAGE;
 
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
@@ -64,6 +69,154 @@ public class ArrowFlightUtil {
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
+
+    public static void DoGetCustom(@Nullable final ScheduledExecutorService executorService,
+                                   final SessionState session,
+                                   final TicketRouter ticketRouter,
+                                   final Flight.Ticket request,
+                                   final StreamObserver<InputStream> observer) {
+
+        final SessionState.ExportObject<BaseTable> export =
+                ticketRouter.resolve(session, request, "request");
+
+        session.nonExport()
+                .require(export)
+                .onError(observer)
+                .submit(() -> {
+                    final BaseTable table = export.get();
+
+                    // create an adapter for the response observer
+                    final StreamObserver<BarrageStreamGenerator.View> listener =
+                            ArrowModule.provideListenerAdapter().adapt(observer);
+
+                    // Send Schema wrapped in Message
+                    final FlatBufferBuilder builder = new FlatBufferBuilder();
+                    final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
+                            table.getAttributes());
+                    builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
+                            org.apache.arrow.flatbuf.MessageHeader.Schema));
+                    final ByteBuffer serializedMessage = builder.dataBuffer();
+
+                    // leverage the stream generator SchemaView constructor
+                    final BarrageStreamGenerator.SchemaView schemaView =
+                            new BarrageStreamGenerator.SchemaView(serializedMessage);
+
+                    // push the schema to the listener
+                    listener.onNext(schemaView);
+
+                    // shared code between `DoGet` and `BarrageSnapshotRequest`
+                    createAndSendSnapshot(table, null, null, false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener);
+
+                    listener.onCompleted();
+                });
+    }
+
+    private static void createAndSendSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener) {
+        // if the table is static or append-only and a full snapshot is requested, we can make and send multiple
+        // snapshots to save memory and operate  more efficiently
+
+        if (viewport == null && (!table.isRefreshing() || table.isAddOnly())) {
+            // start with small value and grow
+            long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
+            double snapshotNanosPerCell = 0.0;
+            long startKey = 0L;
+
+            final long columnCount = Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().length);
+
+            boolean isComplete = false;
+
+            try (final WritableRowSet snapshotViewport = RowSetFactory.empty()) {
+                while (!isComplete) {
+                    // compute the next range to snapshot
+                    final long cellCount =
+                            Math.max(MIN_SNAPSHOT_CELL_COUNT,
+                                    Math.min(snapshotTargetCellCount, MAX_SNAPSHOT_CELL_COUNT));
+                    long endKey = startKey + (cellCount / columnCount) - 1;
+
+                    // if we are approaching the end of the table, request all remaining rows
+                    if (endKey > table.size()) {
+                        endKey = Long.MAX_VALUE - 1;
+                        isComplete = true;
+                    }
+
+                    try (final RowSet snapshotPartialViewport =
+                                 RowSetFactory.fromRange(startKey, endKey)) {
+                        snapshotViewport.insert(snapshotPartialViewport);
+
+                        // grab the snapshot and measure elapsed time for next projections
+                        long start = System.nanoTime();
+                        final BarrageMessage msg =
+                                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                                        columns, snapshotPartialViewport, null);
+                        msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data for DoGet
+                        long elapsed = System.nanoTime() - start;
+
+                        // send out the data. Note that although a `BarrageUpdateMetaData` object will
+                        // be provided with each unique snapshot, vanilla Flight clients will ignore
+                        // these and see only an incoming stream of batches
+                        try (final BarrageStreamGenerator bsg =
+                                     new BarrageStreamGenerator(msg, (bytes, nanos) -> {
+                                     })) {
+                            // use `isComplete` to inform barrage clients when the full snapshot has
+                            // been provided
+                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                                    isComplete ? null : snapshotViewport, false,
+                                    msg.rowsIncluded, columns));
+                        }
+
+                        if (msg.rowsIncluded.size() > 0) {
+                            // very simplistic logic to take the last snapshot and extrapolate max
+                            // number of rows that will not exceed the target UGP processing time
+                            // percentage
+                            long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
+                                    * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis()
+                                    * 1000000);
+
+                            long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
+
+                            // apply an exponential moving average to filter the data
+                            if (snapshotNanosPerCell == 0) {
+                                snapshotNanosPerCell = nanosPerCell; // initialize to first value
+                            } else {
+                                // EMA smoothing factor is 0.1 (N = 10)
+                                snapshotNanosPerCell =
+                                        (snapshotNanosPerCell * 0.9) + (nanosPerCell * 0.1);
+                            }
+
+                            snapshotTargetCellCount =
+                                    (long) (targetNanos / Math.max(1, snapshotNanosPerCell));
+                        }
+                    }
+                    // increment the starting key
+                    startKey = endKey + 1;
+                }
+            }
+        } else {
+            // get ourselves some data (reversing viewport as instructed)
+            final BarrageMessage msg;
+            if (reverseViewport) {
+                msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                        columns, null, viewport);
+            } else {
+                msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
+                        columns, viewport, null);
+            }
+            msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
+
+            // translate the viewport to keyspace and make the call
+            try (final BarrageStreamGenerator bsg =
+                         new BarrageStreamGenerator(msg, (bytes, nanos) -> {
+                         });
+                 final RowSet keySpaceViewport =
+                         viewport != null
+                                 ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                 : null) {
+                listener.onNext(
+                        bsg.getSnapshotView(snapshotRequestOptions, viewport,
+                                reverseViewport, keySpaceViewport, columns));
+            }
+        }
+    }
 
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
@@ -267,7 +420,7 @@ public class ArrowFlightUtil {
             }
 
             final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
-            resultTable = BarrageTable.make(executorService, result.tableDef, result.attributes, false);
+            resultTable = BarrageTable.make(executorService, result.tableDef, result.attributes, -1);
             columnConversionFactors = result.conversionFactors;
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
@@ -516,29 +669,8 @@ public class ArrowFlightUtil {
 
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
-                                // get ourselves some data (reversing viewport as instructed)
-                                final BarrageMessage msg;
-                                if (reverseViewport) {
-                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
-                                            columns, null, viewport);
-                                } else {
-                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
-                                            columns, viewport, null);
-                                }
-                                msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
-
-                                // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg =
-                                        new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                                        });
-                                        final RowSet keySpaceViewport =
-                                                hasViewport
-                                                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
-                                                        : null) {
-                                    listener.onNext(
-                                            bsg.getSnapshotView(snapshotOptAdapter.adapt(snapshotRequest), viewport,
-                                                    reverseViewport, keySpaceViewport, columns));
-                                }
+                                // leverage common code for `DoGet` and `BarrageSnapshotOptions`
+                                createAndSendSnapshot(table, columns, viewport, reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener);
 
                                 listener.onCompleted();
                             });
@@ -708,6 +840,8 @@ public class ArrowFlightUtil {
                 if (preExportSubscriptions != null) {
                     preExportSubscriptions = null;
                 }
+
+                listener.onCompleted();
             }
         }
 

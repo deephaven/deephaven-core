@@ -14,6 +14,8 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -52,9 +54,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private volatile BitSet expectedColumns;
 
-    private volatile Condition sealedCondition;
-    private volatile boolean sealed = false;
-    private volatile Throwable exceptionWhileSealing = null;
+    private volatile Condition completedCondition;
+    private volatile boolean completed = false;
+    private volatile Throwable exceptionWhileCompleting = null;
 
     private volatile boolean connected = true;
 
@@ -79,7 +81,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         final TableDefinition tableDefinition = schema.tableDef;
-        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, false);
+        resultTable = BarrageTable.make(executorService, tableDefinition, schema.attributes, -1);
         resultTable.addParentReference(this);
 
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
@@ -122,12 +124,13 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     return;
                 }
 
+                final long offset = resultTable.size();
                 final long resultSize = barrageMessage.rowsIncluded.size();
 
                 // override server-supplied data and regenerate flattened rowsets
                 barrageMessage.rowsAdded.close();
                 barrageMessage.rowsIncluded.close();
-                barrageMessage.rowsAdded = RowSetFactory.flat(resultSize);
+                barrageMessage.rowsAdded = RowSetFactory.fromRange(offset, offset + resultSize - 1);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
 
                 listener.handleBarrageMessage(barrageMessage);
@@ -181,7 +184,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         prevUsed = true;
 
         if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-            sealedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+            completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
         }
 
         if (!connected) {
@@ -191,26 +194,29 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         // store this for streamreader parser
         expectedColumns = columns;
 
+        // update the viewport size for initial snapshot completion
+        resultTable.setInitialSnapshotViewportRows(viewport == null ? -1 : viewport.size());
+
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
                 .build());
 
-        observer.onCompleted();
-
-        while (!sealed && exceptionWhileSealing == null) {
+        while (!completed && exceptionWhileCompleting == null) {
             // handle the condition where this function may have the exclusive lock
-            if (sealedCondition != null) {
-                sealedCondition.await();
+            if (completedCondition != null) {
+                completedCondition.await();
             } else {
                 wait(); // barragesnapshotimpl lock
             }
         }
 
-        if (exceptionWhileSealing == null) {
+        observer.onCompleted();
+
+        if (exceptionWhileCompleting == null) {
             return resultTable;
         } else {
-            throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileSealing);
+            throw new UncheckedDeephavenException("Error while handling snapshot:", exceptionWhileCompleting);
         }
     }
 
@@ -226,18 +232,18 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         resultTable.sealTable(() -> {
-            sealed = true;
-            if (sealedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            completed = true;
+            if (completedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
             } else {
                 synchronized (BarrageSnapshotImpl.this) {
                     BarrageSnapshotImpl.this.notifyAll();
                 }
             }
         }, () -> {
-            exceptionWhileSealing = new Exception();
-            if (sealedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(sealedCondition);
+            exceptionWhileCompleting = new Exception();
+            if (completedCondition != null) {
+                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
             } else {
                 synchronized (BarrageSnapshotImpl.this) {
                     BarrageSnapshotImpl.this.notifyAll();
