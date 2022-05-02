@@ -711,9 +711,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             try {
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (logger) {
-                    flush(now, logger, deserialize, "DeserializationTimeMs");
-                    flush(now, logger, processUpdate, "ProcessUpdateTimeMs");
-                    flush(now, logger, refresh, "RefreshTimeMs");
+                    flush(now, logger, deserialize, "DeserializationMillis");
+                    flush(now, logger, processUpdate, "ProcessUpdateMillis");
+                    flush(now, logger, refresh, "RefreshMillis");
                 }
             } catch (IOException ioe) {
                 beginLog(LogLevel.ERROR).append("Unexpected exception while flushing barrage stats: ")

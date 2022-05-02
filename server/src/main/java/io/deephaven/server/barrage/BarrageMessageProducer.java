@@ -2165,13 +2165,13 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             try {
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (logger) {
-                    flush(now, logger, enqueue, "EnqueueTimeMs");
-                    flush(now, logger, aggregate, "AggregateTimeMs");
-                    flush(now, logger, propagate, "PropagateTimeMs");
-                    flush(now, logger, snapshot, "SnapshotTimeMs");
-                    flush(now, logger, updateJob, "UpdateJobTimeMs");
-                    flush(now, logger, writeTime, "WriteTimeMs");
-                    flush(now, logger, writeBits, "WriteMb");
+                    flush(now, logger, enqueue, "EnqueueMillis");
+                    flush(now, logger, aggregate, "AggregateMillis");
+                    flush(now, logger, propagate, "PropagateMillis");
+                    flush(now, logger, snapshot, "SnapshotMillis");
+                    flush(now, logger, updateJob, "UpdateJobMillis");
+                    flush(now, logger, writeTime, "WriteMillis");
+                    flush(now, logger, writeBits, "WriteMegabits");
                 }
             } catch (IOException ioe) {
                 log.error().append(logPrefix).append("Unexpected exception while flushing barrage stats: ")
