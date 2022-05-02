@@ -9,6 +9,7 @@ import com.google.rpc.Code;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -153,11 +154,18 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionState.ExportObject<BaseTable> export =
                     ticketRouter.resolve(session, request, "request");
 
+            final long queueStartTm = System.nanoTime();
+            final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                    new BarragePerformanceLog.SnapshotMetricsHelper();
+
             session.nonExport()
                     .require(export)
                     .onError(responseObserver)
                     .submit(() -> {
+                        metrics.queueNanos = System.nanoTime() - queueStartTm;
                         final BaseTable table = export.get();
+                        metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                        metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                         // create an adapter for the response observer
                         final StreamObserver<BarrageStreamGenerator.View> listener =
@@ -179,12 +187,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         listener.onNext(schemaView);
 
                         // get ourselves some data!
+                        final long snapshotStartTm = System.nanoTime();
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
                         msg.modColumnData = ZERO_MOD_COLUMNS; // actually no mod column data for DoGet
+                        metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
 
                         // translate the viewport to keyspace and make the call
-                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                        })) {
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics)) {
                             listener.onNext(bsg.getSnapshotView(DEFAULT_SNAPSHOT_DESER_OPTIONS));
                         }
 

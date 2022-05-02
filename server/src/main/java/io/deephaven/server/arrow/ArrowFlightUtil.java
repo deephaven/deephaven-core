@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -484,11 +485,18 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<BaseTable> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
+                    final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                            new BarragePerformanceLog.SnapshotMetricsHelper();
+
+                    final long queueStartTm = System.nanoTime();
                     session.nonExport()
                             .require(parent)
                             .onError(listener)
                             .submit(() -> {
+                                metrics.queueNanos = System.nanoTime() - queueStartTm;
                                 final BaseTable table = parent.get();
+                                metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                                metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                                 // Send Schema wrapped in Message
                                 final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -519,6 +527,7 @@ public class ArrowFlightUtil {
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
                                 // get ourselves some data (reversing viewport as instructed)
+                                final long snapshotStartTm = System.nanoTime();
                                 final BarrageMessage msg;
                                 if (reverseViewport) {
                                     msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
@@ -527,12 +536,11 @@ public class ArrowFlightUtil {
                                     msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
                                             columns, viewport, null);
                                 }
+                                metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
                                 msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
                                 // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg =
-                                        new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                                        });
+                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
                                         final RowSet keySpaceViewport =
                                                 hasViewport
                                                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
