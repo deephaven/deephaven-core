@@ -204,7 +204,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             }
 
             // update the viewport size for initial snapshot completion
-            resultTable.setInitialSnapshotViewportRows(viewport == null ? -1 : viewport.size());
+            resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
 
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()

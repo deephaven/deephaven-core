@@ -14,8 +14,6 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -195,7 +193,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         expectedColumns = columns;
 
         // update the viewport size for initial snapshot completion
-        resultTable.setInitialSnapshotViewportRows(viewport == null ? -1 : viewport.size());
+        resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
