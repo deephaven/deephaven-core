@@ -241,10 +241,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
                     if (isComplete) {
                         if (performSnapshot) {
-//                            // stop future updates
-//                            observer.onCompleted();
-
                             resultTable.sealTable(() -> {
+                                // signify that we are closing the connection
+                                observer.onCompleted();
+
                                 // once sealed, notify the waiters
                                 completed = true;
 
@@ -336,7 +336,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         if (!connected) {
             return;
         }
-        log.error().append(this).append(": unexpectedly closed by other host").endl();
+        // log an error only when doing a true subscription (not snapshot)
+        if (!performSnapshot) {
+            log.error().append(this).append(": unexpectedly closed by other host").endl();
+        }
         cleanup();
     }
 

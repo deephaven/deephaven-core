@@ -234,9 +234,18 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         this.onSealRunnable = onSealRunnable;
         this.onSealFailure = onSealFailure;
 
+        doWakeup();
+    }
+    /**
+     * After invoking `sealTable()` can call this to flatten the internal rowset and discard unpopulated rows
+     */
+    public synchronized void flattenInPlace() {
+        if (!sealed) {
+            throw new UnsupportedOperationException("BarrageTable must be sealed before calling flattenInPlace()");
+        }
         // remove all unpopulated rows
+        WritableRowSet currentRowSet = getRowSet().writableCast();
         if (this.serverViewport != null) {
-            WritableRowSet currentRowSet = getRowSet().writableCast();
             try (final RowSet populated = currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                 currentRowSet.retain(populated);
             }
@@ -245,7 +254,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         // flatten the result
         if (!isFlat()) {
             MutableLong idx = new MutableLong(0L);
-            getRowSet().forAllRowKeyRanges( (s,e) -> {
+            currentRowSet.forAllRowKeyRanges( (s,e) -> {
                 long size = e - s + 1;
                 if (idx.longValue() == s) {
                     // whole range is already flattened
@@ -263,13 +272,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 }
             });
             // clear and regenerate a flattened rowset
-            WritableRowSet currentRowSet = getRowSet().writableCast();
             long size = currentRowSet.size();
             currentRowSet.clear();
             currentRowSet.insertRange(0, size - 1);
         }
-
-        doWakeup();
     }
 
     @Override
@@ -631,6 +637,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         if (sealed) {
+            // flatten the table
+            flattenInPlace();
             if (onSealRunnable != null) {
                 onSealRunnable.run();
             }

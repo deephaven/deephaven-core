@@ -22,6 +22,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.tablelogger.Row;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -131,6 +132,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 barrageMessage.rowsIncluded.close();
                 barrageMessage.rowsAdded = RowSetFactory.fromRange(rowsReceived, rowsReceived + resultSize - 1);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
+                try (final RowSet ignored = barrageMessage.snapshotRowSet) {
+                    barrageMessage.snapshotRowSet = null;
+                }
 
                 rowsReceived += resultSize;
 
