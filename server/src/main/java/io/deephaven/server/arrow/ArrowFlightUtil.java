@@ -688,29 +688,6 @@ public class ArrowFlightUtil {
 
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
                                 createAndSendSnapshot(table, columns, viewport, reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
-                                // get ourselves some data (reversing viewport as instructed)
-                                final long snapshotStartTm = System.nanoTime();
-                                final BarrageMessage msg;
-                                if (reverseViewport) {
-                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
-                                            columns, null, viewport);
-                                } else {
-                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
-                                            columns, viewport, null);
-                                }
-                                metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
-                                msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
-
-                                // translate the viewport to keyspace and make the call
-                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
-                                        final RowSet keySpaceViewport =
-                                                hasViewport
-                                                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
-                                                        : null) {
-                                    listener.onNext(
-                                            bsg.getSnapshotView(snapshotOptAdapter.adapt(snapshotRequest), viewport,
-                                                    reverseViewport, keySpaceViewport, columns));
-                                }
 
                                 listener.onCompleted();
                             });

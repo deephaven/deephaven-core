@@ -106,6 +106,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     private class DoExchangeObserver implements ClientResponseObserver<FlightData, BarrageMessage> {
+        private long rowsReceived = 0L;
+
         @Override
         public void beforeStart(final ClientCallStreamObserver<FlightData> requestStream) {
             requestStream.disableAutoInboundFlowControl();
@@ -122,14 +124,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     return;
                 }
 
-                final long offset = resultTable.size();
                 final long resultSize = barrageMessage.rowsIncluded.size();
 
                 // override server-supplied data and regenerate flattened rowsets
                 barrageMessage.rowsAdded.close();
                 barrageMessage.rowsIncluded.close();
-                barrageMessage.rowsAdded = RowSetFactory.fromRange(offset, offset + resultSize - 1);
+                barrageMessage.rowsAdded = RowSetFactory.fromRange(rowsReceived, rowsReceived + resultSize - 1);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
+
+                rowsReceived += resultSize;
 
                 listener.handleBarrageMessage(barrageMessage);
             }

@@ -54,8 +54,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #2 - reading all columns, but only subset of rows starting with 0
@@ -71,8 +69,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #3 - reading all columns, but only subset of rows starting at >0
@@ -88,8 +84,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #4 - reading some columns but all rows
@@ -107,8 +101,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #5 - reading some columns and only some rows
@@ -127,8 +119,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #6 - reverse viewport, all columns
@@ -145,8 +135,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         // example #7 - reverse viewport, some columns
@@ -166,8 +154,6 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
-
-            table.close();
         }
 
         System.out.println("End of Snapshot examples");
