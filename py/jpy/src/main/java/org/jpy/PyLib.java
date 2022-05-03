@@ -22,6 +22,7 @@ package org.jpy;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 import static org.jpy.PyLibConfig.*;
 
@@ -430,6 +431,8 @@ public class PyLib {
     static native boolean hasAttribute(long pointer, String name);
 
     public static native boolean hasGil();
+
+    public static native <T> T ensureGil(Supplier<T> runnable);
 
     /**
      * Calls a Python callable and returns the resulting Python object.

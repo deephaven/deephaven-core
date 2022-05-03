@@ -14,7 +14,7 @@ public class JsVariableChanges {
             TABLEMAP = "TableMap",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
-            PANDAS = "Pandas";
+            PANDAS = "pandas.DataFrame";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;

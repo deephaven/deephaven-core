@@ -26,6 +26,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -95,7 +97,7 @@ public class BarrageStreamGenerator implements
 
         @Override
         public BarrageMessageProducer.StreamGenerator<View> newGenerator(
-                final BarrageMessage message, final WriteMetricsConsumer metricsConsumer) {
+                final BarrageMessage message, final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
             return new BarrageStreamGenerator(message, metricsConsumer);
         }
 
@@ -159,7 +161,7 @@ public class BarrageStreamGenerator implements
     }
 
     public final BarrageMessage message;
-    public final WriteMetricsConsumer writeConsumer;
+    public final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
 
     public final long firstSeq;
     public final long lastSeq;
@@ -182,7 +184,8 @@ public class BarrageStreamGenerator implements
      * @param message the generator takes ownership of the message and its internal objects
      * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGenerator(final BarrageMessage message, final WriteMetricsConsumer writeConsumer) {
+    public BarrageStreamGenerator(final BarrageMessage message,
+            final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {
@@ -482,13 +485,13 @@ public class BarrageStreamGenerator implements
 
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+            final long startTm = System.nanoTime();
             ByteBuffer metadata = generator.getSnapshotMetadata(this);
             MutableLong bytesWritten = new MutableLong(0L);
 
             // batch size is maximum, will write fewer rows when needed
             int maxBatchSize = batchSize();
             final MutableInt actualBatchSize = new MutableInt();
-
             if (numAddRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 visitor.accept(generator.getInputStream(
@@ -498,9 +501,9 @@ public class BarrageStreamGenerator implements
                 generator.processBatches(visitor, this, numAddRows, maxBatchSize, metadata, generator::appendAddColumns,
                         bytesWritten);
             }
-
             addRowOffsets.close();
             addRowKeys.close();
+            generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {

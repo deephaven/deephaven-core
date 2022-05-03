@@ -1,12 +1,13 @@
 package io.deephaven.server.uri;
 
-import io.deephaven.server.console.GlobalSessionProvider;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolversInstance;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Objects;
@@ -26,10 +27,10 @@ public final class QueryScopeResolver implements UriResolver {
         return UriResolversInstance.get().find(QueryScopeResolver.class).get();
     }
 
-    private final GlobalSessionProvider globalSessionProvider;
+    private final Provider<ScriptSession> globalSessionProvider;
 
     @Inject
-    public QueryScopeResolver(GlobalSessionProvider globalSessionProvider) {
+    public QueryScopeResolver(Provider<ScriptSession> globalSessionProvider) {
         this.globalSessionProvider = Objects.requireNonNull(globalSessionProvider);
     }
 
@@ -53,6 +54,6 @@ public final class QueryScopeResolver implements UriResolver {
     }
 
     public Object resolve(String variableName) {
-        return globalSessionProvider.getGlobalSession().getVariable(variableName, null);
+        return globalSessionProvider.get().getVariable(variableName, null);
     }
 }

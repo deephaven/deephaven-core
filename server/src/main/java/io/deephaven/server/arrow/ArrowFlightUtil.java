@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -79,11 +80,18 @@ public class ArrowFlightUtil {
         final SessionState.ExportObject<BaseTable> export =
                 ticketRouter.resolve(session, request, "request");
 
+        final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                new BarragePerformanceLog.SnapshotMetricsHelper();
+
+        final long queueStartTm = System.nanoTime();
         session.nonExport()
                 .require(export)
                 .onError(observer)
                 .submit(() -> {
+                    metrics.queueNanos = System.nanoTime() - queueStartTm;
                     final BaseTable table = export.get();
+                    metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                    metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                     // create an adapter for the response observer
                     final StreamObserver<BarrageStreamGenerator.View> listener =
@@ -105,13 +113,13 @@ public class ArrowFlightUtil {
                     listener.onNext(schemaView);
 
                     // shared code between `DoGet` and `BarrageSnapshotRequest`
-                    createAndSendSnapshot(table, null, null, false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener);
+                    createAndSendSnapshot(table, null, null, false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
 
                     listener.onCompleted();
                 });
     }
 
-    private static void createAndSendSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener) {
+    private static void createAndSendSnapshot(BaseTable table, BitSet columns, RowSet viewport, boolean reverseViewport, BarrageSnapshotOptions snapshotRequestOptions, StreamObserver<BarrageStreamGenerator.View> listener, BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // if the table is static or append-only and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate  more efficiently
 
@@ -150,13 +158,13 @@ public class ArrowFlightUtil {
                                         columns, snapshotPartialViewport, null);
                         msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data for DoGet
                         long elapsed = System.nanoTime() - start;
+                        // accumulate snapshot time in the metrics
+                        metrics.snapshotNanos += elapsed;
 
                         // send out the data. Note that although a `BarrageUpdateMetaData` object will
                         // be provided with each unique snapshot, vanilla Flight clients will ignore
                         // these and see only an incoming stream of batches
-                        try (final BarrageStreamGenerator bsg =
-                                     new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                                     })) {
+                        try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics)) {
                             // use `isComplete` to inform barrage clients when the full snapshot has
                             // been provided
                             listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
@@ -194,6 +202,8 @@ public class ArrowFlightUtil {
         } else {
             // get ourselves some data (reversing viewport as instructed)
             final BarrageMessage msg;
+
+            final long snapshotStartTm = System.nanoTime();
             if (reverseViewport) {
                 msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
                         columns, null, viewport);
@@ -201,12 +211,12 @@ public class ArrowFlightUtil {
                 msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(log, table,
                         columns, viewport, null);
             }
+            metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
+
             msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
 
             // translate the viewport to keyspace and make the call
-            try (final BarrageStreamGenerator bsg =
-                         new BarrageStreamGenerator(msg, (bytes, nanos) -> {
-                         });
+            try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
                  final RowSet keySpaceViewport =
                          viewport != null
                                  ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
@@ -635,11 +645,18 @@ public class ArrowFlightUtil {
                     final SessionState.ExportObject<BaseTable> parent =
                             ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "ticket");
 
+                    final BarragePerformanceLog.SnapshotMetricsHelper metrics =
+                            new BarragePerformanceLog.SnapshotMetricsHelper();
+
+                    final long queueStartTm = System.nanoTime();
                     session.nonExport()
                             .require(parent)
                             .onError(listener)
                             .submit(() -> {
+                                metrics.queueNanos = System.nanoTime() - queueStartTm;
                                 final BaseTable table = parent.get();
+                                metrics.tableId = Integer.toHexString(System.identityHashCode(table));
+                                metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                                 // Send Schema wrapped in Message
                                 final FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -670,7 +687,30 @@ public class ArrowFlightUtil {
                                 final boolean reverseViewport = snapshotRequest.reverseViewport();
 
                                 // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                createAndSendSnapshot(table, columns, viewport, reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener);
+                                createAndSendSnapshot(table, columns, viewport, reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener, metrics);
+                                // get ourselves some data (reversing viewport as instructed)
+                                final long snapshotStartTm = System.nanoTime();
+                                final BarrageMessage msg;
+                                if (reverseViewport) {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, null, viewport);
+                                } else {
+                                    msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, table,
+                                            columns, viewport, null);
+                                }
+                                metrics.snapshotNanos = System.nanoTime() - snapshotStartTm;
+                                msg.modColumnData = ZERO_MOD_COLUMNS; // no mod column data
+
+                                // translate the viewport to keyspace and make the call
+                                try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg, metrics);
+                                        final RowSet keySpaceViewport =
+                                                hasViewport
+                                                        ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
+                                                        : null) {
+                                    listener.onNext(
+                                            bsg.getSnapshotView(snapshotOptAdapter.adapt(snapshotRequest), viewport,
+                                                    reverseViewport, keySpaceViewport, columns));
+                                }
 
                                 listener.onCompleted();
                             });

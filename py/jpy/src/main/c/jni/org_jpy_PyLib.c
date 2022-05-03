@@ -2145,6 +2145,21 @@ JNIEXPORT jboolean JNICALL Java_org_jpy_PyLib_hasGil
     return result;
 }
 
+/*
+ * Class:     org_jpy_PyLib
+ * Method:    ensureGil
+ * Signature: (Ljava/util/function/Supplier;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_jpy_PyLib_ensureGil
+  (JNIEnv* jenv, jclass jLibClass, jobject supplier)
+{
+    jobject result;
+    JPy_BEGIN_GIL_STATE
+    result = (*jenv)->CallObjectMethod(jenv, supplier, JPy_Supplier_get_MID);
+    JPy_END_GIL_STATE
+    return result;
+}
+
 
 /*
  * Class:     org_jpy_python_PyLib

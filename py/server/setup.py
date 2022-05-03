@@ -44,6 +44,15 @@ setup(name='deephaven',
       ],
       keywords='Deephaven Development',
       install_requires=['deephaven-jpy=={}'.format(__normalized_version__),
-                        'numpy', 'dill>=0.2.8', 'wrapt', 'pandas', 'numba;python_version>"3.0"',
-                        'enum34;python_version<"3.4"'],
+                        'deephaven-plugin',
+                        'numpy',
+                        'dill>=0.2.8',
+                        'wrapt',
+                        'pandas',
+                        'numba;python_version>"3.0"',
+                        'enum34;python_version<"3.4"'
+                        ],
+      entry_points={
+          'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
+      },
       )

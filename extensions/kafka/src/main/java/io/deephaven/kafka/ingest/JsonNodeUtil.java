@@ -33,38 +33,34 @@ public class JsonNodeUtil {
             final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.get(key);
-        if (!allowMissingKeys && tmpNode == null) {
-            throw new IllegalArgumentException(
-                    "Key " + key + " not found in the record, and allowMissingKeys is false.");
-        }
-        if (tmpNode != null && !allowNullValues && tmpNode.isNull()) {
-            throw new IllegalArgumentException(
-                    "Value for Key " + key + " is null in the record, and allowNullValues is false.");
-        }
+        checkNode(key, tmpNode, allowMissingKeys, allowNullValues);
         return tmpNode;
     }
-
 
     private static JsonNode checkAllowMissingOrNull(
             final JsonNode node, @NotNull final JsonPointer ptr,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.at(ptr);
-        if (!allowMissingKeys && isNullField(tmpNode)) {
-            throw new IllegalArgumentException(
-                    "JsonPointer " + ptr + " not found in the record, and allowMissingKeys is false.");
-        }
-        if (!isNullField(tmpNode) && !allowNullValues && tmpNode.isNull()) {
-            throw new IllegalArgumentException(
-                    "Value for JsonPointer " + ptr + " is null in the record, and allowNullValues is false.");
-        }
+        checkNode(ptr, tmpNode, allowMissingKeys, allowNullValues);
         return tmpNode;
     }
 
+    private static void checkNode(Object key, JsonNode node, boolean allowMissingKeys, boolean allowNullValues) {
+        if (!allowMissingKeys && (node == null || node.isMissingNode())) {
+            throw new IllegalArgumentException(
+                    String.format("Key '%s' not found in the record, and allowMissingKeys is false.", key));
+        }
+        if (!allowNullValues && isNullOrMissingField(node)) {
+            throw new IllegalArgumentException(String
+                    .format("Value for '%s' is null or missing in the record, and allowNullValues is false.", key));
+        }
+    }
+
     /**
-     * @return true if node is null object or is a "Json" null
+     * @return true if node is null object or is a "Json" null or missing
      */
-    private static boolean isNullField(final JsonNode node) {
-        return node == null || node.isNull();
+    private static boolean isNullOrMissingField(final JsonNode node) {
+        return node == null || node.isNull() || node.isMissingNode();
     }
 
     /**
@@ -100,7 +96,7 @@ public class JsonNodeUtil {
      * @return A Deephaven int (primitive int with reserved values for null)
      */
     public static int getInt(final JsonNode node) {
-        return isNullField(node) ? QueryConstants.NULL_INT : node.asInt();
+        return isNullOrMissingField(node) ? QueryConstants.NULL_INT : node.asInt();
     }
 
     /**
@@ -125,7 +121,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Integer getBoxedInt(final JsonNode node) {
-        return isNullField(node) ? null : node.asInt();
+        return isNullOrMissingField(node) ? null : node.asInt();
     }
 
     /**
@@ -161,7 +157,7 @@ public class JsonNodeUtil {
      * @return A Deephaven short (primitive short with reserved values for Null)
      */
     public static short getShort(final JsonNode node) {
-        return isNullField(node) ? QueryConstants.NULL_SHORT : (short) node.asInt();
+        return isNullOrMissingField(node) ? QueryConstants.NULL_SHORT : (short) node.asInt();
     }
 
     /**
@@ -180,7 +176,7 @@ public class JsonNodeUtil {
 
     @Nullable
     public static Short getBoxedShort(final JsonNode node) {
-        return isNullField(node) ? null : (short) node.asInt();
+        return isNullOrMissingField(node) ? null : (short) node.asInt();
     }
 
     /**
@@ -216,7 +212,7 @@ public class JsonNodeUtil {
      * @return A Deephaven long (primitive long with reserved values for null)
      */
     public static long getLong(final JsonNode node) {
-        return isNullField(node) ? QueryConstants.NULL_LONG : node.asLong();
+        return isNullOrMissingField(node) ? QueryConstants.NULL_LONG : node.asLong();
     }
 
     /**
@@ -241,7 +237,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Long getBoxedLong(final JsonNode node) {
-        return isNullField(node) ? null : node.asLong();
+        return isNullOrMissingField(node) ? null : node.asLong();
     }
 
     /**
@@ -277,7 +273,7 @@ public class JsonNodeUtil {
      * @return A Deephaven double (primitive double with reserved values for null)
      */
     public static double getDouble(final JsonNode node) {
-        return isNullField(node) ? QueryConstants.NULL_DOUBLE : node.asDouble();
+        return isNullOrMissingField(node) ? QueryConstants.NULL_DOUBLE : node.asDouble();
     }
 
     /**
@@ -302,7 +298,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Double getBoxedDouble(final JsonNode node) {
-        return isNullField(node) ? null : node.asDouble();
+        return isNullOrMissingField(node) ? null : node.asDouble();
     }
 
     /**
@@ -338,7 +334,7 @@ public class JsonNodeUtil {
      * @return A Deephaven float (primitive float with reserved values for Null)
      */
     public static float getFloat(final JsonNode node) {
-        return isNullField(node) ? QueryConstants.NULL_FLOAT : (float) node.asDouble();
+        return isNullOrMissingField(node) ? QueryConstants.NULL_FLOAT : (float) node.asDouble();
     }
 
     /**
@@ -363,7 +359,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Float getBoxedFloat(final JsonNode node) {
-        return isNullField(node) ? null : (float) node.asDouble();
+        return isNullOrMissingField(node) ? null : (float) node.asDouble();
     }
 
     /**
@@ -399,7 +395,7 @@ public class JsonNodeUtil {
      * @return A Deephaven byte (primitive byte with a reserved value for Null)
      */
     public static byte getByte(final JsonNode node) {
-        if (isNullField(node)) {
+        if (isNullOrMissingField(node)) {
             return QueryConstants.NULL_BYTE;
         }
         final byte[] bytes = node.asText().getBytes();
@@ -431,7 +427,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Byte getBoxedByte(final JsonNode node) {
-        if (isNullField(node)) {
+        if (isNullOrMissingField(node)) {
             return null;
         }
         final byte[] bytes = node.asText().getBytes();
@@ -474,7 +470,7 @@ public class JsonNodeUtil {
      * @return A Deephaven char (primitive char with a reserved value for Null)
      */
     public static char getChar(final JsonNode node) {
-        if (isNullField(node)) {
+        if (isNullOrMissingField(node)) {
             return QueryConstants.NULL_CHAR;
         }
         final String s = node.asText();
@@ -500,7 +496,7 @@ public class JsonNodeUtil {
 
     @Nullable
     public static Character getBoxedChar(final JsonNode tmpNode) {
-        if (isNullField(tmpNode)) {
+        if (isNullOrMissingField(tmpNode)) {
             return null;
         }
         final String s = tmpNode.asText();
@@ -546,7 +542,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static String getString(final JsonNode node) {
-        return isNullField(node) ? null : node.asText();
+        return isNullOrMissingField(node) ? null : node.asText();
     }
 
     /**
@@ -583,7 +579,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Boolean getBoolean(final JsonNode node) {
-        return isNullField(node) ? null : node.asBoolean();
+        return isNullOrMissingField(node) ? null : node.asBoolean();
     }
 
     /**
@@ -620,7 +616,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static BigInteger getBigInteger(final JsonNode node) {
-        return isNullField(node) ? null : node.bigIntegerValue();
+        return isNullOrMissingField(node) ? null : node.bigIntegerValue();
     }
 
     /**
@@ -659,7 +655,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static BigDecimal getBigDecimal(final JsonNode node) {
-        return isNullField(node) ? null : node.decimalValue();
+        return isNullOrMissingField(node) ? null : node.decimalValue();
     }
 
     /**
@@ -684,7 +680,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Object getValue(final JsonNode node) {
-        return isNullField(node) ? null : node;
+        return isNullOrMissingField(node) ? null : node;
     }
 
     /**
@@ -729,7 +725,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static DateTime getDateTime(final JsonNode node) {
-        if (isNullField(node)) {
+        if (isNullOrMissingField(node)) {
             return null;
         }
         // Try to guess formatting from common formats

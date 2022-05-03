@@ -103,7 +103,7 @@ public class IdeSession extends HasEventHandling {
         return getVariableDefinition(name, JsVariableChanges.FIGURE).then(connection::getFigure);
     }
 
-    public Promise<Object> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
         if (definitionObject instanceof JsVariableDefinition) {
             return connection.getObject((JsVariableDefinition) definitionObject);
         }

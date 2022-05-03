@@ -93,8 +93,10 @@ class TimeZone(Enum):
 def to_datetime(s: str, quiet: bool = False) -> DateTime:
     """ Converts a datetime string to a DateTime object.
 
+    Supports ISO 8601 format and others.
+
     Args:
-        s (str): in the form of "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ"
+        s (str): in the form of ISO 8601 or "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ"
         quiet (bool): when True, if the datetime string can't be parsed, this function returns None, otherwise
             it raises an exception. The default is False
 

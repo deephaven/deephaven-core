@@ -377,7 +377,9 @@ int JType_PythonToJavaConversionError(JPy_JType* type, PyObject* pyArg)
 
 int JType_CreateJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jclass classRef, jmethodID initMID, jvalue value, jobject* objectRef)
 {
+    Py_BEGIN_ALLOW_THREADS;
     *objectRef = (*jenv)->NewObjectA(jenv, classRef, initMID, &value);
+    Py_END_ALLOW_THREADS;
     if (*objectRef == NULL) {
         PyErr_NoMemory();
         return -1;
@@ -388,7 +390,9 @@ int JType_CreateJavaObject(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jclas
 
 int JType_CreateJavaObject_2(JNIEnv* jenv, JPy_JType* type, PyObject* pyArg, jclass classRef, jmethodID initMID, jvalue value1, jvalue value2, jobject* objectRef)
 {
+    Py_BEGIN_ALLOW_THREADS;
     *objectRef = (*jenv)->NewObject(jenv, classRef, initMID, value1, value2);
+    Py_END_ALLOW_THREADS;
     if (*objectRef == NULL) {
         PyErr_NoMemory();
         return -1;

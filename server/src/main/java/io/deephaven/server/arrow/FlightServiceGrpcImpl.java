@@ -5,6 +5,10 @@
 package io.deephaven.server.arrow;
 
 import com.google.rpc.Code;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;

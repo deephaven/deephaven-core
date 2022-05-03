@@ -21,6 +21,7 @@ import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -33,12 +34,12 @@ import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
 
-    private final GlobalSessionProvider globalSessionProvider;
+    private final Provider<ScriptSession> scriptSessionProvider;
 
     @Inject
-    public ScopeTicketResolver(final GlobalSessionProvider globalSessionProvider) {
+    public ScopeTicketResolver(final Provider<ScriptSession> globalSessionProvider) {
         super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
-        this.globalSessionProvider = globalSessionProvider;
+        this.scriptSessionProvider = globalSessionProvider;
     }
 
     @Override
@@ -53,7 +54,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         final String scopeName = nameForDescriptor(descriptor, logId);
 
         final Flight.FlightInfo flightInfo = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession gss = globalSessionProvider.getGlobalSession();
+            final ScriptSession gss = scriptSessionProvider.get();
             Object scopeVar = gss.getVariable(scopeName, null);
             if (scopeVar == null) {
                 throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
@@ -72,7 +73,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        globalSessionProvider.getGlobalSession().getVariables().forEach((varName, varObj) -> {
+        scriptSessionProvider.get().getVariables().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
                 visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName),
                         flightTicketForName(varName)));
@@ -96,7 +97,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             @Nullable final SessionState session, final String scopeName, final String logId) {
         // if we are not attached to a session, check the scope for a variable right now
         final T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
-            final ScriptSession gss = globalSessionProvider.getGlobalSession();
+            final ScriptSession gss = scriptSessionProvider.get();
             // noinspection unchecked
             T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
             if (scopeVar == null) {
@@ -137,7 +138,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 .requiresSerialQueue()
                 .require(resultExport)
                 .submit(() -> {
-                    final ScriptSession gss = globalSessionProvider.getGlobalSession();
+                    final ScriptSession gss = scriptSessionProvider.get();
                     gss.setVariable(varName, resultExport.get());
                 });
 

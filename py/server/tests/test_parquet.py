@@ -45,7 +45,7 @@ class ParquetTestCase(BaseTestCase):
             write(table, file_location)
             self.assertTrue(os.path.exists(file_location))
             table2 = read(file_location)
-            self.assertEqual(table, table2)
+            self.assert_table_equals(table, table2)
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_tables(Table[], destinations, col_definitions"):
@@ -53,7 +53,7 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             table2 = read(file_location)
-            self.assertEqual(table, table2)
+            self.assert_table_equals(table, table2)
 
         # Delete
         with self.subTest(msg="delete(str)"):
@@ -108,7 +108,7 @@ class ParquetTestCase(BaseTestCase):
         # Reading
         with self.subTest(msg="read_table(str)"):
             table2 = read(path=file_location, col_instructions=[col_inst, col_inst1])
-            self.assertEqual(table, table2)
+            self.assert_table_equals(table, table2)
 
         # Delete
         with self.subTest(msg="delete(str)"):
@@ -136,7 +136,7 @@ class ParquetTestCase(BaseTestCase):
         write(table, file_location)
         table2 = read(file_location)
         self.assertEqual(table.size, table2.size)
-        self.assertEqual(table, table2)
+        self.assert_table_equals(table, table2)
 
         self.assertTrue(os.path.exists(file_location))
         shutil.rmtree(base_dir)

@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.function.Numeric;
 import io.deephaven.time.DateTime;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -22,7 +23,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.function.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
@@ -551,7 +551,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                 BucketState bucket = null;
                 for (int indexInChunk = 0; indexInChunk < xValueChunk.size(); indexInChunk++) {
                     final long xValue = xValueChunk.get(indexInChunk);
-                    final long bin = LongNumericPrimitives.lowerBin(xValue, nanosPerPx);
+                    final long bin = Numeric.lowerBin(xValue, nanosPerPx);
 
                     if (lastBin != bin || bucket == null) {
                         bucket = getOrCreateBucket(bin);
@@ -581,7 +581,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                 final long lastBin = 0;
                 BucketState bucket = null;
                 for (int i = 0; i < dateChunk.size(); i++) {
-                    final long bin = LongNumericPrimitives.lowerBin(dateChunk.get(i), nanosPerPx);
+                    final long bin = Numeric.lowerBin(dateChunk.get(i), nanosPerPx);
 
                     if (lastBin != bin || bucket == null) {
                         bucket = getBucket(bin);
@@ -618,8 +618,8 @@ public class RunChartDownsample implements Function<Table, Table> {
                 final long lastBin = 0;
                 BucketState bucket = null;
                 for (int indexInChunk = 0; indexInChunk < oldDateChunk.size(); indexInChunk++) {
-                    final long bin = LongNumericPrimitives.lowerBin(oldDateChunk.get(indexInChunk), nanosPerPx);
-                    final long newBin = LongNumericPrimitives.lowerBin(newDateChunk.get(indexInChunk), nanosPerPx);
+                    final long bin = Numeric.lowerBin(oldDateChunk.get(indexInChunk), nanosPerPx);
+                    final long newBin = Numeric.lowerBin(newDateChunk.get(indexInChunk), nanosPerPx);
 
                     if (lastBin != bin || bucket == null) {
                         bucket = getBucket(bin);
@@ -650,7 +650,7 @@ public class RunChartDownsample implements Function<Table, Table> {
         }
 
         private BucketState getBucket(final long bin) {
-            // long bin = LongNumericPrimitives.lowerBin(xValue, nanosPerPx);
+            // long bin = Numeric.lowerBin(xValue, nanosPerPx);
             if (rangeMode == RangeMode.ZOOM) {
                 if (bin + nanosPerPx < key.zoomRange[0]) {
                     return head;

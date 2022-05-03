@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
@@ -25,7 +26,7 @@ public class GenericRecordDateTimeArrayFieldCopier extends GenericRecordFieldCop
     private static DateTime[] convertArray(final GenericArray<?> ga, final long multiplier) {
         final int gaSize = ga.size();
         if (gaSize == 0) {
-            return DateTime.EMPTY_DATETIME_ARRAY;
+            return DateTimeUtils.ZERO_LENGTH_DATETIME_ARRAY;
         }
         final DateTime[] out = new DateTime[ga.size()];
         int i = 0;

@@ -109,7 +109,7 @@ class PandasTestCase(BaseTestCase):
         test_table = new_table(cols=input_cols)
         df = to_pandas(test_table)
         table_from_df = to_table(df)
-        self.assertEqual(table_from_df, test_table)
+        self.assert_table_equals(table_from_df, test_table)
 
     def test_to_table_boolean_with_none(self):
         input_cols = [bool_col(name="Boolean", data=[True, None])]
@@ -118,7 +118,7 @@ class PandasTestCase(BaseTestCase):
             formulas=["Boolean = isNull(Boolean) ? NULL_BYTE : (Boolean == true ? 1: 0)"])
         df = to_pandas(prepared_table)
         table_from_df = to_table(df)
-        self.assertEqual(table_from_df, prepared_table)
+        self.assert_table_equals(table_from_df, prepared_table)
 
     def test_to_table_datetime_with_none(self):
         datetime_str = "2021-12-10T23:59:59 NY"
@@ -132,7 +132,7 @@ class PandasTestCase(BaseTestCase):
 
         df = to_pandas(table_with_null_dt)
         table_from_df = to_table(df)
-        self.assertEqual(table_from_df, table_with_null_dt)
+        self.assert_table_equals(table_from_df, table_with_null_dt)
 
     def test_round_trip_with_nulls(self):
         # Note that no two-way conversion for those types
@@ -156,7 +156,7 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(len(df.columns), len(test_table.columns))
         self.assertEqual(df.size, 2 * len(test_table.columns))
         test_table2 = to_table(df)
-        self.assertEqual(test_table2, test_table)
+        self.assert_table_equals(test_table2, test_table)
 
     def test_to_table_category(self):
         df = pd.DataFrame({"A": ["a", "b", "a", "d"]})

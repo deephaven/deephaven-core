@@ -7,10 +7,10 @@ package io.deephaven.time;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
-import io.deephaven.function.LongNumericPrimitives;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
@@ -22,6 +22,7 @@ import org.joda.time.DurationFieldType;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Calendar;
 import java.util.Date;
@@ -1500,7 +1501,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.lowerBin(dateTime.getNanos(), intervalNanos));
+        return nanosToTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1519,7 +1520,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return nanosToTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     /**
@@ -1536,7 +1537,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.upperBin(dateTime.getNanos(), intervalNanos));
+        return nanosToTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1556,7 +1557,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToTime(LongNumericPrimitives.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return nanosToTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1741,7 +1742,10 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>
+     * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
@@ -1970,13 +1974,21 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a DateTime String from a few specific zoned formats to a DateTime
+     * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
+     *
+     * <p>
+     * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
      * @return A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
      */
     public static DateTime convertDateTimeQuiet(final String s) {
+        try {
+            return DateTime.of(Instant.parse(s));
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
         try {
             TimeZone timeZone = null;
             String dateTimeString = null;
