@@ -65,14 +65,21 @@ class TableUpdate(JObjectWrapper):
     def __init__(self, table: Table, j_table_update):
         self.table = table
         self.j_table_update = j_table_update
-        self.chunk_size = None
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table_update
 
     def added(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
-        """TODO"""
+        """Returns a dict with each key bing a column name and each value being a NumPy array of
+        all the added rows in the columns.
+
+        Args:
+             cols (Union[str, List[str]): the column(s) for which to return the added rows
+
+        Returns:
+            a dict
+        """
         if not self.j_table_update.added:
             return {}
 
@@ -84,17 +91,35 @@ class TableUpdate(JObjectWrapper):
         except StopIteration:
             return {}
 
-    def added_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
-        """TODO"""
+    def added_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
+        Dict[str, numpy.ndarray], None, None]:
+        """Returns a generator that on each iteration, only returns a chunk of added rows in the form of a dict with
+        each key bing a column name and each value being a NumPy array of the rows in the chunk.
+
+        Args:
+            chunk_size (int): the size of the chunk
+            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+
+        Returns:
+            a generator
+        """
         if not self.j_table_update.added:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.added.asRowSet(),
-                                 chunk_size=self.chunk_size)
+                                 chunk_size=chunk_size)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
-        """TODO"""
+        """Returns a dict with each key bing a column name and each value being a NumPy array of
+        all the removed rows in the columns.
+
+        Args:
+             cols (Union[str, List[str]): the column(s) for which to return the added rows
+
+        Returns:
+            a dict
+        """
         if not self.j_table_update.removed:
             return {}
 
@@ -106,17 +131,35 @@ class TableUpdate(JObjectWrapper):
         except StopIteration:
             return {}
 
-    def removed_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
-        """TODO"""
+    def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
+        Dict[str, numpy.ndarray], None, None]:
+        """Returns a generator that on each iteration, only returns a chunk of removed rows in the form of a dict with
+        each key bing a column name and each value being a NumPy array of the rows in the chunk.
+
+        Args:
+            chunk_size (int): the size of the chunk
+            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+
+        Returns:
+            a generator
+        """
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(table=self.table, col_defs=col_defs, row_set=self.j_table_update.removed.asRowSet(),
-                                 chunk_size=self.chunk_size, prev=True)
+                                 chunk_size=chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
-        """TODO"""
+        """Returns a dict with each key bing a column name and each value being a NumPy array of the current values of
+        all the modified rows in the columns.
+
+        Args:
+             cols (Union[str, List[str]): the column(s) for which to return the added rows
+
+        Returns:
+            a dict
+        """
         if not self.j_table_update.modified:
             return {}
 
@@ -128,17 +171,35 @@ class TableUpdate(JObjectWrapper):
         except StopIteration:
             return {}
 
-    def modified_chunks(self, cols: Union[str, List[str]] = None) -> Generator[Dict[str, numpy.ndarray], None, None]:
-        """TODO"""
+    def modified_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
+        Dict[str, numpy.ndarray], None, None]:
+        """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
+        each key bing a column name and each value being a NumPy array of the current values of the rows in the chunk.
+
+        Args:
+            chunk_size (int): the size of the chunk
+            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+
+        Returns:
+            a generator
+        """
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=self.chunk_size)
+                                 chunk_size=chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
-        """TODO"""
+        """Returns a dict with each key bing a column name and each value being a NumPy array of the previous values of
+        all the modified rows in the columns.
+
+        Args:
+             cols (Union[str, List[str]): the column(s) for which to return the added rows
+
+        Returns:
+            a dict
+        """
         if not self.j_table_update.modified:
             return {}
 
@@ -150,15 +211,24 @@ class TableUpdate(JObjectWrapper):
         except StopIteration:
             return {}
 
-    def modified_prev_chunks(self, cols: Union[str, List[str]] = None) -> Generator[
+    def modified_prev_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:
-        """TODO"""
+        """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
+        each key bing a column name and each value being a NumPy array of the previous values of the rows in the chunk.
+
+        Args:
+            chunk_size (int): the size of the chunk
+            cols (Union[str, List[str]]: the columns(s) for which to return the added rows
+
+        Returns:
+            a generator
+        """
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
         col_defs = _col_defs(table=self.table, cols=cols)
         return _changes_to_numpy(self.table, col_defs=col_defs, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=self.chunk_size, prev=True)
+                                 chunk_size=chunk_size, prev=True)
 
     @property
     def shifted(self):
@@ -193,6 +263,12 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
     if lock_type == "exclusive":
         update_graph_processor.DEFAULT.exclusiveLock().doLocked(throwing_runnable(f))
     elif lock_type == "shared":
+        # slock = update_graph_processor.DEFAULT.sharedLock()
+        # try:
+        #     slock.lock()
+        #     f()
+        # finally:
+        #     slock.unlock()
         update_graph_processor.DEFAULT.sharedLock().doLocked(throwing_runnable(f))
     else:
         raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
@@ -218,7 +294,9 @@ def listener_wrapper(table: Table):
                 listener(t_update, args[0])
             else:
                 listener(t_update)
+
         return wrapper
+
     return decorator
 
 
@@ -265,7 +343,7 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
 
 
 class TableListenerHandle:
-    """A handle for a table listener."""
+    """A handle for a table listener to manage its lifecycle."""
 
     def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
         """Creates a new table listener handle.
@@ -334,7 +412,7 @@ class TableListenerHandle:
         self.started = True
 
     def stop(self) -> None:
-        """Stop the listener by de=registering it from the table and stop listening for updates."""
+        """Stop the listener by de-registering it from the table and stop listening for updates."""
 
         if not self.started:
             return
