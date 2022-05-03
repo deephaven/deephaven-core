@@ -11,6 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -20,7 +21,6 @@ import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.arrow.FlightServiceGrpcBinding;
-import io.deephaven.server.console.GlobalSessionProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.session.SessionService;
@@ -49,6 +49,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
@@ -73,10 +74,14 @@ public abstract class FlightMessageRoundTripTest {
             return resolver;
         }
 
+        @Singleton
         @Provides
-        AbstractScriptSession createGlobalScriptSession(GlobalSessionProvider sessionProvider) {
-            final AbstractScriptSession scriptSession = new NoLanguageDeephavenSession("non-script-session");
-            sessionProvider.initializeGlobalScriptSession(scriptSession);
+        AbstractScriptSession<?> provideAbstractScriptSession() {
+            return new NoLanguageDeephavenSession("non-script-session");
+        }
+
+        @Provides
+        ScriptSession provideScriptSession(AbstractScriptSession<?> scriptSession) {
             return scriptSession;
         }
 
@@ -120,7 +125,7 @@ public abstract class FlightMessageRoundTripTest {
 
         SessionService sessionService();
 
-        AbstractScriptSession scriptSession();
+        AbstractScriptSession<?> scriptSession();
 
         GrpcServer server();
     }
@@ -133,7 +138,7 @@ public abstract class FlightMessageRoundTripTest {
     SessionService sessionService;
     private UUID sessionToken;
     private SessionState currentSession;
-    private AbstractScriptSession scriptSession;
+    private AbstractScriptSession<?> scriptSession;
 
     @Before
     public void setup() throws IOException {

@@ -13,7 +13,6 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.function.DoubleNumericPrimitives;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 import junit.framework.TestCase;

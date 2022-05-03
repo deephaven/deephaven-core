@@ -680,31 +680,16 @@ public class WorkerConnection {
         });
     }
 
-    public Promise<JsTable> getPandas(JsVariableDefinition varDef) {
-        return whenServerReady("get a pandas table").then(serve -> {
-            JsLog.debug("innerGetPandasTable", varDef.getTitle(), " started");
-            return newState(info,
-                    (c, cts, metadata) -> {
-                        JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                                " (" + LazyString.of(cts::getHandle), ")");
-                        throw new UnsupportedOperationException("getPandas");
-
-                    }, "fetch pandas table " + varDef.getTitle()).then(cts -> {
-                        JsLog.debug("innerGetPandasTable", varDef.getTitle(), " succeeded ", cts);
-                        JsTable table = new JsTable(this, cts);
-                        return Promise.resolve(table);
-                    });
-        });
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public Promise<Object> getObject(JsVariableDefinition definition) {
-        if (definition.getType().equals(JsVariableChanges.TABLE)) {
-            return (Promise) getTable(definition, null);
-        } else if (definition.getType().equals(JsVariableChanges.FIGURE)) {
-            return (Promise) getFigure(definition);
+    public Promise<?> getObject(JsVariableDefinition definition) {
+        if (JsVariableChanges.TABLE.equals(definition.getType())) {
+            return getTable(definition, null);
+        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
+            return getFigure(definition);
+        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+            return getWidget(definition)
+                    .then(widget -> widget.getExportedObjects()[0].fetch());
         } else {
-            return (Promise) getWidget(definition);
+            return getWidget(definition);
         }
     }
 

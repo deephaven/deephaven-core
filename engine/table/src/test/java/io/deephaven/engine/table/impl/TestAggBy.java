@@ -4,6 +4,10 @@
 
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.set.TDoubleSet;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TDoubleHashSet;
+import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.table.DataColumn;
@@ -26,6 +30,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -284,19 +291,19 @@ public class TestAggBy extends RefreshingTableTestCase {
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym",
                                 "MedD=median(doubleCol)",
-                                "Pct01D=percentile(doubleCol, 0.01)",
+                                "Pct01D=percentile(0.01, doubleCol)",
                                 "Pct01I=(int)TestAggBy.percentile(intCol, 0.01)",
-                                "Pct05D=percentile(doubleCol, 0.05)",
+                                "Pct05D=percentile(0.05, doubleCol)",
                                 "Pct05I=(int)TestAggBy.percentile(intCol, 0.05)",
-                                "Pct25D=percentile(doubleCol, 0.25)",
+                                "Pct25D=percentile(0.25, doubleCol)",
                                 "Pct25I=(int)TestAggBy.percentile(intCol, 0.25)",
-                                "Pct50D=percentile(doubleCol, 0.50)",
+                                "Pct50D=percentile(0.50, doubleCol)",
                                 "Pct50I=(int)TestAggBy.percentile(intCol, 0.50)",
-                                "Pct65D=percentile(doubleCol, 0.65)",
+                                "Pct65D=percentile(0.65, doubleCol)",
                                 "Pct65I=(int)TestAggBy.percentile(intCol, 0.65)",
-                                "Pct90D=percentile(doubleCol, 0.90)",
+                                "Pct90D=percentile(0.90, doubleCol)",
                                 "Pct90I=(int)TestAggBy.percentile(intCol, 0.90)",
-                                "Pct99D=percentile(doubleCol, 0.99)",
+                                "Pct99D=percentile(0.99, doubleCol)",
                                 "Pct99I=(int)TestAggBy.percentile(intCol, 0.99)").sort("Sym"),
                         queryTable.aggBy(List.of(
                                 AggMed("MedD=doubleCol"),
@@ -326,14 +333,14 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 "ddi=countDistinct(doubleCol)",
                                 "cdiN=countDistinct(intColNulls, true)",
                                 "ddiN=countDistinct(doubleColNulls, true)",
-                                "dic=distinct(intCol, false, true)",
-                                "did=distinct(doubleCol, false, true)",
-                                "dicN=distinct(intColNulls, true, true)",
-                                "didN=distinct(doubleColNulls, true, true)",
-                                "uic=uniqueValue(intCol, false)",
-                                "uid=uniqueValue(doubleCol, false)",
-                                "uicN=uniqueValue(intColNulls, true)",
-                                "uidN=uniqueValue(doubleColNulls, true)")
+                                "dic=array(sort(distinct(intCol, false)))",
+                                "did=array(sort(distinct(doubleCol, false)))",
+                                "dicN=array(sort(distinct(intColNulls, true)))",
+                                "didN=array(sort(distinct(doubleColNulls, true)))",
+                                "uic=TestAggBy.uniqueValue(intCol, false)",
+                                "uid=TestAggBy.uniqueValue(doubleCol, false)",
+                                "uicN=TestAggBy.uniqueValue(intColNulls, true)",
+                                "uidN=TestAggBy.uniqueValue(doubleColNulls, true)")
                                 .sort("Sym"),
                         "countDistinctView",
                         queryTable.aggBy(List.of(AggCountDistinct("cdi=intCol", "ddi=doubleCol"),
@@ -717,4 +724,61 @@ public class TestAggBy extends RefreshingTableTestCase {
             return copy[idx];
         }
     }
+
+    /**
+     * Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.
+     *
+     * @param arr the array
+     * @param countNull if nulls should count as values
+     * @return the single unique value in the array, or null.
+     */
+    public static int uniqueValue(final IntVector arr, boolean countNull) {
+        if (arr == null || arr.isEmpty()) {
+            return NULL_INT;
+        }
+
+        if (arr.size() == 1) {
+            return arr.get(0);
+        }
+
+        final TIntSet keys = new TIntHashSet();
+        for (int ii = 0; ii < arr.size(); ii++) {
+            keys.add(arr.get(ii));
+        }
+
+        if (!countNull) {
+            keys.remove(NULL_INT);
+        }
+
+        return keys.size() == 1 ? keys.iterator().next() : NULL_INT;
+    }
+
+    /**
+     * Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.
+     *
+     * @param arr the array
+     * @param countNull if nulls should count as values
+     * @return the single unique value in the array, or null.
+     */
+    public static double uniqueValue(final DoubleVector arr, boolean countNull) {
+        if (arr == null || arr.isEmpty()) {
+            return NULL_DOUBLE;
+        }
+
+        if (arr.size() == 1) {
+            return arr.get(0);
+        }
+
+        final TDoubleSet keys = new TDoubleHashSet();
+        for (int ii = 0; ii < arr.size(); ii++) {
+            keys.add(arr.get(ii));
+        }
+
+        if (!countNull) {
+            keys.remove(NULL_DOUBLE);
+        }
+
+        return keys.size() == 1 ? keys.iterator().next() : NULL_DOUBLE;
+    }
+
 }

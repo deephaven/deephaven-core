@@ -12,12 +12,14 @@ import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.PythonDeephavenSession.PythonSnapshot;
+import io.deephaven.engine.util.jpy.JpyInit;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +39,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -46,7 +49,7 @@ import java.util.stream.Collectors;
  * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
  * supporting structures.
  */
-public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot> implements ScriptSession {
+public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot> {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
@@ -66,28 +69,22 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Create a Python ScriptSession.
      *
      * @param objectTypeLookup the object type lookup
-     * @param runInitScripts if init scripts should be executed
-     * @throws IOException if an IO error occurs running initialization scripts
-     */
-    public PythonDeephavenSession(ObjectTypeLookup objectTypeLookup, boolean runInitScripts)
-            throws IOException {
-        this(objectTypeLookup, null, runInitScripts, false);
-    }
-
-    /**
-     * Create a Python ScriptSession.
-     *
-     * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
+     * @throws InterruptedException if the current thread is interrupted while starting JPY
+     * @throws TimeoutException if jpy times out while obtaining configuration details
      */
     public PythonDeephavenSession(
             ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
             boolean isDefaultScriptSession)
-            throws IOException {
+            throws IOException, InterruptedException, TimeoutException {
         super(objectTypeLookup, listener, isDefaultScriptSession);
+
+        // Start Jpy, if not already running from the python instance
+        JpyInit.init(log);
+
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();
@@ -199,7 +196,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         return Collections.unmodifiableMap(scope.getEntriesMap());
     }
 
-    protected static class PythonSnapshot implements Snapshot, Closeable {
+    protected static class PythonSnapshot implements Snapshot, SafeCloseable {
 
         private final PyDictWrapper dict;
 

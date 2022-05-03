@@ -1,0 +1,10 @@
+/src/main/java/io/deephaven/function/Basic.java
+/src/test/java/io/deephaven/function/TestBasic.java
+/src/main/java/io/deephaven/function/Cast.java
+/src/test/java/io/deephaven/function/TestCast.java
+/src/main/java/io/deephaven/function/BinSearch.java
+/src/test/java/io/deephaven/function/TestBinSearch.java
+/src/main/java/io/deephaven/function/Sort.java
+/src/test/java/io/deephaven/function/TestSort.java
+/src/main/java/io/deephaven/function/Numeric.java
+/src/test/java/io/deephaven/function/TestNumeric.java

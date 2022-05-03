@@ -54,7 +54,7 @@ class TestJpy(unittest.TestCase):
 
   def test_has_gil(self):
     PyLib = jpy.get_type('org.jpy.PyLib')
-    self.assertTrue(PyLib.hasGil())
+    self.assertFalse(PyLib.hasGil())
 
   def test_reenter_python(self):
     ReenterPython = jpy.get_type('io.deephaven.jpy.integration.ReenterPython')

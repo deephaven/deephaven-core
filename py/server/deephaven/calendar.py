@@ -74,6 +74,9 @@ class BusinessPeriod(JObjectWrapper):
     def __repr__(self):
         return f"[{self.start_time}, {self.end_time}]"
 
+    def __str__(self):
+        return repr(self)
+
     @property
     def j_object(self) -> jpy.JType:
         return self.j_business_period
@@ -302,12 +305,7 @@ class BusinessCalendar(Calendar):
         open and close times. """
 
         default_business_periods = self.j_calendar.getDefaultBusinessPeriods()
-        b_periods = []
-        for i in range(default_business_periods.size()):
-            p = default_business_periods.get(i)
-            b_periods.append(p)
-
-        return b_periods
+        return list(default_business_periods.toArray())
 
     @property
     def standard_business_day_length(self) -> int:

@@ -7,9 +7,10 @@ from time import sleep
 
 from deephaven.constants import NULL_LONG, NULL_INT
 from deephaven.time import *
+from tests.testbase import BaseTestCase
 
 
-class TimeTestCase(unittest.TestCase):
+class TimeTestCase(BaseTestCase):
     def test_to_datetime(self):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "NY"

@@ -40,27 +40,15 @@ import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.util.ColorUtilImpl;
+import io.deephaven.function.Basic;
 import io.deephaven.function.BinSearch;
-import io.deephaven.function.BooleanPrimitives;
-import io.deephaven.function.ByteNumericPrimitives;
-import io.deephaven.function.BytePrimitives;
-import io.deephaven.function.Casting;
-import io.deephaven.function.CharacterPrimitives;
-import io.deephaven.function.ComparePrimitives;
-import io.deephaven.function.DoubleFpPrimitives;
-import io.deephaven.function.DoubleNumericPrimitives;
-import io.deephaven.function.DoublePrimitives;
-import io.deephaven.function.FloatFpPrimitives;
-import io.deephaven.function.FloatNumericPrimitives;
-import io.deephaven.function.FloatPrimitives;
-import io.deephaven.function.IntegerNumericPrimitives;
-import io.deephaven.function.IntegerPrimitives;
-import io.deephaven.function.LongNumericPrimitives;
-import io.deephaven.function.LongPrimitives;
-import io.deephaven.function.ObjectPrimitives;
-import io.deephaven.function.PrimitiveParseUtil;
-import io.deephaven.function.ShortNumericPrimitives;
-import io.deephaven.function.ShortPrimitives;
+import io.deephaven.function.BinSearchAlgo;
+import io.deephaven.function.Cast;
+import io.deephaven.function.Logic;
+import io.deephaven.function.Numeric;
+import io.deephaven.function.Parse;
+import io.deephaven.function.Random;
+import io.deephaven.function.Sort;
 import io.deephaven.gui.color.Color;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -145,27 +133,15 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
     public Set<Class<?>> statics() {
         return new LinkedHashSet<>(Arrays.asList(
                 QueryConstants.class,
-                BytePrimitives.class,
-                ByteNumericPrimitives.class,
-                CharacterPrimitives.class,
-                DoublePrimitives.class,
-                DoubleNumericPrimitives.class,
-                DoubleFpPrimitives.class,
-                FloatPrimitives.class,
-                FloatFpPrimitives.class,
-                FloatNumericPrimitives.class,
-                IntegerPrimitives.class,
-                IntegerNumericPrimitives.class,
-                ShortPrimitives.class,
-                ShortNumericPrimitives.class,
-                LongPrimitives.class,
-                LongNumericPrimitives.class,
-                ObjectPrimitives.class,
-                BooleanPrimitives.class,
-                ComparePrimitives.class,
+                Basic.class,
                 BinSearch.class,
-                Casting.class,
-                PrimitiveParseUtil.class,
+                BinSearchAlgo.class,
+                Cast.class,
+                Logic.class,
+                Numeric.class,
+                Parse.class,
+                Random.class,
+                Sort.class,
                 QueryLanguageFunctionUtils.class,
                 DateTimeUtils.class,
                 TimeZone.class,
