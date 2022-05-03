@@ -151,7 +151,7 @@ class TableUpdate(JObjectWrapper):
             return {}
 
     def modified_prev_chunks(self, cols: Union[str, List[str]] = None) -> Generator[
-            Dict[str, numpy.ndarray], None, None]:
+        Dict[str, numpy.ndarray], None, None]:
         """TODO"""
         if not self.j_table_update.modified:
             return (_ for _ in ())
@@ -173,50 +173,6 @@ class TableUpdate(JObjectWrapper):
         return list(cols) if cols else []
 
 
-class TableListenerHandle:
-    """A handle for a table listener."""
-
-    def __init__(self, t: Table, listener):
-        """Creates a new table listener handle.
-
-        Args:
-            t (Table): table being listened to
-            listener: listener object
-        """
-        self.t = t
-        self.listener = listener
-        self.isRegistered = False
-
-    def register(self) -> None:
-        """Register the listener with the table and listen for updates.
-
-        Raises:
-            RuntimeError
-        """
-
-        if self.isRegistered:
-            raise RuntimeError(
-                "Attempting to register an already registered listener.."
-            )
-
-        self.t.j_table.listenForUpdates(self.listener)
-
-        self.isRegistered = True
-
-    def deregister(self) -> None:
-        """Deregister the listener from the table and stop listening for updates.
-
-        Raises:
-            RuntimeError
-        """
-
-        if not self.isRegistered:
-            raise RuntimeError("Attempting to deregister an unregistered listener..")
-
-        self.t.j_table.removeUpdateListener(self.listener)
-        self.isRegistered = False
-
-
 def _do_locked(f: Callable, lock_type="shared") -> None:
     """Executes a function while holding the UpdateGraphProcessor (UGP) lock.  Holding the UGP lock
     ensures that the contents of a table will not change during a computation, but holding
@@ -231,12 +187,8 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
     Raises:
         ValueError
     """
-    throwing_runnable = jpy.get_type(
-        "io.deephaven.integrations.python.PythonThrowingRunnable"
-    )
-    update_graph_processor = jpy.get_type(
-        "io.deephaven.engine.updategraph.UpdateGraphProcessor"
-    )
+    throwing_runnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
+    update_graph_processor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraphProcessor")
 
     if lock_type == "exclusive":
         update_graph_processor.DEFAULT.exclusiveLock().doLocked(throwing_runnable(f))
@@ -248,14 +200,6 @@ def _do_locked(f: Callable, lock_type="shared") -> None:
 
 class TableListener(ABC):
     """An abstract table listener class that should be subclassed by any user table listener class."""
-
-    @abstractmethod
-    def on_update(self, update: TableUpdate) -> None:
-        ...
-
-
-class TableReplayListener(ABC):
-    """An abstract table replay listener class that should be subclassed by any user table replay listener class."""
 
     @abstractmethod
     def on_update(self, update: TableUpdate, is_replay: bool) -> None:
@@ -274,117 +218,125 @@ def listener_wrapper(table: Table):
                 listener(t_update, args[0])
             else:
                 listener(t_update)
-
         return wrapper
-
     return decorator
 
 
-def _wrap_listener_func(t: Table, description: str, listener: Callable, replay_initial: bool, retain: bool):
+def _wrap_listener_func(t: Table, description: str, listener: Callable):
     n_params = len(signature(listener).parameters)
-
-    if n_params not in {1, 2}:
-        raise ValueError("listener must take 1 (update) or 2 (isReplay, update) arguments.")
-    if n_params == 1 and replay_initial:
-        raise ValueError(f"Listener does not support replay: nargs={n_params}")
-
-    listener = listener_wrapper(table=t)(listener)
-
-    if n_params == 1:
-        return _JPythonListenerAdapter(description, t.j_table, retain, listener)
-    else:
-        return _JPythonReplayListenerAdapter(description, t.j_table, retain, listener)
+    if n_params != 2:
+        raise ValueError("listener must have 2 (update, is_replay) parameters.")
+    return listener_wrapper(table=t)(listener)
 
 
-def _wrap_listener_obj(t: Table, description: str, listener: TableListener, replay_initial: bool, retain: bool):
+def _wrap_listener_obj(t: Table, description: str, listener: TableListener):
     n_params = len(signature(listener.on_update).parameters)
-
-    if n_params not in {1, 2}:
-        raise ValueError(f"listener must take 1 (update) or 2 (isReplay, update) arguments.")
-    if n_params == 1 and replay_initial:
-        raise ValueError(f"Listener does not support replay: nargs={n_params}")
-
+    if n_params != 2:
+        raise ValueError(f"The on_update method must have 2 (update, is_replay) parameters.")
     listener.on_update = listener_wrapper(table=t)(listener.on_update)
-    if n_params == 1:
-        return _JPythonListenerAdapter(description, t.j_table, retain, listener)
-    else:
-        return _JPythonReplayListenerAdapter(description, t.j_table, retain, listener)
+    return listener
 
 
-def listen(
-        t: Table,
-        listener: Union[Callable, Type[TableListener], Type[TableReplayListener]],
-        description: str = None,
-        *,
-        retain: bool = True,
-        start_listening: bool = True,
-        replay_initial: bool = False,
-        lock_type: str = "shared",
-) -> TableListenerHandle:
-    """Listen to table changes.
+def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
+           replay_lock: str = "shared"):
+    """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
+    for table updates.
 
-    Table change events are processed by 'listener', which can be either
-        (1) a callable (e.g. function) or
-        (2) an instance of either TableListener or TableReplayListener type which provides an "on_update" method.
-
-    The callable or the on_update method must have one of the following two signatures.
-        * (update: TableUpdate): receive only normal table updates
-        * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
-
-        The 'update' parameter is an object that describes the table update;
-        The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
-            snapshot and 'false' during normal updates.
+    The function returns the created TableListenerHandle object whose 'stop' method can be called to stop listening.
+    If it goes out of scope and is garbage collected,
 
     Args:
         t (Table): table to listen to
-        listener (Union[Callable, Type[TableListener], Type[TableReplayListener]]): listener for table changes
-        description (str): description for the UpdatePerformanceTracker to append to the listener's entry description
-        retain (bool): whether a hard reference to this listener should be maintained to prevent it from being
-            collected, default is True
-        start_listening (bool): True to create the listener and register the listener with the table. The listener will
-            see updates. False to create the listener, but do not register the listener with the table. The listener
-            will not see updates. Default is True
-        replay_initial (bool): True to replay the initial table contents to the listener. False to only listen to new
-            table changes. To replay the initial image, the listener must support replay. Default is False
-        lock_type (str): UGP lock type, used when replay_initial=True, valid values are "exclusive" and "shared".
-            Default is "shared".
+        listener (Union[Callable, TableListener]): listener for table changes
+        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+            description, default is None
+        do_replay (bool): whether to replay the initial snapshot of the table, default is False
+        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
 
     Returns:
-        a TableListenerHandle instance
+        a TableListenerHandle
 
     Raises:
         DHError
     """
+    table_listener_handle = TableListenerHandle(t=t, listener=listener, description=description)
+    table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
+    return table_listener_handle
 
-    try:
-        if replay_initial and not start_listening:
-            raise ValueError(
-                "Unable to create listener.  Inconsistent arguments.  If the initial snapshot is replayed ("
-                "replay_initial=True), then the listener must be registered to start listening ("
-                "start_listening=True)."
-            )
+
+class TableListenerHandle:
+    """A handle for a table listener."""
+
+    def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
+        """Creates a new table listener handle.
+
+        Table change events are processed by 'listener', which can be either
+        (1) a callable (e.g. function) or
+        (2) an instance of TableListener type which provides an "on_update" method.
+
+        The callable or the on_update method must have one of the following two signatures.
+        * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
+        The 'update' parameter is an object that describes the table update;
+        The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
+            snapshot and 'false' during normal updates.
+
+        Args:
+            t (Table): table to listen to
+            listener (Union[Callable, TableListener]): listener for table changes
+            description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+                description, default is None
+
+        Raises:
+            ValueError
+        """
+        self.t = t
 
         if callable(listener):
-            listener_adapter = _wrap_listener_func(t, description, listener, replay_initial, retain)
-        elif isinstance(listener, (TableListener, TableReplayListener)):
-            listener_adapter = _wrap_listener_obj(t, description, listener, replay_initial, retain)
+            listener_wrapped = _wrap_listener_func(t, description, listener)
+        elif isinstance(listener, TableListener):
+            listener_wrapped = _wrap_listener_obj(t, description, listener)
         else:
             raise ValueError("listener is neither callable nor TableListener nor TableReplayListener object")
+        self.listener = _JPythonReplayListenerAdapter(description, t.j_table, False, listener_wrapped)
 
-        handle = TableListenerHandle(t, listener_adapter)
+        self.started = False
 
-        def start():
-            if replay_initial:
-                listener_adapter.replay()
+    def start(self, do_replay: bool = False, replay_lock: str = "shared") -> None:
+        """Start the listener by registering it with the table and listening for updates.
 
-            if start_listening:
-                handle.register()
+        lock_type (str): UGP lock type, used when replay_initial=True, valid values are "exclusive" and "shared".
+            Default is "shared".
 
-        if replay_initial:
-            _do_locked(start, lock_type=lock_type)
-        else:
-            start()
+        Args:
+            do_replay (bool): whether to replay the initial snapshot of the table, default is False
+            replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'.
 
-        return handle
-    except Exception as e:
-        raise DHError(e, "failed to listen to the table changes.") from e
+        Raises:
+            DHError
+        """
+        if self.started:
+            raise RuntimeError("Attempting to start an already started listener..")
+
+        try:
+            def _start():
+                if do_replay:
+                    self.listener.replay()
+
+                self.t.j_table.listenForUpdates(self.listener)
+
+            if do_replay:
+                _do_locked(_start, lock_type=replay_lock)
+            else:
+                _start()
+        except Exception as e:
+            raise DHError(e, "failed to listen to the table changes.") from e
+
+        self.started = True
+
+    def stop(self) -> None:
+        """Stop the listener by de=registering it from the table and stop listening for updates."""
+
+        if not self.started:
+            return
+        self.t.j_table.removeUpdateListener(self.listener)
+        self.started = False
