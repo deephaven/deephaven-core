@@ -18,7 +18,7 @@ configurations {
 }
 
 // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
-def protobufVersion = '3.17.3'
+def protobufVersion = '3.20.1'
 def boringSslVersion = '2.0.34.Final'
 
 dependencies {

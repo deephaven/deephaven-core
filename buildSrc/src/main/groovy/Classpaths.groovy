@@ -48,14 +48,14 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '6.0.1'
+    static final String ARROW_VERSION = '7.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.0-alpha5'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '1.12.0'
+    static final String FLATBUFFER_VERSION = '2.0.3'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
@@ -87,7 +87,7 @@ class Classpaths {
     static final String GROOVY_VERSION = '3.0.9'
 
     static final String GRPC_GROUP = 'io.grpc'
-    static final String GRPC_VERSION = '1.42.1'
+    static final String GRPC_VERSION = '1.44.0'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
