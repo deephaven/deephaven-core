@@ -4,115 +4,212 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.annotations.VisibleForTesting;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) RowSet
- * into the appropriate segment of a component table.
+ * This class manages the row key space allocated to constituent Tables for a UnionColumnSource, so that we can map row
+ * keys from an outer (merged) RowSet to the enclosing constituent Table.
  */
+@VisibleForTesting
 public class UnionRedirection implements Serializable {
-    /**
-     * What do we tell users when they try to insert into a full row redirection.
-     */
-    private static final String INDEX_OVERFLOW_MESSAGE =
-            "Failure to insert rowSet into UnionRedirection, TrackingWritableRowSet values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
 
     /**
-     * This is the minimum size of an initial allocation of a region.
+     * Message for users when they try to insert into a full row redirection.
      */
-    public static final long CHUNK_MULTIPLE =
-            Configuration.getInstance().getLongWithDefault("UnionRedirection.chunkMultiple", 1 << 16);
+    private static final String ROW_SET_OVERFLOW_MESSAGE =
+            "Failure to insert row set into UnionRedirection, row keys exceed max long.  If you have several recursive"
+                    + " merges, consider rewriting your query to do a single merge of many tables.";
 
     /**
-     * How many slots do we allocate for tables (one slot per table).
+     * Each constituent is allocated row key space in multiples of this unit.
+     */
+    @VisibleForTesting
+    public static final long ALLOCATION_UNIT_ROW_KEYS =
+            Configuration.getInstance().getLongWithDefault("UnionRedirection.allocationUnit", 1 << 16);
+
+    /**
+     * Number of table slots to allocate initially.
      */
     private static final int INITIAL_SIZE = 8;
 
-    // cached last position, used to avoid the binary search for the table id, when requesting it for consecutive
-    // indices
-    private final ThreadLocal<Integer> lastPos = ThreadLocal.withInitial(() -> 0);
-    private final ThreadLocal<Integer> prevLastPos = ThreadLocal.withInitial(() -> 0);
+    /**
+     * Cached prior slot used by {@link #currSlotForRowKey(long)}.
+     */
+    private final ThreadLocal<Integer> priorCurrSlot = ThreadLocal.withInitial(() -> 0);
 
-    // how many tables have been added to this redirection
-    private int size = 0;
+    /**
+     * Cached prior slot used by {@link #prevSlotForRowKey(long)}.
+     */
+    private final ThreadLocal<Integer> priorPrevSlot = ThreadLocal.withInitial(() -> 0);
 
-    // the start of our outer RowSet for this entry, the end of the current entry (+ 1) is in the next table
-    long[] startOfIndices = new long[INITIAL_SIZE];
+    /**
+     * Number of slots in use in the current version of the union. Note that {@code currFirstRowKeys[currSize]} is the
+     * size of the row key space currently allocated to our output.
+     */
+    private int currSize = 0;
+
+    /**
+     * Number of slots in use in the previous version of the union. Note that {@code prevFirstRowKeys[prevSize]} is the
+     * size of the row key space previously allocated to our output.
+     */
+    private int prevSize = 0;
+
+    /**
+     * The current first row key for each slot in of our outer RowSet for this entry, the end of the current entry (+ 1)
+     * is in the next table
+     * 
+     */
+    private long[] currFirstRowKeys = new long[INITIAL_SIZE];
 
     // the start of our outer prev RowSet for this entry, the end of the current entry (+ 1) is in the next table
-    long[] prevStartOfIndices = new long[INITIAL_SIZE];
+    private long[] prevFirstRowKeys = new long[INITIAL_SIZE];
 
-    // copy of prevStartOfIndices to be updated during the UGP cycle and swapped as a terminal notification
-    long[] prevStartOfIndicesAlt = new long[INITIAL_SIZE];
 
     /**
-     * Fetch the table id for a given row key.
-     * 
-     * @param index the row key to lookup
-     * @return table id of where to find content
+     * Get the first row key currently allocated to {@code slot}. This value may be used to "un-shift" the downstream
+     * row key space allocated to this slot into the row key space of the upstream table currently occupying this slot.
+     *
+     * @param slot The slot to lookup
+     * @return The first row key currently allocated to the slot
      */
-    int tidForIndex(long index) {
-        int localTid = lastPos.get();
-        if (index >= startOfIndices[localTid]) {
-            if (index < startOfIndices[localTid + 1]) {
-                return localTid;
-            }
-            localTid = Arrays.binarySearch(startOfIndices, localTid + 1, size, index);
-        } else {
-            localTid = Arrays.binarySearch(startOfIndices, 0, localTid, index);
-        }
-        if (localTid < 0) {
-            localTid = -localTid - 2;
-        }
-
-        lastPos.set(localTid);
-
-        return localTid;
+    long currFirstRowKeyForSlot(final int slot) {
+        return currFirstRowKeys[slot];
     }
 
     /**
-     * Fetch the table id for a given row key.
-     * 
-     * @param index the row key to lookup
-     * @return table id of where to find content
+     * Get the last row key currently allocated to {@code slot}. This value may be used to slice row sequences
+     * into the range allocated to the upstream table currently occupying this slot.
+     *
+     * @param slot The slot to lookup
+     * @return The last row key currently allocated to the slot
      */
-    int tidForPrevIndex(long index) {
-        int localTid = prevLastPos.get();
-        if (index >= prevStartOfIndices[localTid]) {
-            if (index < prevStartOfIndices[localTid + 1]) {
-                return localTid;
-            }
-            localTid = Arrays.binarySearch(prevStartOfIndices, localTid + 1, size, index);
-        } else {
-            localTid = Arrays.binarySearch(prevStartOfIndices, 0, localTid, index);
-        }
-        if (localTid < 0) {
-            localTid = -localTid - 2;
-        }
-
-        prevLastPos.set(localTid);
-
-        return localTid;
+    long currLastRowKeyForSlot(final int slot){
+        return currFirstRowKeys[slot + 1] - 1;
     }
 
     /**
-     * Rounds key up to the nearest boundary with friendly properties.
-     * 
-     * @param key the max key for a given table
-     * @return a multiple of {@code CHUNK_MULTIPLE} higher than provided key
+     * Get the first row key previously allocated to {@code slot}. This value may be used to "un-shift" the downstream
+     * row key space allocated to this slot into the row key space of the upstream table previously occupying this slot.
+     *
+     * @param slot The slot to lookup
+     * @return The first row key previously allocated to the slot
      */
-    private long roundToRegionBoundary(long key) {
-        long numChunks = key / CHUNK_MULTIPLE + 1;
+    long prevFirstRowKeyForSlot(final int slot) {
+        return prevFirstRowKeys[slot];
+    }
 
-        if (numChunks < 0) {
-            throw new UnsupportedOperationException(INDEX_OVERFLOW_MESSAGE);
+    /**
+     * Get the last row key previously allocated to {@code slot}. This value may be used to slice row sequences
+     * into the range allocated to the upstream table previously occupying this slot.
+     *
+     * @param slot The slot to lookup
+     * @return The last row key previously allocated to the slot
+     */
+    long prevLastRowKeyForSlot(final int slot){
+        return prevFirstRowKeys[slot + 1] - 1;
+    }
+
+    /**
+     * Find the current slot holding {@code rowKey}.
+     *
+     * @param rowKey The row key to lookup
+     * @return Table slot that currently contains the row key
+     */
+    int currSlotForRowKey(final long rowKey) {
+        return slotForRowKey(rowKey, priorCurrSlot, currFirstRowKeys, currSize);
+    }
+
+    /**
+     * Find the current slot at or after {@code firstSlot} holding {@code rowKey}.
+     *
+     * @param rowKey The row key to lookup
+     * @return Table slot that currently contains the row key
+     */
+    int currSlotForRowKey(final long rowKey, final int firstSlot) {
+        return slotForRowKey(rowKey, firstSlot, currFirstRowKeys, currSize);
+    }
+
+    /**
+     * Find the previous slot holding {@code rowKey}.
+     *
+     * @param rowKey The row key to lookup
+     * @return Table slot that previously contained the row key
+     */
+    int prevSlotForRowKey(final long rowKey) {
+        return slotForRowKey(rowKey, priorPrevSlot, prevFirstRowKeys, prevSize);
+    }
+
+    /**
+     * Find the previous slot at or after {@code firstSlot} holding {@code rowKey}.
+     *
+     * @param rowKey The row key to lookup
+     * @return Table slot that previously contained the row key
+     */
+    int prevSlotForRowKey(final long rowKey, final int firstSlot) {
+        return slotForRowKey(rowKey, firstSlot, prevFirstRowKeys, prevSize);
+    }
+
+    private static int slotForRowKey(final long rowKey, @NotNull final ThreadLocal<Integer> priorSlot,
+            @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
+        int firstSlot = priorSlot.get();
+        if (rowKey >= firstRowKeyForSlot[firstSlot]) {
+            if (rowKey < firstRowKeyForSlot[firstSlot + 1]) {
+                return firstSlot;
+            }
+        } else {
+            firstSlot = 0;
+        }
+        final int slot = slotForRowKey(rowKey, firstSlot, firstRowKeyForSlot, numSlots);
+        priorSlot.set(slot);
+        return slot;
+    }
+
+    private static int slotForRowKey(final long rowKey, final int firstSlot,
+            @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
+        final int slot = Arrays.binarySearch(firstRowKeyForSlot, firstSlot, numSlots, rowKey);
+        return slot < 0 ? ~slot - 1 : slot;
+    }
+
+    /**
+     * Compute the key space size appropriate to hold {@code lastRowKey}.
+     * 
+     * @param lastRowKey The highest row key for a given constituent table
+     * @return The key space size to allocate
+     */
+    private static long keySpaceFor(final long lastRowKey) {
+        final long numUnits = lastRowKey / ALLOCATION_UNIT_ROW_KEYS + 1;
+
+        if (numUnits < 0) {
+            throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
         }
 
-        // Require empty tables have non-empty keyspace so that we can binary search on key to find source table.
-        return Math.max(1, numChunks) * CHUNK_MULTIPLE;
+        // Require empty tables to have non-empty key space allocation so that we can binary search using a row key to
+        // find its source table slot.
+        return Math.max(1, numUnits) * ALLOCATION_UNIT_ROW_KEYS;
+    }
+
+    /**
+     * Update previous redirections to match current redirections. This should be done at the end of initialization, and
+     * the end of the updating phase of each UGP cycle.
+     */
+    void copyCurrToPrev() {
+        if (prevFirstRowKeys.length != currFirstRowKeys.length) {
+            prevFirstRowKeys = new long[currFirstRowKeys.length];
+        }
+        System.arraycopy(currFirstRowKeys, 0, prevFirstRowKeys, 0, currFirstRowKeys.length);
+        prevSize = currSize;
+    }
+
+    void ensureCapacity(final int numTables) {
+        if (currFirstRowKeys.length < numTables) {
+            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables));
+        }
     }
 
     /**
@@ -122,34 +219,34 @@ public class UnionRedirection implements Serializable {
      * @param maxKey the maximum key of the table
      */
     public void appendTable(long maxKey) {
-        if (size + 1 == startOfIndices.length) {
-            startOfIndices = Arrays.copyOf(startOfIndices, size * 2);
-            prevStartOfIndices = Arrays.copyOf(prevStartOfIndices, size * 2);
-            prevStartOfIndicesAlt = Arrays.copyOf(prevStartOfIndicesAlt, size * 2);
+        if (currSize + 1 == currFirstRowKeys.length) {
+            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, currSize * 2);
+            prevFirstRowKeys = Arrays.copyOf(prevFirstRowKeys, currSize * 2);
+            prevStartOfIndicesAlt = Arrays.copyOf(prevStartOfIndicesAlt, currSize * 2);
         }
 
-        final long keySpace = roundToRegionBoundary(maxKey);
+        final long keySpace = keySpaceFor(maxKey);
 
-        ++size;
-        startOfIndices[size] = startOfIndices[size - 1] + keySpace;
-        prevStartOfIndices[size] = prevStartOfIndices[size - 1] + keySpace;
-        prevStartOfIndicesAlt[size] = prevStartOfIndicesAlt[size - 1] + keySpace;
+        ++currSize;
+        currFirstRowKeys[currSize] = currFirstRowKeys[currSize - 1] + keySpace;
+        prevFirstRowKeys[currSize] = prevFirstRowKeys[currSize - 1] + keySpace;
+        prevStartOfIndicesAlt[currSize] = prevStartOfIndicesAlt[currSize - 1] + keySpace;
 
-        if (startOfIndices[size] < 0 || prevStartOfIndices[size] < 0 || prevStartOfIndicesAlt[size] < 0) {
-            throw new UnsupportedOperationException(INDEX_OVERFLOW_MESSAGE);
+        if (currFirstRowKeys[currSize] < 0 || prevFirstRowKeys[currSize] < 0 || prevStartOfIndicesAlt[currSize] < 0) {
+            throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
         }
     }
 
     /**
-     * Computes any shift that should be applied to future tables.
+     * Computes any shift that should be applied to tables at higher slots.
      * 
-     * @param tableId the table id of the table that might need more space
-     * @param maxKey the max key for the table with tableId
-     * @return the relative shift to be applied to all tables with greater tableIds
+     * @param slot The slot of the table that might need more space
+     * @param lastRowKey The last row key in the table at {@code slot}
+     * @return The relative shift to be applied to all tables at higher slots
      */
-    public long computeShiftIfNeeded(int tableId, long maxKey) {
-        long keySpace = roundToRegionBoundary(maxKey);
-        long currRange = startOfIndices[tableId + 1] - startOfIndices[tableId];
-        return Math.max(0, keySpace - currRange);
+    long computeShiftIfNeeded(final int slot, final long lastRowKey) {
+        final long keySpaceNeeded = keySpaceFor(lastRowKey);
+        final long keySpaceAllocated = currFirstRowKeys[slot + 1] - currFirstRowKeys[slot];
+        return Math.max(0, keySpaceNeeded - keySpaceAllocated);
     }
 }

@@ -4,12 +4,17 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -17,6 +22,7 @@ import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,217 +64,218 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         this.subSources = subSources;
     }
 
-    private long getOffset(long index, int tid) {
-        return index - unionRedirection.startOfIndices[tid];
+    private long getOffset(final long rowKey, final int slot) {
+        return rowKey - unionRedirection.currFirstRowKeyForSlot(slot);
     }
 
-    private long getPrevOffset(long index, int tid) {
-        return index - unionRedirection.prevStartOfIndices[tid];
+    private long getPrevOffset(final long rowKey, final int slot) {
+        return rowKey - unionRedirection.prevFirstRowKeyForSlot(slot);
     }
 
     @Override
-    public Boolean getBoolean(long rowKey) {
+    public Boolean getBoolean(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getBoolean(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getBoolean(offset);
     }
 
     @Override
-    public byte getByte(long rowKey) {
+    public byte getByte(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getByte(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getByte(offset);
     }
 
     @Override
-    public char getChar(long rowKey) {
+    public char getChar(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getChar(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getChar(offset);
     }
 
     @Override
-    public double getDouble(long rowKey) {
+    public double getDouble(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getDouble(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getDouble(offset);
     }
 
     @Override
-    public float getFloat(long rowKey) {
+    public float getFloat(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getFloat(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getFloat(offset);
     }
 
     @Override
-    public int getInt(long rowKey) {
+    public int getInt(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getInt(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getInt(offset);
     }
 
     @Override
-    public long getLong(long rowKey) {
+    public long getLong(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getLong(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getLong(offset);
     }
 
     @Override
-    public short getShort(long rowKey) {
+    public short getShort(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getShort(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getShort(offset);
     }
 
     @Override
-    public T get(long rowKey) {
+    public T get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForIndex(rowKey);
-        final long offset = getOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].get(offset);
+        final int slot = unionRedirection.currSlotForRowKey(rowKey);
+        final long offset = getOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].get(offset);
     }
 
     private void checkPos(long index, int pos) {
         if (pos >= subSources.length) {
-            throw Assert.statementNeverExecuted(
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted(
                     "rowSet: " + index + ", pos: " + pos + ", subSources.length: " + subSources.length);
         }
     }
 
     @Override
-    public T getPrev(long rowKey) {
+    public T getPrev(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrev(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrev(offset);
     }
 
     @Override
-    public Boolean getPrevBoolean(long rowKey) {
+    public Boolean getPrevBoolean(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevBoolean(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevBoolean(offset);
     }
 
     @Override
-    public byte getPrevByte(long rowKey) {
+    public byte getPrevByte(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevByte(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevByte(offset);
     }
 
     @Override
-    public char getPrevChar(long rowKey) {
+    public char getPrevChar(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevChar(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevChar(offset);
     }
 
     @Override
-    public double getPrevDouble(long rowKey) {
+    public double getPrevDouble(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevDouble(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevDouble(offset);
     }
 
     @Override
-    public float getPrevFloat(long rowKey) {
+    public float getPrevFloat(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevFloat(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevFloat(offset);
     }
 
     @Override
-    public int getPrevInt(long rowKey) {
+    public int getPrevInt(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevInt(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevInt(offset);
     }
 
     @Override
-    public long getPrevLong(long rowKey) {
+    public long getPrevLong(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevLong(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevLong(offset);
     }
 
     @Override
-    public short getPrevShort(long rowKey) {
+    public short getPrevShort(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final int tid = unionRedirection.tidForPrevIndex(rowKey);
-        final long offset = getPrevOffset(rowKey, tid);
-        checkPos(rowKey, tid);
-        return subSources[tid].getPrevShort(offset);
+        final int slot = unionRedirection.prevSlotForRowKey(rowKey);
+        final long offset = getPrevOffset(rowKey, slot);
+        checkPos(rowKey, slot);
+        return subSources[slot].getPrevShort(offset);
     }
 
     @Override
@@ -283,104 +290,345 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         return true;
     }
 
-    private static class FillContext implements ColumnSource.FillContext {
-        private final int chunkCapacity;
+    private enum DataVersion {
+        CURR, PREV
+    }
 
-        private int lastTableId = -1;
-        private int lastContextCapacity = 0;
-        private ColumnSource.FillContext lastTableContext = null;
+    private abstract class SlotState<SLOT_CONTEXT_TYPE extends Context> implements SafeCloseable {
 
-        FillContext(final int chunkCapacity) {
-            this.chunkCapacity = chunkCapacity;
+        private int slot = -1;
+        private long slotFirstKeyAllocated;
+        private DataVersion dataVersion;
+        ColumnSource<T> source;
+        SLOT_CONTEXT_TYPE context;
+        int capacity;
+
+        void prepare(final int sliceSlot, final DataVersion sliceDataVersion, final int sliceSize) {
+            final boolean updateSource = sliceSlot != slot || dataVersion != sliceDataVersion;
+            final boolean updateContext = updateSource || context == null || sliceSize < capacity;
+            if (updateSource) {
+                slot = sliceSlot;
+                dataVersion = sliceDataVersion;
+                switch (dataVersion) {
+                    case CURR:
+                        slotFirstKeyAllocated = unionRedirection.currFirstRowKeyForSlot(sliceSlot);
+                        break;
+                    case PREV:
+                        slotFirstKeyAllocated = unionRedirection.prevFirstRowKeyForSlot(sliceSlot);
+                        break;
+                }
+                source = subSources[slot]; // TODO-RWC
+            }
+            if (updateContext) {
+                closeContext();
+                makeContext(sliceSize);
+            }
+        }
+
+        long shift() {
+            return slotFirstKeyAllocated;
+        }
+
+        abstract void makeContext(int sliceSize);
+
+        private void closeContext() {
+            if (context != null) {
+                context.close();
+                context = null;
+            }
         }
 
         @Override
         public void close() {
-            if (lastTableContext != null) {
-                lastTableContext.close();
-            }
+            slot = -1;
+            dataVersion = null;
+            source = null;
+            closeContext();
+            capacity = 0;
+        }
+    }
+
+    private class SlotFillState extends SlotState<ChunkSource.FillContext> {
+
+        @Override
+        void makeContext(final int sliceSize) {
+            context = source.makeFillContext(sliceSize);
+            capacity = context.supportsUnboundedFill() ? Integer.MAX_VALUE : sliceSize;
+        }
+    }
+
+    private class SlotGetState extends SlotState<ChunkSource.GetContext> {
+
+        @Override
+        void makeContext(final int sliceSize) {
+            context = source.makeGetContext(sliceSize);
+            capacity = sliceSize;
+        }
+    }
+
+    private class FillContext implements ChunkSource.FillContext {
+
+        private final ShiftedRowSequence sourceRowSequence;
+        private final ResettableWritableChunk<Any> sliceDestination;
+        private final SlotFillState slotState;
+
+        private FillContext() {
+            sourceRowSequence = new ShiftedRowSequence();
+            sliceDestination = getChunkType().makeResettableWritableChunk();
+            slotState = new SlotFillState();
+        }
+
+        private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
+            return sourceRowSequence.reset(rowSequence, -slotState.shift());
+        }
+
+        private void fillChunkAppend(
+                final int slot,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence outerRowSequence) {
+            final int sliceSize = outerRowSequence.intSize();
+            slotState.prepare(slot, DataVersion.CURR, sliceSize);
+            slotState.source.fillChunk(slotState.context,
+                    sliceDestination.resetFromChunk(destination, destination.size(), sliceSize),
+                    sourceRowSequence(outerRowSequence));
+            destination.setSize(destination.size() + sliceSize);
+        }
+
+        private void fillPrevChunkAppend(
+                final int slot,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence outerRowSequence) {
+            final int sliceSize = outerRowSequence.intSize();
+            slotState.prepare(slot, DataVersion.PREV, sliceSize);
+            slotState.source.fillPrevChunk(slotState.context,
+                    sliceDestination.resetFromChunk(destination, destination.size(), sliceSize),
+                    sourceRowSequence(outerRowSequence));
+            destination.setSize(destination.size() + sliceSize);
+        }
+
+        @Override
+        public void close() {
+            sourceRowSequence.close();
+            sliceDestination.close();
+            slotState.close();
+        }
+    }
+
+    private class GetContext extends DefaultGetContext<Values> {
+
+        private final SlotGetState slotState;
+
+        private GetContext(final int chunkCapacity) {
+            super(UnionColumnSource.this, chunkCapacity, null);
+            slotState = new SlotGetState();
+        }
+
+        @Override
+        public FillContext getFillContext() {
+            // noinspection unchecked
+            return ((FillContext) super.getFillContext());
+        }
+
+        private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
+            return getFillContext().sourceRowSequence.reset(rowSequence, -slotState.shift());
+        }
+
+        private Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
+            slotState.prepare(slot, DataVersion.CURR, outerRowSequence.intSize());
+            return slotState.source.getChunk(slotState.context, sourceRowSequence(outerRowSequence));
+        }
+
+        private Chunk<? extends Values> getChunk(final int slot, final long firstOuterKey, final long lastOuterKey) {
+            slotState.prepare(slot, DataVersion.CURR, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
+            return slotState.source.getChunk(slotState.context,
+                    firstOuterKey - slotState.shift(), lastOuterKey - slotState.shift());
+        }
+
+        private Chunk<? extends Values> getPrevChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
+            slotState.prepare(slot, DataVersion.PREV, outerRowSequence.intSize());
+            return slotState.source.getPrevChunk(slotState.context, sourceRowSequence(outerRowSequence));
+        }
+
+        private Chunk<? extends Values> getPrevChunk(final int slot, final long firstOuterKey,
+                final long lastOuterKey) {
+            slotState.prepare(slot, DataVersion.PREV, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
+            return slotState.source.getPrevChunk(slotState.context,
+                    firstOuterKey - slotState.shift(), lastOuterKey - slotState.shift());
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            slotState.close();
         }
     }
 
     @Override
-    public ColumnSource.FillContext makeFillContext(int chunkCapacity, final SharedContext sharedContext) {
-        return new FillContext(chunkCapacity);
+    public ColumnSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return new FillContext();
     }
 
     @Override
-    public void fillChunk(@NotNull ColumnSource.FillContext _context,
-            @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence) {
-        final FillContext context = (FillContext) _context;
-        doFillChunk(context, destination, rowSequence, false);
+    public ChunkSource.GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return new GetContext(chunkCapacity);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
-            @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence) {
-        final FillContext context = (FillContext) _context;
-        doFillChunk(context, destination, rowSequence, true);
-    }
-
-    private void doFillChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Values> destination,
-            @NotNull RowSequence rowSequence,
-            boolean usePrev) {
-        final int rsSize = rowSequence.intSize();
-
-        // Safe to assume destination has sufficient size for the request.
-        destination.setSize(rsSize);
-
-        // To compute startTid and lastTid we assume at least one element is in the provided rowSequence.
-        if (rsSize == 0) {
+    public void fillChunk(
+            @NotNull final ColumnSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            destination.setSize(0);
             return;
         }
+        // noinspection unchecked
+        final FillContext fillContext = (FillContext) context;
+        final int firstSlot = unionRedirection.currSlotForRowKey(rowSequence.firstRowKey());
+        final long lastKeyForFirstSlot = unionRedirection.currLastRowKeyForSlot(firstSlot);
+        doFillChunk(fillContext, destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+    }
 
-        final int startTid = usePrev ? unionRedirection.tidForPrevIndex(rowSequence.firstRowKey())
-                : unionRedirection.tidForIndex(rowSequence.firstRowKey());
-        final int lastTid = usePrev ? unionRedirection.tidForPrevIndex(rowSequence.lastRowKey())
-                : unionRedirection.tidForIndex(rowSequence.lastRowKey());
-        final long[] startOfIndices = usePrev ? unionRedirection.prevStartOfIndices : unionRedirection.startOfIndices;
-
-        try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
-                final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
-                final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
-            int offset = 0;
-            for (int tid = startTid; tid <= lastTid; ++tid) {
-                final int capacityRemaining = Math.min(context.chunkCapacity, rsSize - offset);
-                if (capacityRemaining <= 0) {
-                    break;
-                }
-
-                okHelper.reset(rsIt.getNextRowSequenceThrough(startOfIndices[tid + 1] - 1), -startOfIndices[tid]);
-                if (okHelper.intSize() <= 0) {
-                    // we do not need to invoke fillChunk on this subSource
-                    continue;
-                }
-
-                final int minCapacity = Math.min(capacityRemaining, okHelper.intSize());
-                if (context.lastTableId != tid || context.lastContextCapacity < minCapacity) {
-                    context.lastTableId = tid;
-                    context.lastContextCapacity = minCapacity;
-                    if (context.lastTableContext != null) {
-                        context.lastTableContext.close();
-                    }
-                    context.lastTableContext = subSources[tid].makeFillContext(minCapacity);
-                }
-
-                resettableDestination.resetFromChunk(destination, offset, capacityRemaining);
-
-                if (usePrev) {
-                    subSources[tid].fillPrevChunk(context.lastTableContext, resettableDestination, okHelper);
-                } else {
-                    subSources[tid].fillChunk(context.lastTableContext, resettableDestination, okHelper);
-                }
-                offset += resettableDestination.size();
-            }
-
-            destination.setSize(offset);
+    private void doFillChunk(
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence,
+            final int firstSlot,
+            final long lastKeyForFirstSlot) {
+        if (rowSequence.lastRowKey() <= lastKeyForFirstSlot) {
+            fillContext.fillChunkAppend(firstSlot, destination, rowSequence);
+            return;
         }
+        try (final RowSequence.Iterator sliceIterator = rowSequence.getRowSequenceIterator()) {
+            {
+                final RowSequence sliceRowSequence = sliceIterator.getNextRowSequenceThrough(lastKeyForFirstSlot);
+                fillContext.fillChunkAppend(firstSlot, destination, sliceRowSequence);
+            }
+            while (sliceIterator.hasMore()) {
+                final int slot = unionRedirection.currSlotForRowKey(sliceIterator.peekNextKey());
+                final long lastKeyForSlot = unionRedirection.currLastRowKeyForSlot(slot);
+                final RowSequence sliceRowSequence = sliceIterator.getNextRowSequenceThrough(lastKeyForSlot);
+                fillContext.fillChunkAppend(slot, destination, sliceRowSequence);
+            }
+        }
+    }
+
+    @Override
+    public void fillPrevChunk(
+            @NotNull final ColumnSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            destination.setSize(0);
+            return;
+        }
+        // noinspection unchecked
+        final FillContext fillContext = (FillContext) context;
+        final int firstSlot = unionRedirection.prevSlotForRowKey(rowSequence.firstRowKey());
+        final long lastKeyForFirstSlot = unionRedirection.prevLastRowKeyForSlot(firstSlot);
+        doFillPrevChunk(fillContext, destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+    }
+
+    private void doFillPrevChunk(
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence,
+            final int firstSlot,
+            final long lastKeyForFirstSlot) {
+        if (rowSequence.lastRowKey() <= lastKeyForFirstSlot) {
+            fillContext.fillPrevChunkAppend(firstSlot, destination, rowSequence);
+            return;
+        }
+        try (final RowSequence.Iterator sliceIterator = rowSequence.getRowSequenceIterator()) {
+            {
+                final RowSequence sliceRowSequence = sliceIterator.getNextRowSequenceThrough(lastKeyForFirstSlot);
+                fillContext.fillPrevChunkAppend(firstSlot, destination, sliceRowSequence);
+            }
+            while (sliceIterator.hasMore()) {
+                final int slot = unionRedirection.prevSlotForRowKey(sliceIterator.peekNextKey());
+                final long lastKeyForSlot = unionRedirection.prevLastRowKeyForSlot(slot);
+                final RowSequence sliceRowSequence = sliceIterator.getNextRowSequenceThrough(lastKeyForSlot);
+                fillContext.fillPrevChunkAppend(slot, destination, sliceRowSequence);
+            }
+        }
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(
+            @NotNull final ChunkSource.GetContext context, @NotNull final RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return getChunkType().getEmptyChunk();
+        }
+        // noinspection unchecked
+        final GetContext getContext = (GetContext) context;
+        final int firstSlot = unionRedirection.currSlotForRowKey(rowSequence.firstRowKey());
+        final long lastKeyForFirstSlot = unionRedirection.currLastRowKeyForSlot(firstSlot);
+        if (rowSequence.lastRowKey() <= lastKeyForFirstSlot) {
+            return getContext.getChunk(firstSlot, rowSequence);
+        }
+        final WritableChunk<Values> destination = DefaultGetContext.getWritableChunk(context);
+        doFillChunk(getContext.getFillContext(), destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+        return destination;
+    }
+
+    @Override
+    public Chunk<? extends Values> getChunk(
+            @NotNull final ChunkSource.GetContext context, final long firstKey, final long lastKey) {
+        final long sizeInRows = lastKey - firstKey + 1;
+        if (sizeInRows == 0) {
+            return getChunkType().getEmptyChunk();
+        }
+        // noinspection unchecked
+        final GetContext getContext = (GetContext) context;
+        final int firstSlot = unionRedirection.currSlotForRowKey(firstKey);
+        final long lastKeyForFirstSlot = unionRedirection.currLastRowKeyForSlot(firstSlot);
+        if (lastKey <= lastKeyForFirstSlot) {
+            return getContext.getChunk(firstSlot, firstKey, lastKey);
+        }
+        final WritableChunk<Values> destination = DefaultGetContext.getWritableChunk(context);
+        try (final RowSequence rowSequence = RowSequenceFactory.forRange(firstKey, lastKey)) {
+            doFillChunk(getContext.getFillContext(), destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+        }
+        return destination;
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(
+            @NotNull final ChunkSource.GetContext context, @NotNull final RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return getChunkType().getEmptyChunk();
+        }
+        // noinspection unchecked
+        final GetContext getContext = (GetContext) context;
+        final int firstSlot = unionRedirection.prevSlotForRowKey(rowSequence.firstRowKey());
+        final long lastKeyForFirstSlot = unionRedirection.prevLastRowKeyForSlot(firstSlot);
+        if (rowSequence.lastRowKey() <= lastKeyForFirstSlot) {
+            return getContext.getPrevChunk(firstSlot, rowSequence);
+        }
+        final WritableChunk<Values> destination = DefaultGetContext.getWritableChunk(context);
+        doFillPrevChunk(getContext.getFillContext(), destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+        return destination;
+    }
+
+    @Override
+    public Chunk<? extends Values> getPrevChunk(
+            @NotNull final ChunkSource.GetContext context, final long firstKey, final long lastKey) {
+        final long sizeInRows = lastKey - firstKey + 1;
+        if (sizeInRows == 0) {
+            return getChunkType().getEmptyChunk();
+        }
+        // noinspection unchecked
+        final GetContext getContext = (GetContext) context;
+        final int firstSlot = unionRedirection.prevSlotForRowKey(firstKey);
+        final long lastKeyForFirstSlot = unionRedirection.prevLastRowKeyForSlot(firstSlot);
+        if (lastKey <= lastKeyForFirstSlot) {
+            return getContext.getPrevChunk(firstSlot, firstKey, lastKey);
+        }
+        final WritableChunk<Values> destination = DefaultGetContext.getWritableChunk(context);
+        try (final RowSequence rowSequence = RowSequenceFactory.forRange(firstKey, lastKey)) {
+            doFillPrevChunk(getContext.getFillContext(), destination, rowSequence, firstSlot, lastKeyForFirstSlot);
+        }
+        return destination;
     }
 
     void appendColumnSource(ColumnSource<T> sourceToAdd) {
@@ -405,14 +653,14 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    private void ensureCapacity(int tid) {
+    private void ensureCapacity(final int slot) {
         int newLen = subSources.length;
-        if (tid < newLen) {
+        if (slot < newLen) {
             return;
         }
         do {
             newLen *= 2;
-        } while (tid >= newLen);
+        } while (slot >= newLen);
         subSources = Arrays.copyOf(subSources, newLen);
     }
 

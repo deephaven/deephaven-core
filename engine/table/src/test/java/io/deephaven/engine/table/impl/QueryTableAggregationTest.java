@@ -263,7 +263,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIncrementalByDownstreamFromMerge() {
-        final long mergeChunkMultiple = UnionRedirection.CHUNK_MULTIPLE;
+        final long mergeChunkMultiple = UnionRedirection.ALLOCATION_UNIT_ROW_KEYS;
 
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
         QueryScope.addParam(nowName, DateTime.now());

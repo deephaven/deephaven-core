@@ -15,7 +15,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -40,8 +39,7 @@ public class UnionSourceManager {
 
     private UpdateCommitter<UnionSourceManager> prevFlusher = null;
 
-    public UnionSourceManager(TableDefinition tableDefinition,
-            @Nullable NotificationQueue.Dependency parentDependency) {
+    public UnionSourceManager(TableDefinition tableDefinition, ) {
         sources = tableDefinition.getColumnList().stream()
                 .map((cd) -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
                 .toArray(UnionColumnSource[]::new);
@@ -167,11 +165,11 @@ public class UnionSourceManager {
     }
 
     private RowSet getShiftedIndex(final RowSet rowSet, final int tableId) {
-        return rowSet.shift(unionRedirection.startOfIndices[tableId]);
+        return rowSet.shift(unionRedirection.currFirstRowKeys[tableId]);
     }
 
     private RowSet getShiftedPrevIndex(final RowSet rowSet, final int tableId) {
-        return rowSet.shift(unionRedirection.prevStartOfIndices[tableId]);
+        return rowSet.shift(unionRedirection.prevFirstRowKeys[tableId]);
     }
 
     public Collection<Table> getComponentTables() {
@@ -184,8 +182,8 @@ public class UnionSourceManager {
     }
 
     private void swapPrevStartOfIndices() {
-        final long[] tmp = unionRedirection.prevStartOfIndices;
-        unionRedirection.prevStartOfIndices = unionRedirection.prevStartOfIndicesAlt;
+        final long[] tmp = unionRedirection.prevFirstRowKeys;
+        unionRedirection.prevFirstRowKeys = unionRedirection.prevStartOfIndicesAlt;
         unionRedirection.prevStartOfIndicesAlt = tmp;
     }
 
@@ -219,24 +217,24 @@ public class UnionSourceManager {
                 final long newShift =
                         unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getRowSet().lastRowKey());
                 unionRedirection.prevStartOfIndicesAlt[tableId] =
-                        unionRedirection.startOfIndices[tableId] += accumulatedShift;
+                        unionRedirection.currFirstRowKeys[tableId] += accumulatedShift;
                 accumulatedShift += newShift;
                 if (newShift > 0 && tableId + 1 < firstShiftingTable) {
                     firstShiftingTable = tableId + 1;
                 }
             }
-            // note: prevStart must be set irregardless of whether accumulatedShift is non-zero or not.
+            // note: prevStart must be set regardless of whether accumulatedShift is non-zero or not.
             unionRedirection.prevStartOfIndicesAlt[tables.size()] =
-                    unionRedirection.startOfIndices[tables.size()] += accumulatedShift;
+                    unionRedirection.currFirstRowKeys[tables.size()] += accumulatedShift;
 
             if (accumulatedShift > 0) {
                 final int maxTableId = tables.size() - 1;
 
                 final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                rowSet.removeRange(unionRedirection.prevStartOfIndices[firstShiftingTable], Long.MAX_VALUE);
+                rowSet.removeRange(unionRedirection.prevFirstRowKeys[firstShiftingTable], Long.MAX_VALUE);
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
-                    final long startOfShift = unionRedirection.startOfIndices[tableId];
+                    final long startOfShift = unionRedirection.currFirstRowKeys[tableId];
                     builder.appendRowSequenceWithOffset(tables.get(tableId).getRowSet(), startOfShift);
                 }
 
@@ -253,8 +251,8 @@ public class UnionSourceManager {
             // tracking
             int nextListenerId = 0;
             for (int tableId = 0; tableId < tables.size(); ++tableId) {
-                final long offset = unionRedirection.prevStartOfIndices[tableId];
-                final long currOffset = unionRedirection.startOfIndices[tableId];
+                final long offset = unionRedirection.prevFirstRowKeys[tableId];
+                final long currOffset = unionRedirection.currFirstRowKeys[tableId];
                 final long shiftDelta = currOffset - offset;
 
                 // Listeners only contains ticking tables. However, we might need to shift tables that do not tick.
@@ -265,8 +263,8 @@ public class UnionSourceManager {
 
                 if (listener == null || listener.getNotificationStep() != currentStep) {
                     if (shiftDelta != 0) {
-                        shiftedBuilder.shiftRange(unionRedirection.prevStartOfIndices[tableId],
-                                unionRedirection.prevStartOfIndices[tableId + 1] - 1, shiftDelta);
+                        shiftedBuilder.shiftRange(unionRedirection.prevFirstRowKeys[tableId],
+                                unionRedirection.prevFirstRowKeys[tableId + 1] - 1, shiftDelta);
                     }
                     continue;
                 }
@@ -278,9 +276,9 @@ public class UnionSourceManager {
                 final RowSetShiftData shiftData = listener.getShifted();
 
                 updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(),
-                        unionRedirection.startOfIndices[tableId]);
+                        unionRedirection.currFirstRowKeys[tableId]);
                 updateModifiedBuilder.appendRowSequenceWithOffset(listener.getModified(),
-                        unionRedirection.startOfIndices[tableId]);
+                        unionRedirection.currFirstRowKeys[tableId]);
 
                 if (shiftDelta == 0) {
                     try (final RowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
@@ -291,22 +289,22 @@ public class UnionSourceManager {
                     // If the shiftDelta is non-zero we have already updated the RowSet above (because we used the new
                     // RowSet), otherwise we need to apply the removals (adjusted by the table's starting key)
                     updateRemovedBuilder.appendRowSequenceWithOffset(listener.getRemoved(),
-                            unionRedirection.prevStartOfIndices[tableId]);
+                            unionRedirection.prevFirstRowKeys[tableId]);
                 }
 
                 // Apply and process shifts.
-                final long firstTableKey = unionRedirection.startOfIndices[tableId];
-                final long lastTableKey = unionRedirection.startOfIndices[tableId + 1] - 1;
+                final long firstTableKey = unionRedirection.currFirstRowKeys[tableId];
+                final long lastTableKey = unionRedirection.currFirstRowKeys[tableId + 1] - 1;
                 if (shiftData.nonempty() && rowSet.overlapsRange(firstTableKey, lastTableKey)) {
-                    final long prevCardinality = unionRedirection.prevStartOfIndices[tableId + 1] - offset;
-                    final long currCardinality = unionRedirection.startOfIndices[tableId + 1] - currOffset;
+                    final long prevCardinality = unionRedirection.prevFirstRowKeys[tableId + 1] - offset;
+                    final long currCardinality = unionRedirection.currFirstRowKeys[tableId + 1] - currOffset;
                     shiftedBuilder.appendShiftData(shiftData, offset, prevCardinality, currOffset, currCardinality);
 
                     // if the entire table was shifted, we've already applied the RowSet update
                     if (shiftDelta == 0) {
                         // it is possible that shifts occur outside of our reserved keyspace for this table; we must
                         // protect from shifting keys that belong to other tables by clipping the shift space
-                        final long lastLegalKey = unionRedirection.prevStartOfIndices[tableId + 1] - 1;
+                        final long lastLegalKey = unionRedirection.prevFirstRowKeys[tableId + 1] - 1;
 
                         try (RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
                             for (int idx = 0; idx < shiftData.size(); ++idx) {
@@ -329,8 +327,8 @@ public class UnionSourceManager {
                     }
                 } else if (shiftDelta != 0) {
                     // shift entire thing
-                    shiftedBuilder.shiftRange(unionRedirection.prevStartOfIndices[tableId],
-                            unionRedirection.prevStartOfIndices[tableId + 1] - 1, shiftDelta);
+                    shiftedBuilder.shiftRange(unionRedirection.prevFirstRowKeys[tableId],
+                            unionRedirection.prevFirstRowKeys[tableId + 1] - 1, shiftDelta);
                 }
             }
 
