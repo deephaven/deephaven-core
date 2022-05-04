@@ -148,6 +148,7 @@ public class TypedHasherFactory {
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .moveMainFull(TypedNaturalJoinFactory::rightIncrementalMoveMain)
+                    .addExtraPartialRehashParameter(ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build())
                     .alwaysMoveMain(true)
                     .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup);
 
@@ -184,6 +185,8 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
                     modifiedSlotTrackerParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
+            final ParameterSpec modifiedSlotTrackerParam = ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
                     .openAddressedAlternate(true)
@@ -191,6 +194,7 @@ public class TypedHasherFactory {
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
+                    .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
                     .moveMainFull(TypedNaturalJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedNaturalJoinFactory::incrementalMoveMainAlternate)
                     .alwaysMoveMain(true)
@@ -204,8 +208,6 @@ public class TypedHasherFactory {
                     false, TypedNaturalJoinFactory::incrementalRightFound,
                     TypedNaturalJoinFactory::incrementalRightInsert));
 
-            final TypeName modifiedSlotTracker = TypeName.get(NaturalJoinModifiedSlotTracker.class);
-            final ParameterSpec modifiedSlotTrackerParam = ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
@@ -408,7 +410,7 @@ public class TypedHasherFactory {
                 hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createNewAlternateMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createClearAlternateMethod(hasherConfig, chunkTypes));
-                hasherBuilder.addMethod(createMigrateFront());
+                hasherBuilder.addMethod(createMigrateFront(hasherConfig));
             }
             if (hasherConfig.supportRehash) {
                 hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
@@ -718,16 +720,26 @@ public class TypedHasherFactory {
         // ensure the capacity for everything
         builder.addStatement("int rehashedEntries = 0");
         builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer))");
+        final String extraParamNames;
+        if (hasherConfig.extraPartialRehashParameters.size() > 0) {
+            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name).collect(Collectors.joining(", "));
+        } else {
+            extraParamNames = "";
+        }
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + extraParamNames + "))");
         builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
         builder.endControlFlow();
         builder.addStatement("return rehashedEntries");
 
-        return MethodSpec.methodBuilder("rehashInternalPartial")
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("rehashInternalPartial")
                 .returns(int.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "entriesToRehash")
                 .addCode(builder.build())
-                .addAnnotation(Override.class).build();
+                .addAnnotation(Override.class);
+
+        hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
+
+        return methodBuilder.build();
     }
 
     @NotNull
@@ -793,22 +805,38 @@ public class TypedHasherFactory {
 
         builder.addStatement("return true");
 
-        return MethodSpec.methodBuilder("migrateOneLocation")
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateOneLocation")
                 .returns(boolean.class).addModifiers(Modifier.PRIVATE).addParameter(int.class, "locationToMigrate")
-                .addCode(builder.build()).build();
+                .addCode(builder.build());
+
+        hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
+
+        return methodBuilder.build();
     }
 
     @NotNull
-    private static MethodSpec createMigrateFront() {
+    private static MethodSpec createMigrateFront(HasherConfig<?> hasherConfig) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("int location = 0");
-        builder.addStatement("while (migrateOneLocation(location++))");
 
-        return MethodSpec.methodBuilder("migrateFront")
+        final String extraParamNames;
+        if (hasherConfig.extraPartialRehashParameters.size() > 0) {
+            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name).collect(Collectors.joining(", "));
+        } else {
+            extraParamNames = "";
+        }
+
+        builder.addStatement("while (migrateOneLocation(location++" + extraParamNames + "))");
+
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateFront")
                 .addModifiers(Modifier.PROTECTED)
                 .addAnnotation(Override.class)
-                .addCode(builder.build()).build();
+                .addCode(builder.build());
+
+        hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
+
+        return methodBuilder.build();
     }
 
     private static void doRehashMoveAlternateToMain(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,

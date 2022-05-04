@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.table.impl.naturaljoin.NaturalJoinHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -169,6 +170,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinIncrementalOverflow() {
+        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
+            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
+            // to contain all of our entries
+            return;
+        }
         setExpectError(false);
 
         final int maxSteps = 5;

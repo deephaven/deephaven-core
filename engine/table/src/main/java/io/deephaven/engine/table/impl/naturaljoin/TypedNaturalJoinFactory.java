@@ -145,8 +145,10 @@ public class TypedNaturalJoinFactory {
     public static void incrementalMoveMainAlternate(CodeBlock.Builder builder) {
         builder.addStatement("mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate))");
         builder.addStatement("alternateLeftRowSet.set(locationToMigrate, null)");
-        builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate))");
+        builder.addStatement("final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);");
+        builder.addStatement("mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie)");
         builder.addStatement("alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L)");
+        builder.addStatement("modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, destinationTableLocation);");
     }
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {

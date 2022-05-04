@@ -193,7 +193,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final BuildHandler buildHandler) {
+            final BuildHandler buildHandler,
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -201,7 +202,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-                doRehash(initialBuild, bc.rehashCredits, nextChunkSize);
+                doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker);
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
@@ -254,7 +255,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
-    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize, NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
@@ -262,7 +263,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            rehashCredits.add(rehashInternalPartial(requiredRehash));
+            rehashCredits.add(rehashInternalPartial(requiredRehash, modifiedSlotTracker));
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -289,7 +290,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries);
+                rehashInternalPartial((int) numEntries, modifiedSlotTracker);
                 clearAlternate();
             }
 
@@ -358,13 +359,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     abstract protected void rehashInternalFull(final int oldSize);
 
-    abstract protected void migrateFront();
+    abstract protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     /**
      * @param numEntriesToRehash number of entries to rehash into main table
      * @return actual number of entries rehashed
      */
-    protected abstract int rehashInternalPartial(int numEntriesToRehash);
+    protected abstract int rehashInternalPartial(int numEntriesToRehash, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     private static void getKeyChunks(ColumnSource<?>[] sources, ColumnSource.GetContext[] contexts,
                                      Chunk<? extends Values>[] chunks, RowSequence rowSequence) {
@@ -518,7 +519,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         final int chunkSize = (int)Math.min(CHUNK_SIZE, rightTable.size());
         try (BuildContext bc = new BuildContext(rightSources, chunkSize)) {
-            buildTable(true, bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide);
+            buildTable(true, bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide, null);
         }
     }
 
@@ -532,7 +533,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             // we are not actually decorating the left side in the initial build context, we allow rehashes to occur
             // which means that we do not want to go back and maintain the hash slots.  we instead will iterate the
             // complete hash table at the end to build our redirection index
-            buildTable(true, bc, leftRows, leftSources, this::buildFromLeftSide);
+            buildTable(true, bc, leftRows, leftSources, this::buildFromLeftSide, null);
         }
     }
     protected abstract void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
@@ -540,7 +541,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void addRightSide(Context bc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
                       @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        buildTable(false, (BuildContext)bc, rightRowSet, rightSources, (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        buildTable(false, (BuildContext)bc, rightRowSet, rightSources, (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker), modifiedSlotTracker);
     }
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
@@ -552,7 +553,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         buildTable(false, (BuildContext)bc, leftRowSet, leftSources, (chunkOk, sourceKeyChunks) -> {
             addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.longValue());
             redirectionOffset.add(chunkOk.size());
-        });
+        }, modifiedSlotTracker);
     }
     protected abstract void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, LongArraySource leftRedirections, long redirectionOffset);
 

@@ -547,7 +547,8 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         return hash;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate) {
+    private boolean migrateOneLocation(int locationToMigrate,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final long currentStateValue = alternateRightRowKey.getUnsafe(locationToMigrate);
         if (currentStateValue == EMPTY_RIGHT_STATE) {
             return false;
@@ -562,17 +563,20 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         mainRightRowKey.set(destinationTableLocation, currentStateValue);
         mainLeftRowSet.set(destinationTableLocation, alternateLeftRowSet.getUnsafe(locationToMigrate));
         alternateLeftRowSet.set(locationToMigrate, null);
-        mainModifiedTrackerCookieSource.set(destinationTableLocation, alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate));
+        final long cookie  = alternateModifiedTrackerCookieSource.getUnsafe(locationToMigrate);;
+        mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
+        modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
         return true;
     }
 
     @Override
-    protected int rehashInternalPartial(int entriesToRehash) {
+    protected int rehashInternalPartial(int entriesToRehash,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer)) {
+            if (migrateOneLocation(--rehashPointer, modifiedSlotTracker)) {
                 rehashedEntries++;
             }
         }
@@ -593,9 +597,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     }
 
     @Override
-    protected void migrateFront() {
+    protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++, modifiedSlotTracker));
     }
 
     @Override

@@ -31,6 +31,7 @@ public class HasherConfig<T> {
     final boolean includeOriginalSources;
     final boolean supportRehash;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
+    final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
     final List<BuildSpec> builds;
 
@@ -45,6 +46,7 @@ public class HasherConfig<T> {
                  Consumer<CodeBlock.Builder> moveMainFull,
                  Consumer<CodeBlock.Builder> moveMainAlternate,
             Consumer<CodeBlock.Builder> rehashFullSetup,
+            List<ParameterSpec> extraPartialRehashParameters,
             List<ProbeSpec> probes,
             List<BuildSpec> builds,
             List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods) {
@@ -64,6 +66,7 @@ public class HasherConfig<T> {
         this.moveMainFull = moveMainFull;
         this.moveMainAlternate = moveMainAlternate;
         this.rehashFullSetup = rehashFullSetup;
+        this.extraPartialRehashParameters = extraPartialRehashParameters;
         this.probes = probes;
         this.builds = builds;
         this.extraMethods = extraMethods;
@@ -133,6 +136,7 @@ public class HasherConfig<T> {
         private Consumer<CodeBlock.Builder> moveMainAlternate;
         private Consumer<CodeBlock.Builder> moveMainFull;
         private Consumer<CodeBlock.Builder> rehashFullSetup;
+        private final List<ParameterSpec> extraPartialRehashParameters = new ArrayList<>();
         private final List<ProbeSpec> probes = new ArrayList<>();
         private final List<BuildSpec> builds = new ArrayList<>();
         private final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods = new ArrayList<>();
@@ -229,6 +233,11 @@ public class HasherConfig<T> {
             return this;
         }
 
+        public Builder<T> addExtraPartialRehashParameter(ParameterSpec paramSpec) {
+            extraPartialRehashParameters.add(paramSpec);
+            return this;
+        }
+
         public Builder<T> addExtraMethod(BiFunction<HasherConfig<T>, ChunkType[], MethodSpec> methodProducer) {
             extraMethods.add(methodProducer);
             return this;
@@ -248,7 +257,7 @@ public class HasherConfig<T> {
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
                     openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
                     overflowOrAlternateStateName, emptyStateName,
-                    stateType, moveMainFull, moveMainAlternate, rehashFullSetup, probes, builds, extraMethods);
+                    stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes, builds, extraMethods);
         }
     }
 }
