@@ -10,11 +10,13 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 public interface BothIncrementalNaturalJoinStateManager extends IncrementalNaturalJoinStateManager {
+    InitialBuildContext makeInitialBuildContext();
+
     void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections);
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc);
     void compactAll();
 
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc, JoinControl.RedirectionType redirectionType);
 
     Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
     Context makeBuildContext(ColumnSource<?>[] buildSources, long maxSize);
@@ -27,4 +29,7 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
     void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?> [] leftSources);
     void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta);
+
+    interface InitialBuildContext extends Context {
+    }
 }

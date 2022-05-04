@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateMa
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,6 +30,7 @@ public class ReplicateTypedHashers {
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
+        generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {

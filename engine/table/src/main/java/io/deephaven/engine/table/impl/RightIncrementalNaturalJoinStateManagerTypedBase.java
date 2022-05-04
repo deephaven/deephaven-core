@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.SafeCloseable.closeArray;

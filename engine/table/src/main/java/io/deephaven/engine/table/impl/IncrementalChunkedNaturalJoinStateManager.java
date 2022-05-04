@@ -258,6 +258,15 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region build wrappers
+    private static class RedirectionsInitialBuildContext implements InitialBuildContext {
+        LongArraySource leftRedirections = new LongArraySource();
+    }
+
+    @Override
+    public InitialBuildContext makeInitialBuildContext() {
+        return new RedirectionsInitialBuildContext();
+    }
+
     @Override
     public void addRightSide(final Context bc, RowSequence rightIndex, ColumnSource<?> [] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rightIndex.isEmpty()) {
@@ -273,11 +282,16 @@ class IncrementalChunkedNaturalJoinStateManager
         buildTable((BuildContext)bc, leftIndex, leftSources,  leftRedirections, modifiedSlotTracker);
     }
 
+    protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, final LongArraySource leftRedirections) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
-    public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc) {
         if (leftRowSet.isEmpty()) {
             return;
         }
+        final LongArraySource leftRedirections = ((RedirectionsInitialBuildContext)ibc).leftRedirections;
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
             leftRedirections.ensureCapacity(leftRowSet.size());
             buildTable(bc, leftRowSet, leftSources, leftRedirections, null);
@@ -2010,7 +2024,8 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
+        final LongArraySource leftRedirections = ((RedirectionsInitialBuildContext)ibc).leftRedirections;
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 

@@ -100,12 +100,15 @@ class NaturalJoinHelper {
                             new IncrementalChunkedNaturalJoinStateManager(
                             bucketingContext.leftSources, tableSize, bucketingContext.originalLeftSources, control.getMaximumLoadFactor(), control.getTargetLoadFactor());
                     jsm.buildFromRightSide(rightTable, bucketingContext.rightSources);
-                    jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, leftHashSlots);
 
-                    jsm.compactAll();
+                    try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc = jsm.makeInitialBuildContext()) {
+                        jsm.decorateLeftSide(leftTable.getRowSet(), bucketingContext.leftSources, ibc);
 
-                    rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftHashSlots,
-                            control.getRedirectionType(leftTable));
+                        jsm.compactAll();
+
+                        rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, ibc,
+                                control.getRedirectionType(leftTable));
+                    }
 
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
 

@@ -25,7 +25,8 @@ public class HasherConfig<T> {
     final String overflowOrAlternateStateName;
     final String emptyStateName;
     final Class<?> stateType;
-    final Consumer<CodeBlock.Builder> moveMain;
+    final Consumer<CodeBlock.Builder> moveMainFull;
+    final Consumer<CodeBlock.Builder> moveMainAlternate;
     final Consumer<CodeBlock.Builder> rehashFullSetup;
     final boolean includeOriginalSources;
     final boolean supportRehash;
@@ -40,7 +41,9 @@ public class HasherConfig<T> {
             boolean supportRehash,
             String mainStateName,
             String overflowOrAlternateStateName,
-            String emptyStateName, Class<?> stateType, Consumer<CodeBlock.Builder> moveMain,
+            String emptyStateName, Class<?> stateType,
+                 Consumer<CodeBlock.Builder> moveMainFull,
+                 Consumer<CodeBlock.Builder> moveMainAlternate,
             Consumer<CodeBlock.Builder> rehashFullSetup,
             List<ProbeSpec> probes,
             List<BuildSpec> builds,
@@ -58,23 +61,29 @@ public class HasherConfig<T> {
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
         this.stateType = stateType;
-        this.moveMain = moveMain;
+        this.moveMainFull = moveMainFull;
+        this.moveMainAlternate = moveMainAlternate;
         this.rehashFullSetup = rehashFullSetup;
         this.probes = probes;
         this.builds = builds;
         this.extraMethods = extraMethods;
     }
 
+    @FunctionalInterface
+    interface FoundMethodBuilder {
+        void accept(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder);
+    }
+
     static class ProbeSpec {
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
-        final Consumer<CodeBlock.Builder> found;
+        final FoundMethodBuilder found;
         final Consumer<CodeBlock.Builder> missing;
         final ParameterSpec[] params;
 
         public ProbeSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                Consumer<CodeBlock.Builder> found,
+                 FoundMethodBuilder found,
                 Consumer<CodeBlock.Builder> missing, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
@@ -89,16 +98,18 @@ public class HasherConfig<T> {
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
-        final BiConsumer<HasherConfig<?>, CodeBlock.Builder> found;
+        final boolean allowAlternates;
+        final FoundMethodBuilder found;
         final BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                BiConsumer<HasherConfig<?>, CodeBlock.Builder> found,
-                BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
+                         boolean allowAlternates, FoundMethodBuilder found,
+                         BiConsumer<HasherConfig<?>, CodeBlock.Builder> insert, ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
+            this.allowAlternates = allowAlternates;
             this.found = found;
             this.insert = insert;
             this.params = params;
@@ -119,7 +130,8 @@ public class HasherConfig<T> {
         private String overflowOrAlternateStateName;
         private String emptyStateName;
         private Class<?> stateType;
-        private Consumer<CodeBlock.Builder> moveMain;
+        private Consumer<CodeBlock.Builder> moveMainAlternate;
+        private Consumer<CodeBlock.Builder> moveMainFull;
         private Consumer<CodeBlock.Builder> rehashFullSetup;
         private final List<ProbeSpec> probes = new ArrayList<>();
         private final List<BuildSpec> builds = new ArrayList<>();
@@ -192,8 +204,13 @@ public class HasherConfig<T> {
             return this;
         }
 
-        public Builder<T> moveMain(Consumer<CodeBlock.Builder> moveMain) {
-            this.moveMain = moveMain;
+        public Builder<T> moveMainAlternate(Consumer<CodeBlock.Builder> moveMainAlternate) {
+            this.moveMainAlternate = moveMainAlternate;
+            return this;
+        }
+
+        public Builder<T> moveMainFull(Consumer<CodeBlock.Builder> moveMainFull) {
+            this.moveMainFull = moveMainFull;
             return this;
         }
 
@@ -231,7 +248,7 @@ public class HasherConfig<T> {
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
                     openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
                     overflowOrAlternateStateName, emptyStateName,
-                    stateType, moveMain, rehashFullSetup, probes, builds, extraMethods);
+                    stateType, moveMainFull, moveMainAlternate, rehashFullSetup, probes, builds, extraMethods);
         }
     }
 }
