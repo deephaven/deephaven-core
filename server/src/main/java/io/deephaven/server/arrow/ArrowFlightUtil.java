@@ -704,8 +704,7 @@ public class ArrowFlightUtil {
             }
 
             @Override
-            synchronized
-            public void close() {
+            synchronized public void close() {
                 if (onExportResolvedContinuation != null) {
                     onExportResolvedContinuation.cancel();
                     onExportResolvedContinuation = null;
