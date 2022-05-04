@@ -222,11 +222,12 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalModifyRightMissing,
                     modifiedSlotTrackerParam));
 
+            ParameterSpec probeContextParam = ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
             builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalApplyRightShift,
                     TypedNaturalJoinFactory::incrementalApplyRightShiftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, probeContextParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
                     true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
@@ -241,7 +242,8 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", "rightRowKeyForState", true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
-                    ParameterSpec.builder(long.class, "shiftDelta").build()));
+                    ParameterSpec.builder(long.class, "shiftDelta").build(),
+                    probeContextParam));
         } else {
             throw new UnsupportedOperationException("Unknown class to make: " + baseClass);
         }

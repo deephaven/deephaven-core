@@ -123,6 +123,24 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }
+
+        void startShifts(long shiftDelta) {
+            if (shiftDelta > 0) {
+                if (pendingShifts == null) {
+                    pendingShifts = new LongArraySource();
+                }
+            }
+            pendingShiftPointer = 0;
+        }
+
+        public int pendingShiftPointer;
+        public LongArraySource pendingShifts;
+
+        public void ensureShiftCapacity(long shiftDelta, long size) {
+            if (shiftDelta > 0) {
+                pendingShifts.ensureCapacity(pendingShiftPointer + 2 * size);
+            }
+        }
     }
 
     private static class BuildOrProbeContext implements Context {
@@ -475,13 +493,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    @Override
-    public void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
-                                @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        probeTable((ProbeContext)pc, shiftedRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
-    }
-
-    protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+    protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker, ProbeContext pc);
 
     @Override
     public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
@@ -552,9 +564,65 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
-        probeTable((ProbeContext)pc, shiftedRowSet, false, leftSources, (chunkOk, sourceKeyChunks) -> applyLeftShift(chunkOk, sourceKeyChunks, shiftDelta));
+        final ProbeContext pc1 = (ProbeContext) pc;
+        pc1.startShifts(shiftDelta);
+        probeTable(pc1, shiftedRowSet, false, leftSources, (chunkOk, sourceKeyChunks) -> {
+            pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
+            applyLeftShift(chunkOk, sourceKeyChunks, shiftDelta, pc1);
+        });
+        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
+            final long location = pc1.pendingShifts.getUnsafe(ii);
+            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
+            if ((location & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) != 0) {
+                shiftLeftIndexAlternate(location & AlternatingColumnSource.ALTERNATE_INNER_MASK, indexKey, shiftDelta);
+            } else {
+                shiftLeftIndexMain(location, indexKey, shiftDelta);
+            }
+        }
     }
-    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta);
+
+    @Override
+    public void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
+                                @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        final ProbeContext pc1 = (ProbeContext) pc;
+        pc1.startShifts(shiftDelta);
+        probeTable(pc1, shiftedRowSet, false, rightSources, (chunkOk, sourceKeyChunks) -> {
+            pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
+            applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker, pc1);
+        });
+        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
+            final long location = pc1.pendingShifts.getUnsafe(ii);
+            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
+            shiftRightDuplicate(location, indexKey, shiftDelta);
+        }
+    }
+
+    private void shiftRightDuplicate(long duplicateLocation, long shiftedKey, long shiftDelta) {
+        final WritableRowSet duplicate = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+        Assert.neqNull(duplicate, "duplicate");
+        shiftOneKey(duplicate, shiftedKey, shiftDelta);
+    }
+
+    private void shiftLeftIndexMain(long tableLocation, long shiftedKey, long shiftDelta) {
+        final WritableRowSet existingLeftRowSet = mainLeftRowSet.getUnsafe(tableLocation);
+        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
+        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
+    }
+
+    private void shiftLeftIndexAlternate(long tableLocation, long shiftedKey, long shiftDelta) {
+        final WritableRowSet existingLeftRowSet = alternateLeftRowSet.getUnsafe(tableLocation);
+        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
+        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
+    }
+
+    protected void shiftOneKey(WritableRowSet existingLeftRowSet, long shiftedKey, long shiftDelta) {
+        final long sizeBefore = existingLeftRowSet.size();
+        existingLeftRowSet.remove(shiftedKey - shiftDelta);
+        existingLeftRowSet.insert(shiftedKey);
+        Assert.eq(existingLeftRowSet.size(), "existingLeftRowSet.size()", sizeBefore, "sizeBefore");
+    }
+
+    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta, ProbeContext pc);
 
     @Override
     public BothIncrementalNaturalJoinStateManager.InitialBuildContext makeInitialBuildContext() {

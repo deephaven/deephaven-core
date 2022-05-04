@@ -156,9 +156,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final int[] leftSizes = new int[] {10, 50, 100};
         final int[] rightSizes = new int[] {10, 50, 100};
-        for (long seed = 0; seed < 5; seed++) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
+        for (int leftSize : leftSizes) {
+            for (int rightSize : rightSizes) {
+                for (long seed = 0; seed < 5; seed++) {
+                    System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
                     for (JoinIncrement joinIncrement : joinIncrementorsShift) {
                         testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
                     }
